@@ -13,18 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from .application import Application
-
-# Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
-# when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
-# on application exit.
-_app = None
+from PyQt5.QtWidgets import QGraphicsView
 
 
-def main():
-    global _app
-    _app = Application()
-
-
-if __name__ == "__main__":
-    main()
+class PageRenderer(QGraphicsView):
+    pass

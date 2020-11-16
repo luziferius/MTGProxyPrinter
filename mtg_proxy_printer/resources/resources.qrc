@@ -1,0 +1,6 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>ui/main_window.ui</file>
+    <file>ui/add_card_widget.ui</file>
+</qresource>
+</RCC>

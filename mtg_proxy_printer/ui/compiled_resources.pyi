@@ -1,4 +1,4 @@
-# Copyright (C) 2020 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2018 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,18 +13,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from .application import Application
+"""
+Declares the interface created by the PyQt5 resource compiler.
+This is only used for type hinting.
+"""
 
-# Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
-# when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
-# on application exit.
-_app = None
+import typing
 
+qt_version = ...  # type: typing.List[str]
+rcc_version = ...  # type: int
+qt_resource_data = ...  # type: bytes
+qt_resource_name = ...  # type: bytes
+qt_resource_struct = ...  # type: bytes
 
-def main():
-    global _app
-    _app = Application()
+def qCleanupResources() -> None: ...
+def qInitResources() -> None: ...
 
-
-if __name__ == "__main__":
-    main()
+del typing

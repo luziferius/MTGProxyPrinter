@@ -13,18 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from .application import Application
-
-# Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
-# when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
-# on application exit.
-_app = None
+from PyQt5.QtWidgets import QWidget
 
 
-def main():
-    global _app
-    _app = Application()
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 
-if __name__ == "__main__":
-    main()
+class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
+    pass
