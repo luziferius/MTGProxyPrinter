@@ -120,6 +120,14 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>card_name_search</tabstop>
+  <tabstop>set_name_search</tabstop>
+  <tabstop>collectors_number_search</tabstop>
+  <tabstop>language_combo_box</tabstop>
+  <tabstop>scryfall_url_input</tabstop>
+  <tabstop>copies_input</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

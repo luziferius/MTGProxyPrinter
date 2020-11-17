@@ -197,6 +197,11 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>page_list_view</tabstop>
+  <tabstop>page_card_table_view</tabstop>
+  <tabstop>page_renderer</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
