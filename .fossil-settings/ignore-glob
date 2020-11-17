@@ -12,3 +12,4 @@ venv
 .coverage
 __pycache__
 *.pyc
+*.json
