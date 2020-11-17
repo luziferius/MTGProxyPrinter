@@ -16,6 +16,7 @@
 from PyQt5.QtCore import QStringListModel
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
+import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.language
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -30,6 +31,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
         self.setupUi(self)
+        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.language_combo_box: QComboBox
         self.language_model = QStringListModel(mtg_proxy_printer.model.language.get_known_language_codes())
         self.language_combo_box.setModel(self.language_model)

@@ -44,6 +44,7 @@ setup(
     install_requires=[
         "appdirs >= 1.4.3",  # 1.4.3 is the first version Supporting Python >= 3.6
         "PyQt5",
+        "ijson",
     ],
     setup_requires=[
         'setuptools >= 30.3.0',
