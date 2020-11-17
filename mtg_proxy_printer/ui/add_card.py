@@ -64,4 +64,5 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
 
     def on_ok_button_triggered(self):
         logger.debug("User clicked OK and adds a new card to the current page.")
+        self.parent().parent().nothing_happens_box.show()
         pass

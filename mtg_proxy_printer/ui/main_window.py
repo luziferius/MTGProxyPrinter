@@ -16,7 +16,7 @@
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import QWidget, QApplication, QTableView
+from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox
 
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_list_view import PageListView
@@ -33,6 +33,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def __init__(self, parent: QWidget = None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
+        self.nothing_happens_box = QMessageBox(
+            QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.dirty: bool = False
         self.page_list_view: PageListView
         self.page_card_table_view: QTableView
@@ -69,7 +71,14 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_print_triggered(self):
         logger.debug(f"User prints the current document.")
+        self.nothing_happens_box.show()
 
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
+        self.nothing_happens_box.show()
+
+    @pyqtSlot()
+    def on_action_discard_page_triggered(self):
+        logger.debug(f"User prints the current document to PDF.")
+        self.nothing_happens_box.show()
