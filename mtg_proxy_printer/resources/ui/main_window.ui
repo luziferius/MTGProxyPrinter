@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>main_window</class>
  <widget class="QMainWindow" name="main_window">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>792</width>
+    <height>311</height>
+   </rect>
+  </property>
   <property name="windowTitle">
    <string>MTGProxyPrinter</string>
   </property>
@@ -66,7 +74,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>793</width>
+     <width>792</width>
      <height>30</height>
     </rect>
    </property>
@@ -79,7 +87,14 @@
     <addaction name="separator"/>
     <addaction name="action_quit"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="action_show_settings"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuSettings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
@@ -153,6 +168,14 @@
    </property>
    <property name="toolTip">
     <string>Discard this page.</string>
+   </property>
+  </action>
+  <action name="action_show_settings">
+   <property name="icon">
+    <iconset theme="configure"/>
+   </property>
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>

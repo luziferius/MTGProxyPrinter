@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QModelIndex
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QWidget, QApplication, QTableView
 
@@ -29,10 +29,6 @@ del get_logger
 
 
 class MainWindow(*inherits_from_ui_file_with_name("main_window")):
-
-    open_command_line_given_images = pyqtSignal()
-    open_images = pyqtSignal(list)
-    close_image = pyqtSignal(QModelIndex, bool)
 
     def __init__(self, parent: QWidget = None):
         super(MainWindow, self).__init__(parent)

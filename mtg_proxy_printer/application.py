@@ -20,6 +20,7 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QApplication
 
 import mtg_proxy_printer.ui.main_window
+import mtg_proxy_printer.ui.settings_window
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -32,8 +33,10 @@ class Application(QApplication):
             argv = sys.argv
         super(Application, self).__init__(argv)
         logger.info("Starting visual_image_splitter")
-
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow()
+        self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(self.main_window)
+        self.settings_window.hide()
+        self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.show()
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()

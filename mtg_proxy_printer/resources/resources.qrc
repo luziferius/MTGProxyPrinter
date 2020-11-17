@@ -2,5 +2,6 @@
 <qresource>
     <file>ui/main_window.ui</file>
     <file>ui/add_card_widget.ui</file>
+    <file>ui/settings_window.ui</file>
 </qresource>
 </RCC>

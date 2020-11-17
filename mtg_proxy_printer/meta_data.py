@@ -15,7 +15,7 @@
 
 from appdirs import AppDirs
 
-PROGRAMNAME = "backuppy"
+PROGRAMNAME = "MTGProxyPrinter"
 __version__ = "0.0.1"
 COPYRIGHT = "(C) 2019,2020 Thomas Hess"
 

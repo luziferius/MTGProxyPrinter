@@ -13,7 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from .application import Application
+import mtg_proxy_printer.application
+import mtg_proxy_printer.settings
 
 # Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
 # when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
@@ -23,7 +24,8 @@ _app = None
 
 def main():
     global _app
-    _app = Application()
+    mtg_proxy_printer.settings.read_settings_from_file()
+    _app = mtg_proxy_printer.application.Application()
 
 
 if __name__ == "__main__":
