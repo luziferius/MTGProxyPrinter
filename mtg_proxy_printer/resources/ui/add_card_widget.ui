@@ -1,21 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>AddCardWidget</class>
+ <widget class="QWidget" name="AddCardWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>646</width>
+    <width>606</width>
     <height>146</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="1" colspan="7">
-    <widget class="QLineEdit" name="lineEdit">
+    <widget class="QLineEdit" name="scryfall_url_input">
      <property name="inputMethodHints">
       <set>Qt::ImhUrlCharactersOnly</set>
      </property>
@@ -25,7 +22,7 @@
     </widget>
    </item>
    <item row="1" column="7">
-    <widget class="QSpinBox" name="spinBox">
+    <widget class="QSpinBox" name="copies_input">
      <property name="minimum">
       <number>1</number>
      </property>
@@ -35,7 +32,7 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="card_name_label">
      <property name="text">
       <string>Card Name:</string>
      </property>
@@ -65,21 +62,21 @@
     </widget>
    </item>
    <item row="0" column="0" colspan="8">
-    <widget class="QLabel" name="label_5">
+    <widget class="QLabel" name="header_label">
      <property name="text">
       <string>Add a new card</string>
      </property>
     </widget>
    </item>
    <item row="1" column="2">
-    <widget class="QLabel" name="label_2">
+    <widget class="QLabel" name="set_name_label">
      <property name="text">
       <string>Set</string>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
-    <widget class="QLabel" name="label_4">
+    <widget class="QLabel" name="scryfall_url_label">
      <property name="text">
       <string>Scryfall URL:</string>
      </property>
@@ -93,7 +90,7 @@
     </widget>
    </item>
    <item row="1" column="4">
-    <widget class="QLabel" name="label_3">
+    <widget class="QLabel" name="collector_number_label">
      <property name="text">
       <string>Collector Number</string>
      </property>
@@ -113,7 +110,7 @@
     </widget>
    </item>
    <item row="1" column="6">
-    <widget class="QLabel" name="label_6">
+    <widget class="QLabel" name="copies_label">
      <property name="text">
       <string>Copies</string>
      </property>

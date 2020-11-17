@@ -24,4 +24,8 @@ del get_logger
 
 
 class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
-    pass
+
+    def __init__(self, parent: QWidget = None):
+        super(AddCardWidget, self).__init__(parent)
+        self.setupUi(self)
+        logger.info(f"Created {self.__class__.__name__} instance.")
