@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>AddCardWidget</class>
  <widget class="QWidget" name="AddCardWidget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>606</width>
-    <height>146</height>
-   </rect>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="1" colspan="7">
     <widget class="QLineEdit" name="scryfall_url_input">
@@ -83,7 +75,7 @@
     </widget>
    </item>
    <item row="4" column="0" colspan="8">
-    <widget class="QDialogButtonBox" name="buttonBox">
+    <widget class="QDialogButtonBox" name="button_box">
      <property name="standardButtons">
       <set>QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
      </property>
