@@ -13,9 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox
+from PyQt5.QtCore import QStringListModel
+from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
-
+import mtg_proxy_printer.model.language
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 from mtg_proxy_printer.logger import get_logger
@@ -28,9 +30,19 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
         self.setupUi(self)
-        self.card_name_search: QLineEdit
-        self.set_name_search: QLineEdit
-        self.collectors_number_search: QLineEdit
+        self.language_combo_box: QComboBox
+        self.language_model = QStringListModel(mtg_proxy_printer.model.language.get_known_language_codes())
+        self.language_combo_box.setModel(self.language_model)
+        self.language_combo_box.setCurrentIndex(
+            self.language_model.stringList().index(
+                mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+        )
+        self.card_name_search: QComboBox
+        self.card_name_search.lineEdit().setPlaceholderText("Search by card name")
+        self.set_name_search: QComboBox
+        self.set_name_search.lineEdit().setPlaceholderText("Search by released set")
+        self.collectors_number_search: QComboBox
+        self.collectors_number_search.lineEdit().setPlaceholderText("Number")
         self.copies_input: QSpinBox
         self.scryfall_url_input: QLineEdit
         self._connect_reset_button()

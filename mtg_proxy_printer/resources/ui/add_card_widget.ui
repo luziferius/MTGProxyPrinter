@@ -3,23 +3,23 @@
  <class>AddCardWidget</class>
  <widget class="QWidget" name="AddCardWidget">
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="1" colspan="7">
-    <widget class="QLineEdit" name="scryfall_url_input">
-     <property name="inputMethodHints">
-      <set>Qt::ImhUrlCharactersOnly</set>
-     </property>
-     <property name="placeholderText">
-      <string>Paste a Scryfall URL to automatically find the card.</string>
+   <item row="2" column="0">
+    <widget class="QLabel" name="scryfall_url_label">
+     <property name="text">
+      <string>Scryfall URL:</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="7">
-    <widget class="QSpinBox" name="copies_input">
-     <property name="minimum">
-      <number>1</number>
+   <item row="1" column="3">
+    <widget class="QComboBox" name="set_name_search">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>5</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="maximum">
-      <number>9</number>
+     <property name="editable">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
@@ -27,6 +27,34 @@
     <widget class="QLabel" name="card_name_label">
      <property name="text">
       <string>Card Name:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="9">
+    <widget class="QLabel" name="header_label">
+     <property name="text">
+      <string>Add a new card</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QLabel" name="set_name_label">
+     <property name="text">
+      <string>Set:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="4">
+    <widget class="QLabel" name="collector_number_label">
+     <property name="text">
+      <string>Collector Number:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="9">
+    <widget class="QDialogButtonBox" name="button_box">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
      </property>
     </widget>
    </item>
@@ -53,60 +81,42 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0" colspan="8">
-    <widget class="QLabel" name="header_label">
-     <property name="text">
-      <string>Add a new card</string>
+   <item row="2" column="1" colspan="6">
+    <widget class="QLineEdit" name="scryfall_url_input">
+     <property name="inputMethodHints">
+      <set>Qt::ImhUrlCharactersOnly</set>
+     </property>
+     <property name="placeholderText">
+      <string>Paste a Scryfall URL to automatically find the card.</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="2">
-    <widget class="QLabel" name="set_name_label">
-     <property name="text">
-      <string>Set</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="scryfall_url_label">
-     <property name="text">
-      <string>Scryfall URL:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="8">
-    <widget class="QDialogButtonBox" name="button_box">
-     <property name="standardButtons">
-      <set>QDialogButtonBox::Ok|QDialogButtonBox::Reset</set>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="4">
-    <widget class="QLabel" name="collector_number_label">
-     <property name="text">
-      <string>Collector Number</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="3">
-    <widget class="QComboBox" name="set_name_search">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>5</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="editable">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="6">
+   <item row="2" column="7">
     <widget class="QLabel" name="copies_label">
      <property name="text">
       <string>Copies</string>
      </property>
     </widget>
+   </item>
+   <item row="2" column="8">
+    <widget class="QSpinBox" name="copies_input">
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>9</number>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="7">
+    <widget class="QLabel" name="language_label">
+     <property name="text">
+      <string>Language:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="8">
+    <widget class="QComboBox" name="language_combo_box"/>
    </item>
   </layout>
  </widget>
