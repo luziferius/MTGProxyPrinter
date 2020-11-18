@@ -15,7 +15,11 @@
 
 import typing
 
+import mtg_proxy_printer.meta_data
+
+
 StringList = typing.List[str]
+database_location = mtg_proxy_printer.meta_data.data_directories.user_cache_dir
 
 
 class CardDatabase:

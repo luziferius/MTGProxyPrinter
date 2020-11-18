@@ -13,10 +13,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import gzip
 from pathlib import Path
+import re
+import typing
 import urllib.request
+import http.client
 
 import ijson
+
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
+
+# Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
+# from file system paths.
+looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
+# Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
+supported_encodings = ("gzip", "identity")
 
 
 def read_json_card_data_from_url(url: str):
@@ -28,21 +42,39 @@ def read_json_card_data_from_url(url: str):
     So use this iterative parser to generate and yield individual card objects, without having to store the whole
     document in memory.
     """
-    with urllib.request.urlopen(url) as file_like:
-        yield from _read_json_card_data_from_open_file(file_like)
+    headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request) as response:  # type: http.client.HTTPResponse
+        if (response_code := response.getcode()) >= 300:
+            raise RuntimeError(f"Error from server! Error code: {response_code}")
+        encoding = response.info().get("Content-Encoding")
+        if encoding == "gzip":
+            decompressed = gzip.open(response, "rb")
+        elif encoding == "identity":
+            decompressed = response
+        else:
+            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
+        yield from _read_json_card_data_from_open_file(decompressed)
 
 
-def read_json_card_data_from_path(path: Path):
+def read_json_card_data(url_or_path: typing.Union[Path, str]):
     """
     Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-    This function takes a file path to a locally stored json document. Mainly for testing purposes.
+    This function can take a file path to a locally stored json document. Mainly for testing purposes.
+    Or a URL pointing to the card data json object in the Scryfall API.
 
     The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
     So use this iterative parser to generate and yield individual card objects, without having to store the whole
     document in memory.
     """
-    with path.open("rb") as file:
-        yield from _read_json_card_data_from_open_file(file)
+    if isinstance(url_or_path, Path):
+        with url_or_path.open("rb") as file:
+            yield from _read_json_card_data_from_open_file(file)
+    elif looks_like_url_re.match(url_or_path):
+        yield from read_json_card_data_from_url(url_or_path)
+    else:
+        with open(url_or_path, "rb") as file:
+            yield from _read_json_card_data_from_open_file(file)
 
 
 def _read_json_card_data_from_open_file(file):
@@ -53,7 +85,7 @@ def _read_json_card_data_from_open_file(file):
     nesting_depth = 0
     object_builder = ijson.ObjectBuilder()
     for event, value in parser:
-        if event in("start_map", "start_array"):
+        if event in ("start_map", "start_array"):
             nesting_depth += 1
         elif event in ("end_map", "end_array"):
             nesting_depth -= 1
