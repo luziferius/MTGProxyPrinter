@@ -13,3 +13,6 @@ venv
 __pycache__
 *.pyc
 *.json
+*.gz
+*.zz
+*.zip

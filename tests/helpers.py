@@ -13,7 +13,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from .helpers import setup_logging_for_testing, setup_settings_for_testing
+import typing
 
-setup_logging_for_testing()
-setup_settings_for_testing()
+import mtg_proxy_printer.logger
+import mtg_proxy_printer.settings
+
+
+class Namespace(typing.NamedTuple):
+    """Mocks parsed command line arguments."""
+    verbose: bool
+    cutelog_integration: bool
+
+
+def setup_logging_for_testing():
+    mtg_proxy_printer.logger.configure_root_logger(Namespace(verbose=False, cutelog_integration=True))
+    mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
+    mtg_proxy_printer.logger.root_logger.info(__name__)
+
+
+def setup_settings_for_testing():
+    mtg_proxy_printer.settings.settings = mtg_proxy_printer.settings.DEFAULT_SETTINGS

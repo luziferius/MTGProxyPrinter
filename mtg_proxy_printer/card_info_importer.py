@@ -22,6 +22,8 @@ import http.client
 
 import ijson
 
+from mtg_proxy_printer.model.carddb import CardDatabase
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -31,6 +33,7 @@ del get_logger
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 # Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
 supported_encodings = ("gzip", "identity")
+JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 
 
 def read_json_card_data_from_url(url: str):
@@ -78,7 +81,7 @@ def read_json_card_data(url_or_path: typing.Union[Path, str]):
 
 
 def _read_json_card_data_from_open_file(file):
-    parser = ijson.basic_parse(file)
+    parser = ijson.basic_parse(file, use_float=True)
     # Throw away the outer json array [] that encapsulates the whole data set
     next(parser)
     # Tracks the current nesting depth. Whenever it reaches 0, an object is fully read and can be yielded.
@@ -96,3 +99,95 @@ def _read_json_card_data_from_open_file(file):
         if nesting_depth == 0:
             yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
             object_builder = ijson.ObjectBuilder()
+
+
+def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType, None, None]):
+    """
+    Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
+    """
+    download_cards_with_content_warning = mtg_proxy_printer.settings.settings["downloads"].getboolean(
+        "download-cards-depicting-racism")
+    for card in card_data:
+        if card["object"] != "card":
+            logger.warning(f"Non-card found in card data during import: {card}")
+            continue
+        try:
+            content_warning = card["content_warning"]
+        except KeyError:
+            content_warning = False
+        if content_warning and not download_cards_with_content_warning:
+            logger.debug(
+                f"Skipping card '{card['name']}' with {content_warning=}, because downloading these is disabled.")
+            continue
+        set_info = _get_set_info(card)
+        card_info = _get_card_info(card)
+        faces = list(_get_card_faces(card))
+        model.db.execute(
+            r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""",
+            set_info
+        )
+        model.db.execute(
+            r"""INSERT INTO CARD
+            (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
+            VALUES (?, ?, ?, ?, ?, ?)""",
+            card_info
+        )
+        model.db.executemany(
+            r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
+            faces
+        )
+
+
+def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
+    set_info = card["set"], card["set_name"], card["scryfall_set_uri"]
+    return set_info
+
+
+def _get_card_info(card: JSONType):
+    card_info = (
+        card["id"], card["oracle_id"], card["set"], card["collector_number"], card["lang"], card["highres_image"]
+    )
+    return card_info
+
+
+def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str], None, None]:
+    """
+    Yields a tuple (Scryfall_id, printed_name, PNG_image_URI) for each face found in the card object.
+    The printed name falls back to the English name, if the card has no printed_name key.
+
+    Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
+    this function builds a "card_face" object providing only the required information from the card object itself.
+    """
+    try:
+        faces = card["card_faces"]
+    except KeyError:
+        faces = [
+            {
+                "printed_name": _get_card_name(card),
+                "image_uris": card["image_uris"],
+            }
+        ]
+    for face in faces:  # type: JSONType
+        yield card["id"], _get_card_name(face), _get_png_image_uri(card, face)
+
+
+def _get_png_image_uri(card: JSONType, face: JSONType):
+    """
+    Get the PNG image URI of the given card face.
+
+    Double-faced cards have multiple faces and an image in each face.
+    Split cards have multiple faces, but the singular image is located in the card itself.
+    """
+    try:
+        return face["image_uris"]["png"]
+    except KeyError:
+        return card["image_uris"]["png"]
+
+
+def _get_card_name(card_or_face: JSONType) -> str:
+    # Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
+    # English cards only have name, so use that as a fallback.
+    try:
+        return card_or_face["printed_name"]
+    except KeyError:
+        return card_or_face["name"]
