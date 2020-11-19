@@ -26,8 +26,10 @@ logger = get_logger(__name__)
 del get_logger
 
 StringList = typing.List[str]
-DATABASE_LOCATION = mtg_proxy_printer.meta_data.data_directories.user_cache_dir
-DATABASE_FILE_NAME = "CardDataCache.sqlite3"
+DEFAULT_DATABASE_LOCATION = pathlib.Path(
+    mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
+    "CardDataCache.sqlite3"
+)
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
 
 
@@ -35,7 +37,7 @@ class CardDatabase:
 
     MIN_SUPPORTED_SQLITE_VERSION = (3, 33, 0)
 
-    def __init__(self, db_path: typing.Union[str, pathlib.Path] = pathlib.Path(DATABASE_LOCATION, DATABASE_FILE_NAME)):
+    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         if isinstance(db_path, str) and db_path != ":memory:":
             db_path = pathlib.Path(db_path)
@@ -51,6 +53,7 @@ class CardDatabase:
             parent_dir.mkdir(parents=True)
         location = "in memory" if db_path == ":memory:" else f"at {db_path}"
         logger.debug(f"Opening Database {location}.")
+        should_create_schema = db_path == ":memory:" or not pathlib.Path(db_path).exists()
         self.db: sqlite3.Connection = sqlite3.connect(db_path)
         logger.debug(f"Connected SQLite database {location}.")
         self.db.execute("PRAGMA foreign_keys = ON")
@@ -59,8 +62,9 @@ class CardDatabase:
             logger.debug("Skipping registering cleanup hooks for in-memory databases.")
             self.populate_database_schema()
         else:
+            if should_create_schema:
+                self.populate_database_schema()
             logger.debug("Registering cleanup hooks that close the database on exit.")
-
             def close_db():
                 logger.debug("Rolling back active transactions.")
                 self.db.rollback()
@@ -84,7 +88,7 @@ class CardDatabase:
             self.db.executescript(schema)
         logger.debug("Created database schema.")
 
-    def check_database_schema_version(self):
+    def check_database_schema_version(self) -> bool:
         database_user_version: int = self.db.execute("PRAGMA user_version").fetchone()[0]
         schema = pkg_resources.resource_string(__name__, 'carddb.sql').decode("utf-8")
         latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
@@ -93,6 +97,7 @@ class CardDatabase:
                       f"Expected schema version {latest_user_version}, got {database_user_version}."
             logger.warning(message)
             print(f"WARNING: {message}")
+        return database_user_version != latest_user_version
 
     def get_card_names(self, language: str) -> StringList:
         """Returns a list with all card names in the given language."""
