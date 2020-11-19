@@ -33,7 +33,7 @@ CREATE TABLE Card (
   collector_number TEXT NOT NULL, -- Most have simple integers, but some cards have non-integer collector numbers.
   language TEXT NOT NULL,
   png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
-  highres_image INTEGER NOT NULL,  -- Boolean indicating that the card has high resolution images.
+  highres_image INTEGER NOT NULL  -- Boolean indicating that the card has high resolution images.
 );
 
 
