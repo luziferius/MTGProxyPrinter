@@ -51,17 +51,16 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def load_settings(self, settings):
         self.preferred_language_combo_box: QComboBox
         self.avoid_low_res_images_check_box: QCheckBox
-        defaults = mtg_proxy_printer.settings.DEFAULT_SETTINGS
-        images_section = self._get_section(settings, "images")
+        self.include_cards_depicting_racism_check_box: QCheckBox
+        images_section = settings["images"]
         self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(
-            images_section.get(
-                "preferred-language",
-                defaults["images"]["preferred-language"]))
-        )
+            images_section.get("preferred-language")
+        ))
         self.avoid_low_res_images_check_box.setChecked(
-            images_section.getboolean(
-                "avoid-low-resolution-images",
-                defaults["images"].getboolean("avoid-low-resolution-images"))
+            images_section.getboolean("avoid-low-resolution-images")
+        )
+        self.include_cards_depicting_racism_check_box.setChecked(
+            settings["downloads"].getboolean("download-cards-depicting-racism")
         )
 
     def reset(self):
@@ -75,11 +74,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def save(self):
         logger.info("User saves the configuration to disk.")
-        settings = mtg_proxy_printer.settings.settings
-        images_section = self._get_section(settings, "images")
+        images_section = mtg_proxy_printer.settings.settings["images"]
+        downloads_section = mtg_proxy_printer.settings.settings["downloads"]
         images_section["preferred-language"] = self.preferred_language_combo_box.currentText()
         self.avoid_low_res_images_check_box: QCheckBox
         images_section["avoid-low-resolution-images"] = str(self.avoid_low_res_images_check_box.isChecked())
+        downloads_section["download-cards-depicting-racism"] = str(
+            self.include_cards_depicting_racism_check_box.isChecked())
         mtg_proxy_printer.settings.write_settings_to_file()
         logger.debug("Save finished.")
 
@@ -95,9 +96,3 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         else:
             return languages.index("en")
 
-    @staticmethod
-    def _get_section(settings, name: str):
-        if not settings.has_section(name):
-            settings.add_section(name)
-        section = settings[name]
-        return section
