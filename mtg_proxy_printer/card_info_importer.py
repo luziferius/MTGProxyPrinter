@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import gzip
+import json
 from pathlib import Path
 import re
 import typing
@@ -34,6 +35,38 @@ looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 # Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
 supported_encodings = ("gzip", "identity")
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
+BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
+
+
+def get_scryfall_bulk_card_data_url() -> str:
+    with _read_from_url(BULK_DATA_API_END_POINT) as data:
+        bulk_items = json.load(data)
+        for item in bulk_items["data"]:
+            if item["type"] == "all_cards":
+                return item["download_uri"]
+        raise RuntimeError(
+            "URL to the Scryfall bulk data export not found. "
+            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
+            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+
+
+def _read_from_url(url: str):
+    """
+    Reads a given URL and returns a file-like object that can and should be used as a context manager.
+    """
+    headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+    request = urllib.request.Request(url, headers=headers)
+    response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
+    if (response_code := response.getcode()) >= 300:
+        raise RuntimeError(f"Error from server! Error code: {response_code}")
+    encoding = response.info().get("Content-Encoding")
+    if encoding == "gzip":
+        data = gzip.open(response, "rb")
+    elif encoding == "identity":
+        data = response
+    else:
+        raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
+    return data
 
 
 def read_json_card_data_from_url(url: str):
@@ -45,19 +78,8 @@ def read_json_card_data_from_url(url: str):
     So use this iterative parser to generate and yield individual card objects, without having to store the whole
     document in memory.
     """
-    headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request) as response:  # type: http.client.HTTPResponse
-        if (response_code := response.getcode()) >= 300:
-            raise RuntimeError(f"Error from server! Error code: {response_code}")
-        encoding = response.info().get("Content-Encoding")
-        if encoding == "gzip":
-            decompressed = gzip.open(response, "rb")
-        elif encoding == "identity":
-            decompressed = response
-        else:
-            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-        yield from _read_json_card_data_from_open_file(decompressed)
+    with _read_from_url(url) as data:
+        yield from _read_json_card_data_from_open_file(data)
 
 
 def read_json_card_data(url_or_path: typing.Union[Path, str]):
