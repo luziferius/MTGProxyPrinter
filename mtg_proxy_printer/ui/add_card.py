@@ -17,7 +17,6 @@ from PyQt5.QtCore import QStringListModel, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.model.language
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
