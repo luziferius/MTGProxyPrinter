@@ -26,7 +26,6 @@ logger = get_logger(__name__)
 del get_logger
 
 StringList = typing.List[str]
-JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 DATABASE_LOCATION = mtg_proxy_printer.meta_data.data_directories.user_cache_dir
 DATABASE_FILE_NAME = "CardDataCache.sqlite3"
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
@@ -38,7 +37,7 @@ class CardDatabase:
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = pathlib.Path(DATABASE_LOCATION, DATABASE_FILE_NAME)):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        if isinstance(db_path, str) and db_path != ":memory":
+        if isinstance(db_path, str) and db_path != ":memory:":
             db_path = pathlib.Path(db_path)
         if sqlite3.sqlite_version_info < self.MIN_SUPPORTED_SQLITE_VERSION:
             raise sqlite3.NotSupportedError(
@@ -50,9 +49,10 @@ class CardDatabase:
         if not isinstance(db_path, str) and not (parent_dir := db_path.parent).exists():
             logger.info(f"Parent directory '{parent_dir}' does not exist, creating it…")
             parent_dir.mkdir(parents=True)
-        logger.debug(f"Opening Database at path {db_path}")
-        self.db: sqlite3.Connection = sqlite3.connect(pathlib.Path(DATABASE_LOCATION, DATABASE_FILE_NAME))
-        logger.debug(f"Connected SQLite database {'in memory' if db_path == ':memory:' else f'at {db_path}'}.")
+        location = "in memory" if db_path == ":memory:" else f"at {db_path}"
+        logger.debug(f"Opening Database {location}.")
+        self.db: sqlite3.Connection = sqlite3.connect(db_path)
+        logger.debug(f"Connected SQLite database {location}.")
         self.db.execute("PRAGMA foreign_keys = ON")
         logger.debug("Enabled SQLite3 foreign keys support.")
         if db_path == ":memory:":
@@ -76,11 +76,13 @@ class CardDatabase:
         self.check_database_schema_version()
 
     def populate_database_schema(self):
+        logger.info("Creating database schema.")
         if user_version := self.db.execute("PRAGMA user_version").fetchone()[0]:
             raise RuntimeError(f"Cannot perform this on a non-empty database: {user_version=}.")
         else:
             schema = pkg_resources.resource_string(__name__, 'carddb.sql').decode("utf-8")
             self.db.executescript(schema)
+        logger.debug("Created database schema.")
 
     def check_database_schema_version(self):
         database_user_version: int = self.db.execute("PRAGMA user_version").fetchone()[0]
@@ -91,27 +93,6 @@ class CardDatabase:
                       f"Expected schema version {latest_user_version}, got {database_user_version}."
             logger.warning(message)
             print(f"WARNING: {message}")
-
-    def populate_database(self, card_data: typing.Generator[JSONType, None, None]):
-        """
-        Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
-        """
-        for card in card_data:
-            if card["object"] != "card":
-                logger.warning(f"Non-card found in card data during import: {card}")
-                continue
-            set_info = (card["set"], card["set_name"], card["scryfall_set_uri"])
-            card_info = (
-                card["id"], card["oracle_id"], card["name"], card["set"],
-                card["collector_number"], card["lang"],card["image_uris"]["png"], card["highres_image"]
-            )
-            self.db.execute(r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""", set_info)
-            self.db.execute(
-                r"""INSERT INTO CARD
-                (scryfall_id, oracle_id, card_name, "set", collector_number, language, png_image_uri, highres_image)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                card_info
-            )
 
     def get_card_names(self, language: str) -> StringList:
         """Returns a list with all card names in the given language."""

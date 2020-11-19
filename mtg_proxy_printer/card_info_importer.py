@@ -22,6 +22,7 @@ import http.client
 
 import ijson
 
+from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -31,6 +32,7 @@ del get_logger
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 # Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
 supported_encodings = ("gzip", "identity")
+JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 
 
 def read_json_card_data_from_url(url: str):
@@ -96,3 +98,33 @@ def _read_json_card_data_from_open_file(file):
         if nesting_depth == 0:
             yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
             object_builder = ijson.ObjectBuilder()
+
+
+def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType, None, None]):
+    """
+    Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
+    """
+    for card in card_data:
+        if card["object"] != "card":
+            logger.warning(f"Non-card found in card data during import: {card}")
+            continue
+        try:
+            set_info = (card["set"], card["set_name"], card["scryfall_set_uri"])
+            card_info = (
+                card["id"], card["oracle_id"], card["name"], card["set"],
+                card["collector_number"], card["lang"],card["image_uris"]["png"], card["highres_image"]
+            )
+        except KeyError:
+            import pprint
+            print(pprint.pprint(card))
+            raise
+        model.db.execute(r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""", set_info)
+        model.db.execute(
+            r"""INSERT INTO CARD
+            (scryfall_id, oracle_id, card_name, "set", collector_number, language, png_image_uri, highres_image)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            card_info
+        )
+
+def _extract_card_faces(card: JSONType) -> typing.Generator[JSONType, None, None]:
+    pass
