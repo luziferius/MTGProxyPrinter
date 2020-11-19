@@ -22,6 +22,7 @@ import urllib.request
 import http.client
 
 import ijson
+from PyQt5.QtCore import pyqtSignal, QObject
 
 from mtg_proxy_printer.model.carddb import CardDatabase
 import mtg_proxy_printer.settings
@@ -38,126 +39,128 @@ JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
 
-def get_scryfall_bulk_card_data_url() -> str:
-    with _read_from_url(BULK_DATA_API_END_POINT) as data:
-        bulk_items = json.load(data)
-        for item in bulk_items["data"]:
-            if item["type"] == "all_cards":
-                return item["download_uri"]
-        raise RuntimeError(
-            "URL to the Scryfall bulk data export not found. "
-            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
-            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+class CardInfoDownloader(QObject):
 
+    update_progress = pyqtSignal(int)
 
-def _read_from_url(url: str):
-    """
-    Reads a given URL and returns a file-like object that can and should be used as a context manager.
-    """
-    headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-    request = urllib.request.Request(url, headers=headers)
-    response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
-    if (response_code := response.getcode()) >= 300:
-        raise RuntimeError(f"Error from server! Error code: {response_code}")
-    encoding = response.info().get("Content-Encoding")
-    if encoding == "gzip":
-        data = gzip.open(response, "rb")
-    elif encoding == "identity":
-        data = response
-    else:
-        raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-    return data
+    def get_scryfall_bulk_card_data_url(self) -> str:
+        with self._read_from_url(BULK_DATA_API_END_POINT) as data:
+            bulk_items = json.load(data)
+            for item in bulk_items["data"]:
+                if item["type"] == "all_cards":
+                    return item["download_uri"]
+            raise RuntimeError(
+                "URL to the Scryfall bulk data export not found. "
+                "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
+                "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
 
+    @staticmethod
+    def _read_from_url(url: str):
+        """
+        Reads a given URL and returns a file-like object that can and should be used as a context manager.
+        """
+        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+        request = urllib.request.Request(url, headers=headers)
+        response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
+        if (response_code := response.getcode()) >= 300:
+            raise RuntimeError(f"Error from server! Error code: {response_code}")
+        encoding = response.info().get("Content-Encoding")
+        if encoding == "gzip":
+            data = gzip.open(response, "rb")
+        elif encoding == "identity":
+            data = response
+        else:
+            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
+        return data
 
-def read_json_card_data_from_url(url: str):
-    """
-    Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-    This function takes a URL pointing to the card data json object in the Scryfall API.
+    def read_json_card_data_from_url(self, url: str):
+        """
+        Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
+        This function takes a URL pointing to the card data json object in the Scryfall API.
 
-    The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
-    So use this iterative parser to generate and yield individual card objects, without having to store the whole
-    document in memory.
-    """
-    with _read_from_url(url) as data:
-        yield from _read_json_card_data_from_open_file(data)
+        The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
+        So use this iterative parser to generate and yield individual card objects, without having to store the whole
+        document in memory.
+        """
+        with self._read_from_url(url) as data:
+            yield from self._read_json_card_data_from_open_file(data)
 
+    def read_json_card_data(self, url_or_path: typing.Union[Path, str]):
+        """
+        Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
+        This function can take a file path to a locally stored json document. Mainly for testing purposes.
+        Or a URL pointing to the card data json object in the Scryfall API.
 
-def read_json_card_data(url_or_path: typing.Union[Path, str]):
-    """
-    Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-    This function can take a file path to a locally stored json document. Mainly for testing purposes.
-    Or a URL pointing to the card data json object in the Scryfall API.
+        The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
+        So use this iterative parser to generate and yield individual card objects, without having to store the whole
+        document in memory.
+        """
+        if isinstance(url_or_path, Path):
+            with url_or_path.open("rb") as file:
+                yield from self._read_json_card_data_from_open_file(file)
+        elif looks_like_url_re.match(url_or_path):
+            yield from self.read_json_card_data_from_url(url_or_path)
+        else:
+            with open(url_or_path, "rb") as file:
+                yield from self._read_json_card_data_from_open_file(file)
 
-    The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
-    So use this iterative parser to generate and yield individual card objects, without having to store the whole
-    document in memory.
-    """
-    if isinstance(url_or_path, Path):
-        with url_or_path.open("rb") as file:
-            yield from _read_json_card_data_from_open_file(file)
-    elif looks_like_url_re.match(url_or_path):
-        yield from read_json_card_data_from_url(url_or_path)
-    else:
-        with open(url_or_path, "rb") as file:
-            yield from _read_json_card_data_from_open_file(file)
+    @staticmethod
+    def _read_json_card_data_from_open_file(file) -> typing.Generator[JSONType, None, None]:
+        parser = ijson.basic_parse(file, use_float=True)
+        # Throw away the outer json array [] that encapsulates the whole data set
+        next(parser)
+        # Tracks the current nesting depth. Whenever it reaches 0, an object is fully read and can be yielded.
+        nesting_depth = 0
+        object_builder = ijson.ObjectBuilder()
+        for event, value in parser:
+            if event in ("start_map", "start_array"):
+                nesting_depth += 1
+            elif event in ("end_map", "end_array"):
+                nesting_depth -= 1
+            if nesting_depth == -1:
+                # End of the outer json array reached, so stop iterating
+                break
+            object_builder.event(event, value)
+            if nesting_depth == 0:
+                yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
+                object_builder = ijson.ObjectBuilder()
 
-
-def _read_json_card_data_from_open_file(file) -> typing.Generator[JSONType, None, None]:
-    parser = ijson.basic_parse(file, use_float=True)
-    # Throw away the outer json array [] that encapsulates the whole data set
-    next(parser)
-    # Tracks the current nesting depth. Whenever it reaches 0, an object is fully read and can be yielded.
-    nesting_depth = 0
-    object_builder = ijson.ObjectBuilder()
-    for event, value in parser:
-        if event in ("start_map", "start_array"):
-            nesting_depth += 1
-        elif event in ("end_map", "end_array"):
-            nesting_depth -= 1
-        if nesting_depth == -1:
-            # End of the outer json array reached, so stop iterating
-            break
-        object_builder.event(event, value)
-        if nesting_depth == 0:
-            yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
-            object_builder = ijson.ObjectBuilder()
-
-
-def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType, None, None]):
-    """
-    Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
-    """
-    download_cards_with_content_warning = mtg_proxy_printer.settings.settings["downloads"].getboolean(
-        "download-cards-depicting-racism")
-    for card in card_data:
-        if card["object"] != "card":
-            logger.warning(f"Non-card found in card data during import: {card}")
-            continue
-        try:
-            content_warning = card["content_warning"]
-        except KeyError:
-            content_warning = False
-        if content_warning and not download_cards_with_content_warning:
-            logger.debug(
-                f"Skipping card '{card['name']}' with {content_warning=}, because downloading these is disabled.")
-            continue
-        set_info = _get_set_info(card)
-        card_info = _get_card_info(card)
-        faces = list(_get_card_faces(card))
-        model.db.execute(
-            r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""",
-            set_info
-        )
-        model.db.execute(
-            r"""INSERT INTO CARD
-            (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
-            VALUES (?, ?, ?, ?, ?, ?)""",
-            card_info
-        )
-        model.db.executemany(
-            r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
-            faces
-        )
+    def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None]):
+        """
+        Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
+        """
+        download_cards_with_content_warning = mtg_proxy_printer.settings.settings["downloads"].getboolean(
+            "download-cards-depicting-racism")
+        for index, card in enumerate(card_data, start=1):
+            if card["object"] != "card":
+                logger.warning(f"Non-card found in card data during import: {card}")
+                continue
+            try:
+                content_warning = card["content_warning"]
+            except KeyError:
+                content_warning = False
+            if content_warning and not download_cards_with_content_warning:
+                logger.debug(
+                    f"Skipping card '{card['name']}' with {content_warning=}, because downloading these is disabled.")
+                continue
+            set_info = _get_set_info(card)
+            card_info = _get_card_info(card)
+            faces = list(_get_card_faces(card))
+            model.db.execute(
+                r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""",
+                set_info
+            )
+            model.db.execute(
+                r"""INSERT INTO CARD
+                (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                card_info
+            )
+            model.db.executemany(
+                r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
+                faces
+            )
+            self.update_progress.emit(index)
 
 
 def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:

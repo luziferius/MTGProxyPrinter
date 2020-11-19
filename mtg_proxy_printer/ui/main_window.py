@@ -115,7 +115,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.action_download_card_data.setDisabled(card_db.has_data())
 
     def download_card_data(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
-        download_url = mtg_proxy_printer.card_info_importer.get_scryfall_bulk_card_data_url()
-        card_data = mtg_proxy_printer.card_info_importer.read_json_card_data_from_url(download_url)
-        mtg_proxy_printer.card_info_importer.populate_database(card_db, card_data)
+        importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(self)
+
+        download_url = importer.get_scryfall_bulk_card_data_url()
+        card_data = importer.read_json_card_data_from_url(download_url)
+        importer.populate_database(card_db, card_data)
         card_db.commit()
