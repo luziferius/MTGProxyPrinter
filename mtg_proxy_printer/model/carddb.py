@@ -106,6 +106,10 @@ class CardDatabase:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)").fetchone()
         return bool(result)
 
+    def get_all_languages(self) -> StringList:
+        result = [lang for (lang,) in self.db.execute("SELECT DISTINCT language FROM Card ORDER BY language ASC")]
+        return result
+
     def get_card_names(self, language: str) -> StringList:
         """Returns a list with all card names in the given language."""
         pass

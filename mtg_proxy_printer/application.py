@@ -39,13 +39,17 @@ class Application(QApplication):
 
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow()
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(self.main_window)
+        self.settings_window.set_language_model(self.main_window.language_model)
         self.settings_window.hide()
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
+        self.settings_window.saved.connect(self.main_window.add_card_widget.update_selected_language)
+
         self.main_window.show()
         card_db_has_data = self.card_db.has_data()
         self.main_window.action_download_card_data.setDisabled(card_db_has_data)
         if not card_db_has_data:
             self.main_window.action_download_card_data.trigger()
+        self.main_window.should_update_languages.emit()
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")

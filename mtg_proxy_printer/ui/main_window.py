@@ -14,12 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
 from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_list_view import PageListView
 from mtg_proxy_printer.ui.page_view import PageRenderer
@@ -32,9 +33,15 @@ del get_logger
 
 class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
+    should_update_languages = pyqtSignal()
+
     def __init__(self, parent: QWidget = None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+
+        self.language_model = QStringListModel([preferred_language], self)
+
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.dirty: bool = False
@@ -42,7 +49,15 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
         self.add_card_widget: AddCardWidget
+        self.add_card_widget.set_language_model(self.language_model)
+        self.should_update_languages.connect(self.update_language_model)
+        self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @pyqtSlot()
+    def update_language_model(self):
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase = QApplication.instance().card_db
+        self.language_model.setStringList(card_db.get_all_languages())
 
     def closeEvent(self, event: QCloseEvent):
         """
@@ -93,12 +108,12 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
             "The local card database is empty. Download the required data from Scryfall now?\n"
             "Downloading might take some time. If you decline, no cards can be searched and printed.",
             QMessageBox.Yes|QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
-        card_db = QApplication.instance().card_db
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase = QApplication.instance().card_db
         if should_download:
             self.download_card_data(card_db)
+            self.should_update_languages.emit()
         self.action_download_card_data.setDisabled(card_db.has_data())
 
-    @pyqtSlot()
     def download_card_data(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         download_url = mtg_proxy_printer.card_info_importer.get_scryfall_bulk_card_data_url()
         card_data = mtg_proxy_printer.card_info_importer.read_json_card_data_from_url(download_url)
