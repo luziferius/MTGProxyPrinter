@@ -23,6 +23,7 @@ import http.client
 import ijson
 
 from mtg_proxy_printer.model.carddb import CardDatabase
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -104,9 +105,19 @@ def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType,
     """
     Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
     """
+    download_cards_with_content_warning = mtg_proxy_printer.settings.settings["downloads"].getboolean(
+        "download-cards-depicting-racism")
     for card in card_data:
         if card["object"] != "card":
             logger.warning(f"Non-card found in card data during import: {card}")
+            continue
+        try:
+            content_warning = card["content_warning"]
+        except KeyError:
+            content_warning = False
+        if content_warning and not download_cards_with_content_warning:
+            logger.debug(
+                f"Skipping card '{card['name']}' with {content_warning=}, because downloading these is disabled.")
             continue
         set_info = _get_set_info(card)
         card_info = _get_card_info(card)

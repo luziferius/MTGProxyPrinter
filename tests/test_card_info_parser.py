@@ -20,6 +20,7 @@ import typing
 from hamcrest import *
 
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.card_info_importer import populate_database, JSONType
 
 
@@ -139,6 +140,54 @@ def test_import_regular_english_card():
     ])
     _assert_card_faces_contains(model, [
         ("0000579f-7b35-4ed3-b44c-db2a538066fe", "Fury Sliver", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+    ])
+
+
+def test_import_skips_card_depicting_racism_if_disabled():
+    """
+    Test if the importer skips cards banned for depicting racism,
+    if the option to download these in the setting is disabled.
+    """
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    # Loads German printing of "Crusade"
+    data = load_json("depicting_racism")
+    populate_database(model, data)
+    assert_that(
+        model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
+        is_(empty()), f"Set relation contains unexpected data"
+    )
+    assert_that(
+        model.db.execute(
+            'SELECT scryfall_id, oracle_id, "set", collector_number, language, highres_image FROM Card').fetchall(),
+        is_(empty()), "Card relation contains unexpected data"
+    )
+    assert_that(
+        model.db.execute("SELECT scryfall_id, card_name, png_image_uri FROM CardFace").fetchall(),
+        is_(empty()), "CardFaces relation contains unexpected data"
+    )
+
+
+def test_import_card_depicting_racism_if_enabled():
+    """
+    Test if the importer imports cards banned for depicting racism,
+    if the option to download these in the setting is enabled.
+    """
+    mtg_proxy_printer.settings.settings["downloads"]["download-cards-depicting-racism"] = "true"
+    try:
+        model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+        # Loads German printing of "Crusade"
+        data = load_json("depicting_racism")
+        populate_database(model, data)
+    finally:
+        mtg_proxy_printer.settings.settings["downloads"]["download-cards-depicting-racism"] = "false"
+    _assert_set_contains(model, [
+        ("4ed", "Fourth Edition", "https://scryfall.com/sets/4ed?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("00809cb0-b152-441f-a0be-1bc1048dad92", "4692740f-be90-459f-8d90-c4ae71771595", "4ed", "20", "de", False),
+    ])
+    _assert_card_faces_contains(model, [
+        ("00809cb0-b152-441f-a0be-1bc1048dad92", "Kreuzzug", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.png?1559603956"),
     ])
 
 

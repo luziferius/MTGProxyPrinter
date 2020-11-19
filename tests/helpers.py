@@ -16,6 +16,7 @@
 import typing
 
 import mtg_proxy_printer.logger
+import mtg_proxy_printer.settings
 
 
 class Namespace(typing.NamedTuple):
@@ -28,3 +29,7 @@ def setup_logging_for_testing():
     mtg_proxy_printer.logger.configure_root_logger(Namespace(verbose=False, cutelog_integration=True))
     mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
     mtg_proxy_printer.logger.root_logger.info(__name__)
+
+
+def setup_settings_for_testing():
+    mtg_proxy_printer.settings.settings = mtg_proxy_printer.settings.DEFAULT_SETTINGS

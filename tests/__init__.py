@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from .helpers import setup_logging_for_testing
+from .helpers import setup_logging_for_testing, setup_settings_for_testing
 
 setup_logging_for_testing()
+setup_settings_for_testing()
