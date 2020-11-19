@@ -34,6 +34,9 @@ DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
     "avoid-low-resolution-images": 'false'
 }
+DEFAULT_SETTINGS["downloads"] = {
+    "download-cards-depicting-racism": 'false'
+}
 
 
 def read_settings_from_file():
