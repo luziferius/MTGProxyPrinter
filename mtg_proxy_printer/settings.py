@@ -42,6 +42,17 @@ def read_settings_from_file():
         settings = DEFAULT_SETTINGS
     else:
         settings.read(config_file_path)
+        all_known_sections = set(DEFAULT_SETTINGS.sections())
+        for section in settings.sections():
+            # Filter and remove outdated sections
+            if section not in all_known_sections:
+                settings.remove_section(section)
+        for section in DEFAULT_SETTINGS.sections():
+            if not settings.has_section(section):
+                # Copy new section into the opened settings.
+                settings.add_section(section)
+                for option, value in DEFAULT_SETTINGS[section].items():
+                    settings[section][option]=value
 
 
 def write_settings_to_file():
