@@ -80,7 +80,7 @@ def read_json_card_data(url_or_path: typing.Union[Path, str]):
 
 
 def _read_json_card_data_from_open_file(file):
-    parser = ijson.basic_parse(file)
+    parser = ijson.basic_parse(file, use_float=True)
     # Throw away the outer json array [] that encapsulates the whole data set
     next(parser)
     # Tracks the current nesting depth. Whenever it reaches 0, an object is fully read and can be yielded.
@@ -115,8 +115,10 @@ def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType,
                 card["collector_number"], card["lang"],card["image_uris"]["png"], card["highres_image"]
             )
         except KeyError:
-            import pprint
-            print(pprint.pprint(card))
+            # Temporary construct that dumps failing entries
+            import json
+            with (Path(__file__).parent.parent/"crash.json").open("wt") as file:
+                json.dump(card, file, indent=2)
             raise
         model.db.execute(r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""", set_info)
         model.db.execute(
