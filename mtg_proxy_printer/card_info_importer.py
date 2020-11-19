@@ -108,17 +108,13 @@ def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType,
         if card["object"] != "card":
             logger.warning(f"Non-card found in card data during import: {card}")
             continue
-        try:
-            set_info = _get_set_info(card)
-            card_info = _get_card_info(card)
-            faces = list(_get_card_faces(card))
-        except KeyError:
-            # Temporary construct that dumps failing entries
-            import json
-            with (Path(__file__).parent.parent/"crash.json").open("wt") as file:
-                json.dump(card, file, indent=2)
-            raise
-        model.db.execute(r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""", set_info)
+        set_info = _get_set_info(card)
+        card_info = _get_card_info(card)
+        faces = list(_get_card_faces(card))
+        model.db.execute(
+            r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""",
+            set_info
+        )
         model.db.execute(
             r"""INSERT INTO CARD
             (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
@@ -161,8 +157,20 @@ def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, s
             }
         ]
     for face in faces:  # type: JSONType
-        yield card["id"], face["printed_name"], face["image_uris"]["png"]
+        yield card["id"], _get_card_name(face), _get_png_image_uri(card, face)
 
+
+def _get_png_image_uri(card: JSONType, face: JSONType):
+    """
+    Get the PNG image URI of the given card face.
+
+    Double-faced cards have multiple faces and an image in each face.
+    Split cards have multiple faces, but the singular image is located in the card itself.
+    """
+    try:
+        return face["image_uris"]["png"]
+    except KeyError:
+        return card["image_uris"]["png"]
 
 
 def _get_card_name(card_or_face: JSONType) -> str:
