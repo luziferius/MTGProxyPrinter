@@ -102,7 +102,7 @@ def read_json_card_data(url_or_path: typing.Union[Path, str]):
             yield from _read_json_card_data_from_open_file(file)
 
 
-def _read_json_card_data_from_open_file(file):
+def _read_json_card_data_from_open_file(file) -> typing.Generator[JSONType, None, None]:
     parser = ijson.basic_parse(file, use_float=True)
     # Throw away the outer json array [] that encapsulates the whole data set
     next(parser)

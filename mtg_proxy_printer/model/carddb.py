@@ -53,7 +53,7 @@ class CardDatabase:
             parent_dir.mkdir(parents=True)
         location = "in memory" if db_path == ":memory:" else f"at {db_path}"
         logger.debug(f"Opening Database {location}.")
-        should_create_schema = db_path == ":memory:" or not pathlib.Path(db_path).exists()
+        should_create_schema = db_path == ":memory:" or not db_path.exists()
         self.db: sqlite3.Connection = sqlite3.connect(db_path)
         logger.debug(f"Connected SQLite database {location}.")
         self.db.execute("PRAGMA foreign_keys = ON")
@@ -98,6 +98,13 @@ class CardDatabase:
             logger.warning(message)
             print(f"WARNING: {message}")
         return database_user_version != latest_user_version
+
+    def commit(self):
+        self.db.execute("COMMIT")
+
+    def has_data(self) -> bool:
+        result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)").fetchone()
+        return bool(result)
 
     def get_card_names(self, language: str) -> StringList:
         """Returns a list with all card names in the given language."""
