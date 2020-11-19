@@ -109,11 +109,9 @@ def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType,
             logger.warning(f"Non-card found in card data during import: {card}")
             continue
         try:
-            set_info = (card["set"], card["set_name"], card["scryfall_set_uri"])
-            card_info = (
-                card["id"], card["oracle_id"], card["name"], card["set"],
-                card["collector_number"], card["lang"],card["image_uris"]["png"], card["highres_image"]
-            )
+            set_info = _get_set_info(card)
+            card_info = _get_card_info(card)
+            faces = list(_get_card_faces(card))
         except KeyError:
             # Temporary construct that dumps failing entries
             import json
@@ -123,10 +121,54 @@ def populate_database(model: CardDatabase, card_data: typing.Generator[JSONType,
         model.db.execute(r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""", set_info)
         model.db.execute(
             r"""INSERT INTO CARD
-            (scryfall_id, oracle_id, card_name, "set", collector_number, language, png_image_uri, highres_image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
+            VALUES (?, ?, ?, ?, ?, ?)""",
             card_info
         )
+        model.db.executemany(
+            r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
+            faces
+        )
 
-def _extract_card_faces(card: JSONType) -> typing.Generator[JSONType, None, None]:
-    pass
+
+def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
+    set_info = card["set"], card["set_name"], card["scryfall_set_uri"]
+    return set_info
+
+
+def _get_card_info(card: JSONType):
+    card_info = (
+        card["id"], card["oracle_id"], card["set"], card["collector_number"], card["lang"], card["highres_image"]
+    )
+    return card_info
+
+
+def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str], None, None]:
+    """
+    Yields a tuple (Scryfall_id, printed_name, PNG_image_URI) for each face found in the card object.
+    The printed name falls back to the English name, if the card has no printed_name key.
+
+    Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
+    this function builds a "card_face" object providing only the required information from the card object itself.
+    """
+    try:
+        faces = card["card_faces"]
+    except KeyError:
+        faces = [
+            {
+                "printed_name": _get_card_name(card),
+                "image_uris": card["image_uris"],
+            }
+        ]
+    for face in faces:  # type: JSONType
+        yield card["id"], face["printed_name"], face["image_uris"]["png"]
+
+
+
+def _get_card_name(card_or_face: JSONType) -> str:
+    # Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
+    # English cards only have name, so use that as a fallback.
+    try:
+        return card_or_face["printed_name"]
+    except KeyError:
+        return card_or_face["name"]

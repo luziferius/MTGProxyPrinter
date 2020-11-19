@@ -15,7 +15,7 @@
 
 
 PRAGMA journal_mode = wal;
-PRAGMA user_version = 0000001;
+PRAGMA user_version = 0000002;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -28,12 +28,17 @@ CREATE TABLE "Set" (
 CREATE TABLE Card (
   scryfall_id TEXT NOT NULL PRIMARY KEY, -- Unique ID for this exact print
   oracle_id   TEXT NOT NULL,  -- Unique ID for this card. All reprints have the same oracle_id
-  card_name TEXT NOT NULL,  -- Card name as printed
   "set" NOT NULL REFERENCES "Set"("set"),  -- Set abbreviation
   collector_number TEXT NOT NULL, -- Most have simple integers, but some cards have non-integer collector numbers.
   language TEXT NOT NULL,
-  png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
   highres_image INTEGER NOT NULL  -- Boolean indicating that the card has high resolution images.
+
+);
+
+CREATE TABLE CardFace (
+  scryfall_id TEXT NOT NULL REFERENCES Card(scryfall_id),  -- The card to which this face belongs
+  card_name TEXT NOT NULL,  -- Card name as printed
+  png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
 );
 
 
