@@ -41,14 +41,27 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
 class CardInfoDownloader(QObject):
 
-    update_progress = pyqtSignal(int)
+    download_progress = pyqtSignal(int)  # Emits the total number of processed items after processing each item
+    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total item count
+    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
 
-    def get_scryfall_bulk_card_data_url(self) -> str:
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
+                 requested_item: str = "all_cards", parent: QObject = None):
+        logger.info(f"Creating {self.__class__.__name__} instance.")
+        super(CardInfoDownloader, self).__init__(parent)
+        self.model = model
+        logger.debug("Request bulk data URL from the Scryfall API.")
+        self.bulk_card_data_url, self.item_count = self.get_scryfall_bulk_card_data_url(requested_item)
+        logger.debug(f"Obtained url: {self.bulk_card_data_url}")
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> (str, int):
+        """Returns the bulk data URL and item count"""
         with self._read_from_url(BULK_DATA_API_END_POINT) as data:
             bulk_items = json.load(data)
             for item in bulk_items["data"]:
-                if item["type"] == "all_cards":
-                    return item["download_uri"]
+                if item["type"] == requested_item:
+                    return item["download_uri"], 300000
             raise RuntimeError(
                 "URL to the Scryfall bulk data export not found. "
                 "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
@@ -73,7 +86,7 @@ class CardInfoDownloader(QObject):
             raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
         return data
 
-    def read_json_card_data_from_url(self, url: str):
+    def read_json_card_data_from_url(self, url: str = None):
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data json object in the Scryfall API.
@@ -82,6 +95,8 @@ class CardInfoDownloader(QObject):
         So use this iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
+        if url is None:
+            url = self.bulk_card_data_url
         with self._read_from_url(url) as data:
             yield from self._read_json_card_data_from_open_file(data)
 
@@ -104,8 +119,8 @@ class CardInfoDownloader(QObject):
             with open(url_or_path, "rb") as file:
                 yield from self._read_json_card_data_from_open_file(file)
 
-    @staticmethod
-    def _read_json_card_data_from_open_file(file) -> typing.Generator[JSONType, None, None]:
+    def _read_json_card_data_from_open_file(self, file) -> typing.Generator[JSONType, None, None]:
+        self.download_begins.emit(self.item_count)
         parser = ijson.basic_parse(file, use_float=True)
         # Throw away the outer json array [] that encapsulates the whole data set
         next(parser)
@@ -124,8 +139,9 @@ class CardInfoDownloader(QObject):
             if nesting_depth == 0:
                 yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
                 object_builder = ijson.ObjectBuilder()
+        self.download_finished.emit()
 
-    def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None]):
+    def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None] = None):
         """
         Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
         """
@@ -160,7 +176,7 @@ class CardInfoDownloader(QObject):
                 r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
                 faces
             )
-            self.update_progress.emit(index)
+            self.download_progress.emit(index)
 
 
 def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
