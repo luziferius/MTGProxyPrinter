@@ -40,6 +40,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.setupUi(self)
         self.progress_bar = QProgressBar(self)
         self.progress_bar.hide()
+        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
 
@@ -57,10 +58,13 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def set_card_database(self, card_database: mtg_proxy_printer.model.carddb.CardDatabase):
+        self.card_database = card_database
+        self.add_card_widget.set_card_database(self.card_database)
+
     @pyqtSlot()
     def update_language_model(self):
-        card_db: mtg_proxy_printer.model.carddb.CardDatabase = QApplication.instance().card_db
-        self.language_model.setStringList(card_db.get_all_languages())
+        self.language_model.setStringList(self.card_database.get_all_languages())
 
     def closeEvent(self, event: QCloseEvent):
         """
@@ -106,16 +110,18 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_download_card_data_triggered(self):
         logger.debug(f"User downloads the card data from Scryfall.")
+        # Prevent the action from triggering multiple times, by preventing the user to trigger the action while this
+        # already runs.
+        self.action_download_card_data.setDisabled(True)
         should_download = QMessageBox.question(
             None, "Download Card data",
             "The local card database is empty. Download the required data from Scryfall now?\n"
             "Downloading might take some time. If you decline, no cards can be searched and printed.",
             QMessageBox.Yes|QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
-        card_db: mtg_proxy_printer.model.carddb.CardDatabase = QApplication.instance().card_db
         if should_download:
-            self.download_card_data(card_db)
+            self.download_card_data()
             self.should_update_languages.emit()
-        self.action_download_card_data.setDisabled(card_db.has_data())
+        self.action_download_card_data.setDisabled(self.card_database.has_data())
 
     @pyqtSlot(int)
     def show_progress_bar(self, expected_total_item_count: int):
@@ -128,13 +134,12 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         if not progress % 10:
             QApplication.instance().processEvents()
 
-
-    def download_card_data(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
-        importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(card_db, parent=self)
+    def download_card_data(self):
+        importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(self.card_database, parent=self)
         importer.download_begins.connect(self.show_progress_bar)
         importer.download_finished.connect(self.progress_bar.hide)
         importer.download_progress.connect(self.progress_bar.setValue)
         importer.download_progress.connect(self.process_events_during_long_operations)
         card_data = importer.read_json_card_data_from_url()
-        importer.populate_database(card_db, card_data)
-        card_db.commit()
+        importer.populate_database(self.card_database, card_data)
+        self.card_database.commit()

@@ -38,6 +38,7 @@ class Application(QApplication):
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
 
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow()
+        self.main_window.set_card_database(self.card_db)
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(self.main_window)
         self.settings_window.set_language_model(self.main_window.language_model)
         self.settings_window.hide()

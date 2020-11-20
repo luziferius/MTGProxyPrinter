@@ -46,6 +46,9 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
 
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
+        self.card_database = card_db
+
     def set_language_model(self, model: QStringListModel):
         self.language_model = model
         self.language_combo_box.setModel(self.language_model)
