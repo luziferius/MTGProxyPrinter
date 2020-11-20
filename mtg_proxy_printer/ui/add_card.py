@@ -32,22 +32,45 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.language_combo_box: QComboBox
+        self.language_combo_box.currentTextChanged.connect(self.update_card_name_model)
         self.language_model = None
         self.card_name_search: QComboBox
         self.card_name_search.lineEdit().setPlaceholderText("Search by card name")
+        self.card_name_search.lineEdit().setClearButtonEnabled(True)
+        self.card_name_model = QStringListModel([], self.card_name_search)
+        self.card_name_search.setModel(self.card_name_model)
         self.set_name_search: QComboBox
         self.set_name_search.lineEdit().setPlaceholderText("Search by released set")
+        self.set_name_search.lineEdit().setClearButtonEnabled(True)
+        self.set_name_model = QStringListModel([], self.set_name_search)
+        self.set_name_search.setModel(self.set_name_model)
         self.collectors_number_search: QComboBox
         self.collectors_number_search.lineEdit().setPlaceholderText("Number")
+        self.collectors_number_search.lineEdit().setClearButtonEnabled(True)
         self.copies_input: QSpinBox
         self.scryfall_url_input: QLineEdit
         self._connect_reset_button()
         self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
-
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @pyqtSlot(str)
+    def update_card_name_model(self, language: str):
+        if self.card_database is not None:
+            card_names = self.card_database.get_card_names(language)
+            self.card_name_model.setStringList(card_names)
+            self.card_name_search.lineEdit().clear()
+
+    def update_set_name_model(self):
+        if self.card_database is not None:
+            set_names = self.card_database.get_sets()
+            self.set_name_model.setStringList(set_names)
+            self.set_name_search.lineEdit().clear()
 
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         self.card_database = card_db
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        self.update_card_name_model(preferred_language)
+        self.update_set_name_model()
 
     def set_language_model(self, model: QStringListModel):
         self.language_model = model
