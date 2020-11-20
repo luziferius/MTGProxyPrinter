@@ -14,10 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
 from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox
+from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox, QProgressBar
 
+import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_list_view import PageListView
 from mtg_proxy_printer.ui.page_view import PageRenderer
@@ -30,9 +33,18 @@ del get_logger
 
 class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
+    should_update_languages = pyqtSignal()
+
     def __init__(self, parent: QWidget = None):
         super(MainWindow, self).__init__(parent)
         self.setupUi(self)
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.hide()
+        self.statusBar().addPermanentWidget(self.progress_bar)
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+
+        self.language_model = QStringListModel([preferred_language], self)
+
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.dirty: bool = False
@@ -40,7 +52,15 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
         self.add_card_widget: AddCardWidget
+        self.add_card_widget.set_language_model(self.language_model)
+        self.should_update_languages.connect(self.update_language_model)
+        self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @pyqtSlot()
+    def update_language_model(self):
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase = QApplication.instance().card_db
+        self.language_model.setStringList(card_db.get_all_languages())
 
     def closeEvent(self, event: QCloseEvent):
         """
@@ -82,3 +102,39 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def on_action_discard_page_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
         self.nothing_happens_box.show()
+
+    @pyqtSlot()
+    def on_action_download_card_data_triggered(self):
+        logger.debug(f"User downloads the card data from Scryfall.")
+        should_download = QMessageBox.question(
+            None, "Download Card data",
+            "The local card database is empty. Download the required data from Scryfall now?\n"
+            "Downloading might take some time. If you decline, no cards can be searched and printed.",
+            QMessageBox.Yes|QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase = QApplication.instance().card_db
+        if should_download:
+            self.download_card_data(card_db)
+            self.should_update_languages.emit()
+        self.action_download_card_data.setDisabled(card_db.has_data())
+
+    @pyqtSlot(int)
+    def show_progress_bar(self, expected_total_item_count: int):
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(expected_total_item_count)
+        self.progress_bar.show()
+
+    @pyqtSlot(int)
+    def process_events_during_long_operations(self, progress: int):
+        if not progress % 10:
+            QApplication.instance().processEvents()
+
+
+    def download_card_data(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
+        importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(card_db, parent=self)
+        importer.download_begins.connect(self.show_progress_bar)
+        importer.download_finished.connect(self.progress_bar.hide)
+        importer.download_progress.connect(self.progress_bar.setValue)
+        importer.download_progress.connect(self.process_events_during_long_operations)
+        card_data = importer.read_json_card_data_from_url()
+        importer.populate_database(card_db, card_data)
+        card_db.commit()

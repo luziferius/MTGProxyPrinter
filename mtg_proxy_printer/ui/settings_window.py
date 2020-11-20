@@ -14,10 +14,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import QStringListModel
+from PyQt5.QtCore import QStringListModel, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QComboBox, QCheckBox
 
-from mtg_proxy_printer.model.language import get_known_language_codes
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 import mtg_proxy_printer.settings
@@ -28,12 +27,13 @@ del get_logger
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
+    saved = pyqtSignal()
+
     def __init__(self, parent: QWidget = None):
         super(SettingsWindow, self).__init__(parent)
         self.setupUi(self)
-        self.language_model = QStringListModel(get_known_language_codes(), self)
+        self.language_model = None
         self.preferred_language_combo_box: QComboBox
-        self.preferred_language_combo_box.setModel(self.language_model)
 
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
@@ -42,6 +42,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
         self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def set_language_model(self, model: QStringListModel):
+        self.language_model = model
+        self.preferred_language_combo_box.setModel(self.language_model)
 
     def show(self):
         logger.info("Show the settings window.")
@@ -82,6 +86,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         downloads_section["download-cards-depicting-racism"] = str(
             self.include_cards_depicting_racism_check_box.isChecked())
         mtg_proxy_printer.settings.write_settings_to_file()
+        self.saved.emit()
         logger.debug("Save finished.")
 
     def restore_defaults(self):

@@ -13,11 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QStringListModel
+from PyQt5.QtCore import QStringListModel, pyqtSlot
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.model.language
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
@@ -33,12 +32,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.language_combo_box: QComboBox
-        self.language_model = QStringListModel(mtg_proxy_printer.model.language.get_known_language_codes())
-        self.language_combo_box.setModel(self.language_model)
-        self.language_combo_box.setCurrentIndex(
-            self.language_model.stringList().index(
-                mtg_proxy_printer.settings.settings["images"]["preferred-language"])
-        )
+        self.language_model = None
         self.card_name_search: QComboBox
         self.card_name_search.lineEdit().setPlaceholderText("Search by card name")
         self.set_name_search: QComboBox
@@ -51,6 +45,19 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
 
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def set_language_model(self, model: QStringListModel):
+        self.language_model = model
+        self.language_combo_box.setModel(self.language_model)
+        self.update_selected_language()
+
+    @pyqtSlot()
+    def update_selected_language(self):
+        self.language_combo_box: QComboBox
+        self.language_combo_box.setCurrentIndex(
+            self.language_model.stringList().index(
+                mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+        )
 
     def _connect_reset_button(self):
         logger.debug("User reset the add_card_widget form.")

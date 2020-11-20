@@ -14,7 +14,6 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA journal_mode = wal;
 PRAGMA user_version = 0000002;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;

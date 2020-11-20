@@ -92,6 +92,7 @@
      <string>Settings</string>
     </property>
     <addaction name="action_show_settings"/>
+    <addaction name="action_download_card_data"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSettings"/>
@@ -172,10 +173,19 @@
   </action>
   <action name="action_show_settings">
    <property name="icon">
-    <iconset theme="configure"/>
+    <iconset theme="configure">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
+   </property>
+  </action>
+  <action name="action_download_card_data">
+   <property name="icon">
+    <iconset theme="edit-download"/>
+   </property>
+   <property name="text">
+    <string>Download card data</string>
    </property>
   </action>
  </widget>
