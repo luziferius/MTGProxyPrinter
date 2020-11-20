@@ -123,12 +123,18 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
+    @pyqtSlot(int)
+    def process_events_during_long_operations(self, progress: int):
+        if not progress % 10:
+            QApplication.instance().processEvents()
+
 
     def download_card_data(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(card_db, parent=self)
         importer.download_begins.connect(self.show_progress_bar)
         importer.download_finished.connect(self.progress_bar.hide)
         importer.download_progress.connect(self.progress_bar.setValue)
+        importer.download_progress.connect(self.process_events_during_long_operations)
         card_data = importer.read_json_card_data_from_url()
         importer.populate_database(card_db, card_data)
         card_db.commit()
