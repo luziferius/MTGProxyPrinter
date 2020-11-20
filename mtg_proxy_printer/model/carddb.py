@@ -112,11 +112,26 @@ class CardDatabase:
 
     def get_card_names(self, language: str) -> StringList:
         """Returns a list with all card names in the given language."""
-        pass
+        query = self.db.execute(
+            r"""SELECT DISTINCT card_name
+            FROM Card
+            JOIN CardFace USING(scryfall_id)
+            WHERE language = ?
+            ORDER BY card_name ASC
+            """,
+            (language,))
+        result = [language for language, in query]
+        return result
 
     def get_sets(self) -> StringList:
         """Returns a list with all set names."""
-        pass
+        query = self.db.execute(
+            r"""SELECT "set"
+            FROM "Set"
+            """
+        )
+        result = [set_abbr for set_abbr, in query]
+        return result
 
     def find_cards_from_set(self,language: str, set_prefix: str, collectors_number_prefix: str) -> StringList:
         """
