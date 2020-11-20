@@ -16,12 +16,14 @@
 import json
 import pkg_resources
 import typing
+from unittest.mock import patch
 
 from hamcrest import *
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.card_info_importer import populate_database, JSONType
+import mtg_proxy_printer.card_info_importer
+from mtg_proxy_printer.card_info_importer import JSONType
 
 
 def load_json(name: str) -> typing.Generator[JSONType, None, None]:
@@ -68,6 +70,15 @@ def _assert_card_faces_contains(
         ),
         "CardFaces relation contains unexpected data"
     )
+
+
+def populate_database(model, data):
+    # Don’t bother the Scryfall API when running tests, so mock the web-accessing parts of the constructor.
+    with patch("mtg_proxy_printer.card_info_importer.CardInfoDownloader.get_scryfall_bulk_card_data_url") as mock:
+        # The URL is not used to fetch data, as the test data directly supplies the JSON document.
+        mock.return_value = ("http://example.com", 1)
+        cid = mtg_proxy_printer.card_info_importer.CardInfoDownloader(model)
+        cid.populate_database(model, data)
 
 
 def test_import_double_faced():
