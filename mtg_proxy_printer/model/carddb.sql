@@ -29,7 +29,7 @@ CREATE TABLE Card (
   oracle_id   TEXT NOT NULL,  -- Unique ID for this card. All reprints have the same oracle_id
   "set" NOT NULL REFERENCES "Set"("set"),  -- Set abbreviation
   collector_number TEXT NOT NULL, -- Most have simple integers, but some cards have non-integer collector numbers.
-  language TEXT NOT NULL,
+  "language" TEXT NOT NULL,
   highres_image INTEGER NOT NULL  -- Boolean indicating that the card has high resolution images.
 
 );

@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot
+from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
 import mtg_proxy_printer.model.carddb
@@ -26,6 +26,9 @@ del get_logger
 
 
 class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
+
+    input_is_valid_and_unique_card = pyqtSignal(bool)
+    add_card = pyqtSignal
 
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
@@ -47,11 +50,43 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.collectors_number_search: QComboBox
         self.collectors_number_search.lineEdit().setPlaceholderText("Number")
         self.collectors_number_search.lineEdit().setClearButtonEnabled(True)
+        self.collectors_number_model = QStringListModel([], self.collectors_number_search)
+        self.collectors_number_search.setModel(self.collectors_number_model)
+
         self.copies_input: QSpinBox
         self.scryfall_url_input: QLineEdit
+        self.scryfall_url_input.setEnabled(False)
         self._connect_reset_button()
+        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.input_is_valid_and_unique_card.connect(self.button_box.button(QDialogButtonBox.Ok).setEnabled)
         self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
+
+        for input_box in (
+                self.card_name_search,
+                self.set_name_search,
+                self.collectors_number_search,
+                self.language_combo_box
+                ):
+            input_box.currentTextChanged.connect(self.check_input_is_valid_and_unique_card)
+
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @pyqtSlot()
+    def check_input_is_valid_and_unique_card(self):
+        if self.card_database is None:
+            return False
+        self.card_name_search: QComboBox
+        self.set_name_search: QComboBox
+        self.collectors_number_search: QComboBox
+        self.language_combo_box: QComboBox
+        card = mtg_proxy_printer.model.carddb.Card(
+            card_name if (card_name := self.card_name_search.currentText()) else None,
+            set_abbreviation if (set_abbreviation := self.set_name_search.currentText()) else None,
+            collector_number if (collector_number := self.collectors_number_search.currentText()) else None,
+            self.language_combo_box.currentText()
+        )
+        result = self.card_database.is_valid_and_unique_card(card)
+        self.input_is_valid_and_unique_card.emit(result)
 
     @pyqtSlot(str)
     def update_card_name_model(self, language: str):
@@ -59,6 +94,12 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
             card_names = self.card_database.get_card_names(language)
             self.card_name_model.setStringList(card_names)
             self.card_name_search.lineEdit().clear()
+
+    def update_collectors_number_model(self, selected_set: str = None):
+        if selected_set is None:
+            self.collectors_number_model.setStringList([])
+        elif self.card_database is not None:
+            self.card_database.get_collector_numbers(selected_set)
 
     def update_set_name_model(self):
         if self.card_database is not None:

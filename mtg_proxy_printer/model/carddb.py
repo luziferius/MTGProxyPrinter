@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import dataclasses
 import pathlib
 import pkg_resources
 import re
@@ -26,11 +27,21 @@ logger = get_logger(__name__)
 del get_logger
 
 StringList = typing.List[str]
+OptionalString = typing.Optional[str]
 DEFAULT_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
     "CardDataCache.sqlite3"
 )
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
+
+
+@dataclasses.dataclass()
+class Card:
+    name: OptionalString
+    set_abbr: OptionalString
+    collector_number: OptionalString
+    language: str
+    image_uri: OptionalString = None
 
 
 class CardDatabase:
@@ -53,10 +64,12 @@ class CardDatabase:
             parent_dir.mkdir(parents=True)
         location = "in memory" if db_path == ":memory:" else f"at {db_path}"
         logger.debug(f"Opening Database {location}.")
+        # This has to be determined before the connection is opened and the file is created on disk.
         should_create_schema = db_path == ":memory:" or not db_path.exists()
         self.db: sqlite3.Connection = sqlite3.connect(db_path)
         logger.debug(f"Connected SQLite database {location}.")
-        self.db.execute("PRAGMA foreign_keys = ON")
+        # Both settings are volatile, thus have to be set for each opened connection
+        self.db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")
         logger.debug("Enabled SQLite3 foreign keys support.")
         if db_path == ":memory:":
             logger.debug("Skipping registering cleanup hooks for in-memory databases.")
@@ -65,13 +78,14 @@ class CardDatabase:
             if should_create_schema:
                 self.populate_database_schema()
             logger.debug("Registering cleanup hooks that close the database on exit.")
+
             def close_db():
                 logger.debug("Rolling back active transactions.")
                 self.db.rollback()
                 logger.debug("Running SQLite PRAGMA optimize.")
                 # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
                 # See also: https://www.sqlite.org/lang_analyze.html
-                self.db.executescript("PRAGMA analysis_limit=1000; PRAGMA optimize;")
+                self.db.execute("PRAGMA optimize")
                 self.db.close()
                 del self.db
                 logger.info("Closed database.")
@@ -131,6 +145,39 @@ class CardDatabase:
             """
         )
         result = [set_abbr for set_abbr, in query]
+        return result
+
+    def is_valid_and_unique_card(self, card: Card) -> bool:
+
+        query = r"""SELECT COUNT(*) = 1
+            FROM Card JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.name:
+            query += "\n AND card_name = ?"
+            parameters.append(card.name)
+        if card.set_abbr:
+            query += """\n AND "set" = ?"""
+            parameters.append(card.set_abbr)
+        if card.collector_number:
+            query += """\n AND collector_number = ?"""
+            parameters.append(card.collector_number)
+        result, = self.db.execute(
+            query,
+            parameters
+        ).fetchone()
+        return bool(result)
+
+    def get_collector_numbers(self, set_abbr: str) -> StringList:
+        query = self.db.execute(
+            r"""SELECT DISTINCT collector_number
+            FROM Card
+            WHERE "set" = ?
+            """,
+            (set_abbr,)
+        )
+        result = [number for number, in query]
         return result
 
     def find_cards_from_set(self,language: str, set_prefix: str, collectors_number_prefix: str) -> StringList:
