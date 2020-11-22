@@ -143,7 +143,7 @@ class CardInfoDownloader(QObject):
 
     def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None] = None):
         """
-        Takes an iterable returned by card_info_ipmorter.read_json_card_data() and populates the database with card data.
+        Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
         download_cards_with_content_warning = mtg_proxy_printer.settings.settings["downloads"].getboolean(
             "download-cards-depicting-racism")

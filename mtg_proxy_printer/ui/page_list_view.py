@@ -15,5 +15,6 @@
 
 from PyQt5.QtWidgets import QListView
 
+
 class PageListView(QListView):
     pass

@@ -180,7 +180,7 @@ class CardDatabase:
         result = [number for number, in query]
         return result
 
-    def find_cards_from_set(self,language: str, set_prefix: str, collectors_number_prefix: str) -> StringList:
+    def find_cards_from_set(self, language: str, set_prefix: str, collectors_number_prefix: str) -> StringList:
         """
         Finds all cards given the set name prefix and collector number prefix.
 

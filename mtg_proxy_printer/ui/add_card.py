@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt
+from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QMessageBox
 
 import mtg_proxy_printer.model.carddb
@@ -149,4 +149,3 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
             f"Selected card:\n{card.name=}\n{card.set_abbr=}\n{card.collector_number=}\n{card.language=}",
             QMessageBox.Ok, QMessageBox.Ok
         )
-

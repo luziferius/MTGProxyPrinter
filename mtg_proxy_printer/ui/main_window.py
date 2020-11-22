@@ -117,7 +117,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
             None, "Download Card data",
             "The local card database is empty. Download the required data from Scryfall now?\n"
             "Downloading might take some time. If you decline, no cards can be searched and printed.",
-            QMessageBox.Yes|QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
         if should_download:
             self.download_card_data()
             self.should_update_languages.emit()
