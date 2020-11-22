@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
+from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt
+from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QMessageBox
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.settings
@@ -79,14 +79,18 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.set_name_search: QComboBox
         self.collectors_number_search: QComboBox
         self.language_combo_box: QComboBox
+        card = self.create_card_from_user_input()
+        result = self.card_database.is_valid_and_unique_card(card)
+        self.input_is_valid_and_unique_card.emit(result)
+
+    def create_card_from_user_input(self):
         card = mtg_proxy_printer.model.carddb.Card(
             card_name if (card_name := self.card_name_search.currentText()) else None,
             set_abbreviation if (set_abbreviation := self.set_name_search.currentText()) else None,
             collector_number if (collector_number := self.collectors_number_search.currentText()) else None,
             self.language_combo_box.currentText()
         )
-        result = self.card_database.is_valid_and_unique_card(card)
-        self.input_is_valid_and_unique_card.emit(result)
+        return card
 
     @pyqtSlot(str)
     def update_card_name_model(self, language: str):
@@ -138,5 +142,11 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
 
     def on_ok_button_triggered(self):
         logger.debug("User clicked OK and adds a new card to the current page.")
-        self.parent().parent().nothing_happens_box.show()
-        pass
+        card = self.create_card_from_user_input()
+        # TODO: Add missing information from the database
+        QMessageBox.information(
+            self, "Adding cards not implemented",
+            f"Selected card:\n{card.name=}\n{card.set_abbr=}\n{card.collector_number=}\n{card.language=}",
+            QMessageBox.Ok, QMessageBox.Ok
+        )
+
