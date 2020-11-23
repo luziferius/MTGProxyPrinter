@@ -148,6 +148,7 @@ class CardDatabase:
         return result
 
     def is_valid_and_unique_card(self, card: Card) -> bool:
+        """Checks, if the given card data represents a unique card printing"""
         query = r"""SELECT COUNT(*) = 1
             FROM Card JOIN CardFace USING (scryfall_id)
             WHERE "language" = ?
@@ -169,6 +170,21 @@ class CardDatabase:
         return bool(result)
 
     def add_missing_information(self, card: Card):
+        """
+        Called with a unique printing in card and
+        fills in all missing information by modifying the Card object in-place.
+
+        A unique card may be
+        - A card name in the given language (if there were no re-prints or multiple printings in the same set)
+        - A card name and collector number (if all re-prints have different numbers)
+        - A card name and set (if there were no multiple printings in the same set)
+        - Set, language and collector number
+        - A collector number (if that is globally unique, because of some special character.
+          Some online sets have thousands of cards, so the largest of these has a bunch
+          of cards that can be uniquely identified by their large collector number.)
+        - Language (some promo cards are one-of a kind and have a unique language,
+          like a single card in traditional Greek)
+        """
         query = r"""SELECT card_name, "set", collector_number, png_image_uri
             FROM Card JOIN CardFace USING (scryfall_id)
             WHERE "language" = ?
@@ -183,10 +199,14 @@ class CardDatabase:
         if card.collector_number:
             query += """\n AND collector_number = ?"""
             parameters.append(card.collector_number)
-        card.name, card.set_abbr, card.collector_number, card.image_uri = self.db.execute(
+        cursor = self.db.execute(
             query,
             parameters
-        ).fetchone()
+        )
+        result = cursor.fetchone()
+        if not result or cursor.fetchone():
+            raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
+        card.name, card.set_abbr, card.collector_number, card.image_uri = result
 
     def get_collector_numbers(self, set_abbr: str) -> StringList:
         query = self.db.execute(
