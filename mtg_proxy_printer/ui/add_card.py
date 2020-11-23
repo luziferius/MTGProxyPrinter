@@ -28,7 +28,7 @@ del get_logger
 class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
 
     input_is_valid_and_unique_card = pyqtSignal(bool)
-    add_card = pyqtSignal
+    card_added = pyqtSignal(mtg_proxy_printer.model.carddb.Card)
 
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
@@ -68,7 +68,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
                 self.language_combo_box
                 ):
             input_box.currentTextChanged.connect(self.check_input_is_valid_and_unique_card)
-
+        self.card_added.connect(self.card_added_debug_slot)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
@@ -143,9 +143,13 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
     def on_ok_button_triggered(self):
         logger.debug("User clicked OK and adds a new card to the current page.")
         card = self.create_card_from_user_input()
-        # TODO: Add missing information from the database
+        self.card_database.add_missing_information(card)
+        self.card_added.emit(card)
+
+    @pyqtSlot(mtg_proxy_printer.model.carddb.Card)
+    def card_added_debug_slot(self, card):
         QMessageBox.information(
             self, "Adding cards not implemented",
-            f"Selected card:\n{card.name=}\n{card.set_abbr=}\n{card.collector_number=}\n{card.language=}",
+            f"Selected card:\n{card.name=}\n{card.set_abbr=}\n{card.collector_number=}\n{card.language=}\n{card.image_uri=}",
             QMessageBox.Ok, QMessageBox.Ok
         )

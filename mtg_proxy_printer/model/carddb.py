@@ -148,7 +148,6 @@ class CardDatabase:
         return result
 
     def is_valid_and_unique_card(self, card: Card) -> bool:
-
         query = r"""SELECT COUNT(*) = 1
             FROM Card JOIN CardFace USING (scryfall_id)
             WHERE "language" = ?
@@ -168,6 +167,26 @@ class CardDatabase:
             parameters
         ).fetchone()
         return bool(result)
+
+    def add_missing_information(self, card: Card):
+        query = r"""SELECT card_name, "set", collector_number, png_image_uri
+            FROM Card JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.name:
+            query += "\n AND card_name = ?"
+            parameters.append(card.name)
+        if card.set_abbr:
+            query += """\n AND "set" = ?"""
+            parameters.append(card.set_abbr)
+        if card.collector_number:
+            query += """\n AND collector_number = ?"""
+            parameters.append(card.collector_number)
+        card.name, card.set_abbr, card.collector_number, card.image_uri = self.db.execute(
+            query,
+            parameters
+        ).fetchone()
 
     def get_collector_numbers(self, set_abbr: str) -> StringList:
         query = self.db.execute(
