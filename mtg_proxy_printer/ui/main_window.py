@@ -20,6 +20,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox, QPro
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_list_view import PageListView
@@ -43,13 +44,16 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
-
         self.language_model = QStringListModel([preferred_language], self)
-
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
-        self.dirty: bool = False
-        self.page_list_view: PageListView
+        self.document = mtg_proxy_printer.model.document.Document(parent=self)
+        self.document_view: PageListView
+        self.document_view.setModel(self.document)
+        self.action_new_page.triggered.connect(self.document.add_page)
+        self.action_discard_page.triggered.connect(
+            lambda: self.document.remove_pages(self.document_view.selectedIndexes()))
+
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
         self.add_card_widget: AddCardWidget
@@ -83,9 +87,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_quit_triggered(self):
         logger.debug(f"User wants to quit.")
-        if self.dirty:
-            # TODO: Unsaved changes. Ask the user what to do: Save and exit, Discard and exit, or keep running?
-            pass
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         logger.debug("Quit action confirmed. Exiting…")
@@ -99,11 +100,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
-        logger.debug(f"User prints the current document to PDF.")
-        self.nothing_happens_box.show()
-
-    @pyqtSlot()
-    def on_action_discard_page_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
         self.nothing_happens_box.show()
 
