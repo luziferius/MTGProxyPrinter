@@ -35,7 +35,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.card = self._create_new_card()
-
+        self.page_total_slots = 9
         self.language_combo_box: QComboBox
         self.language_model = None
         self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
@@ -85,6 +85,14 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         with BlockedSignals(self.collectors_number_search):
             self.collectors_number_search.setModel(self.collectors_number_model)
         self.collectors_number_search.currentTextChanged.connect(self.on_collector_number_search_updated)
+
+    @pyqtSlot(int)
+    def on_page_total_slots_changed(self, slots: int):
+        self.page_total_slots = slots
+
+    @pyqtSlot(int)
+    def on_page_free_slots_changed(self, free_slots: int):
+        self.copies_input.setMaximum(self.page_total_slots-free_slots)
 
     @pyqtSlot()
     def check_input_is_valid_and_unique_card(self):
