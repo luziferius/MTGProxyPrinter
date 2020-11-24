@@ -155,13 +155,13 @@ class CardDatabase:
             """
         parameters = [card.language]
         if card.name:
-            query += "\n AND card_name = ?"
+            query += "AND card_name = ?\n"
             parameters.append(card.name)
         if card.set_abbr:
-            query += """\n AND "set" = ?"""
+            query += """AND "set" = ?\n"""
             parameters.append(card.set_abbr)
         if card.collector_number:
-            query += """\n AND collector_number = ?"""
+            query += """AND collector_number = ?\n"""
             parameters.append(card.collector_number)
         result, = self.db.execute(
             query,
@@ -185,19 +185,19 @@ class CardDatabase:
         - Language (some promo cards are one-of a kind and have a unique language,
           like a single card in traditional Greek)
         """
-        query = r"""SELECT card_name, "set", collector_number, png_image_uri
-            FROM Card JOIN CardFace USING (scryfall_id)
-            WHERE "language" = ?
-            """
+        query = 'SELECT card_name, "set", collector_number, png_image_uri\nFROM Card\n'
+        if card.name:
+            query += "JOIN CardFace USING (scryfall_id)\n"
+        query += 'WHERE "language" = ?\n'
         parameters = [card.language]
         if card.name:
-            query += "\n AND card_name = ?"
+            query += "AND card_name = ?\n"
             parameters.append(card.name)
         if card.set_abbr:
-            query += """\n AND "set" = ?"""
+            query += """AND "set" = ?\n"""
             parameters.append(card.set_abbr)
         if card.collector_number:
-            query += """\n AND collector_number = ?"""
+            query += """AND collector_number = ?\n"""
             parameters.append(card.collector_number)
         cursor = self.db.execute(
             query,
@@ -209,19 +209,19 @@ class CardDatabase:
         card.name, card.set_abbr, card.collector_number, card.image_uri = result
 
     def find_collector_numbers_matching(self, card: Card) -> StringList:
-        query = r"""SELECT DISTINCT collector_number
-            FROM Card JOIN CardFace USING (scryfall_id)
-            WHERE "language" = ?
-            """
+        query = 'SELECT DISTINCT collector_number\nFROM Card\n'
+        if card.name:
+            query += "JOIN CardFace USING (scryfall_id)\n"
+        query += 'WHERE "language" = ?\n'
         parameters = [card.language]
         if card.name:
-            query += "\n AND card_name = ?"
-            parameters.append(card.name)
+            query += "AND card_name LIKE ?\n"
+            parameters.append(f"{card.name}%")
         if card.set_abbr:
-            query += """\n AND "set" LIKE ?"""
-            parameters.append(f"%{card.set_abbr}")
+            query += 'AND "set" LIKE ?\n'
+            parameters.append(f"{card.set_abbr}%")
 
-        query += """\n ORDER BY collector_number ASC"""
+        query += """ORDER BY collector_number ASC\n"""
         cursor = self.db.execute(
             query,
             parameters
@@ -236,17 +236,18 @@ class CardDatabase:
         :returns: List of card names
         """
         query = r"""SELECT DISTINCT card_name
-            FROM Card JOIN CardFace USING (scryfall_id)
+            FROM Card
+            JOIN CardFace USING (scryfall_id)
             WHERE "language" = ?
             """
         parameters = [card.language]
         if card.set_abbr:
-            query += """\n AND "set" LIKE ?"""
-            parameters.append(f"%{card.set_abbr}")
+            query += 'AND "set" LIKE ?\n'
+            parameters.append(f"{card.set_abbr}%")
         if card.collector_number:
-            query += """\n AND collector_number LIKE ?"""
-            parameters.append(f"%{card.collector_number}")
-        query += """\n ORDER BY card_name ASC"""
+            query += "AND collector_number LIKE ?\n"
+            parameters.append(f"{card.collector_number}%")
+        query += "ORDER BY card_name ASC\n"
         cursor = self.db.execute(
             query,
             parameters
@@ -258,19 +259,18 @@ class CardDatabase:
         """
         Finds all sets given the language, card name prefix and collector number prefix
         """
-        pass
-        query = r"""SELECT DISTINCT "set"
-            FROM Card JOIN CardFace USING (scryfall_id)
-            WHERE "language" = ?
-            """
+        query = 'SELECT DISTINCT "set"\nFROM Card\n'
+        if card.name:
+            query += "JOIN CardFace USING (scryfall_id)\n"
+        query += 'WHERE "language" = ?\n'
         parameters = [card.language]
         if card.name:
-            query += """\n AND card_name LIKE ?"""
-            parameters.append(f"%{card.name}")
+            query += """AND card_name LIKE ?\n"""
+            parameters.append(f"{card.name}%")
         if card.collector_number:
-            query += """\n AND collector_number LIKE ?"""
-            parameters.append(f"%{card.collector_number}")
-        query += """\n ORDER BY "set" ASC"""
+            query += """AND collector_number LIKE ?\n"""
+            parameters.append(f"{card.collector_number}%")
+        query += """ORDER BY "set" ASC\n"""
         cursor = self.db.execute(
             query,
             parameters
