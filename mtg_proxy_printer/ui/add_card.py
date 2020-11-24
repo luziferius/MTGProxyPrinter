@@ -38,6 +38,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
 
         self.language_combo_box: QComboBox
         self.language_model = None
+        self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
         self._setup_card_name_search()
         self._setup_set_name_search()
         self._setup_collector_number_search()
@@ -116,21 +117,21 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         with BlockedSignals(self.set_name_search):
             set_names = self.card_database.find_sets_matching(self.card)
             self.set_name_model.setStringList(set_names)
-        if self.card.set_abbr:
+        if self.card.set_abbr and any(abbr.startswith(self.card.set_abbr) for abbr in set_names):
             self.set_name_search.setCurrentText(self.card.set_abbr)
 
     def _update_collector_number_search(self):
         with BlockedSignals(self.collectors_number_search):
             collector_numbers = self.card_database.find_collector_numbers_matching(self.card)
             self.collectors_number_model.setStringList(collector_numbers)
-        if self.card.collector_number:
+        if self.card.collector_number and any(num.startswith(self.card.collector_number) for num in collector_numbers):
             self.collectors_number_search.setCurrentText(self.card.collector_number)
 
     def _update_card_search(self):
         with BlockedSignals(self.card_name_search):
             card_names = self.card_database.find_card_names_matching(self.card)
             self.card_name_model.setStringList(card_names)
-        if self.card.name:
+        if self.card.name and any(name.startswith(self.card.name) for name in card_names):
             self.card_name_search.setCurrentText(self.card.name)
 
     @pyqtSlot(str)
@@ -147,6 +148,14 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
             self.card.collector_number = changed if changed else None
             self._update_card_search()
             self._update_set_name_search()
+
+    @pyqtSlot(str)
+    def on_language_combo_box_changed(self, changed: str):
+        if changed != self.card.language:
+            self.card.language = changed
+            self._update_card_search()
+            self._update_set_name_search()
+            self._update_collector_number_search()
 
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         self.card_database = card_db
