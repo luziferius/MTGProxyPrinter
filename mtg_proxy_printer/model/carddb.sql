@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000002;
+PRAGMA user_version = 0000003;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -31,7 +31,12 @@ CREATE TABLE Card (
   collector_number TEXT NOT NULL, -- Most have simple integers, but some cards have non-integer collector numbers.
   "language" TEXT NOT NULL,
   highres_image INTEGER NOT NULL  -- Boolean indicating that the card has high resolution images.
+);
 
+CREATE INDEX CardLanguageIndex ON Card (
+  "language",
+  scryfall_id,
+  "set"
 );
 
 CREATE TABLE CardFace (
@@ -40,5 +45,9 @@ CREATE TABLE CardFace (
   png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
 );
 
+CREATE INDEX CardNameIndex ON CardFace(
+  card_name,
+  scryfall_id
+);
 
 COMMIT;

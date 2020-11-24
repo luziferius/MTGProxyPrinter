@@ -177,6 +177,9 @@ class CardInfoDownloader(QObject):
                 faces
             )
             self.download_progress.emit(index)
+        # Populate the sqlite stat tables to give the query optimizer data to work with.
+        # This greatly improves query speed.
+        model.db.execute("ANALYZE")
 
 
 def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
