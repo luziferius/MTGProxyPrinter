@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>683</width>
+    <width>890</width>
     <height>146</height>
    </rect>
   </property>
@@ -22,12 +22,18 @@
     <widget class="QComboBox" name="set_name_search">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>5</horstretch>
+       <horstretch>8</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
      <property name="editable">
       <bool>true</bool>
+     </property>
+     <property name="sizeAdjustPolicy">
+      <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+     </property>
+     <property name="minimumContentsLength">
+      <number>8</number>
      </property>
     </widget>
    </item>
@@ -68,6 +74,12 @@
    </item>
    <item row="1" column="5">
     <widget class="QComboBox" name="collectors_number_search">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>3</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="inputMethodHints">
       <set>Qt::ImhPreferNumbers</set>
      </property>
