@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>792</width>
+    <width>691</width>
     <height>311</height>
    </rect>
   </property>
@@ -42,7 +42,7 @@
      </widget>
     </item>
     <item row="0" column="0" rowspan="2">
-     <widget class="PageListView" name="page_list_view">
+     <widget class="PageListView" name="document_view">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>5</horstretch>
@@ -74,7 +74,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>792</width>
+     <width>691</width>
      <height>30</height>
     </rect>
    </property>
@@ -112,6 +112,7 @@
    <addaction name="separator"/>
    <addaction name="action_print_pdf"/>
    <addaction name="separator"/>
+   <addaction name="action_new_page"/>
    <addaction name="action_discard_page"/>
   </widget>
   <action name="action_quit">
@@ -182,10 +183,22 @@
   </action>
   <action name="action_download_card_data">
    <property name="icon">
-    <iconset theme="edit-download"/>
+    <iconset theme="edit-download">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Download card data</string>
+   </property>
+  </action>
+  <action name="action_new_page">
+   <property name="icon">
+    <iconset theme="document-new"/>
+   </property>
+   <property name="text">
+    <string>New Page</string>
+   </property>
+   <property name="toolTip">
+    <string>Add a new, empty page.</string>
    </property>
   </action>
  </widget>
@@ -208,7 +221,7 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>page_list_view</tabstop>
+  <tabstop>document_view</tabstop>
   <tabstop>page_card_table_view</tabstop>
   <tabstop>page_renderer</tabstop>
  </tabstops>
