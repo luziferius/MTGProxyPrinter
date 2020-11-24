@@ -208,31 +208,72 @@ class CardDatabase:
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
         card.name, card.set_abbr, card.collector_number, card.image_uri = result
 
-    def get_collector_numbers(self, set_abbr: str) -> StringList:
-        query = self.db.execute(
-            r"""SELECT DISTINCT collector_number
-            FROM Card
-            WHERE "set" = ?
-            """,
-            (set_abbr,)
+    def find_collector_numbers_matching(self, card: Card) -> StringList:
+        query = r"""SELECT DISTINCT collector_number
+            FROM Card JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.name:
+            query += "\n AND card_name = ?"
+            parameters.append(card.name)
+        if card.set_abbr:
+            query += """\n AND "set" LIKE ?"""
+            parameters.append(f"%{card.set_abbr}")
+
+        query += """\n ORDER BY collector_number ASC"""
+        cursor = self.db.execute(
+            query,
+            parameters
         )
-        result = [number for number, in query]
+        result = [number for number, in cursor]
         return result
 
-    def find_cards_from_set(self, language: str, set_prefix: str, collectors_number_prefix: str) -> StringList:
+    def find_card_names_matching(self, card: Card) -> StringList:
         """
-        Finds all cards given the set name prefix and collector number prefix.
+        Finds all cards given the language, set name prefix and collector number prefix.
 
         :returns: List of card names
         """
-        pass
+        query = r"""SELECT DISTINCT card_name
+            FROM Card JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.set_abbr:
+            query += """\n AND "set" LIKE ?"""
+            parameters.append(f"%{card.set_abbr}")
+        if card.collector_number:
+            query += """\n AND collector_number LIKE ?"""
+            parameters.append(f"%{card.collector_number}")
+        query += """\n ORDER BY card_name ASC"""
+        cursor = self.db.execute(
+            query,
+            parameters
+        )
+        result = [name for name, in cursor]
+        return result
 
-    def find_sets_for_card(self, language: str, card_name: str) -> typing.Tuple[str, StringList]:
+    def find_sets_matching(self, card: Card) -> StringList:
         """
-        Finds all sets and collector numbers given the card name and language.
-        May find multiple collector numbers per set, if the card has multiple printings in a set.
-        (Prime example: Basic lands)
-
-        :returns: List with tuples (set name, List[collector number strings])
+        Finds all sets given the language, card name prefix and collector number prefix
         """
         pass
+        query = r"""SELECT DISTINCT "set"
+            FROM Card JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.name:
+            query += """\n AND card_name LIKE ?"""
+            parameters.append(f"%{card.name}")
+        if card.collector_number:
+            query += """\n AND collector_number LIKE ?"""
+            parameters.append(f"%{card.collector_number}")
+        query += """\n ORDER BY "set" ASC"""
+        cursor = self.db.execute(
+            query,
+            parameters
+        )
+        result = [set_abbr for set_abbr, in cursor]
+        return result
