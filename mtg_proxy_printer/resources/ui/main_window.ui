@@ -161,6 +161,9 @@
    </property>
   </action>
   <action name="action_discard_page">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
    <property name="icon">
     <iconset theme="document-close">
      <normaloff>.</normaloff>.</iconset>

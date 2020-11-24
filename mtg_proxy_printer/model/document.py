@@ -42,7 +42,7 @@ class Page(QAbstractListModel):
             return f"Card: {item}"
 
     def get_preview(self):
-        return ""
+        return "\n".join(card.name for card in self.cards)
 
     
 PageList = typing.List[Page]
@@ -53,7 +53,7 @@ class Document(QAbstractListModel):
     This is the root of a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
-    document_emptied = pyqtSignal()
+    document_empty = pyqtSignal(bool)
 
     def __init__(self, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -85,7 +85,9 @@ class Document(QAbstractListModel):
     @pyqtSlot()
     def add_page(self):
         self.pages.append(Page(self.parent()))
+        self.layoutChanged: pyqtSignal
         self.layoutChanged.emit()
+        self.document_empty.emit(False)
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
@@ -93,9 +95,10 @@ class Document(QAbstractListModel):
         remaining = [page for index, page in enumerate(self.pages) if index not in to_delete]
         self.pages[:] = remaining
         if indices:
+            self.layoutChanged: pyqtSignal
             self.layoutChanged.emit()
         if not self.pages:
-            self.document_emptied.emit()
+            self.document_empty.emit(True)
         
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self.pages)

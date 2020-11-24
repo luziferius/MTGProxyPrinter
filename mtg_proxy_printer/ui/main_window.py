@@ -53,7 +53,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.action_new_page.triggered.connect(self.document.add_page)
         self.action_discard_page.triggered.connect(
             lambda: self.document.remove_pages(self.document_view.selectedIndexes()))
-
+        self.document.document_empty.connect(self.action_discard_page.setDisabled)
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
         self.add_card_widget: AddCardWidget
