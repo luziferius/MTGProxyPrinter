@@ -1,2 +1,2 @@
 include LICENSE
-
+include mtg_proxy_printer/model/carddb.sql
