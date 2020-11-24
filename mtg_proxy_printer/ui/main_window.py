@@ -117,7 +117,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
             None, "Download Card data",
             "The local card database is empty. Download the required data from Scryfall now?\n"
             "Downloading might take some time. If you decline, no cards can be searched and printed.",
-            QMessageBox.Yes|QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
         if should_download:
             self.download_card_data()
             self.should_update_languages.emit()
@@ -129,10 +129,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
-    @pyqtSlot(int)
-    def process_events_during_long_operations(self, progress: int):
-        if not progress % 10:
-            QApplication.instance().processEvents()
+    @pyqtSlot()
+    def process_events_during_long_operations(self):
+        QApplication.instance().processEvents()
 
     def download_card_data(self):
         importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(self.card_database, parent=self)

@@ -16,7 +16,7 @@
 import pathlib
 import functools
 
-from PyQt5.QtCore import QFile, QSize, QUrl
+from PyQt5.QtCore import QFile, QSize, QUrl, QObject
 from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import uic
@@ -51,6 +51,21 @@ else:
     RESOURCE_PATH_PREFIX = ":"
     ICON_PATH_PREFIX = ":/icons"
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+
+class BlockedSignals:
+    """
+    Context manager used to temporarily prevent any QObject-derived object from emitting Qt signals.
+    This can be used to break signal trigger loops or unwanted trigger chains.
+    """
+    def __init__(self, qobject: QObject):
+        self.qobject = qobject
+
+    def __enter__(self):
+        self.qobject.blockSignals(True)
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.qobject.blockSignals(False)
 
 
 def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):

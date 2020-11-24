@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import dataclasses
 import pathlib
 import pkg_resources
 import re
@@ -26,11 +27,21 @@ logger = get_logger(__name__)
 del get_logger
 
 StringList = typing.List[str]
+OptionalString = typing.Optional[str]
 DEFAULT_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
     "CardDataCache.sqlite3"
 )
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
+
+
+@dataclasses.dataclass()
+class Card:
+    name: OptionalString
+    set_abbr: OptionalString
+    collector_number: OptionalString
+    language: str
+    image_uri: OptionalString = None
 
 
 class CardDatabase:
@@ -53,10 +64,12 @@ class CardDatabase:
             parent_dir.mkdir(parents=True)
         location = "in memory" if db_path == ":memory:" else f"at {db_path}"
         logger.debug(f"Opening Database {location}.")
+        # This has to be determined before the connection is opened and the file is created on disk.
         should_create_schema = db_path == ":memory:" or not db_path.exists()
         self.db: sqlite3.Connection = sqlite3.connect(db_path)
         logger.debug(f"Connected SQLite database {location}.")
-        self.db.execute("PRAGMA foreign_keys = ON")
+        # Both settings are volatile, thus have to be set for each opened connection
+        self.db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")
         logger.debug("Enabled SQLite3 foreign keys support.")
         if db_path == ":memory:":
             logger.debug("Skipping registering cleanup hooks for in-memory databases.")
@@ -65,13 +78,14 @@ class CardDatabase:
             if should_create_schema:
                 self.populate_database_schema()
             logger.debug("Registering cleanup hooks that close the database on exit.")
+
             def close_db():
                 logger.debug("Rolling back active transactions.")
                 self.db.rollback()
                 logger.debug("Running SQLite PRAGMA optimize.")
                 # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
                 # See also: https://www.sqlite.org/lang_analyze.html
-                self.db.executescript("PRAGMA analysis_limit=1000; PRAGMA optimize;")
+                self.db.execute("PRAGMA optimize")
                 self.db.close()
                 del self.db
                 logger.info("Closed database.")
@@ -112,26 +126,154 @@ class CardDatabase:
 
     def get_card_names(self, language: str) -> StringList:
         """Returns a list with all card names in the given language."""
-        pass
+        query = self.db.execute(
+            r"""SELECT DISTINCT card_name
+            FROM Card
+            JOIN CardFace USING(scryfall_id)
+            WHERE language = ?
+            ORDER BY card_name ASC
+            """,
+            (language,))
+        result = [language for language, in query]
+        return result
 
     def get_sets(self) -> StringList:
         """Returns a list with all set names."""
-        pass
+        query = self.db.execute(
+            r"""SELECT "set"
+            FROM "Set"
+            """
+        )
+        result = [set_abbr for set_abbr, in query]
+        return result
 
-    def find_cards_from_set(self,language: str, set_prefix: str, collectors_number_prefix: str) -> StringList:
+    def is_valid_and_unique_card(self, card: Card) -> bool:
+        """Checks, if the given card data represents a unique card printing"""
+        query = r"""SELECT COUNT(*) = 1
+            FROM Card JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.name:
+            query += "AND card_name = ?\n"
+            parameters.append(card.name)
+        if card.set_abbr:
+            query += """AND "set" = ?\n"""
+            parameters.append(card.set_abbr)
+        if card.collector_number:
+            query += """AND collector_number = ?\n"""
+            parameters.append(card.collector_number)
+        result, = self.db.execute(
+            query,
+            parameters
+        ).fetchone()
+        return bool(result)
+
+    def add_missing_information(self, card: Card):
         """
-        Finds all cards given the set name prefix and collector number prefix.
+        Called with a unique printing in card and
+        fills in all missing information by modifying the Card object in-place.
+
+        A unique card may be
+        - A card name in the given language (if there were no re-prints or multiple printings in the same set)
+        - A card name and collector number (if all re-prints have different numbers)
+        - A card name and set (if there were no multiple printings in the same set)
+        - Set, language and collector number
+        - A collector number (if that is globally unique, because of some special character.
+          Some online sets have thousands of cards, so the largest of these has a bunch
+          of cards that can be uniquely identified by their large collector number.)
+        - Language (some promo cards are one-of a kind and have a unique language,
+          like a single card in traditional Greek)
+        """
+        query = 'SELECT card_name, "set", collector_number, png_image_uri\nFROM Card\n'
+        if card.name:
+            query += "JOIN CardFace USING (scryfall_id)\n"
+        query += 'WHERE "language" = ?\n'
+        parameters = [card.language]
+        if card.name:
+            query += "AND card_name = ?\n"
+            parameters.append(card.name)
+        if card.set_abbr:
+            query += """AND "set" = ?\n"""
+            parameters.append(card.set_abbr)
+        if card.collector_number:
+            query += """AND collector_number = ?\n"""
+            parameters.append(card.collector_number)
+        cursor = self.db.execute(
+            query,
+            parameters
+        )
+        result = cursor.fetchone()
+        if not result or cursor.fetchone():
+            raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
+        card.name, card.set_abbr, card.collector_number, card.image_uri = result
+
+    def find_collector_numbers_matching(self, card: Card) -> StringList:
+        query = 'SELECT DISTINCT collector_number\nFROM Card\n'
+        if card.name:
+            query += "JOIN CardFace USING (scryfall_id)\n"
+        query += 'WHERE "language" = ?\n'
+        parameters = [card.language]
+        if card.name:
+            query += "AND card_name LIKE ?\n"
+            parameters.append(f"{card.name}%")
+        if card.set_abbr:
+            query += 'AND "set" LIKE ?\n'
+            parameters.append(f"{card.set_abbr}%")
+
+        query += """ORDER BY collector_number ASC\n"""
+        cursor = self.db.execute(
+            query,
+            parameters
+        )
+        result = [number for number, in cursor]
+        return result
+
+    def find_card_names_matching(self, card: Card) -> StringList:
+        """
+        Finds all cards given the language, set name prefix and collector number prefix.
 
         :returns: List of card names
         """
-        pass
+        query = r"""SELECT DISTINCT card_name
+            FROM Card
+            JOIN CardFace USING (scryfall_id)
+            WHERE "language" = ?
+            """
+        parameters = [card.language]
+        if card.set_abbr:
+            query += 'AND "set" LIKE ?\n'
+            parameters.append(f"{card.set_abbr}%")
+        if card.collector_number:
+            query += "AND collector_number LIKE ?\n"
+            parameters.append(f"{card.collector_number}%")
+        query += "ORDER BY card_name ASC\n"
+        cursor = self.db.execute(
+            query,
+            parameters
+        )
+        result = [name for name, in cursor]
+        return result
 
-    def find_sets_for_card(self, language: str, card_name: str) -> typing.Tuple[str, StringList]:
+    def find_sets_matching(self, card: Card) -> StringList:
         """
-        Finds all sets and collector numbers given the card name and language.
-        May find multiple collector numbers per set, if the card has multiple printings in a set.
-        (Prime example: Basic lands)
-
-        :returns: List with tuples (set name, List[collector number strings])
+        Finds all sets given the language, card name prefix and collector number prefix
         """
-        pass
+        query = 'SELECT DISTINCT "set"\nFROM Card\n'
+        if card.name:
+            query += "JOIN CardFace USING (scryfall_id)\n"
+        query += 'WHERE "language" = ?\n'
+        parameters = [card.language]
+        if card.name:
+            query += """AND card_name LIKE ?\n"""
+            parameters.append(f"{card.name}%")
+        if card.collector_number:
+            query += """AND collector_number LIKE ?\n"""
+            parameters.append(f"{card.collector_number}%")
+        query += """ORDER BY "set" ASC\n"""
+        cursor = self.db.execute(
+            query,
+            parameters
+        )
+        result = [set_abbr for set_abbr, in cursor]
+        return result
