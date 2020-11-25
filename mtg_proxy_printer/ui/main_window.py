@@ -23,8 +23,8 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.page_list_view import PageListView
-from mtg_proxy_printer.ui.page_view import PageRenderer
+from mtg_proxy_printer.ui.document_view import DocumentView
+from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 
 from mtg_proxy_printer.logger import get_logger
@@ -48,7 +48,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.document = mtg_proxy_printer.model.document.Document(parent=self)
-        self.document_view: PageListView
+        self.document_view: DocumentView
         self.document_view.setModel(self.document)
         self.action_new_page.triggered.connect(self.document.add_page)
         self.action_discard_page.triggered.connect(

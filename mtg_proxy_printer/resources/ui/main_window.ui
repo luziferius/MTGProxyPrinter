@@ -42,7 +42,7 @@
      </widget>
     </item>
     <item row="0" column="0" rowspan="2">
-     <widget class="PageListView" name="document_view">
+     <widget class="DocumentView" name="document_view">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>5</horstretch>
@@ -195,7 +195,8 @@
   </action>
   <action name="action_new_page">
    <property name="icon">
-    <iconset theme="document-new"/>
+    <iconset theme="document-new">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>New Page</string>
@@ -209,12 +210,12 @@
   <customwidget>
    <class>PageRenderer</class>
    <extends>QGraphicsView</extends>
-   <header>mtg_proxy_printer.ui.page_view</header>
+   <header>mtg_proxy_printer.ui.page_renderer</header>
   </customwidget>
   <customwidget>
-   <class>PageListView</class>
+   <class>DocumentView</class>
    <extends>QListView</extends>
-   <header>mtg_proxy_printer.ui.page_list_view</header>
+   <header>mtg_proxy_printer.ui.document_view</header>
   </customwidget>
   <customwidget>
    <class>AddCardWidget</class>
