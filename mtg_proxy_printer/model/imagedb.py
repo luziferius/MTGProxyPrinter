@@ -17,7 +17,7 @@ import pathlib
 import shutil
 import typing
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtGui import QPixmap
 
 import mtg_proxy_printer.meta_data
@@ -34,6 +34,9 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 
 
 class ImageDatabase(QObject):
+
+    card_download_starting = pyqtSignal()
+    card_download_finished = pyqtSignal()
 
     def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
         super(ImageDatabase, self).__init__(*args, **kwargs)
@@ -65,10 +68,13 @@ class ImageDatabase(QObject):
             self._download_image(card, cache_file_path)
         return cache_file_path
 
-    @staticmethod
-    def _download_image(card: Card, fs_path: pathlib.Path):
+    def _download_image(self, card: Card, fs_path: pathlib.Path):
+        self.card_download_starting.emit()
         download_uri = card.image_uri
         # TODO: Refactor this prototype implementation
-        with mtg_proxy_printer.card_info_importer.CardInfoDownloader._read_from_url(download_uri) as source, \
-                fs_path.open("wb") as file_in_cache:
-            shutil.copyfileobj(source, file_in_cache)
+        try:
+            with mtg_proxy_printer.card_info_importer.CardInfoDownloader._read_from_url(download_uri) as source, \
+                    fs_path.open("wb") as file_in_cache:
+                shutil.copyfileobj(source, file_in_cache)
+        finally:
+            self.card_download_finished.emit()
