@@ -80,7 +80,7 @@ class CardInfoDownloader(QObject):
         encoding = response.info().get("Content-Encoding")
         if encoding == "gzip":
             data = gzip.open(response, "rb")
-        elif encoding == "identity":
+        elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
             data = response
         else:
             raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
