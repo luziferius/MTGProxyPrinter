@@ -108,4 +108,4 @@ class Document(QAbstractListModel):
         if role == Qt.DisplayRole:
             return item.get_preview()
         elif role == Qt.ToolTipRole:
-            return f"Page {index.row()}/{self.rowCount()}"
+            return f"Page {index.row()+1}/{self.rowCount()}"
