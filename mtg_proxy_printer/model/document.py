@@ -87,7 +87,8 @@ class Document(QAbstractListModel):
         self.pages.append(Page(self.parent()))
         self.layoutChanged: pyqtSignal
         self.layoutChanged.emit()
-        self.document_empty.emit(False)
+        if len(self.pages) == 1:
+            self.document_empty.emit(False)
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
