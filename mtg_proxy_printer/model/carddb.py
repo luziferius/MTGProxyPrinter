@@ -21,6 +21,8 @@ import re
 import sqlite3
 import typing
 
+from PyQt5.QtGui import QPixmap
+
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -42,6 +44,8 @@ class Card:
     collector_number: OptionalString
     language: str
     image_uri: OptionalString = None
+    scryfall_id: OptionalString = None
+    image_file: typing.Optional[QPixmap] = None
 
 
 class CardDatabase:
@@ -185,7 +189,7 @@ class CardDatabase:
         - Language (some promo cards are one-of a kind and have a unique language,
           like a single card in traditional Greek)
         """
-        query = 'SELECT card_name, "set", collector_number, png_image_uri\nFROM Card\n'
+        query = 'SELECT card_name, "set", collector_number, png_image_uri, scryfall_id\nFROM Card\n'
         if card.name:
             query += "JOIN CardFace USING (scryfall_id)\n"
         query += 'WHERE "language" = ?\n'
@@ -206,7 +210,7 @@ class CardDatabase:
         result = cursor.fetchone()
         if not result or cursor.fetchone():
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
-        card.name, card.set_abbr, card.collector_number, card.image_uri = result
+        card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id = result
 
     def find_collector_numbers_matching(self, card: Card) -> StringList:
         query = 'SELECT DISTINCT collector_number\nFROM Card\n'
