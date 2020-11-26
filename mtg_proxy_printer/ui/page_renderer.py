@@ -13,8 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QGraphicsView
+
+from mtg_proxy_printer.model.document import Page, Document
 
 
 class PageRenderer(QGraphicsView):
-    pass
+
+    def __init__(self, *args, **kwargs):
+        super(PageRenderer, self).__init__(*args, **kwargs)
+        self.page = None
+
+    @pyqtSlot()
+    def set_page(self, page: Page):
+
+        self.page = page
+        self.page.dataChanged.connect(self.redraw)
+
+    @pyqtSlot()
+    def redraw(self):
+        document: Document = self.page.parent()
+        self.resize(document.page_width, document.page_height)
