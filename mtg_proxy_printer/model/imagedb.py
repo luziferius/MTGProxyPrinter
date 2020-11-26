@@ -17,7 +17,7 @@ import pathlib
 import shutil
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QPixmap
 
 import mtg_proxy_printer.meta_data
@@ -46,6 +46,7 @@ class ImageDatabase(QObject):
         # to save memory.  TODO: Maybe use the QPixmapCache class instead?
         self.loaded_images: typing.Dict[str, QPixmap] = {}
 
+    @pyqtSlot(Card)
     def get_image(self, card: Card):
         try:
             pixmap = self.loaded_images[card.scryfall_id]
