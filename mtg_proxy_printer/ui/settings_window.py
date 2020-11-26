@@ -29,11 +29,12 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     saved = pyqtSignal()
 
-    def __init__(self, parent: QWidget = None):
-        super(SettingsWindow, self).__init__(parent)
+    def __init__(self, language_model: QStringListModel,  *args, **kwargs):
+        super(SettingsWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        self.language_model = None
+        self.language_model = language_model
         self.preferred_language_combo_box: QComboBox
+        self.preferred_language_combo_box.setModel(self.language_model)
 
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
@@ -42,10 +43,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
         self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def set_language_model(self, model: QStringListModel):
-        self.language_model = model
-        self.preferred_language_combo_box.setModel(self.language_model)
 
     def show(self):
         logger.info("Show the settings window.")

@@ -33,14 +33,13 @@ class Application(QApplication):
     def __init__(self, argv: typing.List[str] = None):
         if argv is None:
             argv = sys.argv
+        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         super(Application, self).__init__(argv)
         logger.info("Starting MTGProxyPrinter")
-        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
 
-        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow()
-        self.main_window.set_card_database(self.card_db)
-        self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(self.main_window)
-        self.settings_window.set_language_model(self.main_window.language_model)
+        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.card_db)
+        self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
+            self.main_window.language_model, self.main_window)
         self.settings_window.hide()
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.settings_window.saved.connect(self.main_window.add_card_widget.update_selected_language)

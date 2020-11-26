@@ -36,12 +36,13 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     should_update_languages = pyqtSignal()
 
-    def __init__(self, parent: QWidget = None):
-        super(MainWindow, self).__init__(parent)
+    def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.progress_bar = QProgressBar(self)
         self.progress_bar.hide()
-        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
+        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
+        self.add_card_widget.set_card_database(self.card_database)
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
@@ -61,10 +62,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def set_card_database(self, card_database: mtg_proxy_printer.model.carddb.CardDatabase):
-        self.card_database = card_database
-        self.add_card_widget.set_card_database(self.card_database)
 
     @pyqtSlot()
     def update_language_model(self):
