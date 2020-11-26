@@ -84,7 +84,7 @@ class Document(QAbstractListModel):
 
     @pyqtSlot()
     def add_page(self):
-        self.pages.append(Page(self.parent()))
+        self.pages.append(Page(parent=self))
         self.layoutChanged: pyqtSignal
         self.layoutChanged.emit()
         if len(self.pages) == 1:
