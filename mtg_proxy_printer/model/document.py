@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 import typing
 
 
-from PyQt5.QtCore import QAbstractListModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
 
 
 from mtg_proxy_printer.model.carddb import Card
@@ -25,21 +26,63 @@ from mtg_proxy_printer.settings import settings
 CardList = typing.List[Card]
 
 
-class Page(QAbstractListModel):
+class Page(QAbstractTableModel):
     """
     This is a single page and part of a Document. It holds the proxies added to this page as a list of Card objects.
     """
+    page_empty = pyqtSignal(bool)
+
+    header = {
+        0: "Card name",
+        1: "Set",
+        2: "Collector #",
+        3: "Language",
+    }
+
     def __init__(self, *args, **kwargs):
         super(Page, self).__init__(*args, **kwargs)
         self.cards: CardList = []
         
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self.cards)
+
+    def columnCount(self, parent: QModelIndex = None) -> int:
+        return 4
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
-        item = self.cards[index.row()]
+        card = self.cards[index.row()]
         if role == Qt.DisplayRole:
-            return f"Card: {item}"
+            if index.column() == 0:
+                return card.name
+            elif index.column() == 1:
+                return card.set_abbr
+            elif index.column() == 2:
+                return card.collector_number
+            elif index.column() == 3:
+                return card.language
+
+    @pyqtSlot(Card)
+    def add_card(self, card: Card, count: int):
+        self.cards += list(itertools.repeat(card, count))
+        self.layoutChanged.emit()
+        if len(self.cards) == count:
+            self.page_empty.emit(False)
+
+    @pyqtSlot(list)
+    def remove_cards(self, indices: typing.List[QModelIndex]):
+        to_delete = set(index.row() for index in indices)
+        remaining = [card for index, card in enumerate(self.cards) if index not in to_delete]
+        self.cards[:] = remaining
+        if indices:
+            self.layoutChanged: pyqtSignal
+            self.layoutChanged.emit()
+        if not self.cards:
+            self.page_empty.emit(True)
+
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            return Page.header[section]
+        return super(Page, self).headerData(section, orientation, role)
 
     def get_preview(self):
         return "\n".join(card.name for card in self.cards)
@@ -58,7 +101,6 @@ class Document(QAbstractListModel):
     def __init__(self, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
         self.pages: PageList = []
-        self.apply_settings()
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
         self.page_width = document_settings.getint("paper-width-mm")
@@ -110,3 +152,5 @@ class Document(QAbstractListModel):
             return item.get_preview()
         elif role == Qt.ToolTipRole:
             return f"Page {index.row()+1}/{self.rowCount()}"
+        elif role == Qt.EditRole:
+            return item
