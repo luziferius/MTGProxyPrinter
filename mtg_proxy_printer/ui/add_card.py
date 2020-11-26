@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QMessageBox
+from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.settings
@@ -56,7 +56,6 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
                 self.language_combo_box
                 ):
             input_box.currentTextChanged.connect(self.check_input_is_valid_and_unique_card)
-        self.card_added.connect(self.card_added_debug_slot)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_card_name_search(self):
@@ -195,6 +194,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.card_database.add_missing_information(self.card)
         self.copies_input: QSpinBox
         self.card_added.emit(self.card, self.copies_input.value())
+        self.reset()
 
     @pyqtSlot()
     def reset(self):
@@ -202,11 +202,3 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self._update_card_search()
         self._update_set_name_search()
         self._update_collector_number_search()
-
-    @pyqtSlot(mtg_proxy_printer.model.carddb.Card, int)
-    def card_added_debug_slot(self, card, count: int):
-        QMessageBox.information(
-            self, "Adding cards not implemented",
-            f"Selected card:\n{card.name=}\n{card.set_abbr=}\n{card.collector_number=}\n{card.language=}\n{card.image_uri=}\nCopies={count}",
-            QMessageBox.Ok, QMessageBox.Ok
-        )
