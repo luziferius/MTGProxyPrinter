@@ -14,12 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt
 from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox, QProgressBar
+from PyQt5.QtWidgets import QApplication, QTableView, QMessageBox, QProgressBar
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -42,6 +43,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.progress_bar = QProgressBar(self)
         self.progress_bar.hide()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
+        self.image_downloader = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.add_card_widget.set_card_database(self.card_database)
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
@@ -49,8 +51,13 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.document = mtg_proxy_printer.model.document.Document(parent=self)
+        self.current_page: mtg_proxy_printer.model.document.Page = None
+        self.add_card_widget.card_added.connect(self.image_downloader.get_image)
+        self.add_card_widget.card_added.connect(lambda card, count: self.current_page.add_card(card, count))
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
+        self.document_view.setSelectionMode(DocumentView.SingleSelection)
+        self.document_view.selectionModel().currentRowChanged.connect(self.on_selected_page_changed)
         self.action_new_page.triggered.connect(self.document.add_page)
         self.action_discard_page.triggered.connect(
             lambda: self.document.remove_pages(self.document_view.selectedIndexes()))
@@ -61,6 +68,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.set_language_model(self.language_model)
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
+
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
@@ -135,3 +143,10 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         card_data = importer.read_json_card_data_from_url()
         importer.populate_database(self.card_database, card_data)
         self.card_database.commit()
+
+    @pyqtSlot(QModelIndex, QModelIndex)
+    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
+        self.current_page = self.document.data(selected, Qt.EditRole)
+        self.page_card_table_view.setModel(self.current_page)
+
+
