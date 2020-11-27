@@ -56,7 +56,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.card_added.connect(lambda card, count: self.current_page.add_card(card, count))
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
-        self.document_view.setSelectionMode(DocumentView.SingleSelection)
         self.document_view.selectionModel().currentRowChanged.connect(self.on_selected_page_changed)
         self.action_new_page.triggered.connect(self.document.add_page)
         self.action_discard_page.triggered.connect(
