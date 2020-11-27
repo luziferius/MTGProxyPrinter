@@ -36,6 +36,7 @@ del get_logger
 class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     should_update_languages = pyqtSignal()
+    current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
 
     def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -67,7 +68,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.set_language_model(self.language_model)
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
-
+        self.current_page_changed.connect(self.page_card_table_view.setModel)
+        self.current_page_changed.connect(self.page_renderer.set_page)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
@@ -146,6 +148,4 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot(QModelIndex, QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
         self.current_page = self.document.data(selected, Qt.EditRole)
-        self.page_card_table_view.setModel(self.current_page)
-
-
+        self.current_page_changed.emit(self.current_page)
