@@ -15,7 +15,7 @@
 
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt
-from PyQt5.QtGui import QCloseEvent
+from PyQt5.QtGui import QCloseEvent, QResizeEvent
 from PyQt5.QtWidgets import QApplication, QTableView, QMessageBox, QProgressBar
 
 import mtg_proxy_printer.card_info_importer
@@ -70,7 +70,12 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         self.current_page_changed.connect(self.page_card_table_view.setModel)
         self.current_page_changed.connect(self.page_renderer.set_page)
+
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def resizeEvent(self, event: QResizeEvent):
+        self.page_renderer.on_resize_event_triggered()
+        super(MainWindow, self).resizeEvent(event)
 
     @pyqtSlot()
     def update_language_model(self):
