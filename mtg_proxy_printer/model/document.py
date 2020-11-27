@@ -37,6 +37,7 @@ class Page(QAbstractTableModel):
         1: "Set",
         2: "Collector #",
         3: "Language",
+        4: "Image",
     }
 
     def __init__(self, *args, **kwargs):
@@ -47,7 +48,7 @@ class Page(QAbstractTableModel):
         return len(self.cards)
 
     def columnCount(self, parent: QModelIndex = None) -> int:
-        return 4
+        return 5
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
@@ -60,6 +61,8 @@ class Page(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == 3:
                 return card.language
+            elif index.column() == 4:
+                return card.image_file
 
     @pyqtSlot(Card)
     def add_card(self, card: Card, count: int):
@@ -67,6 +70,8 @@ class Page(QAbstractTableModel):
         self.layoutChanged.emit()
         if len(self.cards) == count:
             self.page_empty.emit(False)
+        for row in range(len(self.cards)-count, len(self.cards)):
+            self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
 
     @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]):
