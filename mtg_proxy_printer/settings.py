@@ -40,10 +40,10 @@ DEFAULT_SETTINGS["downloads"] = {
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",
     "paper-width-mm": "210",
-    "margin-top-mm": "5",
-    "margin-bottom-mm": "5",
-    "margin-left-mm": "5",
-    "margin-right-mm": "5",
+    "margin-top-mm": "10",
+    "margin-bottom-mm": "10",
+    "margin-left-mm": "10",
+    "margin-right-mm": "10",
     "image-spacing-horizontal-mm": "0",
     "image-spacing-vertical-mm": "0",
 }
