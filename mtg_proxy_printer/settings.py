@@ -52,7 +52,7 @@ DEFAULT_SETTINGS["documents"] = {
 def read_settings_from_file():
     global settings, DEFAULT_SETTINGS
     if not config_file_path.exists():
-        settings = DEFAULT_SETTINGS
+        settings.read_dict(DEFAULT_SETTINGS)
     else:
         settings.read(config_file_path)
         read_sections = set(settings.sections())
