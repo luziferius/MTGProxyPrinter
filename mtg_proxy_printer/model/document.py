@@ -65,7 +65,7 @@ class Page(QAbstractTableModel):
             elif index.column() == 4:
                 return card.image_file
 
-    @pyqtSlot(Card)
+    @pyqtSlot(Card, int)
     def add_card(self, card: Card, count: int):
         self.cards += list(itertools.repeat(card, count))
         self.layoutChanged.emit()

@@ -45,6 +45,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.progress_bar.hide()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
         self.image_downloader = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
@@ -52,22 +53,20 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.document = mtg_proxy_printer.model.document.Document(parent=self)
-        self.current_page: mtg_proxy_printer.model.document.Page = None
+        self.current_page = self.document.pages[0]
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
-        self.add_card_widget.card_added.connect(lambda card, count: self.current_page.add_card(card, count))
+        self.add_card_widget.card_added.connect(self.current_page.add_card)
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentRowChanged.connect(self.on_selected_page_changed)
         self.action_new_page.triggered.connect(self.document.add_page)
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
-        self.add_card_widget: AddCardWidget
         self.add_card_widget.set_language_model(self.language_model)
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         self.current_page_changed.connect(self.page_card_table_view.setModel)
         self.current_page_changed.connect(self.page_renderer.set_page)
-
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def resizeEvent(self, event: QResizeEvent):
@@ -149,22 +148,20 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     @pyqtSlot(QModelIndex, QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex = None):
+        self.add_card_widget.card_added.disconnect(self.current_page.add_card)
         self.current_page = self.document.data(selected, Qt.EditRole)
+        self.add_card_widget.card_added.connect(self.current_page.add_card)
         self.current_page_changed.emit(self.current_page)
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
         self.document_view: DocumentView
         to_be_deleted = self.document_view.selectedIndexes()
-        selection = self.document_view.selectionModel().selection()
-        first_index = to_be_deleted[0].row()
         self.document.remove_pages(to_be_deleted)
-        new_row = min(first_index, self.document.rowCount()-1)
-        if new_row == -1:
-            self.document_view.selectionModel().clearSelection()
-            self.current_page_changed.emit(None)
-        else:
-            new_row_selection = self.document.createIndex(new_row, 0)
-            self.document_view.selectionModel().select(
-                new_row_selection, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
-            self.on_selected_page_changed(new_row_selection)
+        new_row_selection = self.document.createIndex(
+            min(to_be_deleted[0].row(), self.document.rowCount()-1),
+            0
+        )
+        self.document_view.selectionModel().select(
+            new_row_selection, QItemSelectionModel.ClearAndSelect)
+        self.on_selected_page_changed(new_row_selection)
