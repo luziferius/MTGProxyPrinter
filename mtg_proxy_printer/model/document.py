@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import itertools
 import typing
 
@@ -90,7 +91,10 @@ class Page(QAbstractTableModel):
         return super(Page, self).headerData(section, orientation, role)
 
     def get_preview(self):
-        return "\n".join(card.name for card in self.cards)
+        names = collections.Counter(card.name for card in self.cards)
+        return "\n".join(
+            f"{count}× {name}" for name, count in names.items()
+        )
 
     
 PageList = typing.List[Page]
