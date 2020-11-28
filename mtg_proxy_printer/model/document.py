@@ -135,7 +135,9 @@ class Document(QAbstractListModel):
 
     @pyqtSlot()
     def add_page(self):
-        self.pages.append(Page(parent=self))
+        page = Page(parent=self)
+        self.pages.append(page)
+        page.dataChanged.connect(self.on_page_data_changed)
         self.layoutChanged: pyqtSignal
         self.layoutChanged.emit()
         if len(self.pages) == 1:
@@ -144,7 +146,12 @@ class Document(QAbstractListModel):
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
         to_delete = set(index.row() for index in indices)
-        remaining = [page for index, page in enumerate(self.pages) if index not in to_delete]
+        remaining = []
+        for index, page in enumerate(self.pages):
+            if index in to_delete:
+                page.dataChanged.disconnect(self.on_page_data_changed)
+            else:
+                remaining.append(page)
         self.pages[:] = remaining
         if indices:
             self.layoutChanged: pyqtSignal
@@ -163,3 +170,9 @@ class Document(QAbstractListModel):
             return f"Page {index.row()+1}/{self.rowCount()}"
         elif role == Qt.EditRole:
             return item
+
+    @pyqtSlot(QModelIndex)
+    def on_page_data_changed(self, page_model_index: QModelIndex):
+        page: Page = page_model_index.model()
+        index = self.createIndex(self.pages.index(page), 0)
+        self.dataChanged.emit(index, index)
