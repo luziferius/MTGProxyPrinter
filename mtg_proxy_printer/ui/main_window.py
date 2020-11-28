@@ -45,8 +45,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.progress_bar.hide()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
         self.image_downloader = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
-        self.add_card_widget: AddCardWidget
-        self.add_card_widget.set_card_database(self.card_database)
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
@@ -54,24 +52,31 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.document = mtg_proxy_printer.model.document.Document(parent=self)
         self.current_page = self.document.pages[0]
-        self.add_card_widget.card_added.connect(self.image_downloader.get_image)
-        self.add_card_widget.card_added.connect(self.current_page.add_card)
-        self.document_view: DocumentView
-        self.document_view.setModel(self.document)
-        sm = self.document_view.selectionModel()
-        sm.currentChanged.connect(self.on_selected_page_changed)
-        sm.select(self.document.createIndex(0,0), QItemSelectionModel.Select)
+        self._setup_add_card_widget()
+        self._setup_document_view()
         self.action_new_page.triggered.connect(self.document.add_page)
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
-        self.add_card_widget.set_language_model(self.language_model)
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         self.current_page_changed.connect(self.page_card_table_view.setModel)
         self.current_page_changed.connect(self.page_renderer.set_page)
-
+        #
         self.on_selected_page_changed(self.document.createIndex(0,0))
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_add_card_widget(self):
+        self.add_card_widget: AddCardWidget
+        self.add_card_widget.set_card_database(self.card_database)
+        self.add_card_widget.card_added.connect(self.image_downloader.get_image)
+        self.add_card_widget.card_added.connect(self.current_page.add_card)
+        self.add_card_widget.set_language_model(self.language_model)
+
+    def _setup_document_view(self):
+        self.document_view: DocumentView
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
 
     def resizeEvent(self, event: QResizeEvent):
         self.page_renderer.on_resize_event_triggered()
