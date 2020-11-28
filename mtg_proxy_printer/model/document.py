@@ -105,7 +105,6 @@ class Document(QAbstractListModel):
     This is the root of a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
-    document_empty = pyqtSignal(bool)
 
     def __init__(self, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -119,6 +118,7 @@ class Document(QAbstractListModel):
         self.margin_right = document_settings.getint("margin-right-mm")
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.add_page()
         
     @pyqtSlot()
     def apply_settings(self):
@@ -140,8 +140,6 @@ class Document(QAbstractListModel):
         page.dataChanged.connect(self.on_page_data_changed)
         self.layoutChanged: pyqtSignal
         self.layoutChanged.emit()
-        if len(self.pages) == 1:
-            self.document_empty.emit(False)
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
@@ -157,7 +155,7 @@ class Document(QAbstractListModel):
             self.layoutChanged: pyqtSignal
             self.layoutChanged.emit()
         if not self.pages:
-            self.document_empty.emit(True)
+            self.add_page()
         
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self.pages)

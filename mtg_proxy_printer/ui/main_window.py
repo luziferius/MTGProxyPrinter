@@ -59,7 +59,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentRowChanged.connect(self.on_selected_page_changed)
         self.action_new_page.triggered.connect(self.document.add_page)
-        self.document.document_empty.connect(self.action_discard_page.setDisabled)
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
         self.add_card_widget: AddCardWidget
