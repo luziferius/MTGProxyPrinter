@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent
 from PyQt5.QtWidgets import QApplication, QTableView, QMessageBox, QProgressBar
 
@@ -59,8 +59,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentRowChanged.connect(self.on_selected_page_changed)
         self.action_new_page.triggered.connect(self.document.add_page)
-        self.action_discard_page.triggered.connect(
-            lambda: self.document.remove_pages(self.document_view.selectedIndexes()))
         self.document.document_empty.connect(self.action_discard_page.setDisabled)
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
@@ -151,6 +149,23 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.card_database.commit()
 
     @pyqtSlot(QModelIndex, QModelIndex)
-    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
+    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex = None):
         self.current_page = self.document.data(selected, Qt.EditRole)
         self.current_page_changed.emit(self.current_page)
+
+    @pyqtSlot()
+    def on_action_discard_page_triggered(self):
+        self.document_view: DocumentView
+        to_be_deleted = self.document_view.selectedIndexes()
+        selection = self.document_view.selectionModel().selection()
+        first_index = to_be_deleted[0].row()
+        self.document.remove_pages(to_be_deleted)
+        new_row = min(first_index, self.document.rowCount()-1)
+        if new_row == -1:
+            self.document_view.selectionModel().clearSelection()
+            self.current_page_changed.emit(None)
+        else:
+            new_row_selection = self.document.createIndex(new_row, 0)
+            self.document_view.selectionModel().select(
+                new_row_selection, QItemSelectionModel.ClearAndSelect | QItemSelectionModel.Rows)
+            self.on_selected_page_changed(new_row_selection)
