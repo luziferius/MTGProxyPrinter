@@ -183,11 +183,14 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
     @pyqtSlot()
     def update_selected_language(self):
         self.language_combo_box: QComboBox
-        self.language_combo_box.setCurrentIndex(
-            self.language_model.stringList().index(
-                mtg_proxy_printer.settings.settings["images"]["preferred-language"])
-        )
-        self.card.language = self.language_combo_box.currentText()
+        if self.language_model.stringList():
+            self.language_combo_box.setCurrentIndex(
+                self.language_model.stringList().index(
+                    mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+            )
+            self.card.language = self.language_combo_box.currentText()
+        else:
+            self.card.language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
 
     def on_ok_button_triggered(self):
         logger.debug("User clicked OK and adds a new card to the current page.")

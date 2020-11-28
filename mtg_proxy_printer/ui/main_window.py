@@ -126,7 +126,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         # already runs.
         self.action_download_card_data.setDisabled(True)
         should_download = QMessageBox.question(
-            None, "Download Card data",
+            self, "Download Card data",
             "The local card database is empty. Download the required data from Scryfall now?\n"
             "Downloading might take some time. If you decline, no cards can be searched and printed.",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes

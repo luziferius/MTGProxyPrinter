@@ -54,9 +54,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.avoid_low_res_images_check_box: QCheckBox
         self.include_cards_depicting_racism_check_box: QCheckBox
         images_section = settings["images"]
-        self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(
-            images_section.get("preferred-language")
-        ))
+        if self.preferred_language_combo_box.model().stringList():
+            self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(
+                images_section.get("preferred-language")
+            ))
         self.avoid_low_res_images_check_box.setChecked(
             images_section.getboolean("avoid-low-resolution-images")
         )
