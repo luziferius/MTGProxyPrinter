@@ -33,7 +33,6 @@ class PageScene(QGraphicsScene):
 
     @pyqtSlot(QModelIndex)
     def draw_card(self, index: QModelIndex):
-        print(f"draw_card({index.row(), index.column()=})")
         position = self._compute_position_for_image(index)
         image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
         pixmap = self.addPixmap(image)
@@ -87,7 +86,6 @@ class PageRenderer(QGraphicsView):
 
     @pyqtSlot(Page)
     def set_page(self, page: Page):
-        print(f"set_page called: {page=}")
         if page is None:
             self.scene().clear()
         else:
@@ -113,5 +111,4 @@ class PageRenderer(QGraphicsView):
 
     @pyqtSlot()
     def on_resize_event_triggered(self):
-        pass
-        #self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
