@@ -31,7 +31,6 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
     IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
 
-
     @pyqtSlot(QModelIndex)
     def draw_card(self, index: QModelIndex):
         print(f"draw_card({index.row(), index.column()=})")
@@ -39,7 +38,6 @@ class PageScene(QGraphicsScene):
         image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
         pixmap = self.addPixmap(image)
         pixmap.setPos(position)
-        pixmap.setScale()
 
     @pyqtSlot()
     def redraw(self):
@@ -99,7 +97,8 @@ class PageRenderer(QGraphicsView):
             self.page.dataChanged.connect(self.scene().draw_card)
             self.scene().redraw()
 
-    def _get_document_size(self) -> QRectF:
+    @staticmethod
+    def _get_document_size() -> QRectF:
         document_settings = settings["documents"]
         height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
         width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
