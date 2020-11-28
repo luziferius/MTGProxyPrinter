@@ -22,12 +22,15 @@
      <widget class="PageRenderer" name="page_renderer">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>10</horstretch>
+        <horstretch>8</horstretch>
         <verstretch>10</verstretch>
        </sizepolicy>
       </property>
       <property name="acceptDrops">
        <bool>false</bool>
+      </property>
+      <property name="renderHints">
+       <set>QPainter::Antialiasing|QPainter::HighQualityAntialiasing</set>
       </property>
      </widget>
     </item>
@@ -45,7 +48,7 @@
      <widget class="DocumentView" name="document_view">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>5</horstretch>
+        <horstretch>4</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -68,6 +71,12 @@
       <property name="alternatingRowColors">
        <bool>true</bool>
       </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <property name="selectionBehavior">
+       <enum>QAbstractItemView::SelectRows</enum>
+      </property>
       <attribute name="verticalHeaderVisible">
        <bool>false</bool>
       </attribute>
@@ -81,7 +90,7 @@
      <x>0</x>
      <y>0</y>
      <width>691</width>
-     <height>30</height>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
