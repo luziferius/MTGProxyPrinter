@@ -58,7 +58,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.card_added.connect(self.current_page.add_card)
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentRowChanged.connect(self.on_selected_page_changed)
+        sm = self.document_view.selectionModel()
+        sm.currentChanged.connect(self.on_selected_page_changed)
+        sm.select(self.document.createIndex(0,0), QItemSelectionModel.Select)
         self.action_new_page.triggered.connect(self.document.add_page)
         self.page_card_table_view: QTableView
         self.page_renderer: PageRenderer
@@ -67,6 +69,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         self.current_page_changed.connect(self.page_card_table_view.setModel)
         self.current_page_changed.connect(self.page_renderer.set_page)
+
+        self.on_selected_page_changed(self.document.createIndex(0,0))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def resizeEvent(self, event: QResizeEvent):
