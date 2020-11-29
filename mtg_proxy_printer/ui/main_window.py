@@ -16,7 +16,7 @@
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QFileDialog
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
@@ -129,7 +129,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
-        self.nothing_happens_box.show()
+        dialog = QFileDialog(self, "Save document", filter="PDF-Documents (*.pdf)")
+        dialog.setFileMode(QFileDialog.AnyFile)
 
     @pyqtSlot()
     def on_action_download_card_data_triggered(self):
