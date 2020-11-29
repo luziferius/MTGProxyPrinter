@@ -57,8 +57,8 @@ class PageScene(QGraphicsScene):
         spacing_vertical = document.image_spacing_vertical * unit_registry.millimeter
         spacing_horizontal = document.image_spacing_horizontal * unit_registry.millimeter
 
-        x_pos = document.margin_left * unit_registry.millimeter + column * (PageScene.IMAGE_WIDTH + spacing_vertical)
-        y_pos = document.margin_top * unit_registry.millimeter + row * (PageScene.IMAGE_HEIGHT + spacing_horizontal)
+        x_pos = document.margin_left * unit_registry.millimeter + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
+        y_pos = document.margin_top * unit_registry.millimeter + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
         return QPointF(
             (x_pos * DPI).to_reduced_units().to_tuple()[0],
             (y_pos * DPI).to_reduced_units().to_tuple()[0],

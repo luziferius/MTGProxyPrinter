@@ -201,7 +201,7 @@ class Document(QAbstractListModel):
     def compute_cards_per_row(self) -> int:
         total_width: pint.Quantity = self.page_width * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
 
         total_width -= margins
         if total_width < Document.IMAGE_WIDTH:
@@ -213,7 +213,7 @@ class Document(QAbstractListModel):
     def compute_row_count(self) -> int:
         total_height: pint.Quantity = self.page_height * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
         total_height -= margins
         if total_height < Document.IMAGE_HEIGHT:
             return 0
