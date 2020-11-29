@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>792</width>
-    <height>311</height>
+    <width>1000</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,36 +18,19 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="2">
-     <widget class="PageRenderer" name="page_renderer">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>10</horstretch>
-        <verstretch>10</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="acceptDrops">
-       <bool>false</bool>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="1" colspan="2">
-     <widget class="AddCardWidget" name="add_card_widget" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>1</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
+     <widget class="AddCardWidget" name="add_card_widget" native="true"/>
     </item>
     <item row="0" column="0" rowspan="2">
-     <widget class="PageListView" name="page_list_view">
+     <widget class="DocumentView" name="document_view">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>5</horstretch>
+        <horstretch>4</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
       </property>
       <property name="selectionMode">
        <enum>QAbstractItemView::SingleSelection</enum>
@@ -57,12 +40,12 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QTableView" name="page_card_table_view">
+    <item row="1" column="1" colspan="2">
+     <widget class="CurrentPageView" name="page_view" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>5</horstretch>
-        <verstretch>10</verstretch>
+        <horstretch>10</horstretch>
+        <verstretch>4</verstretch>
        </sizepolicy>
       </property>
      </widget>
@@ -74,7 +57,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>792</width>
+     <width>1000</width>
      <height>30</height>
     </rect>
    </property>
@@ -112,6 +95,7 @@
    <addaction name="separator"/>
    <addaction name="action_print_pdf"/>
    <addaction name="separator"/>
+   <addaction name="action_new_page"/>
    <addaction name="action_discard_page"/>
   </widget>
   <action name="action_quit">
@@ -182,23 +166,31 @@
   </action>
   <action name="action_download_card_data">
    <property name="icon">
-    <iconset theme="edit-download"/>
+    <iconset theme="edit-download">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Download card data</string>
    </property>
   </action>
+  <action name="action_new_page">
+   <property name="icon">
+    <iconset theme="document-new">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>New Page</string>
+   </property>
+   <property name="toolTip">
+    <string>Add a new, empty page.</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PageRenderer</class>
-   <extends>QGraphicsView</extends>
-   <header>mtg_proxy_printer.ui.page_view</header>
-  </customwidget>
-  <customwidget>
-   <class>PageListView</class>
+   <class>DocumentView</class>
    <extends>QListView</extends>
-   <header>mtg_proxy_printer.ui.page_list_view</header>
+   <header>mtg_proxy_printer.ui.document_view</header>
   </customwidget>
   <customwidget>
    <class>AddCardWidget</class>
@@ -206,11 +198,15 @@
    <header>mtg_proxy_printer.ui.add_card</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>CurrentPageView</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.current_page_view</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>page_list_view</tabstop>
-  <tabstop>page_card_table_view</tabstop>
-  <tabstop>page_renderer</tabstop>
+  <tabstop>document_view</tabstop>
  </tabstops>
  <resources/>
  <connections/>

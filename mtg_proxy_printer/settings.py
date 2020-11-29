@@ -37,12 +37,22 @@ DEFAULT_SETTINGS["images"] = {
 DEFAULT_SETTINGS["downloads"] = {
     "download-cards-depicting-racism": 'false'
 }
+DEFAULT_SETTINGS["documents"] = {
+    "paper-height-mm": "297",
+    "paper-width-mm": "210",
+    "margin-top-mm": "10",
+    "margin-bottom-mm": "10",
+    "margin-left-mm": "10",
+    "margin-right-mm": "10",
+    "image-spacing-horizontal-mm": "0",
+    "image-spacing-vertical-mm": "0",
+}
 
 
 def read_settings_from_file():
     global settings, DEFAULT_SETTINGS
     if not config_file_path.exists():
-        settings = DEFAULT_SETTINGS
+        settings.read_dict(DEFAULT_SETTINGS)
     else:
         settings.read(config_file_path)
         read_sections = set(settings.sections())
@@ -50,7 +60,7 @@ def read_settings_from_file():
         # Synchronise sections
         for outdated in read_sections - known_sections:
             settings.remove_section(outdated)
-        for new in known_sections - read_sections:
+        for new in sorted(known_sections - read_sections):
             settings.add_section(new)
         # Synchronize individual options
         for section in known_sections:
@@ -58,7 +68,7 @@ def read_settings_from_file():
             known_options = set(DEFAULT_SETTINGS[section].keys())
             for outdated in read_options - known_options:
                 del settings[section][outdated]
-            for new in known_options - read_options:
+            for new in sorted(known_options - read_options):
                 settings[section][new] = DEFAULT_SETTINGS[section][new]
 
 

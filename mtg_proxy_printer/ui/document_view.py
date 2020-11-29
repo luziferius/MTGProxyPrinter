@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtWidgets import QGraphicsView
+from PyQt5.QtWidgets import QListView
 
 
-class PageRenderer(QGraphicsView):
+class DocumentView(QListView):
     pass

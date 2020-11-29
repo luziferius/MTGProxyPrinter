@@ -14,9 +14,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QMessageBox
+from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
 
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
 
@@ -35,7 +36,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.card = self._create_new_card()
-        self.page_total_slots = 9
+        self.page_free_slots = self.page_total_slots = 9
         self.language_combo_box: QComboBox
         self.language_model = None
         self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
@@ -56,7 +57,6 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
                 self.language_combo_box
                 ):
             input_box.currentTextChanged.connect(self.check_input_is_valid_and_unique_card)
-        self.card_added.connect(self.card_added_debug_slot)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_card_name_search(self):
@@ -88,11 +88,20 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
 
     @pyqtSlot(int)
     def on_page_total_slots_changed(self, slots: int):
+        difference = self.page_total_slots - slots
         self.page_total_slots = slots
+        self.page_free_slots -= difference
+        self.copies_input.setMaximum(self.page_free_slots)
 
-    @pyqtSlot(int)
-    def on_page_free_slots_changed(self, free_slots: int):
-        self.copies_input.setMaximum(self.page_total_slots-free_slots)
+    @pyqtSlot(mtg_proxy_printer.model.document.Page)
+    def on_current_page_changed(self, page: mtg_proxy_printer.model.document.Page):
+        self.page_free_slots = self.page_total_slots - page.rowCount()
+        if self.page_free_slots and not self.copies_input.maximum():
+            # If the previous maximum was 0 (because the page was full),
+            # the minimum value was automatically set from 1 to 0 by Qt, so set it up to 1 again.
+            self.copies_input.setMinimum(1)
+        self.copies_input.setMaximum(self.page_free_slots)
+        self.check_input_is_valid_and_unique_card()
 
     @pyqtSlot()
     def check_input_is_valid_and_unique_card(self):
@@ -102,7 +111,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.set_name_search: QComboBox
         self.collectors_number_search: QComboBox
         self.language_combo_box: QComboBox
-        result = self.card_database.is_valid_and_unique_card(self.card)
+        result = self.card_database.is_valid_and_unique_card(self.card) and bool(self.page_free_slots)
         self.input_is_valid_and_unique_card.emit(result)
 
     def _create_card_from_user_input(self):
@@ -184,17 +193,24 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
     @pyqtSlot()
     def update_selected_language(self):
         self.language_combo_box: QComboBox
-        self.language_combo_box.setCurrentIndex(
-            self.language_model.stringList().index(
-                mtg_proxy_printer.settings.settings["images"]["preferred-language"])
-        )
-        self.card.language = self.language_combo_box.currentText()
+        if self.language_model.stringList():
+            self.language_combo_box.setCurrentIndex(
+                self.language_model.stringList().index(
+                    mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+            )
+            self.card.language = self.language_combo_box.currentText()
+        else:
+            self.card.language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
 
     def on_ok_button_triggered(self):
         logger.debug("User clicked OK and adds a new card to the current page.")
         self.card_database.add_missing_information(self.card)
         self.copies_input: QSpinBox
-        self.card_added.emit(self.card, self.copies_input.value())
+        copies = self.copies_input.value()
+        self.page_free_slots -= copies
+        self.copies_input.setMaximum(self.page_free_slots)
+        self.card_added.emit(self.card, copies)
+        self.reset()
 
     @pyqtSlot()
     def reset(self):
@@ -202,11 +218,4 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self._update_card_search()
         self._update_set_name_search()
         self._update_collector_number_search()
-
-    @pyqtSlot(mtg_proxy_printer.model.carddb.Card, int)
-    def card_added_debug_slot(self, card, count: int):
-        QMessageBox.information(
-            self, "Adding cards not implemented",
-            f"Selected card:\n{card.name=}\n{card.set_abbr=}\n{card.collector_number=}\n{card.language=}\n{card.image_uri=}\nCopies={count}",
-            QMessageBox.Ok, QMessageBox.Ok
-        )
+        self.input_is_valid_and_unique_card.emit(False)

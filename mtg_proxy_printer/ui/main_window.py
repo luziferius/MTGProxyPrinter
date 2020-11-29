@@ -14,16 +14,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
-from PyQt5.QtGui import QCloseEvent
-from PyQt5.QtWidgets import QWidget, QApplication, QTableView, QMessageBox, QProgressBar
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
+from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.imagedb
+import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.page_list_view import PageListView
-from mtg_proxy_printer.ui.page_view import PageRenderer
+from mtg_proxy_printer.ui.current_page_view import CurrentPageView
+from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 
 from mtg_proxy_printer.logger import get_logger
@@ -34,33 +36,63 @@ del get_logger
 class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     should_update_languages = pyqtSignal()
+    current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
+    window_size_changed = pyqtSignal()
+    settings_changed = pyqtSignal()
 
-    def __init__(self, parent: QWidget = None):
-        super(MainWindow, self).__init__(parent)
+    def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.progress_bar = QProgressBar(self)
         self.progress_bar.hide()
-        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
+        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
+        self.image_downloader = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.statusBar().addPermanentWidget(self.progress_bar)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
-
         self.language_model = QStringListModel([preferred_language], self)
-
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
-        self.dirty: bool = False
-        self.page_list_view: PageListView
-        self.page_card_table_view: QTableView
-        self.page_renderer: PageRenderer
-        self.add_card_widget: AddCardWidget
-        self.add_card_widget.set_language_model(self.language_model)
+        self.document = mtg_proxy_printer.model.document.Document(parent=self)
+        self.page_view: CurrentPageView
+        self.window_size_changed.connect(self.page_view.window_size_changed)
+        self.current_page_changed.connect(self.page_view.current_page_changed)
+        self._setup_add_card_widget()
+        self._setup_document_view()
+        self.action_new_page.triggered.connect(self.document.add_page)
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
+        self.settings_changed.connect(self.add_card_widget.update_selected_language)
+        self.settings_changed.connect(self.document.apply_settings)
+        self.settings_changed.connect(self.page_view.settings_changed)
+
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def set_card_database(self, card_database: mtg_proxy_printer.model.carddb.CardDatabase):
-        self.card_database = card_database
+    def _setup_add_card_widget(self):
+        self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
+        self.add_card_widget.card_added.connect(self.image_downloader.get_image)
+        self.add_card_widget.set_language_model(self.language_model)
+        self.current_page_changed.connect(self.add_card_widget.on_current_page_changed)
+        self.add_card_widget.on_page_total_slots_changed(self.document.compute_total_cards_per_page())
+        self.document.total_cards_per_page_changed.connect(self.add_card_widget.on_page_total_slots_changed)
+
+    def _setup_document_view(self):
+        self.document_view: DocumentView
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        old_selection = self.document_view.selectionModel().currentIndex()
+        self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
+        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
+        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
+        self.document_view.selectionModel().currentChanged.emit(self.document.createIndex(0, 0), old_selection)
+
+    def resizeEvent(self, event: QResizeEvent):
+        super(MainWindow, self).resizeEvent(event)
+        self.window_size_changed.emit()
+
+    def showEvent(self, event: QShowEvent):
+        super(MainWindow, self).showEvent(event)
+        self.window_size_changed.emit()
 
     @pyqtSlot()
     def update_language_model(self):
@@ -83,9 +115,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_quit_triggered(self):
         logger.debug(f"User wants to quit.")
-        if self.dirty:
-            # TODO: Unsaved changes. Ask the user what to do: Save and exit, Discard and exit, or keep running?
-            pass
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         logger.debug("Quit action confirmed. Exiting…")
@@ -103,18 +132,13 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.nothing_happens_box.show()
 
     @pyqtSlot()
-    def on_action_discard_page_triggered(self):
-        logger.debug(f"User prints the current document to PDF.")
-        self.nothing_happens_box.show()
-
-    @pyqtSlot()
     def on_action_download_card_data_triggered(self):
         logger.debug(f"User downloads the card data from Scryfall.")
         # Prevent the action from triggering multiple times, by preventing the user to trigger the action while this
         # already runs.
         self.action_download_card_data.setDisabled(True)
         should_download = QMessageBox.question(
-            None, "Download Card data",
+            self, "Download Card data",
             "The local card database is empty. Download the required data from Scryfall now?\n"
             "Downloading might take some time. If you decline, no cards can be searched and printed.",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
@@ -142,3 +166,29 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         card_data = importer.read_json_card_data_from_url()
         importer.populate_database(self.card_database, card_data)
         self.card_database.commit()
+
+    @pyqtSlot(QModelIndex, QModelIndex)
+    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
+        if deselected.isValid():
+            old_page: mtg_proxy_printer.model.document.Page = deselected.data(Qt.EditRole)
+            self.add_card_widget.card_added.disconnect(old_page.add_card)
+        if selected.isValid():
+            new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
+            self.current_page_changed.emit(new_page)
+            self.add_card_widget.card_added.connect(new_page.add_card)
+
+    @pyqtSlot()
+    def on_action_discard_page_triggered(self):
+        self.document_view: DocumentView
+        to_be_deleted = self.document_view.selectedIndexes()
+        self.document.remove_pages(to_be_deleted)
+        new_row_selection = self.document.createIndex(
+            min(to_be_deleted[0].row(), self.document.rowCount()-1),
+            0
+        )
+        old_selection = self.document_view.selectionModel().currentIndex()
+        self.document_view.selectionModel().select(
+            new_row_selection, QItemSelectionModel.ClearAndSelect)
+        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
+        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
+        self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
