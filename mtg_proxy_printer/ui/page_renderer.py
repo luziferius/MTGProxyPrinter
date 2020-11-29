@@ -51,7 +51,7 @@ class PageScene(QGraphicsScene):
 
     def _compute_position_for_image(self, index: QModelIndex):
         document = self.get_document()
-        cards_per_row = self._compute_cards_per_row()
+        cards_per_row = document.compute_cards_per_row()
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
         spacing_vertical = document.image_spacing_vertical * unit_registry.millimeter
@@ -63,16 +63,6 @@ class PageScene(QGraphicsScene):
             (x_pos * DPI).to_reduced_units().to_tuple()[0],
             (y_pos * DPI).to_reduced_units().to_tuple()[0],
         )
-
-    def _compute_cards_per_row(self) -> int:
-        document = self.get_document()
-        total_width: pint.Quantity = document.page_width * unit_registry.millimeter
-        margins: pint.Quantity = (document.margin_left + document.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = document.image_spacing_vertical * unit_registry.millimeter
-
-        total_width -= margins + PageScene.IMAGE_WIDTH
-        cards = total_width/(PageScene.IMAGE_WIDTH+spacing)+1
-        return int(cards.to_tuple()[0])
 
     def get_document(self) -> Document:
         page: Page = self.parent().page

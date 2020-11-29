@@ -38,6 +38,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     should_update_languages = pyqtSignal()
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
     window_size_changed = pyqtSignal()
+    settings_changed = pyqtSignal()
 
     def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -60,6 +61,10 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.action_new_page.triggered.connect(self.document.add_page)
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
+        self.settings_changed.connect(self.add_card_widget.update_selected_language)
+        self.settings_changed.connect(self.document.apply_settings)
+        self.settings_changed.connect(self.page_view.settings_changed)
+
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_add_card_widget(self):
@@ -67,6 +72,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
         self.add_card_widget.set_language_model(self.language_model)
+        self.document.total_cards_per_page_changed.connect(self.add_card_widget.on_page_total_slots_changed)
 
     def _setup_document_view(self):
         self.document_view: DocumentView

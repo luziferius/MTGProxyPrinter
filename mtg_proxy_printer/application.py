@@ -42,7 +42,7 @@ class Application(QApplication):
             self.main_window.language_model, self.main_window)
         self.settings_window.hide()
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
-        self.settings_window.saved.connect(self.main_window.add_card_widget.update_selected_language)
+        self.settings_window.saved.connect(self.main_window.settings_changed)
 
         self.main_window.show()
         card_db_has_data = self.card_db.has_data()

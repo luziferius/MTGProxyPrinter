@@ -17,7 +17,7 @@ import collections
 import itertools
 import typing
 
-
+import pint
 from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
 
 
@@ -25,6 +25,7 @@ from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.settings import settings
 
 CardList = typing.List[Card]
+unit_registry = pint.UnitRegistry()
 
 
 class Page(QAbstractTableModel):
@@ -109,6 +110,11 @@ class Document(QAbstractListModel):
     This is the root of a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
+    DPI: pint.Quantity = 300 / unit_registry.inch
+    IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
+    IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
+
+    total_cards_per_page_changed = pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -122,6 +128,7 @@ class Document(QAbstractListModel):
         self.margin_right = document_settings.getint("margin-right-mm")
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.total_cards_per_page = self._compute_total_cards_per_page()
         self.add_page()
         
     @pyqtSlot()
@@ -136,6 +143,10 @@ class Document(QAbstractListModel):
         self.margin_right = document_settings.getint("margin-right-mm")
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        previous_card_count = self.total_cards_per_page
+        self.total_cards_per_page = self._compute_total_cards_per_page()
+        if self.total_cards_per_page != previous_card_count:
+            self.total_cards_per_page_changed.emit(self.total_cards_per_page)
 
     @pyqtSlot()
     def add_page(self):
@@ -186,3 +197,29 @@ class Document(QAbstractListModel):
         page: Page = page_model_index.model()
         index = self.createIndex(self.pages.index(page), 0)
         self.dataChanged.emit(index, index)
+
+    def compute_cards_per_row(self) -> int:
+        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+
+        total_width -= margins
+        if total_width < Document.IMAGE_WIDTH:
+            return 0
+        total_width -= Document.IMAGE_WIDTH
+        cards = total_width/(Document.IMAGE_WIDTH+spacing)+1
+        return int(cards.to_tuple()[0])
+
+    def compute_row_count(self) -> int:
+        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+        total_height -= margins
+        if total_height < Document.IMAGE_HEIGHT:
+            return 0
+        total_height -= Document.IMAGE_HEIGHT
+        cards = total_height/(Document.IMAGE_HEIGHT+spacing)+1
+        return int(cards.to_tuple()[0])
+
+    def _compute_total_cards_per_page(self) -> int:
+        return self.compute_row_count() * self.compute_cards_per_row()
