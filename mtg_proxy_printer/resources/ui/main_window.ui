@@ -18,27 +18,11 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="2">
-     <widget class="PageRenderer" name="page_renderer">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>8</horstretch>
-        <verstretch>10</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="acceptDrops">
-       <bool>false</bool>
-      </property>
-      <property name="renderHints">
-       <set>QPainter::Antialiasing|QPainter::HighQualityAntialiasing</set>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="1" colspan="2">
      <widget class="AddCardWidget" name="add_card_widget" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>10</horstretch>
         <verstretch>1</verstretch>
        </sizepolicy>
       </property>
@@ -63,26 +47,14 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QTableView" name="page_card_table_view">
+    <item row="1" column="1" colspan="2">
+     <widget class="CurrentPageView" name="page_view" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>5</horstretch>
-        <verstretch>10</verstretch>
+        <horstretch>10</horstretch>
+        <verstretch>4</verstretch>
        </sizepolicy>
       </property>
-      <property name="alternatingRowColors">
-       <bool>true</bool>
-      </property>
-      <property name="selectionMode">
-       <enum>QAbstractItemView::SingleSelection</enum>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
-      </property>
-      <attribute name="verticalHeaderVisible">
-       <bool>false</bool>
-      </attribute>
      </widget>
     </item>
    </layout>
@@ -223,11 +195,6 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PageRenderer</class>
-   <extends>QGraphicsView</extends>
-   <header>mtg_proxy_printer.ui.page_renderer</header>
-  </customwidget>
-  <customwidget>
    <class>DocumentView</class>
    <extends>QListView</extends>
    <header>mtg_proxy_printer.ui.document_view</header>
@@ -238,11 +205,15 @@
    <header>mtg_proxy_printer.ui.add_card</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>CurrentPageView</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.current_page_view</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>document_view</tabstop>
-  <tabstop>page_card_table_view</tabstop>
-  <tabstop>page_renderer</tabstop>
  </tabstops>
  <resources/>
  <connections/>

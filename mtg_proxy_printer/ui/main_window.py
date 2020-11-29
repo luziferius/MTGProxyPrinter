@@ -16,7 +16,7 @@
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent
-from PyQt5.QtWidgets import QApplication, QTableView, QMessageBox, QProgressBar
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
@@ -24,8 +24,8 @@ import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
-from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 
 from mtg_proxy_printer.logger import get_logger
@@ -37,6 +37,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     should_update_languages = pyqtSignal()
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
+    window_size_changed = pyqtSignal(QResizeEvent)
 
     def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -51,36 +52,35 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.document = mtg_proxy_printer.model.document.Document(parent=self)
-        self.current_page = self.document.pages[0]
+        self.page_view: CurrentPageView
+        self.window_size_changed.connect(self.page_view.window_size_changed)
+        self.current_page_changed.connect(self.page_view.current_page_changed)
         self._setup_add_card_widget()
         self._setup_document_view()
         self.action_new_page.triggered.connect(self.document.add_page)
-        self.page_card_table_view: QTableView
-        self.page_renderer: PageRenderer
         self.should_update_languages.connect(self.update_language_model)
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
-        self.current_page_changed.connect(self.page_card_table_view.setModel)
-        self.current_page_changed.connect(self.page_renderer.set_page)
-        #
-        self.on_selected_page_changed(self.document.createIndex(0,0))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_add_card_widget(self):
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
-        self.add_card_widget.card_added.connect(self.current_page.add_card)
         self.add_card_widget.set_language_model(self.language_model)
 
     def _setup_document_view(self):
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
+        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
+        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
+        self.document_view.selectionModel().currentChanged.emit(self.document.createIndex(0, 0), old_selection)
 
     def resizeEvent(self, event: QResizeEvent):
-        self.page_renderer.on_resize_event_triggered()
         super(MainWindow, self).resizeEvent(event)
+        self.window_size_changed.emit(event)
 
     @pyqtSlot()
     def update_language_model(self):
@@ -157,10 +157,12 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     @pyqtSlot(QModelIndex, QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex = None):
-        self.add_card_widget.card_added.disconnect(self.current_page.add_card)
-        self.current_page = self.document.data(selected, Qt.EditRole)
-        self.add_card_widget.card_added.connect(self.current_page.add_card)
-        self.current_page_changed.emit(self.current_page)
+        if deselected is not None and deselected.isValid():
+            old_page: mtg_proxy_printer.model.document.Page = deselected.data(Qt.EditRole)
+            self.add_card_widget.card_added.disconnect(old_page.add_card)
+        new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
+        self.current_page_changed.emit(new_page)
+        self.add_card_widget.card_added.connect(new_page.add_card)
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
@@ -171,6 +173,10 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
             min(to_be_deleted[0].row(), self.document.rowCount()-1),
             0
         )
+        old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(
             new_row_selection, QItemSelectionModel.ClearAndSelect)
-        self.on_selected_page_changed(new_row_selection)
+        #self.on_selected_page_changed(new_row_selection)
+        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
+        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
+        self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
