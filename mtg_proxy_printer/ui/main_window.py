@@ -156,13 +156,14 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.card_database.commit()
 
     @pyqtSlot(QModelIndex, QModelIndex)
-    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex = None):
-        if deselected is not None and deselected.isValid():
+    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
+        if deselected.isValid():
             old_page: mtg_proxy_printer.model.document.Page = deselected.data(Qt.EditRole)
             self.add_card_widget.card_added.disconnect(old_page.add_card)
-        new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
-        self.current_page_changed.emit(new_page)
-        self.add_card_widget.card_added.connect(new_page.add_card)
+        if selected.isValid():
+            new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
+            self.current_page_changed.emit(new_page)
+            self.add_card_widget.card_added.connect(new_page.add_card)
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
@@ -176,7 +177,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(
             new_row_selection, QItemSelectionModel.ClearAndSelect)
-        #self.on_selected_page_changed(new_row_selection)
         # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
         # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
         self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
