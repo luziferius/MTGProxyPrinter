@@ -24,7 +24,6 @@ from .common import inherits_from_ui_file_with_name
 class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
 
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
-    card_added = pyqtSignal()
     window_size_changed = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
