@@ -41,10 +41,11 @@ class PageScene(QGraphicsScene):
         pixmap.setPos(position)
 
     @pyqtSlot()
-    def redraw(self):
+    def redraw(self, draw_background: bool = True):
         self.clear()
-        white = QColor("white")
-        self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
+        if draw_background:
+            white = QColor("white")
+            self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
         page: Page = self.parent().page
         for index in (page.createIndex(row, 0) for row in range(page.rowCount())):
             self.draw_card(index)
