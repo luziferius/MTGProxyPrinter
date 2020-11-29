@@ -76,12 +76,13 @@ class Page(QAbstractTableModel):
 
     @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]):
+        if not indices:
+            return
+        self.rowsAboutToBeRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
         to_delete = set(index.row() for index in indices)
         remaining = [card for index, card in enumerate(self.cards) if index not in to_delete]
         self.cards[:] = remaining
-        if indices:
-            self.layoutChanged: pyqtSignal
-            self.layoutChanged.emit()
+        self.rowsRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
         if not self.cards:
             self.page_empty.emit(True)
 
@@ -143,6 +144,9 @@ class Document(QAbstractListModel):
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
+        if not indices:
+            return
+        self.rowsAboutToBeRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
         to_delete = set(index.row() for index in indices)
         remaining = []
         for index, page in enumerate(self.pages):
@@ -151,9 +155,7 @@ class Document(QAbstractListModel):
             else:
                 remaining.append(page)
         self.pages[:] = remaining
-        if indices:
-            self.layoutChanged: pyqtSignal
-            self.layoutChanged.emit()
+        self.rowsRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
         if not self.pages:
             self.add_page()
         
@@ -161,7 +163,12 @@ class Document(QAbstractListModel):
         return len(self.pages)
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
-        item = self.pages[index.row()]
+
+        if 0 < index.row() >= self.rowCount():
+            print(f"Warning: Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
+            item = self.pages[0]
+        else:
+            item = self.pages[index.row()]
         if role == Qt.DisplayRole:
             return item.get_preview()
         elif role == Qt.ToolTipRole:
