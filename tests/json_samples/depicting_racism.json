@@ -1,0 +1,93 @@
+{
+  "object": "card",
+  "id": "00809cb0-b152-441f-a0be-1bc1048dad92",
+  "oracle_id": "4692740f-be90-459f-8d90-c4ae71771595",
+  "multiverse_ids": [],
+  "name": "Crusade",
+  "printed_name": "Kreuzzug",
+  "lang": "de",
+  "released_at": "1995-04-01",
+  "uri": "https://api.scryfall.com/cards/00809cb0-b152-441f-a0be-1bc1048dad92",
+  "scryfall_uri": "https://scryfall.com/card/4ed/20/de/kreuzzug?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.png?1559603956",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956"
+  },
+  "mana_cost": "{W}{W}",
+  "cmc": 2.0,
+  "type_line": "Enchantment",
+  "printed_type_line": "Verzauberung",
+  "oracle_text": "White creatures get +1/+1.",
+  "printed_text": "Alle wei\u00dfen Kreaturen erhalten +1/+1.",
+  "colors": [
+    "W"
+  ],
+  "color_identity": [
+    "W"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "banned",
+    "pauper": "not_legal",
+    "vintage": "banned",
+    "penny": "not_legal",
+    "commander": "banned",
+    "brawl": "not_legal",
+    "duel": "legal",
+    "oldschool": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set": "4ed",
+  "set_name": "Fourth Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/2dd259d4-dc13-4956-a2dc-3e1d70b4a743",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A4ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/4ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/00809cb0-b152-441f-a0be-1bc1048dad92/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A4692740f-be90-459f-8d90-c4ae71771595&unique=prints",
+  "collector_number": "20",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Mark Poole",
+  "artist_ids": [
+    "bfdeaf09-f915-4058-8e8b-bcac3bc43c33"
+  ],
+  "illustration_id": "c2406cb0-b3f9-4ba8-88a1-2b5db19b952f",
+  "border_color": "white",
+  "frame": "1993",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 6839,
+  "content_warning": true,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {}
+}
