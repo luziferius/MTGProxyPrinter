@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>691</width>
-    <height>311</height>
+    <width>1000</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,14 +19,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="1" colspan="2">
-     <widget class="AddCardWidget" name="add_card_widget" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-        <horstretch>10</horstretch>
-        <verstretch>1</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
+     <widget class="AddCardWidget" name="add_card_widget" native="true"/>
     </item>
     <item row="0" column="0" rowspan="2">
      <widget class="DocumentView" name="document_view">
@@ -64,8 +57,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>691</width>
-     <height>29</height>
+     <width>1000</width>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
