@@ -67,22 +67,25 @@ class Page(QAbstractTableModel):
 
     @pyqtSlot(Card, int)
     def add_card(self, card: Card, count: int):
+        first_index, last_index = len(self.cards), len(self.cards) + count - 1
+        self.beginInsertRows(QModelIndex(), first_index, last_index)
         self.cards += list(itertools.repeat(card, count))
-        self.layoutChanged.emit()
+        self.endInsertRows()
         if len(self.cards) == count:
             self.page_empty.emit(False)
-        for row in range(len(self.cards)-count, len(self.cards)):
+        for row in range(first_index, last_index + 1):  # Qt includes last_index, Python excludes it, so add one here
             self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
 
     @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]):
         if not indices:
             return
-        self.rowsAboutToBeRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
+        first_index, last_index = indices[0].row(), indices[-1].row()
+        self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
         remaining = [card for index, card in enumerate(self.cards) if index not in to_delete]
         self.cards[:] = remaining
-        self.rowsRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
+        self.endRemoveRows()
         if not self.cards:
             self.page_empty.emit(True)
 
@@ -136,17 +139,19 @@ class Document(QAbstractListModel):
 
     @pyqtSlot()
     def add_page(self):
+        index = len(self.pages)
+        self.beginInsertRows(QModelIndex(), index, index)
         page = Page(parent=self)
         self.pages.append(page)
         page.dataChanged.connect(self.on_page_data_changed)
-        self.layoutChanged: pyqtSignal
-        self.layoutChanged.emit()
+        self.endInsertRows()
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
         if not indices:
             return
-        self.rowsAboutToBeRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
+        first_index, last_index = indices[0].row(), indices[-1].row()
+        self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
         remaining = []
         for index, page in enumerate(self.pages):
@@ -155,7 +160,7 @@ class Document(QAbstractListModel):
             else:
                 remaining.append(page)
         self.pages[:] = remaining
-        self.rowsRemoved.emit(QModelIndex(), indices[0].row(), indices[-1].row())
+        self.endRemoveRows()
         if not self.pages:
             self.add_page()
         
