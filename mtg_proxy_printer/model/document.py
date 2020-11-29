@@ -128,7 +128,7 @@ class Document(QAbstractListModel):
         self.margin_right = document_settings.getint("margin-right-mm")
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
-        self.total_cards_per_page = self._compute_total_cards_per_page()
+        self.total_cards_per_page = self.compute_total_cards_per_page()
         self.add_page()
         
     @pyqtSlot()
@@ -144,7 +144,7 @@ class Document(QAbstractListModel):
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
         previous_card_count = self.total_cards_per_page
-        self.total_cards_per_page = self._compute_total_cards_per_page()
+        self.total_cards_per_page = self.compute_total_cards_per_page()
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
 
@@ -221,5 +221,5 @@ class Document(QAbstractListModel):
         cards = total_height/(Document.IMAGE_HEIGHT+spacing)+1
         return int(cards.to_tuple()[0])
 
-    def _compute_total_cards_per_page(self) -> int:
+    def compute_total_cards_per_page(self) -> int:
         return self.compute_row_count() * self.compute_cards_per_row()

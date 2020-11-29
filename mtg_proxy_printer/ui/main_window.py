@@ -72,6 +72,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
         self.add_card_widget.set_language_model(self.language_model)
+        self.current_page_changed.connect(self.add_card_widget.on_current_page_changed)
+        self.add_card_widget.on_page_total_slots_changed(self.document.compute_total_cards_per_page())
         self.document.total_cards_per_page_changed.connect(self.add_card_widget.on_page_total_slots_changed)
 
     def _setup_document_view(self):
