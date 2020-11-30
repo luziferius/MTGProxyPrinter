@@ -26,7 +26,7 @@ with open("README.rst", "r", encoding="utf-8") as f:
 
 setup(
     name=project_name,
-    packages=find_packages(exclude=("tests", ".pytest_cache")),
+    packages=find_packages(exclude=["tests*", "venv", ".pytest_cache"]),
     include_package_data=True,  # Database schema is included as package data.
     entry_points={
         "gui_scripts": [
