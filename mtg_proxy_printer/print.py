@@ -14,32 +14,38 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt5.QtCore import QObject
-from PyQt5.QtGui import QPainter
-from PyQt5.QtPrintSupport import QPrinter
+from PyQt5.QtGui import QPainter, QPdfWriter
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
 
 
-class PDFPrinter(QObject):
+class PDFPrinter(QPdfWriter):
 
-    def __init__(self, document: Document, file_path: str, *args, **kwargs):
-        super(PDFPrinter, self).__init__(*args, **kwargs)
-        self.printer = QPrinter(QPrinter.HighResolution)
-        self.printer.setOutputFormat(QPrinter.PdfFormat)
-        self.printer.setOutputFileName(file_path)
+    def __init__(self, document: Document, file_path: str, parent: QObject = None):
+        super(PDFPrinter, self).__init__(file_path)
+        self.setParent(parent)
+        self.painter = QPainter()
         self.document = document
+        self.setResolution(document.DPI.to_tuple()[0])
         self.page = None
         self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
-        self.painter = QPainter(self.printer)
 
     def print_document(self):
         page_count = self.document.rowCount()
+        self.painter.begin(self)
+        self.painter.setRenderHint(QPainter.LosslessImageRendering)
+        self.painter.scale(
+                self.logicalDpiX()/self.resolution(),
+                self.logicalDpiY()/self.resolution()
+            )
         for index, page in enumerate(self.document.pages, start=1):
             self.page = page
             self.scene.redraw()
+
+
             self.scene.render(self.painter)
             if index < page_count:
-                self.printer.newPage()
+                self.newPage()
         self.painter.end()
 
