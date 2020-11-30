@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QFileDialog, QAction
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
@@ -65,8 +66,22 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(self.document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
-
+        self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_icons(self):
+        action_fallback_icons: typing.List[typing.Tuple[QAction, str]] = [
+            (self.action_quit, "application-exit"),
+            (self.action_print, "document-print-direct"),
+            (self.action_print_pdf, "document-print"),
+            (self.action_show_settings, "configure"),
+            (self.action_download_card_data, "edit-download"),
+            (self.action_new_page, "document-new"),
+            (self.action_discard_page, "document-close"),
+        ]
+        for action, icon_name in action_fallback_icons:
+            if action.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
+                action.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
 
     def _setup_add_card_widget(self):
         self.add_card_widget: AddCardWidget

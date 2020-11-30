@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import QApplication
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 from mtg_proxy_printer.logger import get_logger

@@ -55,7 +55,7 @@ class Card:
 
 class CardDatabase:
 
-    MIN_SUPPORTED_SQLITE_VERSION = (3, 33, 0)
+    MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
