@@ -100,9 +100,7 @@
   </widget>
   <action name="action_quit">
    <property name="icon">
-    <iconset theme="application-exit">
-     <normalon>:/icons/application-exit.svg</normalon>
-    </iconset>
+    <iconset theme="application-exit"/>
    </property>
    <property name="text">
     <string>&amp;Quit</string>
@@ -116,9 +114,7 @@
   </action>
   <action name="action_print">
    <property name="icon">
-    <iconset theme="document-print-direct">
-     <normalon>:/icons/document-print-direct.svg</normalon>
-    </iconset>
+    <iconset theme="document-print-direct"/>
    </property>
    <property name="text">
     <string>&amp;Print</string>
@@ -132,9 +128,7 @@
   </action>
   <action name="action_print_pdf">
    <property name="icon">
-    <iconset theme="document-print">
-     <normalon>:/icons/document-print.svg</normalon>
-    </iconset>
+    <iconset theme="document-print"/>
    </property>
    <property name="text">
     <string>&amp;Create PDF</string>
@@ -148,9 +142,7 @@
   </action>
   <action name="action_discard_page">
    <property name="icon">
-    <iconset theme="document-close">
-     <normalon>:/icons/document-close.svg</normalon>
-    </iconset>
+    <iconset theme="document-close"/>
    </property>
    <property name="text">
     <string>Discard page</string>
@@ -161,9 +153,7 @@
   </action>
   <action name="action_show_settings">
    <property name="icon">
-    <iconset theme="configure">
-     <normalon>:/icons/configure.svg</normalon>
-    </iconset>
+    <iconset theme="configure"/>
    </property>
    <property name="text">
     <string>Settings</string>
@@ -171,9 +161,7 @@
   </action>
   <action name="action_download_card_data">
    <property name="icon">
-    <iconset theme="edit-download">
-     <normalon>:/icons/edit-download.svg</normalon>
-    </iconset>
+    <iconset theme="edit-download"/>
    </property>
    <property name="text">
     <string>Download card data</string>
@@ -181,9 +169,7 @@
   </action>
   <action name="action_new_page">
    <property name="icon">
-    <iconset theme="document-new">
-     <normalon>:/icons/document-new.svg</normalon>
-    </iconset>
+    <iconset theme="document-new"/>
    </property>
    <property name="text">
     <string>New Page</string>
