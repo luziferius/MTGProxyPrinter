@@ -131,6 +131,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def on_action_print_pdf_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
         dialog = QFileDialog(self, "Save document", filter="PDF-Documents (*.pdf)")
+        dialog.setDefaultSuffix("pdf")
         dialog.setFileMode(QFileDialog.AnyFile)
         if dialog.exec_() == QFileDialog.Accepted:
             path = dialog.selectedFiles()[0]
