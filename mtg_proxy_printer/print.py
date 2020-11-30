@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QMarginsF
 from PyQt5.QtGui import QPainter, QPdfWriter
 
 import mtg_proxy_printer.meta_data
@@ -30,6 +30,7 @@ class PDFPrinter(QPdfWriter):
         self.painter = QPainter()
         self.document = document
         self.setResolution(document.DPI.to_tuple()[0])
+        self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.page = None
         self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
 
