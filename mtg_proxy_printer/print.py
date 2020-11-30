@@ -16,6 +16,7 @@
 from PyQt5.QtCore import QObject
 from PyQt5.QtGui import QPainter, QPdfWriter
 
+import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
 
@@ -25,6 +26,7 @@ class PDFPrinter(QPdfWriter):
     def __init__(self, document: Document, file_path: str, parent: QObject = None):
         super(PDFPrinter, self).__init__(file_path)
         self.setParent(parent)
+        self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
         self.document = document
         self.setResolution(document.DPI.to_tuple()[0])
