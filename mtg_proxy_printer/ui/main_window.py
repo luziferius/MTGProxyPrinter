@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QObject
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QFileDialog
 
@@ -175,12 +175,19 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     @pyqtSlot(QModelIndex, QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
-        if deselected.isValid():
-            old_page: mtg_proxy_printer.model.document.Page = deselected.data(Qt.EditRole)
-            self.add_card_widget.card_added.disconnect(old_page.add_card)
         if selected.isValid():
             new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
             self.current_page_changed.emit(new_page)
+            self.add_card_widget: AddCardWidget
+            # Forcefully disconnect all page’s add_card signal to prevent duplicate signal connections
+            # TODO: Find out why this is needed. It seems that programmatically selecting the first page at startup
+            #  does not properly select it, then clicking on one page duplicates the signal connection. If the root
+            #  cause is found, remove this loop and disconnect the single signal using the deselected parameter.
+            for page in self.document.pages:
+                try:
+                    self.add_card_widget.card_added.disconnect(page.add_card)
+                except TypeError:
+                    pass
             self.add_card_widget.card_added.connect(new_page.add_card)
 
     @pyqtSlot()
