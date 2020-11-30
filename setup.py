@@ -62,7 +62,7 @@ setup(
     test_suite="pytest",
     # list of classifiers: https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-        'Development Status :: 1 - Planning',
+        'Development Status :: 3 - Alpha',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
         'Environment :: X11 Applications :: Qt',
         'Environment :: Win32 (MS Windows)',
@@ -73,6 +73,5 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Games/Entertainment :: Board Games',
         'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
-        '',
     ],
 )
