@@ -2,9 +2,11 @@
 
 """setup.py: setuptools control."""
 
-
+from pathlib import Path
 import re
+import subprocess
 from setuptools import setup, find_packages
+import setuptools.command.build_py
 
 project_name = "MTGProxyPrinter"
 main_package = "mtg_proxy_printer"
@@ -24,6 +26,28 @@ with open("README.rst", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
+class BuildWithQtResources(setuptools.command.build_py.build_py):
+    """Try to build the Qt resources file for visual_image_splitter."""
+    def run(self):
+        if not self.dry_run:  # Obey the --dry-run switch
+            source_root = Path(__file__).resolve().parent / main_package
+            build_root = Path(self.build_lib).resolve() / main_package
+            resources_file = source_root / "resources" / "resources.qrc"
+            compiled_qt_resources = self._compile_resource_file(resources_file)
+            target_directory = build_root / "ui"
+            compiled_resources_file_path = target_directory / "compiled_resources.py"
+            self.mkpath(str(target_directory))
+            with compiled_resources_file_path.open("wt") as compiled_qt_resources_file:
+                compiled_qt_resources_file.write(compiled_qt_resources)
+        super(BuildWithQtResources, self).run()
+
+    @staticmethod
+    def _compile_resource_file(resource_file: Path) -> str:
+        command = ("pyrcc5", str(resource_file))
+        compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
+        return compiled
+
+
 setup(
     name=project_name,
     packages=find_packages(exclude=["tests*", "venv", ".pytest_cache"]),
@@ -40,6 +64,7 @@ setup(
     author="Thomas Hess",
     author_email="thomas.hess@udo.edu",
     url="http://1337net.duckdns.org:8080/mtg-proxy-printer/",
+    cmdclass={'build_py': BuildWithQtResources},
     license="GPLv3+",
     install_requires=[
         "appdirs >= 1.4.3",  # 1.4.3 is the first version Supporting Python >= 3.6
