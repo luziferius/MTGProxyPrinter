@@ -1,7 +1,7 @@
 MTGProxyPrinter
 ===============
 
-Print Magic: The Gathering cards for playtesting purposes.
+Print Magic: The Gathering cards for play-testing purposes.
 
 
 Requirements
@@ -9,12 +9,16 @@ Requirements
 
 - Python >= 3.8
 
+
 Python libraries
 ++++++++++++++++
 
 These external libraries are used in the code. They can be installed from PyPI.
 
-- appdirs
+- ``appdirs``
+- ``ijson``
+- ``pint``
+- ``PyQt5``
 
 
 Test Requirements
