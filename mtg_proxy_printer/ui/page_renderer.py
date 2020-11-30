@@ -78,7 +78,7 @@ class PageRenderer(QGraphicsView):
         super(PageRenderer, self).__init__(*args, **kwargs)
         self.page = None
         self.setBackgroundBrush(QColor(200, 200, 200))
-        self.setScene(PageScene(True, self._get_document_size(), self))
+        self.setScene(PageScene(True, self.get_document_page_size(), self))
 
     @pyqtSlot(Page)
     def set_page(self, page: Page):
@@ -92,7 +92,7 @@ class PageRenderer(QGraphicsView):
             self.scene().redraw()
 
     @staticmethod
-    def _get_document_size() -> QRectF:
+    def get_document_page_size() -> QRectF:
         document_settings = settings["documents"]
         height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
         width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
