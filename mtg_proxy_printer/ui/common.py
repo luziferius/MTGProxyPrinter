@@ -36,15 +36,7 @@ except ModuleNotFoundError:
                "directory, this is expected and harmless. If not, this indicates a failure in the resource compilation."
     warnings.warn(warn_msg)
     RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources")
-    local_path = pathlib.Path(__file__).resolve().parent.parent.parent / "files"
-    if local_path.exists():
-        # This is running from the source directory, thus icons are in <root>/files
-        ICON_PATH_PREFIX = str(local_path)
-    else:
-        # This is an installation. Icons reside in visual_image_splitter/resources/icons,
-        # where they were copied by setup.py
-        ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources" / "icons")
-    del local_path
+    ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources" / "icons")
 else:
     import atexit
     # Compiled resources found, so use it.
