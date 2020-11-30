@@ -24,6 +24,11 @@ from mtg_proxy_printer.model.document import Page, Document
 unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
 
+__all__ = [
+    "PageScene",
+    "PageRenderer",
+]
+
 
 class PageScene(QGraphicsScene):
     IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")

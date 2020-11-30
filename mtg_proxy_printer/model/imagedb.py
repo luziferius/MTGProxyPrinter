@@ -31,6 +31,9 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
     "CardImages"
 )
+__all__ = [
+    "ImageDatabase",
+]
 
 
 class ImageDatabase(QObject):

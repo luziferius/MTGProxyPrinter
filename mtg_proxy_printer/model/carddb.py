@@ -36,6 +36,11 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 )
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
 
+__all__ = [
+    "Card",
+    "CardDatabase"
+]
+
 
 @dataclasses.dataclass()
 class Card:

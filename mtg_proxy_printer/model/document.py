@@ -27,6 +27,12 @@ from mtg_proxy_printer.settings import settings
 CardList = typing.List[Card]
 unit_registry = pint.UnitRegistry()
 
+__all__ = [
+    "Page",
+    "PageList",
+    "Document",
+]
+
 
 class Page(QAbstractTableModel):
     """

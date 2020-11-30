@@ -15,7 +15,7 @@
 
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QComboBox, QCheckBox
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox
 
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 

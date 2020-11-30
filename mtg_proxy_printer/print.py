@@ -44,10 +44,7 @@ class PDFPrinter(QPdfWriter):
         for index, page in enumerate(self.document.pages, start=1):
             self.page = page
             self.scene.redraw()
-
-
             self.scene.render(self.painter)
             if index < page_count:
                 self.newPage()
         self.painter.end()
-
