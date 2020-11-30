@@ -29,9 +29,10 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
     IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, draw_background: bool, *args, **kwargs):
         super(PageScene, self).__init__(*args, **kwargs)
         self.background = None
+        self.draw_background = draw_background
 
     @pyqtSlot(QModelIndex)
     def draw_card(self, index: QModelIndex):
@@ -43,8 +44,9 @@ class PageScene(QGraphicsScene):
     @pyqtSlot()
     def redraw(self):
         self.clear()
-        white = QColor("white")
-        self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
+        if self.draw_background:
+            white = QColor("white")
+            self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
         page: Page = self.parent().page
         for index in (page.createIndex(row, 0) for row in range(page.rowCount())):
             self.draw_card(index)
@@ -76,7 +78,7 @@ class PageRenderer(QGraphicsView):
         super(PageRenderer, self).__init__(*args, **kwargs)
         self.page = None
         self.setBackgroundBrush(QColor(200, 200, 200))
-        self.setScene(PageScene(self._get_document_size(), self))
+        self.setScene(PageScene(True, self.get_document_page_size(), self))
 
     @pyqtSlot(Page)
     def set_page(self, page: Page):
@@ -90,7 +92,7 @@ class PageRenderer(QGraphicsView):
             self.scene().redraw()
 
     @staticmethod
-    def _get_document_size() -> QRectF:
+    def get_document_page_size() -> QRectF:
         document_settings = settings["documents"]
         height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
         width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
