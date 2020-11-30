@@ -82,6 +82,7 @@ setup(
             'pytest-cov',
             'pytest-xdist',
             'PyHamcrest >= 1.8.1',
+            'PyQt5-stubs',  # Install the stubs used for type hinting when creating the development environment
         ]
     },
     test_suite="pytest",
