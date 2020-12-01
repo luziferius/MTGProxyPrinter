@@ -237,6 +237,28 @@ def test_import_funny_card_if_enabled():
     ])
 
 
+def test_import_skips_gold_bordered_card_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("gold_bordered_card")
+    _populate_database_with_specific_download_setting(model, data, "download-gold-bordered", "False")
+    _assert_model_is_empty(model)
+
+
+def test_import_gold_bordered_card_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("gold_bordered_card")
+    _populate_database_with_specific_download_setting(model, data, "download-gold-bordered", "True")
+    _assert_set_contains(model, [
+        ("wc97", "World Championship Decks 1997", "https://scryfall.com/sets/wc97?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("2afb04a3-2940-4860-a4be-223aca0bac4b", "d0e1904e-1a37-41f6-8582-b9ea794bb886", "wc97", "pm30", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("2afb04a3-2940-4860-a4be-223aca0bac4b", "Abduction", "https://c1.scryfall.com/file/scryfall-cards/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104"),
+    ])
+
+
 """
 Assert-template: (Use for quick copy&paste when adding new test cases.)
 
