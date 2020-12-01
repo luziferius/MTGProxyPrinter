@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000003;
+PRAGMA user_version = 0000004;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -48,6 +48,11 @@ CREATE TABLE CardFace (
 CREATE INDEX CardNameIndex ON CardFace(
   card_name,
   scryfall_id
+);
+
+CREATE TABLE LastDatabaseUpdate (
+  update_id        INTEGER NOT NULL PRIMARY KEY,
+  update_timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
 
 COMMIT;

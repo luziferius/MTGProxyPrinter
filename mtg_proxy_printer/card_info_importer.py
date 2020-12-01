@@ -171,6 +171,8 @@ class CardInfoDownloader(QObject):
                 faces
             )
             self.download_progress.emit(index)
+        # Store the timestamp of this import.
+        model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES")
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
         model.db.execute("ANALYZE")
