@@ -283,14 +283,14 @@ def test_import_white_bordered_card_if_enabled():
 
 def test_import_skips_card_banned_in_commander_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_commander")
+    data = load_json("illegal_in_commander")
     _populate_database_with_specific_download_setting(model, data, "download-illegal-in-commander", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_commander_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_commander")
+    data = load_json("illegal_in_commander")
     _populate_database_with_specific_download_setting(model, data, "download-illegal-in-commander", "True")
     _assert_set_contains(model, [
         ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
