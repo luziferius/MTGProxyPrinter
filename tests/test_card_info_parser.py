@@ -347,6 +347,28 @@ def test_import_card_banned_in_historic_if_enabled():
     ])
 
 
+def test_import_skips_card_banned_in_legacy_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_legacy")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-legacy", "False")
+    _assert_model_is_empty(model)
+
+
+def test_import_card_banned_in_legacy_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_legacy")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-legacy", "True")
+    _assert_set_contains(model, [
+        ("leg", "Legends", "https://scryfall.com/sets/leg?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("f2b9983e-20d4-4d12-9e2c-ec6d9a345787", "f5ca7b13-8003-4361-b827-7095c89f2750", "leg", "145", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("f2b9983e-20d4-4d12-9e2c-ec6d9a345787", "Falling Star", "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+    ])
+
+
 def test_import_skips_card_banned_in_pauper_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     data = load_json("illegal_in_pauper")
@@ -380,6 +402,28 @@ def test_import_card_banned_in_pioneer_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     data = load_json("illegal_in_pioneer")
     _populate_database_with_specific_download_setting(model, data, "download-illegal-in-pioneer", "True")
+    _assert_set_contains(model, [
+        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", "ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c", "m13", "158", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", "Worldfire", "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+    ])
+
+
+def test_import_skips_card_banned_in_standard_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_standard")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-standard", "False")
+    _assert_model_is_empty(model)
+
+
+def test_import_card_banned_in_standard_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_standard")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-standard", "True")
     _assert_set_contains(model, [
         ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
     ])
