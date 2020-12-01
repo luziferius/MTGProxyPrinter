@@ -185,7 +185,8 @@ def _should_skip_card(card: JSONType) -> bool:
         # Border filter
         card["border_color"] == "white" and not ds.getboolean("download-white-bordered"),
         card["border_color"] == "gold" and not ds.getboolean("download-gold-bordered"),
-        # 'Funny' cards, not legal in any constructed format
+        # 'Funny' cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+        # black-bordered promotional cards, in addition to silver-bordered cards.
         card["set_type"] == "funny" and not ds.getboolean("download-funny-cards"),
         # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
         not (card["legalities"]["brawl"] == "legal" or ds.getboolean("download-illegal-in-brawl")),
