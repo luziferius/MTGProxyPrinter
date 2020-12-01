@@ -119,7 +119,6 @@ class CardDatabase:
             message = f"Schema version mismatch in the opened database. " \
                       f"Expected schema version {latest_user_version}, got {database_user_version}."
             logger.warning(message)
-            print(f"WARNING: {message}")
         return database_user_version != latest_user_version
 
     def commit(self):
