@@ -13,9 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import configparser
+import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox
 
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
@@ -49,10 +51,14 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.load_settings(mtg_proxy_printer.settings.settings)
         super(SettingsWindow, self).show()
 
-    def load_settings(self, settings):
+    def load_settings(self, settings: configparser.ConfigParser):
+        self._load_images_settings(settings)
+        self._load_download_settings(settings)
+        self._load_document_settings(settings)
+
+    def _load_images_settings(self, settings):
         self.preferred_language_combo_box: QComboBox
         self.avoid_low_res_images_check_box: QCheckBox
-        self.include_cards_depicting_racism_check_box: QCheckBox
         images_section = settings["images"]
         if self.preferred_language_combo_box.model().stringList():
             self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(
@@ -61,18 +67,50 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.avoid_low_res_images_check_box.setChecked(
             images_section.getboolean("avoid-low-resolution-images")
         )
-        self.include_cards_depicting_racism_check_box.setChecked(
-            settings["downloads"].getboolean("download-cards-depicting-racism")
-        )
+
+    def _load_document_settings(self, settings: configparser.ConfigParser):
         document_section = settings["documents"]
-        self.page_height.setValue(document_section.getint("paper-height-mm"))
-        self.page_width.setValue(document_section.getint("paper-width-mm"))
-        self.page_margin_top.setValue(document_section.getint("margin-top-mm"))
-        self.page_margin_bottom.setValue(document_section.getint("margin-bottom-mm"))
-        self.page_margin_left.setValue(document_section.getint("margin-left-mm"))
-        self.page_margin_right.setValue(document_section.getint("margin-right-mm"))
-        self.page_image_spacing_horizontal.setValue(document_section.getint("image-spacing-horizontal-mm"))
-        self.page_image_spacing_vertical.setValue(document_section.getint("image-spacing-vertical-mm"))
+        widgets_with_settings = self._get_document_settings_widgets()
+        for widget, setting in widgets_with_settings:
+            widget.setValue(document_section.getint(setting))
+
+    def _load_download_settings(self, settings: configparser.ConfigParser):
+        download_section = settings["downloads"]
+        widgets_with_settings = self._get_download_settings_widgets()
+        for widget, setting in widgets_with_settings:
+            widget.setChecked(download_section.getboolean(setting))
+
+    def _get_document_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
+            (self.page_height, "paper-height-mm"),
+            (self.page_width, "paper-width-mm"),
+            (self.page_margin_top, "margin-top-mm"),
+            (self.page_margin_bottom, "margin-bottom-mm"),
+            (self.page_margin_left, "margin-left-mm"),
+            (self.page_margin_right, "margin-right-mm"),
+            (self.page_image_spacing_horizontal, "image-spacing-horizontal-mm"),
+            (self.page_image_spacing_vertical, "image-spacing-vertical-mm"),
+        ]
+        return widgets_with_settings
+
+    def _get_download_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.include_cards_depicting_racism, "download-cards-depicting-racism"),
+            (self.include_white_bordered_cards, "download-white-bordered"),
+            (self.include_gold_bordered_cards, "download-gold-bordered"),
+            (self.include_funny_cards, "download-funny-cards"),
+            (self.include_illegal_in_brawl, "download-illegal-in-brawl"),
+            (self.include_illegal_in_commander, "download-illegal-in-commander"),
+            (self.include_illegal_in_historic, "download-illegal-in-historic"),
+            (self.include_illegal_in_legacy, "download-illegal-in-legacy"),
+            (self.include_illegal_in_modern, "download-illegal-in-modern"),
+            (self.include_illegal_in_pauper, "download-illegal-in-pauper"),
+            (self.include_illegal_in_penny, "download-illegal-in-penny"),
+            (self.include_illegal_in_pioneer, "download-illegal-in-pioneer"),
+            (self.include_illegal_in_standard, "download-illegal-in-standard"),
+            (self.include_illegal_in_vintage, "download-illegal-in-vintage"),
+        ]
+        return widgets_with_settings
 
     def reset(self):
         logger.info("User reverts the made changes.")
@@ -85,25 +123,29 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def save(self):
         logger.info("User saves the configuration to disk.")
-        images_section = mtg_proxy_printer.settings.settings["images"]
-        downloads_section = mtg_proxy_printer.settings.settings["downloads"]
-        documents_section = mtg_proxy_printer.settings.settings["documents"]
-        images_section["preferred-language"] = self.preferred_language_combo_box.currentText()
-        self.avoid_low_res_images_check_box: QCheckBox
-        images_section["avoid-low-resolution-images"] = str(self.avoid_low_res_images_check_box.isChecked())
-        downloads_section["download-cards-depicting-racism"] = str(
-            self.include_cards_depicting_racism_check_box.isChecked())
-        documents_section["paper-height-mm"] = str(self.page_height.value())
-        documents_section["paper-width-mm"] = str(self.page_width.value())
-        documents_section["margin-top-mm"] = str(self.page_margin_top.value())
-        documents_section["margin-bottom-mm"] = str(self.page_margin_bottom.value())
-        documents_section["margin-left-mm"] = str(self.page_margin_left.value())
-        documents_section["margin-right-mm"] = str(self.page_margin_right.value())
-        documents_section["image-spacing-horizontal-mm"] = str(self.page_image_spacing_horizontal.value())
-        documents_section["image-spacing-vertical-mm"] = str(self.page_image_spacing_vertical.value())
+        self._save_images_settings()
+        self._save_downloads_settings()
+        self._save_documents_settings()
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
         logger.debug("Save finished.")
+
+    def _save_images_settings(self):
+        images_section = mtg_proxy_printer.settings.settings["images"]
+        images_section["preferred-language"] = self.preferred_language_combo_box.currentText()
+        images_section["avoid-low-resolution-images"] = str(self.avoid_low_res_images_check_box.isChecked())
+
+    def _save_downloads_settings(self):
+        downloads_section = mtg_proxy_printer.settings.settings["downloads"]
+        widgets_and_settings = self._get_download_settings_widgets()
+        for widget, setting in widgets_and_settings:
+            downloads_section[setting] = str(widget.isChecked())
+
+    def _save_documents_settings(self):
+        documents_section = mtg_proxy_printer.settings.settings["documents"]
+        widgets_and_settings = self._get_document_settings_widgets()
+        for widget, setting in widgets_and_settings:
+            documents_section[setting] = str(widget.value())
 
     def restore_defaults(self):
         logger.info("User resets the configuration to the default settings.")

@@ -145,19 +145,13 @@ class CardInfoDownloader(QObject):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
-        download_cards_with_content_warning = mtg_proxy_printer.settings.settings["downloads"].getboolean(
-            "download-cards-depicting-racism")
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            try:
-                content_warning = card["content_warning"]
-            except KeyError:
-                content_warning = False
-            if content_warning and not download_cards_with_content_warning:
+            if _should_skip_card(card):
                 logger.debug(
-                    f"Skipping card '{card['name']}' with {content_warning=}, because downloading these is disabled.")
+                    f"Skipping card '{card['name']}', because it matches a download filter.")
                 continue
             set_info = _get_set_info(card)
             card_info = _get_card_info(card)
@@ -180,6 +174,32 @@ class CardInfoDownloader(QObject):
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
         model.db.execute("ANALYZE")
+
+
+def _should_skip_card(card: JSONType) -> bool:
+    """Determine, if the given card should be included based on the application settings"""
+    ds = mtg_proxy_printer.settings.settings["downloads"]
+    return any((
+        # Racism filter
+        card.get("content_warning", False) and not ds.getboolean("download-cards-depicting-racism"),
+        # Border filter
+        card["border_color"] == "white" and not ds.getboolean("download-white-bordered"),
+        card["border_color"] == "gold" and not ds.getboolean("download-gold-bordered"),
+        # 'Funny' cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+        # black-bordered promotional cards, in addition to silver-bordered cards.
+        card["set_type"] == "funny" and not ds.getboolean("download-funny-cards"),
+        # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
+        not (card["legalities"]["brawl"] == "legal" or ds.getboolean("download-illegal-in-brawl")),
+        not (card["legalities"]["commander"] == "legal" or ds.getboolean("download-illegal-in-commander")),
+        not (card["legalities"]["historic"] == "legal" or ds.getboolean("download-illegal-in-historic")),
+        not (card["legalities"]["legacy"] == "legal" or ds.getboolean("download-illegal-in-legacy")),
+        not (card["legalities"]["modern"] == "legal" or ds.getboolean("download-illegal-in-modern")),
+        not (card["legalities"]["pauper"] == "legal" or ds.getboolean("download-illegal-in-pauper")),
+        not (card["legalities"]["penny"] == "legal" or ds.getboolean("download-illegal-in-penny")),
+        not (card["legalities"]["pioneer"] == "legal" or ds.getboolean("download-illegal-in-pioneer")),
+        not (card["legalities"]["standard"] == "legal" or ds.getboolean("download-illegal-in-standard")),
+        not (card["legalities"]["vintage"] == "legal" or ds.getboolean("download-illegal-in-vintage")),
+    ))
 
 
 def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
