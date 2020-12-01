@@ -259,6 +259,28 @@ def test_import_gold_bordered_card_if_enabled():
     ])
 
 
+def test_import_skips_white_bordered_card_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("white_bordered_card")
+    _populate_database_with_specific_download_setting(model, data, "download-white-bordered", "False")
+    _assert_model_is_empty(model)
+
+
+def test_import_white_bordered_card_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("white_bordered_card")
+    _populate_database_with_specific_download_setting(model, data, "download-white-bordered", "True")
+    _assert_set_contains(model, [
+        ("4ed", "Fourth Edition", "https://scryfall.com/sets/4ed?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("a363bc91-8278-448e-9d5c-564e4b51eb62", "2c57c4e9-0a46-45d6-92db-9203fb722b60", "4ed", "117", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("a363bc91-8278-448e-9d5c-564e4b51eb62", "Abomination", "https://c1.scryfall.com/file/scryfall-cards/png/front/a/3/a363bc91-8278-448e-9d5c-564e4b51eb62.png?1559603880"),
+    ])
+
+
 """
 Assert-template: (Use for quick copy&paste when adding new test cases.)
 
