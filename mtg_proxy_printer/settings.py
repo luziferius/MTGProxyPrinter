@@ -36,17 +36,16 @@ DEFAULT_SETTINGS["images"] = {
 }
 DEFAULT_SETTINGS["downloads"] = {
     "download-cards-depicting-racism": 'False',
-    "download-illegal-in-commander": 'True',
-    "download-illegal-in-modern": 'True',
-    "download-illegal-in-legacy": 'True',
-    "download-illegal-in-vintage": 'True',
-    "download-illegal-in-standard": 'True',
     "download-illegal-in-brawl": 'True',
+    "download-illegal-in-commander": 'True',
     "download-illegal-in-historic": 'True',
+    "download-illegal-in-legacy": 'True',
+    "download-illegal-in-modern": 'True',
     "download-illegal-in-pauper": 'True',
     "download-illegal-in-penny": 'True',
     "download-illegal-in-pioneer": 'True',
-
+    "download-illegal-in-standard": 'True',
+    "download-illegal-in-vintage": 'True',
     "download-white-bordered": 'True',
     "download-gold-bordered": 'True',
     "download-funny-cards": 'True',
