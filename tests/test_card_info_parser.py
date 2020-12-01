@@ -325,6 +325,28 @@ def test_import_card_banned_in_commander_if_enabled():
     ])
 
 
+def test_import_skips_card_banned_in_historic_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_historic")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-historic", "False")
+    _assert_model_is_empty(model)
+
+
+def test_import_card_banned_in_historic_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_historic")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-historic", "True")
+    _assert_set_contains(model, [
+        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", "ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c", "m13", "158", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", "Worldfire", "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+    ])
+
+
 """
 Assert-template: (Use for quick copy&paste when adding new test cases.)
 

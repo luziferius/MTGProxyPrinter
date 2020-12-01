@@ -190,6 +190,7 @@ def _should_skip_card(card: JSONType) -> bool:
         # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
         not (card["legalities"]["brawl"] == "legal" or ds.getboolean("download-illegal-in-brawl")),
         not (card["legalities"]["commander"] == "legal" or ds.getboolean("download-illegal-in-commander")),
+        not (card["legalities"]["historic"] == "legal" or ds.getboolean("download-illegal-in-historic")),
     ))
 
 
