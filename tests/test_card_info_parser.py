@@ -35,6 +35,7 @@ def load_json(name: str) -> typing.Generator[JSONType, None, None]:
 def _assert_set_contains(
         model: mtg_proxy_printer.model.carddb.CardDatabase,
         values: typing.Iterable[typing.Tuple[str, str, str]]):
+    """Checks "set", set_name, set_uri"""
     db_content = model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall()
     assert_that(
         db_content,
@@ -48,6 +49,7 @@ def _assert_set_contains(
 def _assert_card_contains(
         model: mtg_proxy_printer.model.carddb.CardDatabase,
         values: typing.Iterable[typing.Tuple[str, str, str, str, str, bool]]):
+    """Checks scryfall_id, oracle_id, "set", collector_number, language, highres_image"""
     db_content = model.db.execute(
         'SELECT scryfall_id, oracle_id, "set", collector_number, language, highres_image FROM Card').fetchall()
     assert_that(
@@ -62,6 +64,7 @@ def _assert_card_contains(
 def _assert_card_faces_contains(
         model: mtg_proxy_printer.model.carddb.CardDatabase,
         values: typing.Sequence[typing.Tuple[str, str, str]]):
+    """Checks scryfall_id, card_name, png_image_uri"""
     db_content = model.db.execute("SELECT scryfall_id, card_name, png_image_uri FROM CardFace").fetchall()
     assert_that(
         db_content,
@@ -69,6 +72,26 @@ def _assert_card_faces_contains(
             *values
         ),
         "CardFaces relation contains unexpected data"
+    )
+
+
+def _assert_model_is_empty(model):
+    """
+    Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
+    download settings.
+    """
+    assert_that(
+        model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
+        is_(empty()), f"Set relation contains unexpected data"
+    )
+    assert_that(
+        model.db.execute(
+            'SELECT scryfall_id, oracle_id, "set", collector_number, language, highres_image FROM Card').fetchall(),
+        is_(empty()), "Card relation contains unexpected data"
+    )
+    assert_that(
+        model.db.execute("SELECT scryfall_id, card_name, png_image_uri FROM CardFace").fetchall(),
+        is_(empty()), "CardFaces relation contains unexpected data"
     )
 
 
@@ -169,19 +192,7 @@ def test_import_skips_card_depicting_racism_if_disabled():
     # Loads German printing of "Crusade"
     data = load_json("depicting_racism")
     _populate_database_with_specific_download_setting(model, data, "download-cards-depicting-racism", "False")
-    assert_that(
-        model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
-        is_(empty()), f"Set relation contains unexpected data"
-    )
-    assert_that(
-        model.db.execute(
-            'SELECT scryfall_id, oracle_id, "set", collector_number, language, highres_image FROM Card').fetchall(),
-        is_(empty()), "Card relation contains unexpected data"
-    )
-    assert_that(
-        model.db.execute("SELECT scryfall_id, card_name, png_image_uri FROM CardFace").fetchall(),
-        is_(empty()), "CardFaces relation contains unexpected data"
-    )
+    _assert_model_is_empty(model)
 
 
 def test_import_card_depicting_racism_if_enabled():
@@ -204,7 +215,26 @@ def test_import_card_depicting_racism_if_enabled():
     ])
 
 
+def test_import_skips_funny_card_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("funny_card")
+    _populate_database_with_specific_download_setting(model, data, "download-funny-cards", "False")
+    _assert_model_is_empty(model)
 
+
+def test_import_funny_card_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("funny_card")
+    _populate_database_with_specific_download_setting(model, data, "download-funny-cards", "True")
+    _assert_set_contains(model, [
+        ("unh", "Unhinged", "https://scryfall.com/sets/unh?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("0464a507-20e5-42d5-8aca-12504a869f21", "8789d5fa-101c-457a-90ec-5cf067f5289b", "unh", "48", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("0464a507-20e5-42d5-8aca-12504a869f21", "Aesthetic Consultation", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441"),
+    ])
 
 
 """
