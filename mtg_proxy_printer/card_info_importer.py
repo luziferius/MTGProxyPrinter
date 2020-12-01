@@ -194,6 +194,7 @@ def _should_skip_card(card: JSONType) -> bool:
         not (card["legalities"]["legacy"] == "legal" or ds.getboolean("download-illegal-in-legacy")),
         not (card["legalities"]["modern"] == "legal" or ds.getboolean("download-illegal-in-modern")),
         not (card["legalities"]["pauper"] == "legal" or ds.getboolean("download-illegal-in-pauper")),
+        not (card["legalities"]["penny"] == "legal" or ds.getboolean("download-illegal-in-penny")),
         not (card["legalities"]["pioneer"] == "legal" or ds.getboolean("download-illegal-in-pioneer")),
         not (card["legalities"]["standard"] == "legal" or ds.getboolean("download-illegal-in-standard")),
         not (card["legalities"]["vintage"] == "legal" or ds.getboolean("download-illegal-in-vintage")),

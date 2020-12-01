@@ -413,6 +413,28 @@ def test_import_card_banned_in_pauper_if_enabled():
     ])
 
 
+def test_import_skips_card_banned_in_penny_if_disabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_penny")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-penny", "False")
+    _assert_model_is_empty(model)
+
+
+def test_import_card_banned_in_penny_if_enabled():
+    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_json("illegal_in_penny")
+    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-penny", "True")
+    _assert_set_contains(model, [
+        ("leg", "Legends", "https://scryfall.com/sets/leg?utm_source=api"),
+    ])
+    _assert_card_contains(model, [
+        ("f2b9983e-20d4-4d12-9e2c-ec6d9a345787", "f5ca7b13-8003-4361-b827-7095c89f2750", "leg", "145", "en", True),
+    ])
+    _assert_card_faces_contains(model, [
+        ("f2b9983e-20d4-4d12-9e2c-ec6d9a345787", "Falling Star", "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+    ])
+
+
 def test_import_skips_card_banned_in_pioneer_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     data = load_json("illegal_in_pioneer")
