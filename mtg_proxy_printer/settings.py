@@ -32,10 +32,25 @@ DEFAULT_SETTINGS = configparser.ConfigParser()
 
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
-    "avoid-low-resolution-images": 'false'
+    "avoid-low-resolution-images": 'False',
 }
 DEFAULT_SETTINGS["downloads"] = {
-    "download-cards-depicting-racism": 'false'
+    "download-cards-depicting-racism": 'False',
+    "download-illegal-in-commander": 'True',
+    "download-illegal-in-modern": 'True',
+    "download-illegal-in-legacy": 'True',
+    "download-illegal-in-vintage": 'True',
+    "download-illegal-in-standard": 'True',
+    "download-illegal-in-brawl": 'True',
+    "download-illegal-in-historic": 'True',
+    "download-illegal-in-pauper": 'True',
+    "download-illegal-in-penny": 'True',
+    "download-illegal-in-pioneer": 'True',
+
+    "download-white-bordered": 'True',
+    "download-gold-bordered": 'True',
+    "download-funny-cards": 'True',
+    "download-non-traditional-cards": 'True',
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",
