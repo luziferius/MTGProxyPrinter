@@ -126,7 +126,7 @@ def test_import_split_card():
 
 
 def test_import_english_double_faced_art_card():
-    """Has two or more smaller cards on one side."""
+    """Has a printing on both sides."""
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads English art series card "Clearwater Pathway // Clearwater Pathway"
     data = load_json("english_double_faced_card")
@@ -144,9 +144,9 @@ def test_import_english_double_faced_art_card():
 
 
 def test_import_regular_english_card():
-    """Has two or more smaller cards on one side."""
+    """Tests import with a simple, regular, English card."""
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    # Loads English art series card "Clearwater Pathway // Clearwater Pathway"
+    # Loads "Fury Sliver" from Time Spiral
     data = load_json("regular_english_card")
     populate_database(model, data)
     _assert_set_contains(model, [
