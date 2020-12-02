@@ -122,7 +122,7 @@ class CardDatabase:
         return database_user_version != latest_user_version
 
     def commit(self):
-        self.db.execute("COMMIT")
+        self.db.execute("COMMIT\n")
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)").fetchone()
