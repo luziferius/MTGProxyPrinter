@@ -41,8 +41,6 @@ def parse_args() -> Namespace:
 to_be_profiled_functions = {
     mtg_proxy_printer.card_info_importer.CardInfoDownloader: [
         "populate_database",
-        "read_json_card_data",
-        "_read_json_card_data_from_open_file"
     ],
     mtg_proxy_printer.card_info_importer: [
         "_insert_language",
@@ -51,6 +49,7 @@ to_be_profiled_functions = {
         "_insert_face_name",
         "_insert_card_faces",
         "_insert_language",
+        "_should_skip_card",
     ],
 }
 
