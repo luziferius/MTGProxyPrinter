@@ -125,11 +125,11 @@ class CardDatabase:
         self.db.execute("COMMIT\n")
 
     def has_data(self) -> bool:
-        result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)").fetchone()
+        result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
 
     def get_all_languages(self) -> StringList:
-        result = [lang for (lang,) in self.db.execute("SELECT DISTINCT language FROM Card ORDER BY language ASC")]
+        result = [lang for (lang,) in self.db.execute("SELECT DISTINCT language FROM Card ORDER BY language ASC\n")]
         return result
 
     def get_card_names(self, language: str) -> StringList:
