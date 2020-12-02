@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import gzip
 import json
 from pathlib import Path
@@ -134,11 +135,16 @@ class CardInfoDownloader(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
         model.db.execute("BEGIN TRANSACTION\n")
+        ds = mtg_proxy_printer.settings.settings["downloads"]
+        download_enabled = {  # Parse the boolean download settings only once per import
+            key: ds.getboolean(key)
+            for key in ds.keys()
+        }
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if _should_skip_card(card):
+            if _should_skip_card(card, download_enabled):
                 logger.debug(
                     f"Skipping card '{card['name']}', because it matches a download filter.")
                 continue
@@ -219,29 +225,29 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, ca
         )
 
 
-def _should_skip_card(card: JSONType) -> bool:
+def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) -> bool:
     """Determine, if the given card should be included based on the application settings"""
-    ds = mtg_proxy_printer.settings.settings["downloads"]
+    legalities = card["legalities"]
     return any((
         # Racism filter
-        card.get("content_warning", False) and not ds.getboolean("download-cards-depicting-racism"),
+        card.get("content_warning", False) and not download_enabled["download-cards-depicting-racism"],
         # Border filter
-        card["border_color"] == "white" and not ds.getboolean("download-white-bordered"),
-        card["border_color"] == "gold" and not ds.getboolean("download-gold-bordered"),
+        card["border_color"] == "white" and not download_enabled["download-white-bordered"],
+        card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],
         # 'Funny' cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
-        card["set_type"] == "funny" and not ds.getboolean("download-funny-cards"),
+        card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
         # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
-        not (card["legalities"]["brawl"] == "legal" or ds.getboolean("download-illegal-in-brawl")),
-        not (card["legalities"]["commander"] == "legal" or ds.getboolean("download-illegal-in-commander")),
-        not (card["legalities"]["historic"] == "legal" or ds.getboolean("download-illegal-in-historic")),
-        not (card["legalities"]["legacy"] == "legal" or ds.getboolean("download-illegal-in-legacy")),
-        not (card["legalities"]["modern"] == "legal" or ds.getboolean("download-illegal-in-modern")),
-        not (card["legalities"]["pauper"] == "legal" or ds.getboolean("download-illegal-in-pauper")),
-        not (card["legalities"]["penny"] == "legal" or ds.getboolean("download-illegal-in-penny")),
-        not (card["legalities"]["pioneer"] == "legal" or ds.getboolean("download-illegal-in-pioneer")),
-        not (card["legalities"]["standard"] == "legal" or ds.getboolean("download-illegal-in-standard")),
-        not (card["legalities"]["vintage"] == "legal" or ds.getboolean("download-illegal-in-vintage")),
+        not (legalities["brawl"] == "legal" or download_enabled["download-illegal-in-brawl"]),
+        not (legalities["commander"] == "legal" or download_enabled["download-illegal-in-commander"]),
+        not (legalities["historic"] == "legal" or download_enabled["download-illegal-in-historic"]),
+        not (legalities["legacy"] == "legal" or download_enabled["download-illegal-in-legacy"]),
+        not (legalities["modern"] == "legal" or download_enabled["download-illegal-in-modern"]),
+        not (legalities["pauper"] == "legal" or download_enabled["download-illegal-in-pauper"]),
+        not (legalities["penny"] == "legal" or download_enabled["download-illegal-in-penny"]),
+        not (legalities["pioneer"] == "legal" or download_enabled["download-illegal-in-pioneer"]),
+        not (legalities["standard"] == "legal" or download_enabled["download-illegal-in-standard"]),
+        not (legalities["vintage"] == "legal" or download_enabled["download-illegal-in-vintage"]),
     ))
 
 
