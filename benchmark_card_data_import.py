@@ -43,12 +43,10 @@ to_be_profiled_functions = {
         "populate_database",
     ],
     mtg_proxy_printer.card_info_importer: [
-        "_insert_language",
         "_insert_card",
         "_insert_set",
         "_insert_face_name",
         "_insert_card_faces",
-        "_insert_language",
         "_should_skip_card",
     ],
 }

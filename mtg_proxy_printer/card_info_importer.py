@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
+import functools
 import gzip
 import json
 from pathlib import Path
@@ -148,7 +148,7 @@ class CardInfoDownloader(QObject):
                 logger.debug(
                     f"Skipping card '{card['name']}', because it matches a download filter.")
                 continue
-            language_id = _insert_language(model, card)
+            language_id = _insert_language(model, card["lang"])
             card_id = _insert_card(model, card)
             set_id = _insert_set(model, card)
             _insert_card_faces(model, card, language_id, card_id, set_id)
@@ -163,16 +163,16 @@ class CardInfoDownloader(QObject):
         model.commit()
 
 
-def _insert_language(model: CardDatabase, card: JSONType) -> int:
-    language: typing.Tuple[str] = card["lang"],
+@functools.lru_cache()
+def _insert_language(model: CardDatabase, language: str) -> int:
     if result := model.db.execute(
             'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
-            language).fetchone():
+            (language,)).fetchone():
         language_id, = result
     else:
         language_id = model.db.execute(
             'INSERT INTO PrintLanguage("language") VALUES (?)\n',
-            language
+            (language,)
         ).lastrowid
     return language_id
 
