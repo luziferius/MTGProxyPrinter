@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000006;
+PRAGMA user_version = 0000008;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -24,7 +24,7 @@ CREATE TABLE PrintLanguage (
   "language" TEXT NOT NULL UNIQUE
 );
 
-CREATE INDEX LanguageIndex ON PrintLanguage("language", language_id);
+CREATE INDEX LanguageIndex ON PrintLanguage ("language", language_id);
 
 
 CREATE TABLE Card (
@@ -44,8 +44,10 @@ CREATE TABLE FaceName (
   language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE INDEX FaceNameIndex ON FaceName (CARD_NAME, language_id, face_name_id);
-
+-- Speeds up LIKE matches against card names, used by the Card name search
+CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
+-- Used during the import process to speed up finding already inserted card faces
+CREATE INDEX FaceNameCardNameToLanguageIndex ON FaceName(card_name, language_id);
 
 CREATE TABLE CardFace (
   -- The printable card face of a specific card in a specific language. Is the front most of the time, but can be the
@@ -58,6 +60,10 @@ CREATE TABLE CardFace (
   scryfall_id TEXT NOT NULL,
   png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
 );
+-- Used to find matching sets
+CREATE INDEX CardFaceIDLookup ON CardFace (face_name_id, set_id, card_id);
+-- Used to find matching collector numbers
+CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, collector_number);
 
 
 CREATE TABLE "Set" (
@@ -67,12 +73,12 @@ CREATE TABLE "Set" (
   set_uri TEXT NOT NULL
 );
 
+CREATE INDEX SetAbbreviationIndex ON "Set" ("set", set_id);
 
 CREATE TABLE LastDatabaseUpdate (
   update_id        INTEGER NOT NULL PRIMARY KEY,
   update_timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP)
 );
-
 
 CREATE VIEW AllPrintings AS
   SELECT card_name, "set", "language", collector_number, scryfall_id, png_image_uri
