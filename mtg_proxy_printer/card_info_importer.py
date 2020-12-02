@@ -125,24 +125,8 @@ class CardInfoDownloader(QObject):
 
     def _read_json_card_data_from_open_file(self, file) -> typing.Generator[JSONType, None, None]:
         self.download_begins.emit(self.item_count)
-        parser = ijson.basic_parse(file, use_float=True)
-        # Throw away the outer json array [] that encapsulates the whole data set
-        next(parser)
-        # Tracks the current nesting depth. Whenever it reaches 0, an object is fully read and can be yielded.
-        nesting_depth = 0
-        object_builder = ijson.ObjectBuilder()
-        for event, value in parser:
-            if event in ("start_map", "start_array"):
-                nesting_depth += 1
-            elif event in ("end_map", "end_array"):
-                nesting_depth -= 1
-            if nesting_depth == -1:
-                # End of the outer json array reached, so stop iterating
-                break
-            object_builder.event(event, value)
-            if nesting_depth == 0:
-                yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
-                object_builder = ijson.ObjectBuilder()
+        # Using "item" as the object path returns elements from a top-level JSON array
+        yield from ijson.items(file, "item")
         self.download_finished.emit()
 
     def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None] = None):
