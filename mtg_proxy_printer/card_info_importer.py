@@ -111,8 +111,12 @@ class CardInfoDownloader(QObject):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            with url_or_path.open("rb") as file:
-                yield from self._read_json_card_data_from_open_file(file)
+            if url_or_path.suffix.casefold() == ".gz":
+                with gzip.open(url_or_path, "rb") as file:
+                    yield from self._read_json_card_data_from_open_file(file)
+            else:
+                with url_or_path.open("rb") as file:
+                    yield from self._read_json_card_data_from_open_file(file)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path)
         else:
@@ -145,6 +149,7 @@ class CardInfoDownloader(QObject):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
+        model.db.execute("BEGIN TRANSACTION\n")
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
@@ -153,29 +158,80 @@ class CardInfoDownloader(QObject):
                 logger.debug(
                     f"Skipping card '{card['name']}', because it matches a download filter.")
                 continue
-            set_info = _get_set_info(card)
-            card_info = _get_card_info(card)
-            faces = list(_get_card_faces(card))
-            model.db.execute(
-                r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""",
-                set_info
-            )
-            model.db.execute(
-                r"""INSERT INTO CARD
-                (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
-                VALUES (?, ?, ?, ?, ?, ?)""",
-                card_info
-            )
-            model.db.executemany(
-                r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
-                faces
-            )
+            language_id = _insert_language(model, card)
+            card_id = _insert_card(model, card)
+            set_id = _insert_set(model, card)
+            _insert_card_faces(model, card, language_id, card_id, set_id)
             self.download_progress.emit(index)
+            if not index % 1000:
+                model.db.execute("PRAGMA optimize\n")
         # Store the timestamp of this import.
-        model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES")
+        model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
-        model.db.execute("ANALYZE")
+        model.db.execute("ANALYZE\n")
+        model.commit()
+
+
+def _insert_language(model: CardDatabase, card: JSONType) -> int:
+    language: typing.Tuple[str] = card["lang"],
+    if result := model.db.execute(
+            'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
+            language).fetchone():
+        language_id, = result
+    else:
+        language_id = model.db.execute(
+            'INSERT INTO PrintLanguage("language") VALUES (?)\n',
+            language
+        ).lastrowid
+    return language_id
+
+
+def _insert_card(model: CardDatabase, card: JSONType) -> int:
+    oracle_id: typing.Tuple[str] = card["oracle_id"],
+    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', oracle_id).fetchone():
+        card_id, = result
+    else:
+        card_id = model.db.execute(
+            'INSERT INTO Card (oracle_id) VALUES (?)\n',
+            oracle_id
+        ).lastrowid
+    return card_id
+
+
+def _insert_set(model: CardDatabase, card: JSONType) -> int:
+    set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
+    if result := model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone():
+        set_id, = result
+    else:
+        set_id = model.db.execute(
+            'INSERT INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)\n',
+            (set_abbr, set_name, set_uri)
+        ).lastrowid
+    return set_id
+
+
+def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
+    if result := model.db.execute(
+            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n',
+            (printed_name, language_id)).fetchone():
+        face_name_id, = result
+    else:
+        face_name_id = model.db.execute(
+            'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n',
+            (printed_name, language_id)
+        ).lastrowid
+    return face_name_id
+
+
+def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
+    for scryfall_id, printed_name, png_image_uri in _get_card_faces(card):
+        face_name_id = _insert_face_name(model, printed_name, language_id)
+        model.db.execute(
+            "INSERT INTO CardFace (card_id, set_id, face_name_id, scryfall_id, png_image_uri) \n"
+            "VALUES (?, ?, ?, ?, ?)\n",
+            (card_id, set_id, face_name_id, scryfall_id, png_image_uri)
+        )
 
 
 def _should_skip_card(card: JSONType) -> bool:
@@ -202,18 +258,6 @@ def _should_skip_card(card: JSONType) -> bool:
         not (card["legalities"]["standard"] == "legal" or ds.getboolean("download-illegal-in-standard")),
         not (card["legalities"]["vintage"] == "legal" or ds.getboolean("download-illegal-in-vintage")),
     ))
-
-
-def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
-    set_info = card["set"], card["set_name"], card["scryfall_set_uri"]
-    return set_info
-
-
-def _get_card_info(card: JSONType):
-    card_info = (
-        card["id"], card["oracle_id"], card["set"], card["collector_number"], card["lang"], card["highres_image"]
-    )
-    return card_info
 
 
 def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str], None, None]:
