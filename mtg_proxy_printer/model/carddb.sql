@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000008;
+PRAGMA user_version = 0000009;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -58,6 +58,7 @@ CREATE TABLE CardFace (
   face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
   collector_number TEXT NOT NULL,
   scryfall_id TEXT NOT NULL,
+  highres_image INTEGER NOT NULL,  -- Boolean indicating that the card has high resolution images.
   png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
 );
 -- Used to find matching sets
@@ -81,7 +82,7 @@ CREATE TABLE LastDatabaseUpdate (
 );
 
 CREATE VIEW AllPrintings AS
-  SELECT card_name, "set", "language", collector_number, scryfall_id, png_image_uri
+  SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri
   FROM CardFace
   JOIN FaceName USING(face_name_id)
   JOIN "Set" USING (set_id)
