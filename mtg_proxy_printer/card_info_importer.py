@@ -225,12 +225,13 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
 
 
 def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
+    collector_number = card["collector_number"]
     for scryfall_id, printed_name, png_image_uri in _get_card_faces(card):
         face_name_id = _insert_face_name(model, printed_name, language_id)
         model.db.execute(
-            "INSERT INTO CardFace (card_id, set_id, face_name_id, scryfall_id, png_image_uri) \n"
-            "VALUES (?, ?, ?, ?, ?)\n",
-            (card_id, set_id, face_name_id, scryfall_id, png_image_uri)
+            "INSERT INTO CardFace (card_id, set_id, face_name_id, collector_number, scryfall_id, png_image_uri) \n"
+            "VALUES (?, ?, ?, ?, ?, ?)\n",
+            (card_id, set_id, face_name_id, collector_number, scryfall_id, png_image_uri)
         )
 
 
