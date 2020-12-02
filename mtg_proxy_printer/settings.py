@@ -62,9 +62,13 @@ DEFAULT_SETTINGS["documents"] = {
     "image-spacing-vertical-mm": "0",
 }
 
+# Populate the settings with default values
+settings.read_dict(DEFAULT_SETTINGS)
+
 
 def read_settings_from_file():
     global settings, DEFAULT_SETTINGS
+    settings.clear()
     if not config_file_path.exists():
         settings.read_dict(DEFAULT_SETTINGS)
     else:

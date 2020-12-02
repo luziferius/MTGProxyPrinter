@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import gzip
 import json
 from pathlib import Path
@@ -111,8 +112,12 @@ class CardInfoDownloader(QObject):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            with url_or_path.open("rb") as file:
-                yield from self._read_json_card_data_from_open_file(file)
+            if url_or_path.suffix.casefold() == ".gz":
+                with gzip.open(url_or_path, "rb") as file:
+                    yield from self._read_json_card_data_from_open_file(file)
+            else:
+                with url_or_path.open("rb") as file:
+                    yield from self._read_json_card_data_from_open_file(file)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path)
         else:
@@ -121,99 +126,131 @@ class CardInfoDownloader(QObject):
 
     def _read_json_card_data_from_open_file(self, file) -> typing.Generator[JSONType, None, None]:
         self.download_begins.emit(self.item_count)
-        parser = ijson.basic_parse(file, use_float=True)
-        # Throw away the outer json array [] that encapsulates the whole data set
-        next(parser)
-        # Tracks the current nesting depth. Whenever it reaches 0, an object is fully read and can be yielded.
-        nesting_depth = 0
-        object_builder = ijson.ObjectBuilder()
-        for event, value in parser:
-            if event in ("start_map", "start_array"):
-                nesting_depth += 1
-            elif event in ("end_map", "end_array"):
-                nesting_depth -= 1
-            if nesting_depth == -1:
-                # End of the outer json array reached, so stop iterating
-                break
-            object_builder.event(event, value)
-            if nesting_depth == 0:
-                yield object_builder.value  # value is dynamically created whenever the parser gathered a full object
-                object_builder = ijson.ObjectBuilder()
+        # Using "item" as the object path returns elements from a top-level JSON array
+        yield from ijson.items(file, "item")
         self.download_finished.emit()
 
     def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None] = None):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
+        model.db.execute("BEGIN TRANSACTION\n")
+        ds = mtg_proxy_printer.settings.settings["downloads"]
+        download_enabled = {  # Parse the boolean download settings only once per import
+            key: ds.getboolean(key)
+            for key in ds.keys()
+        }
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if _should_skip_card(card):
+            if _should_skip_card(card, download_enabled):
                 logger.debug(
                     f"Skipping card '{card['name']}', because it matches a download filter.")
                 continue
-            set_info = _get_set_info(card)
-            card_info = _get_card_info(card)
-            faces = list(_get_card_faces(card))
-            model.db.execute(
-                r"""INSERT OR IGNORE INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)""",
-                set_info
-            )
-            model.db.execute(
-                r"""INSERT INTO CARD
-                (scryfall_id, oracle_id, "set", collector_number, language, highres_image)
-                VALUES (?, ?, ?, ?, ?, ?)""",
-                card_info
-            )
-            model.db.executemany(
-                r"""INSERT INTO CardFace (scryfall_id, card_name, png_image_uri) VALUES (?, ?, ?)""",
-                faces
-            )
+            language_id = _insert_language(model, card["lang"])
+            card_id = _insert_card(model, card)
+            set_id = _insert_set(model, card)
+            _insert_card_faces(model, card, language_id, card_id, set_id)
             self.download_progress.emit(index)
+            if not index % 1000:
+                model.db.execute("PRAGMA optimize\n")
         # Store the timestamp of this import.
-        model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES")
+        model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
-        model.db.execute("ANALYZE")
+        model.db.execute("ANALYZE\n")
+        model.commit()
 
 
-def _should_skip_card(card: JSONType) -> bool:
+@functools.lru_cache()
+def _insert_language(model: CardDatabase, language: str) -> int:
+    if result := model.db.execute(
+            'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
+            (language,)).fetchone():
+        language_id, = result
+    else:
+        language_id = model.db.execute(
+            'INSERT INTO PrintLanguage("language") VALUES (?)\n',
+            (language,)
+        ).lastrowid
+    return language_id
+
+
+def _insert_card(model: CardDatabase, card: JSONType) -> int:
+    oracle_id: typing.Tuple[str] = card["oracle_id"],
+    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', oracle_id).fetchone():
+        card_id, = result
+    else:
+        card_id = model.db.execute(
+            'INSERT INTO Card (oracle_id) VALUES (?)\n',
+            oracle_id
+        ).lastrowid
+    return card_id
+
+
+def _insert_set(model: CardDatabase, card: JSONType) -> int:
+    set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
+    if result := model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone():
+        set_id, = result
+    else:
+        set_id = model.db.execute(
+            'INSERT INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)\n',
+            (set_abbr, set_name, set_uri)
+        ).lastrowid
+    return set_id
+
+
+def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
+    if result := model.db.execute(
+            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n',
+            (printed_name, language_id)).fetchone():
+        face_name_id, = result
+    else:
+        face_name_id = model.db.execute(
+            'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n',
+            (printed_name, language_id)
+        ).lastrowid
+    return face_name_id
+
+
+def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
+    collector_number = card["collector_number"]
+    highres_image = card["highres_image"]
+    for scryfall_id, printed_name, png_image_uri in _get_card_faces(card):
+        face_name_id = _insert_face_name(model, printed_name, language_id)
+        model.db.execute(
+            "INSERT INTO CardFace (\n"
+            "  card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri)\n"
+            "VALUES (?, ?, ?, ?, ?, ?, ?)\n",
+            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri)
+        )
+
+
+def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) -> bool:
     """Determine, if the given card should be included based on the application settings"""
-    ds = mtg_proxy_printer.settings.settings["downloads"]
+    legalities = card["legalities"]
     return any((
         # Racism filter
-        card.get("content_warning", False) and not ds.getboolean("download-cards-depicting-racism"),
+        card.get("content_warning", False) and not download_enabled["download-cards-depicting-racism"],
         # Border filter
-        card["border_color"] == "white" and not ds.getboolean("download-white-bordered"),
-        card["border_color"] == "gold" and not ds.getboolean("download-gold-bordered"),
+        card["border_color"] == "white" and not download_enabled["download-white-bordered"],
+        card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],
         # 'Funny' cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
-        card["set_type"] == "funny" and not ds.getboolean("download-funny-cards"),
+        card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
         # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
-        not (card["legalities"]["brawl"] == "legal" or ds.getboolean("download-illegal-in-brawl")),
-        not (card["legalities"]["commander"] == "legal" or ds.getboolean("download-illegal-in-commander")),
-        not (card["legalities"]["historic"] == "legal" or ds.getboolean("download-illegal-in-historic")),
-        not (card["legalities"]["legacy"] == "legal" or ds.getboolean("download-illegal-in-legacy")),
-        not (card["legalities"]["modern"] == "legal" or ds.getboolean("download-illegal-in-modern")),
-        not (card["legalities"]["pauper"] == "legal" or ds.getboolean("download-illegal-in-pauper")),
-        not (card["legalities"]["penny"] == "legal" or ds.getboolean("download-illegal-in-penny")),
-        not (card["legalities"]["pioneer"] == "legal" or ds.getboolean("download-illegal-in-pioneer")),
-        not (card["legalities"]["standard"] == "legal" or ds.getboolean("download-illegal-in-standard")),
-        not (card["legalities"]["vintage"] == "legal" or ds.getboolean("download-illegal-in-vintage")),
+        not (legalities["brawl"] == "legal" or download_enabled["download-illegal-in-brawl"]),
+        not (legalities["commander"] == "legal" or download_enabled["download-illegal-in-commander"]),
+        not (legalities["historic"] == "legal" or download_enabled["download-illegal-in-historic"]),
+        not (legalities["legacy"] == "legal" or download_enabled["download-illegal-in-legacy"]),
+        not (legalities["modern"] == "legal" or download_enabled["download-illegal-in-modern"]),
+        not (legalities["pauper"] == "legal" or download_enabled["download-illegal-in-pauper"]),
+        not (legalities["penny"] == "legal" or download_enabled["download-illegal-in-penny"]),
+        not (legalities["pioneer"] == "legal" or download_enabled["download-illegal-in-pioneer"]),
+        not (legalities["standard"] == "legal" or download_enabled["download-illegal-in-standard"]),
+        not (legalities["vintage"] == "legal" or download_enabled["download-illegal-in-vintage"]),
     ))
-
-
-def _get_set_info(card: JSONType) -> typing.Tuple[str, str, str]:
-    set_info = card["set"], card["set_name"], card["scryfall_set_uri"]
-    return set_info
-
-
-def _get_card_info(card: JSONType):
-    card_info = (
-        card["id"], card["oracle_id"], card["set"], card["collector_number"], card["lang"], card["highres_image"]
-    )
-    return card_info
 
 
 def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str], None, None]:

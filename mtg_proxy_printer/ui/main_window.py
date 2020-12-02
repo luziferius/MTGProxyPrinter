@@ -187,7 +187,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         importer.download_progress.connect(self.process_events_during_long_operations)
         card_data = importer.read_json_card_data_from_url()
         importer.populate_database(self.card_database, card_data)
-        self.card_database.commit()
 
     @pyqtSlot(QModelIndex, QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
