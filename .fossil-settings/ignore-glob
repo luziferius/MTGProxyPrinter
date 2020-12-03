@@ -12,7 +12,6 @@ venv
 .coverage
 __pycache__
 *.pyc
-*.json
 *.gz
 *.zz
 *.zip
