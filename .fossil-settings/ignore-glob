@@ -15,3 +15,7 @@ __pycache__
 *.gz
 *.zz
 *.zip
+build
+dist
+mtg_proxy_printer/ui/compiled_resources.py
+mtg-proxy-printer-runner.spec
