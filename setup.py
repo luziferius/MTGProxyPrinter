@@ -65,7 +65,7 @@ if __name__ == "__main__":
         entry_points={
             "gui_scripts": [
                 "mtg-proxy-printer = {main_package}.__main__:main".format(main_package=main_package)
-            ]
+            ],
         },
         version=version,
         description=description,
@@ -94,6 +94,7 @@ if __name__ == "__main__":
                 'PyHamcrest >= 1.8.1',
                 'PyQt5-stubs',  # Install the stubs used for type hinting when creating the development environment
                 "PyInstaller >= 4.0",
+                "sip",
             ]
         },
         test_suite="pytest",
