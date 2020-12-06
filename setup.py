@@ -26,26 +26,35 @@ with open("README.rst", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
+def get_qrc_file_path() -> Path:
+    source_root = Path(__file__).resolve().parent / main_package
+    resources_file = source_root / "resources" / "resources.qrc"
+    return resources_file
+
+
+def compile_resources(target_file: Path = None, resources_source: Path = None):
+    resources_source = resources_source or  get_qrc_file_path()
+    command = ("pyrcc5", str(resources_source))
+    compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
+    with target_file.open("wt") as compiled_qt_resources_file:
+        compiled_qt_resources_file.write(compiled)
+    return compiled
+
+
 class BuildWithQtResources(setuptools.command.build_py.build_py):
     """Try to build the Qt resources file for visual_image_splitter."""
     def run(self):
         if not self.dry_run:  # Obey the --dry-run switch
-            source_root = Path(__file__).resolve().parent / main_package
-            build_root = Path(self.build_lib).resolve() / main_package
-            resources_file = source_root / "resources" / "resources.qrc"
-            compiled_qt_resources = self._compile_resource_file(resources_file)
-            target_directory = build_root / "ui"
-            compiled_resources_file_path = target_directory / "compiled_resources.py"
-            self.mkpath(str(target_directory))
-            with compiled_resources_file_path.open("wt") as compiled_qt_resources_file:
-                compiled_qt_resources_file.write(compiled_qt_resources)
+            output_path = self.compiled_resources_path()
+            self.mkpath(str(output_path.parent))
+            compile_resources(output_path)
         super(BuildWithQtResources, self).run()
 
-    @staticmethod
-    def _compile_resource_file(resource_file: Path) -> str:
-        command = ("pyrcc5", str(resource_file))
-        compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
-        return compiled
+    def compiled_resources_path(self) -> Path:
+        build_root = Path(self.build_lib).resolve() / main_package
+        target_directory = build_root / "ui"
+        compiled_resources_file_path = target_directory / "compiled_resources.py"
+        return compiled_resources_file_path
 
 
 setup(
