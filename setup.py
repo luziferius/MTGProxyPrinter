@@ -93,6 +93,7 @@ if __name__ == "__main__":
                 'pytest-xdist',
                 'PyHamcrest >= 1.8.1',
                 'PyQt5-stubs',  # Install the stubs used for type hinting when creating the development environment
+                "PyInstaller >= 4.0",
             ]
         },
         test_suite="pytest",
