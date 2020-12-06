@@ -32,8 +32,8 @@ def get_qrc_file_path() -> Path:
     return resources_file
 
 
-def compile_resources(target_file: Path = None, resources_source: Path = None):
-    resources_source = resources_source or  get_qrc_file_path()
+def compile_resources(target_file: Path, resources_source: Path = None):
+    resources_source = resources_source or get_qrc_file_path()
     command = ("pyrcc5", str(resources_source))
     compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
     with target_file.open("wt") as compiled_qt_resources_file:
