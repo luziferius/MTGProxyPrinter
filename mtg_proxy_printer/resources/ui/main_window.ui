@@ -97,8 +97,10 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_print"/>
+   <addaction name="action_load_document"/>
+   <addaction name="action_save_document"/>
    <addaction name="separator"/>
+   <addaction name="action_print"/>
    <addaction name="action_print_pdf"/>
    <addaction name="separator"/>
    <addaction name="action_new_page"/>
