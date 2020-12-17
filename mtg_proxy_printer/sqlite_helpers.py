@@ -28,7 +28,7 @@ SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?
 
 def open_database(
         db_path: typing.Union[str, pathlib.Path], schema_name: str,
-        min_supported_sqlite_version: typing.Tuple[int, int, int]):
+        min_supported_sqlite_version: typing.Tuple[int, int, int]) -> sqlite3.Connection:
     if isinstance(db_path, str) and db_path != ":memory:":
         db_path = pathlib.Path(db_path)
     if sqlite3.sqlite_version_info < min_supported_sqlite_version:
@@ -45,19 +45,15 @@ def open_database(
     logger.debug(f"Opening Database {location}.")
     # This has to be determined before the connection is opened and the file is created on disk.
     should_create_schema = db_path == ":memory:" or not db_path.exists()
-    db: sqlite3.Connection = sqlite3.connect(db_path)
+    db = sqlite3.connect(db_path)
     logger.debug(f"Connected SQLite database {location}.")
     # Both settings are volatile, thus have to be set for each opened connection
     db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")
     logger.debug("Enabled SQLite3 foreign keys support.")
-    if db_path == ":memory:":
-        logger.debug("Skipping registering cleanup hooks for in-memory databases.")
+    if should_create_schema:
         populate_database_schema(db, schema_name)
-    else:
-        if should_create_schema:
-            populate_database_schema(db, schema_name)
 
-    check_database_schema_version(db, "carddb")
+    check_database_schema_version(db, schema_name)
     return db
 
 
