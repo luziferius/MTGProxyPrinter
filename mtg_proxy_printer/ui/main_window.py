@@ -73,6 +73,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def _setup_icons(self):
         action_fallback_icons: typing.List[typing.Tuple[QAction, str]] = [
             (self.action_quit, "application-exit"),
+            (self.action_load_document, "document-open"),
+            (self.action_save_document, "document-save"),
+            (self.action_save_as, "document-save-as"),
             (self.action_print, "document-print-direct"),
             (self.action_print_pdf, "document-print"),
             (self.action_show_settings, "configure"),
