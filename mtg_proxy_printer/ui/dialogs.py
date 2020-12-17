@@ -28,6 +28,7 @@ class SavePDFDialog(QFileDialog):
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document, **kwargs):
         super(SavePDFDialog, self).__init__(parent, "Save document", filter="PDF-Documents (*.pdf)", **kwargs)
         self.document = document
+        self.setAcceptMode(QFileDialog.AcceptSave)
         self.setDefaultSuffix("pdf")
         self.setFileMode(QFileDialog.AnyFile)
         logger.info(f"Created {self.__class__.__name__} instance.")
