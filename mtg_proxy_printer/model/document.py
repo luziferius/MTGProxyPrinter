@@ -15,6 +15,7 @@
 
 import collections
 import itertools
+import pathlib
 import typing
 
 import pint
@@ -124,6 +125,7 @@ class Document(QAbstractListModel):
 
     def __init__(self, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
+        self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
@@ -229,3 +231,12 @@ class Document(QAbstractListModel):
 
     def compute_total_cards_per_page(self) -> int:
         return self.compute_row_count() * self.compute_cards_per_row()
+
+    def save_as(self, path: pathlib.Path):
+        self.file_path = path
+        self.save_to_disk()
+
+    def save_to_disk(self):
+        if self.file_path is None:
+            raise RuntimeError("Cannot save without a file path!")
+        # TODO
