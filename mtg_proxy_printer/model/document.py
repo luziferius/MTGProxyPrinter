@@ -264,7 +264,6 @@ class Document(QAbstractListModel):
             card = card_db.get_card_with_scryfall_id(scryfall_id)
             image_db.get_image(card)
             page.add_card(card, 1)
-        self.layoutChanged.emit()
 
     def save_as(self, path: pathlib.Path):
         self.file_path = path
@@ -291,5 +290,3 @@ class Document(QAbstractListModel):
                 flattened_data
             )
             db.commit()
-
-
