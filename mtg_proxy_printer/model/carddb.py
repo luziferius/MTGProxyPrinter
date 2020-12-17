@@ -270,3 +270,15 @@ class CardDatabase:
         )
         result = [set_abbr for set_abbr, in cursor]
         return result
+
+    def is_scryfall_id_known(self, scryfall_id: str) -> bool:
+        query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ?)'
+        result, = self.db.execute(query, (scryfall_id,)).fetchone()
+        return bool(result)
+
+    def get_card_with_scryfall_id(self, scryfall_id: str) -> Card:
+        query = 'SELECT card_name, "set", collector_number, "language", png_image_uri\n' \
+                'FROM AllPrintings\n' \
+                'WHERE scryfall_id = ?'
+        name, set_abbr, collector_number, language, image_uri = self.db.execute(query, (scryfall_id,)).fetchone()
+        return Card(name, set_abbr, collector_number, language, image_uri, scryfall_id)

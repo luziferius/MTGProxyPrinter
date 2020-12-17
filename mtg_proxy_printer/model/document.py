@@ -22,7 +22,9 @@ import pint
 from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
 
 
-from mtg_proxy_printer.model.carddb import Card
+import mtg_proxy_printer.sqlite_helpers
+from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.settings import settings
 
 CardList = typing.List[Card]
@@ -117,6 +119,8 @@ class Document(QAbstractListModel):
     This is the root of a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
+
+    MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
     DPI: pint.Quantity = 300 / unit_registry.inch
     IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
     IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
@@ -232,6 +236,36 @@ class Document(QAbstractListModel):
     def compute_total_cards_per_page(self) -> int:
         return self.compute_row_count() * self.compute_cards_per_row()
 
+    def load_from_disk(self, path: pathlib.Path, card_db: CardDatabase, image_db: ImageDatabase):
+        self.file_path = path
+        with mtg_proxy_printer.sqlite_helpers.open_database(
+                self.file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
+            data = db.execute(
+                "SELECT page, slot, scryfall_id\n"
+                "FROM Card\n"
+                "ORDER BY page, slot ASC").fetchall()
+        if self.pages:
+            self.beginRemoveRows(QModelIndex(), 0, len(self.pages))
+            for page in self.pages:
+                page.dataChanged.disconnect(self.on_page_data_changed)
+            self.pages.clear()
+            self.endRemoveRows()
+
+        current_page = None
+        for page_number, slot, scryfall_id in data:
+            if current_page != page_number:
+                current_page = page_number
+                self.add_page()
+            if not card_db.is_scryfall_id_known(scryfall_id):
+                # If the save file was tampered with or the database used to save contained more cards than the
+                # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
+                continue
+            page = self.pages[-1]
+            card = card_db.get_card_with_scryfall_id(scryfall_id)
+            image_db.get_image(card)
+            page.add_card(card, 1)
+        self.layoutChanged.emit()
+
     def save_as(self, path: pathlib.Path):
         self.file_path = path
         self.save_to_disk()
@@ -239,4 +273,23 @@ class Document(QAbstractListModel):
     def save_to_disk(self):
         if self.file_path is None:
             raise RuntimeError("Cannot save without a file path!")
-        # TODO
+        cards = (
+            zip(itertools.repeat(page_index), enumerate((card.scryfall_id for card in page.cards), start=1))
+            for page_index, page in enumerate(self.pages, start=1)
+        )
+        flattened_data = (
+            (page, slot, scryfall_id)
+            for (page, (slot, scryfall_id))
+            in itertools.chain.from_iterable(cards)
+        )
+        with mtg_proxy_printer.sqlite_helpers.open_database(
+                self.file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
+            db.execute("BEGIN TRANSACTION")
+            db.execute("DELETE FROM Card")
+            db.executemany(
+                "INSERT INTO Card (page, slot, scryfall_id) VALUES (?, ?, ?)",
+                flattened_data
+            )
+            db.commit()
+
+

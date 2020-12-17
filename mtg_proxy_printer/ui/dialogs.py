@@ -17,7 +17,9 @@ import pathlib
 
 from PyQt5.QtWidgets import QFileDialog, QWidget
 
+import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
+import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
 from mtg_proxy_printer.logger import get_logger
 
@@ -57,7 +59,7 @@ class SaveDocumentAsDialog(QFileDialog):
             parent, "Save document as …", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptSave)
-        self.setDefaultSuffix("pdf")
+        self.setDefaultSuffix("mtgproxies")
         self.setFileMode(QFileDialog.AnyFile)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -71,4 +73,34 @@ class SaveDocumentAsDialog(QFileDialog):
             logger.info(f"Saved document to {path}")
         else:
             logger.debug("User aborted saving. Doing nothing.")
+        return result
+
+
+class LoadDocumentDialog(QFileDialog):
+
+    def __init__(
+            self, parent: QWidget,
+            document: mtg_proxy_printer.model.document.Document,
+            card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+            image_db: mtg_proxy_printer.model.imagedb.ImageDatabase, **kwargs):
+        super(LoadDocumentDialog, self).__init__(
+            parent, "Load MTGProxyPrinter document", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
+        self.document = document
+        self.card_db = card_db
+        self.image_db = image_db
+        self.setAcceptMode(QFileDialog.AcceptOpen)
+        self.setDefaultSuffix("mtgproxies")
+        self.setFileMode(QFileDialog.ExistingFile)
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def exec_(self) -> int:
+        logger.debug(f"About to run the {self.__class__.__name__} event loop.")
+        result = super(LoadDocumentDialog, self).exec_()
+        if result == QFileDialog.Accepted:
+            logger.debug("User chose a file name, about to load the document from disk")
+            path = pathlib.Path(self.selectedFiles()[0])
+            self.document.load_from_disk(path, self.card_db, self.image_db)
+            logger.info(f"Loaded document from {path}")
+        else:
+            logger.debug("User aborted loading. Doing nothing.")
         return result
