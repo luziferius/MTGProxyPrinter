@@ -29,6 +29,7 @@ from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
+from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -145,13 +146,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
-        dialog = QFileDialog(self, "Save document", filter="PDF-Documents (*.pdf)")
-        dialog.setDefaultSuffix("pdf")
-        dialog.setFileMode(QFileDialog.AnyFile)
-        if dialog.exec_() == QFileDialog.Accepted:
-            path = dialog.selectedFiles()[0]
-            printer = mtg_proxy_printer.print.PDFPrinter(self.document, path)
-            printer.print_document()
+        dialog = SavePDFDialog(self, self.document)
+        dialog.exec_()
 
     @pyqtSlot()
     def on_action_download_card_data_triggered(self):
