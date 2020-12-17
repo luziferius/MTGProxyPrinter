@@ -65,6 +65,9 @@
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
+    <addaction name="action_load_document"/>
+    <addaction name="action_save_document"/>
+    <addaction name="action_save_as"/>
     <addaction name="action_print"/>
     <addaction name="action_print_pdf"/>
     <addaction name="separator"/>
@@ -179,6 +182,30 @@
    </property>
    <property name="toolTip">
     <string>Add a new, empty page.</string>
+   </property>
+  </action>
+  <action name="action_save_document">
+   <property name="icon">
+    <iconset theme="document-save"/>
+   </property>
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="action_load_document">
+   <property name="icon">
+    <iconset theme="document-open"/>
+   </property>
+   <property name="text">
+    <string>Load</string>
+   </property>
+  </action>
+  <action name="action_save_as">
+   <property name="icon">
+    <iconset theme="document-save-as"/>
+   </property>
+   <property name="text">
+    <string>Save as …</string>
    </property>
   </action>
  </widget>
