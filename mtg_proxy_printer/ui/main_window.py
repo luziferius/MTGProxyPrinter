@@ -100,6 +100,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        self._select_first_page()
+
+    def _select_first_page(self):
         old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
         # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
@@ -240,3 +243,4 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document, self.card_database, self.image_downloader)
         dialog.exec_()
+        self._select_first_page()
