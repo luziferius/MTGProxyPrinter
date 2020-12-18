@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QTableView
 
 import mtg_proxy_printer.model.document
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
@@ -32,10 +33,12 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.setupUi(self)
         self.current_page: mtg_proxy_printer.model.document.Page = None
         self.page_renderer: PageRenderer
+        self.page_card_table_view: QTableView
         self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
 
         self.current_page_changed.connect(self._on_current_page_changed)
         self.current_page_changed.connect(self.page_card_table_view.setModel)
+        self.current_page_changed.connect(lambda: self.page_card_table_view.setColumnHidden(4, True))
         self.current_page_changed.connect(self.page_renderer.set_page)
         self.settings_changed.connect(self.page_renderer.scene().redraw)
 
