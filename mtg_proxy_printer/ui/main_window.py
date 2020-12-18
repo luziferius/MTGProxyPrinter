@@ -29,7 +29,7 @@ from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
-from mtg_proxy_printer.ui.dialogs import SavePDFDialog
+from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -73,6 +73,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def _setup_icons(self):
         action_fallback_icons: typing.List[typing.Tuple[QAction, str]] = [
             (self.action_quit, "application-exit"),
+            (self.action_load_document, "document-open"),
+            (self.action_save_document, "document-save"),
+            (self.action_save_as, "document-save-as"),
             (self.action_print, "document-print-direct"),
             (self.action_print_pdf, "document-print"),
             (self.action_show_settings, "configure"),
@@ -97,6 +100,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        self._select_first_page()
+
+    def _select_first_page(self):
         old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
         # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
@@ -216,3 +222,25 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
         # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
         self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
+
+    @pyqtSlot()
+    def on_action_save_document_triggered(self):
+        logger.debug("User clicked on Save")
+        if self.document.file_path is None:
+            logger.debug("No save file path set. Call 'Save as' instead.")
+            self.action_save_as.triggered.emit()
+        else:
+            logger.debug("About to save the document")
+            self.document.save_to_disk()
+            logger.debug("Saved.")
+
+    @pyqtSlot()
+    def on_action_save_as_triggered(self):
+        dialog = SaveDocumentAsDialog(self, self.document)
+        dialog.exec_()
+
+    @pyqtSlot()
+    def on_action_load_document_triggered(self):
+        dialog = LoadDocumentDialog(self, self.document, self.card_database, self.image_downloader)
+        if dialog.exec_() == LoadDocumentDialog.Accepted:
+            self._select_first_page()

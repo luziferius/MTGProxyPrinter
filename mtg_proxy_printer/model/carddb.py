@@ -16,13 +16,12 @@
 import atexit
 import dataclasses
 import pathlib
-import pkg_resources
-import re
 import sqlite3
 import typing
 
 from PyQt5.QtGui import QPixmap
 
+import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -34,7 +33,6 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
     "CardDataCache.sqlite3"
 )
-SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
 
 __all__ = [
     "Card",
@@ -59,33 +57,9 @@ class CardDatabase:
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        if isinstance(db_path, str) and db_path != ":memory:":
-            db_path = pathlib.Path(db_path)
-        if sqlite3.sqlite_version_info < self.MIN_SUPPORTED_SQLITE_VERSION:
-            raise sqlite3.NotSupportedError(
-                f"This program uses functionality added in SQLite "
-                f"{'.'.join(map(str, self.MIN_SUPPORTED_SQLITE_VERSION))}. Your system has {sqlite3.sqlite_version}. "
-                f"Please update your SQLite3 installation or point your Python installation to a supported version "
-                f"of the SQLite3 library."
-            )
-        if not isinstance(db_path, str) and not (parent_dir := db_path.parent).exists():
-            logger.info(f"Parent directory '{parent_dir}' does not exist, creating it…")
-            parent_dir.mkdir(parents=True)
-        location = "in memory" if db_path == ":memory:" else f"at {db_path}"
-        logger.debug(f"Opening Database {location}.")
-        # This has to be determined before the connection is opened and the file is created on disk.
-        should_create_schema = db_path == ":memory:" or not db_path.exists()
-        self.db: sqlite3.Connection = sqlite3.connect(db_path)
-        logger.debug(f"Connected SQLite database {location}.")
-        # Both settings are volatile, thus have to be set for each opened connection
-        self.db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")
-        logger.debug("Enabled SQLite3 foreign keys support.")
-        if db_path == ":memory:":
-            logger.debug("Skipping registering cleanup hooks for in-memory databases.")
-            self.populate_database_schema()
-        else:
-            if should_create_schema:
-                self.populate_database_schema()
+        db = mtg_proxy_printer.sqlite_helpers.open_database(db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION)
+        self.db = db
+        if db_path != ":memory:":
             logger.debug("Registering cleanup hooks that close the database on exit.")
 
             def close_db():
@@ -100,26 +74,6 @@ class CardDatabase:
                 logger.info("Closed database.")
 
             atexit.register(close_db)
-        self.check_database_schema_version()
-
-    def populate_database_schema(self):
-        logger.info("Creating database schema.")
-        if user_version := self.db.execute("PRAGMA user_version\n").fetchone()[0]:
-            raise RuntimeError(f"Cannot perform this on a non-empty database: {user_version=}.")
-        else:
-            schema = pkg_resources.resource_string(__name__, 'carddb.sql').decode("utf-8")
-            self.db.executescript(schema)
-        logger.debug("Created database schema.")
-
-    def check_database_schema_version(self) -> bool:
-        database_user_version: int = self.db.execute("PRAGMA user_version\n").fetchone()[0]
-        schema = pkg_resources.resource_string(__name__, 'carddb.sql').decode("utf-8")
-        latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
-        if database_user_version != latest_user_version:
-            message = f"Schema version mismatch in the opened database. " \
-                      f"Expected schema version {latest_user_version}, got {database_user_version}."
-            logger.warning(message)
-        return database_user_version != latest_user_version
 
     def commit(self):
         self.db.execute("COMMIT\n")
@@ -316,3 +270,15 @@ class CardDatabase:
         )
         result = [set_abbr for set_abbr, in cursor]
         return result
+
+    def is_scryfall_id_known(self, scryfall_id: str) -> bool:
+        query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ?)'
+        result, = self.db.execute(query, (scryfall_id,)).fetchone()
+        return bool(result)
+
+    def get_card_with_scryfall_id(self, scryfall_id: str) -> Card:
+        query = 'SELECT card_name, "set", collector_number, "language", png_image_uri\n' \
+                'FROM AllPrintings\n' \
+                'WHERE scryfall_id = ?'
+        name, set_abbr, collector_number, language, image_uri = self.db.execute(query, (scryfall_id,)).fetchone()
+        return Card(name, set_abbr, collector_number, language, image_uri, scryfall_id)
