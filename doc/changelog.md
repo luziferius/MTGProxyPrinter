@@ -1,6 +1,12 @@
 # Changelog
 
-# Version 0.2.1
+# Version 0.3.0
+
+- Implemented saving and loading documents to and from disk.
+  The created files do not contain the image data and are therefore small.
+- Added an About… dialog that shows a message box with the application name, version, homepage and the license text.
+
+# Version 0.2.1 (2020-12-02)
 
 This version incorporates major performance optimisations.
 
@@ -17,7 +23,7 @@ and let MTGProxyPrinter re-create it from scratch.
   Searching cards should now feel instant, as the up-to one second delay after each key press is gone for good.
 - Decreased the card database size. The new database roughly takes two/thirds the space previously required.
 
-# Version 0.2.0
+# Version 0.2.0 (2020-12-01)
 
 This is the second alpha version of MTGProxyPrinter.
 
@@ -35,7 +41,7 @@ This is the second alpha version of MTGProxyPrinter.
 - Fixed down-scaling of card images when exporting PDFs. Generated PDF documents should now have the proper size.
 
 
-# Version 0.1.1
+# Version 0.1.1 (2020-11-30)
 
 This version fixes a bug that prevents MTGProxyPrinter from running on Windows using Python 3.8.
 
@@ -47,7 +53,7 @@ This version fixes a bug that prevents MTGProxyPrinter from running on Windows u
 - Fixed missing application icons when run in Windows. Now the main toolbar and menus show the icons as intended.
 
 
-# Version 0.1.0
+# Version 0.1.0 (2020-11-30)
 
 This is the first alpha version of MTGProxyPrinter.
 

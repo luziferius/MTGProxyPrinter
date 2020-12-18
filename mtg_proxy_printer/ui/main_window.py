@@ -29,7 +29,8 @@ from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
-from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog
+from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
+    AboutMTGProxyPrinterDialog
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -46,6 +47,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        self.about_dialog = AboutMTGProxyPrinterDialog(self)
         self.progress_bar = QProgressBar(self)
         self.progress_bar.hide()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
@@ -244,3 +246,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         dialog = LoadDocumentDialog(self, self.document, self.card_database, self.image_downloader)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
             self._select_first_page()
+
+    @pyqtSlot()
+    def on_action_show_about_dialog_triggered(self):
+        self.about_dialog.show()

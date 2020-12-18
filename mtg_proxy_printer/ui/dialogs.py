@@ -14,13 +14,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
+import sys
 
-from PyQt5.QtWidgets import QFileDialog, QWidget
+from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
+import mtg_proxy_printer.ui.common
+import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -104,3 +107,15 @@ class LoadDocumentDialog(QFileDialog):
         else:
             logger.debug("User aborted loading. Doing nothing.")
         return result
+
+class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_file_with_name("about_dialog")):
+
+    def __init__(self, *args, **kwargs):
+        super(AboutMTGProxyPrinterDialog, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.mtg_proxy_printer_version_label: QLabel
+        self.python_version_label: QLabel
+        self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
+        self.python_version_label.setText(sys.version.replace("\n", " "))
+
+

@@ -79,6 +79,8 @@
     </property>
     <addaction name="action_show_settings"/>
     <addaction name="action_download_card_data"/>
+    <addaction name="separator"/>
+    <addaction name="action_show_about_dialog"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSettings"/>
@@ -208,6 +210,11 @@
    </property>
    <property name="text">
     <string>Save as …</string>
+   </property>
+  </action>
+  <action name="action_show_about_dialog">
+   <property name="text">
+    <string>About…</string>
    </property>
   </action>
  </widget>
