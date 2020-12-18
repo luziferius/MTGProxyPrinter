@@ -242,5 +242,5 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document, self.card_database, self.image_downloader)
-        dialog.exec_()
-        self._select_first_page()
+        if dialog.exec_() == LoadDocumentDialog.Accepted:
+            self._select_first_page()
