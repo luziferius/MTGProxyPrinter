@@ -1,16 +1,16 @@
 # Changelog
 
-# Version 0.3.0
+# Version 0.3.0 (2020-12-18)
 
 - Implemented saving and loading documents to and from disk.
   The created files do not contain the image data and are therefore small.
 - Added an About… dialog that shows a message box with the application name, version, homepage and the license text.
+- Suppress showing a CMD console window on Windows while MTGProxyPrinter runs.
 
 # Version 0.2.1 (2020-12-02)
 
 This version incorporates major performance optimisations.
 
-[Downloads are here]($ROOT/info/86c3067c4be06558). (See the Downloads section in the Overview.)
 
 ## Important notice
 
@@ -27,7 +27,6 @@ and let MTGProxyPrinter re-create it from scratch.
 
 This is the second alpha version of MTGProxyPrinter.
 
-[Downloads are here]($ROOT/info/13329d2d4113c53c). (See the Downloads section in the Overview.)
 
 ## Implemented features
 
@@ -45,7 +44,6 @@ This is the second alpha version of MTGProxyPrinter.
 
 This version fixes a bug that prevents MTGProxyPrinter from running on Windows using Python 3.8.
 
-[Downloads are here]($ROOT/info/9f82ed194f287e13). (See the Downloads section in the Overview.)
 
 # Fixed bugs
 
@@ -57,7 +55,6 @@ This version fixes a bug that prevents MTGProxyPrinter from running on Windows u
 
 This is the first alpha version of MTGProxyPrinter.
 
-[Downloads are here]($ROOT/info/09b56f168f6736be). (See the Downloads section in the Overview.)
 
 ## Implemented features
 
