@@ -15,6 +15,8 @@
 
 PRAGMA user_version = 0000001;
 PRAGMA application_id = 41325044; -- ASCII-encoded "MTGP"
+PRAGMA page_size = '512';
+VACUUM;
 
 CREATE TABLE Card (
   page INTEGER NOT NULL CHECK (page > 0),
