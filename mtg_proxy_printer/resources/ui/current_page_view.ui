@@ -2,7 +2,15 @@
 <ui version="4.0">
  <class>current_page_view</class>
  <widget class="QWidget" name="current_page_view">
-  <layout class="QHBoxLayout" name="horizontalLayout">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>518</width>
+    <height>421</height>
+   </rect>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
     <number>0</number>
    </property>
@@ -15,7 +23,7 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
-   <item>
+   <item row="0" column="1" rowspan="2">
     <widget class="QTableView" name="page_card_table_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -26,11 +34,14 @@
      <property name="lineWidth">
       <number>0</number>
      </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
      <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
+      <enum>QAbstractItemView::MultiSelection</enum>
      </property>
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
@@ -40,7 +51,17 @@
      </attribute>
     </widget>
    </item>
-   <item>
+   <item row="2" column="1">
+    <widget class="QPushButton" name="delete_selected_images_button">
+     <property name="text">
+      <string>Remove selected</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-delete"/>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2" rowspan="3">
     <widget class="PageRenderer" name="page_renderer">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
