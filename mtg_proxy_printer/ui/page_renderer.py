@@ -43,8 +43,9 @@ class PageScene(QGraphicsScene):
     def draw_card(self, index: QModelIndex):
         position = self._compute_position_for_image(index)
         image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
-        pixmap = self.addPixmap(image)
-        pixmap.setPos(position)
+        if image is not None:
+            pixmap = self.addPixmap(image)
+            pixmap.setPos(position)
 
     @pyqtSlot()
     def redraw(self):
