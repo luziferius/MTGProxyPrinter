@@ -15,6 +15,7 @@
     <file>icons/document-print.svg</file>
     <file>icons/document-save.svg</file>
     <file>icons/document-save-as.svg</file>
+    <file>icons/edit-delete.svg</file>
     <file>icons/edit-download.svg</file>
 </qresource>
 </RCC>
