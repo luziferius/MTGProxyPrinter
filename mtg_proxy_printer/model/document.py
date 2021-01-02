@@ -87,6 +87,23 @@ class Page(QAbstractTableModel):
             self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
 
     @pyqtSlot(list)
+    def remove_multi_selection(self, indices: typing.List[QModelIndex]):
+        current_range: typing.List[QModelIndex] = []
+        ranges = []
+        for index in indices:
+            if not current_range or index.row() == current_range[-1].row() + 1:
+                current_range.append(index)
+            if current_range and index.row() != current_range[-1].row() + 1:
+                ranges.append(current_range)
+                current_range = []
+        if current_range:
+            ranges.append(current_range)
+        if ranges:
+            ranges.reverse()
+            for range_ in ranges:
+                self.remove_cards(range_)
+
+    @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]):
         if not indices:
             return
@@ -98,6 +115,8 @@ class Page(QAbstractTableModel):
         self.endRemoveRows()
         if not self.cards:
             self.page_empty.emit(True)
+        for row in range(first_index, last_index + 1):  # Qt includes last_index, Python excludes it, so add one here
+            self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:

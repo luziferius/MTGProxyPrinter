@@ -21,6 +21,10 @@ from mtg_proxy_printer.ui.page_renderer import PageRenderer
 
 from .common import inherits_from_ui_file_with_name
 
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
+
 
 class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
 
@@ -44,7 +48,12 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
 
     @pyqtSlot(mtg_proxy_printer.model.document.Page)
     def _on_current_page_changed(self, page: mtg_proxy_printer.model.document.Page):
+        logger.debug("Current page changed. Loading new page.")
         self.current_page = page
 
-
-
+    @pyqtSlot()
+    def on_delete_selected_images_button_clicked(self):
+        self.page_card_table_view: QTableView
+        multi_selection = self.page_card_table_view.selectionModel().selectedRows()
+        logger.debug(f"User removes {len(multi_selection)} items from the current page.")
+        self.current_page.remove_multi_selection(multi_selection)
