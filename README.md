@@ -29,7 +29,7 @@ These libraries are required to run the unit tests.
 
 ## Install
 
-To install the latest release, execute `pip install http://1337net.duckdns.org:8080/MTGProxyPrinter/zip/MTGProxyPrinter.zip?r=release`
+To install the newest version, execute `pip install http://1337net.duckdns.org:8080/MTGProxyPrinter/zip/MTGProxyPrinter.zip?r=release`  
 Install latest development snapshot: From the cloned repository root directory, execute `pip install .`
 
 
