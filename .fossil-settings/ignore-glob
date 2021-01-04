@@ -18,4 +18,4 @@ __pycache__
 build
 dist
 mtg_proxy_printer/ui/compiled_resources.py
-mtg-proxy-printer-runner.spec
+*.spec
