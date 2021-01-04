@@ -21,6 +21,7 @@ When bundling MTGProxyPrinter using PyInstaller, the compilation has to be perfo
 so use the pre_find_module_path hook to generate it at the very beginning of the packaging process.
 """
 
+import atexit
 from pathlib import Path
 
 from PyInstaller.utils.hooks import logger
@@ -32,5 +33,6 @@ def pre_find_module_path(api):
     logger.info("About to compile the Qt resource file")
     import setup
     target_path = Path(mtg_proxy_printer.ui.__file__).parent/"compiled_resources.py"
+    atexit.register(target_path.unlink)
     setup.compile_resources(target_path)
     logger.info("Compiling resource file finished")
