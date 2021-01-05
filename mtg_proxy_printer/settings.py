@@ -60,6 +60,7 @@ DEFAULT_SETTINGS["documents"] = {
     "margin-right-mm": "10",
     "image-spacing-horizontal-mm": "0",
     "image-spacing-vertical-mm": "0",
+    "print-cut-marker": "False",
 }
 
 # Populate the settings with default values
