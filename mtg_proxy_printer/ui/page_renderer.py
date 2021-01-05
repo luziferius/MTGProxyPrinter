@@ -31,8 +31,8 @@ __all__ = [
 
 
 class PageScene(QGraphicsScene):
-    IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
-    IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
+    IMAGE_WIDTH = 63
+    IMAGE_HEIGHT = 88
 
     def __init__(self, draw_background: bool, *args, **kwargs):
         super(PageScene, self).__init__(*args, **kwargs)
@@ -53,6 +53,8 @@ class PageScene(QGraphicsScene):
         if self.draw_background:
             white = QColor("white")
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
+        if settings["documents"].getboolean("print-cut-marker"):
+            self._draw_cut_markers()
         page: Page = self.parent().page
         for index in (page.createIndex(row, 0) for row in range(page.rowCount())):
             self.draw_card(index)
@@ -62,20 +64,58 @@ class PageScene(QGraphicsScene):
         cards_per_row = document.compute_cards_per_row()
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
-        spacing_vertical = document.image_spacing_vertical * unit_registry.millimeter
-        spacing_horizontal = document.image_spacing_horizontal * unit_registry.millimeter
+        spacing_vertical = document.image_spacing_vertical
+        spacing_horizontal = document.image_spacing_horizontal
 
-        x_pos = document.margin_left * unit_registry.millimeter + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
-        y_pos = document.margin_top * unit_registry.millimeter + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        x_pos = document.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
+        y_pos = document.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        document_settings = settings["documents"]
+        scaling_horizontal = self.width() / document_settings.getint("paper-width-mm")
+        scaling_vertical = self.height() / document_settings.getint("paper-height-mm")
         return QPointF(
-            (x_pos * DPI).to_reduced_units().to_tuple()[0],
-            (y_pos * DPI).to_reduced_units().to_tuple()[0],
+            x_pos * scaling_horizontal,
+            y_pos * scaling_vertical,
         )
 
     def get_document(self) -> Document:
         page: Page = self.parent().page
         document: Document = page.parent()
         return document
+
+    def _draw_cut_markers(self):
+        """Draws the optional cut markers that extend to the paper border"""
+        line_color = QColor("black")
+        document = self.get_document()
+
+        column_count = document.compute_cards_per_row()
+        row_count = document.compute_row_count()
+
+        scaling_horizontal = self.width() / document.page_width
+        scaling_vertical = self.height() / document.page_height
+        for column in range(column_count + 1):
+            column_px = scaling_vertical * (
+                    document.margin_left +
+                    column * (PageScene.IMAGE_WIDTH + document.image_spacing_vertical)
+            )
+            self.addLine(column_px, 0, column_px, self.height(), line_color)
+            if document.image_spacing_vertical and column:
+                column_px = 1 + scaling_vertical * (
+                        document.margin_left - document.image_spacing_vertical +
+                        column * (PageScene.IMAGE_WIDTH + document.image_spacing_vertical)
+                )
+                self.addLine(column_px, 0, column_px, self.height(), line_color)
+        for row in range(row_count + 1):
+            row_px = scaling_horizontal * (
+                    document.margin_top +
+                    row * (PageScene.IMAGE_HEIGHT + document.image_spacing_horizontal)
+            )
+            self.addLine(0, row_px, self.width(), row_px, line_color)
+            if document.image_spacing_horizontal and row:
+                row_px = 1 + scaling_horizontal * (
+                        document.margin_top - document.image_spacing_horizontal +
+                        row * (PageScene.IMAGE_HEIGHT + document.image_spacing_horizontal)
+                )
+                self.addLine(0, row_px, self.width(), row_px, line_color)
 
 
 class PageRenderer(QGraphicsView):

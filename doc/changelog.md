@@ -1,5 +1,21 @@
 # Changelog
 
+# Version 0.4.0 (2021-01-05)
+
+## Implemented features
+
+- Implemented removing images from the current page.
+  There is a new button below the table showing the current page content
+  that can be used to remove all selected images from the current page.
+- Implemented optional drawing and printing of cut helper lines.
+  These lines can help machine-cutting the printed pages.
+  They are disabled by default and can be enabled in the settings.
+
+## Optimizations
+
+- Reduced document file sizes. This mainly benefits documents with few pages,
+  where new documents take about 10% of the disk space when compared to documents saved with version 0.3.
+
 # Version 0.3.0 (2020-12-18)
 
 - Implemented saving and loading documents to and from disk.

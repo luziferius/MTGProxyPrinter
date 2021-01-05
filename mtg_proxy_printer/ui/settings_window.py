@@ -73,6 +73,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings = self._get_document_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setValue(document_section.getint(setting))
+        self.print_cut_marker.setChecked(document_section.getboolean("print-cut-marker"))
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
         download_section = settings["downloads"]
@@ -146,6 +147,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_and_settings = self._get_document_settings_widgets()
         for widget, setting in widgets_and_settings:
             documents_section[setting] = str(widget.value())
+        documents_section["print-cut-marker"] = str(self.print_cut_marker.isChecked())
 
     def restore_defaults(self):
         logger.info("User resets the configuration to the default settings.")

@@ -75,42 +75,7 @@
           <string>Default settings for new documents</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="9" column="0">
-           <widget class="QLabel" name="page_image_spacing_vertical_label">
-            <property name="text">
-             <string>Vertical image spacing</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
-           <widget class="QLabel" name="page_margin_left_label">
-            <property name="text">
-             <string>Left margin</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="page_margin_bottom_label">
-            <property name="text">
-             <string>Bottom Margin</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="page_height_label">
-            <property name="text">
-             <string>Page height</string>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="0">
-           <widget class="QLabel" name="page_image_spacing_horizontal_label">
-            <property name="text">
-             <string>Horizontal image spacing</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
+          <item row="1" column="2">
            <widget class="QSpinBox" name="page_height">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -129,85 +94,14 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
+          <item row="3" column="0">
            <widget class="QLabel" name="page_width_label">
             <property name="text">
              <string>Page width</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0">
-           <widget class="QLabel" name="page_margin_top_label">
-            <property name="text">
-             <string>Top margin</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QSpinBox" name="page_width">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper width in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="0">
-           <widget class="QLabel" name="page_margin_right_label">
-            <property name="text">
-             <string>Right margin</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QSpinBox" name="page_margin_top">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="2">
-           <widget class="QSpinBox" name="page_margin_bottom">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="2">
+          <item row="7" column="2">
            <widget class="QSpinBox" name="page_margin_left">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -226,7 +120,73 @@
             </property>
            </widget>
           </item>
-          <item row="7" column="2">
+          <item row="10" column="0">
+           <widget class="QLabel" name="page_image_spacing_vertical_label">
+            <property name="text">
+             <string>Vertical image spacing</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="page_margin_top_label">
+            <property name="text">
+             <string>Top margin</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="page_margin_bottom_label">
+            <property name="text">
+             <string>Bottom Margin</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QSpinBox" name="page_margin_top">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="page_height_label">
+            <property name="text">
+             <string>Page height</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QSpinBox" name="page_width">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Default paper width in millimeters</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
            <widget class="QSpinBox" name="page_margin_right">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -245,7 +205,47 @@
             </property>
            </widget>
           </item>
-          <item row="8" column="2">
+          <item row="5" column="2">
+           <widget class="QSpinBox" name="page_margin_bottom">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <widget class="QLabel" name="page_margin_left_label">
+            <property name="text">
+             <string>Left margin</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0">
+           <widget class="QLabel" name="page_margin_right_label">
+            <property name="text">
+             <string>Right margin</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0">
+           <widget class="QLabel" name="page_image_spacing_horizontal_label">
+            <property name="text">
+             <string>Horizontal image spacing</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="2">
            <widget class="QSpinBox" name="page_image_spacing_horizontal">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -264,7 +264,7 @@
             </property>
            </widget>
           </item>
-          <item row="9" column="2">
+          <item row="10" column="2">
            <widget class="QSpinBox" name="page_image_spacing_vertical">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -280,6 +280,16 @@
             </property>
             <property name="maximum">
              <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QCheckBox" name="print_cut_marker">
+            <property name="toolTip">
+             <string>Enable printing additional lines to aid cutting the printed sheets.</string>
+            </property>
+            <property name="text">
+             <string>Print cut markers</string>
             </property>
            </widget>
           </item>
@@ -462,8 +472,32 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>tab_widget</tabstop>
   <tabstop>preferred_language_combo_box</tabstop>
   <tabstop>avoid_low_res_images_check_box</tabstop>
+  <tabstop>print_cut_marker</tabstop>
+  <tabstop>page_height</tabstop>
+  <tabstop>page_width</tabstop>
+  <tabstop>page_margin_top</tabstop>
+  <tabstop>page_margin_bottom</tabstop>
+  <tabstop>page_margin_left</tabstop>
+  <tabstop>page_margin_right</tabstop>
+  <tabstop>page_image_spacing_horizontal</tabstop>
+  <tabstop>page_image_spacing_vertical</tabstop>
+  <tabstop>include_cards_depicting_racism</tabstop>
+  <tabstop>include_white_bordered_cards</tabstop>
+  <tabstop>include_gold_bordered_cards</tabstop>
+  <tabstop>include_funny_cards</tabstop>
+  <tabstop>include_illegal_in_brawl</tabstop>
+  <tabstop>include_illegal_in_commander</tabstop>
+  <tabstop>include_illegal_in_historic</tabstop>
+  <tabstop>include_illegal_in_legacy</tabstop>
+  <tabstop>include_illegal_in_modern</tabstop>
+  <tabstop>include_illegal_in_pauper</tabstop>
+  <tabstop>include_illegal_in_penny</tabstop>
+  <tabstop>include_illegal_in_pioneer</tabstop>
+  <tabstop>include_illegal_in_standard</tabstop>
+  <tabstop>include_illegal_in_vintage</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -474,8 +508,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
+     <x>254</x>
+     <y>573</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -490,8 +524,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>316</x>
-     <y>260</y>
+     <x>322</x>
+     <y>573</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
