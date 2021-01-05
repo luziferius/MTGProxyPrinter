@@ -22,7 +22,7 @@ with open(script_file, "r", encoding="utf-8") as opened_script_file:
         ).group(1)
 
 
-with open("README.rst", "r", encoding="utf-8") as f:
+with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
