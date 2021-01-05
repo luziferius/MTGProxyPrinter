@@ -83,55 +83,39 @@ class PageScene(QGraphicsScene):
         return document
 
     def _draw_cut_markers(self):
+        """Draws the optional cut markers that extend to the paper border"""
         line_color = QColor("black")
         document = self.get_document()
 
         column_count = document.compute_cards_per_row()
         row_count = document.compute_row_count()
 
-        self._draw_outer_cut_markers(
-            document, line_color, column_count, row_count
-        )
-
-    def _draw_outer_cut_markers(
-            self, document: Document, line_color: QColor,
-            column_count: int, row_count: int):
-        """Draws the cut markers that extend to the paper border"""
         scaling_horizontal = self.width() / document.page_width
         scaling_vertical = self.height() / document.page_height
-        left_horizontal_line_length = scaling_horizontal * min(document.margin_left, 10)
-        right_horizontal_line_length = scaling_horizontal * min(document.margin_right, 10)
-        top_vertical_line_length = scaling_vertical * min(document.margin_top, 10)
-        bottom_vertical_line_length = scaling_vertical * min(document.margin_bottom, 10)
         for column in range(column_count + 1):
             column_px = scaling_vertical * (
                     document.margin_left +
                     column * (PageScene.IMAGE_WIDTH + document.image_spacing_vertical)
             )
-            self.addLine(column_px, 0, column_px, top_vertical_line_length, line_color)
-            self.addLine(column_px, self.height() - bottom_vertical_line_length, column_px, self.height(), line_color)
+            self.addLine(column_px, 0, column_px, self.height(), line_color)
             if document.image_spacing_vertical and column:
                 column_px = 1 + scaling_vertical * (
                         document.margin_left - document.image_spacing_vertical +
                         column * (PageScene.IMAGE_WIDTH + document.image_spacing_vertical)
                 )
-                self.addLine(column_px, 0, column_px, top_vertical_line_length, line_color)
-                self.addLine(column_px, self.height() - bottom_vertical_line_length, column_px, self.height(),
-                             line_color)
+                self.addLine(column_px, 0, column_px, self.height(), line_color)
         for row in range(row_count + 1):
             row_px = scaling_horizontal * (
                     document.margin_top +
                     row * (PageScene.IMAGE_HEIGHT + document.image_spacing_horizontal)
             )
-            self.addLine(0, row_px, left_horizontal_line_length, row_px, line_color)
-            self.addLine(self.width() - right_horizontal_line_length, row_px, self.width(), row_px, line_color)
+            self.addLine(0, row_px, self.width(), row_px, line_color)
             if document.image_spacing_horizontal and row:
                 row_px = 1 + scaling_horizontal * (
                         document.margin_top - document.image_spacing_horizontal +
                         row * (PageScene.IMAGE_HEIGHT + document.image_spacing_horizontal)
                 )
-                self.addLine(0, row_px, left_horizontal_line_length, row_px, line_color)
-                self.addLine(self.width() - right_horizontal_line_length, row_px, self.width(), row_px, line_color)
+                self.addLine(0, row_px, self.width(), row_px, line_color)
 
 
 class PageRenderer(QGraphicsView):
