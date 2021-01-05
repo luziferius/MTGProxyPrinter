@@ -19,3 +19,5 @@ build
 dist
 mtg_proxy_printer/ui/compiled_resources.py
 *.spec
+*.pdf
+*.mtgproxies
