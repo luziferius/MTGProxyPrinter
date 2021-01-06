@@ -61,6 +61,7 @@ DEFAULT_SETTINGS["documents"] = {
     "image-spacing-horizontal-mm": "0",
     "image-spacing-vertical-mm": "0",
     "print-cut-marker": "False",
+    "pdf-page-count-limit": "0",
 }
 
 # Populate the settings with default values

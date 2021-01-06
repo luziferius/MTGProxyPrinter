@@ -83,6 +83,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
+            (self.pdf_page_count_limit, "pdf-page-count-limit"),
             (self.page_height, "paper-height-mm"),
             (self.page_width, "paper-width-mm"),
             (self.page_margin_top, "margin-top-mm"),
