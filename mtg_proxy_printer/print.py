@@ -13,39 +13,68 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import math
+from pathlib import Path
+
 from PyQt5.QtCore import QObject, QMarginsF
 from PyQt5.QtGui import QPainter, QPdfWriter
 
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
+
+__all__ = [
+    "export_pdf",
+]
+
+
+def export_pdf(document: Document, file_path: str, parent: QObject = None):
+    pages_to_print = settings["documents"].getint("pdf-page-count-limit") or document.rowCount()
+    if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
+        return
+    for document_index in range(math.ceil(document.rowCount()/pages_to_print)):
+        printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
+        printer.print_document()
 
 
 class PDFPrinter(QPdfWriter):
 
-    def __init__(self, document: Document, file_path: str, parent: QObject = None):
+    def __init__(self, document: Document, file_path: str, parent: QObject = None,
+                 document_index: int = 0, pages_to_print: int = None):
+        self.document = document
+        self.document_index = document_index
+        self.pages_to_print: int = pages_to_print or document.rowCount()
+        if pages_to_print < document.rowCount():
+            path = Path(file_path)
+            # Add one to the document_index for human-readable counting starting at 1 and suffix includes the separator
+            file_path = str(path.parent / f"{path.stem}-{document_index+1}{path.suffix}")
         super(PDFPrinter, self).__init__(file_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
-        self.document = document
+
         self.setResolution(document.DPI.to_tuple()[0])
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.page = None
         self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
 
     def print_document(self):
-        page_count = self.document.rowCount()
         self.painter.begin(self)
         self.painter.setRenderHint(QPainter.LosslessImageRendering)
         self.painter.scale(
                 self.logicalDpiX()/self.resolution(),
                 self.logicalDpiY()/self.resolution()
             )
-        for index, page in enumerate(self.document.pages, start=1):
+        first_index = self.document_index*self.pages_to_print
+        last_index = (self.document_index+1)*self.pages_to_print
+
+        pages_to_process = self.document.pages[first_index:last_index]
+        page_count = len(pages_to_process)
+        for index, page in enumerate(pages_to_process, start=1):
             self.page = page
             self.scene.redraw()
             self.scene.render(self.painter)
-            if index < page_count:
+            if index < page_count:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()

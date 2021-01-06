@@ -46,8 +46,7 @@ class SavePDFDialog(QFileDialog):
         if result == QFileDialog.Accepted:
             logger.debug("User chose a file name, about to generate the PDF document")
             path = self.selectedFiles()[0]
-            printer = mtg_proxy_printer.print.PDFPrinter(self.document, path)
-            printer.print_document()
+            mtg_proxy_printer.print.export_pdf(self.document, path, self)
             logger.info(f"Saved document to {path}")
 
         else:
