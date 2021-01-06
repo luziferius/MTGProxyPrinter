@@ -23,4 +23,4 @@ CREATE TABLE Card (
   slot INTEGER NOT NULL CHECK (slot > 0),
   scryfall_id TEXT NOT NULL,
   PRIMARY KEY(page, slot)
-);
+) WITHOUT ROWID;
