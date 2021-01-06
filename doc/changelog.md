@@ -1,13 +1,28 @@
 # Changelog
 
+
+# Version 0.5.0 (unreleased, in development)
+
+## Implemented features
+
+- Added optional, automatic splitting of generated PDF documents,
+  based on a page count limit set in the settings. If enabled,
+  documents with more pages than the set limit will be exported to multiple PDF files.
+  This can be used when exported PDFs exceed the printer’s internal file size limit.
+
+## Optimizations
+
+- Further reduced document file size for newly created documents.
+
+
 # Version 0.4.0 (2021-01-05)
 
 ## Implemented features
 
-- Implemented removing images from the current page.
+- Added option to remove images from the current page.
   There is a new button below the table showing the current page content
   that can be used to remove all selected images from the current page.
-- Implemented optional drawing and printing of cut helper lines.
+- Added optional drawing and printing of cut helper lines.
   These lines can help machine-cutting the printed pages.
   They are disabled by default and can be enabled in the settings.
 
@@ -16,6 +31,7 @@
 - Reduced document file sizes. This mainly benefits documents with few pages,
   where new documents take about 10% of the disk space when compared to documents saved with version 0.3.
 
+
 # Version 0.3.0 (2020-12-18)
 
 - Implemented saving and loading documents to and from disk.
@@ -23,10 +39,10 @@
 - Added an About… dialog that shows a message box with the application name, version, homepage and the license text.
 - Suppress showing a CMD console window on Windows while MTGProxyPrinter runs.
 
+
 # Version 0.2.1 (2020-12-02)
 
 This version incorporates major performance optimisations.
-
 
 ## Important notice
 
@@ -39,10 +55,10 @@ and let MTGProxyPrinter re-create it from scratch.
   Searching cards should now feel instant, as the up-to one second delay after each key press is gone for good.
 - Decreased the card database size. The new database roughly takes two/thirds the space previously required.
 
+
 # Version 0.2.0 (2020-12-01)
 
 This is the second alpha version of MTGProxyPrinter.
-
 
 ## Implemented features
 
@@ -60,7 +76,6 @@ This is the second alpha version of MTGProxyPrinter.
 
 This version fixes a bug that prevents MTGProxyPrinter from running on Windows using Python 3.8.
 
-
 # Fixed bugs
 
 - Fixed issue that prevented 0.1.0 from running under Windows when using Python 3.8.6, as obtained from python.org
@@ -70,7 +85,6 @@ This version fixes a bug that prevents MTGProxyPrinter from running on Windows u
 # Version 0.1.0 (2020-11-30)
 
 This is the first alpha version of MTGProxyPrinter.
-
 
 ## Implemented features
 
