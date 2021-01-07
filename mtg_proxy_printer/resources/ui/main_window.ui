@@ -61,7 +61,7 @@
      <height>30</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
+   <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
@@ -73,7 +73,7 @@
     <addaction name="separator"/>
     <addaction name="action_quit"/>
    </widget>
-   <widget class="QMenu" name="menuSettings">
+   <widget class="QMenu" name="menu_settings">
     <property name="title">
      <string>Settings</string>
     </property>
@@ -82,8 +82,17 @@
     <addaction name="separator"/>
     <addaction name="action_show_about_dialog"/>
    </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuSettings"/>
+   <widget class="QMenu" name="menu_edit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="separator"/>
+    <addaction name="action_new_page"/>
+    <addaction name="action_discard_page"/>
+   </widget>
+   <addaction name="menu_file"/>
+   <addaction name="menu_edit"/>
+   <addaction name="menu_settings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
