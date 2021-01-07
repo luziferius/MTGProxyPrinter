@@ -17,5 +17,6 @@
     <file>icons/document-save-as.svg</file>
     <file>icons/edit-delete.svg</file>
     <file>icons/edit-download.svg</file>
+    <file>icons/format-align-vertical-top.svg</file>
 </qresource>
 </RCC>
