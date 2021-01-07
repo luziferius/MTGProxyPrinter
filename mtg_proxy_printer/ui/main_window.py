@@ -58,6 +58,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.document = mtg_proxy_printer.model.document.Document(parent=self)
+        self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
         self.current_page_changed.connect(self.page_view.current_page_changed)
