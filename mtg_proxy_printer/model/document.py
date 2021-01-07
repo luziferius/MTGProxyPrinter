@@ -309,3 +309,40 @@ class Document(QAbstractListModel):
                 flattened_data
             )
             db.commit()
+
+    @pyqtSlot()
+    def compact_pages(self):
+        """
+        Compacts a document by filling as many empty slots as possible on pages that are not at the end of the document.
+
+        Scans the document for pages that are not completely filled and for each such page,
+        moves cards from the last page with items to it.
+        This fills all (but the last) pages up to the capacity limit to help reducing possible waste during printing.
+        """
+        cards_per_page = self.compute_total_cards_per_page()
+        last_index = -1
+        for current_page in self.pages[:-1]:
+            if cards_to_add := cards_per_page - current_page.rowCount():
+                while cards_to_add and current_page is not self.pages[last_index]:
+                    moved_cards = self._move_images_to_fill_page(current_page, self.pages[last_index])
+                    cards_to_add -= moved_cards
+                    if not self.pages[last_index].rowCount():
+                        last_index -= 1
+
+    def _move_images_to_fill_page(self, page_to_fill: Page, source: Page) -> int:
+        """
+        Moves min(free_slots_in_target, cards_in_source) items from the source page to the target page.
+
+        :return: Number of moved images
+
+        """
+        cards_per_page = self.compute_total_cards_per_page()
+        card_count_to_move = min(cards_per_page - page_to_fill.rowCount(), source.rowCount())
+        if not card_count_to_move:
+            return 0
+        cards_to_move = source.cards[:card_count_to_move]
+        source_model_indices_to_remove = [source.createIndex(row, 0) for row in range(card_count_to_move)]
+        source.remove_cards(source_model_indices_to_remove)
+        for card in cards_to_move:
+            page_to_fill.add_card(card, 1)
+        return card_count_to_move

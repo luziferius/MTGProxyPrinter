@@ -86,6 +86,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <addaction name="action_compact_document"/>
     <addaction name="separator"/>
     <addaction name="action_new_page"/>
     <addaction name="action_discard_page"/>
@@ -116,6 +117,8 @@
    <addaction name="separator"/>
    <addaction name="action_new_page"/>
    <addaction name="action_discard_page"/>
+   <addaction name="separator"/>
+   <addaction name="action_compact_document"/>
   </widget>
   <action name="action_quit">
    <property name="icon">
@@ -224,6 +227,17 @@
   <action name="action_show_about_dialog">
    <property name="text">
     <string>About…</string>
+   </property>
+  </action>
+  <action name="action_compact_document">
+   <property name="icon">
+    <iconset theme="format-align-vertical-top"/>
+   </property>
+   <property name="text">
+    <string>Compact document</string>
+   </property>
+   <property name="toolTip">
+    <string>Fill empty slots on pages by moving cards from the end of the document</string>
    </property>
   </action>
  </widget>
