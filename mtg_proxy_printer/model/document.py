@@ -329,15 +329,20 @@ class Document(QAbstractListModel):
         moves cards from the last page with items to it.
         This fills all (but the last) pages up to the capacity limit to help reducing possible waste during printing.
         """
-        cards_per_page = self.compute_total_cards_per_page()
-        last_index = -1
-        for current_page in self.pages[:-1]:
-            if cards_to_add := cards_per_page - current_page.rowCount():
-                while cards_to_add and current_page is not self.pages[last_index]:
-                    moved_cards = self._move_images_to_fill_page(current_page, self.pages[last_index])
-                    cards_to_add -= moved_cards
+        maximum_cards_per_page = self.compute_total_cards_per_page()
+        last_index = self.rowCount() - 1
+        current_index = 0
+        for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
+            if cards_to_add := maximum_cards_per_page - current_page.rowCount():
+                while cards_to_add and current_index < last_index:
+                    cards_to_add -= self._move_images_to_fill_page(current_page, self.pages[last_index])
                     if not self.pages[last_index].rowCount():
                         last_index -= 1
+                if current_index == last_index:  # No more pages available to take cards from
+                    break
+        if current_index < self.rowCount() - 1:
+            empty_trailing_pages = [self.createIndex(row, 0) for row in range(current_index+1, self.rowCount())]
+            self.remove_pages(empty_trailing_pages)
 
     def _move_images_to_fill_page(self, page_to_fill: Page, source: Page) -> int:
         """
