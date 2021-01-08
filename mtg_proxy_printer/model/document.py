@@ -75,8 +75,9 @@ class Page(QAbstractTableModel):
             elif index.column() == 4:
                 return card.image_file
 
+    @pyqtSlot(Card)
     @pyqtSlot(Card, int)
-    def add_card(self, card: Card, count: int):
+    def add_card(self, card: Card, count: int = 1):
         first_index, last_index = len(self.cards), len(self.cards) + count - 1
         self.beginInsertRows(QModelIndex(), first_index, last_index)
         self.cards += list(itertools.repeat(card, count))
@@ -282,7 +283,7 @@ class Document(QAbstractListModel):
             page = self.pages[-1]
             card = card_db.get_card_with_scryfall_id(scryfall_id)
             image_db.get_image(card)
-            page.add_card(card, 1)
+            page.add_card(card)
 
     def save_as(self, path: pathlib.Path):
         self.file_path = path
@@ -344,5 +345,5 @@ class Document(QAbstractListModel):
         source_model_indices_to_remove = [source.createIndex(row, 0) for row in range(card_count_to_move)]
         source.remove_cards(source_model_indices_to_remove)
         for card in cards_to_move:
-            page_to_fill.add_card(card, 1)
+            page_to_fill.add_card(card)
         return card_count_to_move
