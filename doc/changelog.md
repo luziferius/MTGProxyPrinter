@@ -12,6 +12,11 @@
 - Added document compacting: Completely fill partially filled pages by moving images from the end into free slots.
   This may help reducing the page count and therefore reduce wasted paper when printing.
 
+## Fixed issues
+
+- When changing document settings decreases the page capacity,
+  move images from then overflowing pages to free slots or new pages.
+
 ## Optimizations
 
 - Further reduced document file size for newly created documents.
