@@ -179,10 +179,12 @@ class Document(QAbstractListModel):
         self.total_cards_per_page = self.compute_total_cards_per_page()
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
+        if self.total_cards_per_page < previous_card_count:
+            self._move_excess_images_to_free_pages()
 
     @pyqtSlot()
     @pyqtSlot(int)
-    def add_page(self, position: int = None):
+    def add_page(self, position: int = None) -> Page:
         position = self.rowCount() if position is None else min(position, self.rowCount())
         if position < 0:
             raise ValueError("Attempted to add a page at a negative position.")
@@ -194,6 +196,7 @@ class Document(QAbstractListModel):
             self.pages.insert(position, page)
         page.dataChanged.connect(self.on_page_data_changed)
         self.endInsertRows()
+        return page
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
@@ -353,3 +356,40 @@ class Document(QAbstractListModel):
         for card in cards_to_move:
             page_to_fill.add_card(card)
         return card_count_to_move
+
+    def _move_excess_images_to_free_pages(self) -> int:
+        """
+        If the page capacity is reduced due to increased margins, spacing or reduced page size, images beyond the
+        page capacity should be moved from overflowing pages to free slots and potentially new pages at the end.
+
+        :return: Number of moved images
+        """
+        current_capacity = self.compute_total_cards_per_page()
+        if not current_capacity:
+            raise RuntimeError("Page capacity is zero!")
+        excess_images = []
+        for page in self.pages:
+            images_on_page = page.rowCount()
+            if images_on_page > current_capacity:
+                to_remove = [
+                    page.createIndex(row, 0)
+                    # Qt includes the last value in a range and Python excludes it, so add one to the range 'stop'
+                    for row in range(current_capacity, images_on_page + 1)
+                ]
+                excess_images += page.cards[current_capacity: images_on_page]
+                page.remove_cards(to_remove)
+        total_moved_images = len(excess_images)
+        for page in self.pages:
+            images_on_page = page.rowCount()
+            if free_slots := current_capacity - images_on_page:
+                to_add = excess_images[:free_slots]
+                excess_images = excess_images[free_slots:]
+                for card in to_add:
+                    page.add_card(card)
+        while excess_images:
+            page = self.add_page()
+            to_add = excess_images[:current_capacity]
+            excess_images = excess_images[current_capacity:]
+            for card in to_add:
+                page.add_card(card)
+        return total_moved_images
