@@ -181,11 +181,17 @@ class Document(QAbstractListModel):
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
 
     @pyqtSlot()
-    def add_page(self):
-        index = len(self.pages)
-        self.beginInsertRows(QModelIndex(), index, index)
+    @pyqtSlot(int)
+    def add_page(self, position: int = None):
+        position = self.rowCount() if position is None else min(position, self.rowCount())
+        if position < 0:
+            raise RuntimeError("Attempted to add a page at a negative position.")
+        self.beginInsertRows(QModelIndex(), position, position)
         page = Page(parent=self)
-        self.pages.append(page)
+        if position == self.rowCount():
+            self.pages.append(page)
+        else:
+            self.pages.insert(position, page)
         page.dataChanged.connect(self.on_page_data_changed)
         self.endInsertRows()
 
