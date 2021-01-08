@@ -185,7 +185,7 @@ class Document(QAbstractListModel):
     def add_page(self, position: int = None):
         position = self.rowCount() if position is None else min(position, self.rowCount())
         if position < 0:
-            raise RuntimeError("Attempted to add a page at a negative position.")
+            raise ValueError("Attempted to add a page at a negative position.")
         self.beginInsertRows(QModelIndex(), position, position)
         page = Page(parent=self)
         if position == self.rowCount():
