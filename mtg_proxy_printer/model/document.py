@@ -78,11 +78,11 @@ class Page(QAbstractTableModel):
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
     def add_card(self, card: Card, count: int = 1):
-        first_index, last_index = len(self.cards), len(self.cards) + count - 1
+        first_index, last_index = self.rowCount(), self.rowCount() + count - 1
         self.beginInsertRows(QModelIndex(), first_index, last_index)
         self.cards += list(itertools.repeat(card, count))
         self.endInsertRows()
-        if len(self.cards) == count:
+        if self.rowCount() == count:
             self.page_empty.emit(False)
         for row in range(first_index, last_index + 1):  # Qt includes last_index, Python excludes it, so add one here
             self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
@@ -271,7 +271,7 @@ class Document(QAbstractListModel):
                 "FROM Card\n"
                 "ORDER BY page, slot ASC").fetchall()
         if self.pages:
-            self.beginRemoveRows(QModelIndex(), 0, len(self.pages))
+            self.beginRemoveRows(QModelIndex(), 0, self.rowCount())
             for page in self.pages:
                 page.dataChanged.disconnect(self.on_page_data_changed)
             self.pages.clear()
