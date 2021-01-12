@@ -59,21 +59,28 @@ class CardDatabase:
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION)
         self.db = db
+        self._exit_hook = None
         if db_path != ":memory:":
-            logger.debug("Registering cleanup hooks that close the database on exit.")
+            self._register_exit_hook()
 
-            def close_db():
-                logger.debug("Rolling back active transactions.")
-                self.db.rollback()
-                logger.debug("Running SQLite PRAGMA optimize.")
-                # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
-                # See also: https://www.sqlite.org/lang_analyze.html
-                self.db.execute("PRAGMA optimize")
-                self.db.close()
-                del self.db
-                logger.info("Closed database.")
+    def _register_exit_hook(self):
+        logger.debug("Registering cleanup hooks that close the database on exit.")
+        if self._exit_hook is not None:
+            logger.debug("Unregister previously installed hook")
+            atexit.unregister(self._exit_hook)
 
-            atexit.register(close_db)
+        def close_db():
+            logger.debug("Rolling back active transactions.")
+            self.db.rollback()
+            logger.debug("Running SQLite PRAGMA optimize.")
+            # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
+            # See also: https://www.sqlite.org/lang_analyze.html
+            self.db.execute("PRAGMA optimize")
+            self.db.close()
+            logger.info("Closed database.")
+
+        atexit.register(close_db)
+        self._exit_hook = close_db
 
     def commit(self):
         self.db.execute("COMMIT\n")
