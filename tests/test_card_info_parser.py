@@ -114,7 +114,7 @@ def populate_database(model, data):
         # The URL is not used to fetch data, as the test data directly supplies the JSON document.
         mock.return_value = ("http://example.com", 1)
         cid = mtg_proxy_printer.card_info_importer.CardInfoDownloader(model)
-        cid.populate_database(model, data)
+        cid.populate_database(data)
 
 
 def _populate_database_with_specific_download_setting(model, data, option, value):

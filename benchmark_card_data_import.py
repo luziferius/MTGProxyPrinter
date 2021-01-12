@@ -94,6 +94,6 @@ if __name__ == "__main__":
     print("Creating JSON data generator…")
     json_data = cid.read_json_card_data(args.card_data)
     print("Starting benchmark…")
-    cid.populate_database(cdb, json_data)
+    cid.populate_database(json_data)
     print("Done")
 

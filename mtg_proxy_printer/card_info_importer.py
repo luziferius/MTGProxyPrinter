@@ -130,11 +130,11 @@ class CardInfoDownloader(QObject):
         yield from ijson.items(file, "item")
         self.download_finished.emit()
 
-    def populate_database(self, model: CardDatabase, card_data: typing.Generator[JSONType, None, None] = None):
+    def populate_database(self, card_data: typing.Generator[JSONType, None, None] = None):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
-        model.db.execute("BEGIN TRANSACTION\n")
+        self.model.db.execute("BEGIN TRANSACTION\n")
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled = {  # Parse the boolean download settings only once per import
             key: ds.getboolean(key)
@@ -148,23 +148,27 @@ class CardInfoDownloader(QObject):
                 logger.debug(
                     f"Skipping card '{card['name']}', because it matches a download filter.")
                 continue
-            language_id = _insert_language(model, card["lang"])
-            card_id = _insert_card(model, card)
-            set_id = _insert_set(model, card)
-            _insert_card_faces(model, card, language_id, card_id, set_id)
+            language_id = _insert_language(self.model, card["lang"])
+            card_id = _insert_card(self.model, card)
+            set_id = _insert_set(self.model, card)
+            _insert_card_faces(self.model, card, language_id, card_id, set_id)
             self.download_progress.emit(index)
             if not index % 1000:
-                model.db.execute("PRAGMA optimize\n")
+                self.model.db.execute("PRAGMA optimize\n")
         # Store the timestamp of this import.
-        model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
+        self.model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
-        model.db.execute("ANALYZE\n")
-        model.commit()
+        self.model.db.execute("ANALYZE\n")
+        self.model.commit()
 
 
 @functools.lru_cache()
 def _insert_language(model: CardDatabase, language: str) -> int:
+    """
+    Inserts the given language into the database and returns the generated ID.
+    If the language is already present, just return the ID.
+    """
     if result := model.db.execute(
             'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
             (language,)).fetchone():
