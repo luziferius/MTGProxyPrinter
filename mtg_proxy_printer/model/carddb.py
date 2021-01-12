@@ -83,7 +83,7 @@ class CardDatabase:
         self._exit_hook = close_db
 
     def commit(self):
-        self.db.execute("COMMIT\n")
+        self.db.commit()
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
