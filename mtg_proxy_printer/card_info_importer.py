@@ -135,6 +135,7 @@ class CardInfoDownloader(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
         self.model.db.execute("BEGIN TRANSACTION\n")
+        self._clear_database()
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled = {  # Parse the boolean download settings only once per import
             key: ds.getboolean(key)
@@ -161,6 +162,15 @@ class CardInfoDownloader(QObject):
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
+
+    def _clear_database(self):
+        """
+        Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
+        This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
+        """
+        self.model.db.execute("DELETE FROM FaceName\n")
+        self.model.db.execute("DELETE FROM Card\n")
+        self.model.db.execute('DELETE FROM "Set"\n')
 
 
 @functools.lru_cache()
