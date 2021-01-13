@@ -21,6 +21,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QPixmap
 
 import mtg_proxy_printer.meta_data
+import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.card_info_importer
@@ -75,10 +76,9 @@ class ImageDatabase(QObject):
     def _download_image(self, card: Card, fs_path: pathlib.Path):
         self.card_download_starting.emit()
         download_uri = card.image_uri
-        # TODO: Refactor this prototype implementation
         try:
-            with mtg_proxy_printer.card_info_importer.CardInfoDownloader._read_from_url(download_uri) as source, \
-                    fs_path.open("wb") as file_in_cache:
+            file, size = mtg_proxy_printer.card_info_importer.read_from_url(download_uri)
+            with mtg_proxy_printer.metered_file.MeteredFile(file, size) as source, fs_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(source, file_in_cache)
         finally:
             self.card_download_finished.emit()
