@@ -46,10 +46,9 @@ class Application(QApplication):
         self.settings_window.saved.connect(self.main_window.settings_changed)
 
         self.main_window.show()
-        card_db_has_data = self.card_db.has_data()
-        self.main_window.action_download_card_data.setDisabled(card_db_has_data)
-        if not card_db_has_data:
-            self.main_window.action_download_card_data.trigger()
+        self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        if not self.card_db.has_data():
+            self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()

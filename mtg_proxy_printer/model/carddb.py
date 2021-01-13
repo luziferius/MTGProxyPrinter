@@ -15,6 +15,7 @@
 
 import atexit
 import dataclasses
+import datetime
 import pathlib
 import sqlite3
 import typing
@@ -33,6 +34,10 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
     "CardDataCache.sqlite3"
 )
+
+# The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
+# once per month or so.
+MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 
 __all__ = [
     "Card",
@@ -88,6 +93,18 @@ class CardDatabase:
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
+
+    def allow_updating_card_data(self) -> bool:
+        query = "SELECT update_timestamp FROM LastDatabaseUpdate ORDER BY update_timestamp DESC LIMIT 1\n"
+        result: typing.Tuple[str] = self.db.execute(query).fetchone()
+        if result:
+            last_timestamp_str, = result
+            last_timestamp = datetime.datetime.fromisoformat(last_timestamp_str).date()
+            now = datetime.datetime.now().date()
+            allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= now
+            return allow_update
+        else:
+            return True
 
     def get_all_languages(self) -> StringList:
         result = [lang for (lang,) in self.db.execute(

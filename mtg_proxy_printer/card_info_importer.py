@@ -135,6 +135,7 @@ class CardInfoDownloader(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
         self.model.db.execute("BEGIN TRANSACTION\n")
+        self._clear_database()
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled = {  # Parse the boolean download settings only once per import
             key: ds.getboolean(key)
@@ -161,6 +162,25 @@ class CardInfoDownloader(QObject):
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
+
+    def _clear_database(self):
+        """
+        Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
+        This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
+        """
+        # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
+        # leaves to roots. This allows SQLite to use the TRUNCATE optimization
+        # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
+        # the tables in a way that doesn’t break foreign keys during the process.
+        tables_to_clear = [
+            "CardFace",
+            "FaceName",
+            "Card",
+            '"Set"',
+            "PrintLanguage",
+        ]
+        for table in tables_to_clear:
+            self.model.db.execute(f"DELETE FROM {table}\n")
 
 
 @functools.lru_cache()

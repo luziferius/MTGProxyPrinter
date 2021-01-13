@@ -159,20 +159,31 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         dialog = SavePDFDialog(self, self.document)
         dialog.exec_()
 
+    def ask_user_about_empty_database(self):
+        """
+        This is called when the application starts with an empty or no card database. Ask the user if they wish
+        to download the card data now. If so, trigger the appropriate action, just as if the user clicked the menu item.
+        """
+        should_download = QMessageBox.question(
+            self, "Download Card data",
+            "The local card database is empty. Download the required data from Scryfall now?\n"
+            "Downloading might take some time.\n"
+            "If you decline, you can configure which cards get downloaded "
+            "in the settings and then manually start the download later.\n"
+            "Or accept and use the default settings.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
+        if should_download:
+            self.action_download_card_data.trigger()
+
     @pyqtSlot()
     def on_action_download_card_data_triggered(self):
         logger.debug(f"User downloads the card data from Scryfall.")
         # Prevent the action from triggering multiple times, by preventing the user to trigger the action while this
         # already runs.
         self.action_download_card_data.setDisabled(True)
-        should_download = QMessageBox.question(
-            self, "Download Card data",
-            "The local card database is empty. Download the required data from Scryfall now?\n"
-            "Downloading might take some time. If you decline, no cards can be searched and printed.",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
-        if should_download:
-            self.download_card_data()
-            self.should_update_languages.emit()
+        # TODO: Check, which Exceptions can occur in the network code and catch them. Do a ROLLBACK in the except-block
+        self.download_card_data()
+        self.should_update_languages.emit()
         self.action_download_card_data.setDisabled(self.card_database.has_data())
 
     @pyqtSlot(int)
