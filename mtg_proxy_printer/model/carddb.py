@@ -102,7 +102,6 @@ class CardDatabase:
             last_timestamp = datetime.datetime.fromisoformat(last_timestamp_str).date()
             now = datetime.datetime.now().date()
             allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= now
-            print(f"{last_timestamp=}, {now=}, {allow_update=}")
             return allow_update
         else:
             return True

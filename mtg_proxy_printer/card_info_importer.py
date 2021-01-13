@@ -168,9 +168,19 @@ class CardInfoDownloader(QObject):
         Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
         This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
         """
-        self.model.db.execute("DELETE FROM FaceName\n")
-        self.model.db.execute("DELETE FROM Card\n")
-        self.model.db.execute('DELETE FROM "Set"\n')
+        # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
+        # leaves to roots. This allows SQLite to use the TRUNCATE optimization
+        # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
+        # the tables in a way that doesn’t break foreign keys during the process.
+        tables_to_clear = [
+            "CardFace",
+            "FaceName",
+            "Card",
+            '"Set"',
+            "PrintLanguage",
+        ]
+        for table in tables_to_clear:
+            self.model.db.execute(f"DELETE FROM {table}\n")
 
 
 @functools.lru_cache()
