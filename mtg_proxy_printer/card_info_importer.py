@@ -16,6 +16,7 @@
 import functools
 import gzip
 import json
+import os
 from pathlib import Path
 import re
 import typing
@@ -27,6 +28,7 @@ from PyQt5.QtCore import pyqtSignal, QObject
 
 from mtg_proxy_printer.model.carddb import CardDatabase
 import mtg_proxy_printer.settings
+import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -42,8 +44,8 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
 class CardInfoDownloader(QObject):
 
-    download_progress = pyqtSignal(int)  # Emits the total number of processed items after processing each item
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total item count
+    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
+    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
@@ -52,40 +54,29 @@ class CardInfoDownloader(QObject):
         super(CardInfoDownloader, self).__init__(parent)
         self.model = model
         logger.debug("Request bulk data URL from the Scryfall API.")
-        self.bulk_card_data_url, self.item_count = self.get_scryfall_bulk_card_data_url(requested_item)
+        self.bulk_card_data_url = self.get_scryfall_bulk_card_data_url(requested_item)
         logger.debug(f"Obtained url: {self.bulk_card_data_url}")
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> (str, int):
+    def _wrap_file_for_monitoring(self, file, expected_size_bytes):
+        metered_file = mtg_proxy_printer.metered_file.MeteredFile(file, expected_size_bytes)
+        metered_file.total_bytes_processed.connect(self.download_progress)
+        metered_file.io_begin.connect(self.download_begins)
+        metered_file.io_end.connect(self.download_finished)
+        return metered_file
+
+    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
-        with self._read_from_url(BULK_DATA_API_END_POINT) as data:
+        data, _ = read_from_url(BULK_DATA_API_END_POINT)
+        with data:
             bulk_items = json.load(data)
             for item in bulk_items["data"]:
                 if item["type"] == requested_item:
-                    return item["download_uri"], 300000
+                    return item["download_uri"]
             raise RuntimeError(
                 "URL to the Scryfall bulk data export not found. "
                 "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
                 "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
-
-    @staticmethod
-    def _read_from_url(url: str):
-        """
-        Reads a given URL and returns a file-like object that can and should be used as a context manager.
-        """
-        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        request = urllib.request.Request(url, headers=headers)
-        response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
-        if (response_code := response.getcode()) >= 300:
-            raise RuntimeError(f"Error from server! Error code: {response_code}")
-        encoding = response.info().get("Content-Encoding")
-        if encoding == "gzip":
-            data = gzip.open(response, "rb")
-        elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
-            data = response
-        else:
-            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-        return data
 
     def read_json_card_data_from_url(self, url: str = None):
         """
@@ -93,12 +84,13 @@ class CardInfoDownloader(QObject):
         This function takes a URL pointing to the card data json object in the Scryfall API.
 
         The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
-        So use this iterative parser to generate and yield individual card objects, without having to store the whole
+        So use an iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
         if url is None:
             url = self.bulk_card_data_url
-        with self._read_from_url(url) as data:
+        file, size = read_from_url(url)
+        with self._wrap_file_for_monitoring(file, size) as data:
             yield from self._read_json_card_data_from_open_file(data)
 
     def read_json_card_data(self, url_or_path: typing.Union[Path, str]):
@@ -112,23 +104,21 @@ class CardInfoDownloader(QObject):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            if url_or_path.suffix.casefold() == ".gz":
-                with gzip.open(url_or_path, "rb") as file:
-                    yield from self._read_json_card_data_from_open_file(file)
-            else:
-                with url_or_path.open("rb") as file:
-                    yield from self._read_json_card_data_from_open_file(file)
+            file_size = url_or_path.stat().st_size
+            with self._wrap_file_for_monitoring(url_or_path.open("rb"), file_size) as file:
+                if url_or_path.suffix.casefold() == ".gz":
+                    file = gzip.open(file, "rb")
+                yield from self._read_json_card_data_from_open_file(file)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path)
         else:
-            with open(url_or_path, "rb") as file:
+            file_size = os.stat(url_or_path).st_size
+            with self._wrap_file_for_monitoring(open(url_or_path, "rb"), file_size) as file:
                 yield from self._read_json_card_data_from_open_file(file)
 
     def _read_json_card_data_from_open_file(self, file) -> typing.Generator[JSONType, None, None]:
-        self.download_begins.emit(self.item_count)
         # Using "item" as the object path returns elements from a top-level JSON array
         yield from ijson.items(file, "item")
-        self.download_finished.emit()
 
     def populate_database(self, card_data: typing.Generator[JSONType, None, None] = None):
         """
@@ -153,7 +143,6 @@ class CardInfoDownloader(QObject):
             card_id = _insert_card(self.model, card)
             set_id = _insert_set(self.model, card)
             _insert_card_faces(self.model, card, language_id, card_id, set_id)
-            self.download_progress.emit(index)
             if not index % 1000:
                 self.model.db.execute("PRAGMA optimize\n")
         # Store the timestamp of this import.
@@ -181,6 +170,26 @@ class CardInfoDownloader(QObject):
         ]
         for table in tables_to_clear:
             self.model.db.execute(f"DELETE FROM {table}\n")
+
+
+def read_from_url(url: str):
+    """
+    Reads a given URL and returns a file-like object that can and should be used as a context manager.
+    """
+    headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+    request = urllib.request.Request(url, headers=headers)
+    response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
+    if (response_code := response.getcode()) >= 300:
+        raise RuntimeError(f"Error from server! Error code: {response_code}")
+    encoding = response.info().get("Content-Encoding")
+    size_bytes = int(response.info().get("Content-Length", "0"))
+    if encoding == "gzip":
+        data = gzip.open(response, "rb")
+    elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
+        data = response
+    else:
+        raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
+    return data, size_bytes
 
 
 @functools.lru_cache()
