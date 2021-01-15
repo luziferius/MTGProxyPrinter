@@ -48,11 +48,9 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.about_dialog = AboutMTGProxyPrinterDialog(self)
-        self.progress_bar = QProgressBar(self)
-        self.progress_bar.hide()
+        self.progress_bar = self._create_progress_bar()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
-        self.image_downloader = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
-        self.statusBar().addPermanentWidget(self.progress_bar)
+        self.image_downloader = self._create_image_database()
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.nothing_happens_box = QMessageBox(
@@ -72,6 +70,20 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.settings_changed.connect(self.page_view.settings_changed)
         self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_image_database(self):
+        image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        image_db.card_download_starting.connect(self.show_progress_bar)
+        image_db.card_download_finished.connect(self.progress_bar.hide)
+        image_db.card_download_progress.connect(self.progress_bar.setValue)
+        image_db.card_download_progress.connect(self.process_events_during_long_operations)
+        return image_db
+
+    def _create_progress_bar(self):
+        progress_bar = QProgressBar(self)
+        progress_bar.hide()
+        self.statusBar().addPermanentWidget(progress_bar)
+        return progress_bar
 
     def _setup_icons(self):
         action_fallback_icons: typing.List[typing.Tuple[QAction, str]] = [
