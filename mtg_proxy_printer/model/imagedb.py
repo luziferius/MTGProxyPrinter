@@ -39,8 +39,9 @@ __all__ = [
 
 class ImageDatabase(QObject):
 
-    card_download_starting = pyqtSignal()
+    card_download_starting = pyqtSignal(int)
     card_download_finished = pyqtSignal()
+    card_download_progress = pyqtSignal(int)
 
     def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
         super(ImageDatabase, self).__init__(*args, **kwargs)
@@ -49,6 +50,13 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.  TODO: Maybe use the QPixmapCache class instead?
         self.loaded_images: typing.Dict[str, QPixmap] = {}
+
+    def _wrap_file_for_monitoring(self, file, expected_size_bytes):
+        metered_file = mtg_proxy_printer.metered_file.MeteredFile(file, expected_size_bytes)
+        metered_file.io_begin.connect(self.card_download_starting)
+        metered_file.total_bytes_processed.connect(self.card_download_progress)
+        metered_file.io_end.connect(self.card_download_finished)
+        return metered_file
 
     @pyqtSlot(Card)
     def get_image(self, card: Card):
@@ -74,11 +82,7 @@ class ImageDatabase(QObject):
         return cache_file_path
 
     def _download_image(self, card: Card, fs_path: pathlib.Path):
-        self.card_download_starting.emit()
         download_uri = card.image_uri
-        try:
-            file, size = mtg_proxy_printer.card_info_importer.read_from_url(download_uri)
-            with mtg_proxy_printer.metered_file.MeteredFile(file, size) as source, fs_path.open("wb") as file_in_cache:
-                shutil.copyfileobj(source, file_in_cache)
-        finally:
-            self.card_download_finished.emit()
+        file, size = mtg_proxy_printer.card_info_importer.read_from_url(download_uri)
+        with self._wrap_file_for_monitoring(file, size) as source, fs_path.open("wb") as file_in_cache:
+            shutil.copyfileobj(source, file_in_cache)
