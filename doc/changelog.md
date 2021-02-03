@@ -7,7 +7,7 @@
 
 - Added optional, automatic splitting of generated PDF documents,
   based on a page count limit set in the settings. If enabled,
-  documents with more pages than the set limit will be exported to multiple PDF files.
+  documents with more pages than the set limit will be exported as multiple PDF files.
   This can be used when exported PDFs exceed the printer’s internal file size limit.
 - Added document compacting: Completely fill partially filled pages by moving images from the end into free slots.
   This may help reducing the page count and therefore reduce wasted paper when printing.

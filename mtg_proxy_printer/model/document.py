@@ -340,7 +340,9 @@ class Document(QAbstractListModel):
                         last_index -= 1
                 if current_index == last_index:  # No more pages available to take cards from
                     break
-        if current_index < self.rowCount() - 1:
+        # Subtract 2 (two) to skip the last page, which this algorithm must not look at. Otherwise the last page will
+        # get lost when compacting an already compacted document.
+        if current_index < self.rowCount() - 2:
             empty_trailing_pages = [self.createIndex(row, 0) for row in range(current_index+1, self.rowCount())]
             self.remove_pages(empty_trailing_pages)
 
