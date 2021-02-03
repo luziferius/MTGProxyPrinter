@@ -16,6 +16,8 @@
 
 - When changing document settings decreases the page capacity,
   move images from then overflowing pages to free slots or new pages.
+- Display card image download progress when an image has to be downloaded from Scryfall instead of freezing the GUI
+- Fixed broken rendering of cut markers, if image spacing is active.
 
 ## Optimizations
 
