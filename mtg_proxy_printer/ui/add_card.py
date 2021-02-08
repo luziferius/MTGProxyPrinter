@@ -219,3 +219,8 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self._update_set_name_search()
         self._update_collector_number_search()
         self.input_is_valid_and_unique_card.emit(False)
+
+    @pyqtSlot(int)
+    def cards_removed(self, amount: int):
+        self.page_free_slots += amount
+        self.copies_input.setMaximum(self.page_free_slots)

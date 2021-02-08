@@ -60,6 +60,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
         self.current_page_changed.connect(self.page_view.current_page_changed)
+
         self._setup_add_card_widget()
         self._setup_document_view()
         self.action_new_page.triggered.connect(self.document.add_page)
@@ -106,11 +107,13 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
                 action.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
 
     def _setup_add_card_widget(self):
+        self.page_view: CurrentPageView
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
         self.add_card_widget.set_language_model(self.language_model)
         self.current_page_changed.connect(self.add_card_widget.on_current_page_changed)
+        self.page_view.cards_removed.connect(self.add_card_widget.cards_removed)
         self.add_card_widget.on_page_total_slots_changed(self.document.compute_total_cards_per_page())
         self.document.total_cards_per_page_changed.connect(self.add_card_widget.on_page_total_slots_changed)
 
