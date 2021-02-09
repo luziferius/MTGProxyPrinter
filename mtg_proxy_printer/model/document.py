@@ -59,7 +59,7 @@ class Page(QAbstractTableModel):
         return len(self.cards)
 
     def columnCount(self, parent: QModelIndex = None) -> int:
-        return 5
+        return len(Page.header)
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
