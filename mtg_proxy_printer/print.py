@@ -47,27 +47,29 @@ class PDFPrinter(QPdfWriter):
         self.pages_to_print: int = pages_to_print or document.rowCount()
         if pages_to_print < document.rowCount():
             path = Path(file_path)
-            # Add one to the document_index for human-readable counting starting at 1 and suffix includes the separator
+            # Add one to the document_index for human-readable counting starting at 1. suffix includes the separator
             file_path = str(path.parent / f"{path.stem}-{document_index+1}{path.suffix}")
         super(PDFPrinter, self).__init__(file_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
-
         self.setResolution(document.DPI.to_tuple()[0])
+        # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
+        # PageScene reads the Page instance from the parent QObject. So store it here before starting any rendering
         self.page = None
         self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
 
     def print_document(self):
         self.painter.begin(self)
+        # Prevent quality loss by re-compressing the source images
         self.painter.setRenderHint(QPainter.LosslessImageRendering)
         self.painter.scale(
                 self.logicalDpiX()/self.resolution(),
                 self.logicalDpiY()/self.resolution()
             )
-        first_index = self.document_index*self.pages_to_print
-        last_index = (self.document_index+1)*self.pages_to_print
+        first_index = self.document_index * self.pages_to_print
+        last_index = (self.document_index + 1) * self.pages_to_print
 
         pages_to_process = self.document.pages[first_index:last_index]
         page_count = len(pages_to_process)
