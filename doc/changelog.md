@@ -5,12 +5,14 @@
 
 ## Implemented features
 
-- Added optional, automatic splitting of generated PDF documents,
-  based on a page count limit set in the settings. If enabled,
-  documents with more pages than the set limit will be exported as multiple PDF files.
+- Added optional, automatic splitting of generated PDF documents, based on a new page count limit setting.
+  If enabled, documents with more pages than the set limit will be exported as multiple PDF files.
   This can be used when exported PDFs exceed the printer’s internal file size limit.
 - Added document compacting: Completely fill partially filled pages by moving images from the end into free slots.
   This may help reducing the page count and therefore reduce wasted paper when printing.
+- Lifted the limitations on the amount of card copies that can be added at once.
+  It is now possible to add up to 99 copies of cards at once.
+  If the added cards do not fit on the current page, any remaining copies are automatically put on new pages.
 
 ## Fixed issues
 
@@ -19,7 +21,9 @@
 - Display card image download progress when an image has to be downloaded from Scryfall instead of freezing the GUI
 - Fixed broken rendering of cut markers, if image spacing is active.
 - Fixed that the maximum number of card copies possible to add to the current page
-  did not increase when cards were deleted from the current page.
+  did not increase when cards were deleted from the current page. This limiting was completely removed, so it is now
+  always possible to add cards, even if the current page is full.
+  
 
 ## Optimizations
 
