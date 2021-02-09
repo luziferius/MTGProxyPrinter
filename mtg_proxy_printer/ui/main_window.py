@@ -55,7 +55,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.language_model = QStringListModel([preferred_language], self)
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
-        self.document = mtg_proxy_printer.model.document.Document(parent=self)
+        self.document = self._create_document_instance()
         self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
@@ -71,6 +71,11 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.settings_changed.connect(self.page_view.settings_changed)
         self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_document_instance(self):
+        document = mtg_proxy_printer.model.document.Document(parent=self)
+        self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        return document
 
     def _create_image_database(self):
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
@@ -111,6 +116,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
+        self.add_card_widget.card_added.connect(self.document.add_card)
         self.add_card_widget.set_language_model(self.language_model)
         self.current_page_changed.connect(self.add_card_widget.on_current_page_changed)
 
@@ -223,17 +229,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         if selected.isValid():
             new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
             self.current_page_changed.emit(new_page)
-            self.add_card_widget: AddCardWidget
-            # Forcefully disconnect all page’s add_card signal to prevent duplicate signal connections
-            # TODO: Find out why this is needed. It seems that programmatically selecting the first page at startup
-            #  does not properly select it, then clicking on one page duplicates the signal connection. If the root
-            #  cause is found, remove this loop and disconnect the single signal using the deselected parameter.
-            for page in self.document.pages:
-                try:
-                    self.add_card_widget.card_added.disconnect(page.add_card)
-                except TypeError:
-                    pass
-            self.add_card_widget.card_added.connect(new_page.add_card)
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
