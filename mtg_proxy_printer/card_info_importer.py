@@ -65,7 +65,8 @@ class CardInfoDownloader(QObject):
         metered_file.io_end.connect(self.download_finished)
         return metered_file
 
-    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
+    @staticmethod
+    def get_scryfall_bulk_card_data_url(requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
         data, _ = read_from_url(BULK_DATA_API_END_POINT)
         with data:
@@ -116,7 +117,8 @@ class CardInfoDownloader(QObject):
             with self._wrap_file_for_monitoring(open(url_or_path, "rb"), file_size) as file:
                 yield from self._read_json_card_data_from_open_file(file)
 
-    def _read_json_card_data_from_open_file(self, file) -> typing.Generator[JSONType, None, None]:
+    @staticmethod
+    def _read_json_card_data_from_open_file(file) -> typing.Generator[JSONType, None, None]:
         # Using "item" as the object path returns elements from a top-level JSON array
         yield from ijson.items(file, "item")
 
