@@ -39,13 +39,16 @@ class PageScene(QGraphicsScene):
         self.background = None
         self.draw_background = draw_background
 
-    @pyqtSlot(QModelIndex)
-    def draw_card(self, index: QModelIndex):
-        position = self._compute_position_for_image(index)
-        image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
-        if image is not None:
-            pixmap = self.addPixmap(image)
-            pixmap.setPos(position)
+    @pyqtSlot(QModelIndex, QModelIndex)
+    def draw_cards(self, first_index: QModelIndex, last_index: QModelIndex):
+        # Qt includes the last element and Python excludes it, so add one to the range maximum.
+        for row in range(first_index.row(), last_index.row()+1):
+            index = first_index.sibling(row, first_index.column())
+            position = self._compute_position_for_image(index)
+            image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
+            if image is not None:
+                pixmap = self.addPixmap(image)
+                pixmap.setPos(position)
 
     @pyqtSlot()
     def redraw(self):
@@ -56,8 +59,7 @@ class PageScene(QGraphicsScene):
         if settings["documents"].getboolean("print-cut-marker"):
             self._draw_cut_markers()
         page: Page = self.parent().page
-        for index in (page.createIndex(row, 0) for row in range(page.rowCount())):
-            self.draw_card(index)
+        self.draw_cards(page.createIndex(0, 0), page.createIndex(page.rowCount(), 0))
 
     def _compute_position_for_image(self, index: QModelIndex):
         document = self.get_document()
@@ -140,9 +142,9 @@ class PageRenderer(QGraphicsView):
             self.scene().clear()
         else:
             if self.page is not None:
-                self.page.dataChanged.disconnect(self.scene().draw_card)
+                self.page.dataChanged.disconnect(self.scene().draw_cards)
             self.page = page
-            self.page.dataChanged.connect(self.scene().draw_card)
+            self.page.dataChanged.connect(self.scene().draw_cards)
             self.scene().redraw()
 
     @staticmethod
