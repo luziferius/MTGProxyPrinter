@@ -225,6 +225,9 @@ class Document(QAbstractListModel):
         current_page_position = self.pages.index(self.currently_edited_page) + 1
         while copies > 0:
             self.add_page(current_page_position).add_card(card, min(copies, page_capacity))
+            # Increment the index for each page. If the added amount is not divisible by the page_capacity, this causes
+            # the last-added page to be non-full, instead of the first one in document page order.
+            current_page_position += 1
             copies -= page_capacity
 
     @pyqtSlot(list)
