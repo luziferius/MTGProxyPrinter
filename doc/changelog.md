@@ -15,9 +15,11 @@
 ## Fixed issues
 
 - When changing document settings decreases the page capacity,
-  move images from then overflowing pages to free slots or new pages.
+  move images from any overflowing pages to free slots on existing pages or new pages.
 - Display card image download progress when an image has to be downloaded from Scryfall instead of freezing the GUI
 - Fixed broken rendering of cut markers, if image spacing is active.
+- Fixed that the maximum number of card copies possible to add to the current page
+  did not increase when cards were deleted from the current page.
 
 ## Optimizations
 
