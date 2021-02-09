@@ -107,7 +107,7 @@ class Page(QAbstractTableModel):
             ranges.append(current_range)
         if ranges:
             ranges.reverse()
-            return sum(self.remove_cards(range_) for range_ in ranges)
+            return sum(map(self.remove_cards, ranges))
 
     @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
@@ -389,11 +389,12 @@ class Document(QAbstractListModel):
         for page in self.pages:
             images_on_page = page.rowCount()
             if images_on_page > current_capacity:
-                to_remove = [
-                    page.createIndex(row, 0)
-                    # Qt includes the last value in a range and Python excludes it, so add one to the range 'stop'
-                    for row in range(current_capacity, images_on_page + 1)
-                ]
+                # Qt includes the last value in a range and Python excludes it, so add one to the range 'stop'
+                to_remove = list(map(
+                    page.createIndex,
+                    range(current_capacity, images_on_page+1),
+                    itertools.repeat(0)
+                ))
                 excess_images += page.cards[current_capacity: images_on_page]
                 page.remove_cards(to_remove)
         total_moved_images = len(excess_images)
