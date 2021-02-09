@@ -59,7 +59,7 @@ class Page(QAbstractTableModel):
         return len(self.cards)
 
     def columnCount(self, parent: QModelIndex = None) -> int:
-        return 5
+        return len(Page.header)
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
@@ -84,8 +84,10 @@ class Page(QAbstractTableModel):
         self.endInsertRows()
         if self.rowCount() == count:
             self.page_empty.emit(False)
-        for row in range(first_index, last_index + 1):  # Qt includes last_index, Python excludes it, so add one here
-            self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
+        self.dataChanged.emit(
+            self.createIndex(first_index, 0),
+            self.createIndex(last_index, self.columnCount()-1)
+        )
 
     @pyqtSlot(list)
     def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
@@ -162,6 +164,8 @@ class Document(QAbstractListModel):
         super(Document, self).__init__(*args, **kwargs)
         self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
+        self.add_page()
+        self.currently_edited_page = self.pages[0]
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
         self.page_width = document_settings.getint("paper-width-mm")
@@ -172,8 +176,11 @@ class Document(QAbstractListModel):
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
         self.total_cards_per_page = self.compute_total_cards_per_page()
-        self.add_page()
-        
+
+    @pyqtSlot(Page)
+    def on_currently_edited_page_changed(self, new_page: Page):
+        self.currently_edited_page = new_page
+
     @pyqtSlot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
@@ -191,7 +198,7 @@ class Document(QAbstractListModel):
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
-            self._move_excess_images_to_free_pages()
+            self.move_excess_images_to_free_pages()
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -208,6 +215,20 @@ class Document(QAbstractListModel):
         page.dataChanged.connect(self.on_page_data_changed)
         self.endInsertRows()
         return page
+
+    @pyqtSlot(Card, int)
+    def add_card(self, card: Card, copies: int):
+        page_capacity = self.compute_total_cards_per_page()
+        if current_page_capacity := page_capacity - self.currently_edited_page.rowCount():
+            self.currently_edited_page.add_card(card, min(copies, current_page_capacity))
+            copies -= current_page_capacity
+        current_page_position = self.pages.index(self.currently_edited_page) + 1
+        while copies > 0:
+            self.add_page(current_page_position).add_card(card, min(copies, page_capacity))
+            # Increment the index for each page. If the added amount is not divisible by the page_capacity, this causes
+            # the last-added page to be non-full, instead of the first one in document page order.
+            current_page_position += 1
+            copies -= page_capacity
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
@@ -375,7 +396,7 @@ class Document(QAbstractListModel):
             page_to_fill.add_card(card)
         return card_count_to_move
 
-    def _move_excess_images_to_free_pages(self) -> int:
+    def move_excess_images_to_free_pages(self) -> int:
         """
         If the page capacity is reduced due to increased margins, spacing or reduced page size, images beyond the
         page capacity should be moved from overflowing pages to free slots and potentially new pages at the end.

@@ -36,14 +36,12 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.card = self._create_new_card()
-        self.page_free_slots = self.page_total_slots = 9
         self.language_combo_box: QComboBox
         self.language_model = None
         self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
         self._setup_card_name_search()
         self._setup_set_name_search()
         self._setup_collector_number_search()
-        self.copies_input: QSpinBox
         self.scryfall_url_input: QLineEdit
         self.scryfall_url_input.setEnabled(False)
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
@@ -86,21 +84,8 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
             self.collectors_number_search.setModel(self.collectors_number_model)
         self.collectors_number_search.currentTextChanged.connect(self.on_collector_number_search_updated)
 
-    @pyqtSlot(int)
-    def on_page_total_slots_changed(self, slots: int):
-        difference = self.page_total_slots - slots
-        self.page_total_slots = slots
-        self.page_free_slots -= difference
-        self.copies_input.setMaximum(self.page_free_slots)
-
     @pyqtSlot(mtg_proxy_printer.model.document.Page)
     def on_current_page_changed(self, page: mtg_proxy_printer.model.document.Page):
-        self.page_free_slots = self.page_total_slots - page.rowCount()
-        if self.page_free_slots and not self.copies_input.maximum():
-            # If the previous maximum was 0 (because the page was full),
-            # the minimum value was automatically set from 1 to 0 by Qt, so set it up to 1 again.
-            self.copies_input.setMinimum(1)
-        self.copies_input.setMaximum(self.page_free_slots)
         self.check_input_is_valid_and_unique_card()
 
     @pyqtSlot()
@@ -111,7 +96,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.set_name_search: QComboBox
         self.collectors_number_search: QComboBox
         self.language_combo_box: QComboBox
-        result = self.card_database.is_valid_and_unique_card(self.card) and bool(self.page_free_slots)
+        result = self.card_database.is_valid_and_unique_card(self.card)
         self.input_is_valid_and_unique_card.emit(result)
 
     def _create_card_from_user_input(self):
@@ -207,8 +192,6 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.card_database.add_missing_information(self.card)
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
-        self.page_free_slots -= copies
-        self.copies_input.setMaximum(self.page_free_slots)
         self.card_added.emit(self.card, copies)
         self.reset()
 
@@ -218,9 +201,5 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self._update_card_search()
         self._update_set_name_search()
         self._update_collector_number_search()
+        self.copies_input.setValue(1)
         self.input_is_valid_and_unique_card.emit(False)
-
-    @pyqtSlot(int)
-    def cards_removed(self, amount: int):
-        self.page_free_slots += amount
-        self.copies_input.setMaximum(self.page_free_slots)

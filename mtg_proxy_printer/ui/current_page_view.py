@@ -31,7 +31,6 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
-    cards_removed = pyqtSignal(int)
 
     def __init__(self, *args, **kwargs):
         super(CurrentPageView, self).__init__(*args, **kwargs)
@@ -57,5 +56,4 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.page_card_table_view: QTableView
         multi_selection = self.page_card_table_view.selectionModel().selectedRows()
         logger.debug(f"User removes {len(multi_selection)} items from the current page.")
-        removed = self.current_page.remove_multi_selection(multi_selection)
-        self.cards_removed.emit(removed)
+        self.current_page.remove_multi_selection(multi_selection)
