@@ -13,7 +13,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-PRAGMA user_version = 0000002;
+PRAGMA user_version = 0000003;
 PRAGMA application_id = 41325044; -- ASCII-encoded "MTGP"
 PRAGMA page_size = '512';
 VACUUM;
@@ -21,6 +21,7 @@ VACUUM;
 CREATE TABLE Card (
   page INTEGER NOT NULL CHECK (page > 0),
   slot INTEGER NOT NULL CHECK (slot > 0),
+  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)),
   scryfall_id TEXT NOT NULL,
   PRIMARY KEY(page, slot)
 ) WITHOUT ROWID;
