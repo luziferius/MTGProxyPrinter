@@ -1,6 +1,15 @@
 # Changelog
 
 
+# Version 0.6.0 (in development)
+
+## Implemented features
+
+- When adding a double-faced card, automatically add it’s opposing face.
+  This automatically adds the appropriate other side, matching set, art style, 
+  border style, etc, if multiple choices are available. Can be disabled in the settings.
+
+
 # Version 0.5.0 (2021-02-15)
 
 ## Implemented features
@@ -26,7 +35,6 @@
 - Fixed handling of double-faced cards. It is now possible to add both sides of double-faced cards.
   Additionally, support for those was added to the document format,
   so documents including those can be saved and loaded.
-  
 
 ## Optimizations
 
