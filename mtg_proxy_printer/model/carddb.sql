@@ -56,7 +56,7 @@ CREATE TABLE CardFace (
   card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,  -- The card to which this face belongs
   set_id INTEGER NOT NULL REFERENCES "Set"(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
   face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)),
+  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
   collector_number TEXT NOT NULL,
   scryfall_id TEXT NOT NULL,
   highres_image INTEGER NOT NULL,  -- Boolean indicating that the card has high resolution images.

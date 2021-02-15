@@ -21,7 +21,7 @@ VACUUM;
 CREATE TABLE Card (
   page INTEGER NOT NULL CHECK (page > 0),
   slot INTEGER NOT NULL CHECK (slot > 0),
-  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)),
+  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
   scryfall_id TEXT NOT NULL,
   PRIMARY KEY(page, slot)
 ) WITHOUT ROWID;
