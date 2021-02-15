@@ -174,7 +174,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
-        
+
     def restore_defaults(self):
         logger.info("User resets the configuration to the default settings.")
         self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
