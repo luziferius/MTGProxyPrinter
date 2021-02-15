@@ -321,7 +321,7 @@ def migrate_card_database(db: sqlite3.Connection):
         # the database using fresh data from Scryfall.
         clear_database(db)
         db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
-        db.execute("PRAGMA user_version = ?", (10,))
+        db.execute("PRAGMA user_version = 10")
 
 
 def clear_database(db: sqlite3.Connection):
