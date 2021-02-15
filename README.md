@@ -17,7 +17,7 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `ijson`
 - `pint`
 - `PyQt5`
-
+- `delegateto`
 
 ### Test Requirements
 
