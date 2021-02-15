@@ -8,7 +8,8 @@
 - When adding a double-faced card, automatically add it’s opposing face.
   This automatically adds the appropriate other side, matching set, art style, 
   border style, etc, if multiple choices are available. Can be disabled in the settings.
-
+- Configurable default storage location for Proxy documents and PDF documents.
+  The locations can be set in the settings window.
 
 # Version 0.5.0 (2021-02-15)
 
