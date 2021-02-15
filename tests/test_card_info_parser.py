@@ -66,19 +66,19 @@ def _assert_face_name_contains(
 
 def _assert_card_face_contains(
         model: mtg_proxy_printer.model.carddb.CardDatabase,
-        values: typing.Sequence[typing.Tuple[str, str, bool, str]]):
-    """Checks collector_number, scryfall_id, highres_image, png_image_uri"""
+        values: typing.Sequence[typing.Tuple[str, str, bool, str, bool]]):
+    """Checks collector_number, scryfall_id, highres_image, png_image_uri, is_front"""
     db_content = model.db.execute(
-        "SELECT collector_number, scryfall_id, highres_image, png_image_uri FROM CardFace").fetchall()
+        "SELECT collector_number, scryfall_id, highres_image, png_image_uri, is_front FROM CardFace").fetchall()
     assert_that(db_content, contains_inanyorder(*values), "CardFace relation contains unexpected data")
 
 
 def _assert_all_printings_contains(
         model: mtg_proxy_printer.model.carddb.CardDatabase,
-        values: typing.Sequence[typing.Tuple[str, str, str,str, str, bool, str]]):
+        values: typing.Sequence[typing.Tuple[str, str, str,str, str, bool, str, bool]]):
     """Checks card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri"""
     db_content = model.db.execute(
-        'SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri '
+        'SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri, is_front '
         'FROM AllPrintings').fetchall()
     assert_that(db_content, contains_inanyorder(*values), "CardFace relation contains unexpected data")
 
@@ -103,9 +103,9 @@ def _assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
     _assert_relation_is_empty(model, "PrintLanguage", 'language_id, "language"')
     _assert_relation_is_empty(model, "Card", "card_id, oracle_id")
     _assert_relation_is_empty(model, "FaceName", "face_name_id, card_name, language_id")
-    _assert_relation_is_empty(model, "CardFace", "card_face_id, card_id, set_id, face_name_id, collector_number, scryfall_id, png_image_uri")
+    _assert_relation_is_empty(model, "CardFace", "card_face_id, card_id, set_id, face_name_id, collector_number, scryfall_id, png_image_uri, is_front")
     _assert_relation_is_empty(model, '"Set"', 'set_id, "set", set_name, set_uri')
-    _assert_relation_is_empty(model, "AllPrintings", 'card_name, "set", "language", collector_number, scryfall_id, png_image_uri')
+    _assert_relation_is_empty(model, "AllPrintings", 'card_name, "set", "language", collector_number, scryfall_id, png_image_uri, is_front')
 
 
 def populate_database(model, data):
@@ -141,12 +141,12 @@ def test_import_double_faced():
         ("烈阳育所伊替莫",),
     ])
     _assert_card_face_contains(model, [
-        ("191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619"),
-        ("191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619"),
+        ("191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619", True),
+        ("191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619", False),
     ])
     _assert_all_printings_contains(model, [
-        ("伊替莫成长仪式", "xln", "zhs", "191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619"),
-        ("烈阳育所伊替莫", "xln", "zhs", "191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619"),
+        ("伊替莫成长仪式", "xln", "zhs", "191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619", True),
+        ("烈阳育所伊替莫", "xln", "zhs", "191", "000847d3-ebde-4580-a00e-61d501e99485", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619", False),
     ])
 
 
@@ -166,12 +166,12 @@ def test_import_split_card():
         ("띠",),
     ])
     _assert_card_face_contains(model, [
-        ("223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200"),
-        ("223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200"),
+        ("223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200", True),
+        ("223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200", True),
     ])
     _assert_all_printings_contains(model, [
-        ("절단", "akh", "ko", "223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200"),
-        ("띠", "akh", "ko", "223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200"),
+        ("절단", "akh", "ko", "223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200", True),
+        ("띠", "akh", "ko", "223", "00031562-3818-49f9-b45c-ab28a521284c", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200", True),
     ])
 
 
@@ -190,12 +190,12 @@ def test_import_english_double_faced_art_card():
         ("Clearwater Pathway",),
     ])
     _assert_card_face_contains(model, [
-        ("25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859"),
-        ("25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859"),
+        ("25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859", True),
+        ("25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859", False),
     ])
     _assert_all_printings_contains(model, [
-        ("Clearwater Pathway", "aznr", "en", "25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859"),
-        ("Clearwater Pathway", "aznr", "en", "25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859"),
+        ("Clearwater Pathway", "aznr", "en", "25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859", True),
+        ("Clearwater Pathway", "aznr", "en", "25", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False, "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859", False),
     ])
 
 
@@ -214,10 +214,10 @@ def test_import_regular_english_card():
         ("Fury Sliver",),
     ])
     _assert_card_face_contains(model, [
-        ("157", "0000579f-7b35-4ed3-b44c-db2a538066fe", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+        ("157", "0000579f-7b35-4ed3-b44c-db2a538066fe", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Fury Sliver", "tsp", "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+        ("Fury Sliver", "tsp", "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979", True),
     ])
 
 
@@ -251,10 +251,10 @@ def test_import_card_depicting_racism_if_enabled():
         ("Kreuzzug",),
     ])
     _assert_card_face_contains(model, [
-        ("20", "00809cb0-b152-441f-a0be-1bc1048dad92", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.png?1559603956"),
+        ("20", "00809cb0-b152-441f-a0be-1bc1048dad92", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.png?1559603956", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Kreuzzug", "4ed", "de", "20", "00809cb0-b152-441f-a0be-1bc1048dad92", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.png?1559603956"),
+        ("Kreuzzug", "4ed", "de", "20", "00809cb0-b152-441f-a0be-1bc1048dad92", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.png?1559603956", True),
     ])
 
 
@@ -278,10 +278,10 @@ def test_import_funny_card_if_enabled():
         ("Aesthetic Consultation",),
     ])
     _assert_card_face_contains(model, [
-        ("48", "0464a507-20e5-42d5-8aca-12504a869f21", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441"),
+        ("48", "0464a507-20e5-42d5-8aca-12504a869f21", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Aesthetic Consultation", "unh", "en", "48", "0464a507-20e5-42d5-8aca-12504a869f21", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441"),
+        ("Aesthetic Consultation", "unh", "en", "48", "0464a507-20e5-42d5-8aca-12504a869f21", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441", True),
     ])
 
 
@@ -305,10 +305,10 @@ def test_import_gold_bordered_card_if_enabled():
         ("Abduction",),
     ])
     _assert_card_face_contains(model, [
-        ("pm30", "2afb04a3-2940-4860-a4be-223aca0bac4b", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104"),
+        ("pm30", "2afb04a3-2940-4860-a4be-223aca0bac4b", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Abduction", "wc97", "en", "pm30", "2afb04a3-2940-4860-a4be-223aca0bac4b", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104"),
+        ("Abduction", "wc97", "en", "pm30", "2afb04a3-2940-4860-a4be-223aca0bac4b", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104", True),
     ])
 
 
@@ -332,10 +332,10 @@ def test_import_white_bordered_card_if_enabled():
         ("Abomination",),
     ])
     _assert_card_face_contains(model, [
-        ("117", "a363bc91-8278-448e-9d5c-564e4b51eb62", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/a/3/a363bc91-8278-448e-9d5c-564e4b51eb62.png?1559603880"),
+        ("117", "a363bc91-8278-448e-9d5c-564e4b51eb62", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/a/3/a363bc91-8278-448e-9d5c-564e4b51eb62.png?1559603880", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Abomination", "4ed", "en", "117", "a363bc91-8278-448e-9d5c-564e4b51eb62", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/a/3/a363bc91-8278-448e-9d5c-564e4b51eb62.png?1559603880"),
+        ("Abomination", "4ed", "en", "117", "a363bc91-8278-448e-9d5c-564e4b51eb62", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/a/3/a363bc91-8278-448e-9d5c-564e4b51eb62.png?1559603880", True),
     ])
 
 
@@ -359,10 +359,10 @@ def test_import_card_banned_in_brawl_if_enabled():
         ("Worldfire",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
 
 
@@ -386,10 +386,10 @@ def test_import_card_banned_in_commander_if_enabled():
         ("Worldfire",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
 
 
@@ -413,10 +413,10 @@ def test_import_card_banned_in_historic_if_enabled():
         ("Worldfire",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
 
 
@@ -440,10 +440,10 @@ def test_import_card_banned_in_legacy_if_enabled():
         ("Falling Star",),
     ])
     _assert_card_face_contains(model, [
-        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
 
 
@@ -467,10 +467,10 @@ def test_import_card_banned_in_modern_if_enabled():
         ("Falling Star",),
     ])
     _assert_card_face_contains(model, [
-        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
 
 
@@ -494,10 +494,10 @@ def test_import_card_banned_in_pauper_if_enabled():
         ("Worldfire",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
 
 
@@ -521,10 +521,10 @@ def test_import_card_banned_in_penny_if_enabled():
         ("Falling Star",),
     ])
     _assert_card_face_contains(model, [
-        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
 
 
@@ -548,10 +548,10 @@ def test_import_card_banned_in_pioneer_if_enabled():
         ("Worldfire",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
 
 
@@ -575,10 +575,10 @@ def test_import_card_banned_in_standard_if_enabled():
         ("Worldfire",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052"),
+        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
     ])
 
 
@@ -602,10 +602,10 @@ def test_import_card_banned_in_vintage_if_enabled():
         ("Falling Star",),
     ])
     _assert_card_face_contains(model, [
-        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838"),
+        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
     ])
 
 

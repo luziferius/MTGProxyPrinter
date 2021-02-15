@@ -233,13 +233,13 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
 def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
     collector_number = card["collector_number"]
     highres_image = card["highres_image"]
-    for scryfall_id, printed_name, png_image_uri in _get_card_faces(card):
+    for scryfall_id, printed_name, png_image_uri, is_front in _get_card_faces(card):
         face_name_id = _insert_face_name(model, printed_name, language_id)
         model.db.execute(
             "INSERT INTO CardFace (\n"
-            "  card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri)\n"
-            "VALUES (?, ?, ?, ?, ?, ?, ?)\n",
-            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri)
+            "card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)\n"
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n",
+            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)
         )
 
 
@@ -269,7 +269,7 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
     ))
 
 
-def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str], None, None]:
+def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str, bool], None, None]:
     """
     Yields a tuple (Scryfall_id, printed_name, PNG_image_URI) for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
@@ -287,7 +287,7 @@ def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, s
             }
         ]
     for face in faces:  # type: JSONType
-        yield card["id"], _get_card_name(face), _get_png_image_uri(card, face)
+        yield card["id"], _get_card_name(face), (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri)
 
 
 def _get_png_image_uri(card: JSONType, face: JSONType):
@@ -301,6 +301,17 @@ def _get_png_image_uri(card: JSONType, face: JSONType):
         return face["image_uris"]["png"]
     except KeyError:
         return card["image_uris"]["png"]
+
+
+def _is_front_face(image_uri: str) -> bool:
+    """
+    Determine if the PNG image URI is a front or back face. The API does not expose which side a face is, so get that
+    detail using the directory structure in the URI. This is kind of a hack, though.
+
+    :param image_uri: URI pointing to the image on the Scryfall servers
+    :return: True, if the face is a front face, False otherwise
+    """
+    return "/front/" in image_uri
 
 
 def _get_card_name(card_or_face: JSONType) -> str:
