@@ -107,6 +107,7 @@ class LoadDocumentDialog(QFileDialog):
             logger.debug("User aborted loading. Doing nothing.")
         return result
 
+
 class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_file_with_name("about_dialog")):
 
     def __init__(self, *args, **kwargs):

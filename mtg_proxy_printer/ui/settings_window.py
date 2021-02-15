@@ -16,8 +16,8 @@
 import configparser
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit
 
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
@@ -55,6 +55,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_images_settings(settings)
         self._load_download_settings(settings)
         self._load_document_settings(settings)
+        self._load_save_path_settings(settings)
 
     def _load_images_settings(self, settings):
         self.preferred_language_combo_box: QComboBox
@@ -83,6 +84,12 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings = self._get_download_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setChecked(download_section.getboolean(setting))
+
+    def _load_save_path_settings(self, settings: configparser.ConfigParser):
+        section = settings["default-save-paths"]
+        widgets_with_settings = self._get_save_path_settings_widgets()
+        for widget, setting in widgets_with_settings:
+            widget.setText(section[setting])
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
@@ -117,6 +124,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         return widgets_with_settings
 
+    def _get_save_path_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+            (self.document_save_path, "document-save-path"),
+            (self.pdf_save_path, "pdf-export-path"),
+        ]
+        return widgets_with_settings
+
     def reset(self):
         logger.info("User reverts the made changes.")
         self.load_settings(mtg_proxy_printer.settings.settings)
@@ -131,6 +145,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._save_images_settings()
         self._save_downloads_settings()
         self._save_documents_settings()
+        self._save_save_path_settings()
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
         logger.debug("Save finished.")
@@ -154,6 +169,12 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             documents_section[setting] = str(widget.value())
         documents_section["print-cut-marker"] = str(self.print_cut_marker.isChecked())
 
+    def _save_save_path_settings(self):
+        section = mtg_proxy_printer.settings.settings["default-save-paths"]
+        widgets_and_settings = self._get_save_path_settings_widgets()
+        for widget, setting in widgets_and_settings:
+            section[setting] = widget.text()
+        
     def restore_defaults(self):
         logger.info("User resets the configuration to the default settings.")
         self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
@@ -165,3 +186,15 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             return languages.index(language)
         else:
             return languages.index("en")
+
+    @pyqtSlot()
+    def on_document_save_path_browse_button_clicked(self):
+        logger.info("User selects a new default document save path.")
+        location = QFileDialog.getExistingDirectory(self, "Select default save location")
+        self.document_save_path.setText(location)
+
+    @pyqtSlot()
+    def on_pdf_save_path_browse_button_clicked(self):
+        logger.info("User selects a new default PDF document export path.")
+        location = QFileDialog.getExistingDirectory(self, "Select default PDF export location")
+        self.pdf_save_path.setText(location)
