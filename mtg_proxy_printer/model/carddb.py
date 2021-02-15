@@ -315,6 +315,16 @@ class CardDatabase:
         ).fetchone()
         return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id)
 
+    def get_opposing_face(self, card) -> typing.Optional[Card]:
+        """
+        Returns the opposing face for double faced cards, or None for single-faced cards.
+        """
+        other_side = not card.is_front
+        if self.is_scryfall_id_known(card.scryfall_id, other_side):
+            return self.get_card_with_scryfall_id(card.scryfall_id, other_side)
+        else:
+            return None
+
 
 def migrate_card_database(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version").fetchone()[0] == 9:
