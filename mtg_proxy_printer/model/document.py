@@ -341,12 +341,13 @@ class Document(QAbstractListModel):
         if self.file_path is None:
             raise RuntimeError("Cannot save without a file path!")
         cards = (
-            zip(itertools.repeat(page_index), enumerate((card.scryfall_id for card in page.cards), start=1))
+            zip(itertools.repeat(page_index), enumerate((
+                (card.scryfall_id, card.is_front) for card in page.cards), start=1))
             for page_index, page in enumerate(self.pages, start=1)
         )
         flattened_data = (
-            (page, slot, scryfall_id)
-            for (page, (slot, scryfall_id))
+            (page, slot, scryfall_id, is_front)
+            for (page, (slot, (scryfall_id, is_front)))
             in itertools.chain.from_iterable(cards)
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
@@ -355,7 +356,7 @@ class Document(QAbstractListModel):
             _migrate_database(db)
             db.execute("DELETE FROM Card")
             db.executemany(
-                "INSERT INTO Card (page, slot, scryfall_id) VALUES (?, ?, ?)",
+                "INSERT INTO Card (page, slot, scryfall_id, is_front) VALUES (?, ?, ?, ?)",
                 flattened_data
             )
             db.commit()
