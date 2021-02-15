@@ -301,28 +301,35 @@ class Document(QAbstractListModel):
         self.file_path = path
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            data = db.execute(
-                "SELECT page, slot, scryfall_id\n"
-                "FROM Card\n"
-                "ORDER BY page, slot ASC").fetchall()
+            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            else:
+                query = r"""SELECT page, slot, scryfall_id, is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            data: typing.List[typing.Tuple[int, int, str, bool]] = [
+                (page, slot, scryfall_id, bool(is_front))
+                for page, slot, scryfall_id, is_front in db.execute(query)
+            ]
         if self.pages:
             self.beginRemoveRows(QModelIndex(), 0, self.rowCount())
             for page in self.pages:
                 page.dataChanged.disconnect(self.on_page_data_changed)
             self.pages.clear()
             self.endRemoveRows()
-
-        current_page = None
-        for page_number, slot, scryfall_id in data:
+        current_page = -1
+        for page_number, slot, scryfall_id, is_front in data:
             if current_page != page_number:
                 current_page = page_number
                 self.add_page()
-            if not card_db.is_scryfall_id_known(scryfall_id):
+            if not card_db.is_scryfall_id_known(scryfall_id, is_front):
                 # If the save file was tampered with or the database used to save contained more cards than the
                 # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
                 continue
             page = self.pages[-1]
-            card = card_db.get_card_with_scryfall_id(scryfall_id)
+            card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
             image_db.get_image(card)
             page.add_card(card)
 
@@ -345,6 +352,7 @@ class Document(QAbstractListModel):
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
+            _migrate_database(db)
             db.execute("DELETE FROM Card")
             db.executemany(
                 "INSERT INTO Card (page, slot, scryfall_id) VALUES (?, ?, ?)",
@@ -433,3 +441,9 @@ class Document(QAbstractListModel):
             for card in to_add:
                 page.add_card(card)
         return total_moved_images
+
+
+def _migrate_database(db):
+    if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+        db.execute("ALTER TABLE Card ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
+        db.execute("PRAGMA user_version = ?", (3,))
