@@ -169,6 +169,7 @@ class CardDatabase:
         fills in all missing information by modifying the Card object in-place.
 
         A unique card may be
+
         - A card name in the given language (if there were no re-prints or multiple printings in the same set)
         - A card name and collector number (if all re-prints have different numbers)
         - A card name and set (if there were no multiple printings in the same set)
@@ -179,7 +180,8 @@ class CardDatabase:
         - Language (some promo cards are one-of a kind and have a unique language,
           like a single card in traditional Greek)
         """
-        query = 'SELECT card_name, "set", collector_number, png_image_uri, scryfall_id -- add_missing_information()\n' \
+        query = 'SELECT card_name, "set", collector_number, png_image_uri, scryfall_id, is_front ' \
+                '-- add_missing_information()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
@@ -204,7 +206,7 @@ class CardDatabase:
         result = cursor.fetchone()
         if not result or cursor.fetchone():
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
-        card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id = result
+        card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id, card.is_front = result
 
     def find_collector_numbers_matching(self, card: Card) -> StringList:
         query = 'SELECT DISTINCT collector_number -- find_collector_numbers_matching()\n' \
