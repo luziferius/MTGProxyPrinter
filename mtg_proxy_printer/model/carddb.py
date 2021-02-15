@@ -52,7 +52,7 @@ class Card:
     set_abbr: OptionalString
     collector_number: OptionalString
     language: str
-    is_front: bool
+    is_front: typing.Optional[bool] = None
     image_uri: OptionalString = None
     scryfall_id: OptionalString = None
     image_file: typing.Optional[QPixmap] = None
