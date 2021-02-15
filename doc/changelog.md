@@ -1,7 +1,7 @@
 # Changelog
 
 
-# Version 0.5.0 (unreleased, in development)
+# Version 0.5.0 (2021-02-15)
 
 ## Implemented features
 
@@ -23,6 +23,9 @@
 - Fixed that the maximum number of card copies possible to add to the current page
   did not increase when cards were deleted from the current page. This limiting was completely removed, so it is now
   always possible to add cards, even if the current page is full.
+- Fixed handling of double-faced cards. It is now possible to add both sides of double-faced cards.
+  Additionally, support for those was added to the document format,
+  so documents including those can be saved and loaded.
   
 
 ## Optimizations

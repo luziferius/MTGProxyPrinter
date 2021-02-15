@@ -16,8 +16,8 @@
 from appdirs import AppDirs
 
 PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.4.0"
-COPYRIGHT = "(C) 2019,2020 Thomas Hess"
+__version__ = "0.5.0"
+COPYRIGHT = "(C) 2019-2021 Thomas Hess"
 
 data_directories = AppDirs(PROGRAMNAME)
 
