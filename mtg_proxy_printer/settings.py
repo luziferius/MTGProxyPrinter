@@ -51,6 +51,7 @@ DEFAULT_SETTINGS["downloads"] = {
     "download-gold-bordered": "True",
     "download-funny-cards": "True",
     "download-non-traditional-cards": "True",
+    "download-token": "True",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",

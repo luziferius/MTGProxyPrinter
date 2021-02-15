@@ -497,6 +497,10 @@ Uncheck to disable this automatism.</string>
           </item>
           <item>
            <widget class="QCheckBox" name="include_gold_bordered_cards">
+            <property name="toolTip">
+             <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+These are not tournament legal.</string>
+            </property>
             <property name="text">
              <string>Include gold-bordered_cards</string>
             </property>
@@ -504,8 +508,18 @@ Uncheck to disable this automatism.</string>
           </item>
           <item>
            <widget class="QCheckBox" name="include_funny_cards">
+            <property name="toolTip">
+             <string>“Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some black-bordered promotional cards, in addition to all silver-bordered cards.</string>
+            </property>
             <property name="text">
              <string>Include “funny” cards</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="include_token">
+            <property name="text">
+             <string>Include Token cards</string>
             </property>
            </widget>
           </item>
@@ -643,6 +657,7 @@ Uncheck to disable this automatism.</string>
   <tabstop>include_white_bordered_cards</tabstop>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
+  <tabstop>include_token</tabstop>
   <tabstop>include_illegal_in_brawl</tabstop>
   <tabstop>include_illegal_in_commander</tabstop>
   <tabstop>include_illegal_in_historic</tabstop>

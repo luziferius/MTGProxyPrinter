@@ -131,6 +131,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             (self.include_illegal_in_pioneer, "download-illegal-in-pioneer"),
             (self.include_illegal_in_standard, "download-illegal-in-standard"),
             (self.include_illegal_in_vintage, "download-illegal-in-vintage"),
+            (self.include_token, "download-token"),
         ]
         return widgets_with_settings
 

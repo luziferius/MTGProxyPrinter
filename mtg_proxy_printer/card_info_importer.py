@@ -129,7 +129,7 @@ class CardInfoDownloader(QObject):
         self.model.db.execute("BEGIN TRANSACTION\n")
         clear_database(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
-        download_enabled = {  # Parse the boolean download settings only once per import
+        download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
             key: ds.getboolean(key)
             for key in ds.keys()
         }
@@ -255,6 +255,7 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
         # 'Funny' cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
+        card["layout"] == "token" and not download_enabled["download-token"],
         # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
         not (legalities["brawl"] == "legal" or download_enabled["download-illegal-in-brawl"]),
         not (legalities["commander"] == "legal" or download_enabled["download-illegal-in-commander"]),
