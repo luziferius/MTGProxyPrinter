@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>568</width>
-    <height>629</height>
+    <height>521</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -90,6 +90,26 @@ Uncheck to disable this automatism.</string>
          </layout>
         </widget>
        </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Document and Pages sizes</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_6">
        <item>
         <widget class="QGroupBox" name="page_configuration_group_box">
          <property name="title">
@@ -345,7 +365,7 @@ Uncheck to disable this automatism.</string>
         </widget>
        </item>
        <item>
-        <spacer name="verticalSpacer">
+        <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
@@ -523,6 +543,7 @@ Uncheck to disable this automatism.</string>
   <tabstop>tab_widget</tabstop>
   <tabstop>preferred_language_combo_box</tabstop>
   <tabstop>avoid_low_res_images_check_box</tabstop>
+  <tabstop>automatically_add_opposing_faces</tabstop>
   <tabstop>print_cut_marker</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
   <tabstop>page_height</tabstop>
@@ -557,8 +578,8 @@ Uncheck to disable this automatism.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>254</x>
-     <y>573</y>
+     <x>260</x>
+     <y>622</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -573,8 +594,8 @@ Uncheck to disable this automatism.</string>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>322</x>
-     <y>573</y>
+     <x>328</x>
+     <y>622</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
