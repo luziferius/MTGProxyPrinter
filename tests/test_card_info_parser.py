@@ -83,9 +83,9 @@ def _assert_all_printings_contains(
     assert_that(db_content, contains_inanyorder(*values), "CardFace relation contains unexpected data")
 
 
-def _assert_relation_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase, name: str, columns: str):
+def _assert_relation_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
     assert_that(
-        model.db.execute(f"SELECT {columns} FROM {name}").fetchall(),
+        model.db.execute(f"SELECT * FROM {name}").fetchall(),
         is_(empty()), f"{name} contains unexpected data"
     )
 
@@ -95,17 +95,12 @@ def _assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
     Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
     download settings.
     """
-
-    assert_that(
-        model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
-        is_(empty()), f"Set relation contains unexpected data"
-    )
-    _assert_relation_is_empty(model, "PrintLanguage", 'language_id, "language"')
-    _assert_relation_is_empty(model, "Card", "card_id, oracle_id")
-    _assert_relation_is_empty(model, "FaceName", "face_name_id, card_name, language_id")
-    _assert_relation_is_empty(model, "CardFace", "card_face_id, card_id, set_id, face_name_id, collector_number, scryfall_id, png_image_uri, is_front")
-    _assert_relation_is_empty(model, '"Set"', 'set_id, "set", set_name, set_uri')
-    _assert_relation_is_empty(model, "AllPrintings", 'card_name, "set", "language", collector_number, scryfall_id, png_image_uri, is_front')
+    _assert_relation_is_empty(model, "PrintLanguage")
+    _assert_relation_is_empty(model, "Card")
+    _assert_relation_is_empty(model, "FaceName")
+    _assert_relation_is_empty(model, "CardFace")
+    _assert_relation_is_empty(model, '"Set"')
+    _assert_relation_is_empty(model, "AllPrintings")
 
 
 def populate_database(model, data):
