@@ -33,6 +33,7 @@ DEFAULT_SETTINGS = configparser.ConfigParser()
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
     "avoid-low-resolution-images": "False",
+    "automatically-add-opposing-faces": "True",
 }
 DEFAULT_SETTINGS["downloads"] = {
     "download-cards-depicting-racism": "False",
