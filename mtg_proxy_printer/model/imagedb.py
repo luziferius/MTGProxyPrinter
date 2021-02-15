@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 import pathlib
 import shutil
+import string
 import typing
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
@@ -36,6 +38,8 @@ __all__ = [
     "ImageDatabase",
 ]
 
+ImageKey = typing.Tuple[str, bool]
+
 
 class ImageDatabase(QObject):
 
@@ -46,10 +50,11 @@ class ImageDatabase(QObject):
     def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
         super(ImageDatabase, self).__init__(*args, **kwargs)
         self.db_path = db_path
+        _migrate_database(db_path)
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.  TODO: Maybe use the QPixmapCache class instead?
-        self.loaded_images: typing.Dict[str, QPixmap] = {}
+        self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
 
     def _wrap_file_for_monitoring(self, file, expected_size_bytes):
         metered_file = mtg_proxy_printer.metered_file.MeteredFile(file, expected_size_bytes)
@@ -61,18 +66,18 @@ class ImageDatabase(QObject):
     @pyqtSlot(Card)
     def get_image(self, card: Card):
         try:
-            pixmap = self.loaded_images[card.scryfall_id]
+            pixmap = self.loaded_images[(card.scryfall_id, card.is_front)]
         except KeyError:
             cache_file_path = self._fetch_image_from_scryfall(card)
             pixmap = QPixmap(str(cache_file_path))
-            self.loaded_images[card.scryfall_id] = pixmap
+            self.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
         card.image_file = pixmap
 
     def _fetch_image_from_scryfall(self, card):
-        clean_uuid_prefix = card.scryfall_id.replace("-", "")[:6]
         cache_file_path = pathlib.Path(
             self.db_path,
-            *map("".join, zip(*[iter(clean_uuid_prefix)] * 2)),
+            "front" if card.is_front else "back",
+            card.scryfall_id[:2],
             f"{card.scryfall_id}.png"
         )
         if not cache_file_path.parent.exists():
@@ -86,3 +91,11 @@ class ImageDatabase(QObject):
         file, size = mtg_proxy_printer.card_info_importer.read_from_url(download_uri)
         with self._wrap_file_for_monitoring(file, size) as source, fs_path.open("wb") as file_in_cache:
             shutil.copyfileobj(source, file_in_cache)
+
+
+def _migrate_database(db_path: pathlib.Path):
+    if not (db_path/"version.txt").exists():
+        for possible_dir in map("".join, itertools.product(string.hexdigits, string.hexdigits)):
+            if (path := db_path/possible_dir).exists():
+                shutil.rmtree(path)
+        (db_path/"version.txt").write_text("2")
