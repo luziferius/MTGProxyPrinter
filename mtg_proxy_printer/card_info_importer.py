@@ -26,7 +26,7 @@ import http.client
 import ijson
 from PyQt5.QtCore import pyqtSignal, QObject
 
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, clear_database
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
@@ -127,7 +127,7 @@ class CardInfoDownloader(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
         self.model.db.execute("BEGIN TRANSACTION\n")
-        self._clear_database()
+        clear_database(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled = {  # Parse the boolean download settings only once per import
             key: ds.getboolean(key)
@@ -153,25 +153,6 @@ class CardInfoDownloader(QObject):
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
-
-    def _clear_database(self):
-        """
-        Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
-        This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
-        """
-        # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
-        # leaves to roots. This allows SQLite to use the TRUNCATE optimization
-        # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
-        # the tables in a way that doesn’t break foreign keys during the process.
-        tables_to_clear = [
-            "CardFace",
-            "FaceName",
-            "Card",
-            '"Set"',
-            "PrintLanguage",
-        ]
-        for table in tables_to_clear:
-            self.model.db.execute(f"DELETE FROM {table}\n")
 
 
 def read_from_url(url: str):
@@ -252,13 +233,13 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
 def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
     collector_number = card["collector_number"]
     highres_image = card["highres_image"]
-    for scryfall_id, printed_name, png_image_uri in _get_card_faces(card):
+    for scryfall_id, printed_name, png_image_uri, is_front in _get_card_faces(card):
         face_name_id = _insert_face_name(model, printed_name, language_id)
         model.db.execute(
             "INSERT INTO CardFace (\n"
-            "  card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri)\n"
-            "VALUES (?, ?, ?, ?, ?, ?, ?)\n",
-            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri)
+            "card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)\n"
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n",
+            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)
         )
 
 
@@ -288,7 +269,7 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
     ))
 
 
-def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str], None, None]:
+def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str, bool], None, None]:
     """
     Yields a tuple (Scryfall_id, printed_name, PNG_image_URI) for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
@@ -306,7 +287,7 @@ def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, s
             }
         ]
     for face in faces:  # type: JSONType
-        yield card["id"], _get_card_name(face), _get_png_image_uri(card, face)
+        yield card["id"], _get_card_name(face), (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri)
 
 
 def _get_png_image_uri(card: JSONType, face: JSONType):
@@ -320,6 +301,17 @@ def _get_png_image_uri(card: JSONType, face: JSONType):
         return face["image_uris"]["png"]
     except KeyError:
         return card["image_uris"]["png"]
+
+
+def _is_front_face(image_uri: str) -> bool:
+    """
+    Determine if the PNG image URI is a front or back face. The API does not expose which side a face is, so get that
+    detail using the directory structure in the URI. This is kind of a hack, though.
+
+    :param image_uri: URI pointing to the image on the Scryfall servers
+    :return: True, if the face is a front face, False otherwise
+    """
+    return "/front/" in image_uri
 
 
 def _get_card_name(card_or_face: JSONType) -> str:

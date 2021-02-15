@@ -18,6 +18,7 @@ import dataclasses
 import datetime
 import pathlib
 import sqlite3
+import textwrap
 import typing
 
 from PyQt5.QtGui import QPixmap
@@ -41,7 +42,8 @@ MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 
 __all__ = [
     "Card",
-    "CardDatabase"
+    "CardDatabase",
+    "clear_database"
 ]
 
 
@@ -51,6 +53,7 @@ class Card:
     set_abbr: OptionalString
     collector_number: OptionalString
     language: str
+    is_front: typing.Optional[bool] = None
     image_uri: OptionalString = None
     scryfall_id: OptionalString = None
     image_file: typing.Optional[QPixmap] = None
@@ -63,6 +66,7 @@ class CardDatabase:
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION)
+        migrate_card_database(db)
         self.db = db
         self._exit_hook = None
         if db_path != ":memory:":
@@ -166,6 +170,7 @@ class CardDatabase:
         fills in all missing information by modifying the Card object in-place.
 
         A unique card may be
+
         - A card name in the given language (if there were no re-prints or multiple printings in the same set)
         - A card name and collector number (if all re-prints have different numbers)
         - A card name and set (if there were no multiple printings in the same set)
@@ -176,7 +181,8 @@ class CardDatabase:
         - Language (some promo cards are one-of a kind and have a unique language,
           like a single card in traditional Greek)
         """
-        query = 'SELECT card_name, "set", collector_number, png_image_uri, scryfall_id -- add_missing_information()\n' \
+        query = 'SELECT card_name, "set", collector_number, png_image_uri, scryfall_id, is_front ' \
+                '-- add_missing_information()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
@@ -201,7 +207,7 @@ class CardDatabase:
         result = cursor.fetchone()
         if not result or cursor.fetchone():
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
-        card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id = result
+        card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id, card.is_front = result
 
     def find_collector_numbers_matching(self, card: Card) -> StringList:
         query = 'SELECT DISTINCT collector_number -- find_collector_numbers_matching()\n' \
@@ -295,14 +301,56 @@ class CardDatabase:
         result = [set_abbr for set_abbr, in cursor]
         return result
 
-    def is_scryfall_id_known(self, scryfall_id: str) -> bool:
-        query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ?)'
-        result, = self.db.execute(query, (scryfall_id,)).fetchone()
+    def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
+        query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ? and is_front = ?)'
+        result, = self.db.execute(query, (scryfall_id, is_front)).fetchone()
         return bool(result)
 
-    def get_card_with_scryfall_id(self, scryfall_id: str) -> Card:
+    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> Card:
         query = 'SELECT card_name, "set", collector_number, "language", png_image_uri\n' \
                 'FROM AllPrintings\n' \
-                'WHERE scryfall_id = ?'
-        name, set_abbr, collector_number, language, image_uri = self.db.execute(query, (scryfall_id,)).fetchone()
-        return Card(name, set_abbr, collector_number, language, image_uri, scryfall_id)
+                'WHERE scryfall_id = ? AND is_front = ?'
+        name, set_abbr, collector_number, language, image_uri = self.db.execute(
+            query, (scryfall_id, is_front)
+        ).fetchone()
+        return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id)
+
+
+def migrate_card_database(db: sqlite3.Connection):
+    if db.execute("PRAGMA user_version").fetchone()[0] == 9:
+        # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
+        # the database using fresh data from Scryfall.
+        db.execute("BEGIN TRANSACTION")
+        clear_database(db)
+        db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
+        db.execute("DROP VIEW AllPrintings")
+        db.execute(textwrap.dedent(r"""CREATE VIEW AllPrintings AS
+            SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
+            FROM CardFace
+            JOIN FaceName USING(face_name_id)
+            JOIN "Set" USING (set_id)
+            JOIN Card USING (card_id)
+            JOIN PrintLanguage USING(language_id)
+        ;"""))
+        db.execute("PRAGMA user_version = 10")
+        db.commit()
+
+
+def clear_database(db: sqlite3.Connection):
+    """
+    Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
+    This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
+    """
+    # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
+    # leaves to roots. This allows SQLite to use the TRUNCATE optimization
+    # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
+    # the tables in a way that doesn’t break foreign keys during the process.
+    tables_to_clear = [
+        "CardFace",
+        "FaceName",
+        "Card",
+        '"Set"',
+        "PrintLanguage",
+    ]
+    for table in tables_to_clear:
+        db.execute(f"DELETE FROM {table}\n")
