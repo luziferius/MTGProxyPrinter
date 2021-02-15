@@ -64,6 +64,10 @@ DEFAULT_SETTINGS["documents"] = {
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
 }
+DEFAULT_SETTINGS["default-save-paths"] = {
+    "document-save-path": "",
+    "pdf-export-path": "",
+}
 
 # Populate the settings with default values, even if read_settings_from_file() is never called.
 settings.read_dict(DEFAULT_SETTINGS)

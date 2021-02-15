@@ -22,6 +22,7 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
+import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.logger import get_logger
@@ -29,11 +30,24 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+__all__ = [
+    "SavePDFDialog",
+    "SaveDocumentAsDialog",
+    "LoadDocumentDialog",
+    "AboutMTGProxyPrinterDialog",
+]
+
+
+def read_path(setting: str) -> str:
+    return mtg_proxy_printer.settings.settings["default-save-paths"][setting]
+
 
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document, **kwargs):
         super(SavePDFDialog, self).__init__(parent, "Export as PDF", filter="PDF-Documents (*.pdf)", **kwargs)
+        if default_path := read_path("pdf-export-path"):
+            self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptSave)
         self.setDefaultSuffix("pdf")
@@ -59,6 +73,8 @@ class SaveDocumentAsDialog(QFileDialog):
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document, **kwargs):
         super(SaveDocumentAsDialog, self).__init__(
             parent, "Save document as …", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
+        if default_path := read_path("document-save-path"):
+            self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptSave)
         self.setDefaultSuffix("mtgproxies")
@@ -87,6 +103,8 @@ class LoadDocumentDialog(QFileDialog):
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase, **kwargs):
         super(LoadDocumentDialog, self).__init__(
             parent, "Load MTGProxyPrinter document", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
+        if default_path := read_path("document-save-path"):
+            self.setDirectory(default_path)
         self.document = document
         self.card_db = card_db
         self.image_db = image_db
@@ -106,6 +124,7 @@ class LoadDocumentDialog(QFileDialog):
         else:
             logger.debug("User aborted loading. Doing nothing.")
         return result
+
 
 class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_file_with_name("about_dialog")):
 
