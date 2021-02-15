@@ -18,6 +18,7 @@ import dataclasses
 import datetime
 import pathlib
 import sqlite3
+import textwrap
 import typing
 
 from PyQt5.QtGui import QPixmap
@@ -319,9 +320,20 @@ def migrate_card_database(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version").fetchone()[0] == 9:
         # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
         # the database using fresh data from Scryfall.
+        db.execute("BEGIN TRANSACTION")
         clear_database(db)
         db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
+        db.execute("DROP VIEW AllPrintings")
+        db.execute(textwrap.dedent(r"""CREATE VIEW AllPrintings AS
+            SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
+            FROM CardFace
+            JOIN FaceName USING(face_name_id)
+            JOIN "Set" USING (set_id)
+            JOIN Card USING (card_id)
+            JOIN PrintLanguage USING(language_id)
+        ;"""))
         db.execute("PRAGMA user_version = 10")
+        db.commit()
 
 
 def clear_database(db: sqlite3.Connection):
