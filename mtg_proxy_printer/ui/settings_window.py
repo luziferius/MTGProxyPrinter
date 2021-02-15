@@ -67,6 +67,9 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.avoid_low_res_images_check_box.setChecked(
             images_section.getboolean("avoid-low-resolution-images")
         )
+        self.automatically_add_opposing_faces.setChecked(
+            images_section.getboolean("automatically-add-opposing-faces")
+        )
 
     def _load_document_settings(self, settings: configparser.ConfigParser):
         document_section = settings["documents"]
@@ -136,6 +139,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         images_section = mtg_proxy_printer.settings.settings["images"]
         images_section["preferred-language"] = self.preferred_language_combo_box.currentText()
         images_section["avoid-low-resolution-images"] = str(self.avoid_low_res_images_check_box.isChecked())
+        images_section["automatically-add-opposing-faces"] = str(self.automatically_add_opposing_faces.isChecked())
 
     def _save_downloads_settings(self):
         downloads_section = mtg_proxy_printer.settings.settings["downloads"]

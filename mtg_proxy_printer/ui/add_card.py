@@ -193,6 +193,10 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
         self.card_added.emit(self.card, copies)
+        add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean("automatically-add-opposing-faces")
+        if add_opposing_faces_enabled and (
+                opposing_face := self.card_database.get_opposing_face(self.card)) is not None:
+            self.card_added.emit(opposing_face, copies)
         self.reset()
 
     @pyqtSlot()
