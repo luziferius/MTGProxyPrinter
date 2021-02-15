@@ -70,6 +70,27 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="double_faced_cards_group_box">
+         <property name="title">
+          <string>Double-faced cards</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QCheckBox" name="automatically_add_opposing_faces">
+            <property name="toolTip">
+             <string>When adding double-faced cards, automatically add the same number of copies of the other side.
+Uses the appropriate, matching other card side.
+Uncheck to disable this automatism.</string>
+            </property>
+            <property name="text">
+             <string>Automatically add the other side of double-faced cards</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="page_configuration_group_box">
          <property name="title">
           <string>Default settings for new documents</string>
