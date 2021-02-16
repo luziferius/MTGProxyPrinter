@@ -373,9 +373,10 @@ class Document(QAbstractListModel):
         moves cards from the last page with items to it.
         This fills all (but the last) pages up to the capacity limit to help reducing possible waste during printing.
         """
+        if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
+            return
         maximum_cards_per_page = self.compute_total_cards_per_page()
         last_index = self.rowCount() - 1
-        current_index = 0
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
             if cards_to_add := maximum_cards_per_page - current_page.rowCount():
                 while cards_to_add and current_index < last_index:
@@ -384,11 +385,11 @@ class Document(QAbstractListModel):
                         last_index -= 1
                 if current_index == last_index:  # No more pages available to take cards from
                     break
-        # Subtract 2 (two) to skip the last page, which this algorithm must not look at. Otherwise the last page will
-        # get lost when compacting an already compacted document.
-        if current_index < self.rowCount() - 2:
-            empty_trailing_pages = [self.createIndex(row, 0) for row in range(current_index+1, self.rowCount())]
-            self.remove_pages(empty_trailing_pages)
+
+        empty_trailing_pages = [
+            self.createIndex(row, 0) for row in range(1, self.rowCount()) if not self.pages[row].rowCount()
+        ]
+        self.remove_pages(empty_trailing_pages)
 
     def compute_pages_saved_by_compacting(self) -> int:
         """
