@@ -176,6 +176,17 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
         logger.debug(f"User prints the current document to PDF.")
+        if savable_pages := self.document.compute_pages_saved_by_compacting():
+            result = QMessageBox.question(
+                self, "Saving pages possible",
+                f"It is possible to save {savable_pages} pages when printing this document.\n"
+                f"Do you want to compact the document now to minimize the page count prior to exporting as a PDF?",
+                QMessageBox.Yes|QMessageBox.No|QMessageBox.Cancel
+            )
+            if result == QMessageBox.Yes:
+                self.document.compact_pages()
+            elif result == QMessageBox.Cancel:
+                return
         dialog = SavePDFDialog(self, self.document)
         dialog.exec_()
 
