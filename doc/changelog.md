@@ -11,10 +11,16 @@
 - Configurable default storage location for Proxy documents and PDF documents.
   The locations can be set in the settings window.
 - Added optional download filter for token cards to exclude all tokens from the card database.
+- When compacting the current document will save pages,
+  ask the user if they want to compact the document prior to exporting it as a PDF.
 
 ## Changed features
 
 - Adjusted the download filters to only exclude explicitly banned cards, when filtering cards banned in certain formats.
+
+# Fixed issues
+
+- Properly remove trailing, empty pages when compacting a document.
 
 # Version 0.5.0 (2021-02-15)
 
