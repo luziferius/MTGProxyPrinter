@@ -18,6 +18,7 @@ import itertools
 import pathlib
 import typing
 
+import delegateto
 import pint
 from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
 
@@ -37,6 +38,7 @@ __all__ = [
 ]
 
 
+@delegateto.delegate("cards", "__len__")
 class Page(QAbstractTableModel):
     """
     This is a single page and part of a Document. It holds the proxies added to this page as a list of Card objects.
@@ -54,7 +56,7 @@ class Page(QAbstractTableModel):
     def __init__(self, *args, **kwargs):
         super(Page, self).__init__(*args, **kwargs)
         self.cards: CardList = []
-        
+
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self.cards)
 
@@ -147,6 +149,7 @@ class Page(QAbstractTableModel):
 PageList = typing.List[Page]
 
 
+@delegateto.delegate("pages", "__len__")
 class Document(QAbstractListModel):
     """
     This is the root of a multi-page document that contains any number of same-size pages.
@@ -386,6 +389,18 @@ class Document(QAbstractListModel):
         if current_index < self.rowCount() - 2:
             empty_trailing_pages = [self.createIndex(row, 0) for row in range(current_index+1, self.rowCount())]
             self.remove_pages(empty_trailing_pages)
+
+    def compute_pages_saved_by_compacting(self) -> int:
+        """
+        Computes the number of pages that can be saved by compacting the document.
+        """
+        if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
+            return 0
+        single_page_capacity = self.compute_total_cards_per_page()
+        maximum_document_capacity = single_page_capacity * self.rowCount()
+        total_cards_in_document = sum(map(len, self.pages))
+        result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
+        return result
 
     def _move_images_to_fill_page(self, page_to_fill: Page, source: Page) -> int:
         """
