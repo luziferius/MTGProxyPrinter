@@ -31,6 +31,7 @@ from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog
+from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -102,6 +103,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
             (self.action_save_as, "document-save-as"),
             (self.action_print, "document-print-direct"),
             (self.action_print_pdf, "document-print"),
+            (self.action_import_deck_list, "document-import"),
             (self.action_show_settings, "configure"),
             (self.action_download_card_data, "edit-download"),
             (self.action_new_page, "document-new"),
@@ -167,6 +169,12 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         logger.debug("Quit action confirmed. Exiting…")
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         QApplication.instance().shutdown()
+
+    @pyqtSlot()
+    def on_action_import_deck_list_triggered(self):
+        logger.debug(f"User imports a deck list.")
+        wizard = DeckImportWizard(self.card_database, parent=self)
+        wizard.show()
 
     @pyqtSlot()
     def on_action_print_triggered(self):
