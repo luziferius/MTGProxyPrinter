@@ -10,6 +10,11 @@
   border style, etc, if multiple choices are available. Can be disabled in the settings.
 - Configurable default storage location for Proxy documents and PDF documents.
   The locations can be set in the settings window.
+- Added optional download filter for token cards to exclude all tokens from the card database.
+
+## Changed features
+
+- Adjusted the download filters to only exclude explicitly banned cards, when filtering cards banned in certain formats.
 
 # Version 0.5.0 (2021-02-15)
 

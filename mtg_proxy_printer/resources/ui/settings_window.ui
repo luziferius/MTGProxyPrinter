@@ -529,74 +529,74 @@ These are not tournament legal.</string>
        <item>
         <widget class="QGroupBox" name="card_download_format_settings">
          <property name="title">
-          <string>Include cards illegal or banned in specific Formats</string>
+          <string>Include cards banned in specific Formats</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
           <item row="0" column="0">
-           <widget class="QCheckBox" name="include_illegal_in_brawl">
+           <widget class="QCheckBox" name="include_banned_in_brawl">
             <property name="text">
              <string>Brawl</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QCheckBox" name="include_illegal_in_pauper">
+           <widget class="QCheckBox" name="include_banned_in_pauper">
             <property name="text">
              <string>Pauper</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QCheckBox" name="include_illegal_in_commander">
+           <widget class="QCheckBox" name="include_banned_in_commander">
             <property name="text">
              <string>Commander</string>
             </property>
            </widget>
           </item>
           <item row="1" column="1">
-           <widget class="QCheckBox" name="include_illegal_in_penny">
+           <widget class="QCheckBox" name="include_banned_in_penny">
             <property name="text">
              <string>Penny</string>
             </property>
            </widget>
           </item>
           <item row="2" column="0">
-           <widget class="QCheckBox" name="include_illegal_in_historic">
+           <widget class="QCheckBox" name="include_banned_in_historic">
             <property name="text">
              <string>Historic</string>
             </property>
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QCheckBox" name="include_illegal_in_pioneer">
+           <widget class="QCheckBox" name="include_banned_in_pioneer">
             <property name="text">
              <string>Pioneer</string>
             </property>
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QCheckBox" name="include_illegal_in_legacy">
+           <widget class="QCheckBox" name="include_banned_in_legacy">
             <property name="text">
              <string>Legacy</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QCheckBox" name="include_illegal_in_standard">
+           <widget class="QCheckBox" name="include_banned_in_standard">
             <property name="text">
              <string>Standard</string>
             </property>
            </widget>
           </item>
           <item row="4" column="0">
-           <widget class="QCheckBox" name="include_illegal_in_modern">
+           <widget class="QCheckBox" name="include_banned_in_modern">
             <property name="text">
              <string>Modern</string>
             </property>
            </widget>
           </item>
           <item row="4" column="1">
-           <widget class="QCheckBox" name="include_illegal_in_vintage">
+           <widget class="QCheckBox" name="include_banned_in_vintage">
             <property name="text">
              <string>Vintage</string>
             </property>
@@ -658,16 +658,16 @@ These are not tournament legal.</string>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
   <tabstop>include_token</tabstop>
-  <tabstop>include_illegal_in_brawl</tabstop>
-  <tabstop>include_illegal_in_commander</tabstop>
-  <tabstop>include_illegal_in_historic</tabstop>
-  <tabstop>include_illegal_in_legacy</tabstop>
-  <tabstop>include_illegal_in_modern</tabstop>
-  <tabstop>include_illegal_in_pauper</tabstop>
-  <tabstop>include_illegal_in_penny</tabstop>
-  <tabstop>include_illegal_in_pioneer</tabstop>
-  <tabstop>include_illegal_in_standard</tabstop>
-  <tabstop>include_illegal_in_vintage</tabstop>
+  <tabstop>include_banned_in_brawl</tabstop>
+  <tabstop>include_banned_in_commander</tabstop>
+  <tabstop>include_banned_in_historic</tabstop>
+  <tabstop>include_banned_in_legacy</tabstop>
+  <tabstop>include_banned_in_modern</tabstop>
+  <tabstop>include_banned_in_pauper</tabstop>
+  <tabstop>include_banned_in_penny</tabstop>
+  <tabstop>include_banned_in_pioneer</tabstop>
+  <tabstop>include_banned_in_standard</tabstop>
+  <tabstop>include_banned_in_vintage</tabstop>
  </tabstops>
  <resources/>
  <connections>

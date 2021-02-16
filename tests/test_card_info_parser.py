@@ -19,6 +19,7 @@ import typing
 from unittest.mock import patch
 
 from hamcrest import *
+import pytest
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.settings
@@ -51,7 +52,7 @@ def _assert_print_language_contains(
 def _assert_set_contains(
         model: mtg_proxy_printer.model.carddb.CardDatabase,
         values: typing.Iterable[typing.Tuple[str, str, str]]):
-    """Checks "set", set_name, set_uri"""
+    """Checks "set", set_name, scryfall_set_uri"""
     db_content = model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall()
     assert_that(db_content, contains_inanyorder(*values), f"Set relation contains unexpected data")
 
@@ -336,42 +337,42 @@ def test_import_white_bordered_card_if_enabled():
 
 def test_import_skips_card_banned_in_brawl_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_brawl")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-brawl", "False")
+    data = load_json("banned_in_brawl")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-brawl", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_brawl_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_brawl")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-brawl", "True")
+    data = load_json("banned_in_brawl")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-brawl", "True")
     _assert_print_language_contains(model, [("en",)])
-    _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
+    _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
-        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+        ("eld", "Throne of Eldraine", "https://scryfall.com/sets/eld?utm_source=api"),
     ])
     _assert_face_name_contains(model, [
-        ("Worldfire",),
+        ("Oko, Thief of Crowns",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("Oko, Thief of Crowns", "eld", "en", "197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
 
 
 def test_import_skips_card_banned_in_commander_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_commander")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-commander", "False")
+    data = load_json("banned_in_commander")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-commander", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_commander_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_commander")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-commander", "True")
+    data = load_json("banned_in_commander")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-commander", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
     _assert_set_contains(model, [
@@ -390,42 +391,42 @@ def test_import_card_banned_in_commander_if_enabled():
 
 def test_import_skips_card_banned_in_historic_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_historic")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-historic", "False")
+    data = load_json("banned_in_historic")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-historic", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_historic_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_historic")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-historic", "True")
+    data = load_json("banned_in_historic")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-historic", "True")
     _assert_print_language_contains(model, [("en",)])
-    _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
+    _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
-        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+        ("eld", "Throne of Eldraine", "https://scryfall.com/sets/eld?utm_source=api"),
     ])
     _assert_face_name_contains(model, [
-        ("Worldfire",),
+        ("Oko, Thief of Crowns",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("Oko, Thief of Crowns", "eld", "en", "197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
 
 
 def test_import_skips_card_banned_in_legacy_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_legacy")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-legacy", "False")
+    data = load_json("banned_in_legacy")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-legacy", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_legacy_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_legacy")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-legacy", "True")
+    data = load_json("banned_in_legacy")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-legacy", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
     _assert_set_contains(model, [
@@ -444,69 +445,71 @@ def test_import_card_banned_in_legacy_if_enabled():
 
 def test_import_skips_card_banned_in_modern_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_modern")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-modern", "False")
+    data = load_json("banned_in_modern")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-modern", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_modern_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_modern")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-modern", "True")
+    data = load_json("banned_in_modern")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-modern", "True")
     _assert_print_language_contains(model, [("en",)])
-    _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
+    _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
-        ("leg", "Legends", "https://scryfall.com/sets/leg?utm_source=api"),
+        ("eld", "Throne of Eldraine", "https://scryfall.com/sets/eld?utm_source=api"),
     ])
     _assert_face_name_contains(model, [
-        ("Falling Star",),
+        ("Oko, Thief of Crowns",),
     ])
     _assert_card_face_contains(model, [
-        ("145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
+        ("197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Falling Star", "leg", "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838", True),
+        ("Oko, Thief of Crowns", "eld", "en", "197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
 
 
 def test_import_skips_card_banned_in_pauper_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_pauper")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-pauper", "False")
+    data = load_json("banned_in_pauper")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pauper", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_pauper_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_pauper")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-pauper", "True")
+    data = load_json("banned_in_pauper")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pauper", "True")
     _assert_print_language_contains(model, [("en",)])
-    _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
+    _assert_card_contains(model, [("8fcf50cd-e6d0-4516-850f-d42ee75dcc3a",)])
     _assert_set_contains(model, [
-        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+        ("2xm", "Double Masters", "https://scryfall.com/sets/2xm?utm_source=api"),
     ])
     _assert_face_name_contains(model, [
-        ("Worldfire",),
+        ("Expedition Map",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("255", "551c0a45-9515-4e51-84e5-79703832a661", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.png?1599709184", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("Expedition Map", "2xm", "en", "255", "551c0a45-9515-4e51-84e5-79703832a661", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.png?1599709184", True),
     ])
 
 
 def test_import_skips_card_banned_in_penny_if_disabled():
+    pytest.skip("There are currently no cards banned in this format.")
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_penny")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-penny", "False")
+    data = load_json("banned_in_penny")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-penny", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_penny_if_enabled():
+    pytest.skip("There are currently no cards banned in this format.")
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_penny")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-penny", "True")
+    data = load_json("banned_in_penny")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-penny", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
     _assert_set_contains(model, [
@@ -525,69 +528,69 @@ def test_import_card_banned_in_penny_if_enabled():
 
 def test_import_skips_card_banned_in_pioneer_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_pioneer")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-pioneer", "False")
+    data = load_json("banned_in_pioneer")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pioneer", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_pioneer_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_pioneer")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-pioneer", "True")
+    data = load_json("banned_in_pioneer")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pioneer", "True")
     _assert_print_language_contains(model, [("en",)])
-    _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
+    _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
-        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+        ("eld", "Throne of Eldraine", "https://scryfall.com/sets/eld?utm_source=api"),
     ])
     _assert_face_name_contains(model, [
-        ("Worldfire",),
+        ("Oko, Thief of Crowns",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("Oko, Thief of Crowns", "eld", "en", "197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
 
 
 def test_import_skips_card_banned_in_standard_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_standard")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-standard", "False")
+    data = load_json("banned_in_standard")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-standard", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_standard_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_standard")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-standard", "True")
+    data = load_json("banned_in_standard")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-standard", "True")
     _assert_print_language_contains(model, [("en",)])
-    _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
+    _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
-        ("m13", "Magic 2013", "https://scryfall.com/sets/m13?utm_source=api"),
+        ("eld", "Throne of Eldraine", "https://scryfall.com/sets/eld?utm_source=api"),
     ])
     _assert_face_name_contains(model, [
-        ("Worldfire",),
+        ("Oko, Thief of Crowns",),
     ])
     _assert_card_face_contains(model, [
-        ("158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
     _assert_all_printings_contains(model, [
-        ("Worldfire", "m13", "en", "158", "2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/2/e/2ef3d4b5-0453-4bf0-b018-23b0c3b9ae11.png?1562552052", True),
+        ("Oko, Thief of Crowns", "eld", "en", "197", "3462a3d0-5552-49fa-9eb7-100960c55891", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000", True),
     ])
 
 
 def test_import_skips_card_banned_in_vintage_if_disabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_vintage")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-vintage", "False")
+    data = load_json("banned_in_vintage")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-vintage", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_vintage_if_enabled():
     model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("illegal_in_vintage")
-    _populate_database_with_specific_download_setting(model, data, "download-illegal-in-vintage", "True")
+    data = load_json("banned_in_vintage")
+    _populate_database_with_specific_download_setting(model, data, "download-banned-in-vintage", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
     _assert_set_contains(model, [

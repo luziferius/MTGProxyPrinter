@@ -1,0 +1,137 @@
+{
+  "object": "card",
+  "id": "3462a3d0-5552-49fa-9eb7-100960c55891",
+  "oracle_id": "60c60923-ff1b-43f7-8768-731499fcffc9",
+  "multiverse_ids": [
+    473159
+  ],
+  "mtgo_id": 78538,
+  "arena_id": 70344,
+  "tcgplayer_id": 198356,
+  "cardmarket_id": 398659,
+  "name": "Oko, Thief of Crowns",
+  "lang": "en",
+  "released_at": "2019-10-04",
+  "uri": "https://api.scryfall.com/cards/3462a3d0-5552-49fa-9eb7-100960c55891",
+  "scryfall_uri": "https://scryfall.com/card/eld/197/oko-thief-of-crowns?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg?1613387000",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg?1613387000",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg?1613387000",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.png?1613387000",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg?1613387000",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/3/4/3462a3d0-5552-49fa-9eb7-100960c55891.jpg?1613387000"
+  },
+  "mana_cost": "{1}{G}{U}",
+  "cmc": 3.0,
+  "type_line": "Legendary Planeswalker — Oko",
+  "oracle_text": "+2: Create a Food token. (It's an artifact with \"{2}, {T}, Sacrifice this artifact: You gain 3 life.\")\n+1: Target artifact or creature loses all abilities and becomes a green Elk creature with base power and toughness 3/3.\n−5: Exchange control of target artifact or creature you control and target creature an opponent controls with power 3 or less.",
+  "loyalty": "4",
+  "colors": [
+    "G",
+    "U"
+  ],
+  "color_identity": [
+    "G",
+    "U"
+  ],
+  "keywords": [
+
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "3462a3d0-5552-49fa-9eb7-100960c55891",
+      "component": "combo_piece",
+      "name": "Oko, Thief of Crowns",
+      "type_line": "Legendary Planeswalker — Oko",
+      "uri": "https://api.scryfall.com/cards/3462a3d0-5552-49fa-9eb7-100960c55891"
+    },
+    {
+      "object": "related_card",
+      "id": "bf36408d-ed85-497f-8e68-d3a922c388a0",
+      "component": "token",
+      "name": "Food",
+      "type_line": "Token Artifact — Food",
+      "uri": "https://api.scryfall.com/cards/bf36408d-ed85-497f-8e68-d3a922c388a0"
+    }
+  ],
+  "legalities": {
+    "standard": "banned",
+    "future": "banned",
+    "historic": "banned",
+    "gladiator": "banned",
+    "pioneer": "banned",
+    "modern": "banned",
+    "legacy": "banned",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "brawl": "banned",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "arena",
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set": "eld",
+  "set_name": "Throne of Eldraine",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/a90a7b2f-9dd8-4fc7-9f7d-8ea2797ec782",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aeld&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/eld?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/3462a3d0-5552-49fa-9eb7-100960c55891/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A60c60923-ff1b-43f7-8768-731499fcffc9&unique=prints",
+  "collector_number": "197",
+  "digital": false,
+  "rarity": "mythic",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Yongjae Choi",
+  "artist_ids": [
+    "5ab91c3b-a6da-4751-a56e-81d0f61a67ab"
+  ],
+  "illustration_id": "a7e6d58e-e8da-445c-8375-1f1dac564eed",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 915,
+  "preview": {
+    "source": "Card Kingdom",
+    "source_uri": "https://twitter.com/Card_Kingdom/status/1168967403805511680",
+    "previewed_at": "2019-09-03"
+  },
+  "prices": {
+    "usd": "19.64",
+    "usd_foil": "28.81",
+    "eur": "19.01",
+    "eur_foil": "28.00",
+    "tix": "3.54"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=473159",
+    "tcgplayer_decks": "https://decks.tcgplayer.com/magic/deck/search?contains=Oko%2C+Thief+of+Crowns&page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Oko%2C+Thief+of+Crowns",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Oko%2C+Thief+of+Crowns"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=198356&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Oko%2C+Thief+of+Crowns&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/78538?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

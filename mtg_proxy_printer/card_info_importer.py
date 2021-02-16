@@ -252,21 +252,22 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
         # Border filter
         card["border_color"] == "white" and not download_enabled["download-white-bordered"],
         card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],
-        # 'Funny' cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+        # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
+        # Token cards
         card["layout"] == "token" and not download_enabled["download-token"],
-        # Format legality. Compare with "legal" to catch both "not_legal" and "banned"
-        not (legalities["brawl"] == "legal" or download_enabled["download-illegal-in-brawl"]),
-        not (legalities["commander"] == "legal" or download_enabled["download-illegal-in-commander"]),
-        not (legalities["historic"] == "legal" or download_enabled["download-illegal-in-historic"]),
-        not (legalities["legacy"] == "legal" or download_enabled["download-illegal-in-legacy"]),
-        not (legalities["modern"] == "legal" or download_enabled["download-illegal-in-modern"]),
-        not (legalities["pauper"] == "legal" or download_enabled["download-illegal-in-pauper"]),
-        not (legalities["penny"] == "legal" or download_enabled["download-illegal-in-penny"]),
-        not (legalities["pioneer"] == "legal" or download_enabled["download-illegal-in-pioneer"]),
-        not (legalities["standard"] == "legal" or download_enabled["download-illegal-in-standard"]),
-        not (legalities["vintage"] == "legal" or download_enabled["download-illegal-in-vintage"]),
+        # Specific format legality.
+        legalities["brawl"] == "banned" and not download_enabled["download-banned-in-brawl"],
+        legalities["commander"] == "banned" and not download_enabled["download-banned-in-commander"],
+        legalities["historic"] == "banned" and not download_enabled["download-banned-in-historic"],
+        legalities["legacy"] == "banned" and not download_enabled["download-banned-in-legacy"],
+        legalities["modern"] == "banned" and not download_enabled["download-banned-in-modern"],
+        legalities["pauper"] == "banned" and not download_enabled["download-banned-in-pauper"],
+        legalities["penny"] == "banned" and not download_enabled["download-banned-in-penny"],
+        legalities["pioneer"] == "banned" and not download_enabled["download-banned-in-pioneer"],
+        legalities["standard"] == "banned" and not download_enabled["download-banned-in-standard"],
+        legalities["vintage"] == "banned" and not download_enabled["download-banned-in-vintage"],
     ))
 
 
