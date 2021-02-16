@@ -1,7 +1,7 @@
 # Changelog
 
 
-# Version 0.6.0 (in development)
+# Version 0.6.0 (2021-02-17)
 
 ## Implemented features
 
