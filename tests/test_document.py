@@ -27,6 +27,6 @@ def test_document_two_overflow_events_only_add_one_new_page():
     document = mtg_proxy_printer.model.document.Document()
     document.add_card(card, document.total_cards_per_page)
     assert_that(document.rowCount(), is_(equal_to(1)))
-    for _ in range(9):
+    for _ in range(document.total_cards_per_page):
         document.add_card(card, 1)
-        assert_that(document.pages, has_length(2), "Unexpected page break occured")
+        assert_that(document.pages, has_length(2), "Unexpected page break occurred")
