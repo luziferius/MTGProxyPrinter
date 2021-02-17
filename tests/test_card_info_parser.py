@@ -13,24 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import json
-import pkg_resources
 import typing
-from unittest.mock import patch
 
 from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.settings
 import mtg_proxy_printer.card_info_importer
-from mtg_proxy_printer.card_info_importer import JSONType
-
-
-def load_json(name: str) -> typing.Generator[JSONType, None, None]:
-    yield json.loads(
-        pkg_resources.resource_string(f"tests.json_samples", f"{name}.json").decode("utf-8")
-    )
+from .helpers import create_new_card_database_with_json_card
 
 
 def _assert_card_contains(
@@ -104,29 +94,12 @@ def _assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
     _assert_relation_is_empty(model, "AllPrintings")
 
 
-def populate_database(model, data):
-    # Don’t bother the Scryfall API when running tests, so mock the web-accessing parts of the constructor.
-    with patch("mtg_proxy_printer.card_info_importer.CardInfoDownloader.get_scryfall_bulk_card_data_url") as mock:
-        # The URL is not used to fetch data, as the test data directly supplies the JSON document.
-        mock.return_value = ("http://example.com", 1)
-        cid = mtg_proxy_printer.card_info_importer.CardInfoDownloader(model)
-        cid.populate_database(data)
-
-
-def _populate_database_with_specific_download_setting(model, data, option, value):
-    """Sets a specific setting in the downloads section during the card import."""
-    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-        populate_database(model, data)
-
-
 def test_import_double_faced():
     """
     Double faced card. Any transform/meld/modal double faced card.
     """
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads Chinese printing of "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun"
-    data = load_json("non_english_double_faced_card")
-    populate_database(model, data)
+    model = create_new_card_database_with_json_card("non_english_double_faced_card")
     _assert_print_language_contains(model, [("zhs",)])
     _assert_card_contains(model, [("ea9c459a-6047-43aa-968f-a582be4000e8",)])
     _assert_set_contains(model, [
@@ -148,10 +121,8 @@ def test_import_double_faced():
 
 def test_import_split_card():
     """Has two or more smaller cards on one side."""
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads Korean printing of "Cut // Ribbons"
-    data = load_json("split_card")
-    populate_database(model, data)
+    model = create_new_card_database_with_json_card("split_card")
     _assert_print_language_contains(model, [("ko",)])
     _assert_card_contains(model, [("98a5bf1a-1088-4339-9a9b-6ee5e4956cf1",)])
     _assert_set_contains(model, [
@@ -173,10 +144,8 @@ def test_import_split_card():
 
 def test_import_english_double_faced_art_card():
     """Has a printing on both sides."""
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads English art series card "Clearwater Pathway // Clearwater Pathway"
-    data = load_json("english_double_faced_card")
-    populate_database(model, data)
+    model = create_new_card_database_with_json_card("english_double_faced_card")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("a755add5-04ec-4e37-9eb6-152d52cfa46d",)])
     _assert_set_contains(model, [
@@ -197,10 +166,8 @@ def test_import_english_double_faced_art_card():
 
 def test_import_regular_english_card():
     """Tests import with a simple, regular, English card."""
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads "Fury Sliver" from Time Spiral
-    data = load_json("regular_english_card")
-    populate_database(model, data)
+    model = create_new_card_database_with_json_card("regular_english_card")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("44623693-51d6-49ad-8cd7-140505caf02f",)])
     _assert_set_contains(model, [
@@ -222,10 +189,8 @@ def test_import_skips_card_depicting_racism_if_disabled():
     Test if the importer skips cards banned for depicting racism,
     if the option to download these in the setting is disabled.
     """
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads German printing of "Crusade"
-    data = load_json("depicting_racism")
-    _populate_database_with_specific_download_setting(model, data, "download-cards-depicting-racism", "False")
+    model = create_new_card_database_with_json_card("depicting_racism", "download-cards-depicting-racism", "False")
     _assert_model_is_empty(model)
 
 
@@ -234,10 +199,8 @@ def test_import_card_depicting_racism_if_enabled():
     Test if the importer imports cards banned for depicting racism,
     if the option to download these in the setting is enabled.
     """
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     # Loads German printing of "Crusade"
-    data = load_json("depicting_racism")
-    _populate_database_with_specific_download_setting(model, data, "download-cards-depicting-racism", "True")
+    model = create_new_card_database_with_json_card("depicting_racism", "download-cards-depicting-racism", "True")
     _assert_print_language_contains(model, [("de",)])
     _assert_card_contains(model, [("4692740f-be90-459f-8d90-c4ae71771595",)])
     _assert_set_contains(model, [
@@ -255,16 +218,12 @@ def test_import_card_depicting_racism_if_enabled():
 
 
 def test_import_skips_funny_card_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("funny_card")
-    _populate_database_with_specific_download_setting(model, data, "download-funny-cards", "False")
+    model = create_new_card_database_with_json_card("funny_card", "download-funny-cards", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_funny_card_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("funny_card")
-    _populate_database_with_specific_download_setting(model, data, "download-funny-cards", "True")
+    model = create_new_card_database_with_json_card("funny_card", "download-funny-cards", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("8789d5fa-101c-457a-90ec-5cf067f5289b",)])
     _assert_set_contains(model, [
@@ -282,16 +241,12 @@ def test_import_funny_card_if_enabled():
 
 
 def test_import_skips_gold_bordered_card_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("gold_bordered_card")
-    _populate_database_with_specific_download_setting(model, data, "download-gold-bordered", "False")
+    model = create_new_card_database_with_json_card("gold_bordered_card", "download-gold-bordered", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_gold_bordered_card_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("gold_bordered_card")
-    _populate_database_with_specific_download_setting(model, data, "download-gold-bordered", "True")
+    model = create_new_card_database_with_json_card("gold_bordered_card", "download-gold-bordered", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("d0e1904e-1a37-41f6-8582-b9ea794bb886",)])
     _assert_set_contains(model, [
@@ -309,16 +264,12 @@ def test_import_gold_bordered_card_if_enabled():
 
 
 def test_import_skips_white_bordered_card_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("white_bordered_card")
-    _populate_database_with_specific_download_setting(model, data, "download-white-bordered", "False")
+    model = create_new_card_database_with_json_card("white_bordered_card", "download-white-bordered", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_white_bordered_card_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("white_bordered_card")
-    _populate_database_with_specific_download_setting(model, data, "download-white-bordered", "True")
+    model = create_new_card_database_with_json_card("white_bordered_card", "download-white-bordered", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("2c57c4e9-0a46-45d6-92db-9203fb722b60",)])
     _assert_set_contains(model, [
@@ -336,16 +287,12 @@ def test_import_white_bordered_card_if_enabled():
 
 
 def test_import_skips_card_banned_in_brawl_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_brawl")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-brawl", "False")
+    model = create_new_card_database_with_json_card("banned_in_brawl", "download-banned-in-brawl", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_brawl_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_brawl")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-brawl", "True")
+    model = create_new_card_database_with_json_card("banned_in_brawl", "download-banned-in-brawl", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
@@ -363,16 +310,12 @@ def test_import_card_banned_in_brawl_if_enabled():
 
 
 def test_import_skips_card_banned_in_commander_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_commander")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-commander", "False")
+    model = create_new_card_database_with_json_card("banned_in_commander", "download-banned-in-commander", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_commander_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_commander")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-commander", "True")
+    model = create_new_card_database_with_json_card("banned_in_commander", "download-banned-in-commander", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("ae0b8c13-0a71-4a60-bf9f-6e2da9503e9c",)])
     _assert_set_contains(model, [
@@ -390,16 +333,12 @@ def test_import_card_banned_in_commander_if_enabled():
 
 
 def test_import_skips_card_banned_in_historic_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_historic")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-historic", "False")
+    model = create_new_card_database_with_json_card("banned_in_historic", "download-banned-in-historic", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_historic_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_historic")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-historic", "True")
+    model = create_new_card_database_with_json_card("banned_in_historic", "download-banned-in-historic", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
@@ -417,16 +356,12 @@ def test_import_card_banned_in_historic_if_enabled():
 
 
 def test_import_skips_card_banned_in_legacy_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_legacy")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-legacy", "False")
+    model = create_new_card_database_with_json_card("banned_in_legacy", "download-banned-in-legacy", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_legacy_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_legacy")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-legacy", "True")
+    model = create_new_card_database_with_json_card("banned_in_legacy", "download-banned-in-legacy", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
     _assert_set_contains(model, [
@@ -444,16 +379,12 @@ def test_import_card_banned_in_legacy_if_enabled():
 
 
 def test_import_skips_card_banned_in_modern_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_modern")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-modern", "False")
+    model = create_new_card_database_with_json_card("banned_in_modern", "download-banned-in-modern", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_modern_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_modern")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-modern", "True")
+    model = create_new_card_database_with_json_card("banned_in_modern", "download-banned-in-modern", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
@@ -471,16 +402,12 @@ def test_import_card_banned_in_modern_if_enabled():
 
 
 def test_import_skips_card_banned_in_pauper_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_pauper")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pauper", "False")
+    model = create_new_card_database_with_json_card("banned_in_pauper", "download-banned-in-pauper", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_pauper_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_pauper")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pauper", "True")
+    model = create_new_card_database_with_json_card("banned_in_pauper", "download-banned-in-pauper", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("8fcf50cd-e6d0-4516-850f-d42ee75dcc3a",)])
     _assert_set_contains(model, [
@@ -499,17 +426,14 @@ def test_import_card_banned_in_pauper_if_enabled():
 
 def test_import_skips_card_banned_in_penny_if_disabled():
     pytest.skip("There are currently no cards banned in this format.")
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_penny")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-penny", "False")
+    model = create_new_card_database_with_json_card("banned_in_penny", "download-banned-in-penny", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_penny_if_enabled():
+
     pytest.skip("There are currently no cards banned in this format.")
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_penny")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-penny", "True")
+    model = create_new_card_database_with_json_card("banned_in_penny", "download-banned-in-penny", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
     _assert_set_contains(model, [
@@ -527,16 +451,12 @@ def test_import_card_banned_in_penny_if_enabled():
 
 
 def test_import_skips_card_banned_in_pioneer_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_pioneer")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pioneer", "False")
+    model = create_new_card_database_with_json_card("banned_in_pioneer", "download-banned-in-pioneer", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_pioneer_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_pioneer")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-pioneer", "True")
+    model = create_new_card_database_with_json_card("banned_in_pioneer", "download-banned-in-pioneer", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
@@ -554,16 +474,12 @@ def test_import_card_banned_in_pioneer_if_enabled():
 
 
 def test_import_skips_card_banned_in_standard_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_standard")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-standard", "False")
+    model = create_new_card_database_with_json_card("banned_in_standard", "download-banned-in-standard", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_standard_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_standard")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-standard", "True")
+    model = create_new_card_database_with_json_card("banned_in_standard", "download-banned-in-standard", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("60c60923-ff1b-43f7-8768-731499fcffc9",)])
     _assert_set_contains(model, [
@@ -581,16 +497,12 @@ def test_import_card_banned_in_standard_if_enabled():
 
 
 def test_import_skips_card_banned_in_vintage_if_disabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_vintage")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-vintage", "False")
+    model = create_new_card_database_with_json_card("banned_in_vintage", "download-banned-in-vintage", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_vintage_if_enabled():
-    model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json("banned_in_vintage")
-    _populate_database_with_specific_download_setting(model, data, "download-banned-in-vintage", "True")
+    model = create_new_card_database_with_json_card("banned_in_vintage", "download-banned-in-vintage", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
     _assert_set_contains(model, [
