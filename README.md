@@ -60,7 +60,7 @@ document that is not a full-page, borderless photo.
 ## License
 
 
-Copyright (C) 2020 Thomas Hess <thomas.hess@udo.edu>
+Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
