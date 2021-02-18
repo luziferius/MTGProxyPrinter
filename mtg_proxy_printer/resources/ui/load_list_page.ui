@@ -14,7 +14,10 @@
    <string>Form</string>
   </property>
   <property name="title">
-   <string>Load or paste deck list</string>
+   <string>Import a deck list for printing</string>
+  </property>
+  <property name="subTitle">
+   <string>Load a deck file from disk or paste deck list in the text field below</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
