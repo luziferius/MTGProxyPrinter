@@ -77,3 +77,16 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
             card_db,
             r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\) (?P<collector_number>\d+)"
         )
+
+
+class MTGOnlineParser(GenericRegularExpressionDeckParser):
+    """
+    A parser for Magic Online (MTGO, file extension ".dek") deck lists.
+    These do not contain much information, only the English card name and count,
+    so sets and individual printings have to be guessed.
+    """
+    def __init__(self, card_db: CardDatabase):
+        super(MTGOnlineParser, self).__init__(
+            card_db,
+            r"(?P<copies>\d+) (?P<name>.+)"
+        )
