@@ -46,7 +46,7 @@ class GenericRegularExpressionDeckParser:
         deck_list = deck.read_text() if isinstance(deck, pathlib.Path) else deck
         cards = Counter()
         unmatched_lines = []
-        for line in deck_list.splitlines():
+        for line in self.line_splitter(deck_list):
             # Convert the Match instance to a dict, in order to have get() with a default. The default is used,
             # if the user-supplied RE doesn’t contain named groups for some of the attributes.
             if match := self.parser.match(line):
@@ -71,6 +71,16 @@ class GenericRegularExpressionDeckParser:
                 unmatched_lines.append(line)
         return cards, unmatched_lines
 
+    @staticmethod
+    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+        """
+        Split the input deck list into individual lines, omitting empty lines.
+        Subclasses can overwrite this method to provide custom filtering for unrelated meta-data.
+        """
+        for line in deck_list.splitlines():
+            if line:
+                yield line
+
 
 class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
@@ -81,6 +91,13 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
             card_db,
             r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\) (?P<collector_number>\d+)"
         )
+
+    @staticmethod
+    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+        # Skip emtpy lines and the Sideboard marker
+        for line in deck_list.splitlines():
+            if line and not line == "SIDEBOARD:":
+                yield line
 
 
 class MTGOnlineParser(GenericRegularExpressionDeckParser):
