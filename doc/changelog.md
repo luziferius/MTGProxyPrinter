@@ -1,5 +1,21 @@
 # Changelog
 
+# Version 0.7.0 (2012-02-18)
+
+## Implemented features
+
+- Implemented automatic deck list imports
+  - Implemented as a multi-page wizard that guides the user through the process.
+    Accessible via an entry in the File menu.
+  - Supports Magic Online, MTG Arena and XMage deck files (And Websites that export compatible files)
+  - Appends the imported list to the currently edited document or optionally completely replaces it.
+  - Current limitation: Cards have to be matched exactly. Cards that do not specify a unique printing are not imported.
+  
+## Fixed issues
+
+- Fixed that when the current page overflows, each card batch got added to a completely new page,
+  even if the next pages had free slots. Now, free slots on pages after the currently viewed page are used up,
+  before adding new pages.
 
 # Version 0.6.0 (2021-02-17)
 
@@ -18,7 +34,7 @@
 
 - Adjusted the download filters to only exclude explicitly banned cards, when filtering cards banned in certain formats.
 
-# Fixed issues
+## Fixed issues
 
 - Properly remove trailing, empty pages when compacting a document.
 
