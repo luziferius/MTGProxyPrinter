@@ -1,5 +1,11 @@
 # Changelog
 
+# Version 0.7.1 (2012-02-18)
+
+## Fixed issues
+
+- Fixed bug that prevented MTGProxyPrinter from starting when it was installed.
+
 # Version 0.7.0 (2012-02-18)
 
 ## Implemented features
