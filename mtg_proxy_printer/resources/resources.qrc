@@ -7,6 +7,7 @@
     <file>ui/settings_window.ui</file>
     <file>ui/load_list_page.ui</file>
     <file>ui/select_deck_parser_page.ui</file>
+    <file>ui/parser_result_page.ui</file>
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/application-exit.svg</file>
     <file>icons/configure.svg</file>
