@@ -53,23 +53,35 @@ class GenericRegularExpressionDeckParser:
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
                 # If the matcher doesn’t include language information, all cards are implicitly English printings
-                matched_card = Card(
-                    match_dict.get("name"), match_dict.get("set_code"),
-                    match_dict.get("collector_number"), match_dict.get("language", "en"),
-                    scryfall_id=match_dict.get("scryfall_id"),
-                )
-                if matched_card.set_abbr is not None:
-                    matched_card.set_abbr = matched_card.set_abbr.lower()
+                matched_card = self._match_card(match_dict)
                 if self.card_db.is_valid_and_unique_card(matched_card):
                     self.card_db.add_missing_information(matched_card)
                     cards[matched_card] += copies
                     if self.add_opposing_face and (
                             opposing_face := self.card_db.get_opposing_face(matched_card)) is not None:
                         cards[opposing_face] += copies
+                else:
+                    unmatched_lines.append(line)
             elif line:
                 # Non-empty, non-matching lines
                 unmatched_lines.append(line)
         return cards, unmatched_lines
+
+    def _match_card(self, match_dict: typing.Dict[str, str]) -> Card:
+        matched_card = Card(
+            match_dict.get("name"), match_dict.get("set_code"),
+            match_dict.get("collector_number"), match_dict.get("language", "en"),
+            scryfall_id=match_dict.get("scryfall_id"),
+        )
+        if matched_card.name and "//" in matched_card.name:
+            # Many sources combine both names of split- or flip-cards as "Front // Back". If so, simply remove the
+            # second name, as the back, if any, will be added later.
+            matched_card.name = matched_card.name.split("//")[0].rstrip()
+        # Some sources have upper case set codes, but this program uses the Scryfall convention of using lower-case
+        # codes. So lower the code, if set.
+        if matched_card.set_abbr is not None:
+            matched_card.set_abbr = matched_card.set_abbr.lower()
+        return matched_card
 
     @staticmethod
     def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
@@ -111,3 +123,21 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
             card_db,
             r"(?P<copies>\d+) (?P<name>.+)"
         )
+
+
+class XMageParser(GenericRegularExpressionDeckParser):
+    """
+    A parser for XMage deck files (file extension ".dck").
+    """
+    def __init__(self, card_db: CardDatabase):
+        super(XMageParser, self).__init__(
+            card_db,
+            r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>\d+)] (?P<name>.+)"
+        )
+
+    @staticmethod
+    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+        # Skip emtpy lines, the deck name, if set, and the deck/sideboard layout
+        for line in deck_list.splitlines():
+            if line and not line.startswith("NAME") and not line.startswith("LAYOUT"):
+                yield line
