@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WizardPage</class>
+ <widget class="QWizardPage" name="WizardPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>550</width>
+    <height>302</height>
+   </rect>
+  </property>
+  <property name="title">
+   <string>Import a deck list for printing</string>
+  </property>
+  <property name="subTitle">
+   <string>Select which kind of deck list you want to import.</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QRadioButton" name="select_parser_mtg_arena">
+     <property name="text">
+      <string>MTG Arena</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="select_parser_mtg_online">
+     <property name="text">
+      <string>Magic Online</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="select_parser_xmage">
+     <property name="text">
+      <string>XMage</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="select_parser_scryfall_csv">
+     <property name="text">
+      <string>Scryfall deck lists (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="select_parser_custom_re">
+     <property name="toolTip">
+      <string>Specify a custom regular expression to parse each deck list line in the input field below</string>
+     </property>
+     <property name="text">
+      <string>Custom regular expression based parser:</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLineEdit" name="custom_re_input">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="placeholderText">
+      <string>(?P&lt;copies&gt;\d+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>custom_re_input</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>102</x>
+     <y>220</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>106</x>
+     <y>255</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_mtg_arena</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_mtg_online</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_scryfall_csv</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_xmage</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+  </connection>
+ </connections>
+</ui>

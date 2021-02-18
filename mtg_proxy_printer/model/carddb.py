@@ -47,7 +47,7 @@ __all__ = [
 ]
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass(unsafe_hash=True)
 class Card:
     name: OptionalString
     set_abbr: OptionalString

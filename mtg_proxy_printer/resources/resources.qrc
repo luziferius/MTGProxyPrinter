@@ -5,10 +5,13 @@
     <file>ui/current_page_view.ui</file>
     <file>ui/main_window.ui</file>
     <file>ui/settings_window.ui</file>
+    <file>ui/load_list_page.ui</file>
+    <file>ui/select_deck_parser_page.ui</file>
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/application-exit.svg</file>
     <file>icons/configure.svg</file>
     <file>icons/document-close.svg</file>
+    <file>icons/document-import.svg</file>
     <file>icons/document-new.svg</file>
     <file>icons/document-open.svg</file>
     <file>icons/document-print-direct.svg</file>

@@ -71,6 +71,8 @@
     <addaction name="action_print"/>
     <addaction name="action_print_pdf"/>
     <addaction name="separator"/>
+    <addaction name="action_import_deck_list"/>
+    <addaction name="separator"/>
     <addaction name="action_quit"/>
    </widget>
    <widget class="QMenu" name="menu_settings">
@@ -238,6 +240,17 @@
    </property>
    <property name="toolTip">
     <string>Fill empty slots on pages by moving cards from the end of the document</string>
+   </property>
+  </action>
+  <action name="action_import_deck_list">
+   <property name="icon">
+    <iconset theme="document-import"/>
+   </property>
+   <property name="text">
+    <string>Import Deck list</string>
+   </property>
+   <property name="toolTip">
+    <string>Import a deck list from online sources</string>
    </property>
   </action>
  </widget>
