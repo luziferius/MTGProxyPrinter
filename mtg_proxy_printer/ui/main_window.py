@@ -17,7 +17,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QFileDialog, QAction
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction
 
 import mtg_proxy_printer.card_info_importer
 import mtg_proxy_printer.model.carddb
@@ -174,6 +174,8 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def on_action_import_deck_list_triggered(self):
         logger.debug(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, parent=self)
+        wizard.card_added.connect(self.image_downloader.get_image)
+        wizard.card_added.connect(self.document.add_card)
         wizard.show()
 
     @pyqtSlot()

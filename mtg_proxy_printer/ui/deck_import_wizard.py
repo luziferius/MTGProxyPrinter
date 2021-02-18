@@ -16,9 +16,9 @@
 import re
 import typing
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QValidator
-from PyQt5.QtWidgets import QWizard, QWizardPage, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView
 
 from mtg_proxy_printer.decklist_parser import re_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
@@ -135,20 +135,28 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
         self.page = Page(self)
         self.parsed_cards_table.setModel(self.page)
         self.parsed_cards_table.setColumnHidden(4, True)
+        self.parsed_deck = None
+        self.registerField("parsed_deck", self, "parsed_deck")
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
-        self.page.clear()
         self.parsed_cards_table: QTableView
         parser: re_parsers.GenericRegularExpressionDeckParser = self.field("selected_parser")
-        deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
+        self.parsed_deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
+        self.setField("parsed_deck", self.parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
-        for card, count in deck.items():
+        for card, count in self.parsed_deck.items():
             self.page.add_card(card, count)
         self.unparsed_lines_text.setPlainText("\n".join(unparsed_lines))
 
+    def cleanupPage(self):
+        self.page.clear()
+        self.parsed_deck = None
+
 
 class DeckImportWizard(QWizard):
+    card_added = pyqtSignal(Card, int)
+
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(DeckImportWizard, self).__init__(*args, **kwargs)
         self.card_db = card_db
@@ -156,3 +164,10 @@ class DeckImportWizard(QWizard):
         self.addPage(LoadListPage())
         self.addPage(SummaryPage())
         self.setWindowTitle("Import a deck list")
+
+    def accept(self):
+        super(DeckImportWizard, self).accept()
+        deck: typing.Counter[Card] = self.field("parsed_deck")
+        for card, count in deck.items():
+            self.card_added.emit(card, count)
+
