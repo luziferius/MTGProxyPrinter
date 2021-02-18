@@ -18,11 +18,11 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtGui import QValidator
-from PyQt5.QtWidgets import QWizard, QWizardPage, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit
+from PyQt5.QtWidgets import QWizard, QWizardPage, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView
 
-import mtg_proxy_printer.decklist_parser.re_parsers
-import mtg_proxy_printer.decklist_parser.scryfall
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.decklist_parser import re_parsers
+from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from mtg_proxy_printer.model.document import Page
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 
@@ -84,14 +84,16 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
         self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
         self.custom_re_input.textChanged.connect(self.isComplete)
         self.complete = False
+        self.parser = None
         self.registerField("custom_re", self.custom_re_input)
-        self.registerField("selected_parser", self, "get_parser")
+        self.registerField("selected_parser", self, "parser")
 
     @pyqtSlot()
     def isComplete(self) -> bool:
         result = any((
             self.select_parser_mtg_arena.isChecked(),
             self.select_parser_mtg_online.isChecked(),
+            self.select_parser_xmage.isChecked(),
             # self.select_parser_scryfall_csv.isChecked(),  # TODO
         )) or all((
                 self.select_parser_custom_re.isChecked(),
@@ -104,21 +106,46 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
 
     def get_parser(self):
         if self.select_parser_mtg_arena.isChecked():
-            return mtg_proxy_printer.decklist_parser.re_parsers.MTGArenaParser(self.card_db)
+            return re_parsers.MTGArenaParser(self.card_db)
         elif self.select_parser_mtg_online.isChecked():
-            return mtg_proxy_printer.decklist_parser.re_parsers.MTGOnlineParser(self.card_db)
+            return re_parsers.MTGOnlineParser(self.card_db)
+        elif self.select_parser_xmage.isChecked():
+            return re_parsers.XMageParser(self.card_db)
         elif self.select_parser_scryfall_csv.isChecked():
             pass
         elif self.select_parser_custom_re.isChecked():
-            return mtg_proxy_printer.decklist_parser.re_parsers.GenericRegularExpressionDeckParser(
+            return re_parsers.GenericRegularExpressionDeckParser(
                 self.card_db, self.field("custom_re")
             )
+        raise RuntimeError("Requested parser on invalid page state")
+
+    def validatePage(self) -> bool:
+        # TODO: Despite working, this emits a warning “QWizard::setField: Couldn't write to property 'parser'”.
+        #  Research the cause and try to fix this.
+        self.setField("selected_parser", self.get_parser())
+        return super(SelectDeckParserPage, self).validatePage()
 
 
-class SummaryPage(QWizardPage):
+class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
     def __init__(self, *args, **kwargs):
         super(SummaryPage, self).__init__(*args, **kwargs)
-        # self.setupUi(self)
+        self.parsed_cards_table: QTableView
+        self.setupUi(self)
+        self.setCommitPage(True)
+        self.page = Page(self)
+        self.parsed_cards_table.setModel(self.page)
+        self.parsed_cards_table.setColumnHidden(4, True)
+
+    def initializePage(self) -> None:
+        super(SummaryPage, self).initializePage()
+        self.page.clear()
+        self.parsed_cards_table: QTableView
+        parser: re_parsers.GenericRegularExpressionDeckParser = self.field("selected_parser")
+        deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
+        self.unparsed_lines_text: QPlainTextEdit
+        for card, count in deck.items():
+            self.page.add_card(card, count)
+        self.unparsed_lines_text.setPlainText("\n".join(unparsed_lines))
 
 
 class DeckImportWizard(QWizard):
