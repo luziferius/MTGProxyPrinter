@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWizardPage" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>434</width>
+    <height>318</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="title">
+   <string>Load or paste deck list</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QPushButton" name="deck_list_browse_button">
+     <property name="toolTip">
+      <string>Opens a file picker and let’s you load a deck file from disk.</string>
+     </property>
+     <property name="text">
+      <string>Select deck list file</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open"/>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="deck_list">
+     <property name="placeholderText">
+      <string>Paste your deck list here or select a file using the button above.</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
