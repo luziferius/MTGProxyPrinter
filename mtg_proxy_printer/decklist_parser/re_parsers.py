@@ -38,7 +38,11 @@ class GenericRegularExpressionDeckParser:
         )
 
     def parse_deck(self, deck: typing.Union[pathlib.Path, str]) -> ParsedDeck:
-        """Parse an MTG Arena deck list. Compatible with Moxfield exports."""
+        """
+        Parse the given deck using the stored regular expression.
+        :param deck: A Path instance to a deck file or a multiline Python string that contains the deck list.
+        :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
+        """
         deck_list = deck.read_text() if isinstance(deck, pathlib.Path) else deck
         cards = Counter()
         unmatched_lines = []
