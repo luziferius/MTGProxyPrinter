@@ -32,6 +32,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QRadioButton" name="select_parser_xmage">
+     <property name="text">
+      <string>XMage</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QRadioButton" name="select_parser_scryfall_csv">
      <property name="text">
       <string>Scryfall deck lists (CSV export)</string>
@@ -99,21 +106,67 @@
    <signal>clicked()</signal>
    <receiver>WizardPage</receiver>
    <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>select_parser_mtg_online</sender>
    <signal>clicked()</signal>
    <receiver>WizardPage</receiver>
    <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>select_parser_scryfall_csv</sender>
    <signal>clicked()</signal>
    <receiver>WizardPage</receiver>
    <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
   <connection>
    <sender>select_parser_custom_re</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_xmage</sender>
    <signal>clicked()</signal>
    <receiver>WizardPage</receiver>
    <slot>isComplete()</slot>
