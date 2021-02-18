@@ -143,6 +143,14 @@ class Page(QAbstractTableModel):
             f"{count}× {name}" for name, count in names.items()
         )
 
+    def clear(self):
+        self.remove_cards(list(map(
+            self.createIndex,
+            range(self.rowCount()),
+            itertools.repeat(0)
+        )))
+
+
     
 PageList = typing.List[Page]
 
