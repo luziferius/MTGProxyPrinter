@@ -21,6 +21,20 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QCheckBox" name="should_replace_document">
+     <property name="toolTip">
+      <string>If checked, clear all cards in the current document, replacing everything with the list below.
+If unchecked, append the list below to the document.</string>
+     </property>
+     <property name="text">
+      <string>Replace the current document content with the found cards</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-delete"/>
+     </property>
+    </widget>
+   </item>
+   <item>
     <widget class="QLabel" name="parsed_cards_label">
      <property name="text">
       <string>These cards were successfully identified:</string>

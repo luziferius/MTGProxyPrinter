@@ -137,6 +137,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
         self.parsed_cards_table.setColumnHidden(4, True)
         self.parsed_deck = None
         self.registerField("parsed_deck", self, "parsed_deck")
+        self.registerField("should_replace_document", self.should_replace_document)
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
@@ -156,6 +157,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
 
 class DeckImportWizard(QWizard):
     card_added = pyqtSignal(Card, int)
+    clear_document = pyqtSignal()
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(DeckImportWizard, self).__init__(*args, **kwargs)
@@ -167,6 +169,8 @@ class DeckImportWizard(QWizard):
 
     def accept(self):
         super(DeckImportWizard, self).accept()
+        if self.field("should_replace_document"):
+            self.clear_document.emit()
         deck: typing.Counter[Card] = self.field("parsed_deck")
         for card, count in deck.items():
             self.card_added.emit(card, count)

@@ -150,7 +150,6 @@ class Page(QAbstractTableModel):
             itertools.repeat(0)
         )))
 
-
     
 PageList = typing.List[Page]
 
@@ -167,6 +166,7 @@ class Document(QAbstractListModel):
     IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
 
     total_cards_per_page_changed = pyqtSignal(int)
+    document_cleared = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -255,6 +255,8 @@ class Document(QAbstractListModel):
         self.endRemoveRows()
         if not self.pages:
             self.add_page()
+            self.currently_edited_page = self.pages[0]
+            self.document_cleared.emit()
         
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self.pages)
@@ -450,6 +452,14 @@ class Document(QAbstractListModel):
             for card in to_add:
                 page.add_card(card)
         return total_moved_images
+
+    @pyqtSlot()
+    def clear(self):
+        self.remove_pages(list(map(
+            self.createIndex,
+            range(self.rowCount()),
+            itertools.repeat(0)
+        )))
 
 
 def _migrate_database(db):

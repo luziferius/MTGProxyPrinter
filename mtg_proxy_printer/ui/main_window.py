@@ -75,6 +75,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
 
     def _create_document_instance(self):
         document = mtg_proxy_printer.model.document.Document(parent=self)
+        document.document_cleared.connect(self._select_first_page)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         return document
 
@@ -128,6 +129,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
         self._select_first_page()
 
+    @pyqtSlot()
     def _select_first_page(self):
         old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
@@ -174,6 +176,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
     def on_action_import_deck_list_triggered(self):
         logger.debug(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, parent=self)
+        wizard.clear_document.connect(self.document.clear)
         wizard.card_added.connect(self.image_downloader.get_image)
         wizard.card_added.connect(self.document.add_card)
         wizard.show()
