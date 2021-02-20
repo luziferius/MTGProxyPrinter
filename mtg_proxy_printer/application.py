@@ -20,7 +20,7 @@ from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QApplication
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window

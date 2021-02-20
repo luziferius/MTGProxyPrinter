@@ -19,7 +19,7 @@ from hamcrest import *
 import pytest
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.card_info_downloader
 from .helpers import create_new_card_database_with_json_card
 
 

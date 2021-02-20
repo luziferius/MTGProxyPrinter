@@ -19,7 +19,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction
 
-import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.model.document
@@ -238,7 +238,7 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.progress_bar.show()
 
     def download_card_data(self):
-        importer = mtg_proxy_printer.card_info_importer.CardInfoDownloader(self.card_database, parent=self)
+        importer = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database, parent=self)
         importer.download_begins.connect(self.show_progress_bar)
         importer.download_finished.connect(self.progress_bar.hide)
         importer.download_progress.connect(self.progress_bar.setValue)

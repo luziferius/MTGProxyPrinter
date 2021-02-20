@@ -107,8 +107,8 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
         # Skip emtpy lines and the Sideboard marker
-        for line in deck_list.splitlines():
-            if line and not line == "SIDEBOARD:":
+        for line in super().line_splitter(deck_list):
+            if line != "SIDEBOARD:":
                 yield line
 
 
@@ -138,6 +138,6 @@ class XMageParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
         # Skip emtpy lines, the deck name, if set, and the deck/sideboard layout
-        for line in deck_list.splitlines():
-            if line and not line.startswith("NAME") and not line.startswith("LAYOUT"):
+        for line in super().line_splitter(deck_list):
+            if not line.startswith("NAME") and not line.startswith("LAYOUT"):
                 yield line

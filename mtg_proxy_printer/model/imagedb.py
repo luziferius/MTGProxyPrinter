@@ -26,7 +26,7 @@ import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.logger import get_logger
-import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.card_info_downloader
 logger = get_logger(__name__)
 del get_logger
 
@@ -88,7 +88,7 @@ class ImageDatabase(QObject):
 
     def _download_image(self, card: Card, fs_path: pathlib.Path):
         download_uri = card.image_uri
-        file, size = mtg_proxy_printer.card_info_importer.read_from_url(download_uri)
+        file, size = mtg_proxy_printer.card_info_downloader.read_from_url(download_uri)
         with self._wrap_file_for_monitoring(file, size) as source, fs_path.open("wb") as file_in_cache:
             shutil.copyfileobj(source, file_in_cache)
 

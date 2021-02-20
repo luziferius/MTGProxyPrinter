@@ -17,7 +17,7 @@ import argparse
 from pathlib import Path
 import dataclasses
 
-import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
 
 
@@ -39,10 +39,10 @@ def parse_args() -> Namespace:
 
 
 to_be_profiled_functions = {
-    mtg_proxy_printer.card_info_importer.CardInfoDownloader: [
+    mtg_proxy_printer.card_info_downloader.CardInfoDownloader: [
         "populate_database",
     ],
-    mtg_proxy_printer.card_info_importer: [
+    mtg_proxy_printer.card_info_downloader: [
         "_insert_card",
         "_insert_set",
         "_insert_face_name",
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         args.database_path.unlink()
     print("Creating new database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
-    cid = mtg_proxy_printer.card_info_importer.CardInfoDownloader(cdb)
+    cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(cdb)
     print("Creating JSON data generator…")
     json_data = cid.read_json_card_data(args.card_data)
     print("Starting benchmark…")

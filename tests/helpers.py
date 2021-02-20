@@ -20,7 +20,7 @@ from unittest.mock import patch
 import pkg_resources
 
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.card_info_importer
+import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 
@@ -43,14 +43,14 @@ def setup_settings_for_testing():
 
 def populate_database(model, data):
     # Don’t bother the Scryfall API when running tests, so mock the web-accessing parts of the constructor.
-    with patch("mtg_proxy_printer.card_info_importer.CardInfoDownloader.get_scryfall_bulk_card_data_url") as mock:
+    with patch("mtg_proxy_printer.card_info_downloader.CardInfoDownloader.get_scryfall_bulk_card_data_url") as mock:
         # The URL is not used to fetch data, as the test data directly supplies the JSON document.
         mock.return_value = ("http://example.com", 1)
-        cid = mtg_proxy_printer.card_info_importer.CardInfoDownloader(model)
+        cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(model)
         cid.populate_database(data)
 
 
-def load_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_importer.JSONType, None, None]:
+def load_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
     yield json.loads(
         pkg_resources.resource_string(f"tests.json_samples", f"{name}.json").decode("utf-8")
     )
