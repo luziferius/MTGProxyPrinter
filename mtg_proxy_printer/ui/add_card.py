@@ -41,17 +41,14 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.card_name_model = self._setup_card_name_box()
         self.set_name_model = self._setup_set_name_box()
         self.collector_number_model = self._setup_collector_number_box()
-
         self._setup_button_box()
-
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
         ok_button: QPushButton = self.button_box.button(QDialogButtonBox.Ok)
         reset_button: QPushButton = self.button_box.button(QDialogButtonBox.Reset)
         ok_button.setEnabled(False)
-        ok_button.clicked.connect(ok_button.setDisabled)
-        reset_button.clicked.connect(ok_button.setDisabled)
+        reset_button.clicked.connect(ok_button.setEnabled)
         self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
 
@@ -59,46 +56,49 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.language_combo_box: QComboBox
         self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
         model = QStringListModel([], self.language_combo_box)
-        with BlockedSignals(self.language_combo_box):
-            self.language_combo_box.setModel(model)
+        self.language_combo_box.setModel(model)
         return model
 
     def _setup_card_name_box(self) -> QStringListModel:
         self.card_name_filter: QLineEdit
         self.card_name_list: QListView
         model = QStringListModel([], self.card_name_list)
-        with BlockedSignals(self.card_name_list):
-            # Do not emit signals without a card_database used to handle them
-            self.card_name_list.setModel(model)
-        self.card_name_filter.textChanged.connect(self.on_card_name_filter_updated)
+        self.card_name_list.setModel(model)
         self.card_name_list.selectionModel().selectionChanged.connect(self.on_card_name_list_selection_changed)
+        self.card_name_filter.textChanged.connect(self.on_card_name_filter_updated)
         return model
 
     def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
+        self.set_name_filter: QLineEdit
+        self.set_name_list: QListView
         model = mtg_proxy_printer.model.string_list.PrettySetListModel([], self.set_name_list)
         self.card_name_model.rowsRemoved.connect(lambda: self.set_name_box.setEnabled(False))
         self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
-        self.set_name_list: QListView
+
         self.set_name_list.setModel(model)
         self.set_name_list.selectionModel().selectionChanged.connect(self.on_set_name_list_selection_changed)
+        self.set_name_filter.textChanged.connect(self.on_set_name_filter_updated)
         return model
 
     def _setup_collector_number_box(self) -> QStringListModel:
+        self.collector_number_list: QListView
         model = QStringListModel([], self.collector_number_list)
         self.set_name_model.rowsRemoved.connect(lambda: self.collector_number_box.setEnabled(False))
         self.set_name_model.rowsRemoved.connect(lambda: model.setStringList([]))
-        self.collector_number_list: QListView
+
         self.collector_number_list.setModel(model)
-        self.set_name_list.selectionModel().selectionChanged.connect(self.on_collector_number_list_selection_changed)
+        self.collector_number_list.selectionModel().selectionChanged.connect(
+            self.on_collector_number_list_selection_changed
+        )
         return model
 
     @pyqtSlot(QItemSelection)
     def on_card_name_list_selection_changed(self, current: QItemSelection):
+        self.set_name_list: QListView
         if not current.indexes():
-            self.set_name_box.setEnabled(False)
+            self.set_name_list.selectionModel().clearSelection()
             return
         current_model_index = current.indexes()[0]
-        print(f"on_card_name_list_selection_changed({current_model_index.row()=})")
         valid = current_model_index.isValid()
         self.set_name_box.setEnabled(valid)
         if valid:
@@ -110,15 +110,16 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
             # Converts a recursive call structure into a sequential call structure, which is required here
             QTimer.singleShot(
                 0, lambda: self.set_name_list.selectionModel().select(
-                        self.set_name_model.createIndex(0, 0), QItemSelectionModel.Select
+                        self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect
                 ))
 
     @pyqtSlot(QItemSelection)
     def on_set_name_list_selection_changed(self, current: QItemSelection):
+        self.collector_number_list: QListView
         if not current.indexes():
+            self.collector_number_list.selectionModel().clearSelection()
             return
         current_model_index = current.indexes()[0]
-        print(f"on_set_name_list_selection_changed({current_model_index.row()=})")
         valid = current_model_index.isValid()
         self.collector_number_box.setEnabled(valid)
         if valid:
@@ -129,16 +130,12 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
             # Converts a recursive call structure into a sequential call structure, which is required here
             QTimer.singleShot(
                 0, lambda: self.collector_number_list.selectionModel().select(
-                    self.collector_number_model.createIndex(0, 0), QItemSelectionModel.Select
+                    self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect
                 ))
 
     @pyqtSlot(QItemSelection)
     def on_collector_number_list_selection_changed(self, current: QItemSelection):
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(bool(current.indexes()))
-        if not current.indexes():
-            return
-        current_model_index = current.indexes()[0]
-        print(f"on_collector_number_list_selection_changed({current_model_index.row()=})")
 
     def _create_card_from_user_input(self):
         card = mtg_proxy_printer.model.carddb.Card(
@@ -150,12 +147,26 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         return card
 
     @pyqtSlot(str)
-    def on_card_name_filter_updated(self, changed: str):
-        print(f"on_card_name_filter_updated({changed=})")
+    def on_card_name_filter_updated(self, card_name_filter: str):
+        selected_card_name = self.current_card_name
+        card_names = self.card_database.get_card_names(self.current_language, card_name_filter)
+        self.card_name_model.setStringList(card_names)
+
+        if selected_card_name in card_names:
+            self.card_name_list.selectionModel().select(
+                self.card_name_model.createIndex(card_names.index(selected_card_name), 0),
+                QItemSelectionModel.ClearAndSelect
+            )
+        else:
+            self.set_name_model.set_set_data([])
+            self.set_name_box.setDisabled(True)
 
     @pyqtSlot(str)
-    def on_set_name_filter_updated(self, changed: str):
-        print(f"on_set_name_filter_updated({changed=})")
+    def on_set_name_filter_updated(self, set_name_filter: str):
+        set_names = self.card_database.find_sets_matching(
+            self.current_card_name, self.current_language, set_name_filter
+        )
+        self.set_name_model.set_set_data(set_names)
 
     @pyqtSlot(str)
     def on_language_combo_box_changed(self, new_language: str):
@@ -211,7 +222,6 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         self.card_name_filter.clear()
         self.set_name_filter.clear()
         self.copies_input.setValue(1)
-
 
     @property
     def current_language(self) -> str:

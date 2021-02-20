@@ -115,17 +115,25 @@ class CardDatabase:
             "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n")]
         return result
 
-    def get_card_names(self, language: str) -> StringList:
+    def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
         """Returns a list with all card names in the given language."""
-        query = self.db.execute(
-            r"""SELECT card_name -- get_card_names()
+        query = r"""SELECT card_name -- get_card_names()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
-            WHERE language = ?
-            ORDER BY card_name ASC
-            """,
-            (language,))
-        result = [language for language, in query]
+            """
+        where_clause = 'WHERE "language" = ?\n'
+        order_clause = 'ORDER BY card_name ASC'
+        parameters = [language]
+        if card_name_filter:
+            where_clause += 'AND card_name LIKE ?\n'
+            parameters.append(f"{card_name_filter}%")
+        query += where_clause + order_clause
+        result = [
+            language for language, in
+            self.db.execute(
+                query, parameters
+            )
+        ]
         return result
 
     def is_valid_and_unique_card(self, card: Card) -> bool:
@@ -207,19 +215,26 @@ class CardDatabase:
                 'JOIN "Set" USING (set_id)\n' \
                 'WHERE "language" = ?\n' \
                 'AND "set" = ?\n' \
-                'AND card_name = ?\n'
+                'AND card_name = ?\n' \
+                'ORDER BY collector_number ASC\n'
         return [item for item, in self.db.execute(query, (language, set_abbr, card_name))]
 
-    def find_sets_matching(self, card_name: str, language: str) -> typing.List[typing.Tuple[str, str]]:
+    def find_sets_matching(
+            self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[typing.Tuple[str, str]]:
         query = 'SELECT DISTINCT "set", set_name  -- find_sets_matching()\n' \
                 'FROM "Set"\n' \
                 'JOIN CardFace USING (set_id)\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
                 'WHERE "language" = ?\n' \
-                'AND card_name = ?\n' \
-                'ORDER BY set_name ASC\n'
-        return self.db.execute(query, (language, card_name)).fetchall()
+                'AND card_name = ?\n'
+        parameters = [language, card_name]
+        if set_name_filter:
+            query += 'AND "set" LIKE ?\n'
+            parameters.append(f"{set_name_filter}%")
+
+        query += 'ORDER BY set_name ASC\n'
+        return self.db.execute(query, parameters).fetchall()
 
     def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
         query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ? and is_front = ?)'
