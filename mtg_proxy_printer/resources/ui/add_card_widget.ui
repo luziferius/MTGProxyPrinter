@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>887</width>
-    <height>210</height>
+    <height>292</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -141,6 +141,12 @@
    </item>
    <item row="11" column="5" rowspan="5">
     <widget class="QDialogButtonBox" name="button_box">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
