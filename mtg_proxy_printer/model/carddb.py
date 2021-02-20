@@ -128,16 +128,6 @@ class CardDatabase:
         result = [language for language, in query]
         return result
 
-    def get_sets(self) -> StringList:
-        """Returns a list with all set names."""
-        query = self.db.execute(
-            r"""SELECT "set"
-            FROM "Set"
-            """
-        )
-        result = [set_abbr for set_abbr, in query]
-        return result
-
     def is_valid_and_unique_card(self, card: Card) -> bool:
         """Checks, if the given card data represents a unique card printing"""
         query = 'SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()\n' \
@@ -209,97 +199,27 @@ class CardDatabase:
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
         card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id, card.is_front = result
 
-    def find_collector_numbers_matching(self, card: Card) -> StringList:
-        query = 'SELECT DISTINCT collector_number -- find_collector_numbers_matching()\n' \
+    def find_collector_numbers_matching(self,  card_name: str, set_abbr: str, language: str) -> StringList:
+        query = 'SELECT collector_number -- find_collector_numbers_matching()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
-                'JOIN PrintLanguage USING (language_id)\n'
-        join_clause = ''
-        where_clause = 'WHERE "language" = ?\n'
-        parameters = [card.language]
-        if card.name:
-            where_clause += 'AND card_name LIKE ?\n'
-            parameters.append(f"{card.name}%")
-        if card.set_abbr:
-            join_clause += 'JOIN "Set" USING (set_id)\n'
-            where_clause += 'AND "set" LIKE ?\n'
-            parameters.append(f"{card.set_abbr}%")
-        if card.collector_number:
-            where_clause += 'AND collector_number LIKE ?\n'
-            parameters.append(f"{card.collector_number}%")
-        query += join_clause + where_clause
-        query += """ORDER BY collector_number ASC\n"""
-        cursor = self.db.execute(
-            query,
-            parameters
-        )
-        result = [number for number, in cursor]
-        return result
+                'JOIN PrintLanguage USING (language_id)\n' \
+                'JOIN "Set" USING (set_id)\n' \
+                'WHERE "language" = ?\n' \
+                'AND "set" = ?\n' \
+                'AND card_name = ?\n'
+        return [item for item, in self.db.execute(query, (language, set_abbr, card_name))]
 
-    def find_card_names_matching(self, card: Card) -> StringList:
-        """
-        Finds all cards given the language, set name prefix and collector number prefix.
-
-        :returns: List of card names
-        """
-        query = "SELECT DISTINCT card_name -- find_card_names_matching()\n" \
-                "FROM FaceName\n" \
-                "JOIN CardFace USING (face_name_id)\n" \
-                "JOIN PrintLanguage USING (language_id)\n"
-        join_clause = ''
-        where_clause = 'WHERE "language" = ?\n'
-        parameters = [card.language]
-        if card.set_abbr:
-            join_clause += 'JOIN "Set" USING (set_id)\n'
-            where_clause += 'AND "set" LIKE ?\n'
-            parameters.append(f"{card.set_abbr}%")
-        if card.collector_number:
-            where_clause += 'AND collector_number LIKE ?\n'
-            parameters.append(f"{card.collector_number}%")
-        query += join_clause + where_clause
-        query += "ORDER BY card_name ASC\n"
-        try:
-            cursor = self.db.execute(
-                query,
-                parameters
-            )
-        except sqlite3.OperationalError:
-            print("JOIN-CLAUSE:")
-            print(join_clause)
-            print("WHERE-CLAUSE:")
-            print(where_clause)
-            print(query)
-            raise
-        result = [name for name, in cursor]
-        return result
-
-    def find_sets_matching(self, card: Card) -> StringList:
-        """
-        Finds all sets given the language, card name prefix and collector number prefix
-        """
-        query = 'SELECT DISTINCT "set" -- find_sets_matching()\n' \
+    def find_sets_matching(self, card_name: str, language: str) -> typing.List[typing.Tuple[str, str]]:
+        query = 'SELECT DISTINCT "set", set_name  -- find_sets_matching()\n' \
                 'FROM "Set"\n' \
                 'JOIN CardFace USING (set_id)\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
-                'JOIN PrintLanguage USING (language_id)\n'
-        where_clause = 'WHERE "language" = ?\n'
-        parameters = [card.language]
-        if card.name:
-            where_clause += 'AND card_name LIKE ?\n'
-            parameters.append(f"{card.name}%")
-        if card.set_abbr:
-            where_clause += 'AND "set" LIKE ?\n'
-            parameters.append(f"{card.set_abbr}%")
-        if card.collector_number:
-            where_clause += 'AND collector_number LIKE ?\n'
-            parameters.append(f"{card.collector_number}%")
-        query += where_clause + 'ORDER BY "set" ASC\n'
-        cursor = self.db.execute(
-            query,
-            parameters
-        )
-        result = [set_abbr for set_abbr, in cursor]
-        return result
+                'JOIN PrintLanguage USING (language_id)\n' \
+                'WHERE "language" = ?\n' \
+                'AND card_name = ?\n' \
+                'ORDER BY set_name ASC\n'
+        return self.db.execute(query, (language, card_name)).fetchall()
 
     def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
         query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ? and is_front = ?)'
