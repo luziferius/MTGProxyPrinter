@@ -22,6 +22,7 @@ from mtg_proxy_printer.model.carddb import Card, CardDatabase
 import mtg_proxy_printer.settings
 
 ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
+MatchType = typing.Dict[str, str]
 
 
 class GenericRegularExpressionDeckParser:
@@ -67,21 +68,45 @@ class GenericRegularExpressionDeckParser:
                 unmatched_lines.append(line)
         return cards, unmatched_lines
 
-    def _match_card(self, match_dict: typing.Dict[str, str]) -> Card:
+    def _match_card(self, match_dict: MatchType) -> Card:
+        matched_name = self._match_name(match_dict)
+        language = self._match_language(match_dict, matched_name)
         matched_card = Card(
-            match_dict.get("name"), match_dict.get("set_code"),
-            match_dict.get("collector_number"), match_dict.get("language", "en"),
+            matched_name, match_dict.get("set_code"),
+            match_dict.get("collector_number"), language,
             scryfall_id=match_dict.get("scryfall_id"),
         )
-        if matched_card.name and "//" in matched_card.name:
-            # Many sources combine both names of split- or flip-cards as "Front // Back". If so, simply remove the
-            # second name, as the back, if any, will be added later.
-            matched_card.name = matched_card.name.split("//")[0].rstrip()
         # Some sources have upper case set codes, but this program uses the Scryfall convention of using lower-case
         # codes. So lower the code, if set.
         if matched_card.set_abbr is not None:
             matched_card.set_abbr = matched_card.set_abbr.lower()
         return matched_card
+
+    def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
+        """
+        If the used RE doesn’t provide a language, try to guess the language based on the card name.
+        If neither language nor card name are given, default to English printings.
+        """
+        language = match_dict.get("language")
+        if language:
+            language = language.lower()
+        language_unknown = not language or not self.card_db.is_known_language(language)
+        if language_unknown and name:
+            language = self.card_db.guess_language_from_name(name)
+            language_unknown = not language
+        # language might be set to something not in the database, so use this boolean, instead of "not language"
+        if language_unknown:
+            language = "en"
+        return language
+
+    @staticmethod
+    def _match_name(match_dict: MatchType) -> typing.Optional[str]:
+        name = match_dict.get("name")
+        if name and "//" in name:
+            # Many sources combine both names of split- or flip-cards as "Front // Back". If so, simply remove the
+            # second name, as the back, if any, will be added later.
+            name = name.split("//")[0].rstrip()
+        return name
 
     @staticmethod
     def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
@@ -104,10 +129,9 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
             r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\) (?P<collector_number>\d+)"
         )
 
-    @staticmethod
-    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
         # Skip emtpy lines and the Sideboard marker
-        for line in super().line_splitter(deck_list):
+        for line in super(MTGArenaParser, self).line_splitter(deck_list):
             if line != "SIDEBOARD:":
                 yield line
 
@@ -135,9 +159,8 @@ class XMageParser(GenericRegularExpressionDeckParser):
             r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>\d+)] (?P<name>.+)"
         )
 
-    @staticmethod
-    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
         # Skip emtpy lines, the deck name, if set, and the deck/sideboard layout
-        for line in super().line_splitter(deck_list):
+        for line in super(XMageParser, self).line_splitter(deck_list):
             if not line.startswith("NAME") and not line.startswith("LAYOUT"):
                 yield line

@@ -325,6 +325,23 @@ class CardDatabase:
         else:
             return None
 
+    def guess_language_from_name(self, name: str) -> typing.Optional[str]:
+        query = 'SELECT "language"\n' \
+                'FROM FaceName\n' \
+                'JOIN PrintLanguage USING (language_id)\n' \
+                'WHERE card_name LIKE ?'
+        if result := self.db.execute(query, (f"{name}%",)).fetchone():
+            return result[0]
+        else:
+            return None
+
+    def is_known_language(self, language: str) -> bool:
+        query = 'SELECT EXISTS(\n' \
+                'SELECT *\n' \
+                'FROM PrintLanguage\n' \
+                'WHERE "language" = ?)'
+        return bool(self.db.execute(query, (language,)).fetchone()[0])
+
 
 def migrate_card_database(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version").fetchone()[0] == 9:
