@@ -32,6 +32,9 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <widget class="QLineEdit" name="card_name_filter">
+        <property name="toolTip">
+         <string>Filter the list below. Use  % (Percent signs) as wildcards matching any number of characters.</string>
+        </property>
         <property name="placeholderText">
          <string>Filter card names</string>
         </property>
@@ -42,6 +45,9 @@
       </item>
       <item>
        <widget class="QListView" name="card_name_list">
+        <property name="toolTip">
+         <string>The filtered list of card names in the currently selected language. Click on an entry to select it and choose a printing.</string>
+        </property>
         <property name="editTriggers">
          <set>QAbstractItemView::NoEditTriggers</set>
         </property>
@@ -57,6 +63,9 @@
     <widget class="QGroupBox" name="set_name_box">
      <property name="enabled">
       <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>The sets in which the currently selected card was printed.</string>
      </property>
      <property name="title">
       <string>Set</string>
