@@ -18,14 +18,31 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1" colspan="2">
-     <widget class="AddCardWidget" name="add_card_widget" native="true"/>
+    <item row="2" column="2" colspan="2">
+     <widget class="CurrentPageView" name="page_view" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>10</horstretch>
+        <verstretch>4</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
     </item>
-    <item row="0" column="0" rowspan="2">
+    <item row="1" column="1" rowspan="2">
+     <widget class="AddCardWidget" name="add_card_widget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>6</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="0" rowspan="2">
      <widget class="DocumentView" name="document_view">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>4</horstretch>
+        <horstretch>6</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -40,13 +57,24 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1" colspan="2">
-     <widget class="CurrentPageView" name="page_view" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>10</horstretch>
-        <verstretch>4</verstretch>
-       </sizepolicy>
+    <item row="0" column="0">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Page overview:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QLabel" name="label_2">
+      <property name="text">
+       <string>Add new cards:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2" colspan="2">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Current page:</string>
       </property>
      </widget>
     </item>
