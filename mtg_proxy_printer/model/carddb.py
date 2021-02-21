@@ -23,6 +23,7 @@ import typing
 
 from PyQt5.QtGui import QPixmap
 
+from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.logger import get_logger
@@ -215,9 +216,8 @@ class CardDatabase:
                 'JOIN "Set" USING (set_id)\n' \
                 'WHERE "language" = ?\n' \
                 'AND "set" = ?\n' \
-                'AND card_name = ?\n' \
-                'ORDER BY collector_number ASC\n'
-        return [item for item, in self.db.execute(query, (language, set_abbr, card_name))]
+                'AND card_name = ?\n'
+        return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
 
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[typing.Tuple[str, str]]:
