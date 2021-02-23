@@ -58,21 +58,21 @@
      </widget>
     </item>
     <item row="0" column="0">
-     <widget class="QLabel" name="label">
+     <widget class="QLabel" name="document_view_label">
       <property name="text">
-       <string>Page overview:</string>
+       <string>All pages:</string>
       </property>
      </widget>
     </item>
     <item row="0" column="1">
-     <widget class="QLabel" name="label_2">
+     <widget class="QLabel" name="add_card_widget_label">
       <property name="text">
        <string>Add new cards:</string>
       </property>
      </widget>
     </item>
     <item row="0" column="2" colspan="2">
-     <widget class="QLabel" name="label_3">
+     <widget class="QLabel" name="page_view_label">
       <property name="text">
        <string>Current page:</string>
       </property>
@@ -267,7 +267,7 @@
     <string>Compact document</string>
    </property>
    <property name="toolTip">
-    <string>Fill empty slots on pages by moving cards from the end of the document</string>
+    <string>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</string>
    </property>
   </action>
   <action name="action_import_deck_list">
