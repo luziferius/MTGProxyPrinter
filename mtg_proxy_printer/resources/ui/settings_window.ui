@@ -25,6 +25,36 @@
       </attribute>
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
+        <widget class="QGroupBox" name="look_and_feel_settings_group_box">
+         <property name="title">
+          <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="add_card_widget_style_label">
+            <property name="text">
+             <string>Preferred card search layout:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="add_card_widget_style_combo_box">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Horizontal adds a wide search area above the currently edited page.
+Vertical adds a tall search area between the page list and the currently edited page.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="image_download_group_box">
          <property name="title">
           <string>Image download</string>
@@ -151,7 +181,8 @@ Uncheck to disable this automatism.</string>
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="document-open"/>
+             <iconset theme="document-open">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -164,7 +195,8 @@ Uncheck to disable this automatism.</string>
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="document-open"/>
+             <iconset theme="document-open">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -636,6 +668,7 @@ These are not tournament legal.</string>
  </widget>
  <tabstops>
   <tabstop>tab_widget</tabstop>
+  <tabstop>add_card_widget_style_combo_box</tabstop>
   <tabstop>preferred_language_combo_box</tabstop>
   <tabstop>avoid_low_res_images_check_box</tabstop>
   <tabstop>automatically_add_opposing_faces</tabstop>
