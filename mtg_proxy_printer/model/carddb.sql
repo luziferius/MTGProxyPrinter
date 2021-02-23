@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000010;
+PRAGMA user_version = 0000011;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -67,6 +67,10 @@ CREATE INDEX CardFaceIDLookup ON CardFace (face_name_id, set_id, card_id);
 -- Used to find matching collector numbers
 CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, collector_number);
 
+-- Speeds up card name translation. Some deck lists provide the English name plus language code.
+-- These require name translation
+CREATE INDEX CardFace_card_id_index ON CardFace (card_id);
+
 
 CREATE TABLE "Set" (
   set_id INTEGER PRIMARY KEY NOT NULL,
@@ -83,7 +87,8 @@ CREATE TABLE LastDatabaseUpdate (
 );
 
 CREATE VIEW AllPrintings AS
-  SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
+  SELECT card_name, "set", set_name, "language", collector_number, scryfall_id,
+    highres_image, is_front, png_image_uri, oracle_id
   FROM CardFace
   JOIN FaceName USING(face_name_id)
   JOIN "Set" USING (set_id)
