@@ -399,6 +399,7 @@ def migrate_card_database(db: sqlite3.Connection):
         db.execute("PRAGMA user_version = 10")
     if db.execute("PRAGMA user_version").fetchone()[0] == 10:
         db.execute("BEGIN TRANSACTION")
+        db.execute("DROP VIEW AllPrintings")
         db.execute(textwrap.dedent(r"""
         CREATE VIEW AllPrintings AS
           SELECT card_name, "set", set_name, "language", collector_number, scryfall_id, highres_image,
