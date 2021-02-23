@@ -23,7 +23,8 @@ __all__ = [
     "settings",
     "DEFAULT_SETTINGS",
     "read_settings_from_file",
-    "write_settings_to_file"
+    "write_settings_to_file",
+    "validate_settings",
 ]
 
 config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
@@ -111,6 +112,7 @@ def write_settings_to_file():
 def validate_settings(read_settings: configparser.ConfigParser):
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
+    _validate_documents_section(read_settings["documents"])
 
 
 def _validate_download_section(section: configparser.SectionProxy):
@@ -129,8 +131,26 @@ def _validate_images_section(section: configparser.SectionProxy):
         section["preferred-language"] = defaults["preferred-language"]
 
 
-def _validate_boolean(section, defaults, key):
+def _validate_documents_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["documents"]
+    _validate_boolean(section, defaults, "print-cut-marker")
+    for key in section.keys():
+        if key in ("print-cut-marker",):
+            continue
+        _validate_non_negative_int(section, defaults, key)
+    # TODO: Validate some semantic properties, like paper size and margins allow for at least one card per dimension
+
+
+def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
         section.getboolean(key)
+    except ValueError:
+        section[key] = defaults[key]
+
+
+def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
+        if section.getint(key) < 0:
+            raise ValueError
     except ValueError:
         section[key] = defaults[key]
