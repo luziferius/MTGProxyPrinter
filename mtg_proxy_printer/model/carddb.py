@@ -342,6 +342,26 @@ class CardDatabase:
                 'WHERE "language" = ?)'
         return bool(self.db.execute(query, (language,)).fetchone()[0])
 
+    def translate_card_name(self, name: str, target_language: str, source_language: str = "en") -> OptionalString:
+        query = r"""SELECT DISTINCT card_name
+        FROM FaceName
+        JOIN PrintLanguage USING(language_id)
+        JOIN CardFace USING (face_name_id)
+        JOIN Card USING (card_id)
+        WHERE "language" = ? 
+        AND oracle_id in (
+            SELECT oracle_id
+            FROM FaceName
+            JOIN PrintLanguage USING(language_id)
+            JOIN CardFace USING (face_name_id)
+            JOIN Card USING (card_id)
+            WHERE card_name = ? AND "language" = ?
+        )"""
+        if result := self.db.execute(query, (target_language, name, source_language)).fetchone():
+            return result[0]
+        else:
+            return None
+
 
 def migrate_card_database(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version").fetchone()[0] == 9:
