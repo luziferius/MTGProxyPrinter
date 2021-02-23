@@ -96,6 +96,7 @@ def read_settings_from_file():
                 del settings[section][outdated]
             for new in sorted(known_options - read_options):
                 settings[section][new] = DEFAULT_SETTINGS[section][new]
+    validate_settings(settings)
 
 
 def write_settings_to_file():
@@ -104,3 +105,17 @@ def write_settings_to_file():
         config_file_path.parent.mkdir(parents=True)
     with config_file_path.open("w") as config_file:
         settings.write(config_file)
+
+
+def validate_settings(read_settings: configparser.ConfigParser):
+    _validate_download_section(read_settings["downloads"])
+
+
+def _validate_download_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["downloads"]
+    for key in section.keys():
+        try:
+            section.getboolean(key)
+        except ValueError:
+            section[key] = defaults[key]
+
