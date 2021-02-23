@@ -18,12 +18,13 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QValidator
-from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton, \
+    QCheckBox
 
 from mtg_proxy_printer.decklist_parser import re_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Page
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, load_icon
 
 
 class IsRegularExpressionValidator(QValidator):
@@ -48,6 +49,9 @@ class LoadListPage(*inherits_from_ui_file_with_name("load_list_page")):
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
+        self.deck_list_browse_button: QPushButton
+        if self.deck_list_browse_button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
+            self.deck_list_browse_button.setIcon(load_icon("document-open.svg"))
 
     @pyqtSlot()
     def on_deck_list_browse_button_clicked(self):
@@ -138,6 +142,9 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
         self.parsed_deck = None
         self.registerField("parsed_deck", self, "parsed_deck")
         self.registerField("should_replace_document", self.should_replace_document)
+        self.should_replace_document: QCheckBox
+        if self.should_replace_document.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
+            self.should_replace_document.setIcon(load_icon("edit-delete.svg"))
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
