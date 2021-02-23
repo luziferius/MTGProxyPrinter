@@ -13,91 +13,130 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox
+import typing
 
+from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QTimer, QItemSelection
+from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QListView, QPushButton
+
+import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
 
 
-class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
+class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/add_card_widget")):
 
-    input_is_valid_and_unique_card = pyqtSignal(bool)
     card_added = pyqtSignal(mtg_proxy_printer.model.carddb.Card, int)
 
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
-        self.card = self._create_new_card()
-        self.language_combo_box: QComboBox
-        self.language_model = None
-        self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
-        self._setup_card_name_search()
-        self._setup_set_name_search()
-        self._setup_collector_number_search()
-        self.scryfall_url_input: QLineEdit
-        self.scryfall_url_input.setEnabled(False)
-        self.button_box.button(QDialogButtonBox.Ok).setEnabled(False)
-        self.input_is_valid_and_unique_card.connect(self.button_box.button(QDialogButtonBox.Ok).setEnabled)
-        self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
-        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
-        for input_box in (
-                self.card_name_search,
-                self.set_name_search,
-                self.collectors_number_search,
-                self.language_combo_box
-                ):
-            input_box.currentTextChanged.connect(self.check_input_is_valid_and_unique_card)
+        self.language_model = self._setup_language_combo_box()
+        self.card_name_model = self._setup_card_name_box()
+        self.set_name_model = self._setup_set_name_box()
+        self.collector_number_model = self._setup_collector_number_box()
+        self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_card_name_search(self):
-        self.card_name_search: QComboBox
-        self.card_name_search.lineEdit().setPlaceholderText("Search by card name")
-        self.card_name_search.lineEdit().setClearButtonEnabled(True)
-        self.card_name_model = QStringListModel([], self.card_name_search)
-        with BlockedSignals(self.card_name_search):  # Do not emit signals without a card_database used to handle them
-            self.card_name_search.setModel(self.card_name_model)
-        self.card_name_search.currentTextChanged.connect(self.on_card_name_search_updated)
+    def _setup_button_box(self):
+        ok_button: QPushButton = self.button_box.button(QDialogButtonBox.Ok)
+        reset_button: QPushButton = self.button_box.button(QDialogButtonBox.Reset)
+        ok_button.setEnabled(False)
+        reset_button.clicked.connect(ok_button.setEnabled)
+        self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
+        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
 
-    def _setup_set_name_search(self):
-        self.set_name_search: QComboBox
-        self.set_name_search.lineEdit().setPlaceholderText("Search by released set")
-        self.set_name_search.lineEdit().setClearButtonEnabled(True)
-        self.set_name_model = QStringListModel([], self.set_name_search)
-        with BlockedSignals(self.set_name_search):
-            self.set_name_search.setModel(self.set_name_model)
-        self.set_name_search.currentTextChanged.connect(self.on_set_name_search_updated)
-
-    def _setup_collector_number_search(self):
-        self.collectors_number_search: QComboBox
-        self.collectors_number_search.lineEdit().setPlaceholderText("Number")
-        self.collectors_number_search.lineEdit().setClearButtonEnabled(True)
-        self.collectors_number_model = QStringListModel([], self.collectors_number_search)
-        with BlockedSignals(self.collectors_number_search):
-            self.collectors_number_search.setModel(self.collectors_number_model)
-        self.collectors_number_search.currentTextChanged.connect(self.on_collector_number_search_updated)
-
-    @pyqtSlot(mtg_proxy_printer.model.document.Page)
-    def on_current_page_changed(self, page: mtg_proxy_printer.model.document.Page):
-        self.check_input_is_valid_and_unique_card()
-
-    @pyqtSlot()
-    def check_input_is_valid_and_unique_card(self):
-        if self.card_database is None:
-            return False
-        self.card_name_search: QComboBox
-        self.set_name_search: QComboBox
-        self.collectors_number_search: QComboBox
+    def _setup_language_combo_box(self) -> QStringListModel:
         self.language_combo_box: QComboBox
-        result = self.card_database.is_valid_and_unique_card(self.card)
-        self.input_is_valid_and_unique_card.emit(result)
+        self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
+        model = QStringListModel([], self.language_combo_box)
+        self.language_combo_box.setModel(model)
+        return model
+
+    def _setup_card_name_box(self) -> QStringListModel:
+        self.card_name_filter: QLineEdit
+        self.card_name_list: QListView
+        model = QStringListModel([], self.card_name_list)
+        self.card_name_list.setModel(model)
+        self.card_name_list.selectionModel().selectionChanged.connect(self.on_card_name_list_selection_changed)
+        self.card_name_filter.textChanged.connect(self.on_card_name_filter_updated)
+        return model
+
+    def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
+        self.set_name_filter: QLineEdit
+        self.set_name_list: QListView
+        model = mtg_proxy_printer.model.string_list.PrettySetListModel([], self.set_name_list)
+        self.card_name_model.rowsRemoved.connect(lambda: self.set_name_box.setEnabled(False))
+        self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
+
+        self.set_name_list.setModel(model)
+        self.set_name_list.selectionModel().selectionChanged.connect(self.on_set_name_list_selection_changed)
+        self.set_name_filter.textChanged.connect(self.on_set_name_filter_updated)
+        return model
+
+    def _setup_collector_number_box(self) -> QStringListModel:
+        self.collector_number_list: QListView
+        model = QStringListModel([], self.collector_number_list)
+        self.set_name_model.rowsRemoved.connect(lambda: self.collector_number_box.setEnabled(False))
+        self.set_name_model.rowsRemoved.connect(lambda: model.setStringList([]))
+
+        self.collector_number_list.setModel(model)
+        self.collector_number_list.selectionModel().selectionChanged.connect(
+            self.on_collector_number_list_selection_changed
+        )
+        return model
+
+    @pyqtSlot(QItemSelection)
+    def on_card_name_list_selection_changed(self, current: QItemSelection):
+        self.set_name_list: QListView
+        if not current.indexes():
+            self.set_name_list.selectionModel().clearSelection()
+            return
+        current_model_index = current.indexes()[0]
+        valid = current_model_index.isValid()
+        self.set_name_box.setEnabled(valid)
+        if valid:
+            sets = self.card_database.find_sets_matching(
+                current_model_index.data(Qt.DisplayRole),
+                self.current_language
+            )
+            self.set_name_model.set_set_data(sets)
+            # Converts a recursive call structure into a sequential call structure, which is required here
+            QTimer.singleShot(
+                0, lambda: self.set_name_list.selectionModel().select(
+                        self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect
+                ))
+
+    @pyqtSlot(QItemSelection)
+    def on_set_name_list_selection_changed(self, current: QItemSelection):
+        self.collector_number_list: QListView
+        if not current.indexes():
+            self.collector_number_list.selectionModel().clearSelection()
+            return
+        current_model_index = current.indexes()[0]
+        valid = current_model_index.isValid()
+        self.collector_number_box.setEnabled(valid)
+        if valid:
+            collector_numbers = self.card_database.find_collector_numbers_matching(
+                self.current_card_name, current_model_index.data(Qt.EditRole), self.current_language
+            )
+            self.collector_number_model.setStringList(collector_numbers)
+            # Converts a recursive call structure into a sequential call structure, which is required here
+            QTimer.singleShot(
+                0, lambda: self.collector_number_list.selectionModel().select(
+                    self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect
+                ))
+
+    @pyqtSlot(QItemSelection)
+    def on_collector_number_list_selection_changed(self, current: QItemSelection):
+        self.button_box.button(QDialogButtonBox.Ok).setEnabled(bool(current.indexes()))
 
     def _create_card_from_user_input(self):
         card = mtg_proxy_printer.model.carddb.Card(
@@ -109,70 +148,45 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
         return card
 
     @pyqtSlot(str)
-    def on_card_name_search_updated(self, changed: str):
-        if changed != self.card.name:
-            self.card.name = changed if changed else None
-            self._update_set_name_search()
-            self._update_collector_number_search()
+    def on_card_name_filter_updated(self, card_name_filter: str):
+        selected_card_name = self.current_card_name
+        card_names = self.card_database.get_card_names(self.current_language, card_name_filter)
+        self.card_name_model.setStringList(card_names)
 
-    def _update_set_name_search(self):
-        with BlockedSignals(self.set_name_search):
-            set_names = self.card_database.find_sets_matching(self.card)
-            self.set_name_model.setStringList(set_names)
-        if self.card.set_abbr and any(abbr.startswith(self.card.set_abbr) for abbr in set_names):
-            self.set_name_search.setCurrentText(self.card.set_abbr)
-
-    def _update_collector_number_search(self):
-        with BlockedSignals(self.collectors_number_search):
-            collector_numbers = self.card_database.find_collector_numbers_matching(self.card)
-            self.collectors_number_model.setStringList(collector_numbers)
-        if self.card.collector_number and any(num.startswith(self.card.collector_number) for num in collector_numbers):
-            self.collectors_number_search.setCurrentText(self.card.collector_number)
-
-    def _update_card_search(self):
-        with BlockedSignals(self.card_name_search):
-            card_names = self.card_database.find_card_names_matching(self.card)
-            self.card_name_model.setStringList(card_names)
-        if self.card.name and any(name.startswith(self.card.name) for name in card_names):
-            self.card_name_search.setCurrentText(self.card.name)
+        if selected_card_name in card_names:
+            self.card_name_list.selectionModel().select(
+                self.card_name_model.createIndex(card_names.index(selected_card_name), 0),
+                QItemSelectionModel.ClearAndSelect
+            )
+        else:
+            self.set_name_model.set_set_data([])
+            self.set_name_box.setDisabled(True)
 
     @pyqtSlot(str)
-    def on_set_name_search_updated(self, changed: str):
-        if changed != self.card.set_abbr:
-            self.card.set_abbr = changed if changed else None
-            self.card_name_search: QComboBox
-            self._update_card_search()
-            self._update_collector_number_search()
+    def on_set_name_filter_updated(self, set_name_filter: str):
+        set_names = self.card_database.find_sets_matching(
+            self.current_card_name, self.current_language, set_name_filter
+        )
+        self.set_name_model.set_set_data(set_names)
 
     @pyqtSlot(str)
-    def on_collector_number_search_updated(self, changed: str):
-        if changed != self.card.collector_number:
-            self.card.collector_number = changed if changed else None
-            self._update_card_search()
-            self._update_set_name_search()
-
-    @pyqtSlot(str)
-    def on_language_combo_box_changed(self, changed: str):
-        if changed != self.card.language:
-            self.card.language = changed
-            self._update_card_search()
-            self._update_set_name_search()
-            self._update_collector_number_search()
+    def on_language_combo_box_changed(self, new_language: str):
+        card_names = self.card_database.get_card_names(new_language)
+        self.card_name_model.setStringList(card_names)
+        self.set_name_model.set_set_data([])
+        self.set_name_box.setEnabled(False)
 
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         self.card_database = card_db
-        self.reset()
+        languages = self.card_database.get_all_languages()
+        if not languages:
+            languages = [mtg_proxy_printer.settings.settings["images"]["preferred-language"]]
+        self.language_model.setStringList(languages)
 
-    def set_language_model(self, model: QStringListModel):
-        self.language_model = model
-        self.language_combo_box.setModel(self.language_model)
-        self.update_selected_language()
-
-    @staticmethod
-    def _create_new_card() -> mtg_proxy_printer.model.carddb.Card:
+    def _create_new_card(self) -> mtg_proxy_printer.model.carddb.Card:
         card = mtg_proxy_printer.model.carddb.Card(
-            None, None, None,
-            mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+            self.current_card_name, self.current_set_name, self.current_collector_number, self.current_language
+        )
         return card
 
     @pyqtSlot()
@@ -183,27 +197,60 @@ class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
                 self.language_model.stringList().index(
                     mtg_proxy_printer.settings.settings["images"]["preferred-language"])
             )
-            self.card.language = self.language_combo_box.currentText()
-        else:
-            self.card.language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
 
     def on_ok_button_triggered(self):
         logger.debug("User clicked OK and adds a new card to the current page.")
-        self.card_database.add_missing_information(self.card)
+        card = self._create_new_card()
+        self.card_database.add_missing_information(card)
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
-        self.card_added.emit(self.card, copies)
-        add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean("automatically-add-opposing-faces")
+        self.card_added.emit(card, copies)
+        add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
+            "automatically-add-opposing-faces"
+        )
         if add_opposing_faces_enabled and (
-                opposing_face := self.card_database.get_opposing_face(self.card)) is not None:
+                opposing_face := self.card_database.get_opposing_face(card)) is not None:
             self.card_added.emit(opposing_face, copies)
-        self.reset()
 
     @pyqtSlot()
     def reset(self):
-        self.card = self._create_new_card()
-        self._update_card_search()
-        self._update_set_name_search()
-        self._update_collector_number_search()
+        self.card_name_list: QListView
+        self.collector_number_list.clearSelection()
+        self.collector_number_model.setStringList([])
+        self.set_name_list.clearSelection()
+        self.set_name_model.set_set_data([])
+        self.card_name_list.clearSelection()
+        self.card_name_filter.clear()
+        self.set_name_filter.clear()
         self.copies_input.setValue(1)
-        self.input_is_valid_and_unique_card.emit(False)
+
+    @property
+    def current_language(self) -> str:
+        return self.language_combo_box.currentText()
+
+    @property
+    def current_card_name(self) -> typing.Optional[str]:
+        self.card_name_list: QListView
+        selected = self.card_name_list.selectedIndexes()
+        if selected:
+            return selected[0].data(Qt.DisplayRole)
+        else:
+            return None
+
+    @property
+    def current_set_name(self) -> typing.Optional[str]:
+        self.set_name_list: QListView
+        selected = self.set_name_list.selectedIndexes()
+        if selected:
+            return selected[0].data(Qt.EditRole)
+        else:
+            return None
+
+    @property
+    def current_collector_number(self) -> typing.Optional[str]:
+        self.collector_number_list: QListView
+        selected = self.collector_number_list.selectedIndexes()
+        if selected:
+            return selected[0].data(Qt.DisplayRole)
+        else:
+            return None

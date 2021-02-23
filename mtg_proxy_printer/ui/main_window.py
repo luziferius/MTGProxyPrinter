@@ -36,9 +36,10 @@ from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
 
 
-class MainWindow(*inherits_from_ui_file_with_name("main_window")):
+class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):
 
     should_update_languages = pyqtSignal()
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
@@ -120,8 +121,6 @@ class MainWindow(*inherits_from_ui_file_with_name("main_window")):
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
         self.add_card_widget.card_added.connect(self.document.add_card)
-        self.add_card_widget.set_language_model(self.language_model)
-        self.current_page_changed.connect(self.add_card_widget.on_current_page_changed)
 
     def _setup_document_view(self):
         self.document_view: DocumentView

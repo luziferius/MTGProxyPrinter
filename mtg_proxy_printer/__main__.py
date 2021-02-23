@@ -13,8 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import mtg_proxy_printer.application
+
+# Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
+import mtg_proxy_printer.application
+
 
 # Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
 # when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
@@ -24,7 +27,6 @@ _app = None
 
 def main():
     global _app
-    mtg_proxy_printer.settings.read_settings_from_file()
     _app = mtg_proxy_printer.application.Application()
 
 

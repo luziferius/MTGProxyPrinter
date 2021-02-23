@@ -36,7 +36,6 @@ CARD_WIDTH = 63
 CARD_HEIGHT = 88
 
 
-
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
     "avoid-low-resolution-images": "False",
@@ -76,9 +75,10 @@ DEFAULT_SETTINGS["default-save-paths"] = {
     "document-save-path": "",
     "pdf-export-path": "",
 }
-
-# Populate the settings with default values, even if read_settings_from_file() is never called.
-settings.read_dict(DEFAULT_SETTINGS)
+DEFAULT_SETTINGS["gui"] = {
+    "search-widget-layout": "horizontal",
+}
+VALID_SEARCH_WIDGET_LAYOUTS= {"horizontal", "vertical"}
 
 
 def read_settings_from_file():
@@ -118,6 +118,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
+    _validate_gui_section(read_settings["gui"])
 
 
 def _validate_download_section(section: configparser.SectionProxy):
@@ -175,6 +176,13 @@ def _validate_documents_section(section: configparser.SectionProxy):
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 
 
+def _validate_gui_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["gui"]
+    key = "search-widget-layout"
+    if section[key] not in VALID_SEARCH_WIDGET_LAYOUTS:
+        section[key] = defaults[key]
+
+
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
         section.getboolean(key)
@@ -188,3 +196,8 @@ def _validate_non_negative_int(section: configparser.SectionProxy, defaults: con
             raise ValueError
     except ValueError:
         section[key] = defaults[key]
+
+
+# Read the settings from file during module import
+# This has to be performed before any modules containing GUI classes are imported.
+read_settings_from_file()

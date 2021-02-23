@@ -16,7 +16,7 @@
 import configparser
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QPushButton
 
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -37,6 +37,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.language_model = language_model
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
+
+        self.add_card_widget_style_combo_box: QComboBox
+        self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
+        self.add_card_widget_style_combo_box.addItem("Vertical layout", "vertical")
 
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
@@ -62,10 +66,17 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         super(SettingsWindow, self).show()
 
     def load_settings(self, settings: configparser.ConfigParser):
+        self._load_look_and_feel_settings(settings)
         self._load_images_settings(settings)
         self._load_download_settings(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
+
+    def _load_look_and_feel_settings(self, settings):
+        self.add_card_widget_style_combo_box: QComboBox
+        gui_section = settings["gui"]
+        search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["search-widget-layout"])
+        self.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
 
     def _load_images_settings(self, settings):
         self.preferred_language_combo_box: QComboBox
@@ -153,6 +164,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def save(self):
         logger.info("User saves the configuration to disk.")
+        self._save_look_and_feel_settings()
         self._save_images_settings()
         self._save_downloads_settings()
         self._save_documents_settings()
@@ -160,6 +172,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
         logger.debug("Save finished.")
+
+    def _save_look_and_feel_settings(self):
+        gui_section = mtg_proxy_printer.settings.settings["gui"]
+        self.add_card_widget_style_combo_box: QComboBox
+        gui_section["search-widget-layout"] = self.add_card_widget_style_combo_box.currentData(Qt.UserRole)
 
     def _save_images_settings(self):
         images_section = mtg_proxy_printer.settings.settings["images"]
