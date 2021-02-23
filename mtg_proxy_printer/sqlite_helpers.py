@@ -67,7 +67,15 @@ def populate_database_schema(db: sqlite3.Connection, schema_name: str):
     logger.debug("Created database schema.")
 
 
-def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> bool:
+def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> int:
+    """
+    Returns the difference between the latest database schema version and the connected database schema version.
+
+    :returns: - Positive integer, if the database is outdated
+              - Zero if it is up to date
+              - Negative integer, if the database was created by a later version that created a newer schema.
+
+    """
     database_user_version: int = db.execute("PRAGMA user_version\n").fetchone()[0]
     schema = pkg_resources.resource_string("mtg_proxy_printer.model", f"{schema_name}.sql").decode("utf-8")
     latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
@@ -75,4 +83,4 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> b
         message = f"Schema version mismatch in the opened database. " \
                   f"Expected schema version {latest_user_version}, got {database_user_version}."
         logger.warning(message)
-    return database_user_version != latest_user_version
+    return latest_user_version - database_user_version
