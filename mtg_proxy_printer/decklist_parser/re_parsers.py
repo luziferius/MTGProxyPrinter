@@ -18,25 +18,23 @@ import pathlib
 import re
 import typing
 
+from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
 import mtg_proxy_printer.settings
 
-ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 MatchType = typing.Dict[str, str]
 
 
-class GenericRegularExpressionDeckParser:
+class GenericRegularExpressionDeckParser(ParserBase):
     """
     A generic regular expression based parser for deck lists. Takes a regular expression as a Python string and
     uses that to parse each input line.
     """
 
     def __init__(self, card_db: CardDatabase, regular_expression: str):
-        self.card_db = card_db
+        super(GenericRegularExpressionDeckParser, self).__init__(card_db)
         self.parser = re.compile(regular_expression)
-        self.add_opposing_face = mtg_proxy_printer.settings.settings["images"].getboolean(
-            "automatically-add-opposing-faces"
-        )
+
 
     def parse_deck(self, deck: typing.Union[pathlib.Path, str]) -> ParsedDeck:
         """
