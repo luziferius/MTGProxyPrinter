@@ -15,6 +15,7 @@
 
 import configparser
 import pathlib
+import re
 
 import mtg_proxy_printer.meta_data
 
@@ -22,12 +23,18 @@ __all__ = [
     "settings",
     "DEFAULT_SETTINGS",
     "read_settings_from_file",
-    "write_settings_to_file"
+    "write_settings_to_file",
+    "validate_settings",
 ]
 
 config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
+
+# TODO: Single-source these properties somewhere. The Document class holds similar constants.
+CARD_WIDTH = 63
+CARD_HEIGHT = 88
+
 
 
 DEFAULT_SETTINGS["images"] = {
@@ -96,6 +103,7 @@ def read_settings_from_file():
                 del settings[section][outdated]
             for new in sorted(known_options - read_options):
                 settings[section][new] = DEFAULT_SETTINGS[section][new]
+    validate_settings(settings)
 
 
 def write_settings_to_file():
@@ -104,3 +112,79 @@ def write_settings_to_file():
         config_file_path.parent.mkdir(parents=True)
     with config_file_path.open("w") as config_file:
         settings.write(config_file)
+
+
+def validate_settings(read_settings: configparser.ConfigParser):
+    _validate_download_section(read_settings["downloads"])
+    _validate_images_section(read_settings["images"])
+    _validate_documents_section(read_settings["documents"])
+
+
+def _validate_download_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["downloads"]
+    for key in section.keys():
+        _validate_boolean(section, defaults, key)
+
+
+def _validate_images_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["images"]
+    for key in ("avoid-low-resolution-images", "automatically-add-opposing-faces"):
+        _validate_boolean(section, defaults, key)
+    language = section["preferred-language"]
+    if not re.fullmatch(r"[a-z]{2}", language):
+        # Only syntactic validation: Language contains a string of exactly two lower case ascii letters
+        section["preferred-language"] = defaults["preferred-language"]
+
+
+def _validate_documents_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["documents"]
+    _validate_boolean(section, defaults, "print-cut-marker")
+    # Check syntax
+    for key in section.keys():
+        if key in ("print-cut-marker",):
+            continue
+        _validate_non_negative_int(section, defaults, key)
+    # Check some semantic properties
+    available_height = section.getint("paper-height-mm") - \
+                       (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
+    available_width = section.getint("paper-width-mm") - \
+                      (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
+
+    if available_height < CARD_HEIGHT:
+        # Can not fit a single card on a page
+        section["paper-height-mm"] = defaults["paper-height-mm"]
+        section["margin-top-mm"] = defaults["margin-top-mm"]
+        section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
+    if available_width < CARD_WIDTH:
+        # Can not fit a single card on a page
+        section["paper-width-mm"] = defaults["paper-width-mm"]
+        section["margin-left-mm"] = defaults["margin-left-mm"]
+        section["margin-right-mm"] = defaults["margin-right-mm"]
+
+    # Re-calculate, if width or height was reset
+    available_height = section.getint("paper-height-mm") - \
+                       (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
+    available_width = section.getint("paper-width-mm") - \
+                      (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
+
+    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - CARD_HEIGHT):
+        # Prevent vertical spacing from overlapping with bottom margin
+        section["image-spacing-vertical-mm"] = str(available_spacing_vertical)
+    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - CARD_WIDTH):
+        # Prevent horizontal spacing from overlapping with right margin
+        section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
+
+
+def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
+        section.getboolean(key)
+    except ValueError:
+        section[key] = defaults[key]
+
+
+def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
+        if section.getint(key) < 0:
+            raise ValueError
+    except ValueError:
+        section[key] = defaults[key]
