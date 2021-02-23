@@ -65,11 +65,14 @@ class Page(QAbstractTableModel):
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
-        if role == Qt.DisplayRole:
+        if role in (Qt.DisplayRole, Qt.EditRole):
             if index.column() == 0:
                 return card.name
             elif index.column() == 1:
-                return card.set_abbr
+                if role == Qt.EditRole:
+                    return card.set_abbr
+                else:
+                    return f"{card.set_name} ({card.set_abbr.upper()})"
             elif index.column() == 2:
                 return card.collector_number
             elif index.column() == 3:
