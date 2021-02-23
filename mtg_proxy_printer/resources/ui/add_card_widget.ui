@@ -19,7 +19,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>5</verstretch>
+       <verstretch>7</verstretch>
       </sizepolicy>
      </property>
      <property name="toolTip">
@@ -60,7 +60,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>3</verstretch>
+       <verstretch>2</verstretch>
       </sizepolicy>
      </property>
      <property name="title">
@@ -85,7 +85,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>10</verstretch>
+       <verstretch>7</verstretch>
       </sizepolicy>
      </property>
      <property name="title">
@@ -135,6 +135,9 @@
      <property name="text">
       <string>Language:</string>
      </property>
+     <property name="buddy">
+      <cstring>language_combo_box</cstring>
+     </property>
     </widget>
    </item>
    <item row="11" column="0">
@@ -147,6 +150,9 @@
      </property>
      <property name="text">
       <string>Copies:</string>
+     </property>
+     <property name="buddy">
+      <cstring>copies_input</cstring>
      </property>
     </widget>
    </item>
@@ -166,6 +172,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>language_combo_box</tabstop>
+  <tabstop>card_name_filter</tabstop>
+  <tabstop>card_name_list</tabstop>
+  <tabstop>set_name_filter</tabstop>
+  <tabstop>set_name_list</tabstop>
+  <tabstop>collector_number_list</tabstop>
+  <tabstop>copies_input</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
