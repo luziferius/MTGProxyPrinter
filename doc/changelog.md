@@ -1,5 +1,19 @@
 # Changelog
 
+# Version 0.8.0 (in development)
+
+## Implemented features
+
+
+
+## Fixed issues
+
+- The overview table showing the cards of the current page now shows the full, 
+  human readable English set name plus the short, three(-or-more)-letter set code,
+  instead of showing only the cryptic set code.
+- If manual editing of the configuration file causes a setting to have an invalid value, the default will be restored,
+  instead of crashing the application while it tries to parse the invalid data.
+
 # Version 0.7.1 (2012-02-18)
 
 ## Fixed issues
