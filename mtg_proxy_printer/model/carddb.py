@@ -181,7 +181,7 @@ class CardDatabase:
         - Language (some promo cards are one-of a kind and have a unique language,
           like a single card in traditional Greek)
         """
-        query = 'SELECT card_name, "set", collector_number, png_image_uri, scryfall_id, is_front ' \
+        query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front ' \
                 '-- add_missing_information()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
@@ -207,7 +207,8 @@ class CardDatabase:
         result = cursor.fetchone()
         if not result or cursor.fetchone():
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
-        card.name, card.set_abbr, card.collector_number, card.image_uri, card.scryfall_id, card.is_front = result
+        card.name, card.set_abbr, card.set_name, card.collector_number, \
+        card.image_uri, card.scryfall_id, card.is_front = result
 
     def find_collector_numbers_matching(self, card: Card) -> StringList:
         query = 'SELECT DISTINCT collector_number -- find_collector_numbers_matching()\n' \
