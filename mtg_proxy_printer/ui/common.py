@@ -82,6 +82,7 @@ def load_icon(name: str) -> QIcon:
     file_path = ICON_PATH_PREFIX + "/" + name
     icon = QIcon(file_path)
     if not icon.availableSizes() and file_path.endswith(".svg"):
+        logger.info(f"Manually rendering icon {name}")
         # FIXME: Work around Qt Bug: https://bugreports.qt.io/browse/QTBUG-63187
         # Manually render the SVG to some common icon sizes.
         icon = QIcon()  # Discard the bugged QIcon
