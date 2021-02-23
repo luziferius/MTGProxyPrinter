@@ -22,6 +22,9 @@
      <property name="text">
       <string>Language:</string>
      </property>
+     <property name="buddy">
+      <cstring>language_combo_box</cstring>
+     </property>
     </widget>
    </item>
    <item row="7" column="1" rowspan="9">
@@ -148,6 +151,9 @@
      <property name="text">
       <string>Copies</string>
      </property>
+     <property name="buddy">
+      <cstring>copies_input</cstring>
+     </property>
     </widget>
    </item>
    <item row="10" column="5">
@@ -175,6 +181,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>card_name_filter</tabstop>
+  <tabstop>card_name_list</tabstop>
+  <tabstop>set_name_filter</tabstop>
+  <tabstop>set_name_list</tabstop>
+  <tabstop>collector_number_list</tabstop>
+  <tabstop>language_combo_box</tabstop>
+  <tabstop>copies_input</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
