@@ -57,6 +57,7 @@ class Card:
     image_uri: OptionalString = None
     scryfall_id: OptionalString = None
     image_file: typing.Optional[QPixmap] = None
+    set_name: OptionalString = None
 
 
 class CardDatabase:
@@ -100,8 +101,7 @@ class CardDatabase:
 
     def allow_updating_card_data(self) -> bool:
         query = "SELECT update_timestamp FROM LastDatabaseUpdate ORDER BY update_timestamp DESC LIMIT 1\n"
-        result: typing.Tuple[str] = self.db.execute(query).fetchone()
-        if result:
+        if result := self.db.execute(query).fetchone():
             last_timestamp_str, = result
             last_timestamp = datetime.datetime.fromisoformat(last_timestamp_str).date()
             now = datetime.datetime.now().date()
@@ -307,13 +307,13 @@ class CardDatabase:
         return bool(result)
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> Card:
-        query = 'SELECT card_name, "set", collector_number, "language", png_image_uri\n' \
+        query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri\n' \
                 'FROM AllPrintings\n' \
                 'WHERE scryfall_id = ? AND is_front = ?'
-        name, set_abbr, collector_number, language, image_uri = self.db.execute(
+        name, set_abbr, set_name, collector_number, language, image_uri = self.db.execute(
             query, (scryfall_id, is_front)
         ).fetchone()
-        return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id)
+        return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id, set_name=set_name)
 
     def get_opposing_face(self, card) -> typing.Optional[Card]:
         """
@@ -330,10 +330,7 @@ class CardDatabase:
                 'FROM FaceName\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
                 'WHERE card_name LIKE ?'
-        if result := self.db.execute(query, (f"{name}%",)).fetchone():
-            return result[0]
-        else:
-            return None
+        return self._read_optional_scalar_from_db(query, (f"{name}%",))
 
     def is_known_language(self, language: str) -> bool:
         query = 'SELECT EXISTS(\n' \
@@ -342,14 +339,26 @@ class CardDatabase:
                 'WHERE "language" = ?)'
         return bool(self.db.execute(query, (language,)).fetchone()[0])
 
-    def translate_card_name(self, name: str, target_language: str, source_language: str = "en") -> OptionalString:
+    def translate_card_name(self, name: str, target_language: str, source_language: str = None) -> OptionalString:
+        """
+        Translates a card from a source language into the target_language.
+        If the source language is not given, try to guess it, or use English, if that also fails.
+
+        :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
+        """
+        # Implementation note: This approach using a subquery performs better than a
+        # self-join of AllPrintings USING(oracle_id) for cards with many reprints, like basic lands.
+        # On a populated database (of February 2021), using this query to translate a Forest to "de" takes 20ms,
+        # while the self-join of AllPrintings takes full 6 seconds.
+        if not source_language:
+            source_language = self.guess_language_from_name(name) or "en"
         query = r"""SELECT DISTINCT card_name
         FROM FaceName
         JOIN PrintLanguage USING(language_id)
         JOIN CardFace USING (face_name_id)
         JOIN Card USING (card_id)
         WHERE "language" = ? 
-        AND oracle_id in (
+        AND oracle_id IN (
             SELECT oracle_id
             FROM FaceName
             JOIN PrintLanguage USING(language_id)
@@ -357,13 +366,18 @@ class CardDatabase:
             JOIN Card USING (card_id)
             WHERE card_name = ? AND "language" = ?
         )"""
-        if result := self.db.execute(query, (target_language, name, source_language)).fetchone():
+        return self._read_optional_scalar_from_db(query, (target_language, name, source_language))
+
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
+        if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
             return None
 
 
 def migrate_card_database(db: sqlite3.Connection):
+    schema_version = db.execute("PRAGMA user_version").fetchone()[0]
+    needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
     if db.execute("PRAGMA user_version").fetchone()[0] == 9:
         # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
         # the database using fresh data from Scryfall.
@@ -371,16 +385,33 @@ def migrate_card_database(db: sqlite3.Connection):
         clear_database(db)
         db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
         db.execute("DROP VIEW AllPrintings")
-        db.execute(textwrap.dedent(r"""CREATE VIEW AllPrintings AS
-            SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
-            FROM CardFace
-            JOIN FaceName USING(face_name_id)
-            JOIN "Set" USING (set_id)
-            JOIN Card USING (card_id)
-            JOIN PrintLanguage USING(language_id)
+        db.execute(textwrap.dedent(r"""
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
+          FROM CardFace
+          JOIN FaceName USING(face_name_id)
+          JOIN "Set" USING (set_id)
+          JOIN Card USING (card_id)
+          JOIN PrintLanguage USING(language_id)
         ;"""))
-        db.execute("PRAGMA user_version = 10")
         db.commit()
+        db.execute("PRAGMA user_version = 10")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 10:
+        db.execute("BEGIN TRANSACTION")
+        db.execute(textwrap.dedent(r"""
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, "set", set_name, "language", collector_number, scryfall_id, highres_image,
+              is_front, png_image_uri, oracle_id
+          FROM CardFace
+          JOIN FaceName USING(face_name_id)
+          JOIN "Set" USING (set_id)
+          JOIN Card USING (card_id)
+          JOIN PrintLanguage USING(language_id)
+        ;"""))
+
+        db.execute('CREATE INDEX CardFace_card_id_index ON CardFace (card_id)')
+        db.commit()
+        db.execute("PRAGMA user_version = 11")
 
 
 def clear_database(db: sqlite3.Connection):
