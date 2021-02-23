@@ -1,18 +1,32 @@
 # Changelog
 
+
 # Version 0.8.0 (in development)
 
-## Implemented features
+## Changed features
 
-
-
-## Fixed issues
-
+- Re-written the card search to use a hierarchical search, focussing primarily on the card name.
+  The card search now shows a list of suggestions that can be filtered using a search term,
+  including basic wildcard support. When a card name is selected from the suggestion list,
+  a specific printing can be selected. The search selects a random printing as a suggestion by default 
+  to speed up the process,  if the user doesn’t care about the specific printing used.
+  - The new search displays sets using their human readable English name.
+  - The search does not reset itself any more, when adding a card.
+- Added a setting to choose between a horizontal search area layout above the currently edited page and a
+  vertical search area that sits between the page list and the currently edited page.
+  - The horizontal layout resembles a traditional search bar, as used in other programs, looking more familiar
+  - The vertical layout makes better use of the available screen space, requires less mouse movement
+    and works better on widescreen monitors
+  - Switching the layout requires an application restart.
 - The overview table showing the cards of the current page now shows the full, 
   human readable English set name plus the short, three(-or-more)-letter set code,
   instead of showing only the cryptic set code.
+
+## Fixed issues
+
 - If manual editing of the configuration file causes a setting to have an invalid value, the default will be restored,
   instead of crashing the application while it tries to parse the invalid data.
+
 
 # Version 0.7.1 (2012-02-18)
 
