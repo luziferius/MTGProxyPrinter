@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 del get_logger
 
 
-class MainWindow(*inherits_from_ui_file_with_name("main_window")):
+class MainWindow(*inherits_from_ui_file_with_name("vertical_search_layout/main_window")):
 
     should_update_languages = pyqtSignal()
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)

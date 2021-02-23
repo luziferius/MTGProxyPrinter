@@ -1,9 +1,9 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
     <file>ui/about_dialog.ui</file>
-    <file>ui/add_card_widget.ui</file>
+    <file>ui/vertical_search_layout/add_card_widget.ui</file>
     <file>ui/current_page_view.ui</file>
-    <file>ui/main_window.ui</file>
+    <file>ui/vertical_search_layout/main_window.ui</file>
     <file>ui/settings_window.ui</file>
     <file>ui/load_list_page.ui</file>
     <file>ui/select_deck_parser_page.ui</file>
