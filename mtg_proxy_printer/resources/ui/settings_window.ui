@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <widget class="QWidget" name="tab_general">
       <attribute name="title">
@@ -34,6 +34,9 @@
            <widget class="QLabel" name="add_card_widget_style_label">
             <property name="text">
              <string>Preferred card search layout:</string>
+            </property>
+            <property name="buddy">
+             <cstring>add_card_widget_style_combo_box</cstring>
             </property>
            </widget>
           </item>
@@ -80,6 +83,9 @@ Vertical adds a tall search area between the page list and the currently edited 
            <widget class="QLabel" name="preferred_language_label">
             <property name="text">
              <string>Preferred Language:</string>
+            </property>
+            <property name="buddy">
+             <cstring>preferred_language_combo_box</cstring>
             </property>
            </widget>
           </item>
@@ -163,12 +169,18 @@ Uncheck to disable this automatism.</string>
             <property name="text">
              <string>Save path</string>
             </property>
+            <property name="buddy">
+             <cstring>document_save_path</cstring>
+            </property>
            </widget>
           </item>
           <item row="1" column="0">
            <widget class="QLabel" name="pdf_save_path_label">
             <property name="text">
              <string>PDF export path</string>
+            </property>
+            <property name="buddy">
+             <cstring>pdf_save_path</cstring>
             </property>
            </widget>
           </item>
@@ -234,6 +246,9 @@ Uncheck to disable this automatism.</string>
             <property name="text">
              <string>Right margin</string>
             </property>
+            <property name="buddy">
+             <cstring>page_margin_right</cstring>
+            </property>
            </widget>
           </item>
           <item row="12" column="3">
@@ -259,6 +274,9 @@ Uncheck to disable this automatism.</string>
            <widget class="QLabel" name="page_margin_left_label">
             <property name="text">
              <string>Left margin</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_margin_left</cstring>
             </property>
            </widget>
           </item>
@@ -286,6 +304,9 @@ Uncheck to disable this automatism.</string>
             <property name="text">
              <string>Bottom Margin</string>
             </property>
+            <property name="buddy">
+             <cstring>page_margin_bottom</cstring>
+            </property>
            </widget>
           </item>
           <item row="17" column="3">
@@ -311,6 +332,9 @@ Uncheck to disable this automatism.</string>
            <widget class="QLabel" name="page_image_spacing_horizontal_label">
             <property name="text">
              <string>Horizontal image spacing</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_image_spacing_horizontal</cstring>
             </property>
            </widget>
           </item>
@@ -357,6 +381,9 @@ Uncheck to disable this automatism.</string>
             <property name="text">
              <string>Vertical image spacing</string>
             </property>
+            <property name="buddy">
+             <cstring>page_image_spacing_vertical</cstring>
+            </property>
            </widget>
           </item>
           <item row="16" column="3">
@@ -382,6 +409,9 @@ Uncheck to disable this automatism.</string>
            <widget class="QLabel" name="page_height_label">
             <property name="text">
              <string>Page height</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_height</cstring>
             </property>
            </widget>
           </item>
@@ -435,12 +465,18 @@ Uncheck to disable this automatism.</string>
             <property name="text">
              <string>Page width</string>
             </property>
+            <property name="buddy">
+             <cstring>page_width</cstring>
+            </property>
            </widget>
           </item>
           <item row="11" column="1">
            <widget class="QLabel" name="page_margin_top_label">
             <property name="text">
              <string>Top margin</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_margin_top</cstring>
             </property>
            </widget>
           </item>
@@ -471,6 +507,9 @@ Uncheck to disable this automatism.</string>
            <widget class="QLabel" name="pdf_page_count_limit_label">
             <property name="text">
              <string>Split PDFs longer than</string>
+            </property>
+            <property name="buddy">
+             <cstring>pdf_page_count_limit</cstring>
             </property>
            </widget>
           </item>
