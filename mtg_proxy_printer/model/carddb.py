@@ -231,8 +231,9 @@ class CardDatabase:
                 'AND card_name = ?\n'
         parameters = [language, card_name]
         if set_name_filter:
-            query += 'AND "set" LIKE ?\n'
-            parameters.append(f"{set_name_filter}%")
+            query += 'AND ("set" LIKE ?\n' \
+                     '    OR set_name LIKE ?\n)'
+            parameters += [f"{set_name_filter}%"] * 2
 
         query += 'ORDER BY set_name ASC\n'
         return self.db.execute(query, parameters).fetchall()
