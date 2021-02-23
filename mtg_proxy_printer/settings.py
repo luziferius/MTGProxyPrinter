@@ -75,6 +75,10 @@ DEFAULT_SETTINGS["default-save-paths"] = {
     "document-save-path": "",
     "pdf-export-path": "",
 }
+DEFAULT_SETTINGS["gui"] = {
+    "search-widget-layout": "horizontal",
+}
+VALID_SEARCH_WIDGET_LAYOUTS= {"horizontal", "vertical"}
 
 
 def read_settings_from_file():
@@ -114,6 +118,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
+    _validate_gui_section(read_settings["gui"])
 
 
 def _validate_download_section(section: configparser.SectionProxy):
@@ -169,6 +174,13 @@ def _validate_documents_section(section: configparser.SectionProxy):
     if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - CARD_WIDTH):
         # Prevent horizontal spacing from overlapping with right margin
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
+
+
+def _validate_gui_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["gui"]
+    key = "search-widget-layout"
+    if section[key] not in VALID_SEARCH_WIDGET_LAYOUTS:
+        section[key] = defaults[key]
 
 
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
