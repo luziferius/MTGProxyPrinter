@@ -19,6 +19,9 @@
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QRadioButton" name="select_parser_mtg_arena">
+     <property name="toolTip">
+      <string>Magic Arena and exports from compatible websites, like moxfield.com</string>
+     </property>
      <property name="text">
       <string>MTG Arena</string>
      </property>
@@ -59,6 +62,23 @@
     <widget class="QLineEdit" name="custom_re_input">
      <property name="enabled">
       <bool>false</bool>
+     </property>
+     <property name="whatsThis">
+      <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use &lt;span style=&quot; font-style:italic;&quot;&gt;named groups&lt;/span&gt; to extract the individual card properties from the individual lines of the deck list.&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;A named group looks like this &lt;span style=&quot; font-weight:600;&quot;&gt;(?P&amp;lt;GroupName&amp;gt;RE)&lt;/span&gt;, where RE is a Regular Expression matching the part you want to extract.&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This program recognises these group names:&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;copies&lt;/span&gt;: The number of card copies. Defaults to 1, if not present&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;name&lt;/span&gt;: The card name&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt;: The 3 (or more) letter code identifying the set.&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt;: The collector number of the card&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;language&lt;/span&gt;: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to &amp;quot;en&amp;quot; for English, if not possible.&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Not all groups are required for a successful match. For example, &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt; and &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt; is sufficient for exact identification most of the time.&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Hint: You may want to use an online Regular Expression editor, like &lt;a href=&quot;https://regex101.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://regex101.com/&lt;/span&gt;&lt;/a&gt;, for example.&lt;/p&gt;
+&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="placeholderText">
       <string>(?P&lt;copies&gt;\d+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
@@ -170,6 +190,16 @@
    <signal>clicked()</signal>
    <receiver>WizardPage</receiver>
    <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
   </connection>
  </connections>
 </ui>
