@@ -15,6 +15,7 @@
 
 import configparser
 import pathlib
+import re
 
 import mtg_proxy_printer.meta_data
 
@@ -109,13 +110,27 @@ def write_settings_to_file():
 
 def validate_settings(read_settings: configparser.ConfigParser):
     _validate_download_section(read_settings["downloads"])
+    _validate_images_section(read_settings["images"])
 
 
 def _validate_download_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["downloads"]
     for key in section.keys():
-        try:
-            section.getboolean(key)
-        except ValueError:
-            section[key] = defaults[key]
+        _validate_boolean(section, defaults, key)
 
+
+def _validate_images_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["images"]
+    for key in ("avoid-low-resolution-images", "automatically-add-opposing-faces"):
+        _validate_boolean(section, defaults, key)
+    language = section["preferred-language"]
+    if not re.fullmatch(r"[a-z]{2}", language):
+        # Only syntactic validation: Language contains a string of exactly two lower case ascii letters
+        section["preferred-language"] = defaults["preferred-language"]
+
+
+def _validate_boolean(section, defaults, key):
+    try:
+        section.getboolean(key)
+    except ValueError:
+        section[key] = defaults[key]
