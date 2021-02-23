@@ -29,7 +29,7 @@ logger = get_logger(__name__)
 del get_logger
 
 
-class AddCardWidget(*inherits_from_ui_file_with_name("add_card_widget")):
+class AddCardWidget(*inherits_from_ui_file_with_name("horizontal_search_layout/add_card_widget")):
 
     card_added = pyqtSignal(mtg_proxy_printer.model.carddb.Card, int)
 
