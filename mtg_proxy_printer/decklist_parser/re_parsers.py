@@ -35,7 +35,6 @@ class GenericRegularExpressionDeckParser(ParserBase):
         super(GenericRegularExpressionDeckParser, self).__init__(card_db)
         self.parser = re.compile(regular_expression)
 
-
     def parse_deck(self, deck: typing.Union[pathlib.Path, str]) -> ParsedDeck:
         """
         Parse the given deck using the stored regular expression.
@@ -54,17 +53,27 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 # If the matcher doesn’t include language information, all cards are implicitly English printings
                 matched_card = self._match_card(match_dict)
                 if self.card_db.is_valid_and_unique_card(matched_card):
-                    self.card_db.add_missing_information(matched_card)
-                    cards[matched_card] += copies
-                    if self.add_opposing_face and (
-                            opposing_face := self.card_db.get_opposing_face(matched_card)) is not None:
-                        cards[opposing_face] += copies
+                    self._add_matched_card(cards, matched_card, copies)
+                elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
+                    self._add_matched_card(cards, matched_card, copies)
                 else:
                     unmatched_lines.append(line)
             elif line:
                 # Non-empty, non-matching lines
                 unmatched_lines.append(line)
         return cards, unmatched_lines
+
+    def _add_matched_card(self, cards: typing.Counter[Card], matched_card: Card, copies: int):
+        self.card_db.add_missing_information(matched_card)
+        cards[matched_card] += copies
+        if self.add_opposing_face and (
+                opposing_face := self.card_db.get_opposing_face(matched_card)) is not None:
+            cards[opposing_face] += copies
+
+    @staticmethod
+    def _remove_collector_number(card: Card) -> Card:
+        card.collector_number = None
+        return card
 
     def _match_card(self, match_dict: MatchType) -> Card:
         matched_name = self._match_name(match_dict)
@@ -124,7 +133,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase):
         super(MTGArenaParser, self).__init__(
             card_db,
-            r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\) (?P<collector_number>\d+)"
+            r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>\d+))?"
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
