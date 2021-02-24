@@ -232,7 +232,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot(int)
     def show_progress_bar(self, expected_total_item_count: int):
         self.progress_bar.reset()
-        self.progress_bar.setMinimum(0)
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
@@ -241,6 +240,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         importer.download_begins.connect(self.show_progress_bar)
         importer.download_finished.connect(self.progress_bar.hide)
         importer.download_progress.connect(self.progress_bar.setValue)
+
         # Don’t feed the progress value as flags to processEvents(), use a lambda to throw the value away
         app = QApplication.instance()
         importer.download_progress.connect(lambda _: app.processEvents())

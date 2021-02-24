@@ -20,7 +20,6 @@ import typing
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
-import mtg_proxy_printer.settings
 
 MatchType = typing.Dict[str, str]
 

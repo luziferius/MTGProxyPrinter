@@ -58,17 +58,14 @@ class CardInfoDownloader(QObject):
         logger.debug(f"Obtained url: {self.bulk_card_data_url}")
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _wrap_file_for_monitoring(self, file, expected_size_bytes):
-        metered_file = mtg_proxy_printer.metered_file.MeteredFile(file, expected_size_bytes)
-        metered_file.total_bytes_processed.connect(self.download_progress)
-        metered_file.io_begin.connect(self.download_begins)
-        metered_file.io_end.connect(self.download_finished)
-        return metered_file
+    def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
+        monitor.total_bytes_processed.connect(self.download_progress)
+        monitor.io_begin.connect(self.download_begins)
+        monitor.io_end.connect(self.download_finished)
 
-    @staticmethod
-    def get_scryfall_bulk_card_data_url(requested_item: str = "all_cards") -> str:
+    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
-        data, _ = read_from_url(BULK_DATA_API_END_POINT)
+        data, _ = read_from_url(BULK_DATA_API_END_POINT, self)
         with data:
             bulk_items = json.load(data)
             for item in bulk_items["data"]:
@@ -90,9 +87,11 @@ class CardInfoDownloader(QObject):
         """
         if url is None:
             url = self.bulk_card_data_url
-        file, size = read_from_url(url)
-        with self._wrap_file_for_monitoring(file, size) as data:
-            yield from self._read_json_card_data_from_open_file(data)
+        source, monitor = read_from_url(url, self)
+        self._connect_file_monitor(monitor)
+        # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
+        with source, monitor:
+            yield from self._read_json_card_data_from_open_file(source)
 
     def read_json_card_data(self, url_or_path: typing.Union[Path, str]):
         """
@@ -106,7 +105,9 @@ class CardInfoDownloader(QObject):
         """
         if isinstance(url_or_path, Path):
             file_size = url_or_path.stat().st_size
-            with self._wrap_file_for_monitoring(url_or_path.open("rb"), file_size) as file:
+            raw_file = url_or_path.open("rb")
+            with mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self) as file:
+                self._connect_file_monitor(file)
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
                 yield from self._read_json_card_data_from_open_file(file)
@@ -114,7 +115,9 @@ class CardInfoDownloader(QObject):
             yield from self.read_json_card_data_from_url(url_or_path)
         else:
             file_size = os.stat(url_or_path).st_size
-            with self._wrap_file_for_monitoring(open(url_or_path, "rb"), file_size) as file:
+            raw_file = open(url_or_path, "rb")
+            with mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self) as file:
+                self._connect_file_monitor(file)
                 yield from self._read_json_card_data_from_open_file(file)
 
     @staticmethod
@@ -155,7 +158,7 @@ class CardInfoDownloader(QObject):
         self.model.commit()
 
 
-def read_from_url(url: str):
+def read_from_url(url: str, parent: QObject = None):
     """
     Reads a given URL and returns a file-like object that can and should be used as a context manager.
     """
@@ -166,13 +169,14 @@ def read_from_url(url: str):
         raise RuntimeError(f"Error from server! Error code: {response_code}")
     encoding = response.info().get("Content-Encoding")
     size_bytes = int(response.info().get("Content-Length", "0"))
+    metered_reader = mtg_proxy_printer.metered_file.MeteredFile(response, size_bytes, parent)
     if encoding == "gzip":
-        data = gzip.open(response, "rb")
+        data = gzip.open(metered_reader, "rb")
     elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
-        data = response
+        data = metered_reader
     else:
         raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-    return data, size_bytes
+    return data, metered_reader
 
 
 @functools.lru_cache()

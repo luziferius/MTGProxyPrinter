@@ -39,7 +39,7 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
-MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
+MINIMUM_REFRESH_DELAY = datetime.timedelta(days=0)
 
 __all__ = [
     "Card",
