@@ -1,5 +1,10 @@
 # Changelog
 
+# Version 0.8.1 (2021-02-24)
+
+## Fixed issues
+
+- Fixed Crash on startup, if the card image cache is not present.
 
 # Version 0.8.0 (2021-02-24)
 

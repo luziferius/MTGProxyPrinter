@@ -102,8 +102,11 @@ class ImageDatabase(QObject):
 
 
 def _migrate_database(db_path: pathlib.Path):
+    if not db_path.exists():
+        db_path.mkdir(parents=True)
     if not (db_path/"version.txt").exists():
         for possible_dir in map("".join, itertools.product(string.hexdigits, string.hexdigits)):
             if (path := db_path/possible_dir).exists():
                 shutil.rmtree(path)
+
         (db_path/"version.txt").write_text("2")
