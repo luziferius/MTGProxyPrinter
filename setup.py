@@ -101,7 +101,7 @@ if __name__ == "__main__":
         test_suite="pytest",
         # list of classifiers: https://pypi.python.org/pypi?%3Aaction=list_classifiers
         classifiers=[
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 4 - Beta',
             'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
             'Environment :: X11 Applications :: Qt',
             'Environment :: Win32 (MS Windows)',

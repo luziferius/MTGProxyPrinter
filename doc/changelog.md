@@ -1,7 +1,7 @@
 # Changelog
 
 
-# Version 0.8.0 (in development)
+# Version 0.8.0 (2021-02-24)
 
 ## Changed features
 
