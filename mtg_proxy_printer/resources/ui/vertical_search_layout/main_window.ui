@@ -22,7 +22,7 @@
      <widget class="CurrentPageView" name="page_view" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>10</horstretch>
+        <horstretch>9</horstretch>
         <verstretch>4</verstretch>
        </sizepolicy>
       </property>
@@ -32,7 +32,7 @@
      <widget class="AddCardWidget" name="add_card_widget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>6</horstretch>
+        <horstretch>7</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -42,7 +42,7 @@
      <widget class="DocumentView" name="document_view">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>6</horstretch>
+        <horstretch>5</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
@@ -86,7 +86,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>30</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
