@@ -10,8 +10,8 @@
   including basic wildcard support. When a card name is selected from the suggestion list,
   a specific printing can be selected. The search selects a random printing as a suggestion by default 
   to speed up the process,  if the user doesn’t care about the specific printing used.
-  - The new search displays sets using their human readable English name.
-  - The search does not reset itself any more, when adding a card.
+  - The new search displays sets using their human-readable English name.
+  - The search does not reset itself anymore, when adding a card.
 - Added a setting to choose between a horizontal search area layout above the currently edited page and a
   vertical search area that sits between the page list and the currently edited page.
   - The horizontal layout resembles a traditional search bar, as used in other programs, looking more familiar
@@ -19,11 +19,13 @@
     and works better on widescreen monitors
   - Switching the layout requires an application restart.
 - The overview table showing the cards of the current page now shows the full, 
-  human readable English set name plus the short, three(-or-more)-letter set code,
+  human-readable English set name plus the short, three(-or-more)-letter set code,
   instead of showing only the cryptic set code.
 
 ## Fixed issues
 
+- Vastly improved accuracy of all download progress bars, especially for the card data download.
+- Prevent inserting damaged PNG files into the local image cache, if the image transfer is interrupted for any reason.
 - Improved deck list importer hit rate when importing MTG Arena deck lists from [tappedout.com](tappedout.com).
 - If manual editing of the configuration file causes a setting to have an invalid value, the default will be restored,
   instead of crashing the application while it tries to parse the invalid data.
@@ -34,7 +36,7 @@
 
 ## Fixed issues
 
-- Fixed bug that prevented MTGProxyPrinter from starting when it was installed.
+- Fixed a bug that prevented MTGProxyPrinter from starting when it was installed.
 
 # Version 0.7.0 (2012-02-18)
 
@@ -82,7 +84,7 @@
   If enabled, documents with more pages than the set limit will be exported as multiple PDF files.
   This can be used when exported PDFs exceed the printer’s internal file size limit.
 - Added document compacting: Completely fill partially filled pages by moving images from the end into free slots.
-  This may help reducing the page count and therefore reduce wasted paper when printing.
+  This may help reduce the page count and therefore reduce wasted paper when printing.
 - Lifted the limitations on the amount of card copies that can be added at once.
   It is now possible to add up to 99 copies of cards at once.
   If the added cards do not fit on the current page, any remaining copies are automatically put on new pages.
