@@ -23,8 +23,15 @@ so use the pre_find_module_path hook to generate it at the very beginning of the
 
 import atexit
 from pathlib import Path
+import sys
 
 from PyInstaller.utils.hooks import logger
+
+# Make sure to insert the checkout root to the path. Without this, the import below may find an installed version
+# instead of the checkout, if this program is already installed via pip. This is required to properly determine
+# the save path for the compiled resources.
+root_dir = str(Path(__file__).parent.parent.parent)
+sys.path.insert(0, root_dir)
 
 import mtg_proxy_printer.ui
 
