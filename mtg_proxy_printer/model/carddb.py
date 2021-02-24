@@ -39,7 +39,7 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
-MINIMUM_REFRESH_DELAY = datetime.timedelta(days=0)
+MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 
 __all__ = [
     "Card",
@@ -358,7 +358,7 @@ def clear_database(db: sqlite3.Connection):
     This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
     """
     # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
-    # leaves to roots. This allows SQLite to use the TRUNCATE optimization
+    # leaves to roots. This allows SQLite to possibly use the TRUNCATE optimization
     # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
     # the tables in a way that doesn’t break foreign keys during the process.
     tables_to_clear = [
