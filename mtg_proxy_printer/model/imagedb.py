@@ -84,12 +84,21 @@ class ImageDatabase(QObject):
             self._download_image(card, cache_file_path)
         return cache_file_path
 
-    def _download_image(self, card: Card, fs_path: pathlib.Path):
+    def _download_image(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
         source, monitor = mtg_proxy_printer.card_info_downloader.read_from_url(download_uri, self)
         self._connect_file_monitor(monitor)
-        with source, fs_path.open("wb") as file_in_cache:
-            shutil.copyfileobj(source, file_in_cache)
+        download_path = self.db_path / target_path.name
+        # Download to the root of the cache first. Move to the target only after downloading finished.
+        # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
+        # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
+        try:
+            with source, download_path.open("wb") as file_in_cache:
+                shutil.copyfileobj(source, file_in_cache)
+            shutil.move(download_path, target_path)
+        finally:
+            if download_path.is_file():
+                download_path.unlink()
 
 
 def _migrate_database(db_path: pathlib.Path):
