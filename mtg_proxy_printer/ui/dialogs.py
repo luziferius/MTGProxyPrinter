@@ -16,7 +16,7 @@
 import pathlib
 import sys
 
-from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel
+from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
@@ -131,6 +131,10 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
     def __init__(self, *args, **kwargs):
         super(AboutMTGProxyPrinterDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        self.about_text: QTextBrowser
+        formatted_about_text = self.about_text.toMarkdown().format(
+            application_name=mtg_proxy_printer.meta_data.PROGRAMNAME)
+        self.about_text.setMarkdown(formatted_about_text)
         self.mtg_proxy_printer_version_label: QLabel
         self.python_version_label: QLabel
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)

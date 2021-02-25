@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>719</width>
-    <height>361</height>
+    <width>744</width>
+    <height>427</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,10 +37,10 @@
        <string>About</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
-        <widget class="QLabel" name="mtg_proxy_printer_icon">
-         <property name="text">
-          <string/>
+       <item row="3" column="1" colspan="2">
+        <widget class="QLabel" name="python_version_label">
+         <property name="textInteractionFlags">
+          <set>Qt::TextSelectableByMouse</set>
          </property>
         </widget>
        </item>
@@ -48,6 +48,23 @@
         <widget class="QLabel" name="mtg_proxy_printer_name">
          <property name="text">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::NoTextInteraction</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="mtg_proxy_printer_icon">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="mtg_proxy_printer_version_header_label">
+         <property name="text">
+          <string>Version:</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::NoTextInteraction</set>
@@ -67,30 +84,54 @@
          </property>
         </spacer>
        </item>
-       <item row="1" column="0" colspan="3">
-        <widget class="QLabel" name="about_text">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;MTGProxyPrinter allows printing &lt;a href=&quot;https://magic.wizards.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;Magic: The Gathering&lt;/span&gt;&lt;/a&gt; cards for play-testing purposes.&lt;/p&gt;&lt;p&gt;Project Website: &lt;a href=&quot;http://1337net.duckdns.org:8080/MTGProxyPrinter&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;MTGProxyPrinter home page&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="openExternalLinks">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="mtg_proxy_printer_version_header_label">
-         <property name="text">
-          <string>Version:</string>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
-         </property>
-        </widget>
-       </item>
        <item row="3" column="0">
         <widget class="QLabel" name="python_version_header_label">
          <property name="text">
           <string>Python Version:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="3">
+        <widget class="QTextBrowser" name="about_text">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="markdown">
+          <string>{application_name} allows printing 
+[Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
+purposes.
+
+{application_name} is unofficial Fan Content permitted under the 
+[Fan Content Policy](https://company.wizards.com/fancontentpolicy). Not
+approved/endorsed by Wizards. Portions of the materials used are property of
+Wizards of the Coast. ©[Wizards of the Coast LLC](https://company.wizards.com/).
+
+Under the Fan Content Policy, you may neither sell the data downloaded using
+this program, including the card database content and downloaded card images,
+nor any documents created, both in digital and physical form.
+
+Project Website: 
+[{application_name} home page](http://1337net.duckdns.org:8080/MTGProxyPrinter)
+
+</string>
+         </property>
+         <property name="html">
+          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Noto Sans'; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;{application_name} allows printing &lt;a href=&quot;https://magic.wizards.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;Magic: The Gathering&lt;/span&gt;&lt;/a&gt; cards for play-testing purposes.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;{application_name} is unofficial Fan Content permitted under the &lt;a href=&quot;https://company.wizards.com/fancontentpolicy&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;Fan Content Policy&lt;/span&gt;&lt;/a&gt;. Not approved/endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. ©&lt;a href=&quot;https://company.wizards.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;Wizards of the Coast LLC&lt;/span&gt;&lt;/a&gt;.&lt;/p&gt;
+&lt;p style=&quot; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Under the Fan Content Policy, you may neither sell the data downloaded using this program, including the card database content and downloaded card images, nor any documents created, both in digital and physical form.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:6px; margin-bottom:6px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Project Website: &lt;a href=&quot;http://1337net.duckdns.org:8080/MTGProxyPrinter&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;{application_name} home page&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="openExternalLinks">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -109,26 +150,6 @@
           <set>Qt::TextSelectableByMouse</set>
          </property>
         </widget>
-       </item>
-       <item row="3" column="1" colspan="2">
-        <widget class="QLabel" name="python_version_label">
-         <property name="textInteractionFlags">
-          <set>Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="0" colspan="3">
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>
