@@ -107,7 +107,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
         if valid:
             card_name = current_model_index.data(Qt.DisplayRole)
             sets = self.card_database.find_sets_matching(card_name, self.current_language)
-            logger.debug(f'Selected card: "{card_name}", Language: {self.current_language}')
+            logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
             # Converts a recursive call structure into a sequential call structure, which is required here
             QTimer.singleShot(
@@ -117,6 +117,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     @pyqtSlot(QItemSelection)
     def on_set_name_list_selection_changed(self, current: QItemSelection):
+        logger.debug("Currently selected set changed.")
         self.collector_number_list: QListView
         if not current.indexes():
             self.collector_number_list.selectionModel().clearSelection()
@@ -125,9 +126,12 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
         valid = current_model_index.isValid()
         self.collector_number_box.setEnabled(valid)
         if valid:
+            set_abbr = current_model_index.data(Qt.EditRole)
             collector_numbers = self.card_database.find_collector_numbers_matching(
-                self.current_card_name, current_model_index.data(Qt.EditRole), self.current_language
+                self.current_card_name, set_abbr, self.current_language
             )
+            logger.debug(
+                f'Selected: "{set_abbr}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
             # Converts a recursive call structure into a sequential call structure, which is required here
             QTimer.singleShot(
@@ -150,6 +154,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     @pyqtSlot(str)
     def on_card_name_filter_updated(self, card_name_filter: str):
+        logger.debug(f'Card name filter changed to: "{card_name_filter}"')
         selected_card_name = self.current_card_name
         card_names = self.card_database.get_card_names(self.current_language, card_name_filter)
         self.card_name_model.setStringList(card_names)
@@ -165,6 +170,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     @pyqtSlot(str)
     def on_set_name_filter_updated(self, set_name_filter: str):
+        logger.debug(f'Set name/abbreviation filter changed to: "{set_name_filter}"')
         set_names = self.card_database.find_sets_matching(
             self.current_card_name, self.current_language, set_name_filter
         )
@@ -172,12 +178,14 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     @pyqtSlot(str)
     def on_language_combo_box_changed(self, new_language: str):
+        logger.info(f'Selected language changed to: "{new_language}"')
         card_names = self.card_database.get_card_names(new_language)
         self.card_name_model.setStringList(card_names)
         self.set_name_model.set_set_data([])
         self.set_name_box.setEnabled(False)
 
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
+        logger.info("Card database set.")
         self.card_database = card_db
         languages = self.card_database.get_all_languages()
         if not languages:
@@ -200,21 +208,27 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
             )
 
     def on_ok_button_triggered(self):
-        logger.debug("User clicked OK and adds a new card to the current page.")
+        logger.info("User clicked OK and adds a new card to the current page.")
         card = self._create_new_card()
         self.card_database.add_missing_information(card)
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
+        logger.debug(f"Adding {copies}× [{card.set_abbr}:{card.collector_number}] {card.name}")
         self.card_added.emit(card, copies)
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
         )
         if add_opposing_faces_enabled and (
                 opposing_face := self.card_database.get_opposing_face(card)) is not None:
+            logger.info(
+                "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
+            logger.debug(
+                f"Adding {copies}× [{opposing_face.set_abbr}:{opposing_face.collector_number}] {opposing_face.name}")
             self.card_added.emit(opposing_face, copies)
 
     @pyqtSlot()
     def reset(self):
+        logger.info("User hit the Reset button, resetting…")
         self.card_name_list: QListView
         self.collector_number_list.clearSelection()
         self.collector_number_model.setStringList([])
