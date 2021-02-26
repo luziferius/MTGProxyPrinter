@@ -48,6 +48,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
         self.setupUi(self)
         self.about_dialog = AboutMTGProxyPrinterDialog(self)
         self.progress_bar = self._create_progress_bar()

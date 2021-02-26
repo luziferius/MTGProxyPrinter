@@ -58,4 +58,5 @@ class Application(QApplication):
     def shutdown(self):
         logger.info("About to exit.")
         self.closeAllWindows()
+        logger.debug("All windows closed. Calling quit()")
         self.quit()

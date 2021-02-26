@@ -36,6 +36,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
+        logger.debug(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.language_model = self._setup_language_combo_box()
@@ -95,6 +96,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     @pyqtSlot(QItemSelection)
     def on_card_name_list_selection_changed(self, current: QItemSelection):
+        logger.info("Currently selected card changed.")
         self.set_name_list: QListView
         if not current.indexes():
             self.set_name_list.selectionModel().clearSelection()
@@ -103,10 +105,9 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
         valid = current_model_index.isValid()
         self.set_name_box.setEnabled(valid)
         if valid:
-            sets = self.card_database.find_sets_matching(
-                current_model_index.data(Qt.DisplayRole),
-                self.current_language
-            )
+            card_name = current_model_index.data(Qt.DisplayRole)
+            sets = self.card_database.find_sets_matching(card_name, self.current_language)
+            logger.debug(f'Selected card: "{card_name}", Language: {self.current_language}')
             self.set_name_model.set_set_data(sets)
             # Converts a recursive call structure into a sequential call structure, which is required here
             QTimer.singleShot(

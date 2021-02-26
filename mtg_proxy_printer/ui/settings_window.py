@@ -70,12 +70,14 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         super(SettingsWindow, self).show()
 
     def load_settings(self, settings: configparser.ConfigParser):
+        logger.debug("Loading the settings")
         self._load_look_and_feel_settings(settings)
         self._load_images_settings(settings)
         self._load_download_settings(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
         self._load_debug_settings(settings)
+        logger.debug("Fisished loading settings")
 
     def _load_look_and_feel_settings(self, settings):
         self.add_card_widget_style_combo_box: QComboBox
@@ -189,6 +191,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._save_documents_settings()
         self._save_save_path_settings()
         self._save_debug_settings()
+        logger.debug("Settings read from UI widgets, about to write the configuration to disk.")
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
         logger.debug("Save finished.")
