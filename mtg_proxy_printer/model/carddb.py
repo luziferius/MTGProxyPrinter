@@ -207,9 +207,18 @@ class CardDatabase:
         if not result or cursor.fetchone():
             raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
         card.name, card.set_abbr, card.set_name, card.collector_number, \
-        card.image_uri, card.scryfall_id, card.is_front = result
+            card.image_uri, card.scryfall_id, card.is_front = result
 
-    def find_collector_numbers_matching(self,  card_name: str, set_abbr: str, language: str) -> StringList:
+    def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
+        """
+        Finds all collector numbers matching the given card. The result contains multiple elements, if the card
+        had multiple variants with distinct collector numbers in the given set.
+
+        :param card_name: Card name, matched exactly
+        :param set_abbr: Set abbreviation, matched exactly
+        :param language: Card language, matched exactly
+        :return: Naturally sorted list of collector numbers, i.e. "2" before "10".
+        """
         query = 'SELECT collector_number -- find_collector_numbers_matching()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
@@ -222,6 +231,15 @@ class CardDatabase:
 
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[typing.Tuple[str, str]]:
+        """
+        Finds all matching sets that the given card was printed in.
+
+        :param card_name: Card name, matched exactly
+        :param language: card language, matched exactly
+        :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
+          Used as a LIKE pattern, supporting SQLite wildcards.
+        :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
+        """
         query = 'SELECT DISTINCT "set", set_name  -- find_sets_matching()\n' \
                 'FROM "Set"\n' \
                 'JOIN CardFace USING (set_id)\n' \
