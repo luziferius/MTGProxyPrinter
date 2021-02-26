@@ -34,20 +34,20 @@ class Application(QApplication):
     def __init__(self, argv: typing.List[str] = None):
         if argv is None:
             argv = sys.argv
-        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+            logger.info("Starting MTGProxyPrinter")
         super(Application, self).__init__(argv)
-        logger.info("Starting MTGProxyPrinter")
+        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
 
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.card_db)
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             self.main_window.language_model, self.main_window)
-        self.settings_window.hide()
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.settings_window.saved.connect(self.main_window.settings_changed)
 
         self.main_window.show()
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         if not self.card_db.has_data():
+            logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
         logger.debug("Initialisation done. Starting event loop.")
