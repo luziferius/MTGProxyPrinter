@@ -139,5 +139,3 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.python_version_label: QLabel
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.python_version_label.setText(sys.version.replace("\n", " "))
-
-

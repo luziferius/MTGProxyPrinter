@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
@@ -41,6 +42,9 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
         self.add_card_widget_style_combo_box.addItem("Vertical layout", "vertical")
+
+        self.log_level_combo_box: QComboBox
+        self.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
 
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
@@ -71,6 +75,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_download_settings(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
+        self._load_debug_settings(settings)
 
     def _load_look_and_feel_settings(self, settings):
         self.add_card_widget_style_combo_box: QComboBox
@@ -111,6 +116,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
+
+    def _load_debug_settings(self, settings: configparser.ConfigParser):
+        section = settings["debug"]
+        for widget, setting in self._get_debug_settings_checkbox_widgets():
+            widget.setChecked(section.getboolean(setting))
+        self.log_level_combo_box: QComboBox
+        self.log_level_combo_box.setCurrentIndex(self.log_level_combo_box.findText(section["log-level"]))
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
@@ -153,6 +165,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         return widgets_with_settings
 
+    def _get_debug_settings_checkbox_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.enable_cutelog_integration, "cutelog-integration"),
+            (self.enable_write_log_file, "write-log-file")
+        ]
+        return widgets_with_settings
+
     def reset(self):
         logger.info("User reverts the made changes.")
         self.load_settings(mtg_proxy_printer.settings.settings)
@@ -169,6 +188,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._save_downloads_settings()
         self._save_documents_settings()
         self._save_save_path_settings()
+        self._save_debug_settings()
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
         logger.debug("Save finished.")
@@ -202,6 +222,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
+
+    def _save_debug_settings(self):
+        debug_section = mtg_proxy_printer.settings.settings["debug"]
+        for widget, setting in self._get_debug_settings_checkbox_widgets():
+            debug_section[setting] = str(widget.isChecked())
+        self.log_level_combo_box: QComboBox
+        debug_section["log-level"] = self.log_level_combo_box.currentText()
 
     def restore_defaults(self):
         logger.info("User resets the configuration to the default settings.")
