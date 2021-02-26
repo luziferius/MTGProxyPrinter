@@ -14,8 +14,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import logging
 import pathlib
 import re
+import typing
 
 import mtg_proxy_printer.meta_data
 
@@ -78,7 +80,13 @@ DEFAULT_SETTINGS["default-save-paths"] = {
 DEFAULT_SETTINGS["gui"] = {
     "search-widget-layout": "horizontal",
 }
-VALID_SEARCH_WIDGET_LAYOUTS= {"horizontal", "vertical"}
+VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
+DEFAULT_SETTINGS["debug"] = {
+    "cutelog-integration": "False",
+    "write-log-file": "True",
+    "log-level": "INFO"
+}
+VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 
 
 def read_settings_from_file():
@@ -119,6 +127,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
     _validate_gui_section(read_settings["gui"])
+    _validate_debug_section(read_settings["debug"])
 
 
 def _validate_download_section(section: configparser.SectionProxy):
@@ -147,9 +156,9 @@ def _validate_documents_section(section: configparser.SectionProxy):
         _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties
     available_height = section.getint("paper-height-mm") - \
-                       (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
+        (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
     available_width = section.getint("paper-width-mm") - \
-                      (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
+        (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
     if available_height < CARD_HEIGHT:
         # Can not fit a single card on a page
@@ -164,9 +173,9 @@ def _validate_documents_section(section: configparser.SectionProxy):
 
     # Re-calculate, if width or height was reset
     available_height = section.getint("paper-height-mm") - \
-                       (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
+        (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
     available_width = section.getint("paper-width-mm") - \
-                      (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
+        (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
     if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - CARD_HEIGHT):
         # Prevent vertical spacing from overlapping with bottom margin
@@ -178,9 +187,14 @@ def _validate_documents_section(section: configparser.SectionProxy):
 
 def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
-    key = "search-widget-layout"
-    if section[key] not in VALID_SEARCH_WIDGET_LAYOUTS:
-        section[key] = defaults[key]
+    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
+
+
+def _validate_debug_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["debug"]
+    _validate_boolean(section, defaults, "cutelog-integration")
+    _validate_boolean(section, defaults, "write-log-file")
+    _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
 
 
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
@@ -195,6 +209,14 @@ def _validate_non_negative_int(section: configparser.SectionProxy, defaults: con
         if section.getint(key) < 0:
             raise ValueError
     except ValueError:
+        section[key] = defaults[key]
+
+
+def _validate_string_is_in_set(
+        section: configparser.SectionProxy, defaults: configparser.SectionProxy,
+        valid_options: typing.Set[str], key: str):
+    """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
+    if section[key] not in valid_options:
         section[key] = defaults[key]
 
 
