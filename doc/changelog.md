@@ -1,10 +1,27 @@
 # Changelog
 
+# Version <next> (in development)
+
+
+
+## Changed Features
+
+- Added some more information to the About dialog window and re-designed the information display.
+
+## Fixed issues
+
+- Fixed the PyInstaller Hooks.
+  It is now possible to build a PyInstaller bundle, even if the application is installed via pip.
+
+
 # Version 0.8.1 (2021-02-24)
 
 ## Fixed issues
 
 - Fixed Crash on startup, if the card image cache is not present.
+- Make sure to not install the PyInstaller hooks in the user’s Python `site-packages`, when installing via pip.
+  In previous versions, these files were placed there unintentionally. These don’t do anything outside of PyInstaller
+  and only pollute the `site-packages` directory.
 
 # Version 0.8.0 (2021-02-24)
 
@@ -31,7 +48,7 @@
 
 - Vastly improved accuracy of all download progress bars, especially for the card data download.
 - Prevent inserting damaged PNG files into the local image cache, if the image transfer is interrupted for any reason.
-- Improved deck list importer hit rate when importing MTG Arena deck lists from [tappedout.com](tappedout.com).
+- Improved deck list importer hit rate when importing MTG Arena deck lists from [tappedout.com](https://tappedout.com).
 - If manual editing of the configuration file causes a setting to have an invalid value, the default will be restored,
   instead of crashing the application while it tries to parse the invalid data.
 - Fixed missing icons in the deck list import wizard when used on Windows 
