@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import faulthandler
 import logging
 import logging.handlers
 import pathlib
@@ -36,7 +37,6 @@ def get_logger(full_module_path: str) -> logging.Logger:
 def configure_root_logger():
     """
     Initialize the logging system.
-    :param args: Namespace object, parsed command line arguments
     """
     debug_settings = mtg_proxy_printer.settings.settings["debug"]
     file_log_level = debug_settings["log-level"]
@@ -55,3 +55,6 @@ def configure_root_logger():
             log_dir.mkdir(parents=True)
         file_handler = logging.handlers.TimedRotatingFileHandler(log_file_path, "D", 10, delay=True)
         root_logger.addHandler(file_handler)
+    crash_log_path = pathlib.Path(data_directories.user_log_dir, f"{PROGRAMNAME}-crashes.log")
+    # Not closing the file at all to catch segmentation faults occurring at application exit.
+    faulthandler.enable(crash_log_path.open("at"))
