@@ -55,6 +55,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("load_list_page")):
         self.deck_list_browse_button: QPushButton
         if self.deck_list_browse_button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
             self.deck_list_browse_button.setIcon(load_icon("document-open.svg"))
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
     def on_deck_list_browse_button_clicked(self):
@@ -97,6 +98,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
         self.parser = None
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self, "parser")
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
     def isComplete(self) -> bool:
@@ -152,6 +154,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
         self.should_replace_document: QCheckBox
         if self.should_replace_document.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
             self.should_replace_document.setIcon(load_icon("edit-delete.svg"))
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
@@ -180,6 +183,7 @@ class DeckImportWizard(QWizard):
         self.addPage(LoadListPage())
         self.addPage(SummaryPage())
         self.setWindowTitle("Import a deck list")
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
         logger.info("User finished the import wizard, performing the requested actions")
