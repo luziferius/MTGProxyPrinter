@@ -65,12 +65,15 @@ class CardInfoDownloader(QObject):
 
     def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
+        logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = read_from_url(BULK_DATA_API_END_POINT, self)
         with data:
             bulk_items = json.load(data)
             for item in bulk_items["data"]:
                 if item["type"] == requested_item:
-                    return item["download_uri"]
+                    result = item["download_uri"]
+                    logger.debug(f"Bulk data located at: {result}")
+                    return result
             raise RuntimeError(
                 "URL to the Scryfall bulk data export not found. "
                 "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
@@ -129,6 +132,7 @@ class CardInfoDownloader(QObject):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
+        logger.info("About to populate the database with card data")
         self.model.db.execute("BEGIN TRANSACTION\n")
         clear_database(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
@@ -136,26 +140,30 @@ class CardInfoDownloader(QObject):
             key: ds.getboolean(key)
             for key in ds.keys()
         }
+        skipped_cards = 0
+        index = 0
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
             if _should_skip_card(card, download_enabled):
-                logger.debug(
-                    f"Skipping card '{card['name']}', because it matches a download filter.")
+                skipped_cards += 1
                 continue
             language_id = _insert_language(self.model, card["lang"])
             card_id = _insert_card(self.model, card)
             set_id = _insert_set(self.model, card)
             _insert_card_faces(self.model, card, language_id, card_id, set_id)
-            if not index % 1000:
+            if not index % 10000:
+                logger.debug(f"Imported {index} cards.")
                 self.model.db.execute("PRAGMA optimize\n")
+        logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
         self.model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
+        logger.info(f"Finished import with {index} imported cards.")
 
 
 def read_from_url(url: str, parent: QObject = None):

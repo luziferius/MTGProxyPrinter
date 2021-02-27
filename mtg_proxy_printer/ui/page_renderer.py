@@ -20,6 +20,9 @@ import pint
 
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Page, Document
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
@@ -38,9 +41,11 @@ class PageScene(QGraphicsScene):
         super(PageScene, self).__init__(*args, **kwargs)
         self.background = None
         self.draw_background = draw_background
+        logger.info(f"Created {self.__class__.__name__} instance. Drawing background: {self.draw_background}")
 
     @pyqtSlot(QModelIndex, QModelIndex)
     def draw_cards(self, first_index: QModelIndex, last_index: QModelIndex):
+        logger.info(f"Drawing cards: Indices {first_index.row()} to {last_index.row()}")
         # Qt includes the last element and Python excludes it, so add one to the range maximum.
         for row in range(first_index.row(), last_index.row()+1):
             index = first_index.sibling(row, first_index.column())
@@ -52,9 +57,11 @@ class PageScene(QGraphicsScene):
 
     @pyqtSlot()
     def redraw(self):
+        logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
         if self.draw_background:
             white = QColor("white")
+            logger.debug(f"Drawing background rectangle")
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
         if settings["documents"].getboolean("print-cut-marker"):
             self._draw_cut_markers()
@@ -87,6 +94,7 @@ class PageScene(QGraphicsScene):
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
         line_color = QColor("black")
+        logger.info(f"Drawing cut markers")
         document = self.get_document()
         self._draw_vertical_markers(document, line_color)
         self._draw_horizontal_markers(document, line_color)
@@ -105,6 +113,7 @@ class PageScene(QGraphicsScene):
             if document.image_spacing_horizontal:
                 offset = 1 + PageScene.IMAGE_WIDTH * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
+        logger.debug(f"Vertical cut markers drawn")
 
     def _draw_horizontal_markers(self, document, line_color):
         scaling_vertical = self.height() / document.page_height
@@ -120,6 +129,7 @@ class PageScene(QGraphicsScene):
             if document.image_spacing_vertical:
                 offset = 1 + PageScene.IMAGE_HEIGHT * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
+        logger.debug(f"Horizontal cut markers drawn")
 
     def _draw_vertical_line(self, column_px: int, line_color: QColor):
         self.addLine(column_px, 0, column_px, self.height(), line_color)
@@ -135,12 +145,16 @@ class PageRenderer(QGraphicsView):
         self.page = None
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.setScene(PageScene(True, self.get_document_page_size(), self))
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot(Page)
     def set_page(self, page: Page):
         if page is None:
+            logger.info("Setting page to None, clearing the view.")
             self.scene().clear()
+            self.page = page
         else:
+            logger.info("Switching page, updating the signal connection, then redrawing.")
             if self.page is not None:
                 self.page.dataChanged.disconnect(self.scene().draw_cards)
             self.page = page
@@ -163,4 +177,5 @@ class PageRenderer(QGraphicsView):
 
     @pyqtSlot()
     def on_resize_event_triggered(self):
+        logger.debug("Resize event: Scaling the page view to fit.")
         self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)

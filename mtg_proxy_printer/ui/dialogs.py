@@ -62,7 +62,6 @@ class SavePDFDialog(QFileDialog):
             path = self.selectedFiles()[0]
             mtg_proxy_printer.print.export_pdf(self.document, path, self)
             logger.info(f"Saved document to {path}")
-
         else:
             logger.debug("User aborted saving to PDF. Doing nothing.")
         return result
@@ -139,5 +138,4 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.python_version_label: QLabel
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.python_version_label.setText(sys.version.replace("\n", " "))
-
-
+        logger.info(f"Created {self.__class__.__name__} instance.")

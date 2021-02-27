@@ -16,6 +16,7 @@
 
 # Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
+import mtg_proxy_printer.logger
 import mtg_proxy_printer.application
 
 
@@ -27,6 +28,7 @@ _app = None
 
 def main():
     global _app
+    mtg_proxy_printer.logger.configure_root_logger()
     _app = mtg_proxy_printer.application.Application()
 
 

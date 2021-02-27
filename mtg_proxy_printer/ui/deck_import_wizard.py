@@ -25,6 +25,9 @@ from mtg_proxy_printer.decklist_parser import re_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Page
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, load_icon
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 
 class IsRegularExpressionValidator(QValidator):
@@ -52,18 +55,22 @@ class LoadListPage(*inherits_from_ui_file_with_name("load_list_page")):
         self.deck_list_browse_button: QPushButton
         if self.deck_list_browse_button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
             self.deck_list_browse_button.setIcon(load_icon("document-open.svg"))
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
     def on_deck_list_browse_button_clicked(self):
+        logger.info("User selects a deck list from disk")
         self.deck_list: QPlainTextEdit
         if not self.deck_list.toPlainText() \
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
                         "Selecting a file will overwrite the existing deck list. Continue?",
                         QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
             selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file")
             if selected_file:
+                logger.debug("Selected file is valid, loading it from disk, replacing the current deck list")
                 self.deck_list.clear()
                 with open(selected_file, "rt") as opened_file:
                     self.deck_list.setPlainText(opened_file.read())
@@ -91,6 +98,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
         self.parser = None
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self, "parser")
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
     def isComplete(self) -> bool:
@@ -127,6 +135,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
         # TODO: Despite working, this emits a warning “QWizard::setField: Couldn't write to property 'parser'”.
         #  Research the cause and try to fix this.
         self.setField("selected_parser", self.get_parser())
+        logger.info(f"User selected parser: {self.field('selected_parser').__class__.__name__}")
         return super(SelectDeckParserPage, self).validatePage()
 
 
@@ -145,6 +154,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
         self.should_replace_document: QCheckBox
         if self.should_replace_document.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
             self.should_replace_document.setIcon(load_icon("edit-delete.svg"))
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
@@ -173,12 +183,17 @@ class DeckImportWizard(QWizard):
         self.addPage(LoadListPage())
         self.addPage(SummaryPage())
         self.setWindowTitle("Import a deck list")
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
+        logger.info("User finished the import wizard, performing the requested actions")
         super(DeckImportWizard, self).accept()
         if self.field("should_replace_document"):
+            logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
         deck: typing.Counter[Card] = self.field("parsed_deck")
+        # len(deck) only counts keys, use sum(deck.values()) include duplicates
+        logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         for card, count in deck.items():
             self.card_added.emit(card, count)
 

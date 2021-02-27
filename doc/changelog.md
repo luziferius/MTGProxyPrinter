@@ -1,8 +1,11 @@
 # Changelog
 
+
 # Version <next> (in development)
 
+## Added Features
 
+- Configurable application logging for debugging purposes
 
 ## Changed Features
 
@@ -10,8 +13,8 @@
 
 ## Fixed issues
 
-- Fixed the PyInstaller Hooks.
-  It is now possible to build a PyInstaller bundle, even if the application is installed via pip.
+- Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 
+  via pip.
 
 
 # Version 0.8.1 (2021-02-24)
@@ -22,6 +25,7 @@
 - Make sure to not install the PyInstaller hooks in the user’s Python `site-packages`, when installing via pip.
   In previous versions, these files were placed there unintentionally. These don’t do anything outside of PyInstaller
   and only pollute the `site-packages` directory.
+
 
 # Version 0.8.0 (2021-02-24)
 
@@ -60,6 +64,7 @@
 
 - Fixed a bug that prevented MTGProxyPrinter from starting when it was installed.
 
+
 # Version 0.7.0 (2012-02-18)
 
 ## Implemented features
@@ -76,6 +81,7 @@
 - Fixed that when the current page overflows, each card batch got added to a completely new page,
   even if the next pages had free slots. Now, free slots on pages after the currently viewed page are used up,
   before adding new pages.
+
 
 # Version 0.6.0 (2021-02-17)
 
@@ -97,6 +103,7 @@
 ## Fixed issues
 
 - Properly remove trailing, empty pages when compacting a document.
+
 
 # Version 0.5.0 (2021-02-15)
 

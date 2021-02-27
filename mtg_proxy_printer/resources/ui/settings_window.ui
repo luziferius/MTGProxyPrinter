@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>568</width>
-    <height>521</height>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -209,6 +209,52 @@ Uncheck to disable this automatism.</string>
             <property name="icon">
              <iconset theme="document-open">
               <normaloff>.</normaloff>.</iconset>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Debug settings</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_5">
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="enable_cutelog_integration">
+            <property name="toolTip">
+             <string>Cutelog is a live log event viewer that can be used to monitor events in real-time.</string>
+            </property>
+            <property name="whatsThis">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="text">
+             <string>Enable Cutelog integration</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QComboBox" name="log_level_combo_box">
+            <property name="toolTip">
+             <string>Only write events with the given severity level and higher to the log file.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="log_level_label">
+            <property name="text">
+             <string>Event severity that gets logged to file:</string>
+            </property>
+            <property name="buddy">
+             <cstring>log_level_combo_box</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QCheckBox" name="enable_write_log_file">
+            <property name="text">
+             <string>Enable writing a log file to disk</string>
             </property>
            </widget>
           </item>
@@ -715,6 +761,9 @@ These are not tournament legal.</string>
   <tabstop>document_save_path_browse_button</tabstop>
   <tabstop>pdf_save_path</tabstop>
   <tabstop>pdf_save_path_browse_button</tabstop>
+  <tabstop>enable_cutelog_integration</tabstop>
+  <tabstop>enable_write_log_file</tabstop>
+  <tabstop>log_level_combo_box</tabstop>
   <tabstop>print_cut_marker</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
   <tabstop>page_height</tabstop>
@@ -750,8 +799,8 @@ These are not tournament legal.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>266</x>
-     <y>514</y>
+     <x>272</x>
+     <y>654</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -766,8 +815,8 @@ These are not tournament legal.</string>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>334</x>
-     <y>514</y>
+     <x>340</x>
+     <y>654</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
