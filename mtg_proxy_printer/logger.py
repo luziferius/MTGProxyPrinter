@@ -41,10 +41,10 @@ def configure_root_logger():
     debug_settings = mtg_proxy_printer.settings.settings["debug"]
     file_log_level = debug_settings["log-level"]
     root_logger.setLevel(1)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(file_log_level)
-    handler.setFormatter(logging.Formatter(LOG_FORMAT))
-    root_logger.addHandler(handler)
+    std_out_handler = logging.StreamHandler(sys.stdout)
+    std_out_handler.setLevel(file_log_level)
+    std_out_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    root_logger.addHandler(std_out_handler)
     if debug_settings.getboolean("cutelog-integration"):
         socket_handler = logging.handlers.SocketHandler("127.0.0.1", 19996)  # default listening address
         root_logger.addHandler(socket_handler)
@@ -54,6 +54,7 @@ def configure_root_logger():
         if not (log_dir := log_file_path.parent).exists():
             log_dir.mkdir(parents=True)
         file_handler = logging.handlers.TimedRotatingFileHandler(log_file_path, "D", 10, delay=True)
+        file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
         root_logger.addHandler(file_handler)
     crash_log_path = pathlib.Path(data_directories.user_log_dir, f"{PROGRAMNAME}-crashes.log")
     # Not closing the file at all to catch segmentation faults occurring at application exit.
