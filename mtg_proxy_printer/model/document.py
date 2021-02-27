@@ -27,6 +27,10 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.settings import settings
+from mtg_proxy_printer.logger import get_logger
+
+logger = get_logger(__name__)
+del get_logger
 
 CardList = typing.List[Card]
 unit_registry = pint.UnitRegistry()
@@ -321,26 +325,8 @@ class Document(QAbstractListModel):
 
     def load_from_disk(self, path: pathlib.Path, card_db: CardDatabase, image_db: ImageDatabase):
         self.file_path = path
-        with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
-                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            else:
-                query = r"""SELECT page, slot, scryfall_id, is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            data: typing.List[typing.Tuple[int, int, str, bool]] = [
-                (page, slot, scryfall_id, bool(is_front))
-                for page, slot, scryfall_id, is_front in db.execute(query)
-            ]
-        if self.pages:
-            self.beginRemoveRows(QModelIndex(), 0, self.rowCount())
-            for page in self.pages:
-                page.dataChanged.disconnect(self.on_page_data_changed)
-            self.pages.clear()
-            self.endRemoveRows()
+        data = self._read_data_from_save_path(path)
+        self.clear()
         current_page = -1
         for page_number, slot, scryfall_id, is_front in data:
             if current_page != page_number:
@@ -354,6 +340,24 @@ class Document(QAbstractListModel):
             card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
             image_db.get_image(card)
             page.add_card(card)
+
+    def _read_data_from_save_path(self, save_file_path: pathlib.Path):
+        logger.info("Reading data from save file")
+        with mtg_proxy_printer.sqlite_helpers.open_database(
+                save_file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
+            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            else:
+                query = r"""SELECT page, slot, scryfall_id, is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            data: typing.List[typing.Tuple[int, int, str, bool]] = [
+                (page, slot, scryfall_id, bool(is_front))
+                for page, slot, scryfall_id, is_front in db.execute(query)
+            ]
+        return data
 
     def save_as(self, path: pathlib.Path):
         self.file_path = path
@@ -480,6 +484,7 @@ class Document(QAbstractListModel):
 
     @pyqtSlot()
     def clear(self):
+        logger.info("Clearing current document")
         self.remove_pages(list(map(
             self.createIndex,
             range(self.rowCount()),
