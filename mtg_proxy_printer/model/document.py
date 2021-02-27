@@ -20,8 +20,8 @@ import typing
 
 import delegateto
 import pint
-from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, QThread
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, \
+    QThread
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
@@ -472,6 +472,9 @@ class DocumentLoader(QObject):
             super(DocumentLoader.Worker, self).__init__(None)
             self.card_db = card_db
             self.image_loader = ImageDownloader(image_db, self)
+            self.image_loader.card_download_starting.connect(image_db.card_download_starting)
+            self.image_loader.card_download_finished.connect(image_db.card_download_finished)
+            self.image_loader.card_download_progress.connect(image_db.card_download_progress)
             self.document = document
             self.data = []
 
