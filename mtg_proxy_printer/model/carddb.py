@@ -112,12 +112,14 @@ class CardDatabase:
             return True
 
     def get_all_languages(self) -> StringList:
-        result = [lang for (lang,) in self.db.execute(
+        logger.debug("Reading all known languages")
+        result = [lang for lang, in self.db.execute(
             "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n")]
         return result
 
     def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
         """Returns a list with all card names in the given language."""
+        logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query = r"""SELECT card_name -- get_card_names()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
@@ -331,9 +333,15 @@ class CardDatabase:
 
 
 def migrate_card_database(db: sqlite3.Connection):
-    schema_version = db.execute("PRAGMA user_version").fetchone()[0]
+    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
+    if needs_update:
+        logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
+    else:
+        logger.info("Database schema recent, not running any database migrations")
+
     if db.execute("PRAGMA user_version").fetchone()[0] == 9:
+        logger.info("Running migration for schema version 9")
         # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
         # the database using fresh data from Scryfall.
         db.execute("BEGIN TRANSACTION")
@@ -352,6 +360,7 @@ def migrate_card_database(db: sqlite3.Connection):
         db.commit()
         db.execute("PRAGMA user_version = 10")
     if db.execute("PRAGMA user_version").fetchone()[0] == 10:
+        logger.info("Running migration for schema version 10")
         db.execute("BEGIN TRANSACTION")
         db.execute("DROP VIEW AllPrintings")
         db.execute(textwrap.dedent(r"""
@@ -364,10 +373,13 @@ def migrate_card_database(db: sqlite3.Connection):
           JOIN Card USING (card_id)
           JOIN PrintLanguage USING(language_id)
         ;"""))
-
         db.execute('CREATE INDEX CardFace_card_id_index ON CardFace (card_id)')
         db.commit()
         db.execute("PRAGMA user_version = 11")
+
+    if needs_update:
+        current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
+        logger.info(f"Finished database migrations. {current_schema_version=},")
 
 
 def clear_database(db: sqlite3.Connection):
@@ -379,6 +391,7 @@ def clear_database(db: sqlite3.Connection):
     # leaves to roots. This allows SQLite to possibly use the TRUNCATE optimization
     # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
     # the tables in a way that doesn’t break foreign keys during the process.
+    logger.info("Clearing current database content")
     tables_to_clear = [
         "CardFace",
         "FaceName",
@@ -387,4 +400,5 @@ def clear_database(db: sqlite3.Connection):
         "PrintLanguage",
     ]
     for table in tables_to_clear:
+        logger.debug(f"Clearing table {table}")
         db.execute(f"DELETE FROM {table}\n")

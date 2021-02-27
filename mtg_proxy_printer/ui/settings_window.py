@@ -77,7 +77,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
         self._load_debug_settings(settings)
-        logger.debug("Fisished loading settings")
+        logger.debug("Finished loading settings")
 
     def _load_look_and_feel_settings(self, settings):
         self.add_card_widget_style_combo_box: QComboBox

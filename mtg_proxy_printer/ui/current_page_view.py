@@ -45,6 +45,7 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.current_page_changed.connect(lambda: self.page_card_table_view.setColumnHidden(4, True))
         self.current_page_changed.connect(self.page_renderer.set_page)
         self.settings_changed.connect(self.page_renderer.scene().redraw)
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot(mtg_proxy_printer.model.document.Page)
     def _on_current_page_changed(self, page: mtg_proxy_printer.model.document.Page):

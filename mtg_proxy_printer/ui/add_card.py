@@ -213,7 +213,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
         self.card_database.add_missing_information(card)
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
-        logger.debug(f"Adding {copies}× [{card.set_abbr}:{card.collector_number}] {card.name}")
+        self._log_added_card(card, copies)
         self.card_added.emit(card, copies)
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
@@ -222,9 +222,12 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
                 opposing_face := self.card_database.get_opposing_face(card)) is not None:
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
-            logger.debug(
-                f"Adding {copies}× [{opposing_face.set_abbr}:{opposing_face.collector_number}] {opposing_face.name}")
+            self._log_added_card(opposing_face, copies)
             self.card_added.emit(opposing_face, copies)
+
+    @staticmethod
+    def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):
+        logger.debug(f"Adding {copies}× [{card.set_abbr}:{card.collector_number}] {card.name}")
 
     @pyqtSlot()
     def reset(self):

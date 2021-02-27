@@ -23,6 +23,9 @@ import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 __all__ = [
     "export_pdf",
@@ -32,8 +35,12 @@ __all__ = [
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
     pages_to_print = settings["documents"].getint("pdf-page-count-limit") or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
+        logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
-    for document_index in range(math.ceil(document.rowCount()/pages_to_print)):
+    logger.info(f'Exporting document with {document.rowCount()} pages as PDF to "{file_path}"')
+    total_documents = math.ceil(document.rowCount()/pages_to_print)
+    for document_index in range(total_documents):
+        logger.info(f"Creating PDF ({document_index+1}/{total_documents+1}) with {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
 
@@ -59,8 +66,10 @@ class PDFPrinter(QPdfWriter):
         # PageScene reads the Page instance from the parent QObject. So store it here before starting any rendering
         self.page = None
         self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def print_document(self):
+        logger.info("Begin rendering PDF document.")
         self.painter.begin(self)
         # Prevent quality loss by re-compressing the source images
         self.painter.setRenderHint(QPainter.LosslessImageRendering)
@@ -74,9 +83,11 @@ class PDFPrinter(QPdfWriter):
         pages_to_process = self.document.pages[first_index:last_index]
         page_count = len(pages_to_process)
         for index, page in enumerate(pages_to_process, start=1):
+            logger.debug(f"Rendering page {index}/{page_count}")
             self.page = page
             self.scene.redraw()
             self.scene.render(self.painter)
             if index < page_count:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()
+        logger.info("Writing document finished.")

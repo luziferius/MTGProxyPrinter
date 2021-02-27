@@ -79,6 +79,7 @@ def load_icon(name: str) -> QIcon:
     Load a QIcon with the given file name. Files are loaded from the ICON_PATH_PREFIX,
     which depends on the installation style.
     """
+    logger.debug(f'Loading internal icon "{name}"')
     file_path = ICON_PATH_PREFIX + "/" + name
     icon = QIcon(file_path)
     if not icon.availableSizes() and file_path.endswith(".svg"):
@@ -135,7 +136,6 @@ class SomeWidget(*inherits_from_ui_file_with_name("SomeWidgetUiFileName")):
     def __init__(self, parent):
         super(SomeWidget, self).__init__(parent)
         self.setupUi(self)
-
 
 """
 inherits_from_ui_file_with_name = load_ui_from_file
