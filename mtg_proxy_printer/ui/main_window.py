@@ -159,13 +159,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         To quote the Qt5 QCloseEvent documentation: If you do not want your widget to be hidden, or want some special
         handling, you should reimplement the event handler and ignore() the event.
         """
+        logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
         # Be safe and emit this signal, because it might be connected to multiple slots.
         self.action_quit.triggered.emit()
 
     @pyqtSlot()
     def on_action_quit_triggered(self):
-        logger.debug(f"User wants to quit.")
+        logger.info(f"User wants to quit.")
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         logger.debug("Quit action confirmed. Exiting…")
@@ -174,7 +175,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_import_deck_list_triggered(self):
-        logger.debug(f"User imports a deck list.")
+        logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, parent=self)
         wizard.clear_document.connect(self.document.clear)
         wizard.card_added.connect(self.image_downloader.get_image)
@@ -183,12 +184,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_print_triggered(self):
-        logger.debug(f"User prints the current document.")
+        logger.info(f"User prints the current document.")
         self.nothing_happens_box.show()
 
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
-        logger.debug(f"User prints the current document to PDF.")
+        logger.info(f"User prints the current document to PDF.")
         if savable_pages := self.document.compute_pages_saved_by_compacting():
             result = QMessageBox.question(
                 self, "Saving pages possible",
@@ -221,7 +222,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_download_card_data_triggered(self):
-        logger.debug(f"User downloads the card data from Scryfall.")
+        logger.info(f"User downloads the card data from Scryfall.")
         # Prevent the action from triggering multiple times, by preventing the user to trigger the action while this
         # already runs.
         self.action_download_card_data.setDisabled(True)
