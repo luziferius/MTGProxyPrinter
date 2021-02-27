@@ -78,9 +78,26 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def _create_document_instance(self):
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
+        for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
+            document.loading_state_changed.connect(widget_or_action.setDisabled)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.image_db.add_card.connect(document.add_card)
         return document
+
+    def _get_widgets_and_actions_disabled_in_loading_state(self):
+        return[
+            self.action_save_as,
+            self.action_save_document,
+            self.action_compact_document,
+            self.action_load_document,
+            self.action_print,
+            self.action_print_pdf,
+            self.action_import_deck_list,
+            self.action_new_page,
+            self.action_discard_page,
+            self.add_card_widget,
+            self.page_view.delete_selected_images_button,
+        ]
 
     def _create_image_database(self):
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)

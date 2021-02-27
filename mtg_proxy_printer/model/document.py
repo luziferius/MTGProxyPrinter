@@ -175,6 +175,7 @@ class Document(QAbstractListModel):
     IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
     IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
 
+    loading_state_changed = pyqtSignal(bool)
     total_cards_per_page_changed = pyqtSignal(int)
     document_cleared = pyqtSignal()
 
@@ -183,6 +184,7 @@ class Document(QAbstractListModel):
         self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
         self.loader = DocumentLoader(card_db, image_db, self)
+        self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.add_page()
         self.currently_edited_page = self.pages[0]
         document_settings = settings["documents"]
@@ -459,6 +461,8 @@ class Document(QAbstractListModel):
 
 class DocumentLoader(QObject):
 
+    loading_state_changed = pyqtSignal(bool)
+
     class Worker(QObject):
         new_page = pyqtSignal()
         add_card = pyqtSignal(Card)
@@ -499,6 +503,7 @@ class DocumentLoader(QObject):
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
         self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
 
     @pyqtSlot(Card)
@@ -507,6 +512,7 @@ class DocumentLoader(QObject):
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
+        self.loading_state_changed.emit(True)
         self.document.clear()
         self.worker.data = self._read_data_from_save_path(save_file_path)
         self.worker_thread.start()
