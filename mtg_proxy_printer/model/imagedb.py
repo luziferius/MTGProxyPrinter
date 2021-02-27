@@ -57,6 +57,7 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.  TODO: Maybe use the QPixmapCache class instead?
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
+        self.queue: queue.SimpleQueue[typing.Tuple[Card, int, bool]] = queue.SimpleQueue()
         self.download_thread = QThread()
         self.download_worker = ImageDownloader(self)
         self.download_worker.moveToThread(self.download_thread)
@@ -69,8 +70,8 @@ class ImageDatabase(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot(Card, int)
-    def get_image(self, card: Card, count: int = 1):
-        self.download_worker.queue.put((card, count))
+    def get_image(self, card: Card, count: int = 1, notify: bool = True):
+        self.queue.put((card, count, notify))
 
 
 class ImageDownloader(QObject):
@@ -83,23 +84,23 @@ class ImageDownloader(QObject):
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
         self.image_database = image_db
-        self.queue: queue.SimpleQueue[typing.Tuple[Card, int]] = queue.SimpleQueue()
+        self.queue = image_db.queue
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def process_queue(self):
         logger.info("Start processing download queue")
         while self.should_run:
-            card, count = self.queue.get()
+            card, count, notify = self.queue.get()
             logger.debug("Received image request, processing it…")
-            self._get_image(card, count)
+            self._get_image(card, count, notify)
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
         monitor.io_end.connect(self.card_download_finished)
 
-    def _get_image(self, card: Card, count: int = 1):
+    def _get_image(self, card: Card, count: int, notify: bool):
         try:
             pixmap = self.image_database.loaded_images[(card.scryfall_id, card.is_front)]
         except KeyError:
@@ -109,7 +110,8 @@ class ImageDownloader(QObject):
             self.image_database.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
             logger.debug("Image loaded")
         card.image_file = pixmap
-        self.add_card.emit(card, count)
+        if notify:
+            self.add_card.emit(card, count)
 
     def _fetch_image(self, card: Card):
         cache_file_path = pathlib.Path(

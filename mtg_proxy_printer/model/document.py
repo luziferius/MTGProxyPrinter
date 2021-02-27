@@ -21,7 +21,7 @@ import typing
 import delegateto
 import pint
 from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
-
+from PyQt5.QtWidgets import QApplication
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
@@ -327,7 +327,8 @@ class Document(QAbstractListModel):
         self.file_path = path
         data = self._read_data_from_save_path(path)
         self.clear()
-        current_page = -1
+        current_page = 1
+        app = QApplication.instance()
         for page_number, slot, scryfall_id, is_front in data:
             if current_page != page_number:
                 current_page = page_number
@@ -338,8 +339,10 @@ class Document(QAbstractListModel):
                 continue
             page = self.pages[-1]
             card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-            image_db.get_image(card)
+            image_db.get_image(card, notify=False)
             page.add_card(card)
+            # TODO: Design asynchronous document loading and drop this hack
+            app.processEvents()
 
     def _read_data_from_save_path(self, save_file_path: pathlib.Path):
         logger.info("Reading data from save file")
