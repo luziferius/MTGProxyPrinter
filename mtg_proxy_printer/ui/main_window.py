@@ -53,12 +53,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.about_dialog = AboutMTGProxyPrinterDialog(self)
         self.progress_bar = self._create_progress_bar()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
-        self.image_downloader = self._create_image_database()
+        self.image_db = self._create_image_database()
+        self.document = self._create_document_instance()
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
-        self.document = self._create_document_instance()
         self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
@@ -76,19 +76,34 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_document_instance(self):
-        document = mtg_proxy_printer.model.document.Document(parent=self)
+        document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
+        for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
+            document.loading_state_changed.connect(widget_or_action.setDisabled)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        self.image_db.add_card.connect(document.add_card)
         return document
+
+    def _get_widgets_and_actions_disabled_in_loading_state(self):
+        return[
+            self.action_save_as,
+            self.action_save_document,
+            self.action_compact_document,
+            self.action_load_document,
+            self.action_print,
+            self.action_print_pdf,
+            self.action_import_deck_list,
+            self.action_new_page,
+            self.action_discard_page,
+            self.add_card_widget,
+            self.page_view.delete_selected_images_button,
+        ]
 
     def _create_image_database(self):
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         image_db.card_download_starting.connect(self.show_progress_bar)
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
-        # Don’t feed the progress value as flags to processEvents(), use a lambda to throw the value away
-        app = QApplication.instance()
-        image_db.card_download_progress.connect(lambda _: app.processEvents())
         return image_db
 
     def _create_progress_bar(self):
@@ -120,8 +135,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.page_view: CurrentPageView
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
-        self.add_card_widget.card_added.connect(self.image_downloader.get_image)
-        self.add_card_widget.card_added.connect(self.document.add_card)
+        self.add_card_widget.card_added.connect(self.image_db.get_image_asynchronous)
 
     def _setup_document_view(self):
         self.document_view: DocumentView
@@ -178,8 +192,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, parent=self)
         wizard.clear_document.connect(self.document.clear)
-        wizard.card_added.connect(self.image_downloader.get_image)
-        wizard.card_added.connect(self.document.add_card)
+        wizard.card_added.connect(self.image_db.get_image_asynchronous)
         wizard.show()
 
     @pyqtSlot()
@@ -289,7 +302,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_load_document_triggered(self):
-        dialog = LoadDocumentDialog(self, self.document, self.card_database, self.image_downloader)
+        dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
             self._select_first_page()
 

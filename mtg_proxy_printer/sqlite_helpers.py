@@ -28,7 +28,8 @@ SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?
 
 def open_database(
         db_path: typing.Union[str, pathlib.Path], schema_name: str,
-        min_supported_sqlite_version: typing.Tuple[int, int, int]) -> sqlite3.Connection:
+        min_supported_sqlite_version: typing.Tuple[int, int, int],
+        check_same_thread: bool = True) -> sqlite3.Connection:
     if isinstance(db_path, str) and db_path != ":memory:":
         db_path = pathlib.Path(db_path)
     if sqlite3.sqlite_version_info < min_supported_sqlite_version:
@@ -45,7 +46,7 @@ def open_database(
     logger.debug(f"Opening Database {location}.")
     # This has to be determined before the connection is opened and the file is created on disk.
     should_create_schema = db_path == ":memory:" or not db_path.exists()
-    db = sqlite3.connect(db_path)
+    db = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     logger.debug(f"Connected SQLite database {location}.")
     # Both settings are volatile, thus have to be set for each opened connection
     db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")

@@ -67,7 +67,8 @@ class CardDatabase:
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        db = mtg_proxy_printer.sqlite_helpers.open_database(db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION)
+        db = mtg_proxy_printer.sqlite_helpers.open_database(
+            db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
         migrate_card_database(db)
         self.db = db
         self._exit_hook = None

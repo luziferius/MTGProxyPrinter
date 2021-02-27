@@ -9,13 +9,23 @@
 
 ## Changed Features
 
+- Moved most long-running operations (downloading images, importing deck lists and loading documents)
+  to a background thread. The UI is now more responsive during these operations.
+- Disable some buttons and menu entries in the main window while a document is being loaded to prevent possible issues,
+  like printing partially loaded documents or saving a partially loaded document over itself.
 - Added some more information to the About dialog window and re-designed the information display.
 
 ## Fixed issues
 
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 
   via pip.
-
+- Adding multiple cards in quick succession, for example by double-clicking the "Add" button,
+  no longer freezes the GUI. The cards are now properly added in order
+- Adding the same card twice, if it required an image download,
+  no longer inserts a broken, blank card into the current page
+- MTGProxyPrinter no longer hangs until a long running operation is finished when trying to quit the application
+  while a document is being loaded or a deck list import is running
+  
 
 # Version 0.8.1 (2021-02-24)
 
