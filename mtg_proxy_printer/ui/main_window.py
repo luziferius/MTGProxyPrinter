@@ -53,8 +53,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.about_dialog = AboutMTGProxyPrinterDialog(self)
         self.progress_bar = self._create_progress_bar()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
+        self.image_db = self._create_image_database()
         self.document = self._create_document_instance()
-        self.image_downloader = self._create_image_database()
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.nothing_happens_box = QMessageBox(
@@ -76,9 +76,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_document_instance(self):
-        document = mtg_proxy_printer.model.document.Document(parent=self)
+        document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        self.image_db.add_card.connect(document.add_card)
         return document
 
     def _create_image_database(self):
@@ -86,7 +87,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         image_db.card_download_starting.connect(self.show_progress_bar)
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
-        image_db.add_card.connect(self.document.add_card)
         return image_db
 
     def _create_progress_bar(self):
@@ -118,7 +118,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.page_view: CurrentPageView
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
-        self.add_card_widget.card_added.connect(self.image_downloader.get_image)
+        self.add_card_widget.card_added.connect(self.image_db.get_image_asynchronous)
 
     def _setup_document_view(self):
         self.document_view: DocumentView
@@ -175,7 +175,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, parent=self)
         wizard.clear_document.connect(self.document.clear)
-        wizard.card_added.connect(self.image_downloader.get_image)
+        wizard.card_added.connect(self.image_db.get_image_asynchronous)
         wizard.show()
 
     @pyqtSlot()
@@ -285,7 +285,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_load_document_triggered(self):
-        dialog = LoadDocumentDialog(self, self.document, self.card_database, self.image_downloader)
+        dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
             self._select_first_page()
 

@@ -97,16 +97,12 @@ class LoadDocumentDialog(QFileDialog):
 
     def __init__(
             self, parent: QWidget,
-            document: mtg_proxy_printer.model.document.Document,
-            card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-            image_db: mtg_proxy_printer.model.imagedb.ImageDatabase, **kwargs):
+            document: mtg_proxy_printer.model.document.Document, **kwargs):
         super(LoadDocumentDialog, self).__init__(
             parent, "Load MTGProxyPrinter document", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.card_db = card_db
-        self.image_db = image_db
         self.setAcceptMode(QFileDialog.AcceptOpen)
         self.setDefaultSuffix("mtgproxies")
         self.setFileMode(QFileDialog.ExistingFile)
@@ -118,7 +114,7 @@ class LoadDocumentDialog(QFileDialog):
         if result == QFileDialog.Accepted:
             logger.debug("User chose a file name, about to load the document from disk")
             path = pathlib.Path(self.selectedFiles()[0])
-            self.document.load_from_disk(path, self.card_db, self.image_db)
+            self.document.loader.load_document(path)
             logger.info(f"Loaded document from {path}")
         else:
             logger.debug("User aborted loading. Doing nothing.")

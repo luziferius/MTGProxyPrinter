@@ -20,12 +20,12 @@ import typing
 
 import delegateto
 import pint
-from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, QThread
 from PyQt5.QtWidgets import QApplication
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
-from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.logger import get_logger
 
@@ -178,10 +178,11 @@ class Document(QAbstractListModel):
     total_cards_per_page_changed = pyqtSignal(int)
     document_cleared = pyqtSignal()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
         self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
+        self.loader = DocumentLoader(card_db, image_db, self)
         self.add_page()
         self.currently_edited_page = self.pages[0]
         document_settings = settings["documents"]
@@ -323,45 +324,6 @@ class Document(QAbstractListModel):
     def compute_total_cards_per_page(self) -> int:
         return self.compute_row_count() * self.compute_cards_per_row()
 
-    def load_from_disk(self, path: pathlib.Path, card_db: CardDatabase, image_db: ImageDatabase):
-        self.file_path = path
-        data = self._read_data_from_save_path(path)
-        self.clear()
-        current_page = 1
-        app = QApplication.instance()
-        for page_number, slot, scryfall_id, is_front in data:
-            if current_page != page_number:
-                current_page = page_number
-                self.add_page()
-            if not card_db.is_scryfall_id_known(scryfall_id, is_front):
-                # If the save file was tampered with or the database used to save contained more cards than the
-                # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
-                continue
-            page = self.pages[-1]
-            card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-            image_db.get_image(card, notify=False)
-            page.add_card(card)
-            # TODO: Design asynchronous document loading and drop this hack
-            app.processEvents()
-
-    def _read_data_from_save_path(self, save_file_path: pathlib.Path):
-        logger.info("Reading data from save file")
-        with mtg_proxy_printer.sqlite_helpers.open_database(
-                save_file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
-                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            else:
-                query = r"""SELECT page, slot, scryfall_id, is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            data: typing.List[typing.Tuple[int, int, str, bool]] = [
-                (page, slot, scryfall_id, bool(is_front))
-                for page, slot, scryfall_id, is_front in db.execute(query)
-            ]
-        return data
-
     def save_as(self, path: pathlib.Path):
         self.file_path = path
         self.save_to_disk()
@@ -493,6 +455,80 @@ class Document(QAbstractListModel):
             range(self.rowCount()),
             itertools.repeat(0)
         )))
+
+
+class DocumentLoader(QObject):
+
+    class Worker(QObject):
+        new_page = pyqtSignal()
+        add_card = pyqtSignal(Card)
+        finished = pyqtSignal()
+
+        def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
+            super(DocumentLoader.Worker, self).__init__(None)
+            self.card_db = card_db
+            self.image_loader = ImageDownloader(image_db, self)
+            self.document = document
+            self.data = []
+
+        def load_document(self):
+            logger.info("Start filling pages with cards from loaded data")
+            current_page = 1
+            try:
+                for page_number, slot, scryfall_id, is_front in self.data:
+                    if current_page != page_number:
+                        current_page = page_number
+                        self.new_page.emit()
+                    if not self.card_db.is_scryfall_id_known(scryfall_id, is_front):
+                        # If the save file was tampered with or the database used to save contained more cards than the
+                        # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
+                        continue
+                    card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+                    self.image_loader.get_image_synchronous(card, 1, False)
+                    self.add_card.emit(card)
+                self.data.clear()
+            finally:
+                self.finished.emit()
+
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
+        super(DocumentLoader, self).__init__(None)
+        self.document = document
+        self.worker_thread = QThread()
+        self.worker = self.Worker(card_db, image_db, document)
+        self.worker.moveToThread(self.worker_thread)
+        self.worker.new_page.connect(self.document.add_page)
+        self.worker.add_card.connect(self._on_add_card)
+        self.worker.finished.connect(self.worker_thread.quit)
+        self.worker_thread.started.connect(self.worker.load_document)
+
+    @pyqtSlot(Card)
+    def _on_add_card(self, card: Card):
+        self.document.pages[-1].add_card(card)
+
+    def load_document(self, save_file_path: pathlib.Path):
+        logger.info(f"Loading document from {save_file_path}")
+        self.document.clear()
+        self.worker.data = self._read_data_from_save_path(save_file_path)
+        self.worker_thread.start()
+
+    @staticmethod
+    def _read_data_from_save_path(save_file_path: pathlib.Path):
+        logger.info("Reading data from save file")
+        with mtg_proxy_printer.sqlite_helpers.open_database(
+                save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
+            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            else:
+                query = r"""SELECT page, slot, scryfall_id, is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            data: typing.List[typing.Tuple[int, int, str, bool]] = [
+                (page, slot, scryfall_id, bool(is_front))
+                for page, slot, scryfall_id, is_front in db.execute(query)
+            ]
+        return data
 
 
 def _migrate_database(db):

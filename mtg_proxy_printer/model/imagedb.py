@@ -37,6 +37,7 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 )
 __all__ = [
     "ImageDatabase",
+    "ImageDownloader",
 ]
 
 ImageKey = typing.Tuple[str, bool]
@@ -69,8 +70,10 @@ class ImageDatabase(QObject):
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    @pyqtSlot(Card)
     @pyqtSlot(Card, int)
-    def get_image(self, card: Card, count: int = 1, notify: bool = True):
+    @pyqtSlot(Card, int, bool)
+    def get_image_asynchronous(self, card: Card, count: int = 1, notify: bool = True):
         self.queue.put((card, count, notify))
 
 
@@ -93,14 +96,14 @@ class ImageDownloader(QObject):
         while self.should_run:
             card, count, notify = self.queue.get()
             logger.debug("Received image request, processing it…")
-            self._get_image(card, count, notify)
+            self.get_image_synchronous(card, count, notify)
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
         monitor.io_end.connect(self.card_download_finished)
 
-    def _get_image(self, card: Card, count: int, notify: bool):
+    def get_image_synchronous(self, card: Card, count: int, notify: bool):
         try:
             pixmap = self.image_database.loaded_images[(card.scryfall_id, card.is_front)]
         except KeyError:
