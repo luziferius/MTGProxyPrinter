@@ -53,12 +53,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.about_dialog = AboutMTGProxyPrinterDialog(self)
         self.progress_bar = self._create_progress_bar()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
+        self.document = self._create_document_instance()
         self.image_downloader = self._create_image_database()
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
-        self.document = self._create_document_instance()
         self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
@@ -86,9 +86,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         image_db.card_download_starting.connect(self.show_progress_bar)
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
-        # Don’t feed the progress value as flags to processEvents(), use a lambda to throw the value away
-        app = QApplication.instance()
-        image_db.card_download_progress.connect(lambda _: app.processEvents())
+        image_db.add_card.connect(self.document.add_card)
         return image_db
 
     def _create_progress_bar(self):
@@ -121,7 +119,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_downloader.get_image)
-        self.add_card_widget.card_added.connect(self.document.add_card)
 
     def _setup_document_view(self):
         self.document_view: DocumentView
@@ -179,7 +176,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         wizard = DeckImportWizard(self.card_database, parent=self)
         wizard.clear_document.connect(self.document.clear)
         wizard.card_added.connect(self.image_downloader.get_image)
-        wizard.card_added.connect(self.document.add_card)
         wizard.show()
 
     @pyqtSlot()

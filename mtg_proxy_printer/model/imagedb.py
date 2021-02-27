@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import queue
 import itertools
 import pathlib
 import shutil
 import string
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
 from PyQt5.QtGui import QPixmap
 
 import mtg_proxy_printer.meta_data
@@ -46,6 +47,7 @@ class ImageDatabase(QObject):
     card_download_starting = pyqtSignal(int)
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
+    add_card = pyqtSignal(Card, int)
 
     def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
         super(ImageDatabase, self).__init__(*args, **kwargs)
@@ -55,25 +57,63 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.  TODO: Maybe use the QPixmapCache class instead?
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
+        self.download_thread = QThread()
+        self.download_worker = ImageDownloader(self)
+        self.download_worker.moveToThread(self.download_thread)
+        self.download_worker.card_download_starting.connect(self.card_download_starting)
+        self.download_worker.card_download_finished.connect(self.card_download_finished)
+        self.download_worker.card_download_progress.connect(self.card_download_progress)
+        self.download_worker.add_card.connect(self.add_card)
+        self.download_thread.started.connect(self.download_worker.process_queue)
+        self.download_thread.start()
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @pyqtSlot(Card, int)
+    def get_image(self, card: Card, count: int = 1):
+        self.download_worker.queue.put((card, count))
+
+
+class ImageDownloader(QObject):
+
+    card_download_starting = pyqtSignal(int)
+    card_download_finished = pyqtSignal()
+    card_download_progress = pyqtSignal(int)
+    add_card = pyqtSignal(Card, int)
+
+    def __init__(self, image_db: ImageDatabase, parent: QObject = None):
+        super(ImageDownloader, self).__init__(parent)
+        self.image_database = image_db
+        self.queue: queue.SimpleQueue[typing.Tuple[Card, int]] = queue.SimpleQueue()
+        self.should_run = True
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def process_queue(self):
+        logger.info("Start processing download queue")
+        while self.should_run:
+            card, count = self.queue.get()
+            logger.debug("Received enqueued download request, starting…")
+            self._get_image(card, count)
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
         monitor.io_end.connect(self.card_download_finished)
 
-    @pyqtSlot(Card)
-    def get_image(self, card: Card):
+    def _get_image(self, card: Card, count: int = 1):
         try:
-            pixmap = self.loaded_images[(card.scryfall_id, card.is_front)]
+            pixmap = self.image_database.loaded_images[(card.scryfall_id, card.is_front)]
         except KeyError:
+            logger.debug("Image not in disk cache, downloading from Scryfall")
             cache_file_path = self._fetch_image_from_scryfall(card)
             pixmap = QPixmap(str(cache_file_path))
-            self.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
+            self.image_database.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
+            logger.debug("Image download finished, added image to cache")
         card.image_file = pixmap
+        self.add_card.emit(card, count)
 
     def _fetch_image_from_scryfall(self, card):
         cache_file_path = pathlib.Path(
-            self.db_path,
+            self.image_database.db_path,
             "front" if card.is_front else "back",
             card.scryfall_id[:2],
             f"{card.scryfall_id}.png"
@@ -88,7 +128,7 @@ class ImageDatabase(QObject):
         download_uri = card.image_uri
         source, monitor = mtg_proxy_printer.card_info_downloader.read_from_url(download_uri, self)
         self._connect_file_monitor(monitor)
-        download_path = self.db_path / target_path.name
+        download_path = self.image_database.db_path / target_path.name
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
