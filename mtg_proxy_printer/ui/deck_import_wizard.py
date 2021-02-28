@@ -43,6 +43,10 @@ class IsRegularExpressionValidator(QValidator):
             re.compile(input_string)
         except re.error:
             return QValidator.Intermediate, input_string, pos
+        except RecursionError:
+            # An input like '('*10000+'z'+')'*10000 (evaluated) will throw a RecursionError.
+            # Deem this invalid, as it cannot be parsed at all and allowing the user to append more will not help
+            return QValidator.Invalid, input_string, pos
         else:
             return QValidator.Acceptable, input_string, pos
 

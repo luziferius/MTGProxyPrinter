@@ -1,5 +1,11 @@
 # Changelog
 
+# Version <next> (in development)
+
+## Fixed issues
+
+- Custom RE-based deck importer: Handle user-supplied regular expressions that causes a RecursionError in the parser.
+  Such input is now treated as invalid and can’t be entered into the input text field.
 
 # Version 0.8.2 (2021-02-28)
 
