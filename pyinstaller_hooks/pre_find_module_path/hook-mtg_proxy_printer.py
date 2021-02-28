@@ -30,15 +30,17 @@ from PyInstaller.utils.hooks import logger
 # Make sure to insert the checkout root to the path. Without this, the import below may find an installed version
 # instead of the checkout, if this program is already installed via pip. This is required to properly determine
 # the save path for the compiled resources.
-root_dir = str(Path(__file__).parent.parent.parent)
-sys.path.insert(0, root_dir)
+root_dir = str(Path(__file__).parent.parent.parent.absolute().resolve())
+if root_dir not in sys.path:
+    sys.path.insert(0, root_dir)
 
-import mtg_proxy_printer.ui
+import mtg_proxy_printer.ui  # noqa
 
 
 def pre_find_module_path(api):
     logger.info("About to compile the Qt resource file")
     import setup
+    # ui.__file__ points to the package’s __init__.py. Go a level up to get the package directory path
     target_path = Path(mtg_proxy_printer.ui.__file__).parent/"compiled_resources.py"
     atexit.register(target_path.unlink)
     setup.compile_resources(target_path)
