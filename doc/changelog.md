@@ -1,7 +1,7 @@
 # Changelog
 
 
-# Version <next> (in development)
+# Version 0.8.2 (2021-02-28)
 
 ## Added Features
 
@@ -17,15 +17,15 @@
 
 ## Fixed issues
 
+- Adding multiple cards in quick succession, for example by double-clicking the "Add" button,
+  no longer freezes the GUI. The cards are now properly added in the correct order
+- Adding a card that requires an image download and then adding the same card again, while the download
+  is still in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
+- Fixed application hangs until a long running operation is completed when trying to quit the application
+  while a document is being loaded or a deck list import is running
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 
   via pip.
-- Adding multiple cards in quick succession, for example by double-clicking the "Add" button,
-  no longer freezes the GUI. The cards are now properly added in order
-- Adding the same card twice, if it required an image download,
-  no longer inserts a broken, blank card into the current page
-- MTGProxyPrinter no longer hangs until a long running operation is finished when trying to quit the application
-  while a document is being loaded or a deck list import is running
-  
+
 
 # Version 0.8.1 (2021-02-24)
 
