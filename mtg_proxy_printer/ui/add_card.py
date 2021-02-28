@@ -57,8 +57,10 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
     def _setup_language_combo_box(self) -> QStringListModel:
         self.language_combo_box: QComboBox
         self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
-        model = QStringListModel([], self.language_combo_box)
-        self.language_combo_box.setModel(model)
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        model = QStringListModel([preferred_language], self.language_combo_box)
+        with mtg_proxy_printer.ui.common.BlockedSignals(self.language_combo_box):
+            self.language_combo_box.setModel(model)
         return model
 
     def _setup_card_name_box(self) -> QStringListModel:
@@ -142,15 +144,6 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
     @pyqtSlot(QItemSelection)
     def on_collector_number_list_selection_changed(self, current: QItemSelection):
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(bool(current.indexes()))
-
-    def _create_card_from_user_input(self):
-        card = mtg_proxy_printer.model.carddb.Card(
-            card_name if (card_name := self.card_name_search.currentText()) else None,
-            set_abbreviation if (set_abbreviation := self.set_name_search.currentText()) else None,
-            collector_number if (collector_number := self.collectors_number_search.currentText()) else None,
-            self.language_combo_box.currentText()
-        )
-        return card
 
     @pyqtSlot(str)
     def on_card_name_filter_updated(self, card_name_filter: str):

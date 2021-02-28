@@ -89,10 +89,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.preferred_language_combo_box: QComboBox
         self.avoid_low_res_images_check_box: QCheckBox
         images_section = settings["images"]
-        if self.preferred_language_combo_box.model().stringList():
-            self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(
-                images_section.get("preferred-language")
-            ))
+        preferred_language = images_section.get("preferred-language")
+        if not (known := self.preferred_language_combo_box.model().stringList()) or preferred_language not in known:
+            self.preferred_language_combo_box.addItem(preferred_language)
+        self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
         self.avoid_low_res_images_check_box.setChecked(
             images_section.getboolean("avoid-low-resolution-images")
         )
