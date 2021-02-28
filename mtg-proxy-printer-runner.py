@@ -19,6 +19,13 @@
 Thin wrapper to run main() from the source checkout.
 """
 
-from mtg_proxy_printer.__main__ import main
+import pathlib
+import sys
+
+# Make sure to find this checkout, and not any system- or user-wide installed versions that may be present
+root_path = pathlib.Path(__file__).parent.absolute().resolve()
+sys.path.insert(0, str(root_path))
+
+from mtg_proxy_printer.__main__ import main  # noqa
 
 main()
