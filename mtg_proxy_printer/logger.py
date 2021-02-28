@@ -38,6 +38,10 @@ def configure_root_logger():
     """
     Initialize the logging system.
     """
+    crash_log_path = pathlib.Path(data_directories.user_log_dir, f"{PROGRAMNAME}-crashes.log")
+    # Not closing the file at all to catch segmentation faults occurring at application exit.
+    faulthandler.enable(crash_log_path.open("at", encoding="utf-8"))
+
     debug_settings = mtg_proxy_printer.settings.settings["debug"]
     file_log_level = debug_settings["log-level"]
     root_logger.setLevel(1)
@@ -53,9 +57,7 @@ def configure_root_logger():
         log_file_path = pathlib.Path(data_directories.user_log_dir, f"{PROGRAMNAME}.log")
         if not (log_dir := log_file_path.parent).exists():
             log_dir.mkdir(parents=True)
-        file_handler = logging.handlers.TimedRotatingFileHandler(log_file_path, "D", 10, delay=True)
+        file_handler = logging.handlers.TimedRotatingFileHandler(log_file_path, "D", 1, 10, "utf-8", True)
         file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
         root_logger.addHandler(file_handler)
-    crash_log_path = pathlib.Path(data_directories.user_log_dir, f"{PROGRAMNAME}-crashes.log")
-    # Not closing the file at all to catch segmentation faults occurring at application exit.
-    faulthandler.enable(crash_log_path.open("at"))
+
