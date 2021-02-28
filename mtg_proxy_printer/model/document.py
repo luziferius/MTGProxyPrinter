@@ -460,10 +460,30 @@ class Document(QAbstractListModel):
 
 
 class DocumentLoader(QObject):
+    """
+    Implements asynchronous background document loading.
+    Loading a document can take a long time, if it includes downloading all card images and still takes a noticable
+    time when the card images have to be loaded from disk.
+
+    This class uses a QThread with a background worker to push that work off the GUI thread to keep the application
+    responsive during a loading process.
+    """
 
     loading_state_changed = pyqtSignal(bool)
 
     class Worker(QObject):
+        """
+        This is the worker object that runs inside the DocumentLoader’s internal QThread.
+
+        It iterates over the loaded data and creates a stream of events that, when executed sequentially,
+        load the document. It does not directly edit the Document instance.
+        Events are created by simply emitting the defined Qt Signals. The DocumentLoader living in the GUI thread will
+        receive these and update the document living in the same thread accordingly.
+        This prevents issues with QObject instances getting parents assigned across threads.
+
+        Because the thread emits the signals after each long-running I/O process (image loading or downloading)
+        finished, processing the generated events in the GUI thread is fast.
+        """
         new_page = pyqtSignal()
         add_card = pyqtSignal(Card)
         finished = pyqtSignal()
@@ -471,6 +491,10 @@ class DocumentLoader(QObject):
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
             super(DocumentLoader.Worker, self).__init__(None)
             self.card_db = card_db
+            # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
+            # That one lives in it’s own thread and runs asynchronously and is connected in a way that it adds loaded
+            # images to the document on it’s own, interfering with the loading process, in particular with emitting page
+            # breaks. Thus use a separate instance and use it synchronously inside this worker thread.
             self.image_loader = ImageDownloader(image_db, self)
             self.image_loader.card_download_starting.connect(image_db.card_download_starting)
             self.image_loader.card_download_finished.connect(image_db.card_download_finished)
@@ -491,7 +515,7 @@ class DocumentLoader(QObject):
                         # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
                         continue
                     card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-                    self.image_loader.get_image_synchronous(card, 1, False)
+                    self.image_loader.get_image_synchronous(card)
                     self.add_card.emit(card)
                 self.data.clear()
             finally:
