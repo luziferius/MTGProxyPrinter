@@ -21,7 +21,7 @@ from PyQt5.QtGui import QValidator
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton, \
     QCheckBox
 
-from mtg_proxy_printer.decklist_parser import re_parsers
+from mtg_proxy_printer.decklist_parser import re_parsers, common
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Page
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, load_icon
@@ -95,9 +95,8 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
         self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
         self.custom_re_input.textChanged.connect(self.isComplete)
         self.complete = False
-        self.parser = None
         self.registerField("custom_re", self.custom_re_input)
-        self.registerField("selected_parser", self, "parser")
+        self.registerField("selected_parser", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
@@ -148,8 +147,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
         self.page = Page(self)
         self.parsed_cards_table.setModel(self.page)
         self.parsed_cards_table.setColumnHidden(4, True)
-        self.parsed_deck = None
-        self.registerField("parsed_deck", self, "parsed_deck")
+        self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
         self.should_replace_document: QCheckBox
         if self.should_replace_document.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
@@ -159,17 +157,16 @@ class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
         self.parsed_cards_table: QTableView
-        parser: re_parsers.GenericRegularExpressionDeckParser = self.field("selected_parser")
-        self.parsed_deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
-        self.setField("parsed_deck", self.parsed_deck)
+        parser: common.ParserBase = self.field("selected_parser")
+        parsed_deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
+        self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
-        for card, count in self.parsed_deck.items():
+        for card, count in parsed_deck.items():
             self.page.add_card(card, count)
         self.unparsed_lines_text.setPlainText("\n".join(unparsed_lines))
 
     def cleanupPage(self):
         self.page.clear()
-        self.parsed_deck = None
 
 
 class DeckImportWizard(QWizard):

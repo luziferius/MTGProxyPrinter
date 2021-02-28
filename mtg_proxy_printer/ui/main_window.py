@@ -208,7 +208,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 self, "Saving pages possible",
                 f"It is possible to save {savable_pages} pages when printing this document.\n"
                 f"Do you want to compact the document now to minimize the page count prior to exporting as a PDF?",
-                QMessageBox.Yes|QMessageBox.No|QMessageBox.Cancel
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )
             if result == QMessageBox.Yes:
                 self.document.compact_pages()
@@ -262,8 +262,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         card_data = importer.read_json_card_data_from_url()
         importer.populate_database(card_data)
 
-    @pyqtSlot(QModelIndex, QModelIndex)
-    def on_selected_page_changed(self, selected: QModelIndex, deselected: QModelIndex):
+    @pyqtSlot(QModelIndex)
+    def on_selected_page_changed(self, selected: QModelIndex):
         if selected.isValid():
             new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
             self.current_page_changed.emit(new_page)
