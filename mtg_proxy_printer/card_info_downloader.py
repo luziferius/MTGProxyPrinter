@@ -61,7 +61,6 @@ class CardInfoDownloader(QObject):
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.total_bytes_processed.connect(self.download_progress)
         monitor.io_begin.connect(self.download_begins)
-        monitor.io_end.connect(self.download_finished)
 
     def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
@@ -165,6 +164,7 @@ class CardInfoDownloader(QObject):
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
         logger.info(f"Finished import with {index} imported cards.")
+        self.download_finished.emit()
 
 
 def store_download_settings(db):
