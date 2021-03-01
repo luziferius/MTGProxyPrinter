@@ -83,14 +83,15 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             document.loading_state_changed.connect(widget_or_action.setDisabled)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.image_db.add_card.connect(document.add_card)
-        if args.file.is_file():
-            # Wait until after __init__ finished and the main loop starts
-            QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
-            logger.info(f'Enqueued loading of document "{args.file}"')
-        elif args.file.exists():
-            logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
-        else:
-            logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
+        if args.file is not None:
+            if args.file.is_file():
+                # Wait until after __init__ finished and the main loop starts
+                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
+                logger.info(f'Enqueued loading of document "{args.file}"')
+            elif args.file.exists():
+                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
+            else:
+                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
         return document
 
     def _get_widgets_and_actions_disabled_in_loading_state(self):
