@@ -100,7 +100,6 @@ class ImageDownloader(QObject):
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
-        monitor.io_end.connect(self.card_download_finished)
 
     def get_image_synchronous(self, card: Card, count: int = 1):
         try:
@@ -112,6 +111,7 @@ class ImageDownloader(QObject):
             self.image_database.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
             logger.debug("Image loaded")
         card.image_file = pixmap
+        self.card_download_finished.emit()
         self.add_card.emit(card, count)
 
     def _fetch_image(self, card: Card):
