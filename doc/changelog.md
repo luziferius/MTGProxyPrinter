@@ -2,8 +2,17 @@
 
 # Version <next> (in development)
 
+# Implemented features
+
+- Added command line arguments: The application now accepts a document path as a positional argument.
+  This allows opening documents when starting the application.
+  - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file. And it can be used
+    to associate the file type with the program and then automatically open saved documents by clicking on them.
+
 ## Fixed issues
 
+- Fixed issues when trying to load invalid documents. The application will now do nothing, if the file can not be read
+  instead of locking up the GUI.
 - Custom RE-based deck importer: Handle user-supplied regular expressions that causes a RecursionError in the parser.
   Such input is now treated as invalid and can’t be entered into the input text field.
 

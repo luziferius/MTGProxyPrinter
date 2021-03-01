@@ -19,6 +19,7 @@ import typing
 from PyQt5.QtCore import pyqtSlot
 from PyQt5.QtWidgets import QApplication
 
+from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
@@ -31,15 +32,16 @@ del get_logger
 
 class Application(QApplication):
 
-    def __init__(self, argv: typing.List[str] = None):
+    def __init__(self, args: Namespace, argv: typing.List[str] = None):
         if argv is None:
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
         super(Application, self).__init__(argv)
+        self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         logger.debug("Creating GUI")
-        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.card_db)
+        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.args, self.card_db)
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             self.main_window.language_model, self.main_window)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
