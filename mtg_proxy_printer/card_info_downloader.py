@@ -135,6 +135,7 @@ class CardInfoDownloader(QObject):
         logger.info("About to populate the database with card data")
         self.model.db.execute("BEGIN TRANSACTION\n")
         clear_database(self.model.db)
+        store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
             key: ds.getboolean(key)
@@ -164,6 +165,15 @@ class CardInfoDownloader(QObject):
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
         logger.info(f"Finished import with {index} imported cards.")
+
+
+def store_download_settings(db):
+    """Store the current download settings in the database"""
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    db.executemany(
+        'INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)',
+        ((setting, section.getboolean(setting)) for setting in section.keys())
+    )
 
 
 def read_from_url(url: str, parent: QObject = None):

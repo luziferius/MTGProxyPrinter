@@ -26,6 +26,7 @@ from PyQt5.QtGui import QPixmap
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -377,10 +378,25 @@ def migrate_card_database(db: sqlite3.Connection):
         db.execute('CREATE INDEX CardFace_card_id_index ON CardFace (card_id)')
         db.commit()
         db.execute("PRAGMA user_version = 11")
-
+    if db.execute("PRAGMA user_version").fetchone()[0] == 11:
+        logger.info("Running migration for schema version 11")
+        db.execute("BEGIN TRANSACTION")
+        db.execute(textwrap.dedent(r"""
+        CREATE TABLE UsedDownloadSettings (
+          -- This table contains the download filter settings used during the card data import
+          setting TEXT NOT NULL PRIMARY KEY,
+          "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
+        );
+        """))
+        # Import now to avoid a cyclic import. This function is only required during this specific migration task
+        from mtg_proxy_printer.card_info_downloader import store_download_settings
+        # Guess the used settings based on the current ones. This is good enough for this migration task
+        store_download_settings(db)
+        db.commit()
+        db.execute("PRAGMA user_version = 12")
     if needs_update:
         current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-        logger.info(f"Finished database migrations. {current_schema_version=},")
+        logger.info(f"Finished database migrations. {current_schema_version=}")
 
 
 def clear_database(db: sqlite3.Connection):
@@ -399,6 +415,7 @@ def clear_database(db: sqlite3.Connection):
         "Card",
         '"Set"',
         "PrintLanguage",
+        "UsedDownloadSettings",
     ]
     for table in tables_to_clear:
         logger.debug(f"Clearing table {table}")
