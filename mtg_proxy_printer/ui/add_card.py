@@ -199,6 +199,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
                 self.language_model.stringList().index(
                     mtg_proxy_printer.settings.settings["images"]["preferred-language"])
             )
+        self.on_language_combo_box_changed(self.language_combo_box.currentText())
 
     def on_ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")

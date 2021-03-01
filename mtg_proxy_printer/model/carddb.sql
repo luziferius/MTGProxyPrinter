@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000011;
+PRAGMA user_version = 0000012;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -73,17 +73,24 @@ CREATE INDEX CardFace_card_id_index ON CardFace (card_id);
 
 
 CREATE TABLE "Set" (
-  set_id INTEGER PRIMARY KEY NOT NULL,
-  "set" TEXT NOT NULL UNIQUE,
+  set_id   INTEGER PRIMARY KEY NOT NULL,
+  "set"    TEXT NOT NULL UNIQUE,
   set_name TEXT NOT NULL,
-  set_uri TEXT NOT NULL
+  set_uri  TEXT NOT NULL
 );
 
 CREATE INDEX SetAbbreviationIndex ON "Set" ("set", set_id);
 
 CREATE TABLE LastDatabaseUpdate (
+  -- Contains the history of all performed card data updates
   update_id        INTEGER NOT NULL PRIMARY KEY,
   update_timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP)
+);
+
+CREATE TABLE UsedDownloadSettings (
+  -- This table contains the download filter settings used during the card data import
+  setting TEXT NOT NULL PRIMARY KEY,
+  "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
 );
 
 CREATE VIEW AllPrintings AS

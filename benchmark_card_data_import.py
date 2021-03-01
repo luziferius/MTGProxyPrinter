@@ -91,9 +91,7 @@ if __name__ == "__main__":
     print("Creating new database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
     cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(cdb)
-    print("Creating JSON data generator…")
-    json_data = cid.read_json_card_data(args.card_data)
     print("Starting benchmark…")
-    cid.populate_database(json_data)
+    cid.populate_database()
     print("Done")
 

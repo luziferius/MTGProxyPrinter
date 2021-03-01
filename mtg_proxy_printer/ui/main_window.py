@@ -17,7 +17,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
@@ -58,6 +58,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.document = self._create_document_instance(arguments)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
+        self.card_data_downloader = self._create_card_data_downloader()
         self.nothing_happens_box = QMessageBox(
             QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.action_compact_document.triggered.connect(self.document.compact_pages)
@@ -73,6 +74,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(self.document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
+        self.settings_changed.connect(self.offer_re_downloading_card_database)
         self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -94,8 +96,20 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
         return document
 
-    def _get_widgets_and_actions_disabled_in_loading_state(self):
-        return[
+    def _create_card_data_downloader(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloader:
+        downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database)
+        downloader.download_finished.connect(self.should_update_languages)
+        downloader.download_finished.connect(self.update_language_model)
+        downloader.download_begins.connect(self.show_progress_bar)
+        downloader.download_progress.connect(self.progress_bar.setValue)
+        downloader.download_finished.connect(self.progress_bar.hide)
+        downloader.working_state_changed.connect(self.action_show_settings.setDisabled)
+        for widget in self._get_widgets_and_actions_disabled_in_loading_state():
+            downloader.working_state_changed.connect(widget.setDisabled)
+        return downloader
+
+    def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
+        return [
             self.action_save_as,
             self.action_save_document,
             self.action_compact_document,
@@ -153,6 +167,19 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
         self._select_first_page()
 
+    def offer_re_downloading_card_database(self):
+        settings_changed = self.card_database.check_if_download_settings_changed()
+        self.action_download_card_data.setEnabled(self.card_database.allow_updating_card_data())
+        if settings_changed and QMessageBox.question(
+                self, "Card download filter changed",
+                "The card download filter settings changed.\n"
+                "Do you want to re-download the card data now to apply the new settings?\n"
+                "If you decline, you can do this later using the Settings menu.",
+                QMessageBox.Yes | QMessageBox.No
+                ) == QMessageBox.Yes:
+            self.on_action_download_card_data_triggered()
+
+
     @pyqtSlot()
     def _select_first_page(self):
         old_selection = self.document_view.selectionModel().currentIndex()
@@ -194,6 +221,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         logger.debug("Quit action confirmed. Exiting…")
+        self.card_data_downloader.cancel_running_operations()
+
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         QApplication.instance().shutdown()
 
@@ -246,31 +275,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_download_card_data_triggered(self):
         logger.info(f"User downloads the card data from Scryfall.")
-        # Prevent the action from triggering multiple times, by preventing the user to trigger the action while this
-        # already runs.
         self.action_download_card_data.setDisabled(True)
-        # TODO: Check, which Exceptions can occur in the network code and catch them. Do a ROLLBACK in the except-block
-        self.download_card_data()
-        self.should_update_languages.emit()
-        self.action_download_card_data.setDisabled(self.card_database.has_data())
+        self.card_data_downloader.populate_database()
 
     @pyqtSlot(int)
     def show_progress_bar(self, expected_total_item_count: int):
         self.progress_bar.reset()
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
-
-    def download_card_data(self):
-        importer = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database, parent=self)
-        importer.download_begins.connect(self.show_progress_bar)
-        importer.download_finished.connect(self.progress_bar.hide)
-        importer.download_progress.connect(self.progress_bar.setValue)
-
-        # Don’t feed the progress value as flags to processEvents(), use a lambda to throw the value away
-        app = QApplication.instance()
-        importer.download_progress.connect(lambda _: app.processEvents())
-        card_data = importer.read_json_card_data_from_url()
-        importer.populate_database(card_data)
 
     @pyqtSlot(QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex):

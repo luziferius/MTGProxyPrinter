@@ -8,6 +8,8 @@
   This allows opening documents when starting the application.
   - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file. And it can be used
     to associate the file type with the program and then automatically open saved documents by clicking on them.
+- When changing download filter settings, ask the user if they want to re-download the card data. The user can do so
+  when asked or any time later.
 
 ## Fixed issues
 
@@ -15,6 +17,7 @@
   instead of locking up the GUI.
 - Custom RE-based deck importer: Handle user-supplied regular expressions that causes a RecursionError in the parser.
   Such input is now treated as invalid and can’t be entered into the input text field.
+
 
 # Version 0.8.2 (2021-02-28)
 
