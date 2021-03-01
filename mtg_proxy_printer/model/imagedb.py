@@ -107,14 +107,13 @@ class ImageDownloader(QObject):
             pixmap = self.image_database.loaded_images[(card.scryfall_id, card.is_front)]
         except KeyError:
             logger.debug("Image not in memory, requesting from disk")
-            cache_file_path = self._fetch_image(card)
-            pixmap = QPixmap(str(cache_file_path))
+            pixmap = self._fetch_image(card)
             self.image_database.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
             logger.debug("Image loaded")
         card.image_file = pixmap
         self.add_card.emit(card, count)
 
-    def _fetch_image(self, card: Card):
+    def _fetch_image(self, card: Card) -> QPixmap:
         cache_file_path = pathlib.Path(
             self.image_database.db_path,
             "front" if card.is_front else "back",
@@ -123,10 +122,17 @@ class ImageDownloader(QObject):
         )
         if not cache_file_path.parent.exists():
             cache_file_path.parent.mkdir(parents=True)
+        pixmap = None
+        if cache_file_path.exists():
+            pixmap = QPixmap(str(cache_file_path))
+            if pixmap.isNull():
+                logger.warning(f'Failed to load image from "{cache_file_path}", deleting file.')
+                cache_file_path.unlink()
         if not cache_file_path.exists():
             logger.debug("Image not in disk cache, downloading from Scryfall")
             self._download_image_from_scryfall(card, cache_file_path)
-        return cache_file_path
+            pixmap = QPixmap(str(cache_file_path))
+        return pixmap
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
