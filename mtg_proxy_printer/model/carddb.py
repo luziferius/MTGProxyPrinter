@@ -399,7 +399,7 @@ def migrate_card_database(db: sqlite3.Connection):
         logger.info(f"Finished database migrations. {current_schema_version=}")
 
 
-def clear_database(db: sqlite3.Connection):
+def clear_database(db: sqlite3.Connection, parent=None):
     """
     Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
     This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
@@ -420,3 +420,7 @@ def clear_database(db: sqlite3.Connection):
     for table in tables_to_clear:
         logger.debug(f"Clearing table {table}")
         db.execute(f"DELETE FROM {table}\n")
+        if parent is not None:
+            if not parent.should_run:
+                logger.info("Aborting clear_database()")
+                break

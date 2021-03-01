@@ -24,7 +24,7 @@ import urllib.request
 import http.client
 
 import ijson
-from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
 from mtg_proxy_printer.model.carddb import CardDatabase, clear_database
 import mtg_proxy_printer.settings
@@ -43,6 +43,39 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
 
 class CardInfoDownloader(QObject):
+    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
+    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
+    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
+    working_state_changed = pyqtSignal(bool)
+
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
+                 requested_item: str = "all_cards", parent: QObject = None):
+        super(CardInfoDownloader, self).__init__(parent)
+        logger.info(f"Creating {self.__class__.__name__} instance.")
+        self.model = model
+        self.download_worker = CardInfoDownloadWorker(model, requested_item)
+        self.worker_thread = QThread()
+        self.download_worker.moveToThread(self.worker_thread)
+        self.download_worker.download_begins.connect(self.download_begins)
+        self.download_worker.download_progress.connect(self.download_progress)
+        self.download_worker.download_finished.connect(self.download_finished)
+        self.download_worker.download_finished.connect(self.worker_thread.quit)
+        self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
+        self.worker_thread.started.connect(self.download_worker.download_card_data)
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def populate_database(self):
+        self.working_state_changed.emit(True)
+        logger.info("Running the background worker")
+        self.worker_thread.start()
+
+    def cancel_running_operations(self):
+        if self.worker_thread.isRunning():
+            logger.info("Cancelling currently running card download")
+            self.download_worker.should_run = False
+
+
+class CardInfoDownloadWorker(QObject):
 
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
@@ -51,12 +84,15 @@ class CardInfoDownloader(QObject):
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super(CardInfoDownloader, self).__init__(parent)
+        super(CardInfoDownloadWorker, self).__init__(parent)
         self.model = model
-        logger.debug("Request bulk data URL from the Scryfall API.")
-        self.bulk_card_data_url = self.get_scryfall_bulk_card_data_url(requested_item)
-        logger.debug(f"Obtained url: {self.bulk_card_data_url}")
+        self.requested_item = requested_item
+        self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def download_card_data(self):
+        data = self.read_json_card_data_from_url()
+        self.populate_database(data)
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.total_bytes_processed.connect(self.download_progress)
@@ -88,7 +124,9 @@ class CardInfoDownloader(QObject):
         document in memory.
         """
         if url is None:
-            url = self.bulk_card_data_url
+            logger.debug("Request bulk data URL from the Scryfall API.")
+            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            logger.debug(f"Obtained url: {url}")
         source, monitor = read_from_url(url, self)
         self._connect_file_monitor(monitor)
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
@@ -133,7 +171,11 @@ class CardInfoDownloader(QObject):
         """
         logger.info("About to populate the database with card data")
         self.model.db.execute("BEGIN TRANSACTION\n")
-        clear_database(self.model.db)
+        clear_database(self.model.db, self)
+        if not self.should_run:
+            logger.info(f"Aborting card import due to user request.")
+            self.download_finished.emit()
+            return
         store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
@@ -149,6 +191,10 @@ class CardInfoDownloader(QObject):
             if _should_skip_card(card, download_enabled):
                 skipped_cards += 1
                 continue
+            if not self.should_run:
+                logger.info(f"Aborting card import after {index} cards due to user request.")
+                self.download_finished.emit()
+                return
             language_id = _insert_language(self.model, card["lang"])
             card_id = _insert_card(self.model, card)
             set_id = _insert_set(self.model, card)
