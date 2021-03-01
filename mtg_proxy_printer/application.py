@@ -39,7 +39,7 @@ class Application(QApplication):
         super(Application, self).__init__(argv)
         self.args: Namespace = args
         logger.debug("Opening Database")
-        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase(parent=self)
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.card_db)
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(

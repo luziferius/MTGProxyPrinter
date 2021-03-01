@@ -20,6 +20,7 @@ import pathlib
 import sqlite3
 import textwrap
 import typing
+from itertools import filterfalse
 
 from PyQt5.QtGui import QPixmap
 
@@ -95,6 +96,19 @@ class CardDatabase:
         atexit.register(close_db)
         self._exit_hook = close_db
 
+    def check_if_download_settings_changed(self) -> bool:
+        section = mtg_proxy_printer.settings.settings["downloads"]
+
+        currently_disabled_settings = set(filterfalse(section.getboolean, section.keys()))
+        database_disabled_settings = set(item for item, in self.db.execute(
+            'SELECT setting FROM UsedDownloadSettings WHERE "value" = ?',
+            (False,)
+        ))
+        result = currently_disabled_settings != database_disabled_settings
+        logger.debug(
+            f"Checked, if the current download filter settings differ from the previously used. Result: {result}")
+        return result
+
     def commit(self):
         self.db.commit()
 
@@ -109,7 +123,7 @@ class CardDatabase:
             last_timestamp = datetime.datetime.fromisoformat(last_timestamp_str).date()
             now = datetime.datetime.now().date()
             allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= now
-            return allow_update
+            return allow_update or self.check_if_download_settings_changed()
         else:
             return True
 

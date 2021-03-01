@@ -73,6 +73,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(self.document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
+        self.settings_changed.connect(self.offer_re_downloading_card_database)
         self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -155,6 +156,19 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.document_view.setModel(self.document)
         self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
         self._select_first_page()
+
+    def offer_re_downloading_card_database(self):
+        settings_changed = self.card_database.check_if_download_settings_changed()
+        self.action_download_card_data.setEnabled(self.card_database.allow_updating_card_data())
+        if settings_changed and QMessageBox.question(
+                self, "Card download filter changed",
+                "The card download filter settings changed.\n"
+                "Do you want to re-download the card data now to apply the new settings?\n"
+                "If you decline, you can do this later using the Settings menu.",
+                QMessageBox.Yes | QMessageBox.No
+                ) == QMessageBox.Yes:
+            self.on_action_download_card_data_triggered()
+
 
     @pyqtSlot()
     def _select_first_page(self):

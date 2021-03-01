@@ -115,7 +115,7 @@ class LoadDocumentDialog(QFileDialog):
             logger.debug("User chose a file name, about to load the document from disk")
             path = pathlib.Path(self.selectedFiles()[0])
             self.document.loader.load_document(path)
-            logger.info(f"Loaded document from {path}")
+            logger.info(f"Requested loading document from {path}")
         else:
             logger.debug("User aborted loading. Doing nothing.")
         return result
