@@ -15,10 +15,11 @@
 
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction
 
+from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.imagedb
@@ -46,7 +47,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
 
-    def __init__(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
+    def __init__(self, arguments: Namespace, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
         self.setupUi(self)
@@ -54,7 +55,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.progress_bar = self._create_progress_bar()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
         self.image_db = self._create_image_database()
-        self.document = self._create_document_instance()
+        self.document = self._create_document_instance(arguments)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.nothing_happens_box = QMessageBox(
@@ -75,13 +76,21 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_document_instance(self):
+    def _create_document_instance(self, args: Namespace):
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             document.loading_state_changed.connect(widget_or_action.setDisabled)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.image_db.add_card.connect(document.add_card)
+        if args.file.is_file():
+            # Wait until after __init__ finished and the main loop starts
+            QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
+            logger.info(f'Enqueued loading of document "{args.file}"')
+        elif args.file.exists():
+            logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
+        else:
+            logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
         return document
 
     def _get_widgets_and_actions_disabled_in_loading_state(self):
