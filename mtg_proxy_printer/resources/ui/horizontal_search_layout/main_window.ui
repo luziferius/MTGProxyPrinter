@@ -58,7 +58,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>30</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -83,6 +83,7 @@
     <addaction name="action_download_card_data"/>
     <addaction name="separator"/>
     <addaction name="action_show_about_dialog"/>
+    <addaction name="action_cleanup_local_image_cache"/>
    </widget>
    <widget class="QMenu" name="menu_edit">
     <property name="title">
@@ -251,6 +252,14 @@
    </property>
    <property name="toolTip">
     <string>Import a deck list from online sources</string>
+   </property>
+  </action>
+  <action name="action_cleanup_local_image_cache">
+   <property name="icon">
+    <iconset theme="edit-clear-history"/>
+   </property>
+   <property name="text">
+    <string>Cleanup local image cache</string>
    </property>
   </action>
  </widget>

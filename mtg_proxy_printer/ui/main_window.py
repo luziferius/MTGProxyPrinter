@@ -32,6 +32,7 @@ from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog
+from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
 from mtg_proxy_printer.logger import get_logger
@@ -224,6 +225,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         QApplication.instance().shutdown()
+
+    @pyqtSlot()
+    def on_action_cleanup_local_image_cache_triggered(self):
+        logger.info("User wants to clean up the local image cache")
+        wizard = CacheCleanupWizard(self)
+        wizard.show()
 
     @pyqtSlot()
     def on_action_import_deck_list_triggered(self):
