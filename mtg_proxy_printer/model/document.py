@@ -160,6 +160,9 @@ class Page(QAbstractTableModel):
             itertools.repeat(0)
         )))
 
+    def get_content_as_scryfall_ids(self) -> typing.Iterable[typing.Tuple[str, bool]]:
+        return ((card.scryfall_id, card.is_front) for card in self.cards)
+
     
 PageList = typing.List[Page]
 
@@ -184,6 +187,7 @@ class Document(QAbstractListModel):
         super(Document, self).__init__(*args, **kwargs)
         self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
+        self.card_db = card_db
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.add_page()
@@ -458,6 +462,22 @@ class Document(QAbstractListModel):
             range(self.rowCount()),
             itertools.repeat(0)
         )))
+
+    def store_image_use(self):
+        """
+        Increments the usage count of all cards used in the document and updates the last use timestamps.
+        Should be called after a successful PDF export and direct printing.
+        """
+        data = set(itertools.chain.from_iterable(page.get_content_as_scryfall_ids() for page in self.pages))
+        self.card_db.db.executemany(
+            r"""
+            INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
+              VALUES (?, ?)
+              ON CONFLICT (scryfall_id, is_front)
+              DO UPDATE SET usage_count = usage_count + 1, last_use_date = CURRENT_TIMESTAMP;
+            """,
+            data
+        )
 
 
 class DocumentLoader(QObject):
