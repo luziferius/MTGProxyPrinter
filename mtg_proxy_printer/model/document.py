@@ -463,12 +463,14 @@ class Document(QAbstractListModel):
             itertools.repeat(0)
         )))
 
-    def store_image_use(self):
+    def store_image_usage(self):
         """
         Increments the usage count of all cards used in the document and updates the last use timestamps.
         Should be called after a successful PDF export and direct printing.
         """
+        logger.info("Updating image usage for all cards in the document.")
         data = set(itertools.chain.from_iterable(page.get_content_as_scryfall_ids() for page in self.pages))
+        self.card_db.db.execute("BEGIN TRANSACTION")
         self.card_db.db.executemany(
             r"""
             INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
@@ -478,6 +480,7 @@ class Document(QAbstractListModel):
             """,
             data
         )
+        self.card_db.db.commit()
 
 
 class DocumentLoader(QObject):
