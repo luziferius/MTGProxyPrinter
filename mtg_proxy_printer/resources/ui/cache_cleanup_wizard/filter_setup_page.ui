@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WizardPage</class>
+ <widget class="QWizardPage" name="WizardPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>445</width>
+    <height>334</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>WizardPage</string>
+  </property>
+  <property name="title">
+   <string>Cleanup local image database</string>
+  </property>
+  <property name="subTitle">
+   <string>Optionally pre-select images for removal based on these conditions</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="4" column="0" colspan="2">
+    <widget class="QCheckBox" name="remove_unknown_cards_checkbox">
+     <property name="toolTip">
+      <string>Cards become unknown, if your configured a stricter card filter in the settings.
+For example, if you downloaded images of silver-bordered cards and then configured the program to omit those, all these images become unknown.</string>
+     </property>
+     <property name="text">
+      <string>Remove images belonging to unknown cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="combination_choice_combobox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QCheckBox" name="time_filter_enabled_checkbox">
+     <property name="text">
+      <string>Not used for longer than</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QCheckBox" name="count_filter_enabled_checkbox">
+     <property name="text">
+      <string>Used in prints and PDFs less often than</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QSpinBox" name="time_filter_value_spinbox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="suffix">
+      <string> days</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+     <property name="value">
+      <number>90</number>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QSpinBox" name="count_filter_value_spinbox">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="suffix">
+      <string> times</string>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>time_filter_enabled_checkbox</tabstop>
+  <tabstop>time_filter_value_spinbox</tabstop>
+  <tabstop>combination_choice_combobox</tabstop>
+  <tabstop>count_filter_enabled_checkbox</tabstop>
+  <tabstop>count_filter_value_spinbox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>time_filter_enabled_checkbox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>time_filter_value_spinbox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>150</x>
+     <y>16</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>307</x>
+     <y>25</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>time_filter_enabled_checkbox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>combination_choice_combobox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>144</x>
+     <y>23</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>289</x>
+     <y>57</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>count_filter_enabled_checkbox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>count_filter_value_spinbox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>149</x>
+     <y>101</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>311</x>
+     <y>98</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
