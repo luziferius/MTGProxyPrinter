@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>445</width>
-    <height>334</height>
+    <width>385</width>
+    <height>186</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <string>Cleanup local image database</string>
   </property>
   <property name="subTitle">
-   <string>Optionally pre-select images for removal based on these conditions</string>
+   <string>Optionally set automatic cleanup conditions. These will be used to select images for removal.</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="4" column="0" colspan="2">
