@@ -408,6 +408,24 @@ def migrate_card_database(db: sqlite3.Connection):
         store_download_settings(db)
         db.commit()
         db.execute("PRAGMA user_version = 12")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 12:
+        logger.info("Running migration for schema version 12")
+        db.execute("BEGIN TRANSACTION")
+        db.execute(textwrap.dedent(r"""
+        CREATE TABLE LastImageUseTimestamps (
+          -- Used to store the last image use timestamp and usage count of each image.
+          -- The usage count measures how often an image was part of a printed or exported document. Printing multiple copies
+          -- in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
+          scryfall_id TEXT NOT NULL,
+          is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
+          usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
+          last_use_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (scryfall_id, is_front)
+          -- No foreign key relation here. This table should be persistent across card data downloads
+        );
+        """))
+        db.commit()
+        db.execute("PRAGMA user_version = 13")
     if needs_update:
         current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
         logger.info(f"Finished database migrations. {current_schema_version=}")

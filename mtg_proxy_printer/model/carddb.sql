@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000012;
+PRAGMA user_version = 0000013;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -91,6 +91,18 @@ CREATE TABLE UsedDownloadSettings (
   -- This table contains the download filter settings used during the card data import
   setting TEXT NOT NULL PRIMARY KEY,
   "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
+);
+
+CREATE TABLE LastImageUseTimestamps (
+  -- Used to store the last image use timestamp and usage count of each image.
+  -- The usage count measures how often an image was part of a printed or exported document. Printing multiple copies
+  -- in a document still counts as a single use. Saving/loading is not enough to count as a "use".
+  scryfall_id TEXT NOT NULL,
+  is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
+  usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
+  last_use_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (scryfall_id, is_front)
+  -- No foreign key relation here. This table should be persistent across card data downloads
 );
 
 CREATE VIEW AllPrintings AS
