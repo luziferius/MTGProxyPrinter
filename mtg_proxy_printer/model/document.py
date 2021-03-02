@@ -463,7 +463,7 @@ class Document(QAbstractListModel):
 class DocumentLoader(QObject):
     """
     Implements asynchronous background document loading.
-    Loading a document can take a long time, if it includes downloading all card images and still takes a noticable
+    Loading a document can take a long time, if it includes downloading all card images and still takes a noticeable
     time when the card images have to be loaded from disk.
 
     This class uses a QThread with a background worker to push that work off the GUI thread to keep the application
@@ -501,7 +501,7 @@ class DocumentLoader(QObject):
             self.image_loader.card_download_finished.connect(image_db.card_download_finished)
             self.image_loader.card_download_progress.connect(image_db.card_download_progress)
             self.document = document
-            self.data = []
+            self.data: typing.List[typing.Tuple[int, int, str, bool]] = []
 
         def load_document(self):
             logger.info("Start filling pages with cards from loaded data")
@@ -543,7 +543,7 @@ class DocumentLoader(QObject):
         self.loading_state_changed.emit(True)
         try:
             self.worker.data = self._read_data_from_save_path(save_file_path)
-        except sqlite3.DatabaseError as e:
+        except sqlite3.DatabaseError:
             logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
             # Do not trap the user in an endless loading state, if the selected file is not actually a save file
             self.loading_state_changed.emit(False)

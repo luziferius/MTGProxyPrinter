@@ -179,7 +179,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 ) == QMessageBox.Yes:
             self.on_action_download_card_data_triggered()
 
-
     @pyqtSlot()
     def _select_first_page(self):
         old_selection = self.document_view.selectionModel().currentIndex()
