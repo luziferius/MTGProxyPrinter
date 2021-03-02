@@ -44,14 +44,15 @@ class IsRegularExpressionValidator(QValidator):
         except re.error:
             return QValidator.Intermediate, input_string, pos
         except RecursionError:
-            # An input like '('*10000+'z'+')'*10000 (evaluated) will throw a RecursionError.
+            # An input like the evaluated result of the expression '('*10000+'z'+')'*10000  will throw a RecursionError.
+            # (Depending on the recursion limit)
             # Deem this invalid, as it cannot be parsed at all and allowing the user to append more will not help
             return QValidator.Invalid, input_string, pos
         else:
             return QValidator.Acceptable, input_string, pos
 
 
-class LoadListPage(*inherits_from_ui_file_with_name("load_list_page")):
+class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
     def __init__(self, *args, **kwargs):
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
@@ -80,7 +81,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("load_list_page")):
                     self.deck_list.setPlainText(opened_file.read())
 
 
-class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_page")):
+class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/select_deck_parser_page")):
     """
     This page allows the user to chose which format their deck list uses.
     The result will be used to chose an appropriate parser implementation.
@@ -135,14 +136,14 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("select_deck_parser_
         raise RuntimeError("Requested parser on invalid page state")
 
     def validatePage(self) -> bool:
-        # TODO: Despite working, this emits a warning “QWizard::setField: Couldn't write to property 'parser'”.
+        # TODO: Despite working, this emits a warning “QWizard::setField: Couldn't write to property ''”.
         #  Research the cause and try to fix this.
         self.setField("selected_parser", self.get_parser())
         logger.info(f"User selected parser: {self.field('selected_parser').__class__.__name__}")
         return super(SelectDeckParserPage, self).validatePage()
 
 
-class SummaryPage(*inherits_from_ui_file_with_name("parser_result_page")):
+class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
     def __init__(self, *args, **kwargs):
         super(SummaryPage, self).__init__(*args, **kwargs)
         self.parsed_cards_table: QTableView
