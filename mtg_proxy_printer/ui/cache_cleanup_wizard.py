@@ -37,6 +37,23 @@ def format_size(size: float) -> str:
     return f"{size:.2f} YiB"
 
 
+def get_image_for_tooltip_display(cache: QPixmapCache, scryfall_id: str, is_front: bool, path: pathlib.Path) -> str:
+    key = f"{scryfall_id}-{is_front}"
+    if (pixmap := cache.find(key)) is None:
+        pixmap = QPixmap(str(path))
+        scaling_factor = 3
+        pixmap = pixmap.scaled(
+            pixmap.width() // scaling_factor, pixmap.height() // scaling_factor,
+            Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        cache.insert(key, pixmap)
+    buffer = QBuffer()
+    buffer.open(QIODevice.WriteOnly)
+    pixmap.save(buffer, "PNG", quality=100)
+    image = bytes(buffer.data().toBase64()).decode()
+    tooltip_text = '<img src="data:image/png;base64,{}">'.format(image)
+    return tooltip_text
+
+
 class MTGSet:
 
     def __init__(self, name: str, abbr: str):
@@ -86,20 +103,8 @@ class KnownCardRow:
             data = str(self.path)
         elif column == 6 and role == Qt.EditRole:
             data = self.path
-        elif column == 6 and role == Qt.ToolTipRole:
-            key = f"{self.scryfall_id}-{self.is_front}"
-            if (pixmap := self.pixmap_cache.find(key)) is None:
-                pixmap = QPixmap(str(self.path))
-                scaling_factor = 3
-                pixmap = pixmap.scaled(
-                    pixmap.width()//scaling_factor, pixmap.height()//scaling_factor,
-                    Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                self.pixmap_cache.insert(key, pixmap)
-            buffer = QBuffer()
-            buffer.open(QIODevice.WriteOnly)
-            pixmap.save(buffer, "PNG", quality=100)
-            image = bytes(buffer.data().toBase64()).decode()
-            data = '<img src="data:image/png;base64,{}">'.format(image)
+        elif column == 6 and role == Qt.ToolTipRole and self.pixmap_cache is not None:
+            data = get_image_for_tooltip_display(self.pixmap_cache, self.scryfall_id, self.is_front, self.path)
         else:
             data = None
         return data
@@ -159,6 +164,36 @@ class KnownCardImageModel(QAbstractTableModel):
         self.endResetModel()
 
 
+@dataclasses.dataclass()
+class UnknownCardRow:
+    scryfall_id: str
+    is_front: bool
+    size: int
+    path: pathlib.Path
+    pixmap_cache: QPixmapCache = None
+
+    def data(self, column: int, role: int):
+        if column == 0 and role in (Qt.DisplayRole, Qt.EditRole):
+            data = self.scryfall_id
+        elif column == 1 and role == Qt.DisplayRole:
+            data = "Front" if self.is_front else "Back"
+        elif column == 1 and role == Qt.EditRole:
+            data = self.is_front
+        elif column == 2 and role == Qt.DisplayRole:
+            data = format_size(self.size)
+        elif column == 2 and role == Qt.EditRole:
+            data = self.size
+        elif column == 3 and role == Qt.DisplayRole:
+            data = str(self.path)
+        elif column == 3 and role == Qt.EditRole:
+            data = self.path
+        elif column == 3 and role == Qt.ToolTipRole and self.pixmap_cache is not None:
+            data = get_image_for_tooltip_display(self.pixmap_cache, self.scryfall_id, self.is_front, self.path)
+        else:
+            data = None
+        return data
+
+
 class UnknownCardImageModel(QAbstractTableModel):
 
     header_data = [
@@ -168,6 +203,15 @@ class UnknownCardImageModel(QAbstractTableModel):
         "Path",
     ]
 
+    def __init__(self, parent: QObject):
+        super(UnknownCardImageModel, self).__init__(parent)
+        self._data: typing.List[UnknownCardRow] = []
+        self.pixmap_cache = QPixmapCache()
+        self.pixmap_cache.setCacheLimit(100)
+
+    def rowCount(self, parent: QModelIndex = None) -> int:
+        return len(self._data)
+
     def columnCount(self, parent: QModelIndex = None) -> int:
         return len(self.header_data)
 
@@ -175,6 +219,26 @@ class UnknownCardImageModel(QAbstractTableModel):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self.header_data[section]
         return super(UnknownCardImageModel, self).headerData(section, orientation, role)
+
+    def data(self, index: QModelIndex, role: int = None) -> typing.Any:
+        if index.row() in range(0, self.rowCount()):
+            row = self._data[index.row()]
+            return row.data(index.column(), role)
+        return None
+
+    def add_row(self, scryfall_id: str, is_front: bool, file_path: pathlib.Path):
+        position = self.rowCount()
+        self.rowsAboutToBeInserted.emit(QModelIndex(), position, position)
+        row = UnknownCardRow(scryfall_id, is_front, file_path.stat().st_size, file_path, self.pixmap_cache)
+        self.beginInsertRows(QModelIndex(), position, position)
+        self._data.append(row)
+        self.endInsertRows()
+
+    def clear(self):
+        self.modelAboutToBeReset.emit()
+        self.beginResetModel()
+        self._data.clear()
+        self.endResetModel()
 
 
 class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/filter_setup_page")):
@@ -198,6 +262,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.setupUi(self)
         self.card_db = card_db
         self.image_db = image_db
+
         self.card_images_model = KnownCardImageModel(parent=self)
         self.unknown_images_model = UnknownCardImageModel(parent=self)
         self.card_image_view.setModel(self.card_images_model)
@@ -212,15 +277,12 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
             if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is not None:
                 self.card_images_model.add_row(card, file_path)
             else:
-                model = self.unknown_images_model
-                if model.insertRow(model.rowCount()):
-                    model.setData(model.index(model.rowCount()-1, 0), f"{scryfall_id}, {is_front=}")
-        pass
+                self.unknown_images_model.add_row(scryfall_id, is_front, file_path)
 
     def cleanupPage(self) -> None:
         super(CardFilterPage, self).cleanupPage()
         self.card_images_model.clear()
-        self.unknown_images_model.removeRows(0, self.unknown_images_model.rowCount())
+        self.unknown_images_model.clear()
 
 
 class CacheCleanupWizard(QWizard):
