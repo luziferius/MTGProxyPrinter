@@ -229,7 +229,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
-        wizard = CacheCleanupWizard(self)
+        wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
         wizard.show()
 
     @pyqtSlot()
