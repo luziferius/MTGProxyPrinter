@@ -140,9 +140,10 @@ class KnownCardImageModel(QAbstractTableModel):
             return row.data(index.column(), role)
         return None
 
-    def add_row(self, card: Card, file_path: pathlib.Path, size_bytes: int):
+    def add_row(self, card: Card, file_path: pathlib.Path):
         position = self.rowCount()
         self.rowsAboutToBeInserted.emit(QModelIndex(), position, position)
+        size_bytes = file_path.stat().st_size
         row = KnownCardRow(
             card.name, MTGSet(card.set_name, card.set_abbr), card.collector_number,
             card.is_front, size_bytes, card.scryfall_id, file_path, self.pixmap_cache
@@ -208,9 +209,8 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         super(CardFilterPage, self).initializePage()
         images_in_cache = self.image_db.get_cache_content()
         for scryfall_id, is_front, file_path in images_in_cache:
-            if self.card_db.is_scryfall_id_known(scryfall_id, is_front):
-                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-                self.card_images_model.add_row(card, file_path, file_path.stat().st_size)
+            if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is not None:
+                self.card_images_model.add_row(card, file_path)
             else:
                 model = self.unknown_images_model
                 if model.insertRow(model.rowCount()):
