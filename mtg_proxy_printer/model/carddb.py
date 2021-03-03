@@ -426,6 +426,13 @@ def migrate_card_database(db: sqlite3.Connection):
         """))
         db.commit()
         db.execute("PRAGMA user_version = 13")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 13:
+        logger.info("Running migration for schema version 13")
+        db.execute("BEGIN TRANSACTION")
+        db.execute(textwrap.dedent(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);"))
+        db.commit()
+        db.execute("PRAGMA user_version = 14")
+
     if needs_update:
         current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
         logger.info(f"Finished database migrations. {current_schema_version=}")
