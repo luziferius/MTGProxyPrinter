@@ -279,14 +279,16 @@ class CardDatabase:
         result, = self.db.execute(query, (scryfall_id, is_front)).fetchone()
         return bool(result)
 
-    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> Card:
+    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> typing.Optional[Card]:
         query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri\n' \
                 'FROM AllPrintings\n' \
                 'WHERE scryfall_id = ? AND is_front = ?'
-        name, set_abbr, set_name, collector_number, language, image_uri = self.db.execute(
-            query, (scryfall_id, is_front)
-        ).fetchone()
-        return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id, set_name=set_name)
+        result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
+        if result is None:
+            return None
+        else:
+            name, set_abbr, set_name, collector_number, language, image_uri = result
+            return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id, set_name=set_name)
 
     def get_opposing_face(self, card) -> typing.Optional[Card]:
         """
