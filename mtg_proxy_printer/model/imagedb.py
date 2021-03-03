@@ -41,6 +41,8 @@ __all__ = [
 ]
 
 ImageKey = typing.Tuple[str, bool]
+CacheContent = typing.Tuple[str, bool, pathlib.Path]
+PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 
 
 class ImageDatabase(QObject):
@@ -74,6 +76,34 @@ class ImageDatabase(QObject):
     @pyqtSlot(Card, int)
     def get_image_asynchronous(self, card: Card, count: int = 1):
         self.queue.put((card, count))
+
+    def get_cache_content(self) -> typing.List[CacheContent]:
+        """Returns all entries currently in the image cache."""
+        result: typing.List[CacheContent] = []
+        for directory, is_front in ((self.db_path/"front", True), (self.db_path/"back", False)):
+            result += (
+                (path.stem, is_front, path)
+                for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
+        return result
+
+    def delete_entries(self, images: typing.Iterable[ImageKey]) -> PathSizeList:
+        """
+        Remove the given images from the cache.
+
+        :returns: List with removed paths.
+        """
+        removed: PathSizeList = []
+        for scryfall_id, is_front in images:
+            path = self.db_path/("front" if is_front else "back")/scryfall_id[:2]/f"{scryfall_id}.png"
+            if path.is_file():
+                logger.debug(f"Removing image: {path}")
+                size_bytes = path.stat().st_size
+                path.unlink()
+                removed.append((path, size_bytes))
+            else:
+                logger.warning(f"Trying to remove image not in the cache. Not present: {scryfall_id=}, {is_front=}")
+        logger.info(f"Removed {len(removed)} images from the card cache")
+        return removed
 
 
 class ImageDownloader(QObject):
