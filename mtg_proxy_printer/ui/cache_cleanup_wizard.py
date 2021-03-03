@@ -14,12 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import datetime
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QItemSelection
 from PyQt5.QtGui import QIcon, QPixmapCache, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
+from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QTableView
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -163,6 +164,12 @@ class KnownCardImageModel(QAbstractTableModel):
         self._data.clear()
         self.endResetModel()
 
+    def all_keys(self):
+        return [
+            (row.scryfall_id, row.is_front)
+            for row in self._data
+        ]
+
 
 @dataclasses.dataclass()
 class UnknownCardRow:
@@ -278,6 +285,37 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
                 self.card_images_model.add_row(card, file_path)
             else:
                 self.unknown_images_model.add_row(scryfall_id, is_front, file_path)
+        self._apply_filter()
+
+    def _apply_filter(self):
+        self.unknown_image_view: QTableView
+        self.card_image_view: QTableView
+        if self.field("remove-unknown-cards-enabled"):
+
+            for row in range(self.unknown_images_model.rowCount()):
+                self.unknown_image_view.selectionModel().select(
+                    self.unknown_images_model.createIndex(row, 0),
+                    QItemSelectionModel.Select | QItemSelectionModel.Rows
+                )
+
+        keys = self.card_images_model.all_keys()
+        if self.field("time-filter-enabled"):
+            date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
+            logger.info(f"Deleting all images not used since {date.isoformat()}")
+            indices = self.card_db.cards_not_used_since(keys, date)
+            self._select_indices(indices)
+        if self.field("count-filter-enabled"):
+            indices = self.card_db.cards_used_less_often_then(keys, self.field("count-filter-value"))
+            self._select_indices(indices)
+
+    def _select_indices(self, indices: typing.List[int]):
+        self.card_image_view: QTableView
+        selection_model = self.card_image_view.selectionModel()
+        for index in indices:
+            selection_model.select(
+                self.card_images_model.createIndex(index, 0),
+                QItemSelectionModel.Select | QItemSelectionModel.Rows
+            )
 
     def cleanupPage(self) -> None:
         super(CardFilterPage, self).cleanupPage()

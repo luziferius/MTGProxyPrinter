@@ -349,6 +349,37 @@ class CardDatabase:
         else:
             return None
 
+    def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
+        query = textwrap.dedent("""
+            SELECT last_use_date < ? AS last_use_was_before_threshold
+            FROM LastImageUseTimestamps
+            WHERE scryfall_id = ?
+              AND is_front = ?""")
+        cards_not_used_since = []
+        for index, (scryfall_id, is_front) in enumerate(keys):
+            result = self.db.execute(
+                query,
+                (date.isoformat(), scryfall_id, is_front)
+            ).fetchone()
+            if result is None or result[0]:
+                cards_not_used_since.append(index)
+        return cards_not_used_since
+
+    def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
+        query = textwrap.dedent("""
+            SELECT NOT EXISTS (
+              SELECT scryfall_id
+              FROM LastImageUseTimestamps
+              WHERE scryfall_id = ?
+                AND is_front = ?
+                AND usage_count >= ?
+            ) AS hit""")
+        result = []
+        for index, (scryfall_id, is_front) in enumerate(keys):
+            if self.db.execute(query, (scryfall_id, is_front, count)).fetchone()[0]:
+                result.append(index)
+        return result
+
 
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
