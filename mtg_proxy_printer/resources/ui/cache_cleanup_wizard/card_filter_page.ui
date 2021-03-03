@@ -31,7 +31,11 @@
     </widget>
    </item>
    <item>
-    <widget class="QTableView" name="card_image_view"/>
+    <widget class="QTableView" name="card_image_view">
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+    </widget>
    </item>
    <item>
     <widget class="QLabel" name="unknown_images_view_label">
