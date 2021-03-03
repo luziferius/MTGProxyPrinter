@@ -17,8 +17,8 @@ import dataclasses
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QVariant
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice
+from PyQt5.QtGui import QIcon, QPixmapCache, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
@@ -63,6 +63,7 @@ class KnownCardRow:
     size: int
     scryfall_id: str
     path: pathlib.Path
+    pixmap_cache: QPixmapCache = None
 
     def data(self, column: int, role: int):
         if column == 0 and role in (Qt.DisplayRole, Qt.EditRole):
@@ -85,6 +86,20 @@ class KnownCardRow:
             data = str(self.path)
         elif column == 6 and role == Qt.EditRole:
             data = self.path
+        elif column == 6 and role == Qt.ToolTipRole:
+            key = f"{self.scryfall_id}-{self.is_front}"
+            if (pixmap := self.pixmap_cache.find(key)) is None:
+                pixmap = QPixmap(str(self.path))
+                scaling_factor = 3
+                pixmap = pixmap.scaled(
+                    pixmap.width()//scaling_factor, pixmap.height()//scaling_factor,
+                    Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                self.pixmap_cache.insert(key, pixmap)
+            buffer = QBuffer()
+            buffer.open(QIODevice.WriteOnly)
+            pixmap.save(buffer, "PNG", quality=100)
+            image = bytes(buffer.data().toBase64()).decode()
+            data = '<img src="data:image/png;base64,{}">'.format(image)
         else:
             data = None
         return data
@@ -105,6 +120,8 @@ class KnownCardImageModel(QAbstractTableModel):
     def __init__(self, parent: QObject):
         super(KnownCardImageModel, self).__init__(parent)
         self._data: typing.List[KnownCardRow] = []
+        self.pixmap_cache = QPixmapCache()
+        self.pixmap_cache.setCacheLimit(100)
 
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self._data)
@@ -128,7 +145,7 @@ class KnownCardImageModel(QAbstractTableModel):
         self.rowsAboutToBeInserted.emit(QModelIndex(), position, position)
         row = KnownCardRow(
             card.name, MTGSet(card.set_name, card.set_abbr), card.collector_number,
-            card.is_front, size_bytes, card.scryfall_id, file_path
+            card.is_front, size_bytes, card.scryfall_id, file_path, self.pixmap_cache
         )
         self.beginInsertRows(QModelIndex(), position, position)
         self._data.append(row)
@@ -139,7 +156,6 @@ class KnownCardImageModel(QAbstractTableModel):
         self.beginResetModel()
         self._data.clear()
         self.endResetModel()
-
 
 
 class UnknownCardImageModel(QAbstractTableModel):
