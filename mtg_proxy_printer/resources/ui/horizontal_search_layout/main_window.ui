@@ -68,6 +68,7 @@
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
     <addaction name="action_save_as"/>
+    <addaction name="action_print_preview"/>
     <addaction name="action_print"/>
     <addaction name="action_print_pdf"/>
     <addaction name="separator"/>
@@ -115,6 +116,7 @@
    <addaction name="action_load_document"/>
    <addaction name="action_save_document"/>
    <addaction name="separator"/>
+   <addaction name="action_print_preview"/>
    <addaction name="action_print"/>
    <addaction name="action_print_pdf"/>
    <addaction name="separator"/>
@@ -151,9 +153,20 @@
     <string>Ctrl+P</string>
    </property>
   </action>
+  <action name="action_print_preview">
+   <property name="icon">
+    <iconset theme="document-print-preview"/>
+   </property>
+   <property name="text">
+    <string>&amp;Show print preview</string>
+   </property>
+   <property name="toolTip">
+    <string>Show print preview window</string>
+   </property>
+  </action>
   <action name="action_print_pdf">
    <property name="icon">
-    <iconset theme="document-print"/>
+    <iconset theme="viewpdf"/>
    </property>
    <property name="text">
     <string>&amp;Create PDF</string>

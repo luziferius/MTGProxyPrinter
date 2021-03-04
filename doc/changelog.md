@@ -4,6 +4,8 @@
 
 # Implemented features
 
+- Added direct printing support. The user can now directly print documents using a physical printer attached to the
+  computer. It uses the systems native printing support, where available.
 - Added command line arguments: The application now accepts a document path as a positional argument.
   This allows opening documents when starting the application.
   - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file. And it can be used
@@ -13,6 +15,10 @@
 - Implemented a way to trim down the locally stored images: Added a wizard to the Settings menu that allows deletion
   of unused or seldom used card images based on configurable criteria.
   If the user wishes, they can exactly select which images to delete.
+
+## Changed Features
+
+- The card database download now runs in the background. Most of the UI elements stay disabled while the download runs.
 
 ## Fixed issues
 

@@ -17,6 +17,7 @@ import pathlib
 import sys
 
 from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser
+from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
@@ -35,6 +36,8 @@ __all__ = [
     "SaveDocumentAsDialog",
     "LoadDocumentDialog",
     "AboutMTGProxyPrinterDialog",
+    "PrintPreviewDialog",
+    "PrintDialog",
 ]
 
 
@@ -135,3 +138,23 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.python_version_label.setText(sys.version.replace("\n", " "))
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+
+class PrintPreviewDialog(QPrintPreviewDialog):
+
+    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+        self.qprinter = mtg_proxy_printer.print.create_qprinter(document)
+        super(PrintPreviewDialog, self).__init__(self.qprinter, parent)
+        self.renderer = mtg_proxy_printer.print.Renderer(document, self)
+        self.paintRequested.connect(self.renderer.print_document)
+
+
+class PrintDialog(QPrintDialog):
+
+    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
+        self.qprinter = mtg_proxy_printer.print.create_qprinter(document)
+        super(PrintDialog, self).__init__(self.qprinter, parent)
+        self.renderer = mtg_proxy_printer.print.Renderer(document, self)
+        # When the user accepts the dialog, print the document and increase the usage counts
+        self.accepted[QPrinter].connect(self.renderer.print_document)
+        self.accepted.connect(document.store_image_usage)

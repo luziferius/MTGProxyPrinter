@@ -22,6 +22,7 @@
     <file>icons/document-new.svg</file>
     <file>icons/document-open.svg</file>
     <file>icons/document-print-direct.svg</file>
+    <file>icons/document-print-preview.svg</file>
     <file>icons/document-print.svg</file>
     <file>icons/document-save.svg</file>
     <file>icons/document-save-as.svg</file>
@@ -32,5 +33,6 @@
     <file>icons/go-next.svg</file>
     <file>icons/go-previous.svg</file>
     <file>icons/help-contents.svg</file>
+    <file>icons/viewpdf.svg</file>
 </qresource>
 </RCC>
