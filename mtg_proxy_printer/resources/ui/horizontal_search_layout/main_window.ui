@@ -153,7 +153,7 @@
   </action>
   <action name="action_print_pdf">
    <property name="icon">
-    <iconset theme="document-print"/>
+    <iconset theme="viewpdf"/>
    </property>
    <property name="text">
     <string>&amp;Create PDF</string>
