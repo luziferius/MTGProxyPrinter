@@ -174,9 +174,6 @@
    <property name="toolTip">
     <string>Create a PDF document</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
-   </property>
   </action>
   <action name="action_discard_page">
    <property name="icon">
@@ -223,6 +220,9 @@
    <property name="text">
     <string>Save</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
   </action>
   <action name="action_load_document">
    <property name="icon">
@@ -230,6 +230,9 @@
    </property>
    <property name="text">
     <string>Load</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="action_save_as">

@@ -175,7 +175,7 @@
     <string>&amp;Print</string>
    </property>
    <property name="toolTip">
-    <string>Print all pages</string>
+    <string>Print the current documents</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
@@ -201,9 +201,6 @@
    </property>
    <property name="toolTip">
     <string>Create a PDF document</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="action_discard_page">
@@ -251,6 +248,9 @@
    <property name="text">
     <string>Save</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
   </action>
   <action name="action_load_document">
    <property name="icon">
@@ -258,6 +258,9 @@
    </property>
    <property name="text">
     <string>Load</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+L</string>
    </property>
   </action>
   <action name="action_save_as">
