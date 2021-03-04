@@ -18,9 +18,9 @@ import datetime
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QItemSelection
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmapCache, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QTableView
+from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QTableView, QLabel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -332,22 +332,44 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.unknown_image_view: QTableView
         self.card_image_view: QTableView
         selected_images: typing.List[typing.Tuple[str, bool, int]] = [
-            (index.siblingAtRow(0).data(), index.siblingAtRow(1).data(), index.siblingAtRow(2).data())
+            (index.siblingAtColumn(0).data(Qt.EditRole),
+             index.siblingAtColumn(1).data(Qt.EditRole),
+             index.siblingAtColumn(2).data(Qt.EditRole))
             for index in self.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
-            (index.siblingAtRow(5).data(), index.siblingAtRow(3).data(), index.siblingAtRow(4).data())
+            (index.siblingAtColumn(5).data(Qt.EditRole),
+             index.siblingAtColumn(3).data(Qt.EditRole),
+             index.siblingAtColumn(4).data(Qt.EditRole))
             for index in self.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
         return super(CardFilterPage, self).validatePage()
 
 
+class SummaryPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/summary_page")):
+
+    def __init__(self, parent: QWidget = None):
+        super(SummaryPage, self).__init__(parent)
+        self.setupUi(self)
+
+    def initializePage(self) -> None:
+        self.image_count_summary: QLabel
+        self.filesize_summary: QLabel
+        indices = self.field("selected-images")
+        logger.info(indices)
+        disk_space_freed = format_size(sum(size_bytes for _, _, size_bytes in indices))
+        self.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
+        self.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
+
+
 class CacheCleanupWizard(QWizard):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(CacheCleanupWizard, self).__init__(*args, **kwargs)
+        self.image_db = image_db
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
+        self.addPage(SummaryPage(self))
         self.setWindowTitle("Cleanup the local image cache")
         self._setup_window_icon()
         self._setup_button_icons()
@@ -370,3 +392,10 @@ class CacheCleanupWizard(QWizard):
             if icon.isNull():
                 icon = load_icon(icon_name)
             self.button(button).setIcon(icon)
+
+    def accept(self) -> None:
+        super(CacheCleanupWizard, self).accept()
+        self.image_db.delete_entries((
+            (scryfall_id, is_front)
+            for scryfall_id, is_front, _ in self.field("selected-images")
+        ))
