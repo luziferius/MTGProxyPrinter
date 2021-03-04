@@ -20,7 +20,7 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmapCache, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QTableView, QLabel
+from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -275,7 +275,6 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.unknown_image_model = UnknownCardImageModel(parent=self)
         self.card_image_view.setModel(self.card_image_model)
         self.unknown_image_view.setModel(self.unknown_image_model)
-
         self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -298,10 +297,11 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
             keys = self.card_image_model.all_keys()
             if self.field("time-filter-enabled"):
                 date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
-                logger.info(f"Deleting all images not used since {date.isoformat()}")
+                logger.debug(f"Select for deletion all images not used since {date.isoformat()}")
                 indices = self.card_db.cards_not_used_since(keys, date)
                 self._select_indices(indices)
             if self.field("count-filter-enabled"):
+                logger.debug(f"Select for deletion all images used less that {self.field('count-filter-value')} times")
                 indices = self.card_db.cards_used_less_often_then(keys, self.field("count-filter-value"))
                 self._select_indices(indices)
 
@@ -329,6 +329,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.unknown_image_model.clear()
 
     def validatePage(self) -> bool:
+        logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
         self.unknown_image_view: QTableView
         self.card_image_view: QTableView
         selected_images: typing.List[typing.Tuple[str, bool, int]] = [
@@ -351,15 +352,16 @@ class SummaryPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/summary
     def __init__(self, parent: QWidget = None):
         super(SummaryPage, self).__init__(parent)
         self.setupUi(self)
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
         self.image_count_summary: QLabel
         self.filesize_summary: QLabel
         indices = self.field("selected-images")
-        logger.info(indices)
         disk_space_freed = format_size(sum(size_bytes for _, _, size_bytes in indices))
         self.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
         self.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
+        logger.debug(f"{self.__class__.__name__} populated.")
 
 
 class CacheCleanupWizard(QWizard):
@@ -395,6 +397,7 @@ class CacheCleanupWizard(QWizard):
 
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()
+        logger.info("User accepted the wizard, deleting entries from the cache.")
         self.image_db.delete_entries((
             (scryfall_id, is_front)
             for scryfall_id, is_front, _ in self.field("selected-images")
