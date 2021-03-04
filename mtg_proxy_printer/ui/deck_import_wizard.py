@@ -17,7 +17,7 @@ import re
 import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QValidator
+from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton, \
     QCheckBox
 
@@ -181,11 +181,19 @@ class DeckImportWizard(QWizard):
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(DeckImportWizard, self).__init__(*args, **kwargs)
         self.card_db = card_db
-        self.addPage(SelectDeckParserPage(card_db))
-        self.addPage(LoadListPage())
-        self.addPage(SummaryPage())
+        self.addPage(SelectDeckParserPage(card_db, self))
+        self.addPage(LoadListPage(self))
+        self.addPage(SummaryPage(self))
+        self._setup_window_icon()
+        self.setBaseSize(800, 600)
         self.setWindowTitle("Import a deck list")
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_window_icon(self, icon_name: str = "document-import"):
+        icon = QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            icon = load_icon(icon_name)
+        self.setWindowIcon(icon)
 
     def accept(self):
         logger.info("User finished the import wizard, performing the requested actions")

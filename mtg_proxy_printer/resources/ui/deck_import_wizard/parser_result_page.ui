@@ -2,17 +2,6 @@
 <ui version="4.0">
  <class>WizardPage</class>
  <widget class="QWizardPage" name="WizardPage">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>590</width>
-    <height>477</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>WizardPage</string>
-  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
@@ -78,11 +67,14 @@ If unchecked, append the list below to the document.</string>
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustToContents</enum>
+     </property>
      <property name="acceptRichText">
       <bool>false</bool>
      </property>
      <property name="placeholderText">
-      <string>Everything was successfully parsed!</string>
+      <string>Nothing. All cards were successfully identified!</string>
      </property>
      <property name="openLinks">
       <bool>false</bool>

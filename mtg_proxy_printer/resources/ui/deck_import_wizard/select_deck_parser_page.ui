@@ -2,14 +2,6 @@
 <ui version="4.0">
  <class>WizardPage</class>
  <widget class="QWizardPage" name="WizardPage">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>550</width>
-    <height>190</height>
-   </rect>
-  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>

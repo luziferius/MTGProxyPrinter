@@ -1,18 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWizardPage" name="Form">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>434</width>
-    <height>318</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
+ <class>WizardPage</class>
+ <widget class="QWizardPage" name="WizardPage">
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
@@ -29,7 +18,8 @@
       <string>Select deck list file</string>
      </property>
      <property name="icon">
-      <iconset theme="document-open"/>
+      <iconset theme="document-open">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
