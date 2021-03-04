@@ -4,6 +4,8 @@
 
 # Implemented features
 
+- Added direct printing support. The user can now directly print documents using a physical printer attached to the
+  computer. It uses the systems native printing support, where available.
 - Added command line arguments: The application now accepts a document path as a positional argument.
   This allows opening documents when starting the application.
   - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file. And it can be used
