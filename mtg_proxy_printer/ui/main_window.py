@@ -244,34 +244,39 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
+        if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
+            return
         print_dialog = PrintDialog(self.document, self)
-        print_dialog.show()
         print_dialog.exec_()
 
     @pyqtSlot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
+        if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
+            return
         print_preview_dialog = PrintPreviewDialog(self.document, self)
-        print_preview_dialog.show()
         print_preview_dialog.exec_()
-
 
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
+        if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
+            return
+        dialog = SavePDFDialog(self, self.document)
+        dialog.exec_()
+
+    def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
             result = QMessageBox.question(
                 self, "Saving pages possible",
                 f"It is possible to save {savable_pages} pages when printing this document.\n"
-                f"Do you want to compact the document now to minimize the page count prior to exporting as a PDF?",
+                f"Do you want to compact the document now to minimize the page count prior to {action}?",
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )
             if result == QMessageBox.Yes:
                 self.document.compact_pages()
-            elif result == QMessageBox.Cancel:
-                return
-        dialog = SavePDFDialog(self, self.document)
-        dialog.exec_()
+            return result
+        return QMessageBox.No  # No pages can be saved, assume "No" for this case
 
     def ask_user_about_empty_database(self):
         """
