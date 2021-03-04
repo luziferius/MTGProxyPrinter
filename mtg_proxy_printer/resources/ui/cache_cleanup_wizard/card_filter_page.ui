@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WizardPage</class>
+ <widget class="QWizardPage" name="WizardPage">
+  <property name="windowTitle">
+   <string>WizardPage</string>
+  </property>
+  <property name="title">
+   <string>Cleanup local image database</string>
+  </property>
+  <property name="subTitle">
+   <string>Select images for removal. Click on entries in the tables below to mark or unmark them for removal</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="card_image_view_label">
+     <property name="text">
+      <string>All images currently stored on disk:</string>
+     </property>
+     <property name="buddy">
+      <cstring>card_image_view</cstring>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableView" name="card_image_view">
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustToContents</enum>
+     </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="unknown_images_view_label">
+     <property name="toolTip">
+      <string>Images found on disk that can not be associated with any card.</string>
+     </property>
+     <property name="text">
+      <string>Unknown images:</string>
+     </property>
+     <property name="buddy">
+      <cstring>unknown_image_view</cstring>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QTableView" name="unknown_image_view">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

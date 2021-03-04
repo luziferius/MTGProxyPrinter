@@ -10,6 +10,9 @@
     to associate the file type with the program and then automatically open saved documents by clicking on them.
 - When changing download filter settings, ask the user if they want to re-download the card data. The user can do so
   when asked or any time later.
+- Implemented a way to trim down the locally stored images: Added a wizard to the Settings menu that allows deletion
+  of unused or seldom used card images based on configurable criteria.
+  If the user wishes, they can exactly select which images to delete.
 
 ## Fixed issues
 

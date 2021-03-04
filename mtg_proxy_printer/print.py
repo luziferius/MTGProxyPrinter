@@ -43,6 +43,7 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
         logger.info(f"Creating PDF ({document_index+1}/{total_documents+1}) with {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
+    document.store_image_usage()
 
 
 class PDFPrinter(QPdfWriter):

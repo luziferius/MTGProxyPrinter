@@ -109,6 +109,7 @@
     </property>
     <addaction name="action_show_settings"/>
     <addaction name="action_download_card_data"/>
+    <addaction name="action_cleanup_local_image_cache"/>
     <addaction name="separator"/>
     <addaction name="action_show_about_dialog"/>
    </widget>
@@ -279,6 +280,14 @@
    </property>
    <property name="toolTip">
     <string>Import a deck list from online sources</string>
+   </property>
+  </action>
+  <action name="action_cleanup_local_image_cache">
+   <property name="icon">
+    <iconset theme="edit-clear-history"/>
+   </property>
+   <property name="text">
+    <string>Cleanup local image cache</string>
    </property>
   </action>
  </widget>

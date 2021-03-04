@@ -10,6 +10,9 @@
     <file>ui/deck_import_wizard/load_list_page.ui</file>
     <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>
     <file>ui/deck_import_wizard/parser_result_page.ui</file>
+    <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
+    <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
+    <file>ui/cache_cleanup_wizard/summary_page.ui</file>
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/application-exit.svg</file>
     <file>icons/configure.svg</file>
@@ -22,8 +25,12 @@
     <file>icons/document-print.svg</file>
     <file>icons/document-save.svg</file>
     <file>icons/document-save-as.svg</file>
+    <file>icons/edit-clear-history.svg</file>
     <file>icons/edit-delete.svg</file>
     <file>icons/edit-download.svg</file>
     <file>icons/format-align-vertical-top.svg</file>
+    <file>icons/go-next.svg</file>
+    <file>icons/go-previous.svg</file>
+    <file>icons/help-contents.svg</file>
 </qresource>
 </RCC>

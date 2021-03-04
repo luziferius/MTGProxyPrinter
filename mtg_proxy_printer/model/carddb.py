@@ -279,14 +279,16 @@ class CardDatabase:
         result, = self.db.execute(query, (scryfall_id, is_front)).fetchone()
         return bool(result)
 
-    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> Card:
+    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> typing.Optional[Card]:
         query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri\n' \
                 'FROM AllPrintings\n' \
                 'WHERE scryfall_id = ? AND is_front = ?'
-        name, set_abbr, set_name, collector_number, language, image_uri = self.db.execute(
-            query, (scryfall_id, is_front)
-        ).fetchone()
-        return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id, set_name=set_name)
+        result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
+        if result is None:
+            return None
+        else:
+            name, set_abbr, set_name, collector_number, language, image_uri = result
+            return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id, set_name=set_name)
 
     def get_opposing_face(self, card) -> typing.Optional[Card]:
         """
@@ -346,6 +348,37 @@ class CardDatabase:
             return result[0]
         else:
             return None
+
+    def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
+        query = textwrap.dedent("""
+            SELECT last_use_date < ? AS last_use_was_before_threshold
+            FROM LastImageUseTimestamps
+            WHERE scryfall_id = ?
+              AND is_front = ?""")
+        cards_not_used_since = []
+        for index, (scryfall_id, is_front) in enumerate(keys):
+            result = self.db.execute(
+                query,
+                (date.isoformat(), scryfall_id, is_front)
+            ).fetchone()
+            if result is None or result[0]:
+                cards_not_used_since.append(index)
+        return cards_not_used_since
+
+    def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
+        query = textwrap.dedent("""
+            SELECT NOT EXISTS (
+              SELECT scryfall_id
+              FROM LastImageUseTimestamps
+              WHERE scryfall_id = ?
+                AND is_front = ?
+                AND usage_count >= ?
+            ) AS hit""")
+        result = []
+        for index, (scryfall_id, is_front) in enumerate(keys):
+            if self.db.execute(query, (scryfall_id, is_front, count)).fetchone()[0]:
+                result.append(index)
+        return result
 
 
 def migrate_card_database(db: sqlite3.Connection):
@@ -408,6 +441,31 @@ def migrate_card_database(db: sqlite3.Connection):
         store_download_settings(db)
         db.commit()
         db.execute("PRAGMA user_version = 12")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 12:
+        logger.info("Running migration for schema version 12")
+        db.execute("BEGIN TRANSACTION")
+        db.execute(textwrap.dedent(r"""
+        CREATE TABLE LastImageUseTimestamps (
+          -- Used to store the last image use timestamp and usage count of each image.
+          -- The usage count measures how often an image was part of a printed or exported document. Printing multiple copies
+          -- in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
+          scryfall_id TEXT NOT NULL,
+          is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
+          usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
+          last_use_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (scryfall_id, is_front)
+          -- No foreign key relation here. This table should be persistent across card data downloads
+        );
+        """))
+        db.commit()
+        db.execute("PRAGMA user_version = 13")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 13:
+        logger.info("Running migration for schema version 13")
+        db.execute("BEGIN TRANSACTION")
+        db.execute(textwrap.dedent(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);"))
+        db.commit()
+        db.execute("PRAGMA user_version = 14")
+
     if needs_update:
         current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
         logger.info(f"Finished database migrations. {current_schema_version=}")
