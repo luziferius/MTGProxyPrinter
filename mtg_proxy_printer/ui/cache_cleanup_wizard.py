@@ -253,9 +253,9 @@ class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/fil
     def __init__(self, parent: QWidget = None):
         super(FilterSetupPage, self).__init__(parent)
         self.setupUi(self)
+        self.registerField("remove-everything-enabled", self.delete_everything_checkbox)
         self.registerField("time-filter-enabled", self.time_filter_enabled_checkbox)
         self.registerField("time-filter-value", self.time_filter_value_spinbox)
-        self.registerField("filter-combination-choice", self.combination_choice_combobox)
         self.registerField("count-filter-enabled", self.count_filter_enabled_checkbox)
         self.registerField("count-filter-value", self.count_filter_value_spinbox)
         self.registerField("remove-unknown-cards-enabled", self.remove_unknown_cards_checkbox)
@@ -288,27 +288,31 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self._apply_filter()
 
     def _apply_filter(self):
-        self.unknown_image_view: QTableView
+        self._select_unknown_cards_if_enabled()
         self.card_image_view: QTableView
-        if self.field("remove-unknown-cards-enabled"):
+        if self.field("remove-everything-enabled"):
+            self._select_indices(range(self.card_images_model.rowCount()))
+        else:
+            keys = self.card_images_model.all_keys()
+            if self.field("time-filter-enabled"):
+                date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
+                logger.info(f"Deleting all images not used since {date.isoformat()}")
+                indices = self.card_db.cards_not_used_since(keys, date)
+                self._select_indices(indices)
+            if self.field("count-filter-enabled"):
+                indices = self.card_db.cards_used_less_often_then(keys, self.field("count-filter-value"))
+                self._select_indices(indices)
 
+    def _select_unknown_cards_if_enabled(self):
+        self.unknown_image_view: QTableView
+        if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
             for row in range(self.unknown_images_model.rowCount()):
                 self.unknown_image_view.selectionModel().select(
                     self.unknown_images_model.createIndex(row, 0),
                     QItemSelectionModel.Select | QItemSelectionModel.Rows
                 )
 
-        keys = self.card_images_model.all_keys()
-        if self.field("time-filter-enabled"):
-            date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
-            logger.info(f"Deleting all images not used since {date.isoformat()}")
-            indices = self.card_db.cards_not_used_since(keys, date)
-            self._select_indices(indices)
-        if self.field("count-filter-enabled"):
-            indices = self.card_db.cards_used_less_often_then(keys, self.field("count-filter-value"))
-            self._select_indices(indices)
-
-    def _select_indices(self, indices: typing.List[int]):
+    def _select_indices(self, indices: typing.Iterable[int]):
         self.card_image_view: QTableView
         selection_model = self.card_image_view.selectionModel()
         for index in indices:
@@ -330,7 +334,18 @@ class CacheCleanupWizard(QWizard):
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.setWindowTitle("Cleanup the local image cache")
-        icon_name = "edit-clear-history"
-        icon = QIcon.fromTheme(icon_name)
-        self.setWindowIcon(icon if not icon.isNull() else load_icon(icon_name))
+        self._setup_window_icon()
+        self._setup_accept_button_icon()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_window_icon(self, icon_name: str = "edit-clear-history"):
+        icon = QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            icon = load_icon(icon_name)
+        self.setWindowIcon(icon)
+
+    def _setup_accept_button_icon(self, icon_name: str = "edit-delete"):
+        icon = QIcon.fromTheme(icon_name)
+        if icon.isNull():
+            icon = load_icon(icon_name)
+        self.button(QWizard.FinishButton).setIcon(icon)
