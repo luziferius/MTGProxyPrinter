@@ -31,7 +31,7 @@ from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutMTGProxyPrinterDialog
+    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
@@ -243,7 +243,17 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
-        self.nothing_happens_box.show()
+        print_dialog = PrintDialog(self.document, self)
+        print_dialog.show()
+        print_dialog.exec_()
+
+    @pyqtSlot()
+    def on_action_print_preview_triggered(self):
+        logger.info(f"User views the print preview.")
+        print_preview_dialog = PrintPreviewDialog(self.document, self)
+        print_preview_dialog.show()
+        print_preview_dialog.exec_()
+
 
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
