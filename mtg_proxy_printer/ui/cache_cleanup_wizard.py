@@ -269,12 +269,14 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.setupUi(self)
         self.card_db = card_db
         self.image_db = image_db
+        self.unknown_image_view: QTableView
+        self.card_image_view: QTableView
+        self.card_image_model = KnownCardImageModel(parent=self)
+        self.unknown_image_model = UnknownCardImageModel(parent=self)
+        self.card_image_view.setModel(self.card_image_model)
+        self.unknown_image_view.setModel(self.unknown_image_model)
 
-        self.card_images_model = KnownCardImageModel(parent=self)
-        self.unknown_images_model = UnknownCardImageModel(parent=self)
-        self.card_image_view.setModel(self.card_images_model)
-        self.unknown_image_view.setModel(self.unknown_images_model)
-
+        self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
@@ -282,18 +284,18 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         images_in_cache = self.image_db.get_cache_content()
         for scryfall_id, is_front, file_path in images_in_cache:
             if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is not None:
-                self.card_images_model.add_row(card, file_path)
+                self.card_image_model.add_row(card, file_path)
             else:
-                self.unknown_images_model.add_row(scryfall_id, is_front, file_path)
+                self.unknown_image_model.add_row(scryfall_id, is_front, file_path)
         self._apply_filter()
 
     def _apply_filter(self):
         self._select_unknown_cards_if_enabled()
         self.card_image_view: QTableView
         if self.field("remove-everything-enabled"):
-            self._select_indices(range(self.card_images_model.rowCount()))
+            self._select_indices(range(self.card_image_model.rowCount()))
         else:
-            keys = self.card_images_model.all_keys()
+            keys = self.card_image_model.all_keys()
             if self.field("time-filter-enabled"):
                 date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
                 logger.info(f"Deleting all images not used since {date.isoformat()}")
@@ -306,9 +308,9 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
     def _select_unknown_cards_if_enabled(self):
         self.unknown_image_view: QTableView
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
-            for row in range(self.unknown_images_model.rowCount()):
+            for row in range(self.unknown_image_model.rowCount()):
                 self.unknown_image_view.selectionModel().select(
-                    self.unknown_images_model.createIndex(row, 0),
+                    self.unknown_image_model.createIndex(row, 0),
                     QItemSelectionModel.Select | QItemSelectionModel.Rows
                 )
 
@@ -317,14 +319,27 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         selection_model = self.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
-                self.card_images_model.createIndex(index, 0),
+                self.card_image_model.createIndex(index, 0),
                 QItemSelectionModel.Select | QItemSelectionModel.Rows
             )
 
     def cleanupPage(self) -> None:
         super(CardFilterPage, self).cleanupPage()
-        self.card_images_model.clear()
-        self.unknown_images_model.clear()
+        self.card_image_model.clear()
+        self.unknown_image_model.clear()
+
+    def validatePage(self) -> bool:
+        self.unknown_image_view: QTableView
+        self.card_image_view: QTableView
+        selected_images: typing.List[typing.Tuple[str, bool, int]] = [
+            (index.siblingAtRow(0).data(), index.siblingAtRow(1).data(), index.siblingAtRow(2).data())
+            for index in self.unknown_image_view.selectedIndexes() if not index.column()
+        ] + [
+            (index.siblingAtRow(5).data(), index.siblingAtRow(3).data(), index.siblingAtRow(4).data())
+            for index in self.card_image_view.selectedIndexes() if not index.column()
+        ]
+        self.setField("selected-images", selected_images)
+        return super(CardFilterPage, self).validatePage()
 
 
 class CacheCleanupWizard(QWizard):
