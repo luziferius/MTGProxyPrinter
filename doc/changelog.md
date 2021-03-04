@@ -1,6 +1,13 @@
 # Changelog
 
 
+# Version 0.9.1 (2021-03-04)
+
+## Fixed issues
+
+- Prevent the printing dialog from opening twice in a row on Windows systems.
+- Ask the user if they want to compact documents prior to printing, when that saves pages, similarly to exporting PDFs.
+
 # Version 0.9.0 (2021-03-04)
 
 # Implemented features
