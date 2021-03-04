@@ -202,8 +202,7 @@ class DeckImportWizard(QWizard):
             logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
         deck: typing.Counter[Card] = self.field("parsed_deck")
-        # len(deck) only counts keys, use sum(deck.values()) include duplicates
+        # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         for card, count in deck.items():
             self.card_added.emit(card, count)
-
