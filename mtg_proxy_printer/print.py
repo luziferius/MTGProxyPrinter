@@ -16,12 +16,13 @@
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QMarginsF
+from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot
 from PyQt5.QtGui import QPainter, QPdfWriter
+from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document import Document, Page
 from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -29,6 +30,8 @@ del get_logger
 
 __all__ = [
     "export_pdf",
+    "create_qprinter",
+    "Renderer",
 ]
 
 
@@ -44,6 +47,20 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
     document.store_image_usage()
+
+
+def create_qprinter(document: Document) -> QPrinter:
+    printer = QPrinter(QPrinter.HighResolution)
+    printer.setPageSizeMM(QSizeF(document.page_width, document.page_height))
+    printer.setResolution(document.DPI.to_tuple()[0])
+    # Disable duplex printing by default
+    printer.setDoubleSidedPrinting(False)
+    printer.setDuplex(QPrinter.DuplexNone)
+    printer.setOutputFormat(QPrinter.NativeFormat)
+    # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
+    printer.setFullPage(True)
+    printer.setPageMargins(0, 0, 0, 0, QPrinter.Millimeter)
+    return printer
 
 
 class PDFPrinter(QPdfWriter):
@@ -92,3 +109,26 @@ class PDFPrinter(QPdfWriter):
                 self.newPage()
         self.painter.end()
         logger.info("Writing document finished.")
+
+
+class Renderer(QObject):
+
+    def __init__(self, document: Document, *args, **kwargs):
+        super(Renderer, self).__init__(*args, **kwargs)
+        self.document = document
+        self.page: Page = None
+        self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
+
+    @pyqtSlot(QPrinter)
+    def print_document(self, printer: QPrinter):
+        painter = QPainter(printer)
+        painter.setRenderHint(QPainter.LosslessImageRendering)
+        page_count = self.document.rowCount()
+        for index, page in enumerate(self.document.pages, start=1):
+            self.page = page
+            self.scene.redraw()
+            self.scene.render(painter)
+            if index < page_count:
+                printer.newPage()
+        painter.end()
+        self.page = None
