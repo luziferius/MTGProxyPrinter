@@ -31,8 +31,7 @@ from PyInstaller.utils.hooks import logger
 # instead of the checkout, if this program is already installed via pip. This is required to properly determine
 # the save path for the compiled resources.
 root_dir = str(Path(__file__).parent.parent.parent.absolute().resolve())
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
+sys.path.insert(0, root_dir)
 
 import mtg_proxy_printer.ui  # noqa
 

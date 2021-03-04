@@ -1,6 +1,7 @@
 # Changelog
 
-# Version <next> (in development)
+
+# Version 0.9.0 (2021-03-04)
 
 # Implemented features
 
