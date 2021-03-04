@@ -402,3 +402,7 @@ class CacheCleanupWizard(QWizard):
             (scryfall_id, is_front)
             for scryfall_id, is_front, _ in self.field("selected-images")
         ))
+
+    def reject(self) -> None:
+        super(CacheCleanupWizard, self).reject()
+        logger.info("User canceled the cache cleanup.")
