@@ -335,7 +335,7 @@ class CacheCleanupWizard(QWizard):
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.setWindowTitle("Cleanup the local image cache")
         self._setup_window_icon()
-        self._setup_accept_button_icon()
+        self._setup_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_window_icon(self, icon_name: str = "edit-clear-history"):
@@ -344,8 +344,14 @@ class CacheCleanupWizard(QWizard):
             icon = load_icon(icon_name)
         self.setWindowIcon(icon)
 
-    def _setup_accept_button_icon(self, icon_name: str = "edit-delete"):
-        icon = QIcon.fromTheme(icon_name)
-        if icon.isNull():
-            icon = load_icon(icon_name)
-        self.button(QWizard.FinishButton).setIcon(icon)
+    def _setup_button_icons(self):
+        buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
+            (QWizard.CancelButton, "dialog-cancel"),
+            (QWizard.HelpButton, "help-contents"),
+            (QWizard.FinishButton, "edit-delete"),
+        ]
+        for button, icon_name in buttons_with_icons:
+            icon = QIcon.fromTheme(icon_name)
+            if icon.isNull():
+                icon = load_icon(icon_name)
+            self.button(button).setIcon(icon)

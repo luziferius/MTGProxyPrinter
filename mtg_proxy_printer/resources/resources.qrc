@@ -28,5 +28,8 @@
     <file>icons/edit-delete.svg</file>
     <file>icons/edit-download.svg</file>
     <file>icons/format-align-vertical-top.svg</file>
+    <file>icons/go-next.svg</file>
+    <file>icons/go-previous.svg</file>
+    <file>icons/help-contents.svg</file>
 </qresource>
 </RCC>
