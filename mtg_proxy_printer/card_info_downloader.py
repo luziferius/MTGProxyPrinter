@@ -90,8 +90,8 @@ class CardInfoDownloadWorker(QObject):
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def download_card_data(self):
-        data = self.read_json_card_data_from_url()
+    def download_card_data(self, url_or_path: typing.Union[Path, str] = None):
+        data = self.read_json_card_data(url_or_path)
         self.populate_database(data)
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
@@ -133,7 +133,7 @@ class CardInfoDownloadWorker(QObject):
         with source, monitor:
             yield from self._read_json_card_data_from_open_file(source)
 
-    def read_json_card_data(self, url_or_path: typing.Union[Path, str]):
+    def read_json_card_data(self, url_or_path: typing.Union[Path, str] = None):
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function can take a file path to a locally stored json document. Mainly for testing purposes.
@@ -143,6 +143,8 @@ class CardInfoDownloadWorker(QObject):
         So use this iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
+        if url_or_path is None:
+            url_or_path = self.get_scryfall_bulk_card_data_url(self.requested_item)
         if isinstance(url_or_path, Path):
             file_size = url_or_path.stat().st_size
             raw_file = url_or_path.open("rb")
@@ -209,6 +211,10 @@ class CardInfoDownloadWorker(QObject):
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
+        # Clear the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
+        # the import. This will lead to assignment of wrong data via invalid foreign key relations.
+        _insert_language.cache_clear()
+        _insert_set_data.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
         self.download_finished.emit()
 
@@ -275,6 +281,11 @@ def _insert_card(model: CardDatabase, card: JSONType) -> int:
 
 def _insert_set(model: CardDatabase, card: JSONType) -> int:
     set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
+    return _insert_set_data(model, set_abbr, set_name, set_uri)
+
+
+@functools.lru_cache(500)
+def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
     if result := model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone():
         set_id, = result
     else:
