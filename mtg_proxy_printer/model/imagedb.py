@@ -51,6 +51,7 @@ class ImageDatabase(QObject):
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
     add_card = pyqtSignal(Card, int)
+    batch_processing_state_changed = pyqtSignal(bool)
 
     def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
         super(ImageDatabase, self).__init__(*args, **kwargs)
@@ -67,6 +68,7 @@ class ImageDatabase(QObject):
         self.download_worker.card_download_starting.connect(self.card_download_starting)
         self.download_worker.card_download_finished.connect(self.card_download_finished)
         self.download_worker.card_download_progress.connect(self.card_download_progress)
+        self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.add_card.connect(self.add_card)
         self.download_thread.started.connect(self.download_worker.process_queue)
         self.download_thread.start()
@@ -76,6 +78,12 @@ class ImageDatabase(QObject):
     @pyqtSlot(Card, int)
     def get_image_asynchronous(self, card: Card, count: int = 1):
         self.queue.put((card, count))
+
+    def get_deck_asynchronous(self, deck: typing.Counter[Card]):
+        self.queue.put((None, True))
+        for card, count in deck.items():
+            self.queue.put((card, count))
+        self.queue.put((None, False))
 
     def get_cache_content(self) -> typing.List[CacheContent]:
         """Returns all entries currently in the image cache."""
@@ -112,6 +120,7 @@ class ImageDownloader(QObject):
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
     add_card = pyqtSignal(Card, int)
+    batch_processing_state_changed = pyqtSignal(bool)
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
@@ -124,6 +133,9 @@ class ImageDownloader(QObject):
         logger.info("Start processing download queue")
         while self.should_run:
             card, count = self.queue.get()
+            if card is None:
+                self.batch_processing_state_changed.emit(count)
+                continue
             logger.debug("Received image request, processing it…")
             self.get_image_synchronous(card, count)
 

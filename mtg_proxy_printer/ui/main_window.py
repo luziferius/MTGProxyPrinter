@@ -47,6 +47,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
+    loading_state_changed = pyqtSignal(bool)
 
     def __init__(self, arguments: Namespace, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -66,7 +67,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
         self.current_page_changed.connect(self.page_view.current_page_changed)
-
+        self._setup_loading_state_connections()
         self._setup_add_card_widget()
         self._setup_document_view()
         self.action_new_page.triggered.connect(self.document.add_page)
@@ -79,11 +80,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def _setup_loading_state_connections(self):
+        for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
+            self.loading_state_changed.connect(widget_or_action.setDisabled)
+
     def _create_document_instance(self, args: Namespace):
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
-        for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
-            document.loading_state_changed.connect(widget_or_action.setDisabled)
+        document.loading_state_changed.connect(self.loading_state_changed)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
@@ -104,9 +108,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.progress_bar.hide)
-        downloader.working_state_changed.connect(self.action_show_settings.setDisabled)
-        for widget in self._get_widgets_and_actions_disabled_in_loading_state():
-            downloader.working_state_changed.connect(widget.setDisabled)
+        downloader.working_state_changed.connect(self.loading_state_changed)
         return downloader
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
@@ -116,11 +118,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.action_compact_document,
             self.action_load_document,
             self.action_print,
+            self.action_print_preview,
             self.action_print_pdf,
             self.action_import_deck_list,
             self.action_new_page,
             self.action_discard_page,
             self.add_card_widget,
+            self.action_show_settings,
+            self.action_cleanup_local_image_cache,
             self.page_view.delete_selected_images_button,
         ]
 
@@ -129,6 +134,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         image_db.card_download_starting.connect(self.show_progress_bar)
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
+        image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         return image_db
 
     def _create_progress_bar(self):
@@ -238,7 +244,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, parent=self)
         wizard.clear_document.connect(self.document.clear)
-        wizard.card_added.connect(self.image_db.get_image_asynchronous)
+        wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
         wizard.show()
 
     @pyqtSlot()

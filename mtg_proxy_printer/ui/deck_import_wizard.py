@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import re
 import typing
 
@@ -175,7 +176,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
 
 
 class DeckImportWizard(QWizard):
-    card_added = pyqtSignal(Card, int)
+    deck_added = pyqtSignal(collections.Counter)
     clear_document = pyqtSignal()
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
@@ -204,5 +205,4 @@ class DeckImportWizard(QWizard):
         deck: typing.Counter[Card] = self.field("parsed_deck")
         # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
-        for card, count in deck.items():
-            self.card_added.emit(card, count)
+        self.deck_added.emit(deck)
