@@ -33,14 +33,15 @@ def parse_args() -> Namespace:
         "database_path", type=Path,
         help="Path to the test database. Beware: Any file at that location will be deleted without prompt!")
     parser.add_argument(
-        "card_data",type=Path,
+        "card_data", type=Path,
         help="'All cards' bulk data export from the Scryfall API. May be plain-text JSON or GZIP compressed JSON.")
     return parser.parse_args()
 
 
 to_be_profiled_functions = {
-    mtg_proxy_printer.card_info_downloader.CardInfoDownloader: [
+    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker: [
         "populate_database",
+        "read_json_card_data",
     ],
     mtg_proxy_printer.card_info_downloader: [
         "_insert_card",
@@ -90,8 +91,7 @@ if __name__ == "__main__":
         args.database_path.unlink()
     print("Creating new database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
-    cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(cdb)
+    cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(cdb)
     print("Starting benchmark…")
-    cid.populate_database()
+    cid.download_card_data(args.card_data)
     print("Done")
-
