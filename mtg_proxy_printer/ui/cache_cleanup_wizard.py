@@ -18,7 +18,8 @@ import datetime
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel,\
+    QSortFilterProxyModel
 from PyQt5.QtGui import QIcon, QPixmapCache, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
@@ -86,6 +87,8 @@ class KnownCardRow:
     def data(self, column: int, role: int):
         if column == 0 and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.name
+        elif column == 0 and role == Qt.ToolTipRole:
+            data = get_image_for_tooltip_display(self.pixmap_cache, self.scryfall_id, self.is_front, self.path)
         elif column == 1:
             data = self.set.data(role)
         elif column == 2 and role in (Qt.DisplayRole, Qt.EditRole):
@@ -141,7 +144,7 @@ class KnownCardImageModel(QAbstractTableModel):
         return super(KnownCardImageModel, self).headerData(section, orientation, role)
 
     def data(self, index: QModelIndex, role: int = None) -> typing.Any:
-        if index.row() in range(0, self.rowCount()):
+        if index.row() in range(0, self.rowCount()) and index.column() in range(0, self.columnCount()):
             row = self._data[index.row()]
             return row.data(index.column(), role)
         return None
@@ -272,8 +275,15 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.unknown_image_view: QTableView
         self.card_image_view: QTableView
         self.card_image_model = KnownCardImageModel(parent=self)
+        self.card_image_sort_model = QSortFilterProxyModel(self)
+        self.card_image_sort_model.setSourceModel(self.card_image_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
-        self.card_image_view.setModel(self.card_image_model)
+        self.card_image_view.setModel(self.card_image_sort_model)
+        # Use the EditRole for sorting, as this returns the raw data.
+        # Makes it possible to sort the file sizes correctly.
+        self.card_image_sort_model.setSortRole(Qt.EditRole)
+        self.card_image_view.setSortingEnabled(True)
+        self.card_image_view.sortByColumn(0, Qt.AscendingOrder)
         self.unknown_image_view.setModel(self.unknown_image_model)
         self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
