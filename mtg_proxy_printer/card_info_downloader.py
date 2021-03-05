@@ -198,7 +198,7 @@ class CardInfoDownloadWorker(QObject):
                 self.download_finished.emit()
                 return
             language_id = _insert_language(self.model, card["lang"])
-            card_id = _insert_card(self.model, card)
+            card_id = _insert_card(self.model, card["oracle_id"])
             set_id = _insert_set(self.model, card)
             _insert_card_faces(self.model, card, language_id, card_id, set_id)
             if not index % 10000:
@@ -215,6 +215,7 @@ class CardInfoDownloadWorker(QObject):
         # the import. This will lead to assignment of wrong data via invalid foreign key relations.
         _insert_language.cache_clear()
         _insert_set_data.cache_clear()
+        _insert_card.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
         self.download_finished.emit()
 
@@ -267,14 +268,15 @@ def _insert_language(model: CardDatabase, language: str) -> int:
     return language_id
 
 
-def _insert_card(model: CardDatabase, card: JSONType) -> int:
-    oracle_id: typing.Tuple[str] = card["oracle_id"],
-    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', oracle_id).fetchone():
+@functools.lru_cache(30000)
+def _insert_card(model: CardDatabase, oracle_id: str) -> int:
+    parameters = oracle_id,
+    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone():
         card_id, = result
     else:
         card_id = model.db.execute(
             'INSERT INTO Card (oracle_id) VALUES (?)\n',
-            oracle_id
+            parameters
         ).lastrowid
     return card_id
 

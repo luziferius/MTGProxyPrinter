@@ -44,11 +44,14 @@ to_be_profiled_functions = {
         "read_json_card_data",
     ],
     mtg_proxy_printer.card_info_downloader: [
-        "_insert_card",
         "_insert_set",
         "_insert_face_name",
         "_insert_card_faces",
         "_should_skip_card",
+    ],
+    # Bypass the lru_cache
+    mtg_proxy_printer.card_info_downloader._insert_card: [
+        "__wrapped__",
     ],
 }
 
