@@ -19,6 +19,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import typing
 import urllib.request
 import http.client
@@ -178,6 +179,7 @@ class CardInfoDownloadWorker(QObject):
             logger.info(f"Aborting card import due to user request.")
             self.download_finished.emit()
             return
+        self._create_temporary_indices()
         store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
@@ -207,6 +209,7 @@ class CardInfoDownloadWorker(QObject):
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
         self.model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
+        self._drop_temporary_indices()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
@@ -216,8 +219,17 @@ class CardInfoDownloadWorker(QObject):
         _insert_language.cache_clear()
         _insert_set_data.cache_clear()
         _insert_card.cache_clear()
+        _insert_face_name.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
         self.download_finished.emit()
+
+    def _create_temporary_indices(self):
+        self.model.db.execute(
+            "CREATE INDEX IF NOT EXISTS FaceNameID_lookup_for_import ON FaceName (language_id, card_name)"
+        )
+
+    def _drop_temporary_indices(self):
+        self.model.db.execute("DROP INDEX FaceNameID_lookup_for_import")
 
 
 def store_download_settings(db):
@@ -298,16 +310,19 @@ def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri:
     return set_id
 
 
+@functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
-    if result := model.db.execute(
-            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n',
-            (printed_name, language_id)).fetchone():
-        face_name_id, = result
-    else:
+    try:
         face_name_id = model.db.execute(
             'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n',
             (printed_name, language_id)
         ).lastrowid
+    except sqlite3.IntegrityError:
+        face_name_id, = model.db.execute(
+            'SELECT face_name_id '
+            'FROM FaceName INDEXED BY FaceNameID_lookup_for_import '
+            'WHERE card_name = ? AND language_id = ?\n',
+            (printed_name, language_id)).fetchone()
     return face_name_id
 
 

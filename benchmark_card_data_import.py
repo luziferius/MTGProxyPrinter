@@ -45,7 +45,6 @@ to_be_profiled_functions = {
     ],
     mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
-        "_insert_face_name",
         "_insert_card_faces",
         "_should_skip_card",
     ],
@@ -53,6 +52,7 @@ to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader._insert_card: [
         "__wrapped__",
     ],
+
 }
 
 

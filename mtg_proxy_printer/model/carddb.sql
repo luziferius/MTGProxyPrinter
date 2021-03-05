@@ -41,13 +41,12 @@ CREATE TABLE FaceName (
   -- across all reprints for a given language.
   face_name_id INTEGER PRIMARY KEY NOT NULL,
   card_name    TEXT NOT NULL,
-  language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE
+  language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT "NameUniquePerLanguage" UNIQUE(language_id, card_name)
 );
 
 -- Speeds up LIKE matches against card names, used by the Card name search
-CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
--- Used during the import process to speed up finding already inserted card faces
-CREATE INDEX FaceNameCardNameToLanguageIndex ON FaceName(card_name, language_id);
+CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName (language_id, card_name COLLATE NOCASE);
 
 CREATE TABLE CardFace (
   -- The printable card face of a specific card in a specific language. Is the front most of the time, but can be the
