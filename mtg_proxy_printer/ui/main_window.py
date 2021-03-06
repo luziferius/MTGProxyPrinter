@@ -290,12 +290,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         to download the card data now. If so, trigger the appropriate action, just as if the user clicked the menu item.
         """
         should_download = QMessageBox.question(
-            self, "Download Card data",
-            "The local card database is empty. Download the required data from Scryfall now?\n"
-            "Downloading might take some time.\n"
-            "If you decline, you can configure which cards get downloaded "
+            self, "Download required Card data from Scryfall?",
+            "This program requires downloading additional card data from Scryfall to operate the card search.\n"
+            "Download the required data from Scryfall now?\n"
+            "If you decline now, you can exclude some card types or individual cards based on ban lists"
             "in the settings and then manually start the download later.\n"
-            "Or accept and use the default settings.",
+            "Or accept and use the current settings.",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
         if should_download:
             self.action_download_card_data.trigger()
