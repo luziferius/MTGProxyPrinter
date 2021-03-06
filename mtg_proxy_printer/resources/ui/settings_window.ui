@@ -619,7 +619,7 @@ Uncheck to disable this automatism.</string>
 These are not tournament legal.</string>
             </property>
             <property name="text">
-             <string>Include gold-bordered_cards</string>
+             <string>Include gold-bordered cards</string>
             </property>
            </widget>
           </item>
