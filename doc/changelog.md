@@ -1,12 +1,31 @@
 # Changelog
 
 
+# Version <next> (in development)
+
+## Changed Features
+
+- The card table shown in the cache cleanup wizard is now sortable by all columns and also shows the card image
+  as a tooltip when hovering over the card name.
+
+## Fixed issues
+
+- Reworded some of the displayed texts and fixed minor issues in strings.
+- Further optimized the card data import. It should run a bit faster on slow CPUs or really fast internet connections.
+- Fixed potential issues during import when the user re-downloads the card data multiple times in a row.
+- Unified the handling of long-running background operations. All three (loading documents, importing decks and
+  downloading card data) now behave in the same way and disable most buttons in the main window during the process
+- During a long-running background operation, also disable the print preview button and the cache cleanup button to
+  prevent issues.
+
+
 # Version 0.9.1 (2021-03-04)
 
 ## Fixed issues
 
 - Prevent the printing dialog from opening twice in a row on Windows systems.
 - Ask the user if they want to compact documents prior to printing, when that saves pages, similarly to exporting PDFs.
+
 
 # Version 0.9.0 (2021-03-04)
 
