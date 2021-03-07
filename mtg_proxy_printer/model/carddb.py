@@ -17,13 +17,14 @@ import atexit
 import dataclasses
 import datetime
 import pathlib
-import sqlite3
 import textwrap
 import typing
 from itertools import filterfalse
 
 from PyQt5.QtGui import QPixmap
+import delegateto
 
+from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, clear_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
@@ -63,6 +64,7 @@ class Card:
     set_name: OptionalString = None
 
 
+@delegateto.delegate("db", "commit", "rollback")
 class CardDatabase:
 
     MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
@@ -71,6 +73,11 @@ class CardDatabase:
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(
             db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
+        self.trace_file = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_log_dir, "sqldump.sql").open("at")
+        atexit.register(self.trace_file.close)
+
+        db.set_trace_callback(
+            lambda statement: self.trace_file.write(f"EXPLAIN QUERY PLAN{statement.strip().rstrip(';')};\n"))
         migrate_card_database(db)
         self.db = db
         self._exit_hook = None
@@ -85,7 +92,7 @@ class CardDatabase:
 
         def close_db():
             logger.debug("Rolling back active transactions.")
-            self.db.rollback()
+            self.rollback()
             logger.debug("Running SQLite PRAGMA optimize.")
             # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
             # See also: https://www.sqlite.org/lang_analyze.html
@@ -95,6 +102,9 @@ class CardDatabase:
 
         atexit.register(close_db)
         self._exit_hook = close_db
+
+    def begin_transaction(self):
+        self.db.execute("BEGIN TRANSACTION")
 
     def check_if_download_settings_changed(self) -> bool:
         section = mtg_proxy_printer.settings.settings["downloads"]
@@ -108,9 +118,6 @@ class CardDatabase:
         logger.debug(
             f"Checked, if the current download filter settings differ from the previously used. Result: {result}")
         return result
-
-    def commit(self):
-        self.db.commit()
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
@@ -379,120 +386,3 @@ class CardDatabase:
             if self.db.execute(query, (scryfall_id, is_front, count)).fetchone()[0]:
                 result.append(index)
         return result
-
-
-def migrate_card_database(db: sqlite3.Connection):
-    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-    needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
-    if needs_update:
-        logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
-    else:
-        logger.info("Database schema recent, not running any database migrations")
-
-    if db.execute("PRAGMA user_version").fetchone()[0] == 9:
-        logger.info("Running migration for schema version 9")
-        # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
-        # the database using fresh data from Scryfall.
-        db.execute("BEGIN TRANSACTION")
-        clear_database(db)
-        db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
-        db.execute("DROP VIEW AllPrintings")
-        db.execute(textwrap.dedent(r"""
-        CREATE VIEW AllPrintings AS
-          SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
-          FROM CardFace
-          JOIN FaceName USING(face_name_id)
-          JOIN "Set" USING (set_id)
-          JOIN Card USING (card_id)
-          JOIN PrintLanguage USING(language_id)
-        ;"""))
-        db.commit()
-        db.execute("PRAGMA user_version = 10")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 10:
-        logger.info("Running migration for schema version 10")
-        db.execute("BEGIN TRANSACTION")
-        db.execute("DROP VIEW AllPrintings")
-        db.execute(textwrap.dedent(r"""
-        CREATE VIEW AllPrintings AS
-          SELECT card_name, "set", set_name, "language", collector_number, scryfall_id, highres_image,
-              is_front, png_image_uri, oracle_id
-          FROM CardFace
-          JOIN FaceName USING(face_name_id)
-          JOIN "Set" USING (set_id)
-          JOIN Card USING (card_id)
-          JOIN PrintLanguage USING(language_id)
-        ;"""))
-        db.execute('CREATE INDEX CardFace_card_id_index ON CardFace (card_id)')
-        db.commit()
-        db.execute("PRAGMA user_version = 11")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 11:
-        logger.info("Running migration for schema version 11")
-        db.execute("BEGIN TRANSACTION")
-        db.execute(textwrap.dedent(r"""
-        CREATE TABLE UsedDownloadSettings (
-          -- This table contains the download filter settings used during the card data import
-          setting TEXT NOT NULL PRIMARY KEY,
-          "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
-        );
-        """))
-        # Import now to avoid a cyclic import. This function is only required during this specific migration task
-        from mtg_proxy_printer.card_info_downloader import store_download_settings
-        # Guess the used settings based on the current ones. This is good enough for this migration task
-        store_download_settings(db)
-        db.commit()
-        db.execute("PRAGMA user_version = 12")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 12:
-        logger.info("Running migration for schema version 12")
-        db.execute("BEGIN TRANSACTION")
-        db.execute(textwrap.dedent(r"""
-        CREATE TABLE LastImageUseTimestamps (
-          -- Used to store the last image use timestamp and usage count of each image.
-          -- The usage count measures how often an image was part of a printed or exported document. Printing multiple copies
-          -- in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
-          scryfall_id TEXT NOT NULL,
-          is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
-          usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
-          last_use_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (scryfall_id, is_front)
-          -- No foreign key relation here. This table should be persistent across card data downloads
-        );
-        """))
-        db.commit()
-        db.execute("PRAGMA user_version = 13")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 13:
-        logger.info("Running migration for schema version 13")
-        db.execute("BEGIN TRANSACTION")
-        db.execute(textwrap.dedent(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);"))
-        db.commit()
-        db.execute("PRAGMA user_version = 14")
-
-    if needs_update:
-        current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-        logger.info(f"Finished database migrations. {current_schema_version=}")
-
-
-def clear_database(db: sqlite3.Connection, parent=None):
-    """
-    Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
-    This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
-    """
-    # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
-    # leaves to roots. This allows SQLite to possibly use the TRUNCATE optimization
-    # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
-    # the tables in a way that doesn’t break foreign keys during the process.
-    logger.info("Clearing current database content")
-    tables_to_clear = [
-        "CardFace",
-        "FaceName",
-        "Card",
-        '"Set"',
-        "PrintLanguage",
-        "UsedDownloadSettings",
-    ]
-    for table in tables_to_clear:
-        logger.debug(f"Clearing table {table}")
-        db.execute(f"DELETE FROM {table}\n")
-        if parent is not None:
-            if not parent.should_run:
-                logger.info("Aborting clear_database()")
-                break

@@ -470,7 +470,7 @@ class Document(QAbstractListModel):
         """
         logger.info("Updating image usage for all cards in the document.")
         data = set(itertools.chain.from_iterable(page.get_content_as_scryfall_ids() for page in self.pages))
-        self.card_db.db.execute("BEGIN TRANSACTION")
+        self.card_db.begin_transaction()
         self.card_db.db.executemany(
             r"""
             INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
@@ -480,7 +480,7 @@ class Document(QAbstractListModel):
             """,
             data
         )
-        self.card_db.db.commit()
+        self.card_db.commit()
 
 
 class DocumentLoader(QObject):

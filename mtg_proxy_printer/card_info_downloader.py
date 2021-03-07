@@ -172,7 +172,7 @@ class CardInfoDownloadWorker(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
         """
         logger.info("About to populate the database with card data")
-        self.model.db.execute("BEGIN TRANSACTION\n")
+        self.model.begin_transaction()
         clear_database(self.model.db, self)
         if not self.should_run:
             logger.info(f"Aborting card import due to user request.")

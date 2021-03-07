@@ -65,7 +65,7 @@ CREATE TABLE CardFace (
 -- Used to find matching sets
 CREATE INDEX CardFaceIDLookup ON CardFace (face_name_id, set_id, card_id);
 -- Used to find matching collector numbers
-CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, collector_number);
+CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, set_id, collector_number);
 
 -- Speeds up card name translation. Some deck lists provide the English name plus language code.
 -- These require name translation
