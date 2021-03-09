@@ -73,11 +73,6 @@ class CardDatabase:
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(
             db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
-        self.trace_file = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_log_dir, "sqldump.sql").open("at")
-        atexit.register(self.trace_file.close)
-
-        db.set_trace_callback(
-            lambda statement: self.trace_file.write(f"EXPLAIN QUERY PLAN{statement.strip().rstrip(';')};\n"))
         migrate_card_database(db)
         self.db = db
         self._exit_hook = None
