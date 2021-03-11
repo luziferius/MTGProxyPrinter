@@ -75,9 +75,9 @@ class Page(QAbstractTableModel):
                 return card.name
             elif index.column() == 1:
                 if role == Qt.EditRole:
-                    return card.set_abbr
+                    return card.set.code
                 else:
-                    return f"{card.set_name} ({card.set_abbr.upper()})"
+                    return f"{card.set.name} ({card.set.code.upper()})"
             elif index.column() == 2:
                 return card.collector_number
             elif index.column() == 3:
@@ -583,7 +583,7 @@ class DocumentLoader(QObject):
             if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
                 raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
 
-            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+            if db.execute("PRAGMA user_version").fetchone()[0] == 2:
                 query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
                 FROM Card
                 ORDER BY page, slot ASC"""
@@ -599,6 +599,6 @@ class DocumentLoader(QObject):
 
 
 def _migrate_database(db):
-    if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+    if db.execute("PRAGMA user_version").fetchone()[0] == 2:
         db.execute("ALTER TABLE Card ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
         db.execute(f"PRAGMA user_version = 3")

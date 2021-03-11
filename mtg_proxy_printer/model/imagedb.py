@@ -61,7 +61,8 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.  TODO: Maybe use the QPixmapCache class instead?
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
-        self.queue: queue.SimpleQueue[typing.Tuple[Card, int]] = queue.SimpleQueue()
+        self.queue: queue.SimpleQueue[
+            typing.Union[typing.Tuple[Card, int], typing.Tuple[None, bool]]] = queue.SimpleQueue()
         self.download_thread = QThread()
         self.download_worker = ImageDownloader(self)
         self.download_worker.moveToThread(self.download_thread)

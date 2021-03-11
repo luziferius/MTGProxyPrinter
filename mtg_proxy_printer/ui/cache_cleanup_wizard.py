@@ -154,7 +154,7 @@ class KnownCardImageModel(QAbstractTableModel):
         self.rowsAboutToBeInserted.emit(QModelIndex(), position, position)
         size_bytes = file_path.stat().st_size
         row = KnownCardRow(
-            card.name, MTGSet(card.set_name, card.set_abbr), card.collector_number,
+            card.name, MTGSet(card.set.name, card.set.code), card.collector_number,
             card.is_front, size_bytes, card.scryfall_id, file_path, self.pixmap_cache
         )
         self.beginInsertRows(QModelIndex(), position, position)
