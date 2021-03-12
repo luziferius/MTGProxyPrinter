@@ -20,6 +20,7 @@ import typing
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 MatchType = typing.Dict[str, str]
 
@@ -30,8 +31,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
     uses that to parse each input line.
     """
 
-    def __init__(self, card_db: CardDatabase, regular_expression: typing.Union[re.Pattern, str]):
-        super(GenericRegularExpressionDeckParser, self).__init__(card_db)
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str]):
+        super(GenericRegularExpressionDeckParser, self).__init__(card_db, image_db)
         self.parser = regular_expression \
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
@@ -131,9 +132,9 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
-    def __init__(self, card_db: CardDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
         super(MTGArenaParser, self).__init__(
-            card_db,
+            card_db, image_db,
             re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>\d+))?")
         )
 
@@ -150,9 +151,9 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     These do not contain much information, only the English card name and count,
     so sets and individual printings have to be guessed.
     """
-    def __init__(self, card_db: CardDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
         super(MTGOnlineParser, self).__init__(
-            card_db,
+            card_db, image_db,
             re.compile(r"(?P<copies>\d+) (?P<name>.+)")
         )
 
@@ -161,9 +162,9 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
     A parser for XMage deck files (file extension ".dck").
     """
-    def __init__(self, card_db: CardDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
         super(XMageParser, self).__init__(
-            card_db,
+            card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)")
         )
 

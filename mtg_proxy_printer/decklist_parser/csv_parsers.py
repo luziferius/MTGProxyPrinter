@@ -19,23 +19,20 @@ import csv
 import pathlib
 import typing
 
-from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 
 from .common import ParsedDeck, ParserBase
 
 
 class BaseCSVParser(ParserBase):
 
-    DIALECT = ""
-
-    def __init__(self, card_db: CardDatabase, ):
-        super(BaseCSVParser, self).__init__(card_db)
+    DIALECT_NAME = ""
 
     def parse_deck(self, deck_list: typing.Union[pathlib.Path, str]) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
         for line in self._read_lines_from_csv(deck_list):
-            cards = self.parse_card_from_line(line)
+            cards = self.parse_cards_from_line(line)
             if cards:
                 deck.update(cards)
             else:
@@ -46,12 +43,12 @@ class BaseCSVParser(ParserBase):
             self, deck_list: typing.Union[pathlib.Path, str]) -> typing.Generator[typing.Dict[str, str], None, None]:
         if isinstance(deck_list, pathlib.Path):
             with deck_list.open("r", encoding="utf-8", newline="") as csv_file:
-                yield from csv.DictReader(csv_file, dialect=self.DIALECT)
+                yield from csv.DictReader(csv_file, dialect=self.DIALECT_NAME)
         else:
-            yield from csv.DictReader(deck_list.splitlines(), dialect=self.DIALECT)
+            yield from csv.DictReader(deck_list.splitlines(), dialect=self.DIALECT_NAME)
 
     @abc.abstractmethod
-    def parse_card_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
+    def parse_cards_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
         pass
 
 
@@ -71,21 +68,27 @@ class ScryfallCSVParser(BaseCSVParser):
         lineterminator = "\n"
         quoting = csv.QUOTE_MINIMAL
 
-    DIALECT = "scryfall_com"
+    DIALECT_NAME = "scryfall_com"
 
-    def parse_card_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
-        # Only interested in the srcyfall_id and language
+    def parse_cards_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
+        # Only interested in the scryfall_id and language
         cards = collections.Counter()
-        if self.card_db.is_scryfall_id_known(line["scryfall_id"], True):
-            count = int(line["count"])
-            card = self.card_db.get_card_with_scryfall_id(line["scryfall_id"], True)
-            print(card)
+        scryfall_id = line["scryfall_id"]
+        count = int(line["count"])
+        if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, True)) is not None:
             cards[card] += count
-            # TODO: This is wrong for split cards
-            if self.add_opposing_face and "//" in line["name"] and "//" in line["type"]:
+            if self.add_opposing_face and \
+                    (opposing_face := self.card_db.get_card_with_scryfall_id(scryfall_id, False)) is not None:
                 # Double-faced card
-                card = self.card_db.get_card_with_scryfall_id(line["scryfall_id"], False)
-                cards[card] += count
+                cards[opposing_face] += count
+        else:
+            language = line["lang"]
+            english_name = line["name"]
+            card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+            card_data = CardIdentificationData(
+                language, card_name, line["set_code"], line["collector_number"]
+            )
+            # TODO: Guess printings.
         return cards
 
 
@@ -105,14 +108,14 @@ class TappedOutCSVParser(BaseCSVParser):
         lineterminator = "\r\n"
         quoting = csv.QUOTE_MINIMAL
 
-    DIALECT = "tappedout_com"
+    DIALECT_NAME = "tappedout_com"
 
     def __init__(self, card_db: CardDatabase, include_maybe_board: bool = False, include_acquire_board: bool = False):
         super(TappedOutCSVParser, self).__init__(card_db)
         self.include_acquire_board = include_acquire_board
         self.include_maybe_board = include_maybe_board
 
-    def parse_card_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
+    def parse_cards_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
         cards = collections.Counter()
         if self.should_skip_entry(line):
             return cards
@@ -121,17 +124,17 @@ class TappedOutCSVParser(BaseCSVParser):
         except KeyError:
             # TappedOut fixed the typo in the CSV header in December 2019.
             # Older (or previously compatible) exports may still have the typo in the header line.
-            language = line["Languange"]
+            language = line["Languange"]  # noqa
         if not language or not self.card_db.is_known_language(language):
             language = "en"
         english_name = line["Name"]
         card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
-        set_abbr = line["Printing"].lower()
+        set_code = line["Printing"].lower()  # TappedOut uses upper case set codes, so convert to lower case
         count = int(line["Qty"])
         # THe current CSV format (2021-02) does not include the collector number, so no way to identify special
         # printings inside larger sets
-        card = Card(
-            card_name, set_abbr, None, language
+        card_data = CardIdentificationData(
+            language, card_name, set_code
         )
         # TODO: Guess printings.
         return cards
@@ -148,4 +151,4 @@ for parser_class in [
     ScryfallCSVParser,
     TappedOutCSVParser,
 ]:
-    csv.register_dialect(parser_class.DIALECT, parser_class.Dialect)
+    csv.register_dialect(parser_class.DIALECT_NAME, parser_class.Dialect)

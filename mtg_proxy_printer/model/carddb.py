@@ -55,10 +55,10 @@ __all__ = [
 
 @dataclasses.dataclass
 class CardIdentificationData:
-    language: OptionalString
-    name: OptionalString
-    set_code: OptionalString
-    collector_number: OptionalString
+    language: OptionalString = None
+    name: OptionalString = None
+    set_code: OptionalString = None
+    collector_number: OptionalString = None
     scryfall_id: OptionalString = None
     is_front: typing.Optional[bool] = None
 

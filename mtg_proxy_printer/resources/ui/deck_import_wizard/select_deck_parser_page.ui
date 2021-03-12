@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>WizardPage</class>
  <widget class="QWizardPage" name="WizardPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>291</width>
+    <height>230</height>
+   </rect>
+  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
@@ -190,6 +198,22 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>20</x>
      <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>custom_re_input</sender>
+   <signal>textChanged(QString)</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>145</x>
+     <y>161</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>145</x>
+     <y>114</y>
     </hint>
    </hints>
   </connection>
