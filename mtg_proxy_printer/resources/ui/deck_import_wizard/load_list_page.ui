@@ -2,6 +2,17 @@
 <ui version="4.0">
  <class>WizardPage</class>
  <widget class="QWizardPage" name="WizardPage">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>442</width>
+    <height>204</height>
+   </rect>
+  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
@@ -30,8 +41,56 @@
      </property>
     </widget>
    </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="print_guessing_enable">
+     <property name="toolTip">
+      <string>If checked, choose any printing, if a unique printing is not identified.
+If unchecked, each ambiguous card is ignored and reported as unrecognized.</string>
+     </property>
+     <property name="text">
+      <string>Guess printings for ambiguous entries in the deck list</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>Enabling this can potentially save disk space and download volume, based on the images already downloaded.</string>
+     </property>
+     <property name="text">
+      <string>When guessing, prefer printings with already downloaded images</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>print_guessing_enable</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>print_guessing_prefer_already_downloaded</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>137</x>
+     <y>164</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>137</x>
+     <y>184</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

@@ -157,6 +157,10 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
             re.compile(r"(?P<copies>\d+) (?P<name>.+)")
         )
 
+    @property
+    def requires_print_guessing(self) -> bool:
+        return True
+
 
 class XMageParser(GenericRegularExpressionDeckParser):
     """

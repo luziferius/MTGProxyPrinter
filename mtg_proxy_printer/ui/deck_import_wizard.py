@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import pathlib
 import re
 import typing
 
@@ -22,6 +23,7 @@ from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton, \
     QCheckBox
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -59,10 +61,29 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
+        self.registerField("print-guessing-enable", self.print_guessing_enable)
+        self.registerField("print-guessing-prefer-already-downloaded", self.print_guessing_prefer_already_downloaded)
         self.deck_list_browse_button: QPushButton
         if self.deck_list_browse_button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
             self.deck_list_browse_button.setIcon(load_icon("document-open.svg"))
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def initializePage(self) -> None:
+        super(LoadListPage, self).initializePage()
+        options = mtg_proxy_printer.settings.settings["print-guessing"]
+        self.print_guessing_enable.setChecked(options.getboolean("enable-guessing"))
+        self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded"))
+        parser: common.ParserBase = self.field("selected_parser")
+        if parser.requires_print_guessing:
+            logger.debug("Force-enabling print guessing, because the chosen parser requires it.")
+            self.print_guessing_enable.setChecked(True)
+            self.print_guessing_enable.setEnabled(False)
+
+    def cleanupPage(self):
+        super(LoadListPage, self).cleanupPage()
+        self.print_guessing_enable.setEnabled(True)
+        self.print_guessing_enable.setChecked(False)
+        self.print_guessing_prefer_already_downloaded.setChecked(False)
 
     @pyqtSlot()
     def on_deck_list_browse_button_clicked(self):
@@ -76,11 +97,10 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
             selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file")
-            if selected_file:
+            if selected_file and (file_path := pathlib.Path(selected_file)).is_file():
                 logger.debug("Selected file is valid, loading it from disk, replacing the current deck list")
                 self.deck_list.clear()
-                with open(selected_file, "rt") as opened_file:
-                    self.deck_list.setPlainText(opened_file.read())
+                self.deck_list.setPlainText(file_path.read_text())
 
 
 class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/select_deck_parser_page")):

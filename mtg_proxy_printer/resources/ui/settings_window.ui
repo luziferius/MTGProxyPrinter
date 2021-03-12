@@ -276,7 +276,63 @@ Uncheck to disable this automatism.</string>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab">
+     <widget class="QWidget" name="tab_decklist_import">
+      <attribute name="title">
+       <string>Decklist imports</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_7">
+       <item>
+        <widget class="QGroupBox" name="print_guessing_group_box">
+         <property name="toolTip">
+          <string>Some deck list formats contain insufficient information to identify unique printings of cards.
+If so, choose an arbitrary printing.</string>
+         </property>
+         <property name="title">
+          <string>Enable print guessing</string>
+         </property>
+         <property name="checked">
+          <bool>false</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_6">
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
+            <property name="toolTip">
+             <string>When guessing a printing, prefer printings with already downloaded images over other possible printings.</string>
+            </property>
+            <property name="text">
+             <string>Prefer printings with already downloaded images</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="print_guessing_enable">
+            <property name="toolTip">
+             <string/>
+            </property>
+            <property name="text">
+             <string>Enable print guessing by default, where optional</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>412</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_page_sizes">
       <attribute name="title">
        <string>Document and Pages sizes</string>
       </attribute>

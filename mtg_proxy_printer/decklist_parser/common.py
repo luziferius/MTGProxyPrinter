@@ -36,3 +36,7 @@ class ParserBase:
     @abstractmethod
     def parse_deck(self, deck: typing.Union[pathlib.Path, str]) -> ParsedDeck:
         pass
+
+    @property
+    def requires_print_guessing(self) -> bool:
+        return False
