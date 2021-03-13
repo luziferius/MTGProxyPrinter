@@ -33,7 +33,7 @@ del get_logger
 
 
 def format_size(size: float) -> str:
-    for unit in ('', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
+    for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
         if -1024 < size < 1024:
             return f"{size:3.2f} {unit}"
         size /= 1024
@@ -51,7 +51,7 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
     buffer.open(QIODevice.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
     image = bytes(buffer.data().toBase64()).decode()
-    tooltip_text = '<img src="data:image/png;base64,{}">'.format(image)
+    tooltip_text = f'<img src="data:image/png;base64,{image}">'
     return tooltip_text
 
 
