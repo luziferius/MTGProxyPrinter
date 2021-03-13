@@ -395,7 +395,12 @@ class Document(QAbstractListModel):
         single_page_capacity = self.compute_total_cards_per_page()
         maximum_document_capacity = single_page_capacity * self.rowCount()
         total_cards_in_document = sum(map(len, self.pages))
-        result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
+        if total_cards_in_document != 0:
+            result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
+        else:
+            # This is a special case that is not handled correctly by the formula above. If the document
+            # is empty, it can not be compacted to zero pages, but one.
+            result = self.rowCount() - 1
         return result
 
     def _move_images_to_fill_page(self, page_to_fill: Page, source: Page) -> int:
