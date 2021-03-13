@@ -186,7 +186,11 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         super(SummaryPage, self).initializePage()
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
-        parsed_deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
+        parsed_deck, unparsed_lines = parser.parse_deck(
+            self.field("deck_list"),
+            self.field("print-guessing-enable"),
+            self.field("print-guessing-prefer-already-downloaded")
+        )
         self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
         for card, count in parsed_deck.items():

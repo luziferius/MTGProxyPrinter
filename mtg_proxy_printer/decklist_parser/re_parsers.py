@@ -37,12 +37,9 @@ class GenericRegularExpressionDeckParser(ParserBase):
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
 
-    def parse_deck(self, deck: typing.Union[pathlib.Path, str]) -> ParsedDeck:
-        """
-        Parse the given deck using the stored regular expression.
-        :param deck: A Path instance to a deck file or a multiline Python string that contains the deck list.
-        :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
-        """
+    def parse_deck(self, deck: typing.Union[pathlib.Path, str],
+                   print_guessing: bool,
+                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
         deck_list = deck.read_text() if isinstance(deck, pathlib.Path) else deck
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
@@ -66,7 +63,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         return cards, unmatched_lines
 
     def _add_matched_card(self, cards: typing.Counter[Card], matched_card: CardIdentificationData, copies: int):
-        card = self.card_db.get_card_from_data(matched_card)
+        card = self.card_db.get_cards_from_data(matched_card)
         cards[card] += copies
         if self.add_opposing_face and (
                 opposing_face := self.card_db.get_opposing_face(matched_card)) is not None:

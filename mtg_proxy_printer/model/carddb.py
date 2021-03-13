@@ -200,7 +200,7 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def get_card_from_data(self, card: CardIdentificationData) -> Card:
+    def get_cards_from_data(self, card: CardIdentificationData) -> Card:
         """
         Called with a unique printing in card and
         returns the Card object containing the relevant, complete information, except for the image pixmap.
@@ -218,7 +218,7 @@ class CardDatabase:
           like a single card in traditional Greek)
         """
         query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front ' \
-                '-- get_card_from_data()\n' \
+                '-- get_cards_from_data()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
@@ -248,7 +248,7 @@ class CardDatabase:
         )
         result = cursor.fetchone()
         if not result or cursor.fetchone():
-            raise RuntimeError(f"CardDatabase.get_card_from_data() called on non-unique card information: {card}")
+            raise RuntimeError(f"CardDatabase.get_cards_from_data() called on non-unique card information: {card}")
         name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front = result
         return Card(name, MTGSet(set_code, set_name), collector_number, card.language, scryfall_id, is_front, image_uri)
 

@@ -28,7 +28,9 @@ class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
 
-    def parse_deck(self, deck_list: typing.Union[pathlib.Path, str]) -> ParsedDeck:
+    def parse_deck(self, deck_list: typing.Union[pathlib.Path, str],
+                   print_guessing: bool,
+                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
         for line in self._read_lines_from_csv(deck_list):

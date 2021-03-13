@@ -17,7 +17,7 @@ from abc import abstractmethod
 import pathlib
 import typing
 
-from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 import mtg_proxy_printer.settings
 
@@ -34,9 +34,30 @@ class ParserBase:
         )
 
     @abstractmethod
-    def parse_deck(self, deck: typing.Union[pathlib.Path, str]) -> ParsedDeck:
+    def parse_deck(self, deck: typing.Union[pathlib.Path, str],
+                   print_guessing: bool,
+                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+        """
+        Parse the given deck.
+
+        :param deck: A Path instance to a deck file or a multiline Python string that contains the deck list.
+        :param print_guessing: Guess a printing, if a line doesn’t identify a unique printing
+        :param print_guessing_prefer_already_downloaded: If a printing is guessed, prefer one with an already
+          downloaded image
+        :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
+        """
         pass
 
     @property
     def requires_print_guessing(self) -> bool:
         return False
+
+    def guess_printing(self, card_data: CardIdentificationData, prefer_already_downloaded: bool) -> typing.Optional[Card]:
+        if card_data.name:
+            card_data.name = card_data.name.strip()
+        if "//" in card_data.name:
+            # If this is a split card, try to identify one half
+            card_data.name = card_data.name.split("//")[0 if card_data.is_front in {True, None} else 1].strip()
+        if self.card_db.is_valid_and_unique_card(card_data):
+            return self.card_db.get_cards_from_data(card_data)
+
