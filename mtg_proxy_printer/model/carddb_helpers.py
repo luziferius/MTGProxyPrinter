@@ -92,7 +92,7 @@ def _migrate_12_to_13(db: sqlite3.Connection):
 
 
 def _migrate_13_to_14(db: sqlite3.Connection):
-    db.execute(textwrap.dedent(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);"))
+    db.execute(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)")
 
 
 def migrate_card_database(db: sqlite3.Connection):
