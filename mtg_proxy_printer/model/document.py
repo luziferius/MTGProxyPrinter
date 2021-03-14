@@ -499,6 +499,8 @@ class DocumentLoader(QObject):
     """
 
     loading_state_changed = pyqtSignal(bool)
+    unknown_scryfall_ids_found = pyqtSignal(int)
+    error_loading_file_occured = pyqtSignal(pathlib.Path)
 
     class Worker(QObject):
         """
@@ -513,9 +515,14 @@ class DocumentLoader(QObject):
         Because the thread emits the signals after each long-running I/O process (image loading or downloading)
         finished, processing the generated events in the GUI thread is fast.
         """
+
+        # These signals are used to enqueue a stream of commands across thread boundaries.
         new_page = pyqtSignal()
         add_card = pyqtSignal(Card)
         finished = pyqtSignal()
+        error_loading_file_occured = pyqtSignal(pathlib.Path)
+        document_clear_requested = pyqtSignal()
+        unknown_scryfall_ids_found = pyqtSignal(int)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -523,32 +530,69 @@ class DocumentLoader(QObject):
             # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
             # That one lives in it’s own thread and runs asynchronously and is connected in a way that it adds loaded
             # images to the document on it’s own, interfering with the loading process, in particular with emitting page
-            # breaks. Thus use a separate instance and use it synchronously inside this worker thread.
+            # breaks. Thus create a separate instance and use it synchronously inside this worker thread.
             self.image_loader = ImageDownloader(image_db, self)
             self.image_loader.card_download_starting.connect(image_db.card_download_starting)
             self.image_loader.card_download_finished.connect(image_db.card_download_finished)
             self.image_loader.card_download_progress.connect(image_db.card_download_progress)
             self.document = document
+            self.save_path = pathlib.Path()
             self.data: typing.List[typing.Tuple[int, int, str, bool]] = []
 
         def load_document(self):
+            unknown_ids = 0
+            try:
+                unknown_ids = self._load_document()
+            except sqlite3.DatabaseError:
+                logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
+                self.error_loading_file_occured.emit(self.save_path)
+            finally:
+                if unknown_ids:
+                    self.unknown_scryfall_ids_found.emit(unknown_ids)
+                self.finished.emit()
+
+        def _load_document(self) -> int:
+            data = self._read_data_from_save_path(self.save_path)
+            self.document_clear_requested.emit()
             logger.info("Start filling pages with cards from loaded data")
             current_page = 1
-            try:
-                for page_number, slot, scryfall_id, is_front in self.data:
-                    if current_page != page_number:
-                        current_page = page_number
-                        self.new_page.emit()
-                    if not self.card_db.is_scryfall_id_known(scryfall_id, is_front):
-                        # If the save file was tampered with or the database used to save contained more cards than the
-                        # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
-                        continue
-                    card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-                    self.image_loader.get_image_synchronous(card)
-                    self.add_card.emit(card)
-                self.data.clear()
-            finally:
-                self.finished.emit()
+            unknown_ids = 0
+            for page_number, slot, scryfall_id, is_front in data:
+                if current_page != page_number:
+                    current_page = page_number
+                    self.new_page.emit()
+                if not self.card_db.is_scryfall_id_known(scryfall_id, is_front):
+                    # If the save file was tampered with or the database used to save contained more cards than the
+                    # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
+                    unknown_ids += 1
+                    continue
+                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+                self.image_loader.get_image_synchronous(card)
+                self.add_card.emit(card)
+            self.data.clear()
+            return unknown_ids
+
+        @staticmethod
+        def _read_data_from_save_path(save_file_path: pathlib.Path):
+            logger.info("Reading data from save file")
+            with mtg_proxy_printer.sqlite_helpers.open_database(
+                    save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
+                    raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
+
+                if db.execute("PRAGMA user_version").fetchone()[0] == 2:
+                    query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
+                    FROM Card
+                    ORDER BY page, slot ASC"""
+                else:
+                    query = r"""SELECT page, slot, scryfall_id, is_front
+                    FROM Card
+                    ORDER BY page, slot ASC"""
+                data: typing.List[typing.Tuple[int, int, str, bool]] = [
+                    (page, slot, scryfall_id, bool(is_front))
+                    for page, slot, scryfall_id, is_front in db.execute(query)
+                ]
+            return data
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
         super(DocumentLoader, self).__init__(None)
@@ -556,8 +600,12 @@ class DocumentLoader(QObject):
         self.worker_thread = QThread()
         self.worker = self.Worker(card_db, image_db, document)
         self.worker.moveToThread(self.worker_thread)
+        self.worker.document_clear_requested.connect(self.document.clear)
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
+        # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
+        self.worker.error_loading_file_occured.connect(self.error_loading_file_occured)
+        self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
@@ -569,38 +617,8 @@ class DocumentLoader(QObject):
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
         self.loading_state_changed.emit(True)
-        try:
-            self.worker.data = self._read_data_from_save_path(save_file_path)
-        except sqlite3.DatabaseError:
-            logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
-            # Do not trap the user in an endless loading state, if the selected file is not actually a save file
-            self.loading_state_changed.emit(False)
-            return
-        else:
-            self.document.clear()
-            self.worker_thread.start()
-
-    @staticmethod
-    def _read_data_from_save_path(save_file_path: pathlib.Path):
-        logger.info("Reading data from save file")
-        with mtg_proxy_printer.sqlite_helpers.open_database(
-                save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
-                raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
-
-            if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
-                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            else:
-                query = r"""SELECT page, slot, scryfall_id, is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            data: typing.List[typing.Tuple[int, int, str, bool]] = [
-                (page, slot, scryfall_id, bool(is_front))
-                for page, slot, scryfall_id, is_front in db.execute(query)
-            ]
-        return data
+        self.worker.save_path = save_file_path
+        self.worker_thread.start()
 
 
 def _migrate_database(db):

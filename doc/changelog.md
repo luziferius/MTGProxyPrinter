@@ -19,6 +19,7 @@
   prevent issues.
 - Fixed broken image thumbnail caching for tooltips in the cache cleanup dialog.
   Repeated image displays in tooltips will now render faster and cause less CPU load.
+- Optimized GUI responsiveness while a document is being loaded.
 
 
 # Version 0.9.1 (2021-03-04)
