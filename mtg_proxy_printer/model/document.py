@@ -525,6 +525,7 @@ class DocumentLoader(QObject):
         error_loading_file_occured = pyqtSignal(pathlib.Path)
         document_clear_requested = pyqtSignal()
         unknown_scryfall_ids_found = pyqtSignal(int)
+        loading_file_successful = pyqtSignal(pathlib.Path)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -551,6 +552,7 @@ class DocumentLoader(QObject):
             finally:
                 if unknown_ids:
                     self.unknown_scryfall_ids_found.emit(unknown_ids)
+                self.loading_file_successful.emit(self.save_path)
                 self.finished.emit()
 
         def _load_document(self) -> int:
@@ -609,6 +611,7 @@ class DocumentLoader(QObject):
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
         self.worker.error_loading_file_occured.connect(self.error_loading_file_occured)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
+        self.worker.loading_file_successful.connect(self.on_loading_file_successful)
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
@@ -622,6 +625,9 @@ class DocumentLoader(QObject):
         self.loading_state_changed.emit(True)
         self.worker.save_path = save_file_path
         self.worker_thread.start()
+
+    def on_loading_file_successful(self, file_path: pathlib.Path):
+        self.document.file_path = file_path
 
 
 def _migrate_database(db):
