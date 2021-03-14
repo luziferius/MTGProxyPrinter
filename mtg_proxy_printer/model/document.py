@@ -34,6 +34,7 @@ logger = get_logger(__name__)
 del get_logger
 
 CardList = typing.List[Card]
+DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
 unit_registry = pint.UnitRegistry()
 
 __all__ = [
@@ -343,7 +344,7 @@ class Document(QAbstractListModel):
                 (card.scryfall_id, card.is_front) for card in page.cards), start=1))
             for page_index, page in enumerate(self.pages, start=1)
         )
-        flattened_data = (
+        flattened_data: DocumentSaveFormat = (
             (page, slot, scryfall_id, is_front)
             for (page, (slot, (scryfall_id, is_front)))
             in itertools.chain.from_iterable(cards)
@@ -561,19 +562,20 @@ class DocumentLoader(QObject):
                 if current_page != page_number:
                     current_page = page_number
                     self.new_page.emit()
-                if not self.card_db.is_scryfall_id_known(scryfall_id, is_front):
+                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+                if card is None:
                     # If the save file was tampered with or the database used to save contained more cards than the
                     # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
                     unknown_ids += 1
+                    logger.info(f"Unknown ID found in document: {scryfall_id=}, {is_front=}")
                     continue
-                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
                 self.image_loader.get_image_synchronous(card)
                 self.add_card.emit(card)
             self.data.clear()
             return unknown_ids
 
         @staticmethod
-        def _read_data_from_save_path(save_file_path: pathlib.Path):
+        def _read_data_from_save_path(save_file_path: pathlib.Path) -> DocumentSaveFormat:
             logger.info("Reading data from save file")
             with mtg_proxy_printer.sqlite_helpers.open_database(
                     save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
@@ -588,7 +590,7 @@ class DocumentLoader(QObject):
                     query = r"""SELECT page, slot, scryfall_id, is_front
                     FROM Card
                     ORDER BY page, slot ASC"""
-                data: typing.List[typing.Tuple[int, int, str, bool]] = [
+                data = [
                     (page, slot, scryfall_id, bool(is_front))
                     for page, slot, scryfall_id, is_front in db.execute(query)
                 ]
