@@ -359,6 +359,7 @@ class Document(QAbstractListModel):
                 flattened_data
             )
             db.commit()
+            db.execute("VACUUM")
 
     @pyqtSlot()
     def compact_pages(self):
