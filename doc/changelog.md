@@ -11,6 +11,8 @@
 ## Fixed issues
 
 - Reworded some of the displayed texts and fixed minor issues in strings.
+- Show an error message if the user tries to load a file that is not a valid document.
+- Show a warning if the loaded document contains unknown entries that were skipped during the loading process.
 - Further optimized the card data import. It should run a bit faster on slow CPUs or really fast internet connections.
 - Fixed potential issues during import when the user re-downloads the card data multiple times in a row.
 - Unified the handling of long-running background operations. All three (loading documents, importing decks and
@@ -18,8 +20,9 @@
 - During a long-running background operation, also disable the print preview button and the cache cleanup button to
   prevent issues.
 - Fixed broken image thumbnail caching for tooltips in the cache cleanup dialog.
-  Repeated image displays in tooltips will now render faster and cause less CPU load.
+  Repeated image displays in tooltips will now render faster and cause less CPU load and disk accesses.
 - Optimized GUI responsiveness while a document is being loaded.
+- Reduced CPU load during the document loading process.
 
 
 # Version 0.9.1 (2021-03-04)
