@@ -502,7 +502,7 @@ class DocumentLoader(QObject):
 
     loading_state_changed = pyqtSignal(bool)
     unknown_scryfall_ids_found = pyqtSignal(int)
-    error_loading_file_occured = pyqtSignal(pathlib.Path)
+    loading_file_failed = pyqtSignal(pathlib.Path)
 
     class Worker(QObject):
         """
@@ -522,7 +522,7 @@ class DocumentLoader(QObject):
         new_page = pyqtSignal()
         add_card = pyqtSignal(Card)
         finished = pyqtSignal()
-        error_loading_file_occured = pyqtSignal(pathlib.Path)
+        loading_file_failed = pyqtSignal(pathlib.Path)
         document_clear_requested = pyqtSignal()
         unknown_scryfall_ids_found = pyqtSignal(int)
         loading_file_successful = pyqtSignal(pathlib.Path)
@@ -548,7 +548,7 @@ class DocumentLoader(QObject):
                 unknown_ids = self._load_document()
             except sqlite3.DatabaseError:
                 logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
-                self.error_loading_file_occured.emit(self.save_path)
+                self.loading_file_failed.emit(self.save_path)
             finally:
                 if unknown_ids:
                     self.unknown_scryfall_ids_found.emit(unknown_ids)
@@ -609,7 +609,7 @@ class DocumentLoader(QObject):
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
-        self.worker.error_loading_file_occured.connect(self.error_loading_file_occured)
+        self.worker.loading_file_failed.connect(self.loading_file_failed)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
         self.worker.loading_file_successful.connect(self.on_loading_file_successful)
         self.worker.finished.connect(self.worker_thread.quit)

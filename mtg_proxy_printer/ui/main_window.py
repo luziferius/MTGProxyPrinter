@@ -89,7 +89,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
         document.loading_state_changed.connect(self.loading_state_changed)
-        document.loader.error_loading_file_occured.connect(self.on_document_loading_failed)
+        document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.image_db.add_card.connect(document.add_card)
