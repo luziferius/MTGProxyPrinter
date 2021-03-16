@@ -161,6 +161,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             (self.action_download_card_data, "edit-download"),
             (self.action_new_page, "document-new"),
             (self.action_discard_page, "document-close"),
+            (self.action_cleanup_local_image_cache, "edit-clear-history"),
         ]
         for action, icon_name in action_fallback_icons:
             if action.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
