@@ -23,6 +23,7 @@
   Repeated image displays in tooltips will now render faster and cause less CPU load and disk accesses.
 - Optimized GUI responsiveness while a document is being loaded.
 - Reduced CPU load during the document loading process.
+- Fixed application crashes when directly upgrading from version `0.3.0`.
 
 
 # Version 0.9.1 (2021-03-04)
