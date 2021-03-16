@@ -15,8 +15,8 @@
 
 PRAGMA user_version = 0000003;
 PRAGMA application_id = 41325044; -- ASCII-encoded "MTGP"
-PRAGMA page_size = '512';
-VACUUM;
+PRAGMA page_size =  512;
+VACUUM;  -- Required to apply setting PRAGMA page_size
 
 CREATE TABLE Card (
   page INTEGER NOT NULL CHECK (page > 0),
