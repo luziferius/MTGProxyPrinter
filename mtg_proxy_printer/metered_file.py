@@ -30,7 +30,7 @@ __all__ = [
 @delegate(
     "file",
     # IOBase and BufferedIOBase methods
-    "seekable", "readable", "writable", "close", "fileno", "flush", "isatty", "tell", "truncate", "detach",
+    "seekable", "readable", "writable", "close", "fileno", "flush", "isatty", "tell", "truncate", "detach",  # noqa
 )
 class MeteredFile(QObject):
     """Takes a file-like object and monitors read and write progress."""
@@ -85,7 +85,7 @@ class MeteredFile(QObject):
         self._processed(bytes_read)
         return bytes_read
 
-    def readline(self, __size: Optional[int] = ...) -> bytes:
+    def readline(self, __size: Optional[int] = None) -> bytes:
         line = self.file.readline(__size)
         self._processed(len(line))
         return line

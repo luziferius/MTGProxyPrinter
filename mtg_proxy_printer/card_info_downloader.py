@@ -169,7 +169,8 @@ class CardInfoDownloadWorker(QObject):
 
     def populate_database(self, card_data: typing.Generator[JSONType, None, None] = None):
         """
-        Takes an iterable returned by card_info_importer.read_json_card_data() and populates the database with card data.
+        Takes an iterable returned by card_info_importer.read_json_card_data()
+        and populates the database with card data.
         """
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()

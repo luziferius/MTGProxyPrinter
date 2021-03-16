@@ -417,4 +417,3 @@ class CacheCleanupWizard(QWizard):
         logger.debug(f"Tooltip cache efficiency: {get_image_for_tooltip_display.cache_info()}")
         # Free memory by clearing the cached, base64 encoded PNGs used for tooltip display
         get_image_for_tooltip_display.cache_clear()
-
