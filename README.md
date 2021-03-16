@@ -30,7 +30,7 @@ These libraries are required to run the unit tests.
 ## Install
 
 To install the newest version, execute `pip install http://1337net.duckdns.org:8080/MTGProxyPrinter/zip/MTGProxyPrinter.zip?r=release`  
-Install latest development snapshot: From the cloned repository root directory, execute `pip install .`
+Install the latest development snapshot: From the cloned repository root directory, execute `pip install .`
 
 
 ## Usage
@@ -41,7 +41,7 @@ When starting, an empty document is created. You can add any number of pages, if
 The left-most panel in the main window shows an overview over all pages with a summary of what is on each page.
 Click on a page to show it’s content in detail and select it for editing.
 The top-right area is used to find cards by name or set and add them to the current page.
-Below is a preview rendering of the current page and a table with details about the cards in the opened page.
+Below is a preview rendering of the current page, and a table with details about the cards in the opened page.
 You can select images and remove them, if you accidentally added the wrong cards.
 
 You can save and load documents to continue working on your documents later and create PDF documents for printing.
@@ -82,8 +82,8 @@ See the LICENSE file for details.
 
 Copyright (C) 2014 Uri Herrera <uri_herrera@nitrux.in> and others
 
-The icons shipped in mtg_proxy_printer/resources/icons/ and used as a fallback if no
-system theme is present are sourced from Breeze icon theme created by the KDE project.
+The icons shipped in the directory mtg_proxy_printer/resources/icons/ are used as a fallback if no
+system theme is present, and are sourced from Breeze icon theme created by the KDE project.
 These fall under the LGPL either version 3 of the License, or
 (at your option) any later version.
 
