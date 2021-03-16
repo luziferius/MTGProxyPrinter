@@ -1,7 +1,7 @@
 # Changelog
 
 
-# Version <next> (in development)
+# Version 0.9.2 (2021-03-16)
 
 ## Changed Features
 
