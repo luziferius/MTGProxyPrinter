@@ -296,7 +296,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self, "Download required Card data from Scryfall?",
             "This program requires downloading additional card data from Scryfall to operate the card search.\n"
             "Download the required data from Scryfall now?\n"
-            "If you decline now, you can exclude some card types or individual cards based on ban lists"
+            "If you decline now, you can exclude some card types or individual cards based on ban lists "
             "in the settings and then manually start the download later.\n"
             "Or accept and use the current settings.",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
