@@ -1,11 +1,12 @@
 # Changelog
 
-# Version 0.9.3 (2021-03-16)
+# Version \<next> (in development)
 
 ## Fixed issues
 
 - Fixed wrong item order in the `Settings` menu when using the horizontal search layout
 - Fixed several missing icons on platforms without icon theme support, like Windows, or with incomplete icon themes
+
 
 # Version 0.9.2 (2021-03-16)
 
