@@ -249,6 +249,8 @@ class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/fil
     def __init__(self, parent: QWidget = None):
         super(FilterSetupPage, self).__init__(parent)
         self.setupUi(self)
+        if self.delete_everything_checkbox.icon().isNull():
+            self.delete_everything_checkbox.setIcon(load_icon("edit-delete"))
         self.registerField("remove-everything-enabled", self.delete_everything_checkbox)
         self.registerField("time-filter-enabled", self.time_filter_enabled_checkbox)
         self.registerField("time-filter-value", self.time_filter_value_spinbox)

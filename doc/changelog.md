@@ -1,5 +1,11 @@
 # Changelog
 
+# Version 0.9.3 (2021-03-16)
+
+## Fixed issues
+
+- Fixed wrong item order in the `Settings` menu when using the horizontal search layout
+- Fixed several missing icons on platforms without icon theme support, like Windows, or with incomplete icon themes
 
 # Version 0.9.2 (2021-03-16)
 
@@ -10,7 +16,7 @@
 
 ## Fixed issues
 
-- Reworded some of the displayed texts and fixed minor issues in strings.
+- Reworded some displayed texts and fixed minor issues in strings.
 - Show an error message if the user tries to load a file that is not a valid document.
 - Show a warning if the loaded document contains unknown entries that were skipped during the loading process.
 - Further optimized the card data import. It should run a bit faster on slow CPUs or really fast internet connections.
@@ -42,7 +48,7 @@
   computer. It uses the systems native printing support, where available.
 - Added command line arguments: The application now accepts a document path as a positional argument.
   This allows opening documents when starting the application.
-  - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file. And it can be used
+  - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file, and it can be used
     to associate the file type with the program and then automatically open saved documents by clicking on them.
 - When changing download filter settings, ask the user if they want to re-download the card data. The user can do so
   when asked or any time later.
@@ -244,7 +250,7 @@ and let MTGProxyPrinter re-create it from scratch.
 ## Fixed issues
 
 - Improved card search speed by roughly factor 100 and card data import speed by factor ~ 40.
-  Searching cards should now feel instant, as the up-to one second delay after each key press is gone for good.
+  Searching cards should now feel instant, as the up-to one-second delay after each key press is gone for good.
 - Decreased the card database size. The new database roughly takes two/thirds the space previously required.
 
 
