@@ -104,6 +104,7 @@ class Page(QAbstractTableModel):
     def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
         """
         Remove all cards in the given multi-selection.
+
         :param indices: List with QModelIndex instances that represents a multi-selection.
           As returned by a QSelectionModel
         :return: Number of cards removed
@@ -134,13 +135,10 @@ class Page(QAbstractTableModel):
         first_index, last_index = indices[0].row(), indices[-1].row()
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
-        remaining = [card for index, card in enumerate(self.cards) if index not in to_delete]
-        self.cards[:] = remaining
+        self.cards[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
         self.endRemoveRows()
         if not self.cards:
             self.page_empty.emit(True)
-        for row in range(first_index, last_index + 1):  # Qt includes last_index, Python excludes it, so add one here
-            self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
         return len(to_delete)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
@@ -438,13 +436,13 @@ class Document(QAbstractListModel):
             images_on_page = page.rowCount()
             if images_on_page > current_capacity:
                 # Qt includes the last value in a range and Python excludes it, so add one to the range 'stop'
-                to_remove = list(map(
+                images_to_move_away = list(map(
                     page.createIndex,
                     range(current_capacity, images_on_page+1),
                     itertools.repeat(0)
                 ))
-                excess_images += page.cards[current_capacity: images_on_page]
-                page.remove_cards(to_remove)
+                excess_images += page.cards[current_capacity:images_on_page]
+                page.remove_multi_selection(images_to_move_away)
         total_moved_images = len(excess_images)
         for page in self.pages:
             images_on_page = page.rowCount()

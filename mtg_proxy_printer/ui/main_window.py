@@ -168,7 +168,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 action.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
 
     def _setup_add_card_widget(self):
-        self.page_view: CurrentPageView
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_db.get_image_asynchronous)
