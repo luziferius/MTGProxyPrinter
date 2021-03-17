@@ -1,11 +1,15 @@
 # Changelog
 
-# Version \<next> (in development)
+# Version 0.9.3 (2021-03-17)
 
 ## Fixed issues
 
+- Deck list import: Fixed import of cards with letters or symbols in collector numbers. 
 - Fixed wrong item order in the `Settings` menu when using the horizontal search layout
 - Fixed several missing icons on platforms without icon theme support, like Windows, or with incomplete icon themes
+- Fixed unintended display of empty rows in the current page content table, if changing page layout settings decreases
+  the page capacity below the number of cards on the current page. The table now properly trims the empty slots caused
+  by moving away overflowing images.
 
 
 # Version 0.9.2 (2021-03-16)
