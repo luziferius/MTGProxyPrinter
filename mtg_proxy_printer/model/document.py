@@ -49,7 +49,6 @@ class Page(QAbstractTableModel):
     """
     This is a single page and part of a Document. It holds the proxies added to this page as a list of Card objects.
     """
-    page_empty = pyqtSignal(bool)
 
     header = {
         0: "Card name",
@@ -93,8 +92,6 @@ class Page(QAbstractTableModel):
         self.beginInsertRows(QModelIndex(), first_index, last_index)
         self.cards += list(itertools.repeat(card, count))
         self.endInsertRows()
-        if self.rowCount() == count:
-            self.page_empty.emit(False)
         self.dataChanged.emit(
             self.createIndex(first_index, 0),
             self.createIndex(last_index, self.columnCount()-1)
@@ -136,9 +133,8 @@ class Page(QAbstractTableModel):
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
         self.cards[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
+        self.dataChanged.emit(self.createIndex(first_index, 0), self.createIndex(last_index, 0))
         self.endRemoveRows()
-        if not self.cards:
-            self.page_empty.emit(True)
         return len(to_delete)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
