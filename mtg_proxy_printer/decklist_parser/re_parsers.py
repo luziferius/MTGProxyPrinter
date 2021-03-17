@@ -132,7 +132,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase):
         super(MTGArenaParser, self).__init__(
             card_db,
-            r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>\d+))?"
+            r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?"
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
@@ -162,7 +162,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase):
         super(XMageParser, self).__init__(
             card_db,
-            r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>\d+)] (?P<name>.+)"
+            r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
