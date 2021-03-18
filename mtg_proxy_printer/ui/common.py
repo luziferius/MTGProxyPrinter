@@ -14,13 +14,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
-import functools
 
-from PyQt5.QtCore import QFile, QSize, QUrl, QObject
-from PyQt5.QtGui import QIcon, QPixmap, QPainter, QColor
+from PyQt5.QtCore import QFile, QUrl, QObject
+from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import uic
-from PyQt5.QtSvg import QSvgRenderer
 
 from mtg_proxy_printer.meta_data import PROGRAMNAME
 from mtg_proxy_printer.logger import get_logger
@@ -43,6 +41,11 @@ else:
     RESOURCE_PATH_PREFIX = ":"
     ICON_PATH_PREFIX = ":/icons"
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+fallback_theme_paths = QIcon.fallbackSearchPaths()
+fallback_theme_paths.append(ICON_PATH_PREFIX)
+QIcon.setFallbackSearchPaths(fallback_theme_paths)
+QIcon.setFallbackThemeName("breeze")
 
 
 class BlockedSignals:

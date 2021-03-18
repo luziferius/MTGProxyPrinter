@@ -16,7 +16,7 @@
 import sys
 import typing
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QApplication
 
 from mtg_proxy_printer.argument_parser import Namespace
@@ -37,6 +37,7 @@ class Application(QApplication):
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
         super(Application, self).__init__(argv)
+        self.setAttribute(Qt.AA_UseHighDpiPixmaps)
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()

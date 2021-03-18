@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
-<qresource>
+<qresource prefix="/">
+    <!-- UI files -->
     <file>ui/about_dialog.ui</file>
     <file>ui/horizontal_search_layout/add_card_widget.ui</file>
     <file>ui/vertical_search_layout/add_card_widget.ui</file>
@@ -13,26 +14,86 @@
     <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
     <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
     <file>ui/cache_cleanup_wizard/summary_page.ui</file>
+
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
-    <file>icons/application-exit.svg</file>
-    <file>icons/configure.svg</file>
-    <file>icons/dialog-cancel.svg</file>
-    <file>icons/document-close.svg</file>
-    <file>icons/document-import.svg</file>
-    <file>icons/document-new.svg</file>
-    <file>icons/document-open.svg</file>
-    <file>icons/document-print-direct.svg</file>
-    <file>icons/document-print-preview.svg</file>
-    <file>icons/document-print.svg</file>
-    <file>icons/document-save.svg</file>
-    <file>icons/document-save-as.svg</file>
-    <file>icons/edit-clear-history.svg</file>
-    <file>icons/edit-delete.svg</file>
-    <file>icons/edit-download.svg</file>
-    <file>icons/format-align-vertical-top.svg</file>
-    <file>icons/go-next.svg</file>
-    <file>icons/go-previous.svg</file>
-    <file>icons/help-contents.svg</file>
-    <file>icons/viewpdf.svg</file>
+    <file>icons/breeze/index.theme</file>
+    <!-- 16x16 -->
+    <file>icons/breeze/actions/16/application-exit.svg</file>
+    <file>icons/breeze/actions/16/configure.svg</file>
+    <file>icons/breeze/actions/16/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/16/document-close.svg</file>
+    <file>icons/breeze/actions/16/document-import.svg</file>
+    <file>icons/breeze/actions/16/document-new.svg</file>
+    <file>icons/breeze/actions/16/document-open.svg</file>
+    <file>icons/breeze/actions/16/document-print-direct.svg</file>
+    <file>icons/breeze/actions/16/document-print-preview.svg</file>
+    <file>icons/breeze/actions/16/document-print.svg</file>
+    <file>icons/breeze/actions/16/document-save.svg</file>
+    <file>icons/breeze/actions/16/document-save-as.svg</file>
+    <file>icons/breeze/actions/16/edit-clear-history.svg</file>
+    <file>icons/breeze/actions/16/edit-delete.svg</file>
+    <file>icons/breeze/actions/16/edit-download.svg</file>
+    <file>icons/breeze/actions/16/format-align-vertical-top.svg</file>
+    <file>icons/breeze/actions/16/go-next.svg</file>
+    <file>icons/breeze/actions/16/go-previous.svg</file>
+    <file>icons/breeze/actions/16/help-contents.svg</file>
+    <file>icons/breeze/actions/16/viewpdf.svg</file>
+    <!-- 22x22 -->
+    <file>icons/breeze/actions/22/application-exit.svg</file>
+    <file>icons/breeze/actions/22/configure.svg</file>
+    <file>icons/breeze/actions/22/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/22/document-close.svg</file>
+    <file>icons/breeze/actions/22/document-import.svg</file>
+    <file>icons/breeze/actions/22/document-new.svg</file>
+    <file>icons/breeze/actions/22/document-open.svg</file>
+    <file>icons/breeze/actions/22/document-print-direct.svg</file>
+    <file>icons/breeze/actions/22/document-print-preview.svg</file>
+    <file>icons/breeze/actions/22/document-print.svg</file>
+    <file>icons/breeze/actions/22/document-save.svg</file>
+    <file>icons/breeze/actions/22/document-save-as.svg</file>
+    <file>icons/breeze/actions/22/edit-clear-history.svg</file>
+    <file>icons/breeze/actions/22/edit-delete.svg</file>
+    <file>icons/breeze/actions/22/edit-download.svg</file>
+    <file>icons/breeze/actions/22/format-align-vertical-top.svg</file>
+    <file>icons/breeze/actions/22/go-next.svg</file>
+    <file>icons/breeze/actions/22/go-previous.svg</file>
+    <file>icons/breeze/actions/22/help-contents.svg</file>
+    <file>icons/breeze/actions/22/viewpdf.svg</file>
+    <!-- 24x24 -->
+    <file>icons/breeze/actions/24/application-exit.svg</file>
+    <file>icons/breeze/actions/24/configure.svg</file>
+    <file>icons/breeze/actions/24/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/24/document-close.svg</file>
+    <file>icons/breeze/actions/24/document-import.svg</file>
+    <file>icons/breeze/actions/24/document-new.svg</file>
+    <file>icons/breeze/actions/24/document-open.svg</file>
+    <file>icons/breeze/actions/24/document-print-direct.svg</file>
+    <file>icons/breeze/actions/24/document-print-preview.svg</file>
+    <file>icons/breeze/actions/24/document-print.svg</file>
+    <file>icons/breeze/actions/24/document-save.svg</file>
+    <file>icons/breeze/actions/24/document-save-as.svg</file>
+    <file>icons/breeze/actions/24/edit-clear-history.svg</file>
+    <file>icons/breeze/actions/24/edit-delete.svg</file>
+    <file>icons/breeze/actions/24/edit-download.svg</file>
+    <file>icons/breeze/actions/24/format-align-vertical-top.svg</file>
+    <file>icons/breeze/actions/24/go-next.svg</file>
+    <file>icons/breeze/actions/24/go-previous.svg</file>
+    <file>icons/breeze/actions/24/help-contents.svg</file>
+    <file>icons/breeze/actions/24/viewpdf.svg</file>
+    <!-- 32x32, not all icons are available at this resolution! -->
+    <file>icons/breeze/actions/32/application-exit.svg</file>
+    <file>icons/breeze/actions/32/configure.svg</file>
+    <file>icons/breeze/actions/32/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/32/document-close.svg</file>
+    <file>icons/breeze/actions/32/document-import.svg</file>
+    <file>icons/breeze/actions/32/document-new.svg</file>
+    <file>icons/breeze/actions/32/document-open.svg</file>
+    <file>icons/breeze/actions/32/document-print-direct.svg</file>
+    <file>icons/breeze/actions/32/document-print.svg</file>
+    <file>icons/breeze/actions/32/document-save.svg</file>
+    <file>icons/breeze/actions/32/document-save-as.svg</file>
+    <file>icons/breeze/actions/32/edit-delete.svg</file>
+    <file>icons/breeze/actions/32/go-next.svg</file>
+    <file>icons/breeze/actions/32/go-previous.svg</file>
 </qresource>
 </RCC>
