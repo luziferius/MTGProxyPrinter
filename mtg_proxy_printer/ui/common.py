@@ -42,11 +42,6 @@ else:
     ICON_PATH_PREFIX = ":/icons"
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
 
-fallback_theme_paths = QIcon.fallbackSearchPaths()
-fallback_theme_paths.append(ICON_PATH_PREFIX)
-QIcon.setFallbackSearchPaths(fallback_theme_paths)
-QIcon.setFallbackThemeName("breeze")
-
 
 class BlockedSignals:
     """

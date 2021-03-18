@@ -18,6 +18,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.model.carddb
@@ -37,7 +38,7 @@ class Application(QApplication):
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
         super(Application, self).__init__(argv)
-        self.setAttribute(Qt.AA_UseHighDpiPixmaps)
+        self._setup_icons()
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
@@ -57,6 +58,22 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _setup_icons(self):
+        # The current icon theme name is empty by default, which causes the system-default theme to be used.
+        # On platforms without native icon theme support, this causes all images to be blank.
+        # These platforms require an explicit theme name set.
+        # To test if the default settings gets usable icons, check an icon name used.
+        # If this test returns no icon, explicitly set the icon theme name to load the internal icons.
+        if not QIcon.hasThemeIcon("format-align-vertical-top"):
+            logger.info(
+                "No native icon theme support or the used theme returned no usable icon, defaulting to internal icons."
+            )
+            theme_search_paths = QIcon.themeSearchPaths()
+            theme_search_paths.append(mtg_proxy_printer.ui.common.ICON_PATH_PREFIX)
+            QIcon.setThemeSearchPaths(theme_search_paths)
+            QIcon.setThemeName("breeze")
+        self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     @pyqtSlot()
     def shutdown(self):

@@ -81,9 +81,9 @@ Comment[zh_TW]=由 KDE VDG 團隊製作的 Breeze
 
 DisplayDepth=32
 
-# Inherits=hicolor
+Inherits=hicolor
 
-Example=folder
+Example=configure
 
 FollowsColorScheme=true
 
