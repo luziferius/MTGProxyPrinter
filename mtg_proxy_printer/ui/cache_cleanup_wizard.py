@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, load_icon
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -249,8 +249,6 @@ class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/fil
     def __init__(self, parent: QWidget = None):
         super(FilterSetupPage, self).__init__(parent)
         self.setupUi(self)
-        if self.delete_everything_checkbox.icon().isNull():
-            self.delete_everything_checkbox.setIcon(load_icon("edit-delete"))
         self.registerField("remove-everything-enabled", self.delete_everything_checkbox)
         self.registerField("time-filter-enabled", self.time_filter_enabled_checkbox)
         self.registerField("time-filter-value", self.time_filter_value_spinbox)
@@ -378,15 +376,9 @@ class CacheCleanupWizard(QWizard):
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.addPage(SummaryPage(self))
         self.setWindowTitle("Cleanup the local image cache")
-        self._setup_window_icon()
+        self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         self._setup_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _setup_window_icon(self, icon_name: str = "edit-clear-history"):
-        icon = QIcon.fromTheme(icon_name)
-        if icon.isNull():
-            icon = load_icon(icon_name)
-        self.setWindowIcon(icon)
 
     def _setup_button_icons(self):
         buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
@@ -395,10 +387,7 @@ class CacheCleanupWizard(QWizard):
             (QWizard.FinishButton, "edit-delete"),
         ]
         for button, icon_name in buttons_with_icons:
-            icon = QIcon.fromTheme(icon_name)
-            if icon.isNull():
-                icon = load_icon(icon_name)
-            self.button(button).setIcon(icon)
+            self.button(button).setIcon(QIcon.fromTheme(icon_name))
 
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()

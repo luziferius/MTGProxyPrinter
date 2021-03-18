@@ -73,56 +73,20 @@ def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
     label.setText(f"""<a href="{url.path(QUrl.FullyEncoded):s}">{display_text:s}</a>""")
 
 
-@functools.lru_cache()
-def load_icon(name: str) -> QIcon:
-    """
-    Load a QIcon with the given file name. Files are loaded from the ICON_PATH_PREFIX,
-    which depends on the installation style.
-    """
-    logger.debug(f'Loading internal icon "{name}"')
-    file_path = f"{ICON_PATH_PREFIX}/{name}.svg"
-    icon = QIcon(file_path)
-    if not icon.availableSizes():
-        logger.info(f"Manually rendering icon {name}")
-        transparent_white = QColor(255, 255, 255, 0)
-        # FIXME: Work around Qt Bug: https://bugreports.qt.io/browse/QTBUG-63187
-        # Manually render the SVG to some common icon sizes.
-        icon = QIcon()  # Discard the bugged QIcon
-        renderer = QSvgRenderer(file_path)
-        for size in (16, 22, 24, 32, 64, 128):
-            pixmap = QPixmap(QSize(size, size))
-            pixmap.fill(transparent_white)
-            renderer.render(QPainter(pixmap))
-            icon.addPixmap(pixmap)
-    return icon
-
-
-def _get_ui_qfile(name: str) -> QFile:
-    """
-    Returns an opened, read-only QFile for the given QtDesigner UI file name. Expects a plain name like "main_window".
-    The file ending and resource path is added automatically.
-    :param name: UI file name
-    :return: Opened QFile instance
-    :raises FileNotFoundError: If the given ui file does not exist.
-    """
-    file_path = f"{RESOURCE_PATH_PREFIX}/ui/{name}.ui"
-    file = QFile(file_path)
-    if not file.exists():
-        error_message = f"UI file not found: {file_path}"
-        logger.error(error_message)
-        raise FileNotFoundError(error_message)
-    file.open(QFile.ReadOnly)
-    return file
-
-
 def load_ui_from_file(name: str):
     """
     Returns a tuple from uic.loadUiType(), loading the ui file with the given name.
     :param name:
     :return:
     """
-    ui_file = _get_ui_qfile(name)
+    file_path = f"{RESOURCE_PATH_PREFIX}/ui/{name}.ui"
+    ui_file = QFile(file_path)
+    if not ui_file.exists():
+        error_message = f"UI file not found: {file_path}"
+        logger.error(error_message)
+        raise FileNotFoundError(error_message)
     try:
+        ui_file.open(QFile.ReadOnly)
         base_type = uic.loadUiType(ui_file, from_imports=True)
     finally:
         ui_file.close()

@@ -19,13 +19,11 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton, \
-    QCheckBox
-
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton
 from mtg_proxy_printer.decklist_parser import re_parsers, common
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Page
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, load_icon
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -58,9 +56,6 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
-        self.deck_list_browse_button: QPushButton
-        if self.deck_list_browse_button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-            self.deck_list_browse_button.setIcon(load_icon("document-open"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
@@ -155,9 +150,6 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.parsed_cards_table.setColumnHidden(4, True)
         self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
-        self.should_replace_document: QCheckBox
-        if self.should_replace_document.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-            self.should_replace_document.setIcon(load_icon("edit-delete"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
@@ -185,16 +177,10 @@ class DeckImportWizard(QWizard):
         self.addPage(SelectDeckParserPage(card_db, self))
         self.addPage(LoadListPage(self))
         self.addPage(SummaryPage(self))
-        self._setup_window_icon()
+        self.setWindowIcon(QIcon.fromTheme("document-import"))
         self.setBaseSize(800, 600)
         self.setWindowTitle("Import a deck list")
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _setup_window_icon(self, icon_name: str = "document-import"):
-        icon = QIcon.fromTheme(icon_name)
-        if icon.isNull():
-            icon = load_icon(icon_name)
-        self.setWindowIcon(icon)
 
     def accept(self):
         logger.info("User finished the import wizard, performing the requested actions")
