@@ -165,7 +165,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         ]
         for action, icon_name in action_fallback_icons:
             if action.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-                action.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
+                action.setIcon(mtg_proxy_printer.ui.common.load_icon(icon_name))
 
     def _setup_add_card_widget(self):
         self.add_card_widget: AddCardWidget

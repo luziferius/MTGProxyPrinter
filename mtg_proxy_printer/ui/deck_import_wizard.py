@@ -60,7 +60,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
         self.deck_list_browse_button: QPushButton
         if self.deck_list_browse_button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-            self.deck_list_browse_button.setIcon(load_icon("document-open.svg"))
+            self.deck_list_browse_button.setIcon(load_icon("document-open"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @pyqtSlot()
@@ -157,7 +157,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.registerField("should_replace_document", self.should_replace_document)
         self.should_replace_document: QCheckBox
         if self.should_replace_document.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-            self.should_replace_document.setIcon(load_icon("edit-delete.svg"))
+            self.should_replace_document.setIcon(load_icon("edit-delete"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:

@@ -62,7 +62,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         for button, icon_name in action_fallback_icons:
             if button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-                button.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
+                button.setIcon(mtg_proxy_printer.ui.common.load_icon(icon_name))
 
     def show(self):
         logger.info("Show the settings window.")

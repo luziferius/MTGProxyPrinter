@@ -80,17 +80,18 @@ def load_icon(name: str) -> QIcon:
     which depends on the installation style.
     """
     logger.debug(f'Loading internal icon "{name}"')
-    file_path = ICON_PATH_PREFIX + "/" + name
+    file_path = f"{ICON_PATH_PREFIX}/{name}.svg"
     icon = QIcon(file_path)
-    if not icon.availableSizes() and file_path.endswith(".svg"):
+    if not icon.availableSizes():
         logger.info(f"Manually rendering icon {name}")
+        transparent_white = QColor(255, 255, 255, 0)
         # FIXME: Work around Qt Bug: https://bugreports.qt.io/browse/QTBUG-63187
         # Manually render the SVG to some common icon sizes.
         icon = QIcon()  # Discard the bugged QIcon
         renderer = QSvgRenderer(file_path)
         for size in (16, 22, 24, 32, 64, 128):
             pixmap = QPixmap(QSize(size, size))
-            pixmap.fill(QColor(255, 255, 255, 0))
+            pixmap.fill(transparent_white)
             renderer.render(QPainter(pixmap))
             icon.addPixmap(pixmap)
     return icon
