@@ -60,19 +60,28 @@ class Application(QApplication):
         logger.debug("Left event loop.")
 
     def _setup_icons(self):
-        # The current icon theme name is empty by default, which causes the system-default theme to be used.
-        # On platforms without native icon theme support, this causes all images to be blank.
-        # These platforms require an explicit theme name set.
-        # To test if the default settings gets usable icons, check an icon name used.
-        # If this test returns no icon, explicitly set the icon theme name to load the internal icons.
-        if not QIcon.hasThemeIcon("format-align-vertical-top"):
+        # The current icon theme name is empty by default, which causes the system-default theme, returned by
+        # QIcon.fallbackThemeName() to be used.
+        # On platforms without native icon theme support, both QIcon.themeName() and QIcon.fallbackThemeName()
+        # return an empty string and no icons will load. These platforms require an explicit theme name set.
+
+        # To test if the current platform has native icon theme support, check, if QIcon.fallbackThemeName() returns
+        # a non-empty string. If it is empty, explicitly set the name of the internal icon theme. This will load the
+        # internal icons.
+        print(f"{QIcon.themeName()=}")
+        print(f"{QIcon.fallbackThemeName()=}")
+        if not QIcon.fallbackThemeName():
             logger.info(
-                "No native icon theme support or the used theme returned no usable icon, defaulting to internal icons."
+                "No native icon theme support or no system theme set, defaulting to internal icons."
             )
-            theme_search_paths = QIcon.themeSearchPaths()
-            theme_search_paths.append(mtg_proxy_printer.ui.common.ICON_PATH_PREFIX)
-            QIcon.setThemeSearchPaths(theme_search_paths)
+            if not mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES:
+                # If the compiled resources are available, the default search path ":/icons" is sufficient. Only append
+                # the resources directory file system path, if directly running from the source distribution.
+                theme_search_paths = QIcon.themeSearchPaths()
+                theme_search_paths.append(mtg_proxy_printer.ui.common.ICON_PATH_PREFIX)
+                QIcon.setThemeSearchPaths(theme_search_paths)
             QIcon.setThemeName("breeze")
+
         self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     @pyqtSlot()

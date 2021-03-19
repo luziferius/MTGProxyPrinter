@@ -35,11 +35,13 @@ except ModuleNotFoundError:
     warnings.warn(warn_msg)
     RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources")
     ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources" / "icons")
+    HAS_COMPILED_RESOURCES = False
 else:
     import atexit
     # Compiled resources found, so use it.
     RESOURCE_PATH_PREFIX = ":"
     ICON_PATH_PREFIX = ":/icons"
+    HAS_COMPILED_RESOURCES = True
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
 
 

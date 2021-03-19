@@ -1,5 +1,11 @@
 # Changelog
 
+# Version \<next> (in development)
+
+# Fixed issues
+
+- Fixed blurry icons on platforms without native icon theme support.
+
 # Version 0.9.3 (2021-03-17)
 
 ## Fixed issues
