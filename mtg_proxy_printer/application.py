@@ -68,8 +68,6 @@ class Application(QApplication):
         # To test if the current platform has native icon theme support, check, if QIcon.fallbackThemeName() returns
         # a non-empty string. If it is empty, explicitly set the name of the internal icon theme. This will load the
         # internal icons.
-        print(f"{QIcon.themeName()=}")
-        print(f"{QIcon.fallbackThemeName()=}")
         if not QIcon.fallbackThemeName():
             logger.info(
                 "No native icon theme support or no system theme set, defaulting to internal icons."
