@@ -1,5 +1,14 @@
 # Changelog
 
+
+# Version \<next> (in development)
+
+# Fixed issues
+
+- Fixed blurry icons on platforms without native icon theme support.
+- Enabled high DPI monitor support. The application will now properly scale on high DPI displays.
+
+
 # Version 0.9.3 (2021-03-17)
 
 ## Fixed issues

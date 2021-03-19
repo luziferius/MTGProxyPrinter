@@ -16,8 +16,9 @@
 import sys
 import typing
 
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.model.carddb
@@ -37,6 +38,7 @@ class Application(QApplication):
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
         super(Application, self).__init__(argv)
+        self._setup_icons()
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
@@ -56,6 +58,29 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _setup_icons(self):
+        # The current icon theme name is empty by default, which causes the system-default theme, returned by
+        # QIcon.fallbackThemeName() to be used.
+        # On platforms without native icon theme support, both QIcon.themeName() and QIcon.fallbackThemeName()
+        # return an empty string and no icons will load. These platforms require an explicit theme name set.
+
+        # To test if the current platform has native icon theme support, check, if QIcon.fallbackThemeName() returns
+        # a non-empty string. If it is empty, explicitly set the name of the internal icon theme. This will load the
+        # internal icons.
+        if not QIcon.fallbackThemeName():
+            logger.info(
+                "No native icon theme support or no system theme set, defaulting to internal icons."
+            )
+            if not mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES:
+                # If the compiled resources are available, the default search path ":/icons" is sufficient. Only append
+                # the resources directory file system path, if directly running from the source distribution.
+                theme_search_paths = QIcon.themeSearchPaths()
+                theme_search_paths.append(mtg_proxy_printer.ui.common.ICON_PATH_PREFIX)
+                QIcon.setThemeSearchPaths(theme_search_paths)
+            QIcon.setThemeName("breeze")
+
+        self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     @pyqtSlot()
     def shutdown(self):
