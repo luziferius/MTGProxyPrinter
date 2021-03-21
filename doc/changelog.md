@@ -3,7 +3,7 @@
 
 # Version \<next> (in development)
 
-# Fixed issues
+## Fixed issues
 
 - Fixed blurry icons on platforms without native icon theme support.
 - Enabled high DPI monitor support. The application will now properly scale on high DPI displays.
