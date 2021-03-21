@@ -105,7 +105,7 @@ KDE-Extensions=.svg
 ########## Directories
 ########## ordered by category and alphabetically
 
-Directories=actions/16,actions/22,actions/24,actions/32,actions/64
+Directories=actions/16,actions/22,actions/24,actions/32
 
 ########## Actions
 ########## ordered by size
