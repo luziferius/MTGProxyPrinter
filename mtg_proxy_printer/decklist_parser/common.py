@@ -32,6 +32,9 @@ class ParserBase:
         self.add_opposing_face = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
         )
+        self.guess_prefer_already_downloaded = mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
+            "prefer-already-downloaded"
+        )
 
     @abstractmethod
     def parse_deck(self, deck: typing.Union[pathlib.Path, str],
@@ -52,12 +55,18 @@ class ParserBase:
     def requires_print_guessing(self) -> bool:
         return False
 
-    def guess_printing(self, card_data: CardIdentificationData, prefer_already_downloaded: bool) -> typing.Optional[Card]:
+    def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
         if card_data.name:
             card_data.name = card_data.name.strip()
         if "//" in card_data.name:
             # If this is a split card, try to identify one half
-            card_data.name = card_data.name.split("//")[0 if card_data.is_front in {True, None} else 1].strip()
+            card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
         if self.card_db.is_valid_and_unique_card(card_data):
             return self.card_db.get_cards_from_data(card_data)
+
+    def _add_card_to_deck(self, deck: typing.Counter[Card], card: Card, count: int):
+        deck[card] += count
+        if self.add_opposing_face and (opposing_face := self.card_db.get_opposing_face(card)) is not None:
+            # Double-faced card
+            deck[opposing_face] += count
 

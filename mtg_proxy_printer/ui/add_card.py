@@ -212,8 +212,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
         )
-        if add_opposing_faces_enabled and (
-                opposing_face := self.card_database.get_opposing_face(card)) is not None:
+        if add_opposing_faces_enabled and (opposing_face := self.card_database.get_opposing_face(card)) is not None:
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
             self._log_added_card(opposing_face, copies)

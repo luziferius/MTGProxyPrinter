@@ -20,8 +20,11 @@ import pathlib
 import typing
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 from .common import ParsedDeck, ParserBase
+
+LineParserResult = typing.Tuple[typing.Counter[Card], bool]
 
 
 class BaseCSVParser(ParserBase):
@@ -29,16 +32,17 @@ class BaseCSVParser(ParserBase):
     DIALECT_NAME = ""
 
     def parse_deck(self, deck_list: typing.Union[pathlib.Path, str],
-                   print_guessing: bool,
-                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+                   guess_printing: bool,
+                   guess_printing_prefer_already_downloaded: bool) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
         for line in self._read_lines_from_csv(deck_list):
-            cards = self.parse_cards_from_line(line)
-            if cards:
+            cards, should_be_success = self.parse_cards_from_line(line, guess_printing)
+            if cards and should_be_success:
                 deck.update(cards)
-            else:
+            elif not cards and should_be_success:
                 unmatched_lines.append(str(line))
+
         return deck, unmatched_lines
 
     def _read_lines_from_csv(
@@ -50,7 +54,7 @@ class BaseCSVParser(ParserBase):
             yield from csv.DictReader(deck_list.splitlines(), dialect=self.DIALECT_NAME)
 
     @abc.abstractmethod
-    def parse_cards_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         pass
 
 
@@ -72,17 +76,14 @@ class ScryfallCSVParser(BaseCSVParser):
 
     DIALECT_NAME = "scryfall_com"
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         # Only interested in the scryfall_id and language
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
         count = int(line["count"])
         if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, True)) is not None:
-            cards[card] += count
-            if self.add_opposing_face and \
-                    (opposing_face := self.card_db.get_card_with_scryfall_id(scryfall_id, False)) is not None:
-                # Double-faced card
-                cards[opposing_face] += count
+            self._add_card_to_deck(cards, card, count)
+            return cards, True
         else:
             language = line["lang"]
             english_name = line["name"]
@@ -90,8 +91,9 @@ class ScryfallCSVParser(BaseCSVParser):
             card_data = CardIdentificationData(
                 language, card_name, line["set_code"], line["collector_number"]
             )
-            # TODO: Guess printings.
-        return cards
+            if (card := self.guess_printing(card_data)) is not None:
+                self._add_card_to_deck(cards, card, count)
+            return cards, guess_printing
 
 
 class TappedOutCSVParser(BaseCSVParser):
@@ -112,15 +114,36 @@ class TappedOutCSVParser(BaseCSVParser):
 
     DIALECT_NAME = "tappedout_com"
 
-    def __init__(self, card_db: CardDatabase, include_maybe_board: bool = False, include_acquire_board: bool = False):
-        super(TappedOutCSVParser, self).__init__(card_db)
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
+                 include_maybe_board: bool = False, include_acquire_board: bool = False):
+        super(TappedOutCSVParser, self).__init__(card_db, image_db)
         self.include_acquire_board = include_acquire_board
         self.include_maybe_board = include_maybe_board
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str]) -> typing.Counter[Card]:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         cards = collections.Counter()
         if self.should_skip_entry(line):
-            return cards
+            return cards, False
+        language = self._read_language(line)
+        english_name = line["Name"]
+        card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+        set_code = line["Printing"].lower()  # TappedOut uses upper case set codes, so convert to lower case
+        count = int(line["Qty"])  # Quantity (Qty) contains the number of copies
+        # The current CSV format (2021-02) does not include the collector number, so no way to identify special
+        # printings inside larger sets
+        card_data = CardIdentificationData(
+            language, card_name, set_code
+        )
+        if guess_printing and (card := self.guess_printing(card_data)) is not None:
+            self._add_card_to_deck(cards, card, count)
+            return cards, True
+        elif not guess_printing and (card := self.card_db.get_cards_from_data(card_data)) is not None:
+            self._add_card_to_deck(cards, card, count)
+            return cards, True
+        else:
+            return cards, False
+
+    def _read_language(self, line: typing.Dict[str, str]):
         try:
             language = line["Language"]
         except KeyError:
@@ -129,17 +152,7 @@ class TappedOutCSVParser(BaseCSVParser):
             language = line["Languange"]  # noqa
         if not language or not self.card_db.is_known_language(language):
             language = "en"
-        english_name = line["Name"]
-        card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
-        set_code = line["Printing"].lower()  # TappedOut uses upper case set codes, so convert to lower case
-        count = int(line["Qty"])
-        # THe current CSV format (2021-02) does not include the collector number, so no way to identify special
-        # printings inside larger sets
-        card_data = CardIdentificationData(
-            language, card_name, set_code
-        )
-        # TODO: Guess printings.
-        return cards
+        return language
 
     def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
         board = line["Board"]

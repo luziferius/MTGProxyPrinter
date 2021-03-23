@@ -64,10 +64,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def _add_matched_card(self, cards: typing.Counter[Card], matched_card: CardIdentificationData, copies: int):
         card = self.card_db.get_cards_from_data(matched_card)
-        cards[card] += copies
-        if self.add_opposing_face and (
-                opposing_face := self.card_db.get_opposing_face(matched_card)) is not None:
-            cards[opposing_face] += copies
+        self._add_card_to_deck(cards, card, copies)
 
     @staticmethod
     def _remove_collector_number(card: CardIdentificationData) -> CardIdentificationData:
