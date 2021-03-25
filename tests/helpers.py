@@ -19,7 +19,9 @@ from unittest.mock import patch
 import pkg_resources
 
 import ijson
+from hamcrest import assert_that, is_, empty
 
+import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.logger
@@ -78,3 +80,19 @@ def create_new_card_database_with_multiple_cards(
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
             populate_database(new_model, data)
     return new_model
+
+
+def assert_relation_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
+    assert_that(
+        model.db.execute(f'SELECT * FROM "{name}"').fetchall(),
+        is_(empty()), f"{name} contains unexpected data"
+    )
+
+
+def assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
+    """
+    Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
+    download settings.
+    """
+    for relation in ("PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"):
+        assert_relation_is_empty(model, relation)

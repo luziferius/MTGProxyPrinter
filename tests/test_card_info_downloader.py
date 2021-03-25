@@ -16,11 +16,10 @@
 import typing
 
 from hamcrest import *
-import pytest
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
-from .helpers import create_new_card_database_with_json_card
+from .helpers import create_new_card_database_with_json_card, assert_model_is_empty
 
 
 def _assert_card_contains(
@@ -72,26 +71,6 @@ def _assert_all_printings_contains(
         'SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri, is_front '
         'FROM AllPrintings').fetchall()
     assert_that(db_content, contains_inanyorder(*values), "CardFace relation contains unexpected data")
-
-
-def _assert_relation_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
-    assert_that(
-        model.db.execute(f"SELECT * FROM {name}").fetchall(),
-        is_(empty()), f"{name} contains unexpected data"
-    )
-
-
-def _assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
-    """
-    Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
-    download settings.
-    """
-    _assert_relation_is_empty(model, "PrintLanguage")
-    _assert_relation_is_empty(model, "Card")
-    _assert_relation_is_empty(model, "FaceName")
-    _assert_relation_is_empty(model, "CardFace")
-    _assert_relation_is_empty(model, '"Set"')
-    _assert_relation_is_empty(model, "AllPrintings")
 
 
 def test_import_double_faced():
@@ -191,7 +170,7 @@ def test_import_skips_card_depicting_racism_if_disabled():
     """
     # Loads German printing of "Crusade"
     model = create_new_card_database_with_json_card("depicting_racism", "download-cards-depicting-racism", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_depicting_racism_if_enabled():
@@ -219,7 +198,7 @@ def test_import_card_depicting_racism_if_enabled():
 
 def test_import_skips_funny_card_if_disabled():
     model = create_new_card_database_with_json_card("funny_card", "download-funny-cards", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_funny_card_if_enabled():
@@ -242,7 +221,7 @@ def test_import_funny_card_if_enabled():
 
 def test_import_skips_gold_bordered_card_if_disabled():
     model = create_new_card_database_with_json_card("gold_bordered_card", "download-gold-bordered", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_gold_bordered_card_if_enabled():
@@ -265,7 +244,7 @@ def test_import_gold_bordered_card_if_enabled():
 
 def test_import_skips_white_bordered_card_if_disabled():
     model = create_new_card_database_with_json_card("white_bordered_card", "download-white-bordered", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_white_bordered_card_if_enabled():
@@ -288,7 +267,7 @@ def test_import_white_bordered_card_if_enabled():
 
 def test_import_skips_card_banned_in_brawl_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_brawl", "download-banned-in-brawl", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_brawl_if_enabled():
@@ -311,7 +290,7 @@ def test_import_card_banned_in_brawl_if_enabled():
 
 def test_import_skips_card_banned_in_commander_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_commander", "download-banned-in-commander", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_commander_if_enabled():
@@ -334,7 +313,7 @@ def test_import_card_banned_in_commander_if_enabled():
 
 def test_import_skips_card_banned_in_historic_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_historic", "download-banned-in-historic", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_historic_if_enabled():
@@ -357,7 +336,7 @@ def test_import_card_banned_in_historic_if_enabled():
 
 def test_import_skips_card_banned_in_legacy_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_legacy", "download-banned-in-legacy", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_legacy_if_enabled():
@@ -380,7 +359,7 @@ def test_import_card_banned_in_legacy_if_enabled():
 
 def test_import_skips_card_banned_in_modern_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_modern", "download-banned-in-modern", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_modern_if_enabled():
@@ -403,7 +382,7 @@ def test_import_card_banned_in_modern_if_enabled():
 
 def test_import_skips_card_banned_in_pauper_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_pauper", "download-banned-in-pauper", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_pauper_if_enabled():
@@ -426,7 +405,7 @@ def test_import_card_banned_in_pauper_if_enabled():
 
 def test_import_skips_card_banned_in_penny_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_penny", "download-banned-in-penny", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_penny_if_enabled():
@@ -449,7 +428,7 @@ def test_import_card_banned_in_penny_if_enabled():
 
 def test_import_skips_card_banned_in_pioneer_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_pioneer", "download-banned-in-pioneer", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_pioneer_if_enabled():
@@ -472,7 +451,7 @@ def test_import_card_banned_in_pioneer_if_enabled():
 
 def test_import_skips_card_banned_in_standard_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_standard", "download-banned-in-standard", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_standard_if_enabled():
@@ -495,7 +474,7 @@ def test_import_card_banned_in_standard_if_enabled():
 
 def test_import_skips_card_banned_in_vintage_if_disabled():
     model = create_new_card_database_with_json_card("banned_in_vintage", "download-banned-in-vintage", "False")
-    _assert_model_is_empty(model)
+    assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_vintage_if_enabled():
