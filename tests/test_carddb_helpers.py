@@ -30,15 +30,17 @@ def test_clear_database_not_clearing_last_image_use_timestamps():
     # Add two copies. Should only count as one usage
     document.add_card(model.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True), 2)
     document.store_image_usage()
+    end = int(time.time())
     document.clear()
     clear_database(model.db)
     assert_model_is_empty(model)
     usages = model.db.execute(
         "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
         "FROM LastImageUseTimestamps").fetchall()
+
     assert_that(
         usages,
         contains_exactly(
-            contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(time.time(), 2)))
+            contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
     )
 
