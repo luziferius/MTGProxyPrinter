@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from unittest.mock import MagicMock
+
 from hamcrest import *
 
 import mtg_proxy_printer.model.carddb
@@ -24,7 +26,7 @@ from .helpers import create_new_card_database_with_json_card
 def test_document_two_overflow_events_only_add_one_new_page():
     card_db = create_new_card_database_with_json_card("regular_english_card")
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document = mtg_proxy_printer.model.document.Document()
+    document = mtg_proxy_printer.model.document.Document(card_db, MagicMock())
     document.add_card(card, document.total_cards_per_page)
     assert_that(document.rowCount(), is_(equal_to(1)))
     for _ in range(document.total_cards_per_page):

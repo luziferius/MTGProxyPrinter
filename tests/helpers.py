@@ -25,14 +25,8 @@ import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 
 
-class Namespace(typing.NamedTuple):
-    """Mocks parsed command line arguments."""
-    verbose: bool
-    cutelog_integration: bool
-
-
 def setup_logging_for_testing():
-    mtg_proxy_printer.logger.configure_root_logger(Namespace(verbose=False, cutelog_integration=True))
+    mtg_proxy_printer.logger.configure_root_logger()
     mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
     mtg_proxy_printer.logger.root_logger.info(__name__)
 
@@ -42,12 +36,7 @@ def setup_settings_for_testing():
 
 
 def populate_database(model, data):
-    # Don’t bother the Scryfall API when running tests, so mock the web-accessing parts of the constructor.
-    with patch("mtg_proxy_printer.card_info_downloader.CardInfoDownloader.get_scryfall_bulk_card_data_url") as mock:
-        # The URL is not used to fetch data, as the test data directly supplies the JSON document.
-        mock.return_value = ("http://example.com", 1)
-        cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(model)
-        cid.populate_database(data)
+    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(model).populate_database(data)
 
 
 def load_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
