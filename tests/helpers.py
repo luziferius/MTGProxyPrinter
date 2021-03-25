@@ -16,8 +16,9 @@
 import json
 import typing
 from unittest.mock import patch
-
 import pkg_resources
+
+import ijson
 
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
@@ -41,14 +42,33 @@ def populate_database(model, data):
 
 def load_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
     yield json.loads(
-        pkg_resources.resource_string(f"tests.json_samples", f"{name}.json").decode("utf-8")
+        pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8")
     )
+
+
+def load_multi_card_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
+    return ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item")
 
 
 def create_new_card_database_with_json_card(
         json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     new_model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
     data = load_json(json_file_name)
+
+    # Either both None or both set non-empty
+    assert (option is None and value is None) or (bool(option) and bool(value))
+    if option is None:
+        populate_database(new_model, data)
+    else:
+        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
+            populate_database(new_model, data)
+    return new_model
+
+
+def create_new_card_database_with_multiple_cards(
+        json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    new_model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_multi_card_json(json_file_name)
 
     # Either both None or both set non-empty
     assert (option is None and value is None) or (bool(option) and bool(value))
