@@ -425,14 +425,11 @@ def test_import_card_banned_in_pauper_if_enabled():
 
 
 def test_import_skips_card_banned_in_penny_if_disabled():
-    pytest.skip("There are currently no cards banned in this format.")
     model = create_new_card_database_with_json_card("banned_in_penny", "download-banned-in-penny", "False")
     _assert_model_is_empty(model)
 
 
 def test_import_card_banned_in_penny_if_enabled():
-
-    pytest.skip("There are currently no cards banned in this format.")
     model = create_new_card_database_with_json_card("banned_in_penny", "download-banned-in-penny", "True")
     _assert_print_language_contains(model, [("en",)])
     _assert_card_contains(model, [("f5ca7b13-8003-4361-b827-7095c89f2750",)])
