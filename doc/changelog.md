@@ -39,8 +39,6 @@
   downloading card data) now behave in the same way and disable most buttons in the main window during the process
 - During a long-running background operation, also disable the print preview button and the cache cleanup button to
   prevent issues.
-- Fixed broken image thumbnail caching for tooltips in the cache cleanup dialog.
-  Repeated image displays in tooltips will now render faster and cause less CPU load and disk accesses.
 - Optimized GUI responsiveness while a document is being loaded.
 - Reduced CPU load during the document loading process.
 - Fixed application crashes when directly upgrading from version `0.3.0`.
