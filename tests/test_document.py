@@ -13,12 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import time
 from unittest.mock import MagicMock
 
 from hamcrest import *
 
-import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.model.document
+from mtg_proxy_printer.model.document import Document
 
 from .helpers import create_new_card_database_with_json_card
 
@@ -26,9 +26,27 @@ from .helpers import create_new_card_database_with_json_card
 def test_document_two_overflow_events_only_add_one_new_page():
     card_db = create_new_card_database_with_json_card("regular_english_card")
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document = mtg_proxy_printer.model.document.Document(card_db, MagicMock())
+    document = Document(card_db, MagicMock())
     document.add_card(card, document.total_cards_per_page)
     assert_that(document.rowCount(), is_(equal_to(1)))
     for _ in range(document.total_cards_per_page):
         document.add_card(card, 1)
         assert_that(document.pages, has_length(2), "Unexpected page break occurred")
+
+
+def test_clear_database_not_clearing_last_image_use_timestamps():
+    card_db = create_new_card_database_with_json_card("regular_english_card")
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    document = Document(card_db, MagicMock())
+    # Add two copies. Should only count as one usage
+    document.add_card(card, 2)
+    document.store_image_usage()
+    usages = card_db.db.execute(
+        "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
+        "FROM LastImageUseTimestamps").fetchall()
+    end = int(time.time())
+    assert_that(
+        usages,
+        contains_exactly(
+            contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
+    )
