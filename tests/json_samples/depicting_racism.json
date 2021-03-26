@@ -2,7 +2,9 @@
   "object": "card",
   "id": "00809cb0-b152-441f-a0be-1bc1048dad92",
   "oracle_id": "4692740f-be90-459f-8d90-c4ae71771595",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+
+  ],
   "name": "Crusade",
   "printed_name": "Kreuzzug",
   "lang": "de",
@@ -11,6 +13,7 @@
   "scryfall_uri": "https://scryfall.com/card/4ed/20/de/kreuzzug?utm_source=api",
   "layout": "normal",
   "highres_image": false,
+  "image_status": "placeholder",
   "image_uris": {
     "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956",
     "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/0/00809cb0-b152-441f-a0be-1bc1048dad92.jpg?1559603956",
@@ -24,18 +27,21 @@
   "type_line": "Enchantment",
   "printed_type_line": "Verzauberung",
   "oracle_text": "White creatures get +1/+1.",
-  "printed_text": "Alle wei\u00dfen Kreaturen erhalten +1/+1.",
+  "printed_text": "Alle weißen Kreaturen erhalten +1/+1.",
   "colors": [
     "W"
   ],
   "color_identity": [
     "W"
   ],
-  "keywords": [],
+  "keywords": [
+
+  ],
   "legalities": {
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "not_legal",
+    "gladiator": "not_legal",
     "pioneer": "not_legal",
     "modern": "not_legal",
     "legacy": "banned",
@@ -45,7 +51,8 @@
     "commander": "banned",
     "brawl": "not_legal",
     "duel": "legal",
-    "oldschool": "legal"
+    "oldschool": "legal",
+    "premodern": "legal"
   },
   "games": [
     "paper"
@@ -80,7 +87,7 @@
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 6839,
+  "edhrec_rank": 7831,
   "content_warning": true,
   "prices": {
     "usd": null,
@@ -89,5 +96,6 @@
     "eur_foil": null,
     "tix": null
   },
-  "related_uris": {}
+  "related_uris": {
+  }
 }
