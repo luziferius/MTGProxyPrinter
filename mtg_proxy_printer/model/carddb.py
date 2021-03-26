@@ -368,6 +368,8 @@ class CardDatabase:
         return cards_not_used_since
 
     def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
+        if count <= 0:
+            return []
         query = textwrap.dedent("""
             SELECT NOT EXISTS (
               SELECT scryfall_id

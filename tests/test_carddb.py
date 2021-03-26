@@ -14,13 +14,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
+from unittest.mock import MagicMock
 
 from hamcrest import *
 import pytest
 
 from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.document import Document
 
-from .helpers import assert_model_is_empty, create_new_card_database_with_json_card, create_new_card_database_with_multiple_cards
+from .helpers import assert_model_is_empty, create_new_card_database_with_multiple_cards
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
@@ -127,4 +129,37 @@ def test_translate_card_name(model: CardDatabase, source_name: str, target_langu
     assert_that(
         model.translate_card_name(source_name, target_language, source_language),
         is_(equal_to(expected))
+    )
+
+
+def test_cards_not_used_since(model: CardDatabase):
+    pytest.skip("Not implemented")
+    pass
+
+
+@pytest.mark.parametrize("usage_count, expected", [
+    (-1, []),
+    (0, []),
+    (1, [2]),
+    (2, [1, 2]),
+    (3, [0, 1, 2]),
+    (100, [0, 1, 2]),
+])
+def test_cards_used_less_often_then(model: CardDatabase, usage_count: int, expected: typing.List[int]):
+    # Setup
+    document = Document(model, MagicMock())
+    card_1 = model.get_card_with_scryfall_id("e2ef9b74-481b-424b-8e33-f0b910f66370", True)
+    document.add_card(card_1, 1)
+    document.store_image_usage()
+    card_2 = model.get_card_with_scryfall_id("ffa13d4c-6c5e-44bd-859e-38e79d47a916", True)
+    document.add_card(card_2, 1)
+    document.store_image_usage()
+    assert_that(
+        result := model.cards_used_less_often_then([
+            ("e2ef9b74-481b-424b-8e33-f0b910f66370", True),
+            ("ffa13d4c-6c5e-44bd-859e-38e79d47a916", True),
+            ("cd4cf73d-a408-48f1-9931-54707553c5d5", True),
+        ], usage_count),
+        contains_exactly(*expected),
+        f"Result: {result}"
     )
