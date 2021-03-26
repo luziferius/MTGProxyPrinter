@@ -25,27 +25,34 @@ from .helpers import assert_model_is_empty, create_new_card_database_with_json_c
 StringList = typing.List[str]
 OptString = typing.Optional[str]
 
-def test_has_data_on_empty_database_returns_false():
-    model = CardDatabase(":memory:")
-    assert_model_is_empty(model)
-    assert_that(model.has_data(), is_(False))
+
+@pytest.fixture()
+def model() -> CardDatabase:
+    return create_new_card_database_with_multiple_cards("multiple_cards_for_test_card_db")
 
 
-def test_has_data_on_filled_database_returns_true():
-    model = create_new_card_database_with_json_card("regular_english_card")
+@pytest.fixture()
+def empty_model() -> CardDatabase:
+    return CardDatabase(":memory:")
+
+
+def test_has_data_on_empty_database_returns_false(empty_model: CardDatabase):
+    assert_model_is_empty(empty_model)
+    assert_that(empty_model.has_data(), is_(False))
+
+
+def test_has_data_on_filled_database_returns_true(model: CardDatabase):
     assert_that(model.has_data(), is_(True))
 
 
-def test_get_all_languages_without_data():
-    model = CardDatabase(":memory:")
+def test_get_all_languages_without_data(empty_model: CardDatabase):
     assert_that(
-        model.get_all_languages(),
+        empty_model.get_all_languages(),
         is_(empty())
     )
 
 
-def test_get_all_languages_with_data():
-    model = create_new_card_database_with_multiple_cards("multiple_cards_for_test_card_db")
+def test_get_all_languages_with_data(model: CardDatabase):
     assert_that(
         model.get_all_languages(),
         contains_exactly("de", "en", "es")
@@ -62,9 +69,62 @@ def test_get_all_languages_with_data():
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])
-def test_get_card_names(language: str, prefix: OptString, expected_names: StringList):
-    model = create_new_card_database_with_multiple_cards("multiple_cards_for_test_card_db")
+def test_get_card_names(model: CardDatabase, language: str, prefix: OptString, expected_names: StringList):
     assert_that(
         model.get_card_names(language, prefix),
         contains_exactly(*expected_names)
+    )
+
+
+@pytest.mark.parametrize("name, expected", [
+    ("Forest", "en"),
+    ("Future Sight", "en"),
+    ("Wald", "de"),
+    ("Bosque", "es"),
+    ("Unknown", None),
+])
+def test_guess_language_from_name(model: CardDatabase, name: str, expected: OptString):
+    assert_that(
+        model.guess_language_from_name(name),
+        is_(equal_to(expected))
+    )
+
+
+@pytest.mark.parametrize("language, expected", [
+    ("en", True),
+    ("de", True),
+    ("es", True),
+    ("", False),
+    ("Unknown", False),
+])
+def test_is_known_language(model: CardDatabase, language: str, expected: bool):
+    assert_that(
+        model.is_known_language(language),
+        is_(equal_to(expected))
+    )
+
+
+@pytest.mark.parametrize("source_name, target_language, source_language, expected", [
+    ("Forest", "en", "en", "Forest"),
+    ("Wald", "de", "de", "Wald"),
+    ("Bosque", "es", "es", "Bosque"),
+
+    ("Forest", "en", None, "Forest"),
+    ("Wald", "en", None, "Forest"),
+    ("Bosque", "en", None, "Forest"),
+    ("Bosque", "de", None, "Wald"),
+    ("Forest", "de", None, "Wald"),
+
+    ("Wald", "en", "de", "Forest"),
+    ("Bosque", "en", "es", "Forest"),
+
+    ("Wald", "en", "wrong source", None),
+    ("Bosque", "en", "wrong source", None),
+    ("Wald", "de", "wrong source", None),
+    ("Bosque", "es", "wrong source", None),
+])
+def test_translate_card_name(model: CardDatabase, source_name: str, target_language: str, source_language: OptString, expected: OptString):
+    assert_that(
+        model.translate_card_name(source_name, target_language, source_language),
+        is_(equal_to(expected))
     )
