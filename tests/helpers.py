@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import json
 import typing
 from unittest.mock import patch
@@ -35,21 +36,21 @@ def setup_logging_for_testing():
 
 
 def setup_settings_for_testing():
-    mtg_proxy_printer.settings.settings = mtg_proxy_printer.settings.DEFAULT_SETTINGS
+    mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
 
 
 def populate_database(model, data):
     mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(model).populate_database(data)
 
 
-def load_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
-    yield json.loads(
-        pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8")
-    )
+@functools.lru_cache()
+def load_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
+    return [json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))]
 
 
-def load_multi_card_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
-    return ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item")
+@functools.lru_cache()
+def load_multi_card_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
+    return list(ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item"))
 
 
 def create_new_card_database_with_json_card(
