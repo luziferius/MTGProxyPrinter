@@ -19,7 +19,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QPushButton
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView
 from mtg_proxy_printer.decklist_parser import re_parsers, common
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Page
@@ -33,11 +33,11 @@ class IsRegularExpressionValidator(QValidator):
     """
     Validator used to check if the custom RE used for the "Custom RE parser" option is a valid RE.
     """
+
+    has_named_groups_re = re.compile(
+        rf"\(\?P<({'|'.join(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES)})>.+?\)")
+
     def validate(self, input_string: str, pos: int) -> typing.Tuple[QValidator.State, str, int]:
-        if not input_string:
-            # Even though an empty RE is technically valid, it can never be used to parse groups,
-            # so consider empty REs as Intermediate inputs.
-            return QValidator.Intermediate, input_string, pos
         try:
             re.compile(input_string)
         except re.error:
@@ -48,7 +48,17 @@ class IsRegularExpressionValidator(QValidator):
             # Deem this invalid, as it cannot be parsed at all and allowing the user to append more will not help
             return QValidator.Invalid, input_string, pos
         else:
-            return QValidator.Acceptable, input_string, pos
+            return self._validate_content(input_string), input_string, pos
+
+    def _validate_content(self, input_string: str):
+        """
+        Validates the user supplied RE. Currently, this method only checks, if the user content contains a valid
+        named group matching any supported group name.
+        """
+        if self.has_named_groups_re.search(input_string):
+            return QValidator.Acceptable
+        else:
+            return QValidator.Intermediate
 
 
 class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
@@ -93,6 +103,12 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.setupUi(self)
         self.card_db = card_db
         self.custom_re_input: QLineEdit
+        self.custom_re_input.setToolTip(
+            f"Enter a Python Regular Expression using named groups to parse the lines in the deck list.\n"
+            f"Supported named groups are: "
+            f"{', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))}\n"
+            f"See the 'What’s this?' (?-Button) help for details."
+        )
         self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
         self.custom_re_input.textChanged.connect(self.isComplete)
         self.complete = False
