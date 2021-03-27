@@ -104,9 +104,9 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.card_db = card_db
         self.custom_re_input: QLineEdit
         self.custom_re_input.setToolTip(
-            f"Enter a Python Regular Expression using named groups to parse the lines in the deck list.\n"
+            f"Enter a Regular Expression containing at least one supported, named group.\n\n"
             f"Supported named groups are: "
-            f"{', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))}\n"
+            f"{', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))}\n\n"
             f"See the 'What’s this?' (?-Button) help for details."
         )
         self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
