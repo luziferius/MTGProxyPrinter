@@ -26,35 +26,29 @@ with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 
-def get_qrc_file_path() -> Path:
-    source_root = Path(__file__).resolve().parent / main_package
-    resources_file = source_root / "resources" / "resources.qrc"
-    return resources_file
-
-
-def compile_resources(target_file: Path, resources_source: Path = None):
-    resources_source = resources_source or get_qrc_file_path()
-    command = ("pyrcc5", str(resources_source))
-    compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
-    with target_file.open("wt") as compiled_qt_resources_file:
-        compiled_qt_resources_file.write(compiled)
-    return compiled
-
-
 class BuildWithQtResources(setuptools.command.build_py.build_py):
     """Try to build the Qt resources file for visual_image_splitter."""
     def run(self):
         if not self.dry_run:  # Obey the --dry-run switch
-            output_path = self.compiled_resources_path()
+            output_path = Path(self.build_lib, main_package, "ui", "compiled_resources.py").resolve()
             self.mkpath(str(output_path.parent))
-            compile_resources(output_path)
+            self.compile_resources(output_path)
         super(BuildWithQtResources, self).run()
 
-    def compiled_resources_path(self) -> Path:
-        build_root = Path(self.build_lib).resolve() / main_package
-        target_directory = build_root / "ui"
-        compiled_resources_file_path = target_directory / "compiled_resources.py"
-        return compiled_resources_file_path
+    @staticmethod
+    def get_resources_qrc_file_path() -> Path:
+        source_root = Path(__file__).resolve().parent / main_package
+        resources_file = source_root / "resources" / "resources.qrc"
+        return resources_file
+
+    @staticmethod
+    def compile_resources(target_file: Path):
+        resources_source = BuildWithQtResources.get_resources_qrc_file_path()
+        command = ("pyrcc5", str(resources_source))  # noqa  # "pyrcc5" is a program name, not a typo
+        compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
+        with target_file.open("wt") as compiled_qt_resources_file:
+            compiled_qt_resources_file.write(compiled)
+        return compiled
 
 
 if __name__ == "__main__":
@@ -95,6 +89,7 @@ if __name__ == "__main__":
                 'PyHamcrest >= 1.8.1',
                 'PyQt5-stubs',  # Install the stubs used for type hinting when creating the development environment
                 "PyInstaller >= 4.0",
+                "pyinstaller-hooks-contrib >= 2020.11",  # First version that contains the upstreamed hook for ijson
                 "sip",
             ]
         },

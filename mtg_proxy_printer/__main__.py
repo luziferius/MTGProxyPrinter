@@ -16,6 +16,10 @@
 
 # Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
+
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication
+
 import mtg_proxy_printer.argument_parser
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.application
@@ -31,6 +35,9 @@ def main():
     global _app
     arguments = mtg_proxy_printer.argument_parser.parse_args()
     mtg_proxy_printer.logger.configure_root_logger()
+    # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
+    # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     _app = mtg_proxy_printer.application.Application(arguments)
 
 

@@ -18,7 +18,7 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QPushButton
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit
 
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
@@ -52,17 +52,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.save)
         self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
         self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
-        self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _setup_icons(self):
-        action_fallback_icons: typing.List[typing.Tuple[QPushButton, str]] = [
-            (self.document_save_path_browse_button, "document-open"),
-            (self.pdf_save_path_browse_button, "document-open"),
-        ]
-        for button, icon_name in action_fallback_icons:
-            if button.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-                button.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
 
     def show(self):
         logger.info("Show the settings window.")

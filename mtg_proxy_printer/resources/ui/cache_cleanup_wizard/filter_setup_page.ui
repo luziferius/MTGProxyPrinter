@@ -36,7 +36,7 @@
       <string>Select images for removal based on any matching criterium.</string>
      </property>
      <property name="title">
-      <string>Individual filters</string>
+      <string>Select images for deletion, if …</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="1" column="0">
@@ -49,7 +49,7 @@
       <item row="0" column="0">
        <widget class="QCheckBox" name="time_filter_enabled_checkbox">
         <property name="text">
-         <string>Not used for more than this duration:</string>
+         <string>Not used in the last:</string>
         </property>
        </widget>
       </item>

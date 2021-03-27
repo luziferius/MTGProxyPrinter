@@ -15,44 +15,43 @@
 
 import dataclasses
 import datetime
+import functools
 import pathlib
 import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel,\
     QSortFilterProxyModel
-from PyQt5.QtGui import QIcon, QPixmapCache, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, load_icon
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
 
 def format_size(size: float) -> str:
-    for unit in ('', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
+    for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
         if -1024 < size < 1024:
             return f"{size:3.2f} {unit}"
         size /= 1024
     return f"{size:.2f} YiB"
 
 
-def get_image_for_tooltip_display(cache: QPixmapCache, scryfall_id: str, is_front: bool, path: pathlib.Path) -> str:
-    key = f"{scryfall_id}-{is_front}"
-    if (pixmap := cache.find(key)) is None:
-        pixmap = QPixmap(str(path))
-        scaling_factor = 3
-        pixmap = pixmap.scaled(
-            pixmap.width() // scaling_factor, pixmap.height() // scaling_factor,
-            Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        cache.insert(key, pixmap)
+@functools.lru_cache(maxsize=256)
+def get_image_for_tooltip_display(path: pathlib.Path) -> str:
+    scaling_factor = 3
+    source = QPixmap(str(path))
+    pixmap = source.scaled(
+        source.width() // scaling_factor, source.height() // scaling_factor,
+        Qt.KeepAspectRatio, Qt.SmoothTransformation)
     buffer = QBuffer()
     buffer.open(QIODevice.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
     image = bytes(buffer.data().toBase64()).decode()
-    tooltip_text = '<img src="data:image/png;base64,{}">'.format(image)
+    tooltip_text = f'<img src="data:image/png;base64,{image}">'
     return tooltip_text
 
 
@@ -82,13 +81,12 @@ class KnownCardRow:
     size: int
     scryfall_id: str
     path: pathlib.Path
-    pixmap_cache: QPixmapCache = None
 
     def data(self, column: int, role: int):
         if column == 0 and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.name
         elif column == 0 and role == Qt.ToolTipRole:
-            data = get_image_for_tooltip_display(self.pixmap_cache, self.scryfall_id, self.is_front, self.path)
+            data = get_image_for_tooltip_display(self.path)
         elif column == 1:
             data = self.set.data(role)
         elif column == 2 and role in (Qt.DisplayRole, Qt.EditRole):
@@ -107,8 +105,8 @@ class KnownCardRow:
             data = str(self.path)
         elif column == 6 and role == Qt.EditRole:
             data = self.path
-        elif column == 6 and role == Qt.ToolTipRole and self.pixmap_cache is not None:
-            data = get_image_for_tooltip_display(self.pixmap_cache, self.scryfall_id, self.is_front, self.path)
+        elif column == 6 and role == Qt.ToolTipRole:
+            data = get_image_for_tooltip_display(self.path)
         else:
             data = None
         return data
@@ -129,8 +127,6 @@ class KnownCardImageModel(QAbstractTableModel):
     def __init__(self, parent: QObject):
         super(KnownCardImageModel, self).__init__(parent)
         self._data: typing.List[KnownCardRow] = []
-        self.pixmap_cache = QPixmapCache()
-        self.pixmap_cache.setCacheLimit(100)
 
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self._data)
@@ -155,7 +151,7 @@ class KnownCardImageModel(QAbstractTableModel):
         size_bytes = file_path.stat().st_size
         row = KnownCardRow(
             card.name, MTGSet(card.set.name, card.set.code), card.collector_number,
-            card.is_front, size_bytes, card.scryfall_id, file_path, self.pixmap_cache
+            card.is_front, size_bytes, card.scryfall_id, file_path
         )
         self.beginInsertRows(QModelIndex(), position, position)
         self._data.append(row)
@@ -180,7 +176,6 @@ class UnknownCardRow:
     is_front: bool
     size: int
     path: pathlib.Path
-    pixmap_cache: QPixmapCache = None
 
     def data(self, column: int, role: int):
         if column == 0 and role in (Qt.DisplayRole, Qt.EditRole):
@@ -197,8 +192,8 @@ class UnknownCardRow:
             data = str(self.path)
         elif column == 3 and role == Qt.EditRole:
             data = self.path
-        elif column == 3 and role == Qt.ToolTipRole and self.pixmap_cache is not None:
-            data = get_image_for_tooltip_display(self.pixmap_cache, self.scryfall_id, self.is_front, self.path)
+        elif column == 3 and role == Qt.ToolTipRole:
+            data = get_image_for_tooltip_display(self.path)
         else:
             data = None
         return data
@@ -216,8 +211,6 @@ class UnknownCardImageModel(QAbstractTableModel):
     def __init__(self, parent: QObject):
         super(UnknownCardImageModel, self).__init__(parent)
         self._data: typing.List[UnknownCardRow] = []
-        self.pixmap_cache = QPixmapCache()
-        self.pixmap_cache.setCacheLimit(100)
 
     def rowCount(self, parent: QModelIndex = None) -> int:
         return len(self._data)
@@ -239,7 +232,7 @@ class UnknownCardImageModel(QAbstractTableModel):
     def add_row(self, scryfall_id: str, is_front: bool, file_path: pathlib.Path):
         position = self.rowCount()
         self.rowsAboutToBeInserted.emit(QModelIndex(), position, position)
-        row = UnknownCardRow(scryfall_id, is_front, file_path.stat().st_size, file_path, self.pixmap_cache)
+        row = UnknownCardRow(scryfall_id, is_front, file_path.stat().st_size, file_path)
         self.beginInsertRows(QModelIndex(), position, position)
         self._data.append(row)
         self.endInsertRows()
@@ -383,15 +376,9 @@ class CacheCleanupWizard(QWizard):
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.addPage(SummaryPage(self))
         self.setWindowTitle("Cleanup the local image cache")
-        self._setup_window_icon()
+        self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         self._setup_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _setup_window_icon(self, icon_name: str = "edit-clear-history"):
-        icon = QIcon.fromTheme(icon_name)
-        if icon.isNull():
-            icon = load_icon(icon_name)
-        self.setWindowIcon(icon)
 
     def _setup_button_icons(self):
         buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
@@ -400,10 +387,7 @@ class CacheCleanupWizard(QWizard):
             (QWizard.FinishButton, "edit-delete"),
         ]
         for button, icon_name in buttons_with_icons:
-            icon = QIcon.fromTheme(icon_name)
-            if icon.isNull():
-                icon = load_icon(icon_name)
-            self.button(button).setIcon(icon)
+            self.button(button).setIcon(QIcon.fromTheme(icon_name))
 
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()
@@ -412,7 +396,15 @@ class CacheCleanupWizard(QWizard):
             (scryfall_id, is_front)
             for scryfall_id, is_front, _ in self.field("selected-images")
         ))
+        self._clear_tooltip_cache()
 
     def reject(self) -> None:
         super(CacheCleanupWizard, self).reject()
         logger.info("User canceled the cache cleanup.")
+        self._clear_tooltip_cache()
+
+    @staticmethod
+    def _clear_tooltip_cache():
+        logger.debug(f"Tooltip cache efficiency: {get_image_for_tooltip_display.cache_info()}")
+        # Free memory by clearing the cached, base64 encoded PNGs used for tooltip display
+        get_image_for_tooltip_display.cache_clear()

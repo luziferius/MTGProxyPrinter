@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import pathlib
 import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
@@ -77,7 +78,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
-        self._setup_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_loading_state_connections(self):
@@ -88,6 +88,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
         document.document_cleared.connect(self._select_first_page)
         document.loading_state_changed.connect(self.loading_state_changed)
+        document.loader.loading_file_failed.connect(self.on_document_loading_failed)
+        document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
@@ -143,28 +145,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
 
-    def _setup_icons(self):
-        action_fallback_icons: typing.List[typing.Tuple[QAction, str]] = [
-            (self.action_quit, "application-exit"),
-            (self.action_compact_document, "format-align-vertical-top"),
-            (self.action_load_document, "document-open"),
-            (self.action_save_document, "document-save"),
-            (self.action_save_as, "document-save-as"),
-            (self.action_print, "document-print-direct"),
-            (self.action_print_preview, "document-print-preview"),
-            (self.action_print_pdf, "viewpdf"),
-            (self.action_import_deck_list, "document-import"),
-            (self.action_show_settings, "configure"),
-            (self.action_download_card_data, "edit-download"),
-            (self.action_new_page, "document-new"),
-            (self.action_discard_page, "document-close"),
-        ]
-        for action, icon_name in action_fallback_icons:
-            if action.icon().isNull():  # Icon not available in the theme, fallback to built-in icons
-                action.setIcon(mtg_proxy_printer.ui.common.load_icon(f"{icon_name}.svg"))
-
     def _setup_add_card_widget(self):
-        self.page_view: CurrentPageView
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
         self.add_card_widget.card_added.connect(self.image_db.get_image_asynchronous)
@@ -293,7 +274,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self, "Download required Card data from Scryfall?",
             "This program requires downloading additional card data from Scryfall to operate the card search.\n"
             "Download the required data from Scryfall now?\n"
-            "If you decline now, you can exclude some card types or individual cards based on ban lists"
+            "If you decline now, you can exclude some card types or individual cards based on ban lists "
             "in the settings and then manually start the download later.\n"
             "Or accept and use the current settings.",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
@@ -359,3 +340,21 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_show_about_dialog_triggered(self):
         self.about_dialog.show()
+
+    def on_document_loading_failed(self, failed_path: pathlib.Path):
+        QMessageBox.critical(
+            self, "Document loading failed",
+            f"Loading file \"{failed_path}\" failed. The file was not recognized as an "
+            f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
+            f"\"{self.action_import_deck_list.text()}\" function instead.",
+            QMessageBox.Ok, QMessageBox.Ok
+        )
+
+    def on_document_loading_found_unknown_scryfall_ids(self, count: int):
+        QMessageBox.warning(
+            self, "Unrecognized cards in loaded document found",
+            f"Skipped {count} unrecognized cards in the loaded document. Saving the document will remove these entries "
+            f"from the document.\n\nThe locally stored card "
+            f"data may be outdated or the document was created using a less restrictive download filter.",
+            QMessageBox.Ok, QMessageBox.Ok
+        )

@@ -34,6 +34,7 @@ logger = get_logger(__name__)
 del get_logger
 
 CardList = typing.List[Card]
+DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
 unit_registry = pint.UnitRegistry()
 
 __all__ = [
@@ -48,7 +49,6 @@ class Page(QAbstractTableModel):
     """
     This is a single page and part of a Document. It holds the proxies added to this page as a list of Card objects.
     """
-    page_empty = pyqtSignal(bool)
 
     header = {
         0: "Card name",
@@ -92,8 +92,6 @@ class Page(QAbstractTableModel):
         self.beginInsertRows(QModelIndex(), first_index, last_index)
         self.cards += list(itertools.repeat(card, count))
         self.endInsertRows()
-        if self.rowCount() == count:
-            self.page_empty.emit(False)
         self.dataChanged.emit(
             self.createIndex(first_index, 0),
             self.createIndex(last_index, self.columnCount()-1)
@@ -103,6 +101,7 @@ class Page(QAbstractTableModel):
     def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
         """
         Remove all cards in the given multi-selection.
+
         :param indices: List with QModelIndex instances that represents a multi-selection.
           As returned by a QSelectionModel
         :return: Number of cards removed
@@ -133,13 +132,9 @@ class Page(QAbstractTableModel):
         first_index, last_index = indices[0].row(), indices[-1].row()
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
-        remaining = [card for index, card in enumerate(self.cards) if index not in to_delete]
-        self.cards[:] = remaining
+        self.cards[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
+        self.dataChanged.emit(self.createIndex(first_index, 0), self.createIndex(last_index, 0))
         self.endRemoveRows()
-        if not self.cards:
-            self.page_empty.emit(True)
-        for row in range(first_index, last_index + 1):  # Qt includes last_index, Python excludes it, so add one here
-            self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, self.columnCount()-1))
         return len(to_delete)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
@@ -343,7 +338,7 @@ class Document(QAbstractListModel):
                 (card.scryfall_id, card.is_front) for card in page.cards), start=1))
             for page_index, page in enumerate(self.pages, start=1)
         )
-        flattened_data = (
+        flattened_data: DocumentSaveFormat = (
             (page, slot, scryfall_id, is_front)
             for (page, (slot, (scryfall_id, is_front)))
             in itertools.chain.from_iterable(cards)
@@ -358,6 +353,7 @@ class Document(QAbstractListModel):
                 flattened_data
             )
             db.commit()
+            db.execute("VACUUM")
 
     @pyqtSlot()
     def compact_pages(self):
@@ -395,7 +391,12 @@ class Document(QAbstractListModel):
         single_page_capacity = self.compute_total_cards_per_page()
         maximum_document_capacity = single_page_capacity * self.rowCount()
         total_cards_in_document = sum(map(len, self.pages))
-        result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
+        if total_cards_in_document != 0:
+            result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
+        else:
+            # This is a special case that is not handled correctly by the formula above. If the document
+            # is empty, it can not be compacted to zero pages, but one.
+            result = self.rowCount() - 1
         return result
 
     def _move_images_to_fill_page(self, page_to_fill: Page, source: Page) -> int:
@@ -431,13 +432,13 @@ class Document(QAbstractListModel):
             images_on_page = page.rowCount()
             if images_on_page > current_capacity:
                 # Qt includes the last value in a range and Python excludes it, so add one to the range 'stop'
-                to_remove = list(map(
+                images_to_move_away = list(map(
                     page.createIndex,
                     range(current_capacity, images_on_page+1),
                     itertools.repeat(0)
                 ))
-                excess_images += page.cards[current_capacity: images_on_page]
-                page.remove_cards(to_remove)
+                excess_images += page.cards[current_capacity:images_on_page]
+                page.remove_multi_selection(images_to_move_away)
         total_moved_images = len(excess_images)
         for page in self.pages:
             images_on_page = page.rowCount()
@@ -494,6 +495,8 @@ class DocumentLoader(QObject):
     """
 
     loading_state_changed = pyqtSignal(bool)
+    unknown_scryfall_ids_found = pyqtSignal(int)
+    loading_file_failed = pyqtSignal(pathlib.Path)
 
     class Worker(QObject):
         """
@@ -508,9 +511,15 @@ class DocumentLoader(QObject):
         Because the thread emits the signals after each long-running I/O process (image loading or downloading)
         finished, processing the generated events in the GUI thread is fast.
         """
+
+        # These signals are used to enqueue a stream of commands across thread boundaries.
         new_page = pyqtSignal()
         add_card = pyqtSignal(Card)
         finished = pyqtSignal()
+        loading_file_failed = pyqtSignal(pathlib.Path)
+        document_clear_requested = pyqtSignal()
+        unknown_scryfall_ids_found = pyqtSignal(int)
+        loading_file_successful = pyqtSignal(pathlib.Path)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -518,32 +527,71 @@ class DocumentLoader(QObject):
             # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
             # That one lives in it’s own thread and runs asynchronously and is connected in a way that it adds loaded
             # images to the document on it’s own, interfering with the loading process, in particular with emitting page
-            # breaks. Thus use a separate instance and use it synchronously inside this worker thread.
+            # breaks. Thus create a separate instance and use it synchronously inside this worker thread.
             self.image_loader = ImageDownloader(image_db, self)
             self.image_loader.card_download_starting.connect(image_db.card_download_starting)
             self.image_loader.card_download_finished.connect(image_db.card_download_finished)
             self.image_loader.card_download_progress.connect(image_db.card_download_progress)
             self.document = document
+            self.save_path = pathlib.Path()
             self.data: typing.List[typing.Tuple[int, int, str, bool]] = []
 
         def load_document(self):
+            unknown_ids = 0
+            try:
+                unknown_ids = self._load_document()
+            except sqlite3.DatabaseError:
+                logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
+                self.loading_file_failed.emit(self.save_path)
+            finally:
+                if unknown_ids:
+                    self.unknown_scryfall_ids_found.emit(unknown_ids)
+                self.loading_file_successful.emit(self.save_path)
+                self.finished.emit()
+
+        def _load_document(self) -> int:
+            data = self._read_data_from_save_path(self.save_path)
+            self.document_clear_requested.emit()
             logger.info("Start filling pages with cards from loaded data")
             current_page = 1
-            try:
-                for page_number, slot, scryfall_id, is_front in self.data:
-                    if current_page != page_number:
-                        current_page = page_number
-                        self.new_page.emit()
-                    if not self.card_db.is_scryfall_id_known(scryfall_id, is_front):
-                        # If the save file was tampered with or the database used to save contained more cards than the
-                        # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
-                        continue
-                    card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-                    self.image_loader.get_image_synchronous(card)
-                    self.add_card.emit(card)
-                self.data.clear()
-            finally:
-                self.finished.emit()
+            unknown_ids = 0
+            for page_number, slot, scryfall_id, is_front in data:
+                if current_page != page_number:
+                    current_page = page_number
+                    self.new_page.emit()
+                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+                if card is None:
+                    # If the save file was tampered with or the database used to save contained more cards than the
+                    # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
+                    unknown_ids += 1
+                    logger.info(f"Unknown ID found in document: {scryfall_id=}, {is_front=}")
+                    continue
+                self.image_loader.get_image_synchronous(card)
+                self.add_card.emit(card)
+            self.data.clear()
+            return unknown_ids
+
+        @staticmethod
+        def _read_data_from_save_path(save_file_path: pathlib.Path) -> DocumentSaveFormat:
+            logger.info("Reading data from save file")
+            with mtg_proxy_printer.sqlite_helpers.open_database(
+                    save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
+                    raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
+
+                if db.execute("PRAGMA user_version").fetchone()[0] == 2:
+                    query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
+                    FROM Card
+                    ORDER BY page, slot ASC"""
+                else:
+                    query = r"""SELECT page, slot, scryfall_id, is_front
+                    FROM Card
+                    ORDER BY page, slot ASC"""
+                data = [
+                    (page, slot, scryfall_id, bool(is_front))
+                    for page, slot, scryfall_id, is_front in db.execute(query)
+                ]
+            return data
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
         super(DocumentLoader, self).__init__(None)
@@ -551,8 +599,13 @@ class DocumentLoader(QObject):
         self.worker_thread = QThread()
         self.worker = self.Worker(card_db, image_db, document)
         self.worker.moveToThread(self.worker_thread)
+        self.worker.document_clear_requested.connect(self.document.clear)
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
+        # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
+        self.worker.loading_file_failed.connect(self.loading_file_failed)
+        self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
+        self.worker.loading_file_successful.connect(self.on_loading_file_successful)
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
@@ -564,16 +617,8 @@ class DocumentLoader(QObject):
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
         self.loading_state_changed.emit(True)
-        try:
-            self.worker.data = self._read_data_from_save_path(save_file_path)
-        except sqlite3.DatabaseError:
-            logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
-            # Do not trap the user in an endless loading state, if the selected file is not actually a save file
-            self.loading_state_changed.emit(False)
-            return
-        else:
-            self.document.clear()
-            self.worker_thread.start()
+        self.worker.save_path = save_file_path
+        self.worker_thread.start()
 
     @staticmethod
     def _read_data_from_save_path(save_file_path: pathlib.Path):
@@ -596,6 +641,9 @@ class DocumentLoader(QObject):
                 for page, slot, scryfall_id, is_front in db.execute(query)
             ]
         return data
+
+    def on_loading_file_successful(self, file_path: pathlib.Path):
+        self.document.file_path = file_path
 
 
 def _migrate_database(db):

@@ -13,47 +13,44 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import json
 import typing
 from unittest.mock import patch
-
 import pkg_resources
 
+import ijson
+from hamcrest import assert_that, is_, empty
+
+import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 
 
-class Namespace(typing.NamedTuple):
-    """Mocks parsed command line arguments."""
-    verbose: bool
-    cutelog_integration: bool
-
-
 def setup_logging_for_testing():
-    mtg_proxy_printer.logger.configure_root_logger(Namespace(verbose=False, cutelog_integration=True))
+    mtg_proxy_printer.logger.configure_root_logger()
     mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
     mtg_proxy_printer.logger.root_logger.info(__name__)
 
 
 def setup_settings_for_testing():
-    mtg_proxy_printer.settings.settings = mtg_proxy_printer.settings.DEFAULT_SETTINGS
+    mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
 
 
 def populate_database(model, data):
-    # Don’t bother the Scryfall API when running tests, so mock the web-accessing parts of the constructor.
-    with patch("mtg_proxy_printer.card_info_downloader.CardInfoDownloader.get_scryfall_bulk_card_data_url") as mock:
-        # The URL is not used to fetch data, as the test data directly supplies the JSON document.
-        mock.return_value = ("http://example.com", 1)
-        cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(model)
-        cid.populate_database(data)
+    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(model).populate_database(data)
 
 
-def load_json(name: str) -> typing.Generator[mtg_proxy_printer.card_info_downloader.JSONType, None, None]:
-    yield json.loads(
-        pkg_resources.resource_string(f"tests.json_samples", f"{name}.json").decode("utf-8")
-    )
+@functools.lru_cache()
+def load_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
+    return [json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))]
+
+
+@functools.lru_cache()
+def load_multi_card_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
+    return list(ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item"))
 
 
 def create_new_card_database_with_json_card(
@@ -69,3 +66,34 @@ def create_new_card_database_with_json_card(
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
             populate_database(new_model, data)
     return new_model
+
+
+def create_new_card_database_with_multiple_cards(
+        json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    new_model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
+    data = load_multi_card_json(json_file_name)
+
+    # Either both None or both set non-empty
+    assert (option is None and value is None) or (bool(option) and bool(value))
+    if option is None:
+        populate_database(new_model, data)
+    else:
+        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
+            populate_database(new_model, data)
+    return new_model
+
+
+def assert_relation_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
+    assert_that(
+        model.db.execute(f'SELECT * FROM "{name}"').fetchall(),
+        is_(empty()), f"{name} contains unexpected data"
+    )
+
+
+def assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
+    """
+    Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
+    download settings.
+    """
+    for relation in ("PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"):
+        assert_relation_is_empty(model, relation)

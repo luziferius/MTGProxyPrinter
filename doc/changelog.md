@@ -1,7 +1,27 @@
 # Changelog
 
 
-# Version <next> (in development)
+# Version \<next> (in development)
+
+## Fixed issues
+
+- Fixed blurry icons on platforms without native icon theme support.
+- Enabled high DPI monitor support. The application will now properly scale on high DPI displays.
+
+
+# Version 0.9.3 (2021-03-17)
+
+## Fixed issues
+
+- Deck list import: Fixed import of cards with letters or symbols in collector numbers. 
+- Fixed wrong item order in the `Settings` menu when using the horizontal search layout
+- Fixed several missing icons on platforms without icon theme support, like Windows, or with incomplete icon themes
+- Fixed unintended display of empty rows in the current page content table, if changing page layout settings decreases
+  the page capacity below the number of cards on the current page. The table now properly trims the empty slots caused
+  by moving away overflowing images.
+
+
+# Version 0.9.2 (2021-03-16)
 
 ## Changed Features
 
@@ -10,13 +30,18 @@
 
 ## Fixed issues
 
-- Reworded some of the displayed texts and fixed minor issues in strings.
+- Reworded some displayed texts and fixed minor issues in strings.
+- Show an error message if the user tries to load a file that is not a valid document.
+- Show a warning if the loaded document contains unknown entries that were skipped during the loading process.
 - Further optimized the card data import. It should run a bit faster on slow CPUs or really fast internet connections.
 - Fixed potential issues during import when the user re-downloads the card data multiple times in a row.
 - Unified the handling of long-running background operations. All three (loading documents, importing decks and
   downloading card data) now behave in the same way and disable most buttons in the main window during the process
 - During a long-running background operation, also disable the print preview button and the cache cleanup button to
   prevent issues.
+- Optimized GUI responsiveness while a document is being loaded.
+- Reduced CPU load during the document loading process.
+- Fixed application crashes when directly upgrading from version `0.3.0`.
 
 
 # Version 0.9.1 (2021-03-04)
@@ -35,7 +60,7 @@
   computer. It uses the systems native printing support, where available.
 - Added command line arguments: The application now accepts a document path as a positional argument.
   This allows opening documents when starting the application.
-  - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file. And it can be used
+  - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file, and it can be used
     to associate the file type with the program and then automatically open saved documents by clicking on them.
 - When changing download filter settings, ask the user if they want to re-download the card data. The user can do so
   when asked or any time later.
@@ -237,7 +262,7 @@ and let MTGProxyPrinter re-create it from scratch.
 ## Fixed issues
 
 - Improved card search speed by roughly factor 100 and card data import speed by factor ~ 40.
-  Searching cards should now feel instant, as the up-to one second delay after each key press is gone for good.
+  Searching cards should now feel instant, as the up-to one-second delay after each key press is gone for good.
 - Decreased the card database size. The new database roughly takes two/thirds the space previously required.
 
 

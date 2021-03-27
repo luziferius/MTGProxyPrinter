@@ -129,7 +129,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
         super(MTGArenaParser, self).__init__(
             card_db, image_db,
-            re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>\d+))?")
+            re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?")
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:

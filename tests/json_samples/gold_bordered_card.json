@@ -6,6 +6,7 @@
 
   ],
   "tcgplayer_id": 162446,
+  "cardmarket_id": 250095,
   "name": "Abduction",
   "lang": "en",
   "released_at": "1997-08-13",
@@ -13,6 +14,7 @@
   "scryfall_uri": "https://scryfall.com/card/wc97/pm30/abduction?utm_source=api",
   "layout": "normal",
   "highres_image": true,
+  "image_status": "highres_scan",
   "image_uris": {
     "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
     "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
@@ -38,6 +40,7 @@
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "not_legal",
+    "gladiator": "not_legal",
     "pioneer": "not_legal",
     "modern": "not_legal",
     "legacy": "legal",
@@ -47,7 +50,8 @@
     "commander": "legal",
     "brawl": "not_legal",
     "duel": "legal",
-    "oldschool": "not_legal"
+    "oldschool": "not_legal",
+    "premodern": "legal"
   },
   "games": [
 
@@ -82,16 +86,17 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 10321,
+  "edhrec_rank": 10915,
   "prices": {
-    "usd": "2.00",
+    "usd": "0.21",
     "usd_foil": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_decks": "https://decks.tcgplayer.com/magic/deck/search?contains=Abduction&page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Abduction&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Abduction&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
     "edhrec": "https://edhrec.com/route/?cc=Abduction",
     "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Abduction"
   },

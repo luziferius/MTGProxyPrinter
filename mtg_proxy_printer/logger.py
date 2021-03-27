@@ -60,4 +60,3 @@ def configure_root_logger():
         file_handler = logging.handlers.TimedRotatingFileHandler(log_file_path, "D", 1, 10, "utf-8", True)
         file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
         root_logger.addHandler(file_handler)
-
