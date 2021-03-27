@@ -14,6 +14,7 @@
   "scryfall_uri": "https://scryfall.com/card/unh/48/aesthetic-consultation?utm_source=api",
   "layout": "normal",
   "highres_image": true,
+  "image_status": "highres_scan",
   "image_uris": {
     "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
     "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
@@ -39,6 +40,7 @@
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "not_legal",
+    "gladiator": "not_legal",
     "pioneer": "not_legal",
     "modern": "not_legal",
     "legacy": "not_legal",
@@ -48,7 +50,8 @@
     "commander": "not_legal",
     "brawl": "not_legal",
     "duel": "not_legal",
-    "oldschool": "not_legal"
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
   },
   "games": [
     "paper"
@@ -84,7 +87,7 @@
   "booster": true,
   "story_spotlight": false,
   "prices": {
-    "usd": "0.39",
+    "usd": "0.41",
     "usd_foil": null,
     "eur": "0.20",
     "eur_foil": null,
@@ -92,7 +95,8 @@
   },
   "related_uris": {
     "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=74284",
-    "tcgplayer_decks": "https://decks.tcgplayer.com/magic/deck/search?contains=Aesthetic+Consultation&page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Aesthetic+Consultation&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Aesthetic+Consultation&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
     "edhrec": "https://edhrec.com/route/?cc=Aesthetic+Consultation",
     "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Aesthetic+Consultation"
   },

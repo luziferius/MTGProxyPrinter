@@ -12,6 +12,7 @@
   "scryfall_uri": "https://scryfall.com/card/akh/223/ko/%EC%A0%88%EB%8B%A8-%EB%9D%A0?utm_source=api",
   "layout": "split",
   "highres_image": false,
+  "image_status": "lowres",
   "image_uris": {
     "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
     "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
@@ -38,12 +39,12 @@
     {
       "object": "card_face",
       "name": "Cut",
-      "printed_name": "\uc808\ub2e8",
+      "printed_name": "절단",
       "mana_cost": "{1}{R}",
       "type_line": "Sorcery",
-      "printed_type_line": "\uc9d1\uc911\ub9c8\ubc95",
+      "printed_type_line": "집중마법",
       "oracle_text": "Cut deals 4 damage to target creature.",
-      "printed_text": "\uc0dd\ubb3c\uc744 \ubaa9\ud45c\ub85c \uc815\ud55c\ub2e4. \uc808\ub2e8\uc740 \uadf8 \uc0dd\ubb3c\uc5d0\uac8c \ud53c\ud574 4\uc810\uc744 \uc785\ud78c\ub2e4.",
+      "printed_text": "생물을 목표로 정한다. 절단은 그 생물에게 피해 4점을 입힌다.",
       "artist": "Raymond Swanland",
       "artist_id": "e956bacc-077d-4c12-b6bc-ba798b718af9",
       "illustration_id": "4acf8e25-40bb-484f-972f-eae19863a877"
@@ -51,12 +52,12 @@
     {
       "object": "card_face",
       "name": "Ribbons",
-      "printed_name": "\ub760",
+      "printed_name": "띠",
       "mana_cost": "{X}{B}{B}",
       "type_line": "Sorcery",
-      "printed_type_line": "\uc9d1\uc911\ub9c8\ubc95",
+      "printed_type_line": "집중마법",
       "oracle_text": "Aftermath (Cast this spell only from your graveyard. Then exile it.)\nEach opponent loses X life.",
-      "printed_text": "\uc5ec\ud30c (\ub2f9\uc2e0\uc758 \ubb34\ub364\uc5d0\uc11c\ub9cc \uc774 \uc8fc\ubb38\uc744 \ubc1c\ub3d9\ud560 \uc218 \uc788\ub2e4. \uadf8 \ud6c4, \uc774 \uce74\ub4dc\ub97c \ucd94\ubc29\ud55c\ub2e4.)\n\uac01 \uc0c1\ub300\ub294 \uc0dd\uba85 X\uc810\uc744 \uc783\ub294\ub2e4.",
+      "printed_text": "여파 (당신의 무덤에서만 이 주문을 발동할 수 있다. 그 후, 이 카드를 추방한다.)\n각 상대는 생명 X점을 잃는다.",
       "artist": "Raymond Swanland",
       "artist_id": "e956bacc-077d-4c12-b6bc-ba798b718af9"
     }
@@ -65,6 +66,7 @@
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "legal",
+    "gladiator": "legal",
     "pioneer": "legal",
     "modern": "legal",
     "legacy": "legal",
@@ -74,7 +76,8 @@
     "commander": "legal",
     "brawl": "not_legal",
     "duel": "legal",
-    "oldschool": "not_legal"
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
   },
   "games": [
     "paper",
@@ -110,7 +113,7 @@
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 16700,
+  "edhrec_rank": 17265,
   "prices": {
     "usd": null,
     "usd_foil": null,
@@ -120,8 +123,14 @@
   },
   "related_uris": {
     "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=428539&printed=true",
-    "tcgplayer_decks": "https://decks.tcgplayer.com/magic/deck/search?contains=Cut+%2F%2F+Ribbons&page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Cut+%2F%2F+Ribbons&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Cut+%2F%2F+Ribbons&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
     "edhrec": "https://edhrec.com/route/?cc=Cut+%2F%2F+Ribbons",
     "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Cut+%2F%2F+Ribbons"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Cut+%2F%2F+Ribbons&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Cut+%2F%2F+Ribbons&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Cut+%2F%2F+Ribbons&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
 }

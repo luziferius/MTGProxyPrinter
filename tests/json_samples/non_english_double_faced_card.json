@@ -13,6 +13,7 @@
   "scryfall_uri": "https://scryfall.com/card/xln/191/zhs/%E4%BC%8A%E6%9B%BF%E8%8E%AB%E6%88%90%E9%95%BF%E4%BB%AA%E5%BC%8F-%E7%83%88%E9%98%B3%E8%82%B2%E6%89%80%E4%BC%8A%E6%9B%BF%E8%8E%AB?utm_source=api",
   "layout": "transform",
   "highres_image": false,
+  "image_status": "lowres",
   "cmc": 3.0,
   "type_line": "Legendary Enchantment // Legendary Land",
   "color_identity": [
@@ -28,12 +29,12 @@
     {
       "object": "card_face",
       "name": "Growing Rites of Itlimoc",
-      "printed_name": "\u4f0a\u66ff\u83ab\u6210\u957f\u4eea\u5f0f",
+      "printed_name": "伊替莫成长仪式",
       "mana_cost": "{2}{G}",
       "type_line": "Legendary Enchantment",
-      "printed_type_line": "\u4f20\u5947\u7ed3\u754c",
+      "printed_type_line": "传奇结界",
       "oracle_text": "When Growing Rites of Itlimoc enters the battlefield, look at the top four cards of your library. You may reveal a creature card from among them and put it into your hand. Put the rest on the bottom of your library in any order.\nAt the beginning of your end step, if you control four or more creatures, transform Growing Rites of Itlimoc.",
-      "printed_text": "\u5f53\u4f0a\u66ff\u83ab\u6210\u957f\u4eea\u5f0f\u8fdb\u6218\u573a\u65f6\uff0c\u68c0\u89c6\u4f60\u724c\u5e93\u9876\u7684\u56db\u5f20\u724c\u3002\u4f60\u53ef\u4ee5\u5c55\u793a\u5176\u4e2d\u7684\u4e00\u5f20\u751f\u7269\u724c\uff0c\u5e76\u5c06\u5176\u7f6e\u4e8e\u4f60\u624b\u4e0a\u3002\u5c06\u5176\u4f59\u7684\u724c\u4ee5\u4efb\u610f\u987a\u5e8f\u7f6e\u4e8e\u4f60\u724c\u5e93\u5e95\u3002\n\u5728\u4f60\u7684\u7ed3\u675f\u6b65\u9aa4\u5f00\u59cb\u65f6\uff0c\u82e5\u4f60\u64cd\u63a7\u56db\u4e2a\u6216\u66f4\u591a\u751f\u7269\uff0c\u8f6c\u5316\u4f0a\u66ff\u83ab\u6210\u957f\u4eea\u5f0f\u3002",
+      "printed_text": "当伊替莫成长仪式进战场时，检视你牌库顶的四张牌。你可以展示其中的一张生物牌，并将其置于你手上。将其余的牌以任意顺序置于你牌库底。\n在你的结束步骤开始时，若你操控四个或更多生物，转化伊替莫成长仪式。",
       "colors": [
         "G"
       ],
@@ -52,14 +53,16 @@
     {
       "object": "card_face",
       "name": "Itlimoc, Cradle of the Sun",
-      "printed_name": "\u70c8\u9633\u80b2\u6240\u4f0a\u66ff\u83ab",
+      "printed_name": "烈阳育所伊替莫",
       "mana_cost": "",
       "type_line": "Legendary Land",
-      "printed_type_line": "\u4f20\u5947\u5730",
+      "printed_type_line": "传奇地",
       "oracle_text": "(Transforms from Growing Rites of Itlimoc.)\n{T}: Add {G}.\n{T}: Add {G} for each creature you control.",
-      "printed_text": "\uff08\u7531\u4f0a\u66ff\u83ab\u6210\u957f\u4eea\u5f0f\u8f6c\u5316\u3002\uff09\n{T}\uff1a\u52a0{G}\u5230\u4f60\u7684\u6cd5\u672f\u529b\u6c60\u4e2d\u3002\n{T}\uff1a\u4f60\u6bcf\u64cd\u63a7\u4e00\u4e2a\u751f\u7269\uff0c\u4fbf\u52a0{G}\u5230\u4f60\u7684\u6cd5\u672f\u529b\u6c60\u4e2d\u3002",
-      "colors": [],
-      "flavor_text": "\u5728\u70c8\u9633\u5e1d\u56fd\u8bde\u751f\u4e4b\u524d\uff0c\u4eba\u7c7b\u4e0e\u4eba\u9c7c\u8054\u624b\u65bd\u6cd5\uff0c\u7948\u6c42\u8fd9\u65b9\u571f\u5730\u6c38\u8446\u6c83\u8174\u3002",
+      "printed_text": "（由伊替莫成长仪式转化。）\n{T}：加{G}到你的法术力池中。\n{T}：你每操控一个生物，便加{G}到你的法术力池中。",
+      "colors": [
+
+      ],
+      "flavor_text": "在烈阳帝国诞生之前，人类与人鱼联手施法，祈求这方土地永葆沃腴。",
       "artist": "Grzegorz Rutkowski",
       "artist_id": "b5f49d0d-8056-48e3-b614-090e656b4f9c",
       "illustration_id": "fe41f4ca-3344-4a68-9f78-4b274498dcc4",
@@ -77,6 +80,7 @@
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "legal",
+    "gladiator": "legal",
     "pioneer": "legal",
     "modern": "legal",
     "legacy": "legal",
@@ -86,7 +90,8 @@
     "commander": "legal",
     "brawl": "not_legal",
     "duel": "legal",
-    "oldschool": "not_legal"
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
   },
   "games": [
     "arena",
@@ -125,7 +130,7 @@
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 268,
+  "edhrec_rank": 290,
   "prices": {
     "usd": null,
     "usd_foil": null,
@@ -135,8 +140,14 @@
   },
   "related_uris": {
     "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=438037&printed=true",
-    "tcgplayer_decks": "https://decks.tcgplayer.com/magic/deck/search?contains=Growing+Rites+of+Itlimoc&page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
     "edhrec": "https://edhrec.com/route/?cc=Growing+Rites+of+Itlimoc",
     "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Growing+Rites+of+Itlimoc"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Growing+Rites+of+Itlimoc&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Growing+Rites+of+Itlimoc&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Growing+Rites+of+Itlimoc&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
 }

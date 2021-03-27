@@ -307,7 +307,7 @@ class CardDatabase:
                 'FROM FaceName\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
                 'WHERE card_name LIKE ?'
-        return self._read_optional_scalar_from_db(query, (f"{name}%",))
+        return self._read_optional_scalar_from_db(query, (name,))
 
     def is_known_language(self, language: str) -> bool:
         query = 'SELECT EXISTS(\n' \
@@ -368,6 +368,8 @@ class CardDatabase:
         return cards_not_used_since
 
     def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
+        if count <= 0:
+            return []
         query = textwrap.dedent("""
             SELECT NOT EXISTS (
               SELECT scryfall_id

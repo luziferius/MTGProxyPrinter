@@ -19,34 +19,28 @@ from unittest.mock import MagicMock
 from hamcrest import *
 
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb_helpers import clear_database
 
-from .helpers import create_new_card_database_with_json_card
-
-
-def test_document_two_overflow_events_only_add_one_new_page():
-    card_db = create_new_card_database_with_json_card("regular_english_card")
-    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document = Document(card_db, MagicMock())
-    document.add_card(card, document.total_cards_per_page)
-    assert_that(document.rowCount(), is_(equal_to(1)))
-    for _ in range(document.total_cards_per_page):
-        document.add_card(card, 1)
-        assert_that(document.pages, has_length(2), "Unexpected page break occurred")
+from .helpers import create_new_card_database_with_json_card, assert_model_is_empty
 
 
 def test_clear_database_not_clearing_last_image_use_timestamps():
-    card_db = create_new_card_database_with_json_card("regular_english_card")
-    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document = Document(card_db, MagicMock())
+    model = create_new_card_database_with_json_card("regular_english_card")
+    document = Document(model, MagicMock())
     # Add two copies. Should only count as one usage
-    document.add_card(card, 2)
+    document.add_card(model.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True), 2)
     document.store_image_usage()
-    usages = card_db.db.execute(
+    end = int(time.time())
+    document.clear()
+    clear_database(model.db)
+    assert_model_is_empty(model)
+    usages = model.db.execute(
         "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
         "FROM LastImageUseTimestamps").fetchall()
-    end = int(time.time())
+
     assert_that(
         usages,
         contains_exactly(
             contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
     )
+
