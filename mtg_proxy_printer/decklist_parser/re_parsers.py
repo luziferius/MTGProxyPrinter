@@ -30,6 +30,10 @@ class GenericRegularExpressionDeckParser(ParserBase):
     uses that to parse each input line.
     """
 
+    SUPPORTED_GROUP_NAMES = frozenset((
+        "copies", "language", "set_code", "collector_number", "scryfall_id", "name"
+    ))
+
     def __init__(self, card_db: CardDatabase, regular_expression: str):
         super(GenericRegularExpressionDeckParser, self).__init__(card_db)
         self.parser = re.compile(regular_expression)

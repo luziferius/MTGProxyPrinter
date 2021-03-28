@@ -7,6 +7,9 @@
 
 - Fixed blurry icons on platforms without native icon theme support.
 - Enabled high DPI monitor support. The application will now properly scale on high DPI displays.
+- The Deck import wizard uses better validation when using the custom RE parser. The user-supplied RE is now required to
+  have at least one meaningful named group, matching a known card property.
+  REs that do nothing at all are no longer accepted.
 
 
 # Version 0.9.3 (2021-03-17)
