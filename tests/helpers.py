@@ -37,6 +37,9 @@ def setup_logging_for_testing():
 
 def setup_settings_for_testing():
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+    for setting in mtg_proxy_printer.settings.settings["downloads"].keys():
+        # Turn off all download filters, so that the defaults don’t affect the test cases
+        mtg_proxy_printer.settings.settings["downloads"][setting] = str(True)
 
 
 def populate_database(model, data):
