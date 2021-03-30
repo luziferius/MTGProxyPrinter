@@ -14,6 +14,7 @@
   "scryfall_uri": "https://scryfall.com/card/leg/145/falling-star?utm_source=api",
   "layout": "normal",
   "highres_image": true,
+  "image_status": "highres_scan",
   "image_uris": {
     "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838",
     "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838",

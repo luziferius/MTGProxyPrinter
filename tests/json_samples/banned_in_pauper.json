@@ -15,6 +15,7 @@
   "scryfall_uri": "https://scryfall.com/card/2xm/255/expedition-map?utm_source=api",
   "layout": "normal",
   "highres_image": true,
+  "image_status": "highres_scan",
   "image_uris": {
     "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184",
     "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184",
