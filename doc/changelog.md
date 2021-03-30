@@ -3,6 +3,11 @@
 
 # Version \<next> (in development)
 
+## Implemented features
+
+- New download filter for cards with missing images, which is enabled by default. Skips import of card printings for
+  which no images are available, because these can’t be printed.
+
 ## Fixed issues
 
 - Fixed blurry icons on platforms without native icon theme support.
@@ -57,7 +62,7 @@
 
 # Version 0.9.0 (2021-03-04)
 
-# Implemented features
+## Implemented features
 
 - Added direct printing support. The user can now directly print documents using a physical printer attached to the
   computer. It uses the systems native printing support, where available.
@@ -85,7 +90,7 @@
 
 # Version 0.8.2 (2021-02-28)
 
-## Added Features
+## Implemented Features
 
 - Configurable application logging for debugging purposes
 

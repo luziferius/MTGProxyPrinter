@@ -214,6 +214,12 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("4ed", "Fourth Edition", "https://scryfall.com/sets/4ed?utm_source=api"),
         "de", "20", "00809cb0-b152-441f-a0be-1bc1048dad92", "4692740f-be90-459f-8d90-c4ae71771595"
     ), "download-cards-depicting-racism"
+    yield TestCaseData(  # Spanish printing of "Air Elemental"
+        "placeholder_image", (
+            FaceData("Elemental del aire", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.png?1557431149", True),
+        ), DatabaseSetData("4bb", "Fourth Edition Foreign Black Border", "https://scryfall.com/sets/4bb?utm_source=api"),
+        "es", "59", "5a93fe66-620a-4f47-8a07-cff887c1e5d4", "7744bae4-a8b7-44a5-9b4c-0048ad4cc448"
+    ), "download-cards-without-images"
     yield TestCaseData(  # Silver-bordered "Aesthetic Consultation" from Unhinged
         "funny_card", (
             FaceData("Aesthetic Consultation", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441", True),

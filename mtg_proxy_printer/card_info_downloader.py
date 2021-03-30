@@ -331,6 +331,8 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
     return any((
         # Racism filter
         card.get("content_warning", False) and not download_enabled["download-cards-depicting-racism"],
+        # Cards with missing images or placeholder images (low-res image with "not available in your language" overlay)
+        card["image_status"] in {"missing", "placeholder"} and not download_enabled["download-cards-without-images"],
         # Border filter
         card["border_color"] == "white" and not download_enabled["download-white-bordered"],
         card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],

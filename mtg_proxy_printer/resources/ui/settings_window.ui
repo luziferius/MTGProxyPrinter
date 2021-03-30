@@ -592,7 +592,7 @@ Uncheck to disable this automatism.</string>
        <item>
         <widget class="QGroupBox" name="card_download_general_settings">
          <property name="title">
-          <string>General</string>
+          <string>General download filters</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
@@ -602,6 +602,18 @@ Uncheck to disable this automatism.</string>
             </property>
             <property name="text">
              <string>Include cards depicting racism</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="include_cards_without_images">
+            <property name="toolTip">
+             <string>This covers cards without images and non-english cards with low-resolution,
+English placeholder images with an overlay text stating
+“This card is not available in the selected language.”</string>
+            </property>
+            <property name="text">
+             <string>Include cards without images (These can’t be printed)</string>
             </property>
            </widget>
           </item>
@@ -775,6 +787,7 @@ These are not tournament legal.</string>
   <tabstop>page_image_spacing_horizontal</tabstop>
   <tabstop>page_image_spacing_vertical</tabstop>
   <tabstop>include_cards_depicting_racism</tabstop>
+  <tabstop>include_cards_without_images</tabstop>
   <tabstop>include_white_bordered_cards</tabstop>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
