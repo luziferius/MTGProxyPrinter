@@ -47,7 +47,7 @@ MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 __all__ = [
     "Card",
     "CardDatabase",
-    "clear_database"
+    "clear_database",
 ]
 
 
