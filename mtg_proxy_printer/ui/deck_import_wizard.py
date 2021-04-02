@@ -181,6 +181,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
 
     def cleanupPage(self):
         self.page.clear()
+        super(SummaryPage, self).cleanupPage()
 
 
 class DeckImportWizard(QWizard):
