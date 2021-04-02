@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>568</width>
+    <width>566</width>
     <height>612</height>
    </rect>
   </property>
@@ -608,12 +608,12 @@ Uncheck to disable this automatism.</string>
           <item>
            <widget class="QCheckBox" name="include_cards_without_images">
             <property name="toolTip">
-             <string>This covers cards without images and non-english cards with low-resolution,
+             <string>Include non-English cards with low-resolution,
 English placeholder images with an overlay text stating
 “This card is not available in the selected language.”</string>
             </property>
             <property name="text">
-             <string>Include cards without images (These can’t be printed)</string>
+             <string>Include cards with placholder images</string>
             </property>
            </widget>
           </item>
@@ -812,8 +812,8 @@ These are not tournament legal.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>654</y>
+     <x>278</x>
+     <y>605</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -828,8 +828,8 @@ These are not tournament legal.</string>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>340</x>
-     <y>654</y>
+     <x>346</x>
+     <y>605</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

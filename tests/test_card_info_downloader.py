@@ -308,3 +308,8 @@ def test_download_filters(test_case: TestCaseData, filter_name: str, filter_sett
         assert_successful_import(model, test_case)
     else:
         assert_model_is_empty(model)
+
+
+def test_import_card_skips_import_of_card_with_missing_image():
+    model = create_new_card_database_with_json_card("missing_image_double_faced_card")
+    assert_model_is_empty(model)
