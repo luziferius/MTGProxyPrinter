@@ -1,0 +1,120 @@
+{
+  "object": "card",
+  "id": "650722b4-d72b-4745-a1a5-00a34836282b",
+  "oracle_id": "7e6b9b59-cd68-4e3c-827b-38833c92d6eb",
+  "multiverse_ids": [
+
+  ],
+  "tcgplayer_id": 125317,
+  "cardmarket_id": 293925,
+  "name": "Atraxa, Praetors' Voice",
+  "lang": "en",
+  "released_at": "2016-11-11",
+  "uri": "https://api.scryfall.com/cards/650722b4-d72b-4745-a1a5-00a34836282b",
+  "scryfall_uri": "https://scryfall.com/card/oc16/28/atraxa-praetors-voice?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296"
+  },
+  "mana_cost": "{G}{W}{U}{B}",
+  "cmc": 4.0,
+  "type_line": "Legendary Creature — Angel Horror",
+  "oracle_text": "Flying, vigilance, deathtouch, lifelink\nAt the beginning of your end step, proliferate. (Choose any number of permanents and/or players, then give each another counter of each kind already there.)",
+  "power": "4",
+  "toughness": "4",
+  "colors": [
+    "B",
+    "G",
+    "U",
+    "W"
+  ],
+  "color_identity": [
+    "B",
+    "G",
+    "U",
+    "W"
+  ],
+  "keywords": [
+    "Deathtouch",
+    "Flying",
+    "Lifelink",
+    "Vigilance",
+    "Proliferate"
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": false,
+  "oversized": true,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set": "oc16",
+  "set_name": "Commander 2016 Oversized",
+  "set_type": "memorabilia",
+  "set_uri": "https://api.scryfall.com/sets/caa8f8c4-d0bf-4848-9c66-e2fcabd1585c",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aoc16&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/oc16?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/650722b4-d72b-4745-a1a5-00a34836282b/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A7e6b9b59-cd68-4e3c-827b-38833c92d6eb&unique=prints",
+  "collector_number": "28",
+  "digital": false,
+  "rarity": "mythic",
+  "card_back_id": "597b79b3-7d77-4261-871a-60dd17403388",
+  "artist": "Victor Adame Minguez",
+  "artist_ids": [
+    "bd8f7368-5b10-4554-b6b8-d052c6aca89f"
+  ],
+  "illustration_id": "aa6efe75-3fa3-42cd-800e-23320b431646",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "edhrec_rank": 1339,
+  "prices": {
+    "usd": null,
+    "usd_foil": "15.12",
+    "eur": null,
+    "eur_foil": "2.88",
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Atraxa%2C+Praetors%27+Voice&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Atraxa%2C+Praetors%27+Voice&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Atraxa%2C+Praetors%27+Voice",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Atraxa%2C+Praetors%27+Voice"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=125317&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Atraxa%2C+Praetors%27+Voice&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Atraxa%2C+Praetors%27+Voice&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

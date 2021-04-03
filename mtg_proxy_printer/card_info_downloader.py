@@ -335,6 +335,7 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
         card["image_status"] == "placeholder" and not download_enabled["download-cards-without-images"],
         # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
         card["image_status"] == "missing",
+        card["oversized"] and not download_enabled["download-oversized-cards"],
         # Border filter
         card["border_color"] == "white" and not download_enabled["download-white-bordered"],
         card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],

@@ -46,6 +46,7 @@ DEFAULT_SETTINGS["images"] = {
 DEFAULT_SETTINGS["downloads"] = {
     "download-cards-depicting-racism": "False",
     "download-cards-without-images": "False",
+    "download-oversized-cards": "True",
     "download-banned-in-brawl": "True",
     "download-banned-in-commander": "True",
     "download-banned-in-historic": "True",

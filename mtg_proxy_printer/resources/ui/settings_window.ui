@@ -618,6 +618,18 @@ English placeholder images with an overlay text stating
            </widget>
           </item>
           <item>
+           <widget class="QCheckBox" name="include_oversized_cards">
+            <property name="toolTip">
+             <string>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or planeswalker cards included in some pre-constructed Commander decks.</string>
+            </property>
+            <property name="text">
+             <string>Include oversized cards</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QCheckBox" name="include_white_bordered_cards">
             <property name="text">
              <string>Include white-bordered cards</string>

@@ -7,6 +7,7 @@
 
 - New download filter for cards with missing images, which is enabled by default. Skips import of card printings for
   which no images are available, because these can’t be printed.
+- New download filter for oversized cards. 
 
 ## Fixed issues
 

@@ -134,6 +134,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.include_cards_depicting_racism, "download-cards-depicting-racism"),
             (self.include_cards_without_images, "download-cards-without-images"),
+            (self.include_oversized_cards, "download-oversized-cards"),
             (self.include_white_bordered_cards, "download-white-bordered"),
             (self.include_gold_bordered_cards, "download-gold-bordered"),
             (self.include_funny_cards, "download-funny-cards"),
