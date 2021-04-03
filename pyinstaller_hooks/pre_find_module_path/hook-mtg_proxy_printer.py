@@ -42,5 +42,5 @@ def pre_find_module_path(api):
     # ui.__file__ points to the package’s __init__.py. Go a level up to get the package directory path
     target_path = Path(mtg_proxy_printer.ui.__file__).parent/"compiled_resources.py"
     atexit.register(target_path.unlink)
-    setup.compile_resources(target_path)
+    setup.BuildWithQtResources.compile_resources(target_path)
     logger.info("Compiling resource file finished")
