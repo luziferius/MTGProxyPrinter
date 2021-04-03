@@ -1,16 +1,18 @@
 # Changelog
 
 
-# Version \<next> (in development)
+# Version 0.9.4 (2021-04-03)
 
 ## Implemented features
 
-- New download filter for cards with missing images, which is enabled by default. Skips import of card printings for
-  which no images are available, because these can’t be printed.
-- New download filter for oversized cards. 
+- New, enabled by default download filter for cards with placeholder images. Skips import of card printings for
+  which no proper images are available, because these can’t be printed.
+- New, disabled by default download filter for oversized cards. Enable to not import any oversized cards.
 
 ## Fixed issues
 
+- Fixed crash during card data import caused by cards without images. These may occur in the database during running
+  spoilers for new sets. Such cards will be skipped during card data import.
 - Fixed blurry icons on platforms without native icon theme support.
 - Enabled high DPI monitor support. The application will now properly scale on high DPI displays.
 - The Deck import wizard uses better validation when using the custom RE parser. The user-supplied RE is now required to
