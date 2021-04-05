@@ -52,7 +52,7 @@
   prevent issues.
 - Optimized GUI responsiveness while a document is being loaded.
 - Reduced CPU load during the document loading process.
-- Fixed application crashes when directly upgrading from version `0.3.0`.
+- Fixed application crashes when directly upgrading from version [`0.3.0`](#v0_3_0).
 
 
 # Version 0.9.1 (2021-03-04) <a name="v0_9_1"></a>
@@ -250,7 +250,7 @@
 ## Optimizations
 
 - Reduced document file sizes. This mainly benefits documents with few pages,
-  where new documents take about 10% of the disk space when compared to documents saved with version 0.3.
+  where new documents take about 10% of the disk space when compared to documents saved with version [0.3](#v0_3_0).
 
 
 # Version 0.3.0 (2020-12-18) <a name="v0_3_0"></a>
