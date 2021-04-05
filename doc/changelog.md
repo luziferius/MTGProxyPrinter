@@ -1,7 +1,7 @@
 # Changelog
 
 
-# Version 0.9.4 (2021-04-03)
+# Version 0.9.4 (2021-04-03) <a name="v0_9_4"></a>
 
 ## Implemented features
 
@@ -20,11 +20,11 @@
   REs that do nothing at all are no longer accepted.
 
 
-# Version 0.9.3 (2021-03-17)
+# Version 0.9.3 (2021-03-17) <a name="v0_9_3"></a>
 
 ## Fixed issues
 
-- Deck list import: Fixed import of cards with letters or symbols in collector numbers. 
+- Deck list import: Fixed import of cards with letters or symbols in collector numbers.
 - Fixed wrong item order in the `Settings` menu when using the horizontal search layout
 - Fixed several missing icons on platforms without icon theme support, like Windows, or with incomplete icon themes
 - Fixed unintended display of empty rows in the current page content table, if changing page layout settings decreases
@@ -32,7 +32,7 @@
   by moving away overflowing images.
 
 
-# Version 0.9.2 (2021-03-16)
+# Version 0.9.2 (2021-03-16) <a name="v0_9_2"></a>
 
 ## Changed Features
 
@@ -55,7 +55,7 @@
 - Fixed application crashes when directly upgrading from version `0.3.0`.
 
 
-# Version 0.9.1 (2021-03-04)
+# Version 0.9.1 (2021-03-04) <a name="v0_9_1"></a>
 
 ## Fixed issues
 
@@ -63,7 +63,7 @@
 - Ask the user if they want to compact documents prior to printing, when that saves pages, similarly to exporting PDFs.
 
 
-# Version 0.9.0 (2021-03-04)
+# Version 0.9.0 (2021-03-04) <a name="v0_9_0"></a>
 
 ## Implemented features
 
@@ -91,7 +91,7 @@
   Such input is now treated as invalid and can’t be entered into the input text field.
 
 
-# Version 0.8.2 (2021-02-28)
+# Version 0.8.2 (2021-02-28) <a name="v0_8_2"></a>
 
 ## Implemented Features
 
@@ -117,7 +117,7 @@
   via pip.
 
 
-# Version 0.8.1 (2021-02-24)
+# Version 0.8.1 (2021-02-24) <a name="v0_8_1"></a>
 
 ## Fixed issues
 
@@ -127,7 +127,7 @@
   and only pollute the `site-packages` directory.
 
 
-# Version 0.8.0 (2021-02-24)
+# Version 0.8.0 (2021-02-24) <a name="v0_8_0"></a>
 
 ## Changed features
 
@@ -158,14 +158,14 @@
 - Fixed missing icons in the deck list import wizard when used on Windows 
 
 
-# Version 0.7.1 (2012-02-18)
+# Version 0.7.1 (2012-02-18) <a name="v0_7_1"></a>
 
 ## Fixed issues
 
 - Fixed a bug that prevented MTGProxyPrinter from starting when it was installed.
 
 
-# Version 0.7.0 (2012-02-18)
+# Version 0.7.0 (2012-02-18) <a name="v0_7_0"></a>
 
 ## Implemented features
 
@@ -183,7 +183,7 @@
   before adding new pages.
 
 
-# Version 0.6.0 (2021-02-17)
+# Version 0.6.0 (2021-02-17) <a name="v0_6_0"></a>
 
 ## Implemented features
 
@@ -205,7 +205,7 @@
 - Properly remove trailing, empty pages when compacting a document.
 
 
-# Version 0.5.0 (2021-02-15)
+# Version 0.5.0 (2021-02-15) <a name="v0_5_0"></a>
 
 ## Implemented features
 
@@ -236,7 +236,7 @@
 - Further reduced document file size for newly created documents.
 
 
-# Version 0.4.0 (2021-01-05)
+# Version 0.4.0 (2021-01-05) <a name="v0_4_0"></a>
 
 ## Implemented features
 
@@ -253,7 +253,7 @@
   where new documents take about 10% of the disk space when compared to documents saved with version 0.3.
 
 
-# Version 0.3.0 (2020-12-18)
+# Version 0.3.0 (2020-12-18) <a name="v0_3_0"></a>
 
 - Implemented saving and loading documents to and from disk.
   The created files do not contain the image data and are therefore small.
@@ -261,7 +261,7 @@
 - Suppress showing a CMD console window on Windows while MTGProxyPrinter runs.
 
 
-# Version 0.2.1 (2020-12-02)
+# Version 0.2.1 (2020-12-02) <a name="v0_2_1"></a>
 
 This version incorporates major performance optimisations.
 
@@ -277,7 +277,7 @@ and let MTGProxyPrinter re-create it from scratch.
 - Decreased the card database size. The new database roughly takes two/thirds the space previously required.
 
 
-# Version 0.2.0 (2020-12-01)
+# Version 0.2.0 (2020-12-01) <a name="v0_2_0"></a>
 
 This is the second alpha version of MTGProxyPrinter.
 
@@ -293,7 +293,7 @@ This is the second alpha version of MTGProxyPrinter.
 - Fixed down-scaling of card images when exporting PDFs. Generated PDF documents should now have the proper size.
 
 
-# Version 0.1.1 (2020-11-30)
+# Version 0.1.1 (2020-11-30) <a name="v0_1_0"></a>
 
 This version fixes a bug that prevents MTGProxyPrinter from running on Windows using Python 3.8.
 
