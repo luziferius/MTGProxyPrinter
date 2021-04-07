@@ -68,7 +68,10 @@ if __name__ == "__main__":
         python_requires=">=3.8",
         author="Thomas Hess",
         author_email="thomas.hess@udo.edu",
-        url="http://1337net.duckdns.org:8080/mtg-proxy-printer/",
+        url="http://1337net.duckdns.org:8080/MTGProxyPrinter/index",
+        project_urls={
+            "Bug Tracker": "http://1337net.duckdns.org:8080/MTGProxyPrinter/ticket",
+        },
         cmdclass={'build_py': BuildWithQtResources},
         license="GPLv3+",
         install_requires=[
