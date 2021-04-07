@@ -239,12 +239,14 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     @pyqtSlot()
     def on_document_save_path_browse_button_clicked(self):
-        logger.info("User selects a new default document save path.")
-        location = QFileDialog.getExistingDirectory(self, "Select default save location")
-        self.document_save_path.setText(location)
+        logger.debug("User about to select a new default document save path.")
+        if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
+            logger.debug("User selected a new default document save path.")
+            self.document_save_path.setText(location)
 
     @pyqtSlot()
     def on_pdf_save_path_browse_button_clicked(self):
-        logger.info("User selects a new default PDF document export path.")
-        location = QFileDialog.getExistingDirectory(self, "Select default PDF export location")
-        self.pdf_save_path.setText(location)
+        logger.debug("User about to select a new default PDF document export path.")
+        if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
+            logger.info("User selected a new default PDF document export path.")
+            self.pdf_save_path.setText(location)
