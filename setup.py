@@ -27,12 +27,13 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 
 class BuildWithQtResources(setuptools.command.build_py.build_py):
-    """Try to build the Qt resources file for visual_image_splitter."""
+    """Try to build the Qt resources file for MTGProxyPrinter."""
     def run(self):
         if not self.dry_run:  # Obey the --dry-run switch
             output_path = Path(self.build_lib, main_package, "ui", "compiled_resources.py").resolve()
-            self.mkpath(str(output_path.parent))
-            self.compile_resources(output_path)
+            if not output_path.exists():
+                self.mkpath(str(output_path.parent))
+                self.compile_resources(output_path)
         super(BuildWithQtResources, self).run()
 
     @staticmethod
