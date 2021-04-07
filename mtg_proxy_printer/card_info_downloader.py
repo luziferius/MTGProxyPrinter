@@ -19,6 +19,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import typing
 import urllib.request
 import http.client
@@ -185,13 +186,17 @@ class CardInfoDownloadWorker(QObject):
             key: ds.getboolean(key)
             for key in ds.keys()
         }
+        skip_cards_banned_in_formats = frozenset(
+            key.split("-")[-1]
+            for key, enabled in download_enabled.items()
+            if not enabled)
         skipped_cards = 0
         index = 0
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if _should_skip_card(card, download_enabled):
+            if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
             if not self.should_run:
@@ -217,6 +222,7 @@ class CardInfoDownloadWorker(QObject):
         _insert_language.cache_clear()
         _insert_set_data.cache_clear()
         _insert_card.cache_clear()
+        _insert_face_name.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
         self.download_finished.emit()
 
@@ -251,7 +257,7 @@ def read_from_url(url: str, parent: QObject = None):
     return data, metered_reader
 
 
-@functools.lru_cache()
+@functools.lru_cache(None)
 def _insert_language(model: CardDatabase, language: str) -> int:
     """
     Inserts the given language into the database and returns the generated ID.
@@ -269,16 +275,16 @@ def _insert_language(model: CardDatabase, language: str) -> int:
     return language_id
 
 
-@functools.lru_cache(30000)
+@functools.lru_cache(None)
 def _insert_card(model: CardDatabase, oracle_id: str) -> int:
     parameters = oracle_id,
-    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone():
-        card_id, = result
-    else:
+    try:
         card_id = model.db.execute(
             'INSERT INTO Card (oracle_id) VALUES (?)\n',
             parameters
         ).lastrowid
+    except sqlite3.IntegrityError:
+        card_id, = model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone()
     return card_id
 
 
@@ -287,7 +293,7 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
     return _insert_set_data(model, set_abbr, set_name, set_uri)
 
 
-@functools.lru_cache(500)
+@functools.lru_cache(None)
 def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
     if result := model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone():
         set_id, = result
@@ -299,16 +305,17 @@ def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri:
     return set_id
 
 
+@functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
-    if result := model.db.execute(
-            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n',
-            (printed_name, language_id)).fetchone():
-        face_name_id, = result
-    else:
+    try:
         face_name_id = model.db.execute(
             'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n',
             (printed_name, language_id)
         ).lastrowid
+    except sqlite3.IntegrityError:
+        face_name_id, = model.db.execute(
+            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n',
+            (printed_name, language_id)).fetchone()
     return face_name_id
 
 
@@ -325,9 +332,13 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, ca
         )
 
 
-def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) -> bool:
+def _should_skip_card(
+        card: JSONType, download_enabled: typing.Dict[str, bool],
+        skip_cards_banned_in_formats: typing.FrozenSet[str]) -> bool:
     """Determine, if the given card should be included based on the application settings"""
     legalities = card["legalities"]
+    banned_in_formats = frozenset(format_ for format_, status in legalities.items() if status == "banned")
+
     return any((
         # Racism filter
         card.get("content_warning", False) and not download_enabled["download-cards-depicting-racism"],
@@ -345,16 +356,7 @@ def _should_skip_card(card: JSONType, download_enabled: typing.Dict[str, bool]) 
         # Token cards
         card["layout"] == "token" and not download_enabled["download-token"],
         # Specific format legality.
-        legalities["brawl"] == "banned" and not download_enabled["download-banned-in-brawl"],
-        legalities["commander"] == "banned" and not download_enabled["download-banned-in-commander"],
-        legalities["historic"] == "banned" and not download_enabled["download-banned-in-historic"],
-        legalities["legacy"] == "banned" and not download_enabled["download-banned-in-legacy"],
-        legalities["modern"] == "banned" and not download_enabled["download-banned-in-modern"],
-        legalities["pauper"] == "banned" and not download_enabled["download-banned-in-pauper"],
-        legalities["penny"] == "banned" and not download_enabled["download-banned-in-penny"],
-        legalities["pioneer"] == "banned" and not download_enabled["download-banned-in-pioneer"],
-        legalities["standard"] == "banned" and not download_enabled["download-banned-in-standard"],
-        legalities["vintage"] == "banned" and not download_enabled["download-banned-in-vintage"],
+        banned_in_formats.intersection(skip_cards_banned_in_formats),
     ))
 
 
