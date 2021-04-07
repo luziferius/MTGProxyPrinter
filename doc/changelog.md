@@ -1,5 +1,12 @@
 # Changelog
 
+# Version \<next> (in development)
+
+## Fixed issues
+
+- Canceling a directory selection dialog for default save paths in the settings window no longer clears the previously
+  selected directory, if any was selected.
+
 
 # Version 0.9.4 (2021-04-03) <a name="v0_9_4"></a>
 
@@ -11,8 +18,8 @@
 
 ## Fixed issues
 
-- Fixed crash during card data import caused by cards without images. These may occur in the database during running
-  spoilers for new sets. Such cards will be skipped during card data import.
+- Fixed crash during card data import caused by cards without images. These may occur in the Scryfall database 
+  during running spoilers for new sets. Such cards will be skipped during card data import.
 - Fixed blurry icons on platforms without native icon theme support.
 - Enabled high DPI monitor support. The application will now properly scale on high DPI displays.
 - The Deck import wizard uses better validation when using the custom RE parser. The user-supplied RE is now required to
