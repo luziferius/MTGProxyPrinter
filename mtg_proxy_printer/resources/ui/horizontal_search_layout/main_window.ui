@@ -82,6 +82,7 @@
      <string>Settings</string>
     </property>
     <addaction name="action_show_settings"/>
+    <addaction name="action_show_toolbar"/>
     <addaction name="action_download_card_data"/>
     <addaction name="action_cleanup_local_image_cache"/>
     <addaction name="separator"/>
@@ -291,6 +292,17 @@
     <string>Cleanup local image cache</string>
    </property>
   </action>
+  <action name="action_show_toolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show toolbar</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -315,5 +327,38 @@
   <tabstop>document_view</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>action_show_toolbar</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>toolBar</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>48</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>toolBar</sender>
+   <signal>visibilityChanged(bool)</signal>
+   <receiver>action_show_toolbar</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>499</x>
+     <y>48</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
@@ -78,6 +78,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
+        self.action_show_toolbar: QAction
+        self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_loading_state_connections(self):
@@ -212,7 +214,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         logger.debug("Quit action confirmed. Exiting…")
         self.card_data_downloader.cancel_running_operations()
-
+        self.toolBar: QToolBar
+        if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
+            logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
+            mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
+            mtg_proxy_printer.settings.write_settings_to_file()
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         QApplication.instance().shutdown()
 

@@ -81,6 +81,7 @@ DEFAULT_SETTINGS["default-save-paths"] = {
 }
 DEFAULT_SETTINGS["gui"] = {
     "search-widget-layout": "horizontal",
+    "show-toolbar": "True",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
 DEFAULT_SETTINGS["debug"] = {
@@ -190,6 +191,7 @@ def _validate_documents_section(section: configparser.SectionProxy):
 def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
+    _validate_boolean(section, defaults, "show-toolbar")
 
 
 def _validate_debug_section(section: configparser.SectionProxy):
