@@ -62,8 +62,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
-        self.nothing_happens_box = QMessageBox(
-            QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
