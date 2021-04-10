@@ -17,7 +17,7 @@ import pathlib
 import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
-from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
+from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
 from mtg_proxy_printer.argument_parser import Namespace
@@ -78,7 +78,21 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.offer_re_downloading_card_database)
         self.action_show_toolbar: QAction
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
+        self._setup_platform_dependent_default_shortcuts()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_platform_dependent_default_shortcuts(self):
+        actions_with_shortcuts: typing.List[typing.Tuple[QAction, QKeySequence.StandardKey]] = [
+            (self.action_new_document, QKeySequence.New),
+            (self.action_load_document, QKeySequence.Open),
+            (self.action_save_document, QKeySequence.Save),
+            (self.action_save_as, QKeySequence.SaveAs),
+            (self.action_show_settings, QKeySequence.Preferences),
+            (self.action_print, QKeySequence.Print),
+            (self.action_quit, QKeySequence.Quit),
+        ]
+        for action, shortcut in actions_with_shortcuts:
+            action.setShortcut(shortcut)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():

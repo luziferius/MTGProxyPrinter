@@ -13,6 +13,8 @@
 
 - Clearing the document when importing a deck list now creates a new document, as if the "New document" button was used.
   I. e. it also forgets the association with the previously loaded document, if one was loaded from disk before.
+- Use platform-dependent default keyboard shortcuts for some common menu entries. These adjust to the operating system’s
+  default values.
 
 ## Fixed issues
 
