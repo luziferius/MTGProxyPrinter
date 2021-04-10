@@ -91,6 +91,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
@@ -115,6 +116,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
         return [
+            self.action_new_document,
             self.action_save_as,
             self.action_save_document,
             self.action_compact_document,

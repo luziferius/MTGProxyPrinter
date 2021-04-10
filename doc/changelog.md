@@ -2,6 +2,11 @@
 
 # Version \<next> (in development)
 
+## Implemented features
+
+- Added a "New document" entry to the File menu and the toolbar.
+  It closes the currently edited document and creates a new one.
+
 ## Fixed issues
 
 - Canceling a directory selection dialog for default save paths in the settings window no longer clears the previously

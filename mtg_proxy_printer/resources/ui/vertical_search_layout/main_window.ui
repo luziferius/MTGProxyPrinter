@@ -93,6 +93,7 @@
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
+    <addaction name="action_new_document"/>
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
     <addaction name="action_save_as"/>
@@ -141,6 +142,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="action_new_document"/>
    <addaction name="action_load_document"/>
    <addaction name="action_save_document"/>
    <addaction name="separator"/>
@@ -250,6 +252,17 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="action_new_document">
+   <property name="icon">
+    <iconset theme="document-replace"/>
+   </property>
+   <property name="text">
+    <string>New</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
    </property>
   </action>
   <action name="action_load_document">

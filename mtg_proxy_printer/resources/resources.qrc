@@ -28,6 +28,7 @@
     <file>icons/breeze/actions/16/document-print-direct.svg</file>
     <file>icons/breeze/actions/16/document-print-preview.svg</file>
     <file>icons/breeze/actions/16/document-print.svg</file>
+    <file>icons/breeze/actions/16/document-replace.svg</file>
     <file>icons/breeze/actions/16/document-save.svg</file>
     <file>icons/breeze/actions/16/document-save-as.svg</file>
     <file>icons/breeze/actions/16/edit-clear-history.svg</file>
@@ -49,6 +50,7 @@
     <file>icons/breeze/actions/22/document-print-direct.svg</file>
     <file>icons/breeze/actions/22/document-print-preview.svg</file>
     <file>icons/breeze/actions/22/document-print.svg</file>
+    <file>icons/breeze/actions/22/document-replace.svg</file>
     <file>icons/breeze/actions/22/document-save.svg</file>
     <file>icons/breeze/actions/22/document-save-as.svg</file>
     <file>icons/breeze/actions/22/edit-clear-history.svg</file>
@@ -70,6 +72,7 @@
     <file>icons/breeze/actions/24/document-print-direct.svg</file>
     <file>icons/breeze/actions/24/document-print-preview.svg</file>
     <file>icons/breeze/actions/24/document-print.svg</file>
+    <file>icons/breeze/actions/24/document-replace.svg</file>
     <file>icons/breeze/actions/24/document-save.svg</file>
     <file>icons/breeze/actions/24/document-save-as.svg</file>
     <file>icons/breeze/actions/24/edit-clear-history.svg</file>
@@ -90,6 +93,7 @@
     <file>icons/breeze/actions/32/document-open.svg</file>
     <file>icons/breeze/actions/32/document-print-direct.svg</file>
     <file>icons/breeze/actions/32/document-print.svg</file>
+    <file>icons/breeze/actions/32/document-replace.svg</file>
     <file>icons/breeze/actions/32/document-save.svg</file>
     <file>icons/breeze/actions/32/document-save-as.svg</file>
     <file>icons/breeze/actions/32/edit-delete.svg</file>

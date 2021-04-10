@@ -2,6 +2,10 @@
 
 # Generate an application bundle using PyInstaller.
 
+if [ ! -e "venv" ]; then
+  ./create_development_environment.sh
+fi
+
 source venv/bin/activate
 
 # Allow passing in additional parameters, such as --onefile
