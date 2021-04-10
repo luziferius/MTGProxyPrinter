@@ -7,6 +7,11 @@
 - Added a "New document" entry to the File menu and the toolbar.
   It closes the currently edited document and creates a new one.
 
+## Changed Features
+
+- Clearing the document when importing a deck list now creates a new document, as if the "New document" button was used.
+  I. e. it also forgets the association with the previously loaded document, if one was loaded from disk before.
+
 ## Fixed issues
 
 - Canceling a directory selection dialog for default save paths in the settings window no longer clears the previously
