@@ -6,6 +6,8 @@
 
 - Added a "New document" entry to the File menu and the toolbar.
   It closes the currently edited document and creates a new one.
+- The toolbar can now be hidden/shown using an entry in the Settings menu, which can be useful when MTGProxyPrinter is
+  used on very small screens. This setting is saved across application restarts. 
 
 ## Changed Features
 

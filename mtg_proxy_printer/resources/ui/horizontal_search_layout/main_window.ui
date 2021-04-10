@@ -302,6 +302,9 @@
    <property name="text">
     <string>Show toolbar</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
   </action>
  </widget>
  <customwidgets>
