@@ -59,7 +59,7 @@ class ImageDatabase(QObject):
         _migrate_database(db_path)
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
-        # to save memory.  TODO: Maybe use the QPixmapCache class instead?
+        # to save memory.
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
         self.queue: queue.SimpleQueue[
             typing.Union[typing.Tuple[Card, int], typing.Tuple[None, bool]]] = queue.SimpleQueue()
@@ -86,8 +86,12 @@ class ImageDatabase(QObject):
             self.queue.put((card, count))
         self.queue.put((None, False))
 
-    def get_cache_content(self) -> typing.List[CacheContent]:
-        """Returns all entries currently in the image cache."""
+    def get_disk_cache_content(self) -> typing.List[CacheContent]:
+        """
+        Returns all entries currently in the hard disk image cache.
+
+        :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
+        """
         result: typing.List[CacheContent] = []
         for directory, is_front in ((self.db_path/"front", True), (self.db_path/"back", False)):
             result += (
@@ -95,9 +99,9 @@ class ImageDatabase(QObject):
                 for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
         return result
 
-    def delete_entries(self, images: typing.Iterable[ImageKey]) -> PathSizeList:
+    def delete_disk_cache_entries(self, images: typing.Iterable[ImageKey]) -> PathSizeList:
         """
-        Remove the given images from the cache.
+        Remove the given images from the hard disk cache.
 
         :returns: List with removed paths.
         """

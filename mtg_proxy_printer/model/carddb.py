@@ -49,7 +49,7 @@ __all__ = [
     "MTGSet",
     "Card",
     "CardDatabase",
-    "clear_database"
+    "clear_database",
 ]
 
 

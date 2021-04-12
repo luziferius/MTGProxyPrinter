@@ -20,7 +20,7 @@ from unittest.mock import patch
 import pkg_resources
 
 import ijson
-from hamcrest import assert_that, is_, empty
+from hamcrest import assert_that, is_, empty, has_key
 
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
@@ -37,6 +37,9 @@ def setup_logging_for_testing():
 
 def setup_settings_for_testing():
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+    for setting in mtg_proxy_printer.settings.settings["downloads"].keys():
+        # Turn off all download filters, so that the defaults don’t affect the test cases
+        mtg_proxy_printer.settings.settings["downloads"][setting] = str(True)
 
 
 def populate_database(model, data):
@@ -63,6 +66,11 @@ def create_new_card_database_with_json_card(
     if option is None:
         populate_database(new_model, data)
     else:
+        assert_that(
+            mtg_proxy_printer.settings.settings["downloads"],
+            has_key(option),
+            f"Test setup failed: Download settings do not contain expected setting: {option}"
+        )
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
             populate_database(new_model, data)
     return new_model
@@ -78,6 +86,11 @@ def create_new_card_database_with_multiple_cards(
     if option is None:
         populate_database(new_model, data)
     else:
+        assert_that(
+            mtg_proxy_printer.settings.settings["downloads"],
+            has_key(option),
+            f"Test setup failed: Download settings do not contain expected setting: {option}"
+        )
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
             populate_database(new_model, data)
     return new_model

@@ -1,0 +1,111 @@
+{
+  "object": "card",
+  "id": "5a93fe66-620a-4f47-8a07-cff887c1e5d4",
+  "oracle_id": "7744bae4-a8b7-44a5-9b4c-0048ad4cc448",
+  "multiverse_ids": [
+
+  ],
+  "tcgplayer_id": 109481,
+  "cardmarket_id": 251202,
+  "name": "Air Elemental",
+  "printed_name": "Elemental del aire",
+  "lang": "es",
+  "released_at": "1995-04-01",
+  "uri": "https://api.scryfall.com/cards/5a93fe66-620a-4f47-8a07-cff887c1e5d4",
+  "scryfall_uri": "https://scryfall.com/card/4bb/59/es/elemental-del-aire?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "placeholder",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.jpg?1557431149",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.jpg?1557431149",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.jpg?1557431149",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.png?1557431149",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.jpg?1557431149",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.jpg?1557431149"
+  },
+  "mana_cost": "{3}{U}{U}",
+  "cmc": 5.0,
+  "type_line": "Creature — Elemental",
+  "oracle_text": "Flying",
+  "power": "4",
+  "toughness": "4",
+  "colors": [
+    "U"
+  ],
+  "color_identity": [
+    "U"
+  ],
+  "keywords": [
+    "Flying"
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set": "4bb",
+  "set_name": "Fourth Edition Foreign Black Border",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/daa633b3-2bdb-48a2-a40e-3de16b6e41a5",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A4bb&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/4bb?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/5a93fe66-620a-4f47-8a07-cff887c1e5d4/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A7744bae4-a8b7-44a5-9b4c-0048ad4cc448&unique=prints",
+  "collector_number": "59",
+  "digital": false,
+  "rarity": "uncommon",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Richard Thomas",
+  "artist_ids": [
+    "596b3aac-b331-4e1e-ae41-9ec2d3b653e1"
+  ],
+  "illustration_id": "67f66b28-3ee8-4ce0-a184-cb3d7c8fdb4f",
+  "border_color": "black",
+  "frame": "1993",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "edhrec_rank": 11833,
+  "prices": {
+    "usd": "1.99",
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Air+Elemental&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Air+Elemental&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Air+Elemental",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Air+Elemental"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=109481&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Air+Elemental&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Air+Elemental&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

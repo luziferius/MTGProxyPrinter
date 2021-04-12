@@ -214,6 +214,18 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("4ed", "Fourth Edition", "https://scryfall.com/sets/4ed?utm_source=api"),
         "de", "20", "00809cb0-b152-441f-a0be-1bc1048dad92", "4692740f-be90-459f-8d90-c4ae71771595"
     ), "download-cards-depicting-racism"
+    yield TestCaseData(  # Spanish printing of "Air Elemental"
+        "placeholder_image", (
+            FaceData("Elemental del aire", False, "https://c1.scryfall.com/file/scryfall-cards/png/front/5/a/5a93fe66-620a-4f47-8a07-cff887c1e5d4.png?1557431149", True),
+        ), DatabaseSetData("4bb", "Fourth Edition Foreign Black Border", "https://scryfall.com/sets/4bb?utm_source=api"),
+        "es", "59", "5a93fe66-620a-4f47-8a07-cff887c1e5d4", "7744bae4-a8b7-44a5-9b4c-0048ad4cc448"
+    ), "download-cards-without-images"
+    yield TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
+        "oversized_card", (
+            FaceData("Atraxa, Praetors' Voice", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
+        ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api"),
+        "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb"
+    ), "download-oversized-cards"
     yield TestCaseData(  # Silver-bordered "Aesthetic Consultation" from Unhinged
         "funny_card", (
             FaceData("Aesthetic Consultation", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441", True),
@@ -302,3 +314,8 @@ def test_download_filters(test_case: TestCaseData, filter_name: str, filter_sett
         assert_successful_import(model, test_case)
     else:
         assert_model_is_empty(model)
+
+
+def test_import_card_skips_import_of_card_with_missing_image():
+    model = create_new_card_database_with_json_card("missing_image_double_faced_card")
+    assert_model_is_empty(model)

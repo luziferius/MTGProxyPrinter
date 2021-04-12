@@ -464,6 +464,11 @@ class Document(QAbstractListModel):
             itertools.repeat(0)
         )))
 
+    @pyqtSlot()  # Avoid connecting both triggered() and triggered(bool)
+    def clear_all_data(self):
+        self.clear()
+        self.file_path = None
+
     def store_image_usage(self):
         """
         Increments the usage count of all cards used in the document and updates the last use timestamps.

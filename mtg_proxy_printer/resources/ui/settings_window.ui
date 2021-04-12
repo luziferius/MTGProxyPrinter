@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>568</width>
+    <width>566</width>
     <height>612</height>
    </rect>
   </property>
@@ -648,7 +648,7 @@ If so, choose an arbitrary printing.</string>
        <item>
         <widget class="QGroupBox" name="card_download_general_settings">
          <property name="title">
-          <string>General</string>
+          <string>General download filters</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <item>
@@ -658,6 +658,30 @@ If so, choose an arbitrary printing.</string>
             </property>
             <property name="text">
              <string>Include cards depicting racism</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="include_cards_without_images">
+            <property name="toolTip">
+             <string>Include non-English cards with low-resolution,
+English placeholder images with an overlay text stating
+“This card is not available in the selected language.”</string>
+            </property>
+            <property name="text">
+             <string>Include cards with placholder images</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="include_oversized_cards">
+            <property name="toolTip">
+             <string>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or planeswalker cards included in some pre-constructed Commander decks.</string>
+            </property>
+            <property name="text">
+             <string>Include oversized cards</string>
             </property>
            </widget>
           </item>
@@ -831,6 +855,7 @@ These are not tournament legal.</string>
   <tabstop>page_image_spacing_horizontal</tabstop>
   <tabstop>page_image_spacing_vertical</tabstop>
   <tabstop>include_cards_depicting_racism</tabstop>
+  <tabstop>include_cards_without_images</tabstop>
   <tabstop>include_white_bordered_cards</tabstop>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
@@ -855,8 +880,8 @@ These are not tournament legal.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>272</x>
-     <y>654</y>
+     <x>278</x>
+     <y>605</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -871,8 +896,8 @@ These are not tournament legal.</string>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>340</x>
-     <y>654</y>
+     <x>346</x>
+     <y>605</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

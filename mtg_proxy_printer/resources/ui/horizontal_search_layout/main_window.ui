@@ -65,6 +65,7 @@
     <property name="title">
      <string>Fi&amp;le</string>
     </property>
+    <addaction name="action_new_document"/>
     <addaction name="action_load_document"/>
     <addaction name="action_save_document"/>
     <addaction name="action_save_as"/>
@@ -81,6 +82,7 @@
      <string>Settings</string>
     </property>
     <addaction name="action_show_settings"/>
+    <addaction name="action_show_toolbar"/>
     <addaction name="action_download_card_data"/>
     <addaction name="action_cleanup_local_image_cache"/>
     <addaction name="separator"/>
@@ -113,6 +115,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="action_new_document"/>
    <addaction name="action_load_document"/>
    <addaction name="action_save_document"/>
    <addaction name="separator"/>
@@ -224,6 +227,17 @@
     <string>Ctrl+S</string>
    </property>
   </action>
+  <action name="action_new_document">
+   <property name="icon">
+    <iconset theme="document-replace"/>
+   </property>
+   <property name="text">
+    <string>New</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
   <action name="action_load_document">
    <property name="icon">
     <iconset theme="document-open"/>
@@ -278,6 +292,20 @@
     <string>Cleanup local image cache</string>
    </property>
   </action>
+  <action name="action_show_toolbar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show toolbar</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+M</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
@@ -302,5 +330,38 @@
   <tabstop>document_view</tabstop>
  </tabstops>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>action_show_toolbar</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>toolBar</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>48</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>toolBar</sender>
+   <signal>visibilityChanged(bool)</signal>
+   <receiver>action_show_toolbar</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>499</x>
+     <y>48</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

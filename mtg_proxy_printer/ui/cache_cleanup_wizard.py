@@ -283,7 +283,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
-        images_in_cache = self.image_db.get_cache_content()
+        images_in_cache = self.image_db.get_disk_cache_content()
         for scryfall_id, is_front, file_path in images_in_cache:
             if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is not None:
                 self.card_image_model.add_row(card, file_path)
@@ -392,7 +392,7 @@ class CacheCleanupWizard(QWizard):
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()
         logger.info("User accepted the wizard, deleting entries from the cache.")
-        self.image_db.delete_entries((
+        self.image_db.delete_disk_cache_entries((
             (scryfall_id, is_front)
             for scryfall_id, is_front, _ in self.field("selected-images")
         ))

@@ -1,0 +1,133 @@
+{
+  "object": "card",
+  "id": "b120e3c2-21b1-43e3-b685-9cf62bd7aa07",
+  "oracle_id": "9110339d-72ba-4132-801f-cd2fd738b71d",
+  "multiverse_ids": [
+
+  ],
+  "name": "Augmenter Pugilist // Echoing Equation",
+  "lang": "en",
+  "released_at": "2021-04-23",
+  "uri": "https://api.scryfall.com/cards/b120e3c2-21b1-43e3-b685-9cf62bd7aa07",
+  "scryfall_uri": "https://scryfall.com/card/stx/321/augmenter-pugilist-echoing-equation?utm_source=api",
+  "layout": "modal_dfc",
+  "highres_image": false,
+  "image_status": "missing",
+  "cmc": 3.0,
+  "type_line": "Creature — Troll Druid // Sorcery",
+  "color_identity": [
+    "G",
+    "U"
+  ],
+  "keywords": [
+    "Trample"
+  ],
+  "card_faces": [
+    {
+      "object": "card_face",
+      "name": "Augmenter Pugilist",
+      "mana_cost": "{1}{G}{G}",
+      "type_line": "Creature — Troll Druid",
+      "oracle_text": "Trample\nAs long as you control eight or more lands, Augmenter Pugilist gets +5/+5.",
+      "colors": [
+        "G"
+      ],
+      "power": "3",
+      "toughness": "3",
+      "artist": "Volkan Baǵa",
+      "artist_id": "93bec3c0-0260-4d31-8064-5d01efb4153f"
+    },
+    {
+      "object": "card_face",
+      "name": "Echoing Equation",
+      "mana_cost": "{3}{U}{U}",
+      "type_line": "Sorcery",
+      "oracle_text": "Choose target creature you control. Each other creature you control becomes a copy of it until end of turn, except those creatures aren't legendary if the chosen creature is legendary.",
+      "colors": [
+        "U"
+      ],
+      "artist": "Volkan Baǵa",
+      "artist_id": "93bec3c0-0260-4d31-8064-5d01efb4153f"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "brawl": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "arena",
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set": "stx",
+  "set_name": "Strixhaven: School of Mages",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/541c3c28-8747-40e5-a231-8e8f33234859",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Astx&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/stx?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/b120e3c2-21b1-43e3-b685-9cf62bd7aa07/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A9110339d-72ba-4132-801f-cd2fd738b71d&unique=prints",
+  "collector_number": "321",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Volkan Baǵa",
+  "artist_ids": [
+    "93bec3c0-0260-4d31-8064-5d01efb4153f"
+  ],
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "extendedart"
+  ],
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "promo_types": [
+    "boosterfun"
+  ],
+  "preview": {
+    "source": "Wizards of the Coast",
+    "source_uri": "https://www.instagram.com/p/CNF7aF1A6be/",
+    "previewed_at": "2021-04-01"
+  },
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Augmenter+Pugilist+%2F%2F+Echoing+Equation&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Augmenter+Pugilist+%2F%2F+Echoing+Equation&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Augmenter+Pugilist",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Augmenter+Pugilist"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Augmenter+Pugilist&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Augmenter+Pugilist&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Augmenter+Pugilist&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

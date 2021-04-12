@@ -27,12 +27,13 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 
 class BuildWithQtResources(setuptools.command.build_py.build_py):
-    """Try to build the Qt resources file for visual_image_splitter."""
+    """Try to build the Qt resources file for MTGProxyPrinter."""
     def run(self):
         if not self.dry_run:  # Obey the --dry-run switch
             output_path = Path(self.build_lib, main_package, "ui", "compiled_resources.py").resolve()
-            self.mkpath(str(output_path.parent))
-            self.compile_resources(output_path)
+            if not output_path.exists():
+                self.mkpath(str(output_path.parent))
+                self.compile_resources(output_path)
         super(BuildWithQtResources, self).run()
 
     @staticmethod
@@ -67,7 +68,10 @@ if __name__ == "__main__":
         python_requires=">=3.8",
         author="Thomas Hess",
         author_email="thomas.hess@udo.edu",
-        url="http://1337net.duckdns.org:8080/mtg-proxy-printer/",
+        url="http://1337net.duckdns.org:8080/MTGProxyPrinter/index",
+        project_urls={
+            "Bug Tracker": "http://1337net.duckdns.org:8080/MTGProxyPrinter/ticket",
+        },
         cmdclass={'build_py': BuildWithQtResources},
         license="GPLv3+",
         install_requires=[
@@ -75,10 +79,12 @@ if __name__ == "__main__":
             "PyQt5",
             "ijson >= 3.1.0",
             "pint",
-            "delegateto >= 1.5"
+            "delegateto >= 1.5",
         ],
         setup_requires=[
             'setuptools >= 30.3.0',
+            "wheel",
+            "PyQt5",  # includes the "pyrcc5" resource compiler used during the build process. See BuildWithQtResources
         ],
         extras_require={
             "dev": [
@@ -91,6 +97,7 @@ if __name__ == "__main__":
                 "PyInstaller >= 4.0",
                 "pyinstaller-hooks-contrib >= 2020.11",  # First version that contains the upstreamed hook for ijson
                 "sip",
+                "build",
             ]
         },
         test_suite="pytest",

@@ -17,8 +17,8 @@ import pathlib
 import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
-from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget
+from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
@@ -62,8 +62,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
-        self.nothing_happens_box = QMessageBox(
-            QMessageBox.Warning, "Not implemented", "Nothing happened.", QMessageBox.Ok, self)
         self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self.window_size_changed.connect(self.page_view.window_size_changed)
@@ -78,7 +76,23 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
+        self.action_show_toolbar: QAction
+        self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
+        self._setup_platform_dependent_default_shortcuts()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_platform_dependent_default_shortcuts(self):
+        actions_with_shortcuts: typing.List[typing.Tuple[QAction, QKeySequence.StandardKey]] = [
+            (self.action_new_document, QKeySequence.New),
+            (self.action_load_document, QKeySequence.Open),
+            (self.action_save_document, QKeySequence.Save),
+            (self.action_save_as, QKeySequence.SaveAs),
+            (self.action_show_settings, QKeySequence.Preferences),
+            (self.action_print, QKeySequence.Print),
+            (self.action_quit, QKeySequence.Quit),
+        ]
+        for action, shortcut in actions_with_shortcuts:
+            action.setShortcut(shortcut)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -91,6 +105,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
@@ -115,6 +130,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
         return [
+            self.action_new_document,
             self.action_save_as,
             self.action_save_document,
             self.action_compact_document,
@@ -210,7 +226,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         logger.debug("Quit action confirmed. Exiting…")
         self.card_data_downloader.cancel_running_operations()
-
+        self.toolBar: QToolBar
+        if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
+            logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
+            mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
+            mtg_proxy_printer.settings.write_settings_to_file()
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         QApplication.instance().shutdown()
 
@@ -224,7 +244,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, self.image_db, parent=self)
-        wizard.clear_document.connect(self.document.clear)
+        wizard.clear_document.connect(self.document.clear_all_data)
         wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
         wizard.show()
 
