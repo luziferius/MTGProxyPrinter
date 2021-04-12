@@ -218,6 +218,9 @@ class CardDatabase:
         if card.collector_number:
             where_clause += 'AND collector_number = ?\n'
             parameters.append(card.collector_number)
+        if card.is_front is not None:
+            where_clause += 'AND is_front = ?\n'
+            parameters.append(card.is_front)
         query += where_clause
         cursor = self.db.execute(
             query,
