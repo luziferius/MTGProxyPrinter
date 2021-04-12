@@ -239,7 +239,10 @@ class CardDatabase:
         :param language: Card language, matched exactly
         :return: Naturally sorted list of collector numbers, i.e. "2" before "10".
         """
-        query = 'SELECT collector_number -- find_collector_numbers_matching()\n' \
+        # Implementation note: DISTINCT is required for double-faced cards where both sides have the same name.
+        # This can be art-series cards or double-faced tokens (e.g. from C16). Without this, selecting such card
+        # in the AddCardWidget results in a duplicated entry in the collector number selection list.
+        query = 'SELECT DISTINCT collector_number -- find_collector_numbers_matching()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
