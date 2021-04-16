@@ -20,6 +20,7 @@
 
 - Canceling a directory selection dialog for default save paths in the settings window no longer clears the previously
   selected directory, if any was selected.
+- Art-Series cards can now be added to the document and be printed.
 
 
 # Version 0.9.4 (2021-04-03) <a name="v0_9_4"></a>

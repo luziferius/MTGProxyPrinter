@@ -204,7 +204,11 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
     def on_ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
         card = self._create_new_card()
-        self.card_database.add_missing_information(card)
+        try:
+            self.card_database.add_missing_information(card)
+        except RuntimeError:
+            card.is_front = True
+            self.card_database.add_missing_information(card)
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
         self._log_added_card(card, copies)
