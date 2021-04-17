@@ -85,8 +85,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
         )
         # Some sources have upper case set codes, but this program uses the Scryfall convention of using lower-case
         # codes. So lower the code, if set.
-        if matched_card.set_abbr is not None:
-            matched_card.set_abbr = matched_card.set_abbr.lower()
+        if matched_card.set_code is not None:
+            matched_card.set_code = matched_card.set_code.lower()
         return matched_card
 
     def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
