@@ -200,7 +200,7 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def get_cards_from_data(self, card: CardIdentificationData) -> Card:
+    def get_cards_from_data(self, card: CardIdentificationData) -> typing.List[Card]:
         """
         Called with a unique printing in card and
         returns the Card object containing the relevant, complete information, except for the image pixmap.
@@ -246,11 +246,13 @@ class CardDatabase:
             query,
             parameters
         )
-        result = cursor.fetchone()
-        if not result or cursor.fetchone():
-            raise RuntimeError(f"CardDatabase.get_cards_from_data() called on non-unique card information: {card}")
-        name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front = result
-        return Card(name, MTGSet(set_code, set_name), collector_number, card.language, scryfall_id, is_front, image_uri)
+        result = [
+            Card(
+                name, MTGSet(set_code, set_name), collector_number, card.language, scryfall_id, is_front, image_uri
+            )
+            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front in cursor
+        ]
+        return result
 
     def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
         """

@@ -62,7 +62,7 @@ class ParserBase:
             # If this is a split card, try to identify one half
             card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
         if self.card_db.is_valid_and_unique_card(card_data):
-            return self.card_db.get_cards_from_data(card_data)
+            return self.card_db.get_cards_from_data(card_data)[0]
 
     def _add_card_to_deck(self, deck: typing.Counter[Card], card: Card, count: int):
         deck[card] += count

@@ -67,7 +67,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         return cards, unmatched_lines
 
     def _add_matched_card(self, cards: typing.Counter[Card], matched_card: CardIdentificationData, copies: int):
-        card = self.card_db.get_cards_from_data(matched_card)
+        card, = self.card_db.get_cards_from_data(matched_card)
         self._add_card_to_deck(cards, card, copies)
 
     @staticmethod

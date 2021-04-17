@@ -137,8 +137,8 @@ class TappedOutCSVParser(BaseCSVParser):
         if guess_printing and (card := self.guess_printing(card_data)) is not None:
             self._add_card_to_deck(cards, card, count)
             return cards, True
-        elif not guess_printing and (card := self.card_db.get_cards_from_data(card_data)) is not None:
-            self._add_card_to_deck(cards, card, count)
+        elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
+            self._add_card_to_deck(cards, result[0], count)
             return cards, True
         else:
             return cards, False
