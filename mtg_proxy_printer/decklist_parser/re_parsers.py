@@ -44,6 +44,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
     def parse_deck(self, deck: typing.Union[pathlib.Path, str],
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+
+        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
         deck_list = deck.read_text() if isinstance(deck, pathlib.Path) else deck
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
@@ -59,6 +61,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
                     self._add_matched_card(cards, matched_card, copies)
                 elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
                     self._add_matched_card(cards, matched_card, copies)
+                elif print_guessing and (guessed_card := self.guess_printing(matched_card)) is not None:
+                    self._add_card_to_deck(cards, guessed_card, copies)
                 else:
                     unmatched_lines.append(line)
             elif line:

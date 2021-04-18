@@ -32,12 +32,13 @@ class BaseCSVParser(ParserBase):
     DIALECT_NAME = ""
 
     def parse_deck(self, deck_list: typing.Union[pathlib.Path, str],
-                   guess_printing: bool,
-                   guess_printing_prefer_already_downloaded: bool) -> ParsedDeck:
+                   print_guessing: bool,
+                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
         deck = collections.Counter()
         unmatched_lines = []
         for line in self._read_lines_from_csv(deck_list):
-            cards, should_be_success = self.parse_cards_from_line(line, guess_printing)
+            cards, should_be_success = self.parse_cards_from_line(line, print_guessing)
             if cards and should_be_success:
                 deck.update(cards)
             elif not cards and should_be_success:
