@@ -84,6 +84,9 @@ class ImageDatabase(QObject):
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def filter_already_downloaded(self, possible_matches: typing.List[Card]):
+        return [card for card in possible_matches if (card.scryfall_id, card.is_front) in self.images_on_disk]
+
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
     def get_image_asynchronous(self, card: Card, count: int = 1):
