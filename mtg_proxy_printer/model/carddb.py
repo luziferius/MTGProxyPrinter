@@ -63,7 +63,7 @@ class CardIdentificationData:
     is_front: typing.Optional[bool] = None
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class MTGSet:
     code: str
     name: str
