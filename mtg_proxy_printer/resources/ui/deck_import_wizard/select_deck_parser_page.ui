@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>291</width>
-    <height>230</height>
+    <width>280</width>
+    <height>204</height>
    </rect>
   </property>
   <property name="title">
@@ -44,7 +44,14 @@
    <item>
     <widget class="QRadioButton" name="select_parser_scryfall_csv">
      <property name="text">
-      <string>Scryfall deck lists (CSV export)</string>
+      <string>Scryfall.com deck lists (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QRadioButton" name="select_parser_tappedout_csv">
+     <property name="text">
+      <string>Tappedout.com deck list (CSV export)</string>
      </property>
     </widget>
    </item>
@@ -112,12 +119,12 @@ p, li { white-space: pre-wrap; }
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>102</x>
-     <y>220</y>
+     <x>108</x>
+     <y>155</y>
     </hint>
     <hint type="destinationlabel">
-     <x>106</x>
-     <y>255</y>
+     <x>112</x>
+     <y>191</y>
     </hint>
    </hints>
   </connection>
@@ -144,8 +151,8 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
+     <x>26</x>
+     <y>51</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -160,8 +167,8 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
+     <x>26</x>
+     <y>103</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -176,8 +183,8 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
+     <x>26</x>
+     <y>155</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -192,8 +199,8 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
+     <x>26</x>
+     <y>77</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -208,12 +215,28 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>145</x>
-     <y>161</y>
+     <x>151</x>
+     <y>191</y>
     </hint>
     <hint type="destinationlabel">
      <x>145</x>
      <y>114</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_tappedout_csv</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>139</x>
+     <y>119</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>139</x>
+     <y>101</y>
     </hint>
    </hints>
   </connection>

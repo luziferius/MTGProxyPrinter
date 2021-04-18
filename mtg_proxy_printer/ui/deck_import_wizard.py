@@ -143,8 +143,8 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             self.select_parser_mtg_arena.isChecked(),
             self.select_parser_mtg_online.isChecked(),
             self.select_parser_xmage.isChecked(),
-            # self.select_parser_scryfall_csv.isChecked(),  # TODO
-            # self.select_parser_tappedout_csv.isChecked(),  # TODO
+            self.select_parser_scryfall_csv.isChecked(),
+            self.select_parser_tappedout_csv.isChecked(),
         )) or all((
                 self.select_parser_custom_re.isChecked(),
                 self.custom_re_input.hasAcceptableInput()
