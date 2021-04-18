@@ -61,6 +61,7 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
+        self.images_on_disk: typing.Set[typing.Tuple[str, bool]] = set()
         self.queue: queue.SimpleQueue[
             typing.Union[typing.Tuple[Card, int], typing.Tuple[None, bool]]] = queue.SimpleQueue()
         self.download_thread = QThread()
@@ -71,7 +72,7 @@ class ImageDatabase(QObject):
         self.download_worker.card_download_progress.connect(self.card_download_progress)
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.add_card.connect(self.add_card)
-        self.download_thread.started.connect(self.download_worker.process_queue)
+        self.download_thread.started.connect(self.download_worker.fill_known_images_on_disk_then_process_queue)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -113,6 +114,7 @@ class ImageDatabase(QObject):
                 size_bytes = path.stat().st_size
                 path.unlink()
                 removed.append((path, size_bytes))
+                self.images_on_disk.remove((scryfall_id, is_front))
             else:
                 logger.warning(f"Trying to remove image not in the cache. Not present: {scryfall_id=}, {is_front=}")
         logger.info(f"Removed {len(removed)} images from the card cache")
@@ -134,6 +136,14 @@ class ImageDownloader(QObject):
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def fill_known_images_on_disk_then_process_queue(self):
+        logger.info("Reading all image IDs of images stored on disk.")
+        self.image_database.images_on_disk.update(
+            (scryfall_id, is_front)
+            for scryfall_id, is_front, _ in self.get_disk_cache_content()
+        )
+        self.process_queue()
+
     def process_queue(self):
         logger.info("Start processing download queue")
         while self.should_run:
@@ -149,12 +159,14 @@ class ImageDownloader(QObject):
         monitor.total_bytes_processed.connect(self.card_download_progress)
 
     def get_image_synchronous(self, card: Card, count: int = 1):
+        key = card.scryfall_id, card.is_front
         try:
-            pixmap = self.image_database.loaded_images[(card.scryfall_id, card.is_front)]
+            pixmap = self.image_database.loaded_images[key]
         except KeyError:
             logger.debug("Image not in memory, requesting from disk")
             pixmap = self._fetch_image(card)
-            self.image_database.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
+            self.image_database.loaded_images[key] = pixmap
+            self.image_database.images_on_disk.add(key)
             logger.debug("Image loaded")
         card.image_file = pixmap
         self.card_download_finished.emit()
