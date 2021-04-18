@@ -202,20 +202,9 @@ class CardDatabase:
 
     def get_cards_from_data(self, card: CardIdentificationData) -> typing.List[Card]:
         """
-        Called with a unique printing in card and
-        returns the Card object containing the relevant, complete information, except for the image pixmap.
-
-        A unique card may be
-
-        - A card name in the given language (if there were no re-prints or multiple printings in the same set)
-        - A card name and collector number (if all re-prints have different numbers)
-        - A card name and set (if there were no multiple printings in the same set)
-        - Set, language and collector number
-        - A collector number (if that is globally unique, because of some special character.
-          Some online sets have thousands of cards, so the largest of these has a bunch
-          of cards that can be uniquely identified by their large collector number.)
-        - Language (some promo cards are one-of a kind and have a unique language,
-          like a single card in traditional Greek)
+        Called with some card identification data and returns all matching cards.
+        Returns a list with Card objects, each containing complete information, except for the image pixmap.
+        Returns an empty list, if the given data does not match any known card.
         """
         query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front ' \
                 '-- get_cards_from_data()\n' \
