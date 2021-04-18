@@ -72,7 +72,7 @@ class ImageDatabase(QObject):
         self.download_worker.card_download_progress.connect(self.card_download_progress)
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.add_card.connect(self.add_card)
-        self.download_thread.started.connect(self.download_worker.fill_known_images_on_disk_then_process_queue)
+        self.download_thread.started.connect(self.download_worker.scan_disk_image_cache_then_process_queue)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -86,6 +86,19 @@ class ImageDatabase(QObject):
         for card, count in deck.items():
             self.queue.put((card, count))
         self.queue.put((None, False))
+
+    def get_disk_cache_content(self) -> typing.List[CacheContent]:
+        """
+        Returns all entries currently in the hard disk image cache.
+
+        :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
+        """
+        result: typing.List[CacheContent] = []
+        for directory, is_front in ((self.db_path/"front", True), (self.db_path/"back", False)):
+            result += (
+                (path.stem, is_front, path)
+                for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
+        return result
 
     def delete_disk_cache_entries(self, images: typing.Iterable[ImageKey]) -> PathSizeList:
         """
@@ -123,11 +136,11 @@ class ImageDownloader(QObject):
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def fill_known_images_on_disk_then_process_queue(self):
+    def scan_disk_image_cache_then_process_queue(self):
         logger.info("Reading all image IDs of images stored on disk.")
         self.image_database.images_on_disk.update(
             (scryfall_id, is_front)
-            for scryfall_id, is_front, _ in self.get_disk_cache_content()
+            for scryfall_id, is_front, _ in self.image_database.get_disk_cache_content()
         )
         self.process_queue()
 
@@ -144,20 +157,6 @@ class ImageDownloader(QObject):
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
-
-    def get_disk_cache_content(self) -> typing.List[CacheContent]:
-        """
-        Returns all entries currently in the hard disk image cache.
-
-        :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
-        """
-        db_path = self.image_database.db_path
-        result: typing.List[CacheContent] = []
-        for directory, is_front in ((db_path/"front", True), (db_path/"back", False)):
-            result += (
-                (path.stem, is_front, path)
-                for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
-        return result
 
     def get_image_synchronous(self, card: Card, count: int = 1):
         key = card.scryfall_id, card.is_front
