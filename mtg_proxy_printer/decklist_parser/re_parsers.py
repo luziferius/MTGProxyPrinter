@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from collections import Counter
-import pathlib
 import re
 import typing
 
@@ -41,12 +40,11 @@ class GenericRegularExpressionDeckParser(ParserBase):
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
 
-    def parse_deck(self, deck: typing.Union[pathlib.Path, str],
+    def parse_deck(self, deck_list: str,
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
 
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
-        deck_list = deck.read_text() if isinstance(deck, pathlib.Path) else deck
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
         for line in self.line_splitter(deck_list):

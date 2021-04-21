@@ -16,7 +16,6 @@
 import abc
 import collections
 import csv
-import pathlib
 import typing
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
@@ -31,7 +30,7 @@ class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
 
-    def parse_deck(self, deck_list: typing.Union[pathlib.Path, str],
+    def parse_deck(self, deck_list: str,
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
@@ -47,12 +46,8 @@ class BaseCSVParser(ParserBase):
         return deck, unmatched_lines
 
     def _read_lines_from_csv(
-            self, deck_list: typing.Union[pathlib.Path, str]) -> typing.Generator[typing.Dict[str, str], None, None]:
-        if isinstance(deck_list, pathlib.Path):
-            with deck_list.open("r", encoding="utf-8", newline="") as csv_file:
-                yield from csv.DictReader(csv_file, dialect=self.DIALECT_NAME)
-        else:
-            yield from csv.DictReader(deck_list.splitlines(), dialect=self.DIALECT_NAME)
+            self, deck_list: str) -> typing.Generator[typing.Dict[str, str], None, None]:
+        yield from csv.DictReader(deck_list.splitlines(), dialect=self.DIALECT_NAME)
 
     @abc.abstractmethod
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
@@ -94,7 +89,7 @@ class ScryfallCSVParser(BaseCSVParser):
             )
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
-            return cards, guess_printing
+            return cards, bool(card)
 
 
 class TappedOutCSVParser(BaseCSVParser):

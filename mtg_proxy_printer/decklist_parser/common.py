@@ -12,9 +12,8 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-import copy
+
 from abc import abstractmethod
-import pathlib
 import typing
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
@@ -41,7 +40,7 @@ class ParserBase:
             )
 
     @abstractmethod
-    def parse_deck(self, deck: typing.Union[pathlib.Path, str],
+    def parse_deck(self, deck: str,
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
         """
