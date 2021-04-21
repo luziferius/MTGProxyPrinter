@@ -16,7 +16,6 @@
 import pathlib
 
 from PyQt5.QtCore import QFile, QUrl, QObject
-from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import uic
 
@@ -24,6 +23,15 @@ from mtg_proxy_printer.meta_data import PROGRAMNAME
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+__all__ = [
+    "RESOURCE_PATH_PREFIX",
+    "ICON_PATH_PREFIX",
+    "HAS_COMPILED_RESOURCES",
+    "BlockedSignals",
+    "set_url_label",
+    "inherits_from_ui_file_with_name",
+]
+
 
 try:
     import mtg_proxy_printer.ui.compiled_resources

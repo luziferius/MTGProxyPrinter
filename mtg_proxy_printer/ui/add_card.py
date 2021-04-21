@@ -29,6 +29,10 @@ logger = get_logger(__name__)
 del get_logger
 layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
 
+__all__ = [
+    "AddCardWidget",
+]
+
 
 class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/add_card_widget")):
 

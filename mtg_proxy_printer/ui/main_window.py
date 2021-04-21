@@ -40,6 +40,9 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
+__all__ = [
+    "MainWindow",
+]
 
 
 class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):

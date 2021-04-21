@@ -26,6 +26,9 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+__all__ = [
+    "SettingsWindow",
+]
 
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):

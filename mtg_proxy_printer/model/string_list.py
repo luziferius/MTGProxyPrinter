@@ -21,6 +21,10 @@ from PyQt5.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
 StringList = typing.List[str]
 StringDict = typing.Dict[int, str]
 
+__all__ = [
+    "PrettySetListModel",
+]
+
 
 class PrettySetListModel(QAbstractListModel):
 

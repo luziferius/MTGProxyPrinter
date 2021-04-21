@@ -26,6 +26,11 @@ from .common import ParsedDeck, ParserBase
 LineParserResult = typing.Counter[Card]
 CsvLine = typing.Tuple[str, typing.Dict[str, str]]
 
+__all__ = [
+    "ScryfallCSVParser",
+    "TappedOutCSVParser",
+]
+
 
 class BaseCSVParser(ParserBase):
 
@@ -66,7 +71,8 @@ class ScryfallCSVParser(BaseCSVParser):
     class Dialect(csv.Dialect):
         '''
         Specifies the CSV dialect used by Scryfall’s CSV deck export function
-        The parameters were determined by inspecting exports. As a test case, a deck containing "Ach! Hans, Run!" was used.
+        The parameters were determined by inspecting exports.
+        As a test case, a deck containing "Ach! Hans, Run!" was used.
         (Note that the actual card name contains both a comma and the quotation marks.)
         It is exported as """Ach! Hans, Run!""", therefore Scryfall uses the doublequote option.
         '''
@@ -103,7 +109,8 @@ class TappedOutCSVParser(BaseCSVParser):
     class Dialect(csv.Dialect):
         '''
         Specifies the CSV dialect used by TappedOut (http://tappedout.net/).
-        The parameters were determined by inspecting exports. As a test case, a deck containing "Ach! Hans, Run!" was used.
+        The parameters were determined by inspecting exports.
+        As a test case, a deck containing "Ach! Hans, Run!" was used.
         (Note that the actual card name contains both a comma and the quotation marks.)
         It is exported as """Ach! Hans, Run!""", therefore TappedOut uses the doublequote option.
         '''

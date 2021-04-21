@@ -15,6 +15,10 @@
 
 from PyQt5.QtWidgets import QListView
 
+__all__ = [
+    "DocumentView",
+]
+
 
 class DocumentView(QListView):
     pass

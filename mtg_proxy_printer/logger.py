@@ -25,6 +25,11 @@ import mtg_proxy_printer.settings
 root_logger = logging.getLogger(PROGRAMNAME)
 LOG_FORMAT = "%(asctime)s %(levelname)s - %(name)s - %(message)s"
 
+__all__ = [
+    "get_logger",
+    "configure_root_logger",
+]
+
 
 def get_logger(full_module_path: str) -> logging.Logger:
     """

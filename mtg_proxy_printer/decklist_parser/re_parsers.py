@@ -23,6 +23,13 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 MatchType = typing.Dict[str, str]
 
+__all__ = [
+    "GenericRegularExpressionDeckParser",
+    "MTGArenaParser",
+    "MTGOnlineParser",
+    "XMageParser",
+]
+
 
 class GenericRegularExpressionDeckParser(ParserBase):
     """
@@ -34,7 +41,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
         "copies", "language", "set_code", "collector_number", "scryfall_id", "name"
     ))
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str]):
+    def __init__(
+            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str]):
         super(GenericRegularExpressionDeckParser, self).__init__(card_db, image_db)
         self.parser = regular_expression \
             if isinstance(regular_expression, re.Pattern) \

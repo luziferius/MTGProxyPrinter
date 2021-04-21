@@ -34,6 +34,12 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+__all__ = [
+    "CardInfoDownloader",
+    "store_download_settings",
+    "read_from_url",
+]
+
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")

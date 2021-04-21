@@ -31,6 +31,10 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+__all__ = [
+    "CacheCleanupWizard",
+]
+
 
 def format_size(size: float) -> str:
     for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):

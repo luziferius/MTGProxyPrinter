@@ -15,12 +15,10 @@
 
 
 from typing import Iterable, List, Optional
-
 from io import BufferedIOBase
+
 from PyQt5.QtCore import QObject, pyqtSignal
-
 from delegateto import delegate
-
 
 __all__ = [
     "MeteredFile",

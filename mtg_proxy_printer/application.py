@@ -30,6 +30,10 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+__all__ = [
+    "Application",
+]
+
 
 class Application(QApplication):
 
