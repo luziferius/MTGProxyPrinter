@@ -1,5 +1,9 @@
 :: Generate an application bundle using PyInstaller.
-
+IF EXIST "venv" (
+  call venv\Scripts\activate.bat
+) ELSE (
+  call create_development_environment.bat
+)
 :: --windowed suppresses the terminal window.
 pyinstaller  --windowed --name MTGProxyPrinter --additional-hooks-dir pyinstaller_hooks mtg-proxy-printer-runner.py
 
