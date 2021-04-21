@@ -2,8 +2,8 @@
 ENVIRONMENT_NAME="venv"
 
 if [ -e "${ENVIRONMENT_NAME}" ]; then
-  echo "A virtual environment already exists. Doing nothing."
-  exit
+  echo "Removing already existing virtual environment."
+  rm -r "${ENVIRONMENT_NAME}"
 fi
 
 virtualenv -p python3 "${ENVIRONMENT_NAME}"
