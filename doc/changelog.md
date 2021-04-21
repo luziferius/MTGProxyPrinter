@@ -7,12 +7,15 @@
 - Added a "New document" entry to the File menu and the toolbar.
   It closes the currently edited document and creates a new one.
 - The toolbar can now be hidden/shown using an entry in the Settings menu, which can be useful when MTGProxyPrinter is
-  used on very small screens. This setting is saved across application restarts. 
+  used on very small screens. This setting is saved across application restarts.
+- Implemented optional print guessing when importing deck lists. This can increase the hit-rate during import at the
+  expense of some accuracy.
+- When guessing printings, added option to prefer printings with already downloaded images.
 
 ## Changed Features
 
 - Clearing the document when importing a deck list now creates a new document, as if the "New document" button was used.
-  I. e. it also forgets the association with the previously loaded document, if one was loaded from disk before.
+  I.e. it also forgets the association with the previously loaded document, if one was loaded from disk before.
 - Use platform-dependent default keyboard shortcuts for some common menu entries. These adjust to the operating system’s
   default values.
 
@@ -66,7 +69,7 @@
 - Reworded some displayed texts and fixed minor issues in strings.
 - Show an error message if the user tries to load a file that is not a valid document.
 - Show a warning if the loaded document contains unknown entries that were skipped during the loading process.
-- Further optimized the card data import. It should run a bit faster on slow CPUs or really fast internet connections.
+- Optimized the card data import. It should run a bit faster on slow CPUs or really fast internet connections.
 - Fixed potential issues during import when the user re-downloads the card data multiple times in a row.
 - Unified the handling of long-running background operations. All three (loading documents, importing decks and
   downloading card data) now behave in the same way and disable most buttons in the main window during the process
@@ -145,7 +148,7 @@
 
 - Fixed Crash on startup, if the card image cache is not present.
 - Make sure to not install the PyInstaller hooks in the user’s Python `site-packages`, when installing via pip.
-  In previous versions, these files were placed there unintentionally. These don’t do anything outside of PyInstaller
+  In previous versions, these files were placed there unintentionally. These don’t do anything outside PyInstaller
   and only pollute the `site-packages` directory.
 
 
