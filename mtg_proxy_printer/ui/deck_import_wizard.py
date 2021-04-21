@@ -164,7 +164,10 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         elif self.select_parser_scryfall_csv.isChecked():
             return csv_parsers.ScryfallCSVParser(self.card_db, self.image_db)
         elif self.select_parser_tappedout_csv.isChecked():
-            return csv_parsers.TappedOutCSVParser(self.card_db, self.image_db)
+            return csv_parsers.TappedOutCSVParser(
+                self.card_db, self.image_db,
+                self.tappedout_include_maybe_board.isChecked(), self.tappedout_include_acquire_board.isChecked()
+            )
         elif self.select_parser_custom_re.isChecked():
             return re_parsers.GenericRegularExpressionDeckParser(
                 self.card_db, self.image_db, self.field("custom_re")
