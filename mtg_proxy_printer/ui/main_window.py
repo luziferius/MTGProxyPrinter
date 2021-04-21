@@ -243,7 +243,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
-        wizard = DeckImportWizard(self.card_database, parent=self)
+        wizard = DeckImportWizard(self.card_database, self.image_db, parent=self)
         wizard.clear_document.connect(self.document.clear_all_data)
         wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
         wizard.show()

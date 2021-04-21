@@ -14,14 +14,17 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import pathlib
 import re
 import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView
-from mtg_proxy_printer.decklist_parser import re_parsers, common
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Page
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.logger import get_logger
@@ -66,7 +69,26 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
+        self.registerField("print-guessing-enable", self.print_guessing_enable)
+        self.registerField("print-guessing-prefer-already-downloaded", self.print_guessing_prefer_already_downloaded)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def initializePage(self) -> None:
+        super(LoadListPage, self).initializePage()
+        options = mtg_proxy_printer.settings.settings["print-guessing"]
+        self.print_guessing_enable.setChecked(options.getboolean("enable-guessing"))
+        self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded"))
+        parser: common.ParserBase = self.field("selected_parser")
+        if parser.requires_print_guessing:
+            logger.debug("Force-enabling print guessing, because the chosen parser requires it.")
+            self.print_guessing_enable.setChecked(True)
+            self.print_guessing_enable.setEnabled(False)
+
+    def cleanupPage(self):
+        super(LoadListPage, self).cleanupPage()
+        self.print_guessing_enable.setEnabled(True)
+        self.print_guessing_enable.setChecked(False)
+        self.print_guessing_prefer_already_downloaded.setChecked(False)
 
     @pyqtSlot()
     def on_deck_list_browse_button_clicked(self):
@@ -80,11 +102,10 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
             selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file")
-            if selected_file:
+            if selected_file and (file_path := pathlib.Path(selected_file)).is_file():
                 logger.debug("Selected file is valid, loading it from disk, replacing the current deck list")
                 self.deck_list.clear()
-                with open(selected_file, "rt") as opened_file:
-                    self.deck_list.setPlainText(opened_file.read())
+                self.deck_list.setPlainText(file_path.read_text())
 
 
 class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/select_deck_parser_page")):
@@ -98,10 +119,11 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
     # When adding new radio buttons, also add the appropriate connection. Otherwise the “Next” button will stay
     # disabled when the user selects it.
 
-    def __init__(self, card_db: CardDatabase, *args, **kwargs):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(SelectDeckParserPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.card_db = card_db
+        self.image_db = image_db
         self.custom_re_input: QLineEdit
         self.custom_re_input.setToolTip(
             f"Enter a Regular Expression containing at least one supported, named group.\n\n"
@@ -110,7 +132,6 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             f"See the 'What’s this?' (?-Button) help for details."
         )
         self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
-        self.custom_re_input.textChanged.connect(self.isComplete)
         self.complete = False
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self)
@@ -118,32 +139,38 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
 
     @pyqtSlot()
     def isComplete(self) -> bool:
-        result = any((
+        acceptable = any((
             self.select_parser_mtg_arena.isChecked(),
             self.select_parser_mtg_online.isChecked(),
             self.select_parser_xmage.isChecked(),
-            # self.select_parser_scryfall_csv.isChecked(),  # TODO
+            self.select_parser_scryfall_csv.isChecked(),
+            self.select_parser_tappedout_csv.isChecked(),
         )) or all((
                 self.select_parser_custom_re.isChecked(),
                 self.custom_re_input.hasAcceptableInput()
         ))
-        if result != self.complete:
-            self.complete = result
+        if acceptable != self.complete:
+            self.complete = acceptable
             self.completeChanged.emit()
-        return result
+        return acceptable
 
     def get_parser(self):
         if self.select_parser_mtg_arena.isChecked():
-            return re_parsers.MTGArenaParser(self.card_db)
+            return re_parsers.MTGArenaParser(self.card_db, self.image_db)
         elif self.select_parser_mtg_online.isChecked():
-            return re_parsers.MTGOnlineParser(self.card_db)
+            return re_parsers.MTGOnlineParser(self.card_db, self.image_db)
         elif self.select_parser_xmage.isChecked():
-            return re_parsers.XMageParser(self.card_db)
+            return re_parsers.XMageParser(self.card_db, self.image_db)
         elif self.select_parser_scryfall_csv.isChecked():
-            pass
+            return csv_parsers.ScryfallCSVParser(self.card_db, self.image_db)
+        elif self.select_parser_tappedout_csv.isChecked():
+            return csv_parsers.TappedOutCSVParser(
+                self.card_db, self.image_db,
+                self.tappedout_include_maybe_board.isChecked(), self.tappedout_include_acquire_board.isChecked()
+            )
         elif self.select_parser_custom_re.isChecked():
             return re_parsers.GenericRegularExpressionDeckParser(
-                self.card_db, self.field("custom_re")
+                self.card_db, self.image_db, self.field("custom_re")
             )
         raise RuntimeError("Requested parser on invalid page state")
 
@@ -172,7 +199,11 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         super(SummaryPage, self).initializePage()
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
-        parsed_deck, unparsed_lines = parser.parse_deck(self.field("deck_list"))
+        parsed_deck, unparsed_lines = parser.parse_deck(
+            self.field("deck_list"),
+            self.field("print-guessing-enable"),
+            self.field("print-guessing-prefer-already-downloaded")
+        )
         self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
         for card, count in parsed_deck.items():
@@ -188,10 +219,10 @@ class DeckImportWizard(QWizard):
     deck_added = pyqtSignal(collections.Counter)
     clear_document = pyqtSignal()
 
-    def __init__(self, card_db: CardDatabase, *args, **kwargs):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(DeckImportWizard, self).__init__(*args, **kwargs)
         self.card_db = card_db
-        self.addPage(SelectDeckParserPage(card_db, self))
+        self.addPage(SelectDeckParserPage(card_db, image_db, self))
         self.addPage(LoadListPage(self))
         self.addPage(SummaryPage(self))
         self.setWindowIcon(QIcon.fromTheme("document-import"))

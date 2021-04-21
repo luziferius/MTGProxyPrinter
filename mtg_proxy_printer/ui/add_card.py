@@ -185,9 +185,9 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
             languages = [mtg_proxy_printer.settings.settings["images"]["preferred-language"]]
         self.language_model.setStringList(languages)
 
-    def _create_new_card(self) -> mtg_proxy_printer.model.carddb.Card:
-        card = mtg_proxy_printer.model.carddb.Card(
-            self.current_card_name, self.current_set_name, self.current_collector_number, self.current_language
+    def _read_card_data_from_ui(self) -> mtg_proxy_printer.model.carddb.CardIdentificationData:
+        card = mtg_proxy_printer.model.carddb.CardIdentificationData(
+            self.current_language, self.current_card_name, self.current_set_name, self.current_collector_number
         )
         return card
 
@@ -203,12 +203,8 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     def on_ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
-        card = self._create_new_card()
-        try:
-            self.card_database.add_missing_information(card)
-        except RuntimeError:
-            card.is_front = True
-            self.card_database.add_missing_information(card)
+        card_data = self._read_card_data_from_ui()
+        card, = self.card_database.get_cards_from_data(card_data)
         self.copies_input: QSpinBox
         copies = self.copies_input.value()
         self._log_added_card(card, copies)
@@ -216,8 +212,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
         )
-        if add_opposing_faces_enabled and (
-                opposing_face := self.card_database.get_opposing_face(card)) is not None:
+        if add_opposing_faces_enabled and (opposing_face := self.card_database.get_opposing_face(card)) is not None:
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
             self._log_added_card(opposing_face, copies)
@@ -225,7 +220,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
 
     @staticmethod
     def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):
-        logger.debug(f"Adding {copies}× [{card.set_abbr}:{card.collector_number}] {card.name}")
+        logger.debug(f"Adding {copies}× [{card.set.code.upper()}:{card.collector_number}] {card.name}")
 
     @pyqtSlot()
     def reset(self):

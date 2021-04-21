@@ -67,6 +67,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
         self._load_debug_settings(settings)
+        self._load_print_guessing_settings(settings)
         logger.debug("Finished loading settings")
 
     def _load_look_and_feel_settings(self, settings):
@@ -115,6 +116,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             widget.setChecked(section.getboolean(setting))
         self.log_level_combo_box: QComboBox
         self.log_level_combo_box.setCurrentIndex(self.log_level_combo_box.findText(section["log-level"]))
+
+    def _load_print_guessing_settings(self, settings: configparser.ConfigParser):
+        section = settings["print-guessing"]
+        for widget, setting in self._get_print_guessing_checkbox_widgets():
+            widget.setChecked(section.getboolean(setting))
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
@@ -166,6 +172,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         return widgets_with_settings
 
+    def _get_print_guessing_checkbox_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.print_guessing_enable, "enable-guessing"),
+            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+        ]
+        return widgets_with_settings
+
     def reset(self):
         logger.info("User reverts the made changes.")
         self.load_settings(mtg_proxy_printer.settings.settings)
@@ -183,6 +196,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._save_documents_settings()
         self._save_save_path_settings()
         self._save_debug_settings()
+        self._save_print_guessing_settings()
         logger.debug("Settings read from UI widgets, about to write the configuration to disk.")
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
@@ -224,6 +238,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             debug_section[setting] = str(widget.isChecked())
         self.log_level_combo_box: QComboBox
         debug_section["log-level"] = self.log_level_combo_box.currentText()
+
+    def _save_print_guessing_settings(self):
+        section = mtg_proxy_printer.settings.settings["print-guessing"]
+        for widget, setting in self._get_print_guessing_checkbox_widgets():
+            section[setting] = str(widget.isChecked())
 
     def restore_defaults(self):
         logger.info("User resets the configuration to the default settings.")

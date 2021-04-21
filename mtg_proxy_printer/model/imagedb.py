@@ -46,11 +46,19 @@ PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 
 
 class ImageDatabase(QObject):
+    """
+    This class manages the on-disk PNG image cache. It can asynchronously fetch images from disk or from the Scryfall
+    servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
+    """
 
     card_download_starting = pyqtSignal(int)
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
     add_card = pyqtSignal(Card, int)
+    """
+    Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
+    a deck list. It signals if such a long-running process starts or finishes.
+    """
     batch_processing_state_changed = pyqtSignal(bool)
 
     def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
@@ -61,7 +69,9 @@ class ImageDatabase(QObject):
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
-        self.queue: queue.SimpleQueue[typing.Tuple[Card, int]] = queue.SimpleQueue()
+        self.images_on_disk: typing.Set[ImageKey] = set()
+        self.queue: queue.SimpleQueue[
+            typing.Union[typing.Tuple[Card, int], typing.Tuple[None, bool]]] = queue.SimpleQueue()
         self.download_thread = QThread()
         self.download_worker = ImageDownloader(self)
         self.download_worker.moveToThread(self.download_thread)
@@ -70,9 +80,12 @@ class ImageDatabase(QObject):
         self.download_worker.card_download_progress.connect(self.card_download_progress)
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.add_card.connect(self.add_card)
-        self.download_thread.started.connect(self.download_worker.process_queue)
+        self.download_thread.started.connect(self.download_worker.scan_disk_image_cache_then_process_queue)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def filter_already_downloaded(self, possible_matches: typing.List[Card]):
+        return [card for card in possible_matches if (card.scryfall_id, card.is_front) in self.images_on_disk]
 
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
@@ -112,6 +125,7 @@ class ImageDatabase(QObject):
                 size_bytes = path.stat().st_size
                 path.unlink()
                 removed.append((path, size_bytes))
+                self.images_on_disk.remove((scryfall_id, is_front))
             else:
                 logger.warning(f"Trying to remove image not in the cache. Not present: {scryfall_id=}, {is_front=}")
         logger.info(f"Removed {len(removed)} images from the card cache")
@@ -119,11 +133,21 @@ class ImageDatabase(QObject):
 
 
 class ImageDownloader(QObject):
+    """
+    This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
+    a QThread. To perform it’s tasks, it offers multiple Qt Signals that broadcast it’s state changes
+    over thread-safe signal connections.
 
+    It can be used synchronously, if precise, synchronous sequencing of small operations is required.
+    """
     card_download_starting = pyqtSignal(int)
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
     add_card = pyqtSignal(Card, int)
+    """
+    Messages if the instance performs a batch operation when it processes image requests for
+    a deck list. It signals if such a long-running process starts or finishes.
+    """
     batch_processing_state_changed = pyqtSignal(bool)
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
@@ -132,6 +156,14 @@ class ImageDownloader(QObject):
         self.queue = image_db.queue
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def scan_disk_image_cache_then_process_queue(self):
+        logger.info("Reading all image IDs of images stored on disk.")
+        self.image_database.images_on_disk.update(
+            (scryfall_id, is_front)
+            for scryfall_id, is_front, _ in self.image_database.get_disk_cache_content()
+        )
+        self.process_queue()
 
     def process_queue(self):
         logger.info("Start processing download queue")
@@ -142,18 +174,21 @@ class ImageDownloader(QObject):
                 continue
             logger.debug("Received image request, processing it…")
             self.get_image_synchronous(card, count)
+        logger.info("Processing download queue stopped")
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
 
     def get_image_synchronous(self, card: Card, count: int = 1):
+        key: ImageKey = card.scryfall_id, card.is_front
         try:
-            pixmap = self.image_database.loaded_images[(card.scryfall_id, card.is_front)]
+            pixmap = self.image_database.loaded_images[key]
         except KeyError:
             logger.debug("Image not in memory, requesting from disk")
             pixmap = self._fetch_image(card)
-            self.image_database.loaded_images[(card.scryfall_id, card.is_front)] = pixmap
+            self.image_database.loaded_images[key] = pixmap
+            self.image_database.images_on_disk.add(key)
             logger.debug("Image loaded")
         card.image_file = pixmap
         self.card_download_finished.emit()

@@ -75,9 +75,9 @@ class Page(QAbstractTableModel):
                 return card.name
             elif index.column() == 1:
                 if role == Qt.EditRole:
-                    return card.set_abbr
+                    return card.set.code
                 else:
-                    return f"{card.set_name} ({card.set_abbr.upper()})"
+                    return f"{card.set.name} ({card.set.code.upper()})"
             elif index.column() == 2:
                 return card.collector_number
             elif index.column() == 3:
@@ -625,11 +625,33 @@ class DocumentLoader(QObject):
         self.worker.save_path = save_file_path
         self.worker_thread.start()
 
+    @staticmethod
+    def _read_data_from_save_path(save_file_path: pathlib.Path):
+        logger.info("Reading data from save file")
+        with mtg_proxy_printer.sqlite_helpers.open_database(
+                save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
+            if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
+                raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
+
+            if db.execute("PRAGMA user_version").fetchone()[0] == 2:
+                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            else:
+                query = r"""SELECT page, slot, scryfall_id, is_front
+                FROM Card
+                ORDER BY page, slot ASC"""
+            data: typing.List[typing.Tuple[int, int, str, bool]] = [
+                (page, slot, scryfall_id, bool(is_front))
+                for page, slot, scryfall_id, is_front in db.execute(query)
+            ]
+        return data
+
     def on_loading_file_successful(self, file_path: pathlib.Path):
         self.document.file_path = file_path
 
 
 def _migrate_database(db):
-    if (schema_version := db.execute("PRAGMA user_version").fetchone()[0]) == 2:
+    if db.execute("PRAGMA user_version").fetchone()[0] == 2:
         db.execute("ALTER TABLE Card ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
         db.execute(f"PRAGMA user_version = 3")

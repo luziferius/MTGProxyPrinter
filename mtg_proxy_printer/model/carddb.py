@@ -45,23 +45,40 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 
 __all__ = [
+    "CardIdentificationData",
+    "MTGSet",
     "Card",
     "CardDatabase",
     "clear_database",
 ]
 
 
+@dataclasses.dataclass
+class CardIdentificationData:
+    language: OptionalString = None
+    name: OptionalString = None
+    set_code: OptionalString = None
+    collector_number: OptionalString = None
+    scryfall_id: OptionalString = None
+    is_front: typing.Optional[bool] = None
+
+
+@dataclasses.dataclass(frozen=True)
+class MTGSet:
+    code: str
+    name: str
+
+
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
-    name: OptionalString
-    set_abbr: OptionalString
-    collector_number: OptionalString
-    language: str
-    is_front: typing.Optional[bool] = None
-    image_uri: OptionalString = None
-    scryfall_id: OptionalString = None
-    image_file: typing.Optional[QPixmap] = None
-    set_name: OptionalString = None
+    name: str = dataclasses.field(compare=True)
+    set: MTGSet = dataclasses.field(compare=True)
+    collector_number: str = dataclasses.field(compare=True)
+    language: str = dataclasses.field(compare=True)
+    scryfall_id: str = dataclasses.field(compare=True)
+    is_front: bool = dataclasses.field(compare=True)
+    image_uri: str = dataclasses.field(compare=True)
+    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
 
 @delegateto.delegate("db", "commit", "rollback")
@@ -157,7 +174,7 @@ class CardDatabase:
         ]
         return result
 
-    def is_valid_and_unique_card(self, card: Card) -> bool:
+    def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
         """Checks, if the given card data represents a unique card printing"""
         query = 'SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()\n' \
                 'FROM CardFace\n' \
@@ -170,38 +187,27 @@ class CardDatabase:
         if card.name:
             where_clause += 'AND card_name = ?\n'
             parameters.append(card.name)
-        if card.set_abbr:
+        if card.set_code:
             where_clause += 'AND "set" = ?\n'
-            parameters.append(card.set_abbr)
+            parameters.append(card.set_code)
         if card.collector_number:
             where_clause += 'AND collector_number = ?\n'
             parameters.append(card.collector_number)
+        if card.is_front is not None:
+            where_clause += 'AND is_front = ?\n'
+            parameters.append(card.is_front)
         query += where_clause
-        result, = self.db.execute(
-            query,
-            parameters
-        ).fetchone()
+        result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def add_missing_information(self, card: Card):
+    def get_cards_from_data(self, card: CardIdentificationData) -> typing.List[Card]:
         """
-        Called with a unique printing in card and
-        fills in all missing information by modifying the Card object in-place.
-
-        A unique card may be
-
-        - A card name in the given language (if there were no re-prints or multiple printings in the same set)
-        - A card name and collector number (if all re-prints have different numbers)
-        - A card name and set (if there were no multiple printings in the same set)
-        - Set, language and collector number
-        - A collector number (if that is globally unique, because of some special character.
-          Some online sets have thousands of cards, so the largest of these has a bunch
-          of cards that can be uniquely identified by their large collector number.)
-        - Language (some promo cards are one-of a kind and have a unique language,
-          like a single card in traditional Greek)
+        Called with some card identification data and returns all matching cards.
+        Returns a list with Card objects, each containing complete information, except for the image pixmap.
+        Returns an empty list, if the given data does not match any known card.
         """
         query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front ' \
-                '-- add_missing_information()\n' \
+                '-- get_cards_from_data()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
@@ -212,29 +218,34 @@ class CardDatabase:
         if card.name:
             where_clause += 'AND card_name = ?\n'
             parameters.append(card.name)
-        if card.set_abbr:
+        if card.set_code:
             where_clause += 'AND "set" = ?\n'
-            parameters.append(card.set_abbr)
+            parameters.append(card.set_code)
         if card.collector_number:
             where_clause += 'AND collector_number = ?\n'
             parameters.append(card.collector_number)
         if card.is_front is not None:
             where_clause += 'AND is_front = ?\n'
             parameters.append(card.is_front)
+        if card.scryfall_id:
+            where_clause += 'AND scryfall_id = ?\n'
+            parameters.append(card.scryfall_id)
         query += where_clause
         cursor = self.db.execute(
             query,
             parameters
         )
-        result = cursor.fetchone()
-        if not result or cursor.fetchone():
-            raise RuntimeError(f"CardDatabase.add_missing_information() called on non-unique card information: {card}")
-        card.name, card.set_abbr, card.set_name, card.collector_number, \
-            card.image_uri, card.scryfall_id, card.is_front = result
+        result = [
+            Card(
+                name, MTGSet(set_code, set_name), collector_number, card.language, scryfall_id, is_front, image_uri
+            )
+            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front in cursor
+        ]
+        return result
 
     def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
         """
-        Finds all collector numbers matching the given card. The result contains multiple elements, if the card
+        Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
         had multiple variants with distinct collector numbers in the given set.
 
         :param card_name: Card name, matched exactly
@@ -284,7 +295,7 @@ class CardDatabase:
 
     def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
         query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ? and is_front = ?)'
-        result, = self.db.execute(query, (scryfall_id, is_front)).fetchone()
+        result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
         return bool(result)
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> typing.Optional[Card]:
@@ -296,7 +307,9 @@ class CardDatabase:
             return None
         else:
             name, set_abbr, set_name, collector_number, language, image_uri = result
-            return Card(name, set_abbr, collector_number, language, is_front, image_uri, scryfall_id, set_name=set_name)
+            return Card(
+                name, MTGSet(set_abbr, set_name), collector_number, language, scryfall_id, is_front, image_uri
+            )
 
     def get_opposing_face(self, card) -> typing.Optional[Card]:
         """
@@ -320,7 +333,7 @@ class CardDatabase:
                 'SELECT *\n' \
                 'FROM PrintLanguage\n' \
                 'WHERE "language" = ?)'
-        return bool(self.db.execute(query, (language,)).fetchone()[0])
+        return bool(self._read_optional_scalar_from_db(query, (language,)))
 
     def translate_card_name(self, name: str, target_language: str, source_language: str = None) -> OptionalString:
         """
@@ -365,11 +378,8 @@ class CardDatabase:
               AND is_front = ?""")
         cards_not_used_since = []
         for index, (scryfall_id, is_front) in enumerate(keys):
-            result = self.db.execute(
-                query,
-                (date.isoformat(), scryfall_id, is_front)
-            ).fetchone()
-            if result is None or result[0]:
+            result = self._read_optional_scalar_from_db(query, (date.isoformat(), scryfall_id, is_front))
+            if result is None or result:
                 cards_not_used_since.append(index)
         return cards_not_used_since
 
@@ -386,6 +396,6 @@ class CardDatabase:
             ) AS hit""")
         result = []
         for index, (scryfall_id, is_front) in enumerate(keys):
-            if self.db.execute(query, (scryfall_id, is_front, count)).fetchone()[0]:
+            if self._read_optional_scalar_from_db(query, (scryfall_id, is_front, count)):
                 result.append(index)
         return result

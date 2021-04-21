@@ -90,6 +90,10 @@ DEFAULT_SETTINGS["debug"] = {
     "log-level": "INFO"
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
+DEFAULT_SETTINGS["print-guessing"] = {
+    "enable-guessing": "False",
+    "prefer-already-downloaded": "True",
+}
 
 
 def read_settings_from_file():
@@ -101,7 +105,7 @@ def read_settings_from_file():
         settings.read(config_file_path)
         read_sections = set(settings.sections())
         known_sections = set(DEFAULT_SETTINGS.sections())
-        # Synchronise sections
+        # Synchronize sections
         for outdated in read_sections - known_sections:
             settings.remove_section(outdated)
         for new in sorted(known_sections - read_sections):
@@ -131,6 +135,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_documents_section(read_settings["documents"])
     _validate_gui_section(read_settings["gui"])
     _validate_debug_section(read_settings["debug"])
+    _validate_print_guessing_section(read_settings["print-guessing"])
 
 
 def _validate_download_section(section: configparser.SectionProxy):
@@ -199,6 +204,12 @@ def _validate_debug_section(section: configparser.SectionProxy):
     _validate_boolean(section, defaults, "cutelog-integration")
     _validate_boolean(section, defaults, "write-log-file")
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
+
+
+def _validate_print_guessing_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["print-guessing"]
+    for key in section.keys():
+        _validate_boolean(section, defaults, key)
 
 
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
