@@ -1,6 +1,6 @@
 # Changelog
 
-# Version \<next> (in development)
+# Version 0.10.0 (2021-04-21) <a name="v0_10_0"></a>
 
 ## Implemented features
 
