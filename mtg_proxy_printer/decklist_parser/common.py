@@ -62,10 +62,10 @@ class ParserBase:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:
             card_data.name = card_data.name.strip()
-        if "//" in card_data.name:
-            # If this is a split card, try to identify one half
-            card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
-            logger.debug(f"Card seems to be a split card. Using this part of the name: {card_data.name}")
+            if "//" in card_data.name:
+                # If this is a split card, try to identify one half
+                card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
+                logger.debug(f"Card seems to be a split card. Using this part of the name: {card_data.name}")
         if self.card_db.is_valid_and_unique_card(card_data):
             logger.debug("Card is uniquely identified after post-processing the name")
             return self.card_db.get_cards_from_data(card_data)[0]

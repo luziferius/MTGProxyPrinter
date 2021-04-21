@@ -23,7 +23,8 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 from .common import ParsedDeck, ParserBase
 
-LineParserResult = typing.Tuple[typing.Counter[Card], bool]
+LineParserResult = typing.Counter[Card]
+CsvLine = typing.Tuple[str, typing.Dict[str, str]]
 
 
 class BaseCSVParser(ParserBase):
@@ -36,22 +37,28 @@ class BaseCSVParser(ParserBase):
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
         deck = collections.Counter()
         unmatched_lines = []
-        for line in self._read_lines_from_csv(deck_list):
-            cards, should_be_success = self.parse_cards_from_line(line, print_guessing)
-            if cards and should_be_success:
+        for source, line in self._read_lines_from_csv(deck_list):
+            if self.should_skip_entry(line):
+                continue
+            cards = self.parse_cards_from_line(line, print_guessing)
+            if cards:
                 deck.update(cards)
-            elif not cards and should_be_success:
-                unmatched_lines.append(str(line))
-
+            else:
+                unmatched_lines.append(source)
         return deck, unmatched_lines
 
     def _read_lines_from_csv(
-            self, deck_list: str) -> typing.Generator[typing.Dict[str, str], None, None]:
-        yield from csv.DictReader(deck_list.splitlines(), dialect=self.DIALECT_NAME)
+            self, deck_list: str) -> typing.Generator[CsvLine, None, None]:
+        lines = deck_list.splitlines()
+        # Skip the header line when zipping the original lines and the parsed result.
+        yield from zip(lines[1:], csv.DictReader(lines, dialect=self.DIALECT_NAME))
 
     @abc.abstractmethod
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         pass
+
+    def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
+        return False
 
 
 class ScryfallCSVParser(BaseCSVParser):
@@ -79,7 +86,6 @@ class ScryfallCSVParser(BaseCSVParser):
         count = int(line["count"])
         if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, True)) is not None:
             self._add_card_to_deck(cards, card, count)
-            return cards, True
         else:
             language = line["lang"]
             english_name = line["name"]
@@ -89,7 +95,7 @@ class ScryfallCSVParser(BaseCSVParser):
             )
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
-            return cards, bool(card)
+        return cards
 
 
 class TappedOutCSVParser(BaseCSVParser):
@@ -118,11 +124,13 @@ class TappedOutCSVParser(BaseCSVParser):
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         cards = collections.Counter()
-        if self.should_skip_entry(line):
-            return cards, False
         language = self._read_language(line)
         english_name = line["Name"]
         card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+        if english_name and not card_name:
+            # Unable to translate card. Missing localized card data? Defaulting to English
+            card_name = english_name
+            language = "en"
         set_code = line["Printing"].lower()  # TappedOut uses upper case set codes, so convert to lower case
         count = int(line["Qty"])  # Quantity (Qty) contains the number of copies
         # The current CSV format (2021-02) does not include the collector number, so no way to identify special
@@ -132,12 +140,9 @@ class TappedOutCSVParser(BaseCSVParser):
         )
         if guess_printing and (card := self.guess_printing(card_data)) is not None:
             self._add_card_to_deck(cards, card, count)
-            return cards, True
         elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
             self._add_card_to_deck(cards, result[0], count)
-            return cards, True
-        else:
-            return cards, False
+        return cards
 
     def _read_language(self, line: typing.Dict[str, str]):
         try:
@@ -146,6 +151,8 @@ class TappedOutCSVParser(BaseCSVParser):
             # TappedOut fixed the typo in the CSV header in December 2019.
             # Older (or previously compatible) exports may still have the typo in the header line.
             language = line["Languange"]  # noqa
+        if language:
+            language = language.lower()
         if not language or not self.card_db.is_known_language(language):
             language = "en"
         return language
