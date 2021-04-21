@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>280</width>
-    <height>204</height>
+    <width>390</width>
+    <height>260</height>
    </rect>
   </property>
   <property name="title">
@@ -16,59 +16,43 @@
   <property name="subTitle">
    <string>Select which kind of deck list you want to import.</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QRadioButton" name="select_parser_mtg_arena">
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="5" column="2">
+    <widget class="QCheckBox" name="tappedout_include_acquire_board">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="toolTip">
-      <string>Magic Arena and exports from compatible websites, like moxfield.com</string>
+      <string>This is a Tappedout-specific section of the deck.
+It may contain the decklist author’s buylist or anything else.</string>
      </property>
      <property name="text">
-      <string>MTG Arena</string>
+      <string>Include “Acquire-Board”</string>
      </property>
     </widget>
    </item>
-   <item>
-    <widget class="QRadioButton" name="select_parser_mtg_online">
-     <property name="text">
-      <string>Magic Online</string>
+   <item row="5" column="1">
+    <widget class="QCheckBox" name="tappedout_include_maybe_board">
+     <property name="enabled">
+      <bool>false</bool>
      </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="select_parser_xmage">
-     <property name="text">
-      <string>XMage</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="select_parser_scryfall_csv">
-     <property name="text">
-      <string>Scryfall.com deck lists (CSV export)</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="select_parser_tappedout_csv">
-     <property name="text">
-      <string>Tappedout.com deck list (CSV export)</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QRadioButton" name="select_parser_custom_re">
      <property name="toolTip">
-      <string>Specify a custom regular expression to parse each deck list line in the input field below</string>
+      <string>This is a Tappedout-specific section of the deck.
+It may contain cards that the decklist creator considers for inclusion, based on the meta
+or any other preference, like card price.</string>
      </property>
      <property name="text">
-      <string>Custom regular expression based parser:</string>
+      <string>Include “Maybe-Board”</string>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="8" column="1" colspan="2">
     <widget class="QLineEdit" name="custom_re_input">
      <property name="enabled">
       <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>Use this regular expression to parse the deck list file. See the context help (?-Button) for more detailes.</string>
      </property>
      <property name="whatsThis">
       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -95,7 +79,105 @@ p, li { white-space: pre-wrap; }
      </property>
     </widget>
    </item>
-   <item>
+   <item row="5" column="0">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Maximum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="4" column="0" colspan="3">
+    <widget class="QRadioButton" name="select_parser_tappedout_csv">
+     <property name="toolTip">
+      <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
+     </property>
+     <property name="text">
+      <string>Tappedout.com deck list (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="3">
+    <widget class="QRadioButton" name="select_parser_scryfall_csv">
+     <property name="toolTip">
+      <string>CSV exports from Scryfall’s own deck builder.
+Gives accurate results, unless the imported deck list contains ignored items
+matching a configured download filter.</string>
+     </property>
+     <property name="text">
+      <string>Scryfall.com deck lists (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="3">
+    <widget class="QRadioButton" name="select_parser_xmage">
+     <property name="toolTip">
+      <string>Decklist files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give the best results.</string>
+     </property>
+     <property name="text">
+      <string>XMage</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="3">
+    <widget class="QRadioButton" name="select_parser_mtg_online">
+     <property name="toolTip">
+      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
+     </property>
+     <property name="text">
+      <string>Magic Online</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="3">
+    <widget class="QRadioButton" name="select_parser_mtg_arena">
+     <property name="toolTip">
+      <string>Magic Arena and exports from compatible websites, like moxfield.com
+Note that this option is not limited to cards in Standard/Historic,
+as the format works for any card.</string>
+     </property>
+     <property name="text">
+      <string>MTG Arena</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="3">
+    <widget class="QRadioButton" name="select_parser_custom_re">
+     <property name="toolTip">
+      <string>Specify a custom regular expression to parse each deck list line in the input field below</string>
+     </property>
+     <property name="text">
+      <string>Custom regular expression based parser:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <spacer name="horizontalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Maximum</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="9" column="0" colspan="3">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -119,12 +201,12 @@ p, li { white-space: pre-wrap; }
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>108</x>
-     <y>155</y>
+     <x>114</x>
+     <y>195</y>
     </hint>
     <hint type="destinationlabel">
-     <x>112</x>
-     <y>191</y>
+     <x>144</x>
+     <y>233</y>
     </hint>
    </hints>
   </connection>
@@ -183,8 +265,8 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>26</x>
-     <y>155</y>
+     <x>32</x>
+     <y>195</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -215,8 +297,8 @@ p, li { white-space: pre-wrap; }
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>151</x>
-     <y>191</y>
+     <x>183</x>
+     <y>233</y>
     </hint>
     <hint type="destinationlabel">
      <x>145</x>
@@ -237,6 +319,38 @@ p, li { white-space: pre-wrap; }
     <hint type="destinationlabel">
      <x>139</x>
      <y>101</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_tappedout_csv</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tappedout_include_maybe_board</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>86</x>
+     <y>136</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>88</x>
+     <y>154</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_tappedout_csv</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>tappedout_include_acquire_board</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>271</x>
+     <y>136</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>276</x>
+     <y>157</y>
     </hint>
    </hints>
   </connection>
