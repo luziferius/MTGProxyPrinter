@@ -129,6 +129,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.progress_bar.hide)
         downloader.working_state_changed.connect(self.loading_state_changed)
+        downloader.network_error_occurred.connect(self.on_network_error_occurred)
         return downloader
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
@@ -274,6 +275,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             return
         dialog = SavePDFDialog(self, self.document)
         dialog.exec_()
+
+    def on_network_error_occurred(self, message: str):
+        QMessageBox.warning(
+            self, "Network error",
+            f"Operation failed, because a network error occurred.\n"
+            f"Check your internet connection. Reported error message:\n{message}",
+            QMessageBox.Ok, QMessageBox.Ok)
+        self.loading_state_changed.emit(False)
 
     def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
