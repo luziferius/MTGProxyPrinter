@@ -157,6 +157,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
+        image_db.network_error_occurred.connect(self.on_network_error_occurred)
         return image_db
 
     def _create_progress_bar(self):
