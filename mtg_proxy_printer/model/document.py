@@ -16,6 +16,7 @@
 import collections
 import itertools
 import pathlib
+import socket
 import sqlite3
 import typing
 import urllib.error
@@ -558,9 +559,9 @@ class DocumentLoader(QObject):
                 )
                 self.network_errors_during_load.clear()
 
-        def on_network_error_occurred(self, card: Card, error: urllib.error.URLError):
+        def on_network_error_occurred(self, card: Card, error: str):
             card.image_file = self.image_db.blank_image
-            self.network_errors_during_load[str(error.reason)] += 1
+            self.network_errors_during_load[error] += 1
 
         def load_document(self):
             unknown_ids = 0
@@ -595,8 +596,9 @@ class DocumentLoader(QObject):
                 try:
                     self.image_loader.get_image_synchronous(card)
                 except urllib.error.URLError as e:
-                    self.on_network_error_occurred(card, e)
-
+                    self.on_network_error_occurred(card, str(e.reason))
+                except socket.timeout as e:
+                    self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
                 self.add_card.emit(card)
             self.data.clear()
             return unknown_ids

@@ -17,6 +17,7 @@ import queue
 import itertools
 import pathlib
 import shutil
+import socket
 import string
 import typing
 import urllib.error
@@ -181,9 +182,13 @@ class ImageDownloader(QObject):
 
     def process_queue(self):
         logger.info("Start processing download queue")
+        last_error_msg = ""
         while self.should_run:
             card, count = self.queue.get()
             if card is None:
+                if not count and last_error_msg:
+                    self.network_error_occurred.emit(last_error_msg)
+                    last_error_msg = ""
                 self.batch_processing_state = count
                 self.batch_processing_state_changed.emit(count)
                 continue
@@ -191,17 +196,22 @@ class ImageDownloader(QObject):
             try:
                 self.get_image_synchronous(card, count)
             except urllib.error.URLError as e:
-                self.network_error_occurred.emit(str(e.reason))
-                if self.batch_processing_state:
-                    self._drain_queue_in_error_state()
+                last_error_msg = self._handle_network_error_during_download(card, str(e.reason))
+            except socket.timeout as e:
+                last_error_msg = self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
+            finally:
+                self.card_download_finished.emit()
+                self.add_card.emit(card, count)
+
         logger.info("Processing download queue stopped")
 
-    def _drain_queue_in_error_state(self):
-        card, count = object(), False
-        while card is not None:
-            card, count = self.queue.get()
-        self.batch_processing_state = count
-        self.batch_processing_state_changed.emit(count)
+    def _handle_network_error_during_download(self, card, reason_str):
+        card.image_file = self.image_database.blank_image
+        logger.warning(
+            f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
+        if not self.batch_processing_state:
+            self.network_error_occurred.emit(reason_str)
+        return reason_str
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
@@ -218,8 +228,6 @@ class ImageDownloader(QObject):
             self.image_database.images_on_disk.add(key)
             logger.debug("Image loaded")
         card.image_file = pixmap
-        self.card_download_finished.emit()
-        self.add_card.emit(card, count)
 
     def _fetch_image(self, card: Card) -> QPixmap:
         cache_file_path = pathlib.Path(

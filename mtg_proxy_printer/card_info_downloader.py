@@ -20,6 +20,7 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import socket
 import typing
 import urllib.error
 import urllib.request
@@ -48,6 +49,10 @@ looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 supported_encodings = ("gzip", "identity")
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
+
+# Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
+# is in progress
+socket.setdefaulttimeout(5)
 
 
 class CardInfoDownloader(QObject):
@@ -108,6 +113,9 @@ class CardInfoDownloadWorker(QObject):
             self.populate_database(data)
         except urllib.error.URLError as e:
             self.network_error_occurred.emit(str(e.reason))
+            self.model.db.rollback()
+        except socket.timeout as e:
+            self.network_error_occurred.emit(f"Reading from socket failed: {e}")
             self.model.db.rollback()
         else:
             self.download_finished.emit()
@@ -239,7 +247,6 @@ class CardInfoDownloadWorker(QObject):
         _insert_card.cache_clear()
         _insert_face_name.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
-
 
 
 def store_download_settings(db):
