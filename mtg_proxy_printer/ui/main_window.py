@@ -107,6 +107,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
+        document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)

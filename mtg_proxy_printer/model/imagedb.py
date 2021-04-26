@@ -21,8 +21,8 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize
+from PyQt5.QtGui import QPixmap, QColor
 
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.metered_file
@@ -44,6 +44,7 @@ __all__ = [
 ImageKey = typing.Tuple[str, bool]
 CacheContent = typing.Tuple[str, bool, pathlib.Path]
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
+IMAGE_SIZE = QSize(745, 1040)
 
 
 class ImageDatabase(QObject):
@@ -67,6 +68,7 @@ class ImageDatabase(QObject):
         super(ImageDatabase, self).__init__(*args, **kwargs)
         self.db_path = db_path
         _migrate_database(db_path)
+        self._blank_image = QPixmap()
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
@@ -86,6 +88,13 @@ class ImageDatabase(QObject):
         self.download_thread.started.connect(self.download_worker.scan_disk_image_cache_then_process_queue)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @property
+    def blank_image(self):
+        if self._blank_image.isNull():
+            self._blank_image = QPixmap(IMAGE_SIZE)
+            self._blank_image.fill(QColor("white"))
+        return self._blank_image
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]):
         return [card for card in possible_matches if (card.scryfall_id, card.is_front) in self.images_on_disk]
