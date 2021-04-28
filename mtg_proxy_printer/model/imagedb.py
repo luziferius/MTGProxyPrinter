@@ -69,7 +69,8 @@ class ImageDatabase(QObject):
         super(ImageDatabase, self).__init__(*args, **kwargs)
         self.db_path = db_path
         _migrate_database(db_path)
-        self._blank_image = QPixmap()
+        self._blank_image = QPixmap(IMAGE_SIZE)
+        self._blank_image.fill(QColor("white"))
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
@@ -92,9 +93,6 @@ class ImageDatabase(QObject):
 
     @property
     def blank_image(self):
-        if self._blank_image.isNull():
-            self._blank_image = QPixmap(IMAGE_SIZE)
-            self._blank_image.fill(QColor("white"))
         return self._blank_image
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]):

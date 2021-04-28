@@ -185,6 +185,7 @@ class Document(QAbstractListModel):
         self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
         self.card_db = card_db
+        self.image_db = image_db
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.add_page()
@@ -489,6 +490,25 @@ class Document(QAbstractListModel):
             data
         )
         self.card_db.commit()
+
+    def has_missing_images(self) -> bool:
+        try:
+            next(self.get_missing_image_cards())
+        except StopIteration:
+            return False
+        else:
+            return True
+
+    def missing_image_count(self) -> int:
+        return sum(1 for _ in self.get_missing_image_cards())
+
+    def get_missing_image_cards(self):
+        """Returns an iterable with all cards that have missing images"""
+        blank = self.image_db.blank_image
+        return filter(
+            lambda card: card.image_file is blank,
+            set(itertools.chain.from_iterable(self.pages))
+        )
 
 
 class DocumentLoader(QObject):
