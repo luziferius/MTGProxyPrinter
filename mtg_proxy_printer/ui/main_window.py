@@ -107,6 +107,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
+        document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)
@@ -129,6 +130,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.progress_bar.hide)
         downloader.working_state_changed.connect(self.loading_state_changed)
+        downloader.network_error_occurred.connect(self.on_network_error_occurred)
         return downloader
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
@@ -156,6 +158,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
+        image_db.network_error_occurred.connect(self.on_network_error_occurred)
         return image_db
 
     def _create_progress_bar(self):
@@ -274,6 +277,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             return
         dialog = SavePDFDialog(self, self.document)
         dialog.exec_()
+
+    def on_network_error_occurred(self, message: str):
+        QMessageBox.warning(
+            self, "Network error",
+            f"Operation failed, because a network error occurred.\n"
+            f"Check your internet connection. Reported error message:\n{message}",
+            QMessageBox.Ok, QMessageBox.Ok)
+        self.loading_state_changed.emit(False)
 
     def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
         if savable_pages := self.document.compute_pages_saved_by_compacting():

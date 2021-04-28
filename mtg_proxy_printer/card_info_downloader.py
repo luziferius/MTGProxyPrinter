@@ -20,7 +20,9 @@ import os
 from pathlib import Path
 import re
 import sqlite3
+import socket
 import typing
+import urllib.error
 import urllib.request
 import http.client
 
@@ -48,12 +50,17 @@ supported_encodings = ("gzip", "identity")
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
+# Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
+# is in progress
+socket.setdefaulttimeout(5)
+
 
 class CardInfoDownloader(QObject):
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = pyqtSignal(bool)
+    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -68,6 +75,7 @@ class CardInfoDownloader(QObject):
         self.download_worker.download_finished.connect(self.download_finished)
         self.download_worker.download_finished.connect(self.worker_thread.quit)
         self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
+        self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.worker_thread.started.connect(self.download_worker.download_card_data)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -87,6 +95,7 @@ class CardInfoDownloadWorker(QObject):
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
+    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -98,8 +107,18 @@ class CardInfoDownloadWorker(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def download_card_data(self, url_or_path: typing.Union[Path, str] = None):
-        data = self.read_json_card_data(url_or_path)
-        self.populate_database(data)
+        try:
+            url = url_or_path or self.get_scryfall_bulk_card_data_url(self.requested_item)
+            data = self.read_json_card_data(url)
+            self.populate_database(data)
+        except urllib.error.URLError as e:
+            self.network_error_occurred.emit(str(e.reason))
+            self.model.db.rollback()
+        except socket.timeout as e:
+            self.network_error_occurred.emit(f"Reading from socket failed: {e}")
+            self.model.db.rollback()
+        else:
+            self.download_finished.emit()
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.total_bytes_processed.connect(self.download_progress)
@@ -140,7 +159,7 @@ class CardInfoDownloadWorker(QObject):
         with source, monitor:
             yield from self._read_json_card_data_from_open_file(source)
 
-    def read_json_card_data(self, url_or_path: typing.Union[Path, str] = None):
+    def read_json_card_data(self, url_or_path: typing.Union[Path, str]):
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function can take a file path to a locally stored json document. Mainly for testing purposes.
@@ -150,8 +169,6 @@ class CardInfoDownloadWorker(QObject):
         So use this iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
-        if url_or_path is None:
-            url_or_path = self.get_scryfall_bulk_card_data_url(self.requested_item)
         if isinstance(url_or_path, Path):
             file_size = url_or_path.stat().st_size
             raw_file = url_or_path.open("rb")
@@ -230,7 +247,6 @@ class CardInfoDownloadWorker(QObject):
         _insert_card.cache_clear()
         _insert_face_name.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
-        self.download_finished.emit()
 
 
 def store_download_settings(db):
