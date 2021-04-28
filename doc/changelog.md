@@ -1,5 +1,15 @@
 # Changelog
 
+# Version \<next> (in development)
+
+## Fixed issues
+
+- The application now handles offline operation and network outages during download processes.
+  - Shows a message box whenever a download fails
+  - The card database will revert to the last state, if downloading fresh card data fails.
+  - When downloading card images fails, the card will be added to the document using a blank placeholder.
+    The user can save the document and load it the next time network access is available to fetch the missing images.
+
 # Version 0.10.0 (2021-04-21) <a name="v0_10_0"></a>
 
 ## Implemented features
