@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Optional, BinaryIO, Union
 from io import BufferedIOBase
 
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -23,6 +23,8 @@ from delegateto import delegate
 __all__ = [
     "MeteredFile",
 ]
+
+WrappedIoType = Union[BufferedIOBase, BinaryIO]
 
 
 @delegate(
@@ -37,7 +39,7 @@ class MeteredFile(QObject):
     total_bytes_processed = pyqtSignal(int)
     io_end = pyqtSignal()
 
-    def __init__(self, file: BufferedIOBase, expected_size_bytes: int = 0, parent: QObject = None):
+    def __init__(self, file: WrappedIoType, expected_size_bytes: int = 0, parent: QObject = None):
         super(MeteredFile, self).__init__(parent)
         self.file = file
         self._total_bytes_processed = 0
