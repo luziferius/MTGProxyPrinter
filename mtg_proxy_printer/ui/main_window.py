@@ -57,7 +57,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
         self.setupUi(self)
-        self.about_dialog = AboutMTGProxyPrinterDialog(self)
+        self.about_dialog = self._create_about_dialog()
         self.progress_bar = self._create_progress_bar()
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
         self.image_db = self._create_image_database()
@@ -83,6 +83,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_about_dialog(self) -> AboutMTGProxyPrinterDialog:
+        about_dialog = AboutMTGProxyPrinterDialog(self)
+        self.action_show_about_dialog.triggered.connect(about_dialog.show_about)
+        self.action_show_changelog.triggered.connect(about_dialog.show_changelog)
+        return about_dialog
 
     def _setup_platform_dependent_default_shortcuts(self):
         actions_with_shortcuts: typing.List[typing.Tuple[QAction, QKeySequence.StandardKey]] = [
@@ -370,10 +376,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
             self._select_first_page()
-
-    @pyqtSlot()
-    def on_action_show_about_dialog_triggered(self):
-        self.about_dialog.show()
 
     def on_document_loading_failed(self, failed_path: pathlib.Path):
         QMessageBox.critical(
