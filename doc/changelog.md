@@ -2,6 +2,11 @@
 
 # Version \<next> (in development)
 
+## Implemented features
+
+- Integrated the changelog into the About dialog. The user can access the changelog from within the application.
+- Automatically show the changelog once after each application update.
+
 ## Fixed issues
 
 - The application now handles offline operation and network outages during download processes.
