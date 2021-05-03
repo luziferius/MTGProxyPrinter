@@ -17,12 +17,13 @@ import queue
 import itertools
 import pathlib
 import shutil
+import socket
 import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize
+from PyQt5.QtGui import QPixmap, QColor
 
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.metered_file
@@ -44,6 +45,7 @@ __all__ = [
 ImageKey = typing.Tuple[str, bool]
 CacheContent = typing.Tuple[str, bool, pathlib.Path]
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
+IMAGE_SIZE = QSize(745, 1040)
 
 
 class ImageDatabase(QObject):
@@ -67,6 +69,7 @@ class ImageDatabase(QObject):
         super(ImageDatabase, self).__init__(*args, **kwargs)
         self.db_path = db_path
         _migrate_database(db_path)
+        self._blank_image = QPixmap()
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
@@ -86,6 +89,13 @@ class ImageDatabase(QObject):
         self.download_thread.started.connect(self.download_worker.scan_disk_image_cache_then_process_queue)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @property
+    def blank_image(self):
+        if self._blank_image.isNull():
+            self._blank_image = QPixmap(IMAGE_SIZE)
+            self._blank_image.fill(QColor("white"))
+        return self._blank_image
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]):
         return [card for card in possible_matches if (card.scryfall_id, card.is_front) in self.images_on_disk]
@@ -172,9 +182,13 @@ class ImageDownloader(QObject):
 
     def process_queue(self):
         logger.info("Start processing download queue")
+        last_error_msg = ""
         while self.should_run:
             card, count = self.queue.get()
             if card is None:
+                if not count and last_error_msg:
+                    self.network_error_occurred.emit(last_error_msg)
+                    last_error_msg = ""
                 self.batch_processing_state = count
                 self.batch_processing_state_changed.emit(count)
                 continue
@@ -182,17 +196,22 @@ class ImageDownloader(QObject):
             try:
                 self.get_image_synchronous(card, count)
             except urllib.error.URLError as e:
-                self.network_error_occurred.emit(str(e.reason))
-                if self.batch_processing_state:
-                    self._drain_queue_in_error_state()
+                last_error_msg = self._handle_network_error_during_download(card, str(e.reason))
+            except socket.timeout as e:
+                last_error_msg = self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
+            finally:
+                self.card_download_finished.emit()
+                self.add_card.emit(card, count)
+
         logger.info("Processing download queue stopped")
 
-    def _drain_queue_in_error_state(self):
-        card, count = object(), False
-        while card is not None:
-            card, count = self.queue.get()
-        self.batch_processing_state = count
-        self.batch_processing_state_changed.emit(count)
+    def _handle_network_error_during_download(self, card, reason_str):
+        card.image_file = self.image_database.blank_image
+        logger.warning(
+            f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
+        if not self.batch_processing_state:
+            self.network_error_occurred.emit(reason_str)
+        return reason_str
 
     def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
         monitor.io_begin.connect(self.card_download_starting)
@@ -209,8 +228,6 @@ class ImageDownloader(QObject):
             self.image_database.images_on_disk.add(key)
             logger.debug("Image loaded")
         card.image_file = pixmap
-        self.card_download_finished.emit()
-        self.add_card.emit(card, count)
 
     def _fetch_image(self, card: Card) -> QPixmap:
         cache_file_path = pathlib.Path(

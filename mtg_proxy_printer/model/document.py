@@ -16,8 +16,10 @@
 import collections
 import itertools
 import pathlib
+import socket
 import sqlite3
 import typing
+import urllib.error
 
 import delegateto
 import pint
@@ -502,6 +504,8 @@ class DocumentLoader(QObject):
     loading_state_changed = pyqtSignal(bool)
     unknown_scryfall_ids_found = pyqtSignal(int)
     loading_file_failed = pyqtSignal(pathlib.Path)
+    # Emitted when downloading required images during the loading process failed due to network issues.
+    network_error_occurred = pyqtSignal(str)
 
     class Worker(QObject):
         """
@@ -525,10 +529,13 @@ class DocumentLoader(QObject):
         document_clear_requested = pyqtSignal()
         unknown_scryfall_ids_found = pyqtSignal(int)
         loading_file_successful = pyqtSignal(pathlib.Path)
+        network_error_occurred = pyqtSignal(str)
+        request_blank_pixmap = pyqtSignal(Card)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
             super(DocumentLoader.Worker, self).__init__(None)
             self.card_db = card_db
+            self.image_db = image_db
             # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
             # That one lives in it’s own thread and runs asynchronously and is connected in a way that it adds loaded
             # images to the document on it’s own, interfering with the loading process, in particular with emitting page
@@ -537,9 +544,24 @@ class DocumentLoader(QObject):
             self.image_loader.card_download_starting.connect(image_db.card_download_starting)
             self.image_loader.card_download_finished.connect(image_db.card_download_finished)
             self.image_loader.card_download_progress.connect(image_db.card_download_progress)
+            self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
+            self.network_errors_during_load: typing.Counter[str] = collections.Counter()
+            self.finished.connect(self.propagate_errors_during_load)
             self.document = document
             self.save_path = pathlib.Path()
             self.data: typing.List[typing.Tuple[int, int, str, bool]] = []
+
+        def propagate_errors_during_load(self):
+            if error_count := sum(self.network_errors_during_load.values()):
+                self.network_error_occurred.emit(
+                    f"Error count: {error_count}. Most common error message:\n"
+                    f"{self.network_errors_during_load.most_common(1)[0][0]}"
+                )
+                self.network_errors_during_load.clear()
+
+        def on_network_error_occurred(self, card: Card, error: str):
+            card.image_file = self.image_db.blank_image
+            self.network_errors_during_load[error] += 1
 
         def load_document(self):
             unknown_ids = 0
@@ -571,7 +593,12 @@ class DocumentLoader(QObject):
                     unknown_ids += 1
                     logger.info(f"Unknown ID found in document: {scryfall_id=}, {is_front=}")
                     continue
-                self.image_loader.get_image_synchronous(card)
+                try:
+                    self.image_loader.get_image_synchronous(card)
+                except urllib.error.URLError as e:
+                    self.on_network_error_occurred(card, str(e.reason))
+                except socket.timeout as e:
+                    self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
                 self.add_card.emit(card)
             self.data.clear()
             return unknown_ids
@@ -611,6 +638,7 @@ class DocumentLoader(QObject):
         self.worker.loading_file_failed.connect(self.loading_file_failed)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
         self.worker.loading_file_successful.connect(self.on_loading_file_successful)
+        self.worker.network_error_occurred.connect(self.network_error_occurred)
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
