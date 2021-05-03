@@ -187,7 +187,7 @@
 
 - Vastly improved accuracy of all download progress bars, especially for the card data download.
 - Prevent inserting damaged PNG files into the local image cache, if the image transfer is interrupted for any reason.
-- Improved deck list importer hit rate when importing MTG Arena deck lists from [tappedout.com](https://tappedout.com).
+- Improved deck list importer hit rate when importing MTG Arena deck lists from [tappedout.net](https://tappedout.net).
 - If manual editing of the configuration file causes a setting to have an invalid value, the default will be restored,
   instead of crashing the application while it tries to parse the invalid data.
 - Fixed missing icons in the deck list import wizard when used on Windows 

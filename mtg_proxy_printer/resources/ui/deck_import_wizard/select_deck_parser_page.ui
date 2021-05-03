@@ -101,7 +101,7 @@ p, li { white-space: pre-wrap; }
       <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
      </property>
      <property name="text">
-      <string>Tappedout.com deck list (CSV export)</string>
+      <string>tappedout.net deck list (CSV export)</string>
      </property>
     </widget>
    </item>
