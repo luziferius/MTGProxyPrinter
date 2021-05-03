@@ -16,7 +16,7 @@
 import pathlib
 import sys
 
-from PyQt5.QtCore import QFile
+from PyQt5.QtCore import QFile, pyqtSlot
 from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
@@ -137,6 +137,16 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.python_version_label.setText(sys.version.replace("\n", " "))
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @pyqtSlot()
+    def show_about(self):
+        self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QWidget, "tab_about"))
+        self.show()
+
+    @pyqtSlot()
+    def show_changelog(self):
+        self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QWidget, "tab_changelog"))
+        self.show()
 
     def _setup_about_text(self):
         self.about_text: QTextBrowser

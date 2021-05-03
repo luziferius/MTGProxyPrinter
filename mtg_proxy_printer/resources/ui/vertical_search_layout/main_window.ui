@@ -114,6 +114,7 @@
     <addaction name="action_download_card_data"/>
     <addaction name="action_cleanup_local_image_cache"/>
     <addaction name="separator"/>
+    <addaction name="action_show_changelog"/>
     <addaction name="action_show_about_dialog"/>
    </widget>
    <widget class="QMenu" name="menu_edit">
@@ -288,6 +289,11 @@
   <action name="action_show_about_dialog">
    <property name="text">
     <string>About…</string>
+   </property>
+  </action>
+  <action name="action_show_changelog">
+   <property name="text">
+    <string>Show Changelog</string>
    </property>
   </action>
   <action name="action_compact_document">

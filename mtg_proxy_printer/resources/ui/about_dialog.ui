@@ -32,7 +32,7 @@
      <property name="currentIndex">
       <number>0</number>
      </property>
-     <widget class="QWidget" name="tab_authors">
+     <widget class="QWidget" name="tab_about">
       <attribute name="title">
        <string>About</string>
       </attribute>
