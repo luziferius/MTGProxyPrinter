@@ -16,7 +16,7 @@
 import sys
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -57,11 +57,12 @@ class Application(QApplication):
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()
-        if update_performed := str_less_than(settings.settings["gui"]["version-check"], meta_data.__version__):
+        if str_less_than(settings.settings["gui"]["version-check"], meta_data.__version__):
             logger.info(
                 f'Updated application from {settings.settings["gui"]["version-check"]} to {meta_data.__version__}')
             settings.update_version_string()
             settings.write_settings_to_file()
+            QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         if not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
