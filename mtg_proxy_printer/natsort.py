@@ -21,7 +21,8 @@ import re
 import typing
 
 __all__ = [
-    "natural_sorted"
+    "natural_sorted",
+    "str_less_than",
 ]
 
 _NUMBER_GROUP_REG_EXP = re.compile(r"([0-9]+)")
