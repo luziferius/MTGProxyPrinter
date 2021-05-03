@@ -15,6 +15,9 @@
     <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
     <file>ui/cache_cleanup_wizard/summary_page.ui</file>
 
+    <!-- Changelog -->
+    <file alias="changelog.md">../../doc/changelog.md</file>
+
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
     <!-- 16x16 -->
