@@ -21,7 +21,10 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
+from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
+from mtg_proxy_printer import settings
+from mtg_proxy_printer.natsort import str_less_than
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
@@ -50,11 +53,15 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.args, self.card_db)
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             self.main_window.language_model, self.main_window)
-        self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.settings_window.saved.connect(self.main_window.settings_changed)
+        self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()
-
+        if update_performed := str_less_than(settings.settings["gui"]["version-check"], meta_data.__version__):
+            logger.info(
+                f'Updated application from {settings.settings["gui"]["version-check"]} to {meta_data.__version__}')
+            settings.update_version_string()
+            settings.write_settings_to_file()
         if not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()

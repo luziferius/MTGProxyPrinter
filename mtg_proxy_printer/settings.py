@@ -27,6 +27,7 @@ __all__ = [
     "read_settings_from_file",
     "write_settings_to_file",
     "validate_settings",
+    "update_version_string",
 ]
 
 config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
@@ -37,6 +38,10 @@ DEFAULT_SETTINGS = configparser.ConfigParser()
 CARD_WIDTH = 63
 CARD_HEIGHT = 88
 
+VERSION_CHECK_RE = re.compile(
+    # sourced from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+)
 
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
@@ -82,6 +87,7 @@ DEFAULT_SETTINGS["default-save-paths"] = {
 DEFAULT_SETTINGS["gui"] = {
     "search-widget-layout": "horizontal",
     "show-toolbar": "True",
+    "version-check": mtg_proxy_printer.meta_data.__version__
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
 DEFAULT_SETTINGS["debug"] = {
@@ -127,6 +133,10 @@ def write_settings_to_file():
         config_file_path.parent.mkdir(parents=True)
     with config_file_path.open("w") as config_file:
         settings.write(config_file)
+
+
+def update_version_string():
+    settings["gui"]["version-check"] = DEFAULT_SETTINGS["gui"]["version-check"]
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
@@ -197,6 +207,8 @@ def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
+    if not VERSION_CHECK_RE.fullmatch(section["version-check"]):
+        section["version-check"] = defaults["version-check"]
 
 
 def _validate_debug_section(section: configparser.SectionProxy):
