@@ -4,9 +4,10 @@
 
 ## Implemented features
 
-- Integrated the changelog into the About dialog. The user can access the changelog from within the application.
+- Integrated the changelog into the application, as a new tab in the About dialog.
 - Automatically show the changelog once after each application update.
-
+- Suggest a PDF document file name based on the loaded document’s file name, if the current document was saved to
+  or loaded from disk.
 ## Fixed issues
 
 - The application now handles offline operation and network outages during download processes.
