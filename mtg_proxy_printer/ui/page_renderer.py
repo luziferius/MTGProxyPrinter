@@ -53,6 +53,7 @@ class PageScene(QGraphicsScene):
             image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
             if image is not None:
                 pixmap = self.addPixmap(image)
+                pixmap.setTransformationMode(Qt.SmoothTransformation)
                 pixmap.setPos(position)
 
     @pyqtSlot()
