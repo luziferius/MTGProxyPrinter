@@ -653,28 +653,6 @@ class DocumentLoader(QObject):
         self.worker.save_path = save_file_path
         self.worker_thread.start()
 
-    @staticmethod
-    def _read_data_from_save_path(save_file_path: pathlib.Path):
-        logger.info("Reading data from save file")
-        with mtg_proxy_printer.sqlite_helpers.open_database(
-                save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
-                raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
-
-            if db.execute("PRAGMA user_version").fetchone()[0] == 2:
-                query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            else:
-                query = r"""SELECT page, slot, scryfall_id, is_front
-                FROM Card
-                ORDER BY page, slot ASC"""
-            data: typing.List[typing.Tuple[int, int, str, bool]] = [
-                (page, slot, scryfall_id, bool(is_front))
-                for page, slot, scryfall_id, is_front in db.execute(query)
-            ]
-        return data
-
     def on_loading_file_successful(self, file_path: pathlib.Path):
         self.document.file_path = file_path
 
