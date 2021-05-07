@@ -30,9 +30,17 @@ __all__ = [
     "update_version_string",
 ]
 
+
 config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
+# Support three-valued boolean logic by adding values that parse to None, instead of True/False.
+# This will be used to store “unset” boolean settings.
+configparser.ConfigParser.BOOLEAN_STATES.update({
+    "-1": None,
+    "unknown": None,
+    "none": None,
+})
 
 # TODO: Single-source these properties somewhere. The Document class holds similar constants.
 CARD_WIDTH = 63
@@ -40,7 +48,9 @@ CARD_HEIGHT = 88
 
 VERSION_CHECK_RE = re.compile(
     # sourced from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+    r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
 
 DEFAULT_SETTINGS["images"] = {
