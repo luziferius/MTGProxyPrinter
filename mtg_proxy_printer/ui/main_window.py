@@ -394,3 +394,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             f"data may be outdated or the document was created using a less restrictive download filter.",
             QMessageBox.Ok, QMessageBox.Ok
         )
+
+    def show_update_available_message_box(self, newer_version: str):
+        QMessageBox.information(
+            self, "Update available",
+            f"An application update is available: Version {newer_version}\n\n"
+            f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.",
+            QMessageBox.Ok, QMessageBox.Ok
+        )
