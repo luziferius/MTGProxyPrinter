@@ -59,7 +59,8 @@ class Application(QApplication):
         self.main_window.show()
         if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):
             logger.info(
-                f'Updated application from {settings.settings["application"]["last-used-version"]} to {meta_data.__version__}')
+                f'Updated application from {settings.settings["application"]["last-used-version"]} '
+                f'to {meta_data.__version__}')
             settings.update_version_string()
             settings.write_settings_to_file()
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
