@@ -97,7 +97,6 @@ DEFAULT_SETTINGS["default-save-paths"] = {
 DEFAULT_SETTINGS["gui"] = {
     "search-widget-layout": "horizontal",
     "show-toolbar": "True",
-    "version-check": mtg_proxy_printer.meta_data.__version__
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
 DEFAULT_SETTINGS["debug"] = {
@@ -109,6 +108,10 @@ VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
     "enable-guessing": "False",
     "prefer-already-downloaded": "True",
+}
+DEFAULT_SETTINGS["application"] = {
+    "version-check": mtg_proxy_printer.meta_data.__version__,
+
 }
 
 
@@ -146,13 +149,14 @@ def write_settings_to_file():
 
 
 def update_version_string():
-    settings["gui"]["version-check"] = DEFAULT_SETTINGS["gui"]["version-check"]
+    settings["application"]["version-check"] = DEFAULT_SETTINGS["application"]["version-check"]
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
+    _validate_application_section(read_settings["application"])
     _validate_gui_section(read_settings["gui"])
     _validate_debug_section(read_settings["debug"])
     _validate_print_guessing_section(read_settings["print-guessing"])
@@ -213,12 +217,16 @@ def _validate_documents_section(section: configparser.SectionProxy):
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 
 
+def _validate_application_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["application"]
+    if not VERSION_CHECK_RE.fullmatch(section["version-check"]):
+        section["version-check"] = defaults["version-check"]
+
+
 def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
-    if not VERSION_CHECK_RE.fullmatch(section["version-check"]):
-        section["version-check"] = defaults["version-check"]
 
 
 def _validate_debug_section(section: configparser.SectionProxy):
