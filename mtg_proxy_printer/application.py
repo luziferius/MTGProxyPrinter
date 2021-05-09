@@ -57,9 +57,9 @@ class Application(QApplication):
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()
-        if str_less_than(settings.settings["application"]["version-check"], meta_data.__version__):
+        if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):
             logger.info(
-                f'Updated application from {settings.settings["application"]["version-check"]} to {meta_data.__version__}')
+                f'Updated application from {settings.settings["application"]["last-used-version"]} to {meta_data.__version__}')
             settings.update_version_string()
             settings.write_settings_to_file()
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)

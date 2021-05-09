@@ -110,8 +110,7 @@ DEFAULT_SETTINGS["print-guessing"] = {
     "prefer-already-downloaded": "True",
 }
 DEFAULT_SETTINGS["application"] = {
-    "version-check": mtg_proxy_printer.meta_data.__version__,
-
+    "last-used-version": mtg_proxy_printer.meta_data.__version__,
 }
 
 
@@ -149,7 +148,7 @@ def write_settings_to_file():
 
 
 def update_version_string():
-    settings["application"]["version-check"] = DEFAULT_SETTINGS["application"]["version-check"]
+    settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
@@ -219,8 +218,8 @@ def _validate_documents_section(section: configparser.SectionProxy):
 
 def _validate_application_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["application"]
-    if not VERSION_CHECK_RE.fullmatch(section["version-check"]):
-        section["version-check"] = defaults["version-check"]
+    if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
+        section["last-used-version"] = defaults["last-used-version"]
 
 
 def _validate_gui_section(section: configparser.SectionProxy):
