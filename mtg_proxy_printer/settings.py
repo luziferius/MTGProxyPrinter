@@ -111,6 +111,8 @@ DEFAULT_SETTINGS["print-guessing"] = {
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
+    "check-for-application-updates": "None",
+    "check-for-card-data-updates": "None",
 }
 
 
@@ -174,7 +176,7 @@ def _validate_images_section(section: configparser.SectionProxy):
     language = section["preferred-language"]
     if not re.fullmatch(r"[a-z]{2}", language):
         # Only syntactic validation: Language contains a string of exactly two lower case ascii letters
-        section["preferred-language"] = defaults["preferred-language"]
+        _restore_default(section, defaults, "preferred-language")
 
 
 def _validate_documents_section(section: configparser.SectionProxy):
@@ -220,6 +222,8 @@ def _validate_application_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["application"]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
         section["last-used-version"] = defaults["last-used-version"]
+    for option in ("check-for-application-updates", "check-for-card-data-updates"):
+        _validate_three_valued_boolean(section, defaults, option)
 
 
 def _validate_gui_section(section: configparser.SectionProxy):
@@ -243,9 +247,17 @@ def _validate_print_guessing_section(section: configparser.SectionProxy):
 
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
+        if section.getboolean(key) is None:
+            raise ValueError
+    except ValueError:
+        _restore_default(section, defaults, key)
+
+
+def _validate_three_valued_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
         section.getboolean(key)
     except ValueError:
-        section[key] = defaults[key]
+        _restore_default(section, defaults, key)
 
 
 def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
@@ -253,7 +265,7 @@ def _validate_non_negative_int(section: configparser.SectionProxy, defaults: con
         if section.getint(key) < 0:
             raise ValueError
     except ValueError:
-        section[key] = defaults[key]
+        _restore_default(section, defaults, key)
 
 
 def _validate_string_is_in_set(
@@ -261,7 +273,11 @@ def _validate_string_is_in_set(
         valid_options: typing.Set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
-        section[key] = defaults[key]
+        _restore_default(section, defaults, key)
+
+
+def _restore_default(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    section[key] = defaults[key]
 
 
 # Read the settings from file during module import
