@@ -8,7 +8,13 @@
 - Automatically show the changelog once after each application update.
 - Suggest a PDF document file name based on the loaded document’s file name, if the current document was saved to
   or loaded from disk.
-  
+
+## Changed Features
+
+- Use cx_Freeze instead of PyInstaller for stand-alone distributions. This yields cleaner builds,
+  and an actual installer for Windows. The application can now be installed and uninstalled using standard OS
+  features on Windows.
+
 ## Fixed issues
 
 - The application now handles offline operation and network outages during download processes.
