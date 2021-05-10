@@ -5,7 +5,6 @@
 from pathlib import Path
 import re
 import subprocess
-from typing import Type, Dict, List, Any, Union
 
 from setuptools import setup, find_packages
 import setuptools.command.build_py
