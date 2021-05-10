@@ -90,6 +90,7 @@ setup_parameters = dict(
     ],
     extras_require={
         "dev": [
+            'cx_Freeze >= 6.6'
             'pytest-runner',
             'pytest',
             'pytest-cov',
