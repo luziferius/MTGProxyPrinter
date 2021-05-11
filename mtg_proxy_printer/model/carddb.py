@@ -17,6 +17,7 @@ import atexit
 import dataclasses
 import datetime
 import pathlib
+import pprint
 import textwrap
 import typing
 from itertools import filterfalse
@@ -399,3 +400,17 @@ class CardDatabase:
             if self._read_optional_scalar_from_db(query, (scryfall_id, is_front, count)):
                 result.append(index)
         return result
+
+    def get_newest_card_date_in_database(self) -> datetime.date:
+        query = textwrap.dedent("""
+            SELECT newest_card_timestamp
+            FROM LastDatabaseUpdate
+            WHERE update_id = (
+              SELECT MAX(update_id)
+              FROM LastDatabaseUpdate
+            )""")
+        result = [datetime.date.fromisoformat(date) for date, in self.db.execute(query)]
+        if result:
+            return result[0]
+        else:
+            return datetime.date.today()

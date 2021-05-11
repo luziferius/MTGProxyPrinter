@@ -16,15 +16,22 @@
 import random
 import re
 import typing
+import urllib.parse
+import urllib.error
 
 import ijson
 
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.card_info_downloader import read_from_url
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.card_info_downloader import read_from_url, CardInfoDownloadWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 __all__ = [
     "newer_application_version_available",
+    "newer_card_data_available",
 ]
 
 StringList = typing.List[str]
@@ -49,8 +56,12 @@ def read_available_application_versions() -> StringList:
     """
     tags = []
     for mirror in get_application_mirrors():
-        if tags := _read_available_application_versions_from_mirror(mirror):
-            break
+        try:
+            if tags := _read_available_application_versions_from_mirror(mirror):
+                break
+        except urllib.error.URLError as e:
+            logger.warning(f"Failed to read update from mirror {mirror}. Reason: {e}")
+            continue
     return tags
 
 
@@ -71,6 +82,11 @@ def newer_application_version_available() -> OptStr:
     return None
 
 
-def newer_card_data_available() -> bool:
-
-    return False
+def newer_card_data_available(card_db: CardDatabase) -> int:
+    newest_card_in_database = card_db.get_newest_card_date_in_database()
+    dw = CardInfoDownloadWorker(card_db)
+    query = urllib.parse.quote(f"date>={newest_card_in_database.isoformat()}")
+    url = f"https://api.scryfall.com/cards/search?order=date&dir=asc&q={query}"
+    data = dw.read_json_card_data(url, "item")
+    items = data["total_cards"]
+    return items

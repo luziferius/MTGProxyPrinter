@@ -90,9 +90,9 @@ class Application(QApplication):
     def _check_for_card_data_update_if_enabled(self):
         if setting := settings.settings["application"].getboolean("check-for-card-data-updates"):
             logger.info("Checking for card data updates.")
-            if newer_card_data_available():
+            if estimated_new_card_count := newer_card_data_available(self.card_db):
                 logger.info(f"New card data is available. Notifying the user.")
-                self.main_window.show_card_data_update_available_message_box()
+                self.main_window.show_card_data_update_available_message_box(estimated_new_card_count)
             else:
                 logger.debug("No new card data found.")
         elif setting is None:

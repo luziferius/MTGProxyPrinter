@@ -403,13 +403,16 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             QMessageBox.Ok, QMessageBox.Ok
         )
 
-    def show_card_data_update_available_message_box(self):
+    def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
                     self, "New card data available",
-                    "New card data available on Scryfall. Update the local data now?",
+                    f"There are {estimated_card_count} new cards available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
             self.on_action_download_card_data_triggered()
+        else:
+            # If the user declines to perform the update now, allow them to perform it later by enabling the action.
+            self.action_download_card_data.setEnabled(True)
 
     def ask_user_about_application_update_policy(self) -> bool:
         """Executed on start when the application update policy setting is set to None, the default value."""
