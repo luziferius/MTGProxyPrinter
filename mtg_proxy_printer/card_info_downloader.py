@@ -222,6 +222,7 @@ class CardInfoDownloadWorker(QObject):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
+            newest_card_date = _read_card_preview_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
@@ -229,7 +230,6 @@ class CardInfoDownloadWorker(QObject):
                 logger.info(f"Aborting card import after {index} cards due to user request.")
                 self.download_finished.emit()
                 return
-            newest_card_date = _read_card_preview_date(card, newest_card_date)
             language_id = _insert_language(self.model, card["lang"])
             card_id = _insert_card(self.model, card["oracle_id"])
             set_id = _insert_set(self.model, card)
