@@ -15,6 +15,7 @@
 
 import random
 import re
+import socket
 import typing
 import urllib.parse
 import urllib.error
@@ -87,5 +88,9 @@ def newer_card_data_available(card_db: CardDatabase) -> int:
     dw = CardInfoDownloadWorker(card_db)
     query = urllib.parse.quote(f"date>={newest_card_in_database.isoformat()}")
     url = f"https://api.scryfall.com/cards/search?order=date&dir=asc&q={query}"
-    items = next(dw.read_json_card_data(url, "total_cards"))
+    try:
+        items = next(dw.read_json_card_data(url, "total_cards"))
+    except (urllib.error.URLError, socket.timeout, StopIteration):
+        # TODO: Perform better notification in any error case
+        items = 0
     return items
