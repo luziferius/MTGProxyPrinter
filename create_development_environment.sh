@@ -11,6 +11,7 @@ source "${ENVIRONMENT_NAME}/bin/activate"
 
 # Install including all dependencies
 echo "Installing all dependencies, including development and test requirements."
+pip3 install wheel
 pip3 install -e ".[dev]"
 echo ""
 echo "Uninstall the main package again, leaving the dependencies in place."

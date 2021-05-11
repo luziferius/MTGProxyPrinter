@@ -68,6 +68,7 @@ class CardInfoDownloader(QObject):
                  requested_item: str = "all_cards", parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
+        logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
         self.download_worker = CardInfoDownloadWorker(model, requested_item)
         self.worker_thread = QThread()

@@ -13,6 +13,12 @@
     when updating to this version
   - For now, the application update check only notifies about updates, and does not perform any automatic update.
   
+## Changed Features
+
+- Use cx_Freeze instead of PyInstaller for stand-alone distributions. This yields cleaner, but larger builds,
+  and an actual installer for Windows. The application can now be installed and uninstalled using standard OS
+  features on Windows.
+
 ## Fixed issues
 
 - The application now handles offline operation and network outages during download processes.

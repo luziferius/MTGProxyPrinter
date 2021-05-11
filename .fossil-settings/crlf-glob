@@ -1,3 +1,2 @@
-create_application_bundle_using_PyInstaller.bat
-create_development_environment.bat
+*.bat
 mtg_proxy_printer/resources/icons/breeze/*/*/*.svg
