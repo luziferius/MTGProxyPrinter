@@ -60,7 +60,7 @@ def read_available_application_versions() -> StringList:
         try:
             if tags := _read_available_application_versions_from_mirror(mirror):
                 break
-        except urllib.error.URLError as e:
+        except (urllib.error.URLError, socket.timeout) as e:
             logger.warning(f"Failed to read update from mirror {mirror}. Reason: {e}")
             continue
     return tags
