@@ -87,6 +87,5 @@ def newer_card_data_available(card_db: CardDatabase) -> int:
     dw = CardInfoDownloadWorker(card_db)
     query = urllib.parse.quote(f"date>={newest_card_in_database.isoformat()}")
     url = f"https://api.scryfall.com/cards/search?order=date&dir=asc&q={query}"
-    data = dw.read_json_card_data(url, "item")
-    items = data["total_cards"]
+    items = next(dw.read_json_card_data(url, "total_cards"))
     return items
