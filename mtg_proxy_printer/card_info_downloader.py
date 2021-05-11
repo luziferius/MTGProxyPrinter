@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import functools
 import gzip
 import json
@@ -40,6 +41,7 @@ __all__ = [
     "CardInfoDownloader",
     "store_download_settings",
     "read_from_url",
+    "CardInfoDownloadWorker",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
@@ -140,7 +142,7 @@ class CardInfoDownloadWorker(QObject):
                 "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
                 "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
 
-    def read_json_card_data_from_url(self, url: str = None):
+    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item"):
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data json object in the Scryfall API.
@@ -157,9 +159,9 @@ class CardInfoDownloadWorker(QObject):
         self._connect_file_monitor(monitor)
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
-            yield from self._read_json_card_data_from_open_file(source)
+            yield from self._read_json_card_data_from_open_file(source, json_path)
 
-    def read_json_card_data(self, url_or_path: typing.Union[Path, str]):
+    def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item"):
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function can take a file path to a locally stored json document. Mainly for testing purposes.
@@ -176,20 +178,20 @@ class CardInfoDownloadWorker(QObject):
                 self._connect_file_monitor(file)
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
-                yield from self._read_json_card_data_from_open_file(file)
+                yield from self._read_json_card_data_from_open_file(file, json_path)
         elif looks_like_url_re.match(url_or_path):
-            yield from self.read_json_card_data_from_url(url_or_path)
+            yield from self.read_json_card_data_from_url(url_or_path, json_path)
         else:
             file_size = os.stat(url_or_path).st_size
             raw_file = open(url_or_path, "rb")
             with mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self) as file:
                 self._connect_file_monitor(file)
-                yield from self._read_json_card_data_from_open_file(file)
+                yield from self._read_json_card_data_from_open_file(file, json_path)
 
     @staticmethod
-    def _read_json_card_data_from_open_file(file) -> typing.Generator[JSONType, None, None]:
+    def _read_json_card_data_from_open_file(file, json_path: str) -> typing.Generator[JSONType, None, None]:
         # Using "item" as the object path returns elements from a top-level JSON array
-        yield from ijson.items(file, "item")
+        yield from ijson.items(file, json_path)
 
     def populate_database(self, card_data: typing.Generator[JSONType, None, None] = None):
         """
@@ -215,10 +217,12 @@ class CardInfoDownloadWorker(QObject):
             if not enabled)
         skipped_cards = 0
         index = 0
+        newest_card_date = datetime.date.today()
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
+            newest_card_date = _read_card_preview_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
@@ -235,7 +239,10 @@ class CardInfoDownloadWorker(QObject):
                 self.model.db.execute("PRAGMA optimize\n")
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
-        self.model.db.execute("INSERT INTO LastDatabaseUpdate DEFAULT VALUES\n")
+        self.model.db.execute(
+            "INSERT INTO LastDatabaseUpdate (update_timestamp, newest_card_timestamp) VALUES (?, ?)\n",
+            (datetime.datetime.now(), newest_card_date)
+        )
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
@@ -277,6 +284,23 @@ def read_from_url(url: str, parent: QObject = None):
     else:
         raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
     return data, metered_reader
+
+
+def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
+    """
+    Newer cards have their previewed date set. Return that, if it is newer than the given date.
+
+    This will be used to determine if newer card data is available online.
+    """
+    try:
+        if date_str := card["preview"]["previewed_at"]:
+            card_date = datetime.date.fromisoformat(date_str)
+            if card_date > known_newest_card_date:
+                # Found card from a future set
+                return card_date
+    except KeyError:
+        pass
+    return known_newest_card_date
 
 
 @functools.lru_cache(None)

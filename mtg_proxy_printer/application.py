@@ -25,6 +25,7 @@ from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.natsort import str_less_than
+from mtg_proxy_printer.update_checker import newer_application_version_available, newer_card_data_available
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
@@ -57,12 +58,8 @@ class Application(QApplication):
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()
-        if str_less_than(settings.settings["gui"]["version-check"], meta_data.__version__):
-            logger.info(
-                f'Updated application from {settings.settings["gui"]["version-check"]} to {meta_data.__version__}')
-            settings.update_version_string()
-            settings.write_settings_to_file()
-            QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
+        QTimer.singleShot(0, self._check_for_updates)
+        self._show_changelog_after_update()
         if not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
@@ -70,6 +67,50 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _check_for_updates(self):
+        self._check_for_application_update_if_enabled()
+        if self.card_db.has_data():
+            self._check_for_card_data_update_if_enabled()
+
+    def _check_for_application_update_if_enabled(self):
+        if setting := settings.settings["application"].getboolean("check-for-application-updates"):
+            logger.info("Checking for application updates.")
+            if (newer_version := newer_application_version_available()) is not None:
+                logger.info(f"A new update is available: {newer_version}. Notifying the user.")
+                self.main_window.show_application_update_available_message_box(newer_version)
+            else:
+                logger.debug("No application update found.")
+        elif setting is None:
+            logger.info("No user setting for update set. About to ask.")
+            if self.main_window.ask_user_about_application_update_policy():
+                self._check_for_application_update_if_enabled()
+        else:
+            logger.info("Checking for application updates disabled. Not checking for updates.")
+
+    def _check_for_card_data_update_if_enabled(self):
+        if setting := settings.settings["application"].getboolean("check-for-card-data-updates"):
+            logger.info("Checking for card data updates.")
+            if estimated_new_card_count := newer_card_data_available(self.card_db):
+                logger.info(f"New card data is available. Notifying the user.")
+                self.main_window.show_card_data_update_available_message_box(estimated_new_card_count)
+            else:
+                logger.debug("No new card data found.")
+        elif setting is None:
+            logger.info("No user setting for card data updates set. About to ask.")
+            if self.main_window.ask_user_about_card_data_update_policy():
+                self._check_for_card_data_update_if_enabled()
+        else:
+            logger.info("Checking for card data updates disabled. Not checking for updates.")
+
+    def _show_changelog_after_update(self):
+        if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):
+            logger.info(
+                f'Updated application from {settings.settings["application"]["last-used-version"]} '
+                f'to {meta_data.__version__}')
+            settings.update_version_string()
+            settings.write_settings_to_file()
+            QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
 
     def _setup_icons(self):
         # The current icon theme name is empty by default, which causes the system-default theme, returned by

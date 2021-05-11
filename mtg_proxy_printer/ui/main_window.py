@@ -394,3 +394,52 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             f"data may be outdated or the document was created using a less restrictive download filter.",
             QMessageBox.Ok, QMessageBox.Ok
         )
+
+    def show_application_update_available_message_box(self, newer_version: str):
+        QMessageBox.information(
+            self, "Update available",
+            f"An application update is available: Version {newer_version}\n\n"
+            f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.",
+            QMessageBox.Ok, QMessageBox.Ok
+        )
+
+    def show_card_data_update_available_message_box(self, estimated_card_count: int):
+        if QMessageBox.question(
+                    self, "New card data available",
+                    f"There are {estimated_card_count} new cards available on Scryfall. Update the local data now?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                ) == QMessageBox.Yes:
+            self.on_action_download_card_data_triggered()
+        else:
+            # If the user declines to perform the update now, allow them to perform it later by enabling the action.
+            self.action_download_card_data.setEnabled(True)
+
+    def ask_user_about_application_update_policy(self) -> bool:
+        """Executed on start when the application update policy setting is set to None, the default value."""
+        if (result := QMessageBox.question(
+                self, "Check for application updates?",
+                f"Automatically check for application updates whenever you start "
+                f"{mtg_proxy_printer.meta_data.PROGRAMNAME}?\nYou can change this later in the settings.",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+                )) in {QMessageBox.Yes, QMessageBox.No}:
+            logger.info(f"Application update policy set. User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
+            mtg_proxy_printer.settings.settings["application"]["check-for-application-updates"] = str(
+                result == QMessageBox.Yes)
+            mtg_proxy_printer.settings.write_settings_to_file()
+            return True
+        return False
+
+    def ask_user_about_card_data_update_policy(self) -> bool:
+        """Executed on start when the card data update policy setting is set to None, the default value."""
+        if (result := QMessageBox.question(
+                self, "Check for card data updates?",
+                f"Automatically check for card data updates on Scryfall whenever you start "
+                f"{mtg_proxy_printer.meta_data.PROGRAMNAME}?\nYou can change this later in the settings.",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+                )) in {QMessageBox.Yes, QMessageBox.No}:
+            logger.info(f"Card data update policy set. User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
+            mtg_proxy_printer.settings.settings["application"]["check-for-card-data-updates"] = str(
+                result == QMessageBox.Yes)
+            mtg_proxy_printer.settings.write_settings_to_file()
+            return True
+        return False

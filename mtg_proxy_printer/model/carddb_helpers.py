@@ -95,6 +95,15 @@ def _migrate_13_to_14(db: sqlite3.Connection):
     db.execute(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)")
 
 
+def _migrate_14_to_15(db: sqlite3.Connection):
+    db.execute(textwrap.dedent(r"""
+        ALTER TABLE LastDatabaseUpdate ADD COLUMN
+        newest_card_timestamp TIMESTAMP WITH TIME ZONE NULL;
+        """))
+    # Re-use the update timestamp. This is good enough for this purpose.
+    db.execute("UPDATE LastDatabaseUpdate SET newest_card_timestamp = substr(update_timestamp, 0, 11)")
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -109,6 +118,7 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_11_to_12,
         _migrate_12_to_13,
         _migrate_13_to_14,
+        _migrate_14_to_15,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:
