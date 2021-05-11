@@ -69,3 +69,8 @@ def newer_application_version_available() -> OptStr:
     if available_versions and str_less_than(mtg_proxy_printer.meta_data.__version__, available_versions[0]):
         return available_versions[0]
     return None
+
+
+def newer_card_data_available() -> bool:
+
+    return False
