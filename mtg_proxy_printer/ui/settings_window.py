@@ -29,6 +29,12 @@ del get_logger
 __all__ = [
     "SettingsWindow",
 ]
+bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
+    True: Qt.Checked,
+    False: Qt.Unchecked,
+    None: Qt.PartiallyChecked
+}
+check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
@@ -71,15 +77,21 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_save_path_settings(settings)
         self._load_debug_settings(settings)
         self._load_print_guessing_settings(settings)
+        self._load_update_check_settings(settings)
         logger.debug("Finished loading settings")
 
-    def _load_look_and_feel_settings(self, settings):
+    def _load_update_check_settings(self, settings: configparser.ConfigParser):
+        section = settings["application"]
+        for widget, setting in self._get_update_check_settings_widgets():
+            widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
+
+    def _load_look_and_feel_settings(self, settings: configparser.ConfigParser):
         self.add_card_widget_style_combo_box: QComboBox
         gui_section = settings["gui"]
         search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["search-widget-layout"])
         self.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
 
-    def _load_images_settings(self, settings):
+    def _load_images_settings(self, settings: configparser.ConfigParser):
         self.preferred_language_combo_box: QComboBox
         self.avoid_low_res_images_check_box: QCheckBox
         images_section = settings["images"]
@@ -124,6 +136,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         section = settings["print-guessing"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
+
+    def _get_update_check_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.check_application_updates_enabled, "check-for-application-updates"),
+            (self.check_card_data_updates_enabled, "check-for-card-data-updates"),
+        ]
+        return widgets_with_settings
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
@@ -200,10 +219,16 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._save_save_path_settings()
         self._save_debug_settings()
         self._save_print_guessing_settings()
+        self._save_update_check_settings()
         logger.debug("Settings read from UI widgets, about to write the configuration to disk.")
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
         logger.debug("Save finished.")
+
+    def _save_update_check_settings(self):
+        section = mtg_proxy_printer.settings.settings["application"]
+        for widget, setting in self._get_update_check_settings_widgets():
+            section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
         gui_section = mtg_proxy_printer.settings.settings["gui"]
