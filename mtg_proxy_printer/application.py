@@ -70,7 +70,8 @@ class Application(QApplication):
 
     def _check_for_updates(self):
         self._check_for_application_update_if_enabled()
-        self._check_for_card_data_update_if_enabled()
+        if self.card_db.has_data():
+            self._check_for_card_data_update_if_enabled()
 
     def _check_for_application_update_if_enabled(self):
         if setting := settings.settings["application"].getboolean("check-for-application-updates"):
