@@ -8,6 +8,10 @@
 - Automatically show the changelog once after each application update.
 - Suggest a PDF document file name based on the loaded document’s file name, if the current document was saved to
   or loaded from disk.
+- Added optional, automatic update checks, both for MTGProxyPrinter itself and the card data from Scryfall.
+  - The application asks for consent for both when starting the application for the first time or
+    when updating to this version
+  - For now, the application update check only notifies about updates, and does not perform any automatic update.
   
 ## Fixed issues
 
