@@ -39,7 +39,7 @@ StringList = typing.List[str]
 OptStr = typing.Optional[str]
 VERSION_TAG_MATCHER = re.compile(r"v(?P<version>\d+\.\d+\.\d+)")
 KNOWN_APPLICATION_MIRRORS: StringList = [
-    "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",
+    "http://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",
     "http://1337net.duckdns.org:8080/MTGProxyPrinter",
 ]
 
