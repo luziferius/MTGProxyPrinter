@@ -97,9 +97,14 @@ class Application(QApplication):
             else:
                 logger.debug("No new card data found.")
         elif setting is None:
+            pass
+            # TODO: Currently disabled, because the feature is not working 100%. The user has to manually enable this.
+            #   Do not bother asking to enable/disable, until the update check is working in all cases, when enabled.
+            """
             logger.info("No user setting for card data updates set. About to ask.")
             if self.main_window.ask_user_about_card_data_update_policy():
                 self._check_for_card_data_update_if_enabled()
+            """
         else:
             logger.info("Checking for card data updates disabled. Not checking for updates.")
 
