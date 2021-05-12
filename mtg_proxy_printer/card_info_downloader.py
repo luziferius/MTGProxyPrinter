@@ -194,7 +194,7 @@ class CardInfoDownloadWorker(QObject):
         # Using "item" as the object path returns elements from a top-level JSON array
         yield from ijson.items(file, json_path)
 
-    def populate_database(self, card_data: typing.Generator[JSONType, None, None] = None):
+    def populate_database(self, card_data: typing.Generator[JSONType, None, None]):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data()
         and populates the database with card data.
