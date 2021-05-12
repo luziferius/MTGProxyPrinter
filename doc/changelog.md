@@ -1,18 +1,18 @@
 # Changelog
 
-# Version \<next> (in development)
+# Version 0.11.0 (2021-05-12) <a name="v0_11_0"></a>
 
 ## Implemented features
 
-- Integrated the changelog into the application, as a new tab in the About dialog.
-- Automatically show the changelog once after each application update.
 - Suggest a PDF document file name based on the loaded document’s file name, if the current document was saved to
   or loaded from disk.
 - Added optional, automatic update checks, both for MTGProxyPrinter itself and the card data from Scryfall.
   - The application asks for consent for both when starting the application for the first time or
-    when updating to this version
+    when updating from prior versions
   - For now, the application update check only notifies about updates, and does not perform any automatic update.
-  
+- Integrated the changelog into the application, as a new tab in the About dialog.
+  - Automatically show the changelog once after each application update.
+
 ## Changed Features
 
 - Use cx_Freeze instead of PyInstaller for stand-alone distributions. This yields cleaner, but larger builds,
