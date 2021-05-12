@@ -97,8 +97,6 @@ setup_parameters = dict(
             'pytest-xdist',
             'PyHamcrest >= 1.8.1',
             'PyQt5-stubs',  # Install the stubs used for type hinting when creating the development environment
-            "PyInstaller >= 4.0",
-            "pyinstaller-hooks-contrib >= 2020.11",  # First version that contains the upstreamed hook for ijson
             "sip",
             "build",
         ]
