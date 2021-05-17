@@ -1,5 +1,11 @@
 # Changelog
 
+# Version 0.11.1 (2021-05-17) <a name="v0_11_1"></a>
+
+## Fixed issues
+
+- Fixed crashes when adding art-series cards (again).
+
 # Version 0.11.0 (2021-05-12) <a name="v0_11_0"></a>
 
 ## Implemented features
