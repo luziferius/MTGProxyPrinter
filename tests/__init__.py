@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import faulthandler
+
 from .helpers import setup_logging_for_testing, setup_settings_for_testing
 
+faulthandler.enable()
 setup_logging_for_testing()
 setup_settings_for_testing()

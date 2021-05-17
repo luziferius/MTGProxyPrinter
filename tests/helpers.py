@@ -16,7 +16,7 @@
 import functools
 import json
 import typing
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pkg_resources
 
 import ijson
@@ -36,6 +36,11 @@ def setup_logging_for_testing():
 
 
 def setup_settings_for_testing():
+    # Make sure that the tests don’t overwrite the settings stored on disk. Raise an exception, should that occur.
+    mtg_proxy_printer.settings.write_settings_to_file = MagicMock()
+    mtg_proxy_printer.settings.write_settings_to_file.side_effect = AssertionError(
+        "mtg_proxy_printer.settings.write_settings_to_file() called within test code!"
+    )
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     for setting in mtg_proxy_printer.settings.settings["downloads"].keys():
         # Turn off all download filters, so that the defaults don’t affect the test cases
