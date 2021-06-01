@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import copy
 import itertools
 import typing
 from abc import abstractmethod
@@ -34,7 +35,9 @@ class FormatterBase(QObject):
         self.parser = mtg_proxy_printer.decklist_parser.common.ParserBase(self.card_db, image_db)
 
     def format(self, document: Document) -> str:
-        cards: typing.Iterable[Card] = itertools.chain.from_iterable(document)
+        # Work on a copy of the card objects. This prevents side-effects when formatting card names of double-faced
+        # cards
+        cards: typing.Iterable[Card] = map(copy.copy, itertools.chain.from_iterable(document))
         counted_cards = collections.Counter()
         for card in cards:
             if not card.is_front:
