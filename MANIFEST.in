@@ -1,5 +1,5 @@
 include LICENSE
+include LICENSE-ICONS
 include mtg_proxy_printer/model/carddb.sql
 include mtg_proxy_printer/model/document.sql
 prune tests
-prune pyinstaller_hooks

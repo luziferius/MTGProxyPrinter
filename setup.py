@@ -55,7 +55,7 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
 
 setup_parameters = dict(
     name=project_name,
-    packages=find_packages(exclude=["tests*", "venv", ".pytest_cache", "pyinstaller_hooks*"]),
+    packages=find_packages(exclude=["tests*", "venv", ".pytest_cache"]),
     include_package_data=True,  # Database schema is included as package data.
     entry_points={
         "gui_scripts": [
