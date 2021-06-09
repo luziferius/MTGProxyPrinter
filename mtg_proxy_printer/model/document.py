@@ -287,8 +287,8 @@ class Document(QAbstractListModel):
             self.currently_edited_page = self.pages[0]
             self.document_cleared.emit()
         
-    def rowCount(self, parent: QModelIndex = None) -> int:
-        return len(self.pages)
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 0 if parent.isValid() else len(self.pages)
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
 
