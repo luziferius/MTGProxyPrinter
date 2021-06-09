@@ -65,11 +65,11 @@ class Page(QAbstractTableModel):
         super(Page, self).__init__(*args, **kwargs)
         self.cards: CardList = []
 
-    def rowCount(self, parent: QModelIndex = None) -> int:
-        return len(self.cards)
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 0 if parent.isValid() else len(self.cards)
 
-    def columnCount(self, parent: QModelIndex = None) -> int:
-        return len(Page.header)
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        return 0 if parent.isValid() else len(Page.header)
     
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
