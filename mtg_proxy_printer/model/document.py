@@ -23,6 +23,7 @@ import urllib.error
 
 import delegateto
 import pint
+from PyQt5.QtTest import QAbstractItemModelTester
 from PyQt5.QtCore import QAbstractListModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, \
     QThread
 
@@ -184,6 +185,7 @@ class Document(QAbstractListModel):
         super(Document, self).__init__(*args, **kwargs)
         self.file_path: typing.Optional[pathlib.Path] = None
         self.pages: PageList = []
+        self.validators = []
         self.card_db = card_db
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
@@ -231,10 +233,13 @@ class Document(QAbstractListModel):
             raise ValueError("Attempted to add a page at a negative position.")
         self.beginInsertRows(QModelIndex(), position, position)
         page = Page(parent=self)
+        tester = QAbstractItemModelTester(page, QAbstractItemModelTester.FailureReportingMode.Fatal, self)
         if position == self.rowCount():
             self.pages.append(page)
+            self.validators.append(tester)
         else:
             self.pages.insert(position, page)
+            self.validators.insert(position, tester)
         page.dataChanged.connect(self.on_page_data_changed)
         self.endInsertRows()
         return page
@@ -267,12 +272,15 @@ class Document(QAbstractListModel):
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
         remaining = []
-        for index, page in enumerate(self.pages):
+        validators = []
+        for index, (page, validator) in enumerate(zip(self.pages, self.validators)):
             if index in to_delete:
                 page.dataChanged.disconnect(self.on_page_data_changed)
             else:
                 remaining.append(page)
+                validators.append(validator)
         self.pages[:] = remaining
+        self.validators[:] = validators
         self.endRemoveRows()
         if not self.pages:
             self.add_page()

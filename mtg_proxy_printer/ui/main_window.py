@@ -16,6 +16,7 @@
 import pathlib
 import typing
 
+from PyQt5.QtTest import QAbstractItemModelTester
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
@@ -108,7 +109,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.loading_state_changed.connect(widget_or_action.setDisabled)
 
     def _create_document_instance(self, args: Namespace):
+
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
+        self.model_tester = QAbstractItemModelTester(document, QAbstractItemModelTester.FailureReportingMode.Fatal, self)
         document.document_cleared.connect(self._select_first_page)
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
