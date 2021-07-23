@@ -1,5 +1,11 @@
 # Changelog
 
+# Version \<next>
+
+## Fixed issues
+
+- Fixed crash, when the user tries to quit the application while a document loads.
+
 # Version 0.11.1 (2021-05-17) <a name="v0_11_1"></a>
 
 ## Fixed issues
