@@ -236,6 +236,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.info(f"User wants to quit.")
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
+        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+        
         logger.debug("Quit action confirmed. Exiting…")
         self.card_data_downloader.cancel_running_operations()
         self.toolBar: QToolBar
@@ -243,7 +245,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+
         QApplication.instance().shutdown()
 
     @pyqtSlot()

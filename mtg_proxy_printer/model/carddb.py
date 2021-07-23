@@ -17,7 +17,6 @@ import atexit
 import dataclasses
 import datetime
 import pathlib
-import pprint
 import textwrap
 import typing
 from itertools import filterfalse
