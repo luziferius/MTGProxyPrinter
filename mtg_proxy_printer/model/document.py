@@ -550,6 +550,7 @@ class DocumentLoader(QObject):
             self.document = document
             self.save_path = pathlib.Path()
             self.data: typing.List[typing.Tuple[int, int, str, bool]] = []
+            self.should_run: bool = True
 
         def propagate_errors_during_load(self):
             if error_count := sum(self.network_errors_during_load.values()):
@@ -565,6 +566,7 @@ class DocumentLoader(QObject):
 
         def load_document(self):
             unknown_ids = 0
+            self.should_run = True
             try:
                 unknown_ids = self._load_document()
             except sqlite3.DatabaseError:
@@ -583,6 +585,9 @@ class DocumentLoader(QObject):
             current_page = 1
             unknown_ids = 0
             for page_number, slot, scryfall_id, is_front in data:
+                if not self.should_run:
+                    logger.info("Cancel request received, stop processing the card list.")
+                    return unknown_ids
                 if current_page != page_number:
                     current_page = page_number
                     self.new_page.emit()
@@ -625,6 +630,12 @@ class DocumentLoader(QObject):
                 ]
             return data
 
+        def cancel_running_operations(self):
+            self.should_run = False
+            if self.image_loader.currently_opened_file is not None:
+                # Force aborting the download by closing the input stream
+                self.image_loader.currently_opened_file.close()
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: Document):
         super(DocumentLoader, self).__init__(None)
         self.document = document
@@ -643,6 +654,9 @@ class DocumentLoader(QObject):
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
 
+    def is_running(self) -> bool:
+        return self.worker_thread.isRunning()
+
     @pyqtSlot(Card)
     def _on_add_card(self, card: Card):
         self.document.pages[-1].add_card(card)
@@ -655,6 +669,13 @@ class DocumentLoader(QObject):
 
     def on_loading_file_successful(self, file_path: pathlib.Path):
         self.document.file_path = file_path
+
+    def cancel_running_operations(self):
+        """Can be called to cancel loading a document. This forces the """
+        if not self.worker_thread.isRunning():
+            return
+        self.worker.cancel_running_operations()
+
 
 
 def _migrate_database(db):

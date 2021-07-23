@@ -237,9 +237,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
-        
-        logger.debug("Quit action confirmed. Exiting…")
         self.card_data_downloader.cancel_running_operations()
+        self.document.loader.cancel_running_operations()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")

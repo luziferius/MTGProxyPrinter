@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import io
 import queue
 import itertools
 import pathlib
@@ -170,6 +170,7 @@ class ImageDownloader(QObject):
         self.queue = image_db.queue
         self.should_run = True
         self.batch_processing_state: bool = False
+        self.currently_opened_file: typing.Optional[io.BytesIO] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def scan_disk_image_cache_then_process_queue(self):
@@ -260,9 +261,12 @@ class ImageDownloader(QObject):
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
         try:
             with source, download_path.open("wb") as file_in_cache:
+                self.currently_opened_file = source
                 shutil.copyfileobj(source, file_in_cache)
-            shutil.move(download_path, target_path)
+            if self.should_run:
+                shutil.move(download_path, target_path)
         finally:
+            self.currently_opened_file = None
             if download_path.is_file():
                 download_path.unlink()
 
