@@ -71,7 +71,7 @@ class PageScene(QGraphicsScene):
 
     def _compute_position_for_image(self, index: QModelIndex):
         document = self.get_document()
-        cards_per_row = document.compute_cards_per_row()
+        cards_per_row = document.compute_page_column_count()
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
         spacing_vertical = document.image_spacing_vertical
@@ -102,7 +102,7 @@ class PageScene(QGraphicsScene):
 
     def _draw_vertical_markers(self, document, line_color):
         scaling_horizontal = self.width() / document.page_width
-        column_count = document.compute_cards_per_row()
+        column_count = document.compute_page_column_count()
         if not document.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
@@ -118,7 +118,7 @@ class PageScene(QGraphicsScene):
 
     def _draw_horizontal_markers(self, document, line_color):
         scaling_vertical = self.height() / document.page_height
-        row_count = document.compute_row_count()
+        row_count = document.compute_page_row_count()
         if not document.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):

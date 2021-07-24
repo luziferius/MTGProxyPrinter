@@ -218,7 +218,7 @@ class Document(QAbstractItemModel):
         self.margin_right = document_settings.getint("margin-right-mm")
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
-        self.total_cards_per_page = self.compute_total_cards_per_page()
+        self.total_cards_per_page = self.compute_page_card_capacity()
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
@@ -246,7 +246,7 @@ class Document(QAbstractItemModel):
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
         previous_card_count = self.total_cards_per_page
-        self.total_cards_per_page = self.compute_total_cards_per_page()
+        self.total_cards_per_page = self.compute_page_card_capacity()
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
@@ -294,7 +294,7 @@ class Document(QAbstractItemModel):
         page_index = self.createIndex(page_number, 0)
         page_card_count = self.rowCount(page_index)
         first_index, last_index = page_card_count, page_card_count + count - 1
-        if last_index > (page_capacity := self.compute_total_cards_per_page()):
+        if last_index > (page_capacity := self.compute_page_card_capacity()):
             last_index = page_capacity
         cards_inserted = last_index - first_index
         if not cards_inserted:
@@ -359,7 +359,8 @@ class Document(QAbstractItemModel):
         index = self.createIndex(self.pages.index(page), 0)
         self.dataChanged.emit(index, index)
 
-    def compute_cards_per_row(self) -> int:
+    def compute_page_column_count(self) -> int:
+        """Returns the total number of card columns that fit on a page."""
         total_width: pint.Quantity = self.page_width * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
         spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
@@ -368,10 +369,11 @@ class Document(QAbstractItemModel):
         if total_width < Document.IMAGE_WIDTH:
             return 0
         total_width -= Document.IMAGE_WIDTH
-        cards = total_width/(Document.IMAGE_WIDTH+spacing)+1
+        cards = total_width / (Document.IMAGE_WIDTH+spacing) + 1
         return int(cards.to_tuple()[0])
 
-    def compute_row_count(self) -> int:
+    def compute_page_row_count(self) -> int:
+        """Returns the total number of card rows that fit on a page."""
         total_height: pint.Quantity = self.page_height * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
         spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
@@ -379,17 +381,20 @@ class Document(QAbstractItemModel):
         if total_height < Document.IMAGE_HEIGHT:
             return 0
         total_height -= Document.IMAGE_HEIGHT
-        cards = total_height/(Document.IMAGE_HEIGHT+spacing)+1
+        cards = total_height / (Document.IMAGE_HEIGHT+spacing) + 1
         return int(cards.to_tuple()[0])
 
-    def compute_total_cards_per_page(self) -> int:
-        return self.compute_row_count() * self.compute_cards_per_row()
+    def compute_page_card_capacity(self) -> int:
+        """Returns the total number of card images that fit on a single page."""
+        return self.compute_page_row_count() * self.compute_page_column_count()
 
     def save_as(self, path: pathlib.Path):
+        """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
         self.save_to_disk()
 
     def save_to_disk(self):
+        """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
         cards = (
@@ -426,7 +431,7 @@ class Document(QAbstractItemModel):
         # TODO: Ported.
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
-        maximum_cards_per_page = self.compute_total_cards_per_page()
+        maximum_cards_per_page = self.compute_page_card_capacity()
         last_index = self.rowCount() - 1
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
             if cards_to_add := maximum_cards_per_page - len(current_page):
@@ -449,7 +454,7 @@ class Document(QAbstractItemModel):
         # TODO: Ported.
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return 0
-        single_page_capacity = self.compute_total_cards_per_page()
+        single_page_capacity = self.compute_page_card_capacity()
         maximum_document_capacity = single_page_capacity * self.rowCount()
         total_cards_in_document = sum(map(len, self.pages))
         if total_cards_in_document != 0:
@@ -468,7 +473,7 @@ class Document(QAbstractItemModel):
 
         """
         # TODO: Ported.
-        cards_per_page = self.compute_total_cards_per_page()
+        cards_per_page = self.compute_page_card_capacity()
         source_card_count = len(source)
         target_card_count = len(page_to_fill)
         card_count_to_move = min(cards_per_page - target_card_count, source_card_count)
@@ -498,7 +503,7 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
-        current_capacity = self.compute_total_cards_per_page()
+        current_capacity = self.compute_page_card_capacity()
         if not current_capacity:
             raise RuntimeError("Page capacity is zero!")
         excess_images = []
