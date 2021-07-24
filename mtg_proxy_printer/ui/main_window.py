@@ -359,7 +359,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_save_document_triggered(self):
         logger.debug("User clicked on Save")
-        if self.document.file_path is None:
+        if self.document.save_file_path is None:
             logger.debug("No save file path set. Call 'Save as' instead.")
             self.action_save_as.triggered.emit()
         else:
