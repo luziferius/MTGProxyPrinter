@@ -41,6 +41,7 @@ class PageScene(QGraphicsScene):
     def __init__(self, document: Document, draw_background: bool, *args, **kwargs):
         super(PageScene, self).__init__(*args, **kwargs)
         self.document = document
+        self.document.rowsInserted.connect(self.on_rows_inserted)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
         self.draw_background = draw_background
@@ -58,13 +59,22 @@ class PageScene(QGraphicsScene):
         images_to_draw = self.selected_page.model().rowCount(self.selected_page)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
-            index = self.selected_page.child(row, PageColumns.Image)
-            position = self._compute_position_for_image(index)
-            image: QPixmap = index.data(Qt.DisplayRole)
-            if image is not None:
-                pixmap = self.addPixmap(image)
-                pixmap.setTransformationMode(Qt.SmoothTransformation)
-                pixmap.setPos(position)
+            self.draw_card(row)
+
+    def draw_card(self, row: int):
+        index = self.selected_page.child(row, PageColumns.Image)
+        position = self._compute_position_for_image(index)
+        image: QPixmap = index.data(Qt.DisplayRole)
+        if image is not None:
+            pixmap = self.addPixmap(image)
+            pixmap.setTransformationMode(Qt.SmoothTransformation)
+            pixmap.setPos(position)
+
+    def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
+        if parent.isValid() and parent.row() == self.selected_page.row():
+            logger.debug(f"{last-first+1} cards inserted to the currently shown page, drawing them.")
+            for new in range(first, last+1):
+                self.draw_card(new)
 
     @pyqtSlot()
     def redraw(self):
@@ -149,6 +159,7 @@ class PageRenderer(QGraphicsView):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
+        logger.info("Document instance received, creating PageScene.")
         self.setScene(PageScene(document, True, self.get_document_page_size(), self))
 
     @pyqtSlot(QPersistentModelIndex)
