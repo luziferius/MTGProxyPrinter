@@ -50,14 +50,16 @@ class PageScene(QGraphicsScene):
         self.selected_page = selected_page
         self.redraw()
 
-    @pyqtSlot(QModelIndex, QModelIndex)
-    def draw_cards(self, first_index: QModelIndex, last_index: QModelIndex):
-        logger.info(f"Drawing cards: Indices {first_index.row()} to {last_index.row()}")
-        # Qt includes the last element and Python excludes it, so add one to the range maximum.
-        for row in range(first_index.row(), last_index.row()+1):
-            index = first_index.sibling(row, first_index.column())
+    def draw_cards(self):
+        if not self.selected_page.isValid():
+            logger.warning("Got invalid persistent model index. Not drawing cards.")
+            return
+        images_to_draw = self.selected_page.model().rowCount(self.selected_page)
+        logger.info(f"Drawing {images_to_draw} cards")
+        for row in range(images_to_draw):
+            index = self.selected_page.child(row, PageColumns.Image)
             position = self._compute_position_for_image(index)
-            image: QPixmap = index.sibling(index.row(), PageColumns.Image).data(Qt.DisplayRole)
+            image: QPixmap = index.data(Qt.DisplayRole)
             if image is not None:
                 pixmap = self.addPixmap(image)
                 pixmap.setTransformationMode(Qt.SmoothTransformation)
@@ -73,10 +75,7 @@ class PageScene(QGraphicsScene):
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
         if settings["documents"].getboolean("print-cut-marker"):
             self._draw_cut_markers()
-        first_index = self.selected_page.child(0, 0)
-        row_count = self.selected_page.model().rowCount(first_index)
-        last_index = self.selected_page.child(row_count, 0)
-        self.draw_cards(first_index, last_index)
+        self.draw_cards()
 
     def _compute_position_for_image(self, index: QModelIndex):
         cards_per_row = self.document.compute_page_column_count()
