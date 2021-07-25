@@ -243,16 +243,14 @@ class Document(QAbstractItemModel):
 
         :return: Number of cards removed
         """
-        # TODO: Ported.
         if not indices:
             return 0
         first_index, last_index = indices[0].row(), indices[-1].row()
-        self.beginRemoveRows(QModelIndex(), first_index, last_index)
-        to_delete = set(index.row() for index in indices)
-        page: CardList = indices[0].data(Qt.EditRole)
-        del page[first_index:last_index+1]  # TODO: Check if this deletes the correct range
+        self.beginRemoveRows(indices[0].parent(), first_index, last_index)
+        page: CardList = indices[0].parent().internalPointer()
+        del page[first_index:last_index+1]
         self.endRemoveRows()
-        return len(to_delete)
+        return last_index - first_index
         
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
@@ -537,7 +535,6 @@ class Document(QAbstractItemModel):
 
     @pyqtSlot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
-        # TODO: Ported.
         self.clear()
         self.save_file_path = None
 
@@ -546,7 +543,6 @@ class Document(QAbstractItemModel):
         Increments the usage count of all cards used in the document and updates the last use timestamps.
         Should be called after a successful PDF export and direct printing.
         """
-        # TODO: Ported.
         logger.info("Updating image usage for all cards in the document.")
         data = set(itertools.chain.from_iterable(
             map(self._get_page_content_as_scryfall_ids, self.pages)
@@ -565,7 +561,6 @@ class Document(QAbstractItemModel):
 
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
-        # TODO: Ported.
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
 
 
