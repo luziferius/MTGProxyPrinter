@@ -107,7 +107,6 @@ class Document(QAbstractItemModel):
     def headerData(
             self, section: typing.Union[int, PageColumns],
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        # TODO: Ported
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return Document.page_header[section]
         return super(Document, self).headerData(section, orientation, role)
@@ -115,7 +114,6 @@ class Document(QAbstractItemModel):
     @pyqtSlot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
-        # TODO: Ported.
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
         self.page_width = document_settings.getint("paper-width-mm")
@@ -135,7 +133,6 @@ class Document(QAbstractItemModel):
     @pyqtSlot()
     @pyqtSlot(int)
     def add_page(self, position: int = None) -> CardList:
-        # TODO: Ported.
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(QModelIndex(), position, position)
         new_page: CardList = []
@@ -153,7 +150,6 @@ class Document(QAbstractItemModel):
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
-        # TODO: Ported.
         current_page_position = self.pages.index(self.currently_edited_page)
         copies -= self._add_card(current_page_position, card, copies)
         current_page_position += 1
@@ -161,26 +157,23 @@ class Document(QAbstractItemModel):
             copies -= self._add_card(current_page_position, card, copies)
             current_page_position += 1
         while copies > 0:
-            self.add_page(current_page_position)
-            copies -= self._add_card(current_page_position, card, copies)
-            # Increment the index for each page. If the added amount is not divisible by the page_capacity, this causes
+            # Append each new page to the end. If the added amount is not divisible by the page_capacity, this causes
             # the last-added page to be non-full, instead of the first one in document page order.
-            current_page_position += 1
+            self.add_page()
+            copies -= self._add_card(self.rowCount()-1, card, copies)
 
     def _add_card(self, page_number: int, card: Card, count: int = 1) -> int:
         """
         Adds the given card up to count times to the given page. Returns the number of cards actually added.
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
         """
-        # TODO: Ported.
-
         page_capacity = self.compute_page_card_capacity()
         page_index = self.index(page_number, 0)
         page_card_count = self.rowCount(page_index)
         first_index, last_index = page_card_count, page_card_count + count - 1
         logger.debug(f"{page_capacity=}, {page_number=}, {first_index=}, {last_index=}")
-        if last_index > page_capacity:
-            last_index = page_capacity
+        if last_index >= page_capacity:
+            last_index = page_capacity - 1
         cards_inserted = last_index - first_index + 1
         if not cards_inserted:
             logger.debug(f"Trying to add {count} cards into full page {page_number}. Doing nothing")
@@ -194,7 +187,6 @@ class Document(QAbstractItemModel):
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
-        # TODO: Ported.
         if not indices:
             return
         if any(index.parent().isValid() for index in indices):
@@ -219,7 +211,6 @@ class Document(QAbstractItemModel):
           As returned by a QSelectionModel
         :return: Number of cards removed
         """
-        # TODO: Ported.
         current_range: typing.List[QModelIndex] = []
         ranges = []
         for index in indices:
@@ -270,7 +261,7 @@ class Document(QAbstractItemModel):
         elif parent.isValid():
             return len(PageColumns)  # child columnCount of a page. Number of shown Card fields
         else:
-            return len(DocumentColumns)  # columnCount of an invalid index. Returns one, because the top-level pages are list-like
+            return len(DocumentColumns)  # columnCount of an invalid index.
 
     def parent(self, child: QModelIndex) -> QModelIndex:
         data = child.internalPointer()
@@ -281,16 +272,17 @@ class Document(QAbstractItemModel):
             return QModelIndex()  # Pages have no parent
 
     def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
-        if row < 0 or column < 0:
+        if self.rowCount(parent) <= row < 0 or self.columnCount(parent) <= column < 0:
             return QModelIndex()
         if parent.isValid():
             logger.debug(f"{row=}, {column=}, {len(self.pages)=}")
-            return self.createIndex(row, column, parent.data(Qt.EditRole)[row])
+            container = parent.data(Qt.EditRole)[row]
+            return self.createIndex(row, column, container)
         else:
-            return self.createIndex(row, column, self.pages[row])
+            page = self.pages[row]
+            return self.createIndex(row, column, page)
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
-        # TODO: Ported.
         if not index.isValid():
             return None
         if index.parent().isValid():  # Card
@@ -300,7 +292,6 @@ class Document(QAbstractItemModel):
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
-        # TODO: Ported.
         if 0 > index.row() >= self.rowCount() or not index.isValid():
             logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
@@ -314,13 +305,14 @@ class Document(QAbstractItemModel):
 
     def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
-        # TODO: Ported.
-        if 0 > index.row() >= self.rowCount(index) or not index.isValid():
+        if 0 > index.row() >= self.rowCount(index) \
+                or 0 > index.column() >= self.columnCount(index) \
+                or not index.isValid():
             logger.error(
                 f"Invalid index: {index.row()=}, {index.column()=}, "
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
-        card: Card = index.parent().data(Qt.EditRole)[index.row()].card
+        card: Card = index.internalPointer().card
         if role in (Qt.DisplayRole, Qt.EditRole):
             if index.column() == PageColumns.CardName:
                 return card.name
@@ -338,7 +330,6 @@ class Document(QAbstractItemModel):
 
     @staticmethod
     def _get_page_preview(page: CardList):
-        # TODO: Ported.
         names = collections.Counter(container.card.name for container in page)
         return "\n".join(
             f"{count}× {name}" for name, count in names.items()
@@ -346,7 +337,6 @@ class Document(QAbstractItemModel):
 
     def compute_page_column_count(self) -> int:
         """Returns the total number of card columns that fit on a page."""
-        # TODO: Ported.
         total_width: pint.Quantity = self.page_width * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
         spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
@@ -360,7 +350,6 @@ class Document(QAbstractItemModel):
 
     def compute_page_row_count(self) -> int:
         """Returns the total number of card rows that fit on a page."""
-        # TODO: Ported.
         total_height: pint.Quantity = self.page_height * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
         spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
@@ -373,18 +362,15 @@ class Document(QAbstractItemModel):
 
     def compute_page_card_capacity(self) -> int:
         """Returns the total number of card images that fit on a single page."""
-        # TODO: Ported.
         return self.compute_page_row_count() * self.compute_page_column_count()
 
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
-        # TODO: Ported.
         self.save_file_path = path
         self.save_to_disk()
 
     def save_to_disk(self):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
-        # TODO: Ported.
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
         cards = (
@@ -418,7 +404,6 @@ class Document(QAbstractItemModel):
         moves cards from the last page with items to it.
         This fills all (but the last) pages up to the capacity limit to help reducing possible waste during printing.
         """
-        # TODO: Ported.
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
         maximum_cards_per_page = self.compute_page_card_capacity()
@@ -440,7 +425,6 @@ class Document(QAbstractItemModel):
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        # TODO: Ported.
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return 0
         single_page_capacity = self.compute_page_card_capacity()
@@ -459,7 +443,6 @@ class Document(QAbstractItemModel):
         Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
         If maximum_card_count is None, move as many cards as possible.
         """
-        # TODO: Ported.
         total_page_capacity = self.compute_page_card_capacity()
         source_card_count = len(source)
         target_card_count = len(page_to_fill)
@@ -492,7 +475,6 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
-        # TODO: Ported.
         total_page_capacity = self.compute_page_card_capacity()
         if not total_page_capacity:
             raise RuntimeError("Page capacity is zero!")

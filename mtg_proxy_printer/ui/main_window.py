@@ -20,6 +20,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt
     QPersistentModelIndex
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
+from PyQt5.QtTest import QAbstractItemModelTester
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
@@ -63,6 +64,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
         self.image_db = self._create_image_database()
         self.document = self._create_document_instance(arguments)
+        self.tester = QAbstractItemModelTester(self.document, QAbstractItemModelTester.FailureReportingMode.Fatal, self)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
