@@ -19,7 +19,8 @@ from PyQt5.QtGui import QColor, QPixmap
 import pint
 
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.model.document import Document, PageColumns
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
