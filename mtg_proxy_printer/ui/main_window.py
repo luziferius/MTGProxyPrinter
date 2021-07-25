@@ -336,6 +336,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot(QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex):
+        return
+        # FIXME
         if selected.isValid():
             new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
             self.current_page_changed.emit(new_page)

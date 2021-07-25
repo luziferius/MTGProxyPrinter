@@ -319,7 +319,7 @@ class Document(QAbstractItemModel):
         first_index, last_index = indices[0].row(), indices[-1].row()
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
-        remaining = (page, for index, page in enumerate(self.pages) if index not in to_delete)
+        remaining = (page for index, page in enumerate(self.pages) if index not in to_delete)
         self.pages[:] = remaining
         self.endRemoveRows()
         if not self.pages:
@@ -383,6 +383,14 @@ class Document(QAbstractItemModel):
             return len(self.pages[parent.row()])  # child rowCount of a page. Number of cards in that page
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
+
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if parent.isValid() and parent.parent().isValid():
+            return 0  # child columnCount of a Card instance. Always zero.
+        elif parent.isValid():
+            return len(PageColumns)  # child columnCount of a page. Number of shown Card fields
+        else:
+            return len(DocumentColumns)  # columnCount of an invalid index. Returns one, because the top-level pages are list-like
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         # TODO: Ported.
