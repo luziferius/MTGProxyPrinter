@@ -17,14 +17,20 @@ import time
 from unittest.mock import MagicMock
 
 from hamcrest import *
+import pytest
 
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from mtg_proxy_printer.model.document import Document, CardContainer
 
 from .helpers import create_new_card_database_with_json_card
 
 
-def test_document_two_overflow_events_only_add_one_new_page():
-    card_db = create_new_card_database_with_json_card("regular_english_card")
+@pytest.fixture()
+def card_db() -> CardDatabase:
+    return create_new_card_database_with_json_card("regular_english_card")
+
+
+def test_document_two_overflow_events_only_add_one_new_page(card_db: CardDatabase):
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     document.add_card(card, document.total_cards_per_page)
@@ -34,8 +40,7 @@ def test_document_two_overflow_events_only_add_one_new_page():
         assert_that(document.pages, has_length(2), "Unexpected page break occurred")
 
 
-def test_clear_database_not_clearing_last_image_use_timestamps():
-    card_db = create_new_card_database_with_json_card("regular_english_card")
+def test_clear_database_not_clearing_last_image_use_timestamps(card_db: CardDatabase):
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     # Add two copies. Should only count as one usage
@@ -50,3 +55,51 @@ def test_clear_database_not_clearing_last_image_use_timestamps():
         contains_exactly(
             contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
     )
+
+
+@pytest.mark.parametrize("pages_to_fill", range(1, 5))
+def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    document = Document(card_db, MagicMock())
+    page_capacity = document.compute_page_card_capacity()
+    assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
+    assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
+    document.add_card(card, pages_to_fill*page_capacity)
+    assert_that(
+        document.pages,
+        has_length(pages_to_fill),
+        "Unexpected page count"
+    )
+    assert_that(document.rowCount(), is_(equal_to(pages_to_fill)))
+    for page_row, page in enumerate(document.pages):
+        assert_that(
+            page,
+            has_length(page_capacity),
+            "Unexpected number of cards in page."
+        )
+        assert_that(document.index(page_row, 0).isValid(), is_(True))
+        assert_that(
+            document.index(page_row, 0).internalPointer(),
+            is_(page),
+            "Root element internal pointer not referring the page data list."
+        )
+        assert_that(
+            document.rowCount(document.index(page_row, 0)),
+            is_(equal_to(page_capacity)),
+            f"rowCount() of parent index at row {page_row} wrong."
+        )
+        for card_index in range(page_capacity):
+            assert_that(
+                document.index(page_row, 0).child(card_index, 0).internalPointer(),
+                all_of(
+                    instance_of(CardContainer),
+                    has_property("parent", is_(page)),
+                    has_property(
+                        "card", all_of(
+                            instance_of(Card),
+                            has_property("scryfall_id", equal_to("0000579f-7b35-4ed3-b44c-db2a538066fe")),
+                        ),
+                    ),
+                ),
+                "Parent relationship broken"
+            )
