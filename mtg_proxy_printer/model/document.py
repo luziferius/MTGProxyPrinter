@@ -149,7 +149,6 @@ class Page(QAbstractTableModel):
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
         self.cards[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
-        self.dataChanged.emit(self.createIndex(first_index, 0), self.createIndex(last_index, 0))
         self.endRemoveRows()
         return len(to_delete)
 
@@ -236,6 +235,7 @@ class Document(QAbstractItemModel):
     @pyqtSlot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
+        # TODO: Ported.
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
         self.page_width = document_settings.getint("paper-width-mm")
@@ -254,15 +254,17 @@ class Document(QAbstractItemModel):
 
     @pyqtSlot()
     @pyqtSlot(int)
-    def add_page(self, position: int = None):
+    def add_page(self, position: int = None) -> CardList:
         # TODO: Ported.
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(QModelIndex(), position, position)
+        new_page: CardList = []
         if position == self.rowCount():
-            self.pages.append([])
+            self.pages.append(new_page)
         else:
-            self.pages.insert(position, [])
+            self.pages.insert(position, new_page)
         self.endInsertRows()
+        return new_page
 
     @pyqtSlot(Card, int)
     def add_card(self, card: Card, copies: int):
@@ -309,23 +311,66 @@ class Document(QAbstractItemModel):
 
     @pyqtSlot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
+        # TODO: Ported.
         if not indices:
             return
+        if any(index.parent().isValid() for index in indices):
+            raise RuntimeError("Tried to remove a Card in remove_pages()!")
         first_index, last_index = indices[0].row(), indices[-1].row()
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
-        remaining = []
-        for index, page in enumerate(self.pages):
-            if index in to_delete:
-                page.dataChanged.disconnect(self.on_page_data_changed)
-            else:
-                remaining.append(page)
+        remaining = (page, for index, page in enumerate(self.pages) if index not in to_delete)
         self.pages[:] = remaining
         self.endRemoveRows()
         if not self.pages:
             self.add_page()
             self.currently_edited_page = self.pages[0]
             self.document_cleared.emit()
+
+    @pyqtSlot(list)
+    def remove_card_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
+        """
+        Remove all cards in the given multi-selection.
+
+        :param indices: List with QModelIndex instances that represents a multi-selection.
+          As returned by a QSelectionModel
+        :return: Number of cards removed
+        """
+        # TODO: Ported.
+        current_range: typing.List[QModelIndex] = []
+        ranges = []
+        for index in indices:
+            if not index.parent().isValid():
+                raise RuntimeError("Tried to remove a page in remove_card_multi_selection()!")
+            if not current_range or index.row() == current_range[-1].row() + 1:
+                current_range.append(index)
+            if current_range and index.row() != current_range[-1].row() + 1:
+                ranges.append(current_range)
+                current_range = []
+        if current_range:
+            ranges.append(current_range)
+        if ranges:
+            ranges.reverse()
+            return sum(map(self.remove_cards, ranges))
+
+    @pyqtSlot(list)
+    def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
+        """
+        Remove all cards in the given list of consecutive model indices
+
+        :return: Number of cards removed
+        """
+        # TODO: Ported.
+        if not indices:
+            return 0
+        first_index, last_index = indices[0].row(), indices[-1].row()
+        self.beginRemoveRows(QModelIndex(), first_index, last_index)
+        to_delete = set(index.row() for index in indices)
+        page: CardList = indices[0].data(Qt.EditRole)
+        # TODO: This can be expressed by a simple del statement, because indices are consecutive.
+        page[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
+        self.endRemoveRows()
+        return len(to_delete)
         
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
@@ -340,27 +385,70 @@ class Document(QAbstractItemModel):
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+        # TODO: Ported.
+        if not index.isValid():
+            return None
+        if index.parent().isValid():  # Card
+            return self._data_card(index, role)
+        else:  # Page
+            return self._data_page(index, role)
 
-        if 0 < index.row() >= self.rowCount():
-            print(f"Warning: Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
-            item = self.pages[0]
-        else:
-            item = self.pages[index.row()]
+    def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+        """Returns the requested data for an index pointing to a page of Cards."""
+        # TODO: Ported.
+        if 0 > index.row() >= self.rowCount() or not index.isValid():
+            logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
+            return None
+        item: CardList = self.pages[index.row()]
         if role == Qt.DisplayRole:
-            return item.get_preview()
+            return self._get_page_preview(item)
         elif role == Qt.ToolTipRole:
             return f"Page {index.row()+1}/{self.rowCount()}"
         elif role == Qt.EditRole:
             return item
 
+    def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+        """Returns the requested data for an index pointing to a single Card."""
+        # TODO: Ported.
+        if 0 > index.row() >= self.rowCount(index.parent()) or not index.isValid():
+            logger.error(
+                f"Invalid index: {index.row()=}, {index.column()=}, "
+                f"{self.rowCount(index.parent())=}, {index.isValid()=}")
+            return None
+        card: Card = index.parent().data(Qt.EditRole)[index.row()]
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            if index.column() == PageColumns.CardName:
+                return card.name
+            elif index.column() == PageColumns.Set:
+                if role == Qt.EditRole:
+                    return card.set.code
+                else:
+                    return f"{card.set.name} ({card.set.code.upper()})"
+            elif index.column() == PageColumns.CollectorNumber:
+                return card.collector_number
+            elif index.column() == PageColumns.Language:
+                return card.language
+            elif index.column() == PageColumns.Image:
+                return card.image_file
+
+    @staticmethod
+    def _get_page_preview(page: CardList):
+        # TODO: Ported.
+        names = collections.Counter(card.name for card in page)
+        return "\n".join(
+            f"{count}× {name}" for name, count in names.items()
+        )
+
     @pyqtSlot(QModelIndex)
     def on_page_data_changed(self, page_model_index: QModelIndex):
+        # FIXME: Deprecated. This was used to link Page instances to the Document class.
         page: Page = page_model_index.model()
         index = self.createIndex(self.pages.index(page), 0)
         self.dataChanged.emit(index, index)
 
     def compute_page_column_count(self) -> int:
         """Returns the total number of card columns that fit on a page."""
+        # TODO: Ported.
         total_width: pint.Quantity = self.page_width * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
         spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
@@ -374,6 +462,7 @@ class Document(QAbstractItemModel):
 
     def compute_page_row_count(self) -> int:
         """Returns the total number of card rows that fit on a page."""
+        # TODO: Ported.
         total_height: pint.Quantity = self.page_height * unit_registry.millimeter
         margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
         spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
@@ -386,20 +475,23 @@ class Document(QAbstractItemModel):
 
     def compute_page_card_capacity(self) -> int:
         """Returns the total number of card images that fit on a single page."""
+        # TODO: Ported.
         return self.compute_page_row_count() * self.compute_page_column_count()
 
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
+        # TODO: Ported.
         self.save_file_path = path
         self.save_to_disk()
 
     def save_to_disk(self):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
+        # TODO: Ported.
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
         cards = (
             zip(itertools.repeat(page_index), enumerate((
-                (card.scryfall_id, card.is_front) for card in page.cards), start=1))
+                (card.scryfall_id, card.is_front) for card in page), start=1))
             for page_index, page in enumerate(self.pages, start=1)
         )
         flattened_data: DocumentSaveFormat = (
@@ -436,12 +528,11 @@ class Document(QAbstractItemModel):
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
             if cards_to_add := maximum_cards_per_page - len(current_page):
                 while cards_to_add and current_index < last_index:
-                    cards_to_add -= self._move_images_to_fill_page(current_page, self.pages[last_index])
+                    cards_to_add -= self._move_images(current_page, self.pages[last_index])
                     if not len(self.pages[last_index]):
                         last_index -= 1
                 if current_index == last_index:  # No more pages available to take cards from
                     break
-
         empty_trailing_pages = [
             self.createIndex(row, 0) for row in range(1, self.rowCount()) if not len(self.pages[row])
         ]
@@ -465,18 +556,18 @@ class Document(QAbstractItemModel):
             result = self.rowCount() - 1
         return result
 
-    def _move_images_to_fill_page(self, page_to_fill: CardList, source: CardList) -> int:
+    def _move_images(self, page_to_fill: CardList, source: CardList, maximum_card_count: int = None) -> int:
         """
-        Moves min(free_slots_in_target, cards_in_source) items from the source page to the target page.
-
-        :return: Number of moved images
-
+        Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
+        If maximum_card_count is None, move as many cards as possible.
         """
         # TODO: Ported.
-        cards_per_page = self.compute_page_card_capacity()
+        total_page_capacity = self.compute_page_card_capacity()
         source_card_count = len(source)
         target_card_count = len(page_to_fill)
-        card_count_to_move = min(cards_per_page - target_card_count, source_card_count)
+        if maximum_card_count is None:
+            maximum_card_count = source_card_count
+        card_count_to_move = min(maximum_card_count, total_page_capacity - source_card_count)
         if not card_count_to_move:
             return 0
         source_page_index = self.createIndex(self.pages.index(source), 0)
@@ -503,37 +594,37 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
-        current_capacity = self.compute_page_card_capacity()
-        if not current_capacity:
+        # TODO: Ported.
+        total_page_capacity = self.compute_page_card_capacity()
+        if not total_page_capacity:
             raise RuntimeError("Page capacity is zero!")
-        excess_images = []
+        overflowing_pages, pages_with_free_slots = self._find_overflowing_and_underflowing_pages(total_page_capacity)
+        moved_images = 0
+        for page in overflowing_pages:
+            # Fill free slots on other pages first
+            while (current_page_length := len(page)) > total_page_capacity and pages_with_free_slots:
+                page_to_fill = pages_with_free_slots.pop(0)
+                moved_images += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
+            # After filling all remaining free slots, it may still contain images for multiple new pages,
+            # so add new pages until all excess images are moved.
+            while (current_page_length := len(page)) > total_page_capacity:
+                page_to_fill = self.add_page(self.pages.index(page)+1)
+                moved_images += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
+        return moved_images
+
+    def _find_overflowing_and_underflowing_pages(self, total_page_capacity):
+        """
+        Returns two lists of pages: The first contains all pages that are currently overflowing,
+        and the second contains that currently have free slots and therefore can fit additional cards.
+        """
+        overflowing_pages = []
+        pages_with_free_slots: PageList = []
         for page_number, page in enumerate(self.pages):
-            images_on_page = len(page)
-            if images_on_page > current_capacity:
-                # Qt includes the last value in a range and Python excludes it, so add one to the range 'stop'
-                page_index = self.createIndex(page_number, 0)
-                images_to_move_away = list(map(
-                    page_index.child,
-                    range(current_capacity, images_on_page+1),
-                    itertools.repeat(0)
-                ))
-                excess_images += page[current_capacity:images_on_page]
-                page.remove_multi_selection(images_to_move_away)
-        total_moved_images = len(excess_images)
-        for page in self.pages:
-            images_on_page = page.rowCount()
-            if free_slots := current_capacity - images_on_page:
-                to_add = excess_images[:free_slots]
-                excess_images = excess_images[free_slots:]
-                for card in to_add:
-                    page.add_card(card)
-        while excess_images:
-            page = self.add_page()
-            to_add = excess_images[:current_capacity]
-            excess_images = excess_images[current_capacity:]
-            for card in to_add:
-                page.add_card(card)
-        return total_moved_images
+            if len(page) > total_page_capacity:
+                overflowing_pages.append(page)
+            elif len(page) < total_page_capacity:
+                pages_with_free_slots.append(page)
+        return overflowing_pages, pages_with_free_slots
 
     @pyqtSlot()
     def clear(self):
@@ -546,6 +637,7 @@ class Document(QAbstractItemModel):
 
     @pyqtSlot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
+        # TODO: Ported.
         self.clear()
         self.save_file_path = None
 
@@ -554,8 +646,11 @@ class Document(QAbstractItemModel):
         Increments the usage count of all cards used in the document and updates the last use timestamps.
         Should be called after a successful PDF export and direct printing.
         """
+        # TODO: Ported.
         logger.info("Updating image usage for all cards in the document.")
-        data = set(itertools.chain.from_iterable(page.get_content_as_scryfall_ids() for page in self.pages))
+        data = set(itertools.chain.from_iterable(
+            map(self._get_page_content_as_scryfall_ids, self.pages)
+        ))
         self.card_db.begin_transaction()
         self.card_db.db.executemany(
             r"""
@@ -567,6 +662,11 @@ class Document(QAbstractItemModel):
             data
         )
         self.card_db.commit()
+
+    @staticmethod
+    def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
+        # TODO: Ported.
+        return ((card.scryfall_id, card.is_front) for card in page)
 
 
 class DocumentLoader(QObject):
