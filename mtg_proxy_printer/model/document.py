@@ -91,7 +91,6 @@ class Document(QAbstractItemModel):
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.pages: PageList = []
         self.add_page()
-
         self.currently_edited_page = self.pages[0]  # TODO: Attribute deprecated
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
@@ -150,17 +149,23 @@ class Document(QAbstractItemModel):
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
-        current_page_position = self.pages.index(self.currently_edited_page)
-        copies -= self._add_card(current_page_position, card, copies)
+        current_page_position = self.find_page_list_index(self.currently_edited_page)
+        copies -= (added_cards := self._add_card(current_page_position, card, copies))
+        logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < self.rowCount():
-            copies -= self._add_card(current_page_position, card, copies)
+            copies -= (added_cards := self._add_card(current_page_position, card, copies))
+            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
             current_page_position += 1
+        if copies > 0:
+            logger.debug("No empty slots found, appending new pages to the document, until all copies are added.")
         while copies > 0:
             # Append each new page to the end. If the added amount is not divisible by the page_capacity, this causes
             # the last-added page to be non-full, instead of the first one in document page order.
             self.add_page()
-            copies -= self._add_card(self.rowCount()-1, card, copies)
+            copies -= (added_cards := self._add_card(current_page_position, card, copies))
+            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
+            current_page_position += 1
 
     def _add_card(self, page_number: int, card: Card, count: int = 1) -> int:
         """
@@ -171,7 +176,6 @@ class Document(QAbstractItemModel):
         page_index = self.index(page_number, 0)
         page_card_count = self.rowCount(page_index)
         first_index, last_index = page_card_count, page_card_count + count - 1
-        logger.debug(f"{page_capacity=}, {page_number=}, {first_index=}, {last_index=}")
         if last_index >= page_capacity:
             last_index = page_capacity - 1
         cards_inserted = last_index - first_index + 1
@@ -181,6 +185,7 @@ class Document(QAbstractItemModel):
         self.beginInsertRows(page_index, first_index, last_index)
         page = self.pages[page_number]
         page += (CardContainer(page, card) for _ in range(cards_inserted))
+        logger.debug(f"After insert, page contains {len(page)} images.")
         self.endInsertRows()
         logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
@@ -264,20 +269,19 @@ class Document(QAbstractItemModel):
             return len(DocumentColumns)  # columnCount of an invalid index.
 
     def parent(self, child: QModelIndex) -> QModelIndex:
-        data = child.internalPointer()
+        data: typing.Union[CardList, CardContainer] = child.internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
-            return self.createIndex(self.pages.index(page), 0, page)
-        else:
-            return QModelIndex()  # Pages have no parent
+            return self.createIndex(self.find_page_list_index(page), 0, page)
+        return QModelIndex()  # Pages have no parent
 
     def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
         if self.rowCount(parent) <= row < 0 or self.columnCount(parent) <= column < 0:
             return QModelIndex()
         if parent.isValid():
-            logger.debug(f"{row=}, {column=}, {len(self.pages)=}")
-            container = parent.data(Qt.EditRole)[row]
-            return self.createIndex(row, column, container)
+            card_container = parent.data(Qt.EditRole)[row]
+            index = self.createIndex(row, column, card_container)
+            return index
         else:
             page = self.pages[row]
             return self.createIndex(row, column, page)
@@ -451,8 +455,9 @@ class Document(QAbstractItemModel):
         card_count_to_move = min(maximum_card_count, total_page_capacity - source_card_count)
         if not card_count_to_move:
             return 0
-        source_page_index = self.createIndex(self.pages.index(source), 0)
-        target_page_index = self.createIndex(self.pages.index(page_to_fill), 0)
+
+        source_page_index = self.createIndex(self.find_page_list_index(source), 0)
+        target_page_index = self.createIndex(self.find_page_list_index(page_to_fill), 0)
         self.beginMoveRows(
             source_page_index,
             source_card_count - card_count_to_move, source_card_count,
@@ -467,6 +472,12 @@ class Document(QAbstractItemModel):
         #  It may be required, so that the GUI updates the page overview texts. If so, the {source,target}_page_index
         #  can be reused for that purpose.
         return card_count_to_move
+
+    def find_page_list_index(self, other: CardList):
+        for index, page in enumerate(self.pages):
+            if page is other:
+                return index
+        raise ValueError("List not found in the page list.")
 
     def move_excess_images_to_free_pages(self) -> int:
         """
@@ -488,7 +499,7 @@ class Document(QAbstractItemModel):
             # After filling all remaining free slots, it may still contain images for multiple new pages,
             # so add new pages until all excess images are moved.
             while (current_page_length := len(page)) > total_page_capacity:
-                page_to_fill = self.add_page(self.pages.index(page)+1)
+                page_to_fill = self.add_page(self.find_page_list_index(page)+1)
                 moved_images += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
         return moved_images
 
