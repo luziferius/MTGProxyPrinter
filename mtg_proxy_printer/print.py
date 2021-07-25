@@ -16,13 +16,13 @@
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot
+from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot, QPersistentModelIndex
 from PyQt5.QtGui import QPainter, QPdfWriter
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.model.document import Document, Page
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -83,7 +83,7 @@ class PDFPrinter(QPdfWriter):
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         # PageScene reads the Page instance from the parent QObject. So store it here before starting any rendering
         self.page = None
-        self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
+        self.scene = PageScene(document, False, PageRenderer.get_document_page_size(), parent=self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def print_document(self):
@@ -116,8 +116,7 @@ class Renderer(QObject):
     def __init__(self, document: Document, *args, **kwargs):
         super(Renderer, self).__init__(*args, **kwargs)
         self.document = document
-        self.page: Page = None
-        self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
+        self.scene = PageScene(document, False, PageRenderer.get_document_page_size(), parent=self)
 
     @pyqtSlot(QPrinter)
     def print_document(self, printer: QPrinter):
@@ -125,10 +124,8 @@ class Renderer(QObject):
         painter.setRenderHint(QPainter.LosslessImageRendering)
         page_count = self.document.rowCount()
         for index, page in enumerate(self.document.pages, start=1):
-            self.page = page
-            self.scene.redraw()
+            self.scene.on_current_page_changed(QPersistentModelIndex(self.document.index(index, 0)))
             self.scene.render(painter)
             if index < page_count:
                 printer.newPage()
         painter.end()
-        self.page = None

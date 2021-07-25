@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import dataclasses
 import enum
 import itertools
 import pathlib
@@ -22,13 +23,12 @@ import sqlite3
 import typing
 import urllib.error
 
-import delegateto
 import pint
-from PyQt5.QtCore import QAbstractItemModel, QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, \
-    QThread
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, QThread
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.logger import get_logger
@@ -36,145 +36,30 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-CardList = typing.List[Card]
-PageList = typing.List[CardList]
+
 DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
 unit_registry = pint.UnitRegistry()
 
 __all__ = [
-    "Page",
     "PageList",
     "Document",
 ]
-
-
-class PageColumns(enum.IntEnum):
-    CardName = 0
-    Set = 1
-    CollectorNumber = 2
-    Language = 3
-    Image = 4
 
 
 class DocumentColumns(enum.IntEnum):
     Page = 0
 
 
-@delegateto.delegate("cards", "__len__")
-class Page(QAbstractTableModel):
-    """
-    This is a single page and part of a Document. It holds the proxies added to this page as a list of Card objects.
-    """
-
-    page_header = {
-        PageColumns.CardName: "Card name",
-        PageColumns.Set: "Set",
-        PageColumns.CollectorNumber: "Collector #",
-        PageColumns.Language: "Language",
-        PageColumns.Image: "Image",
-    }
-
-    def __init__(self, *args, **kwargs):
-        super(Page, self).__init__(*args, **kwargs)
-        self.cards: CardList = []
-
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
-        return len(self.cards) if not parent.isValid() else 0
-
-    def columnCount(self, parent: QModelIndex = QModelIndex) -> int:
-        return len(Page.page_header) if not parent.isValid() else 0
-    
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
-        card = self.cards[index.row()]
-        if role in (Qt.DisplayRole, Qt.EditRole):
-            if index.column() == PageColumns.CardName:
-                return card.name
-            elif index.column() == PageColumns.Set:
-                if role == Qt.EditRole:
-                    return card.set.code
-                else:
-                    return f"{card.set.name} ({card.set.code.upper()})"
-            elif index.column() == PageColumns.CollectorNumber:
-                return card.collector_number
-            elif index.column() == PageColumns.Language:
-                return card.language
-            elif index.column() == PageColumns.Image:
-                return card.image_file
-
-    @pyqtSlot(Card)
-    @pyqtSlot(Card, int)
-    def add_card(self, card: Card, count: int = 1):
-        first_index, last_index = self.rowCount(), self.rowCount() + count - 1
-        self.beginInsertRows(QModelIndex(), first_index, last_index)
-        self.cards += list(itertools.repeat(card, count))
-        self.endInsertRows()
-        self.dataChanged.emit(
-            self.createIndex(first_index, 0),
-            self.createIndex(last_index, self.columnCount()-1)
-        )
-
-    @pyqtSlot(list)
-    def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
-        """
-        Remove all cards in the given multi-selection.
-
-        :param indices: List with QModelIndex instances that represents a multi-selection.
-          As returned by a QSelectionModel
-        :return: Number of cards removed
-        """
-        current_range: typing.List[QModelIndex] = []
-        ranges = []
-        for index in indices:
-            if not current_range or index.row() == current_range[-1].row() + 1:
-                current_range.append(index)
-            if current_range and index.row() != current_range[-1].row() + 1:
-                ranges.append(current_range)
-                current_range = []
-        if current_range:
-            ranges.append(current_range)
-        if ranges:
-            ranges.reverse()
-            return sum(map(self.remove_cards, ranges))
-
-    @pyqtSlot(list)
-    def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
-        """
-        Remove all cards in the given list of consecutive model indices
-
-        :return: Number of cards removed
-        """
-        if not indices:
-            return 0
-        first_index, last_index = indices[0].row(), indices[-1].row()
-        self.beginRemoveRows(QModelIndex(), first_index, last_index)
-        to_delete = set(index.row() for index in indices)
-        self.cards[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
-        self.endRemoveRows()
-        return len(to_delete)
-
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return Page.page_header[section]
-        return super(Page, self).headerData(section, orientation, role)
-
-    def get_preview(self):
-        names = collections.Counter(card.name for card in self.cards)
-        return "\n".join(
-            f"{count}× {name}" for name, count in names.items()
-        )
-
-    def clear(self):
-        self.remove_cards(list(map(
-            self.createIndex,
-            range(self.rowCount()),
-            itertools.repeat(0)
-        )))
-
-    def get_content_as_scryfall_ids(self) -> typing.Iterable[typing.Tuple[str, bool]]:
-        return ((card.scryfall_id, card.is_front) for card in self.cards)
+@dataclasses.dataclass
+class CardContainer:
+    parent: list
+    card: Card
 
 
-@delegateto.delegate("pages", "__len__")
+CardList = typing.List[CardContainer]
+PageList = typing.List[CardList]
+
+
 class Document(QAbstractItemModel):
     """
     This holds a multi-page document that contains any number of same-size pages.
@@ -224,13 +109,8 @@ class Document(QAbstractItemModel):
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
         # TODO: Ported
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return Page.page_header[section]
+            return Document.page_header[section]
         return super(Document, self).headerData(section, orientation, role)
-
-    @pyqtSlot(Page)
-    def on_currently_edited_page_changed(self, new_page: Page):
-        # TODO: DEPRECATED
-        self.currently_edited_page = new_page
 
     @pyqtSlot()
     def apply_settings(self):
@@ -293,20 +173,23 @@ class Document(QAbstractItemModel):
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
         """
         # TODO: Ported.
-        page_index = self.createIndex(page_number, 0)
+
+        page_capacity = self.compute_page_card_capacity()
+        page_index = self.index(page_number, 0)
         page_card_count = self.rowCount(page_index)
         first_index, last_index = page_card_count, page_card_count + count - 1
-        if last_index > (page_capacity := self.compute_page_card_capacity()):
+        logger.debug(f"{page_capacity=}, {page_number=}, {first_index=}, {last_index=}")
+        if last_index > page_capacity:
             last_index = page_capacity
-        cards_inserted = last_index - first_index
+        cards_inserted = last_index - first_index + 1
         if not cards_inserted:
             logger.debug(f"Trying to add {count} cards into full page {page_number}. Doing nothing")
             return 0
         self.beginInsertRows(page_index, first_index, last_index)
         page = self.pages[page_number]
-        page += itertools.repeat(card, cards_inserted)
+        page += (CardContainer(page, card) for _ in range(cards_inserted))
         self.endInsertRows()
-        logger.debug(f'Added {cards_inserted} × "{Card.name}" to page {page_number}')
+        logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
 
     @pyqtSlot(list)
@@ -367,8 +250,7 @@ class Document(QAbstractItemModel):
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
         to_delete = set(index.row() for index in indices)
         page: CardList = indices[0].data(Qt.EditRole)
-        # TODO: This can be expressed by a simple del statement, because indices are consecutive.
-        page[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
+        del page[first_index:last_index+1]  # TODO: Check if this deletes the correct range
         self.endRemoveRows()
         return len(to_delete)
         
@@ -380,7 +262,7 @@ class Document(QAbstractItemModel):
         if parent.isValid() and parent.parent().isValid():
             return 0  # child rowCount of a Card instance. Always zero.
         elif parent.isValid():
-            return len(self.pages[parent.row()])  # child rowCount of a page. Number of cards in that page
+            return len(parent.data(Qt.EditRole))  # child rowCount of a page. Number of cards in that page
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
@@ -391,6 +273,23 @@ class Document(QAbstractItemModel):
             return len(PageColumns)  # child columnCount of a page. Number of shown Card fields
         else:
             return len(DocumentColumns)  # columnCount of an invalid index. Returns one, because the top-level pages are list-like
+
+    def parent(self, child: QModelIndex) -> QModelIndex:
+        data = child.internalPointer()
+        if isinstance(data, CardContainer):
+            page = data.parent
+            return self.createIndex(self.pages.index(page), 0, page)
+        else:
+            return QModelIndex()  # Pages have no parent
+
+    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
+        if row < 0 or column < 0:
+            return QModelIndex()
+        if parent.isValid():
+            logger.debug(f"{row=}, {column=}, {len(self.pages)=}")
+            return self.createIndex(row, column, parent.data(Qt.EditRole)[row])
+        else:
+            return self.createIndex(row, column, self.pages[row])
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         # TODO: Ported.
@@ -418,12 +317,12 @@ class Document(QAbstractItemModel):
     def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
         # TODO: Ported.
-        if 0 > index.row() >= self.rowCount(index.parent()) or not index.isValid():
+        if 0 > index.row() >= self.rowCount(index) or not index.isValid():
             logger.error(
                 f"Invalid index: {index.row()=}, {index.column()=}, "
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
-        card: Card = index.parent().data(Qt.EditRole)[index.row()]
+        card: Card = index.parent().data(Qt.EditRole)[index.row()].card
         if role in (Qt.DisplayRole, Qt.EditRole):
             if index.column() == PageColumns.CardName:
                 return card.name
@@ -442,17 +341,10 @@ class Document(QAbstractItemModel):
     @staticmethod
     def _get_page_preview(page: CardList):
         # TODO: Ported.
-        names = collections.Counter(card.name for card in page)
+        names = collections.Counter(container.card.name for container in page)
         return "\n".join(
             f"{count}× {name}" for name, count in names.items()
         )
-
-    @pyqtSlot(QModelIndex)
-    def on_page_data_changed(self, page_model_index: QModelIndex):
-        # FIXME: Deprecated. This was used to link Page instances to the Document class.
-        page: Page = page_model_index.model()
-        index = self.createIndex(self.pages.index(page), 0)
-        self.dataChanged.emit(index, index)
 
     def compute_page_column_count(self) -> int:
         """Returns the total number of card columns that fit on a page."""
@@ -499,7 +391,7 @@ class Document(QAbstractItemModel):
             raise RuntimeError("Cannot save without a file path!")
         cards = (
             zip(itertools.repeat(page_index), enumerate((
-                (card.scryfall_id, card.is_front) for card in page), start=1))
+                (container.card.scryfall_id, container.card.is_front) for container in page), start=1))
             for page_index, page in enumerate(self.pages, start=1)
         )
         flattened_data: DocumentSaveFormat = (
@@ -674,7 +566,7 @@ class Document(QAbstractItemModel):
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
         # TODO: Ported.
-        return ((card.scryfall_id, card.is_front) for card in page)
+        return ((container.card.scryfall_id, container.card.is_front) for container in page)
 
 
 class DocumentLoader(QObject):
@@ -845,7 +737,7 @@ class DocumentLoader(QObject):
 
     @pyqtSlot(Card)
     def _on_add_card(self, card: Card):
-        self.document.pages[-1].add_card(card)
+        self.document._add_card(len(self.document.pages), card)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")

@@ -16,7 +16,8 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer,\
+    QPersistentModelIndex
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
@@ -48,7 +49,7 @@ __all__ = [
 class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):
 
     should_update_languages = pyqtSignal()
-    current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
+    current_page_changed = pyqtSignal(QPersistentModelIndex)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
     loading_state_changed = pyqtSignal(bool)
@@ -67,8 +68,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.card_data_downloader = self._create_card_data_downloader()
         self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
-        self.window_size_changed.connect(self.page_view.window_size_changed)
-        self.current_page_changed.connect(self.page_view.current_page_changed)
+        self._setup_page_view()
         self._setup_loading_state_connections()
         self._setup_add_card_widget()
         self._setup_document_view()
@@ -103,6 +103,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
 
+    def _setup_page_view(self):
+        self.page_view: CurrentPageView
+        self.page_view.set_document(self.document)
+        self.window_size_changed.connect(self.page_view.window_size_changed)
+        self.current_page_changed.connect(self.page_view.current_page_changed)
+
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
@@ -114,7 +120,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
-        self.current_page_changed.connect(document.on_currently_edited_page_changed)
         self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
@@ -199,10 +204,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def _select_first_page(self):
         old_selection = self.document_view.selectionModel().currentIndex()
-        self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
+        self.document_view.selectionModel().select(self.document.index(0, 0), QItemSelectionModel.Select)
         # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
         # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(self.document.createIndex(0, 0), old_selection)
+        self.document_view.selectionModel().currentChanged.emit(self.document.index(0, 0), old_selection)
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)
@@ -336,11 +341,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot(QModelIndex)
     def on_selected_page_changed(self, selected: QModelIndex):
-        return
-        # FIXME
         if selected.isValid():
-            new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
-            self.current_page_changed.emit(new_page)
+            self.current_page_changed.emit(QPersistentModelIndex(selected))
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):

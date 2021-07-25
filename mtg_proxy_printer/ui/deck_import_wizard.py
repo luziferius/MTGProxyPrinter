@@ -25,7 +25,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.document import Page
+from mtg_proxy_printer.model.card_list import CardListModel
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -191,8 +191,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.parsed_cards_table: QTableView
         self.setupUi(self)
         self.setCommitPage(True)
-        self.page = Page(self)
-        self.parsed_cards_table.setModel(self.page)
+        self.card_list = CardListModel(self)
+        self.parsed_cards_table.setModel(self.card_list)
         self.parsed_cards_table.setColumnHidden(4, True)
         self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
@@ -210,11 +210,11 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
         for card, count in parsed_deck.items():
-            self.page.add_card(card, count)
+            self.card_list.add_card(card, count)
         self.unparsed_lines_text.setPlainText("\n".join(unparsed_lines))
 
     def cleanupPage(self):
-        self.page.clear()
+        self.card_list.clear()
         super(SummaryPage, self).cleanupPage()
 
 
