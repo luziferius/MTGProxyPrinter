@@ -203,11 +203,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def _select_first_page(self):
-        old_selection = self.document_view.selectionModel().currentIndex()
-        self.document_view.selectionModel().select(self.document.index(0, 0), QItemSelectionModel.Select)
-        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
-        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(self.document.index(0, 0), old_selection)
+        new_selection = self.document.index(0, 0)
+        self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+        self.document.on_ui_selects_new_page(new_selection)
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)
