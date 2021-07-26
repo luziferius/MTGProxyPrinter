@@ -263,10 +263,11 @@ class Document(QAbstractItemModel):
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
         Otherwise returns the number of pages.
         """
-        if parent.isValid() and parent.parent().isValid():
-            return 0  # child rowCount of a Card instance. Always zero.
-        elif parent.isValid():
-            return len(parent.data(Qt.EditRole))  # child rowCount of a page. Number of cards in that page
+        if parent.isValid():
+            if parent.parent().isValid():
+                return 0  # child rowCount of a Card instance. Always zero.
+            else:
+                return len(parent.internalPointer())  # child rowCount of a page. Number of cards in that page
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
@@ -282,14 +283,15 @@ class Document(QAbstractItemModel):
         data: typing.Union[CardList, CardContainer] = child.internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
-            return self.createIndex(self.find_page_list_index(page), 0, page)
+            page_index = self.find_page_list_index(page)
+            return self.createIndex(page_index, 0, page)
         return QModelIndex()  # Pages have no parent
 
     def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
         if self.rowCount(parent) <= row < 0 or self.columnCount(parent) <= column < 0:
             return QModelIndex()
         if parent.isValid():
-            card_container = parent.data(Qt.EditRole)[row]
+            card_container = parent.internalPointer()[row]
             index = self.createIndex(row, column, card_container)
             return index
         else:
@@ -327,7 +329,7 @@ class Document(QAbstractItemModel):
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
         card: Card = index.internalPointer().card
-        if role in (Qt.DisplayRole, Qt.EditRole):
+        if role in {Qt.DisplayRole, Qt.EditRole}:
             if index.column() == PageColumns.CardName:
                 return card.name
             elif index.column() == PageColumns.Set:
@@ -484,6 +486,9 @@ class Document(QAbstractItemModel):
         return card_count_to_move
 
     def find_page_list_index(self, other: CardList):
+        """Finds the 0-indexed locationof the given CardList in the pages list"""
+        # TODO: Add a a dict based lookup table attribute to the Document: {id(list), position} and use that to find the
+        #  position. That has to be updated whenever a page is added or removed.
         for index, page in enumerate(self.pages):
             if page is other:
                 return index
