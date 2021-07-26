@@ -56,7 +56,8 @@ class PageScene(QGraphicsScene):
         if not self.selected_page.isValid():
             logger.warning("Got invalid persistent model index. Not drawing cards.")
             return
-        images_to_draw = self.selected_page.model().rowCount(self.selected_page)
+        index = self.selected_page.sibling(self.selected_page.row(), 0)
+        images_to_draw = self.selected_page.model().rowCount(index)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
             self.draw_card(row)
