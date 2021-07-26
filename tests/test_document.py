@@ -129,14 +129,14 @@ def test_remove_pages_removes_middle_page(card_db: CardDatabase):
     )
 
 
-@pytest.mark.timeout(1)
+@pytest.mark.timeout(0.1)
 def test_compacting_document(card_db):
     pages_to_fill = 5
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     page_capacity = document.compute_page_card_capacity()
     document.add_card(card, pages_to_fill*page_capacity)
-    cards_to_remove = 5
+    cards_to_remove = 6
     for page_index in range(1, 4):
         document.remove_cards(
             list(map(document.index(page_index, 0).child, range(cards_to_remove), itertools.repeat(0)))
@@ -145,8 +145,16 @@ def test_compacting_document(card_db):
     for page_index in (0, 4):
         assert_that(document.pages[page_index], has_length(page_capacity))
     document.compact_pages()
-    for page in document.pages[:-1]:
-        assert_that(page, has_length(page_capacity))
+    assert_that(document.pages, has_length(3), "Unexpected page count after compacting")
+    for index, page in enumerate(document.pages):
+        assert_that(page, has_length(page_capacity), "Unexpected card count found on a page")
+        for card_container in page:
+            assert_that(
+                card_container.parent,
+                same_instance(page),
+                f"Parent relationship incorrect on page {index}"
+            )
+
 
 
 
