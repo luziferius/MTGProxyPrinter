@@ -237,9 +237,9 @@ class Document(QAbstractItemModel):
                 raise RuntimeError("Tried to remove a page in remove_card_multi_selection()!")
             if not current_range or index.row() == current_range[-1].row() + 1:
                 current_range.append(index)
-            if current_range and index.row() != current_range[-1].row() + 1:
+            elif current_range and index.row() != current_range[-1].row() + 1:
                 ranges.append(current_range)
-                current_range = []
+                current_range = [index]
         if current_range:
             ranges.append(current_range)
         if ranges:
