@@ -24,7 +24,8 @@ import typing
 import urllib.error
 
 import pint
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, QThread
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, QThread, \
+    QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
@@ -74,6 +75,7 @@ class Document(QAbstractItemModel):
     loading_state_changed = pyqtSignal(bool)
     total_cards_per_page_changed = pyqtSignal(int)
     document_cleared = pyqtSignal()
+    current_page_changed = pyqtSignal(QPersistentModelIndex)
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -91,7 +93,7 @@ class Document(QAbstractItemModel):
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.pages: PageList = []
         self.add_page()
-        self.currently_edited_page = self.pages[0]  # TODO: Attribute deprecated
+        self.currently_edited_page = self.pages[0]
         document_settings = settings["documents"]
         self.page_height = document_settings.getint("paper-height-mm")
         self.page_width = document_settings.getint("paper-width-mm")
@@ -102,6 +104,14 @@ class Document(QAbstractItemModel):
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
         self.total_cards_per_page = self.compute_page_card_capacity()
+
+    def on_ui_selects_new_page(self, new_page: QModelIndex):
+        if new_page.parent().isValid():
+            error_message = "on_ui_selects_new_page() called with model index pointing to a card instead of a page"
+            logger.error(error_message)
+            raise RuntimeError(error_message)
+        self.currently_edited_page = self.pages[new_page.row()]
+        self.current_page_changed.emit(QPersistentModelIndex(new_page))
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
@@ -521,7 +531,7 @@ class Document(QAbstractItemModel):
     def clear(self):
         logger.info("Clearing current document")
         self.remove_pages(list(map(
-            self.createIndex,
+            self.index,
             range(self.rowCount()),
             itertools.repeat(0)
         )))
@@ -615,7 +625,6 @@ class DocumentLoader(QObject):
             self.finished.connect(self.propagate_errors_during_load)
             self.document = document
             self.save_path = pathlib.Path()
-            self.data: typing.List[typing.Tuple[int, int, str, bool]] = []
             self.should_run: bool = True
 
         def propagate_errors_during_load(self):
@@ -671,7 +680,6 @@ class DocumentLoader(QObject):
                 except socket.timeout as e:
                     self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
                 self.add_card.emit(card)
-            self.data.clear()
             return unknown_ids
 
         @staticmethod
@@ -725,7 +733,7 @@ class DocumentLoader(QObject):
 
     @pyqtSlot(Card)
     def _on_add_card(self, card: Card):
-        self.document._add_card(len(self.document.pages), card)
+        self.document._add_card(len(self.document.pages)-1, card)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
