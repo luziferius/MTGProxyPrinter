@@ -481,7 +481,7 @@ class Document(QAbstractItemModel):
         target_card_count = len(page_to_fill)
         if maximum_card_count is None:
             maximum_card_count = source_card_count
-        card_count_to_move = min(maximum_card_count, total_page_capacity - source_card_count)
+        card_count_to_move = min(maximum_card_count, total_page_capacity - target_card_count)
         if not card_count_to_move:
             return 0
         source_page_index = self.index(self.find_page_list_index(source), 0)
@@ -492,11 +492,13 @@ class Document(QAbstractItemModel):
             target_page_index,
             target_card_count
         )
-        cards_to_move = source[:card_count_to_move]
-        source[:] = source[:card_count_to_move-1]
+        cards_to_move = source[-card_count_to_move:]
+        source[:] = source[:source_card_count-card_count_to_move]
+
         for container in cards_to_move:  # Re-parent containers before moving them to their new list
             container.parent = page_to_fill
         page_to_fill += cards_to_move
+        logger.debug(f"{len(cards_to_move)=}, {len(source)=}, {len(page_to_fill)=}")
         self.endMoveRows()
         # TODO: Evaluate if it is necessary to emit dataChanged() for the top level source and target pages.
         #  It may be required, so that the GUI updates the page overview texts. If so, the {source,target}_page_index
