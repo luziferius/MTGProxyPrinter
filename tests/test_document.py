@@ -57,13 +57,20 @@ def test_clear_database_not_clearing_last_image_use_timestamps(card_db: CardData
     )
 
 
+def test_document_is_created_empty(card_db: CardDatabase):
+    document = Document(card_db, MagicMock())
+    assert_that(document.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
+    assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
+    assert_that(document.pages, has_length(1), "Expected creation of a single, empty page.")
+    assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
+    assert_that(document.pages[0], is_(empty()), "Expected empty page, but it is not empty")
+
+
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
 def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     page_capacity = document.compute_page_card_capacity()
-    assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
-    assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
     document.add_card(card, pages_to_fill*page_capacity)
     assert_that(
         document.pages,
@@ -103,3 +110,20 @@ def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
                 ),
                 "Parent relationship broken"
             )
+
+
+def test_remove_pages_removes_middle_page(card_db: CardDatabase):
+    document = Document(card_db, MagicMock())
+    pages_to_create = 10
+    for _ in range(pages_to_create-1):  # Create one less, because the document has one page by default
+        document.add_page()
+    assert_that(document.rowCount(), is_(equal_to(pages_to_create)), "Unexpected page count before deletion.")
+    assert_that(document.pages, has_length(pages_to_create), "Unexpected page count before deletion.")
+    page_to_delete = document.pages[5]
+    document.remove_pages([document.index(5, 0)])
+    assert_that(document.rowCount(), is_(equal_to(pages_to_create-1)), "Unexpected page count after deletion.")
+    assert_that(document.pages, has_length(pages_to_create-1), "Unexpected page count after deletion.")
+    assert_that(
+        calling(document.find_page_list_index).with_args(page_to_delete),
+        raises(ValueError), "Wrong page deleted."
+    )
