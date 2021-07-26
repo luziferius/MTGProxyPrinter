@@ -42,6 +42,8 @@ class PageScene(QGraphicsScene):
         super(PageScene, self).__init__(*args, **kwargs)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
+        self.document.rowsRemoved.connect(self.on_rows_removed)
+        self.document.rowsMoved.connect(self.on_rows_moved)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
         self.draw_background = draw_background
@@ -77,8 +79,23 @@ class PageScene(QGraphicsScene):
             for new in range(first, last+1):
                 self.draw_card(new)
 
+    def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
+        if parent.isValid() and parent.row() == self.selected_page.row():
+            logger.debug(f"{last-first+1} cards removed from the currently shown page, re-drawing the page.")
+            self.redraw()
+
+    def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
+        if parent.isValid() and parent.row() == self.selected_page.row():
+            # Cards moved away are treated as if they were deleted
+            self.on_rows_removed(parent, start, end)
+        if destination.isValid() and destination.row() == self.selected_page.row():
+            # Moved in cards are treated as if they were added
+            self.on_rows_inserted(destination, row, row+end-start-1)
+
     @pyqtSlot()
     def redraw(self):
+        if not self.selected_page.isValid():
+            logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
         if self.draw_background:

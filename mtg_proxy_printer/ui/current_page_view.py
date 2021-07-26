@@ -54,7 +54,6 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.page_renderer: PageRenderer
         self.page_renderer.set_document(document)
         self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
-        self.delete_selected_images_button.clicked.connect(self.page_renderer.scene().redraw)
         self.settings_changed.connect(self.page_renderer.scene().redraw)
 
     @pyqtSlot()
