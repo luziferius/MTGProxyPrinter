@@ -43,6 +43,7 @@ class PageScene(QGraphicsScene):
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)
+        self.document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
         self.document.rowsMoved.connect(self.on_rows_moved)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
@@ -74,18 +75,24 @@ class PageScene(QGraphicsScene):
             pixmap.setPos(position)
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
-        if parent.isValid() and parent.row() == self.selected_page.row():
+        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
             logger.debug(f"{last-first+1} cards inserted to the currently shown page, drawing them.")
             for new in range(first, last+1):
                 self.draw_card(new)
 
+    def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
+        if not parent.isValid() and self.selected_page.isValid() and self.selected_page.row() in range(first, last+1):
+            logger.debug("About to delete the currently shown page. Removing the held index and clearing the view.")
+            self.selected_page = QModelIndex()
+            self.clear()
+
     def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
-        if parent.isValid() and parent.row() == self.selected_page.row():
+        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
             logger.debug(f"{last-first+1} cards removed from the currently shown page, re-drawing the page.")
             self.redraw()
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
-        if parent.isValid() and parent.row() == self.selected_page.row():
+        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
             # Cards moved away are treated as if they were deleted
             self.on_rows_removed(parent, start, end)
         if destination.isValid() and destination.row() == self.selected_page.row():
