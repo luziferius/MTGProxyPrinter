@@ -422,20 +422,30 @@ class Document(QAbstractItemModel):
         """
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
+        logger.info("Compacting document.")
         maximum_cards_per_page = self.compute_page_card_capacity()
         last_index = self.rowCount() - 1
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
             if cards_to_add := maximum_cards_per_page - len(current_page):
+                logger.debug(f"Found {cards_to_add} empty slots on page {current_index}")
                 while cards_to_add and current_index < last_index:
-                    cards_to_add -= self._move_images(current_page, self.pages[last_index])
-                    if not len(self.pages[last_index]):
+                    cards_to_add -= (moved_cards := self._move_images(current_page, self.pages[last_index]))
+                    logger.debug(f"Moved {moved_cards} from page {last_index} to page {current_index}. "
+                                 f"Free slots in target: {maximum_cards_per_page-len(current_page)}")
+                    if not self.pages[last_index]:
+                        logger.debug(f"Last page {last_index} now empty.")
                         last_index -= 1
+                    else:
+                        logger.debug(f"Last page contains {len(self.pages[last_index])} cards.")
                 if current_index == last_index:  # No more pages available to take cards from
+                    logger.debug("No more pages available to take cards from. Finished.")
                     break
         empty_trailing_pages = [
-            self.createIndex(row, 0) for row in range(1, self.rowCount()) if not len(self.pages[row])
+            self.index(row, 0) for (row, page) in enumerate(self.pages) if not page
         ]
+        logger.debug(f"Removing {len(empty_trailing_pages)} empty, trailing pages.")
         self.remove_pages(empty_trailing_pages)
+        logger.info("Compacting done.")
 
     def compute_pages_saved_by_compacting(self) -> int:
         """
@@ -446,7 +456,7 @@ class Document(QAbstractItemModel):
         single_page_capacity = self.compute_page_card_capacity()
         maximum_document_capacity = single_page_capacity * self.rowCount()
         total_cards_in_document = sum(map(len, self.pages))
-        if total_cards_in_document != 0:
+        if total_cards_in_document:
             result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
         else:
             # This is a special case that is not handled correctly by the formula above. If the document
@@ -467,9 +477,8 @@ class Document(QAbstractItemModel):
         card_count_to_move = min(maximum_card_count, total_page_capacity - source_card_count)
         if not card_count_to_move:
             return 0
-
-        source_page_index = self.createIndex(self.find_page_list_index(source), 0)
-        target_page_index = self.createIndex(self.find_page_list_index(page_to_fill), 0)
+        source_page_index = self.index(self.find_page_list_index(source), 0)
+        target_page_index = self.index(self.find_page_list_index(page_to_fill), 0)
         self.beginMoveRows(
             source_page_index,
             source_card_count - card_count_to_move, source_card_count,
@@ -477,7 +486,9 @@ class Document(QAbstractItemModel):
             target_card_count
         )
         cards_to_move = source[:card_count_to_move]
-        source[:] = source[:card_count_to_move]
+        source[:] = source[:card_count_to_move-1]
+        for container in cards_to_move:  # Re-parent containers before moving them to their new list
+            container.parent = page_to_fill
         page_to_fill += cards_to_move
         self.endMoveRows()
         # TODO: Evaluate if it is necessary to emit dataChanged() for the top level source and target pages.
