@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex
+from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from PyQt5.QtGui import QColor, QPixmap
 import pint
@@ -38,8 +38,8 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
-    def __init__(self, document: Document, draw_background: bool, *args, **kwargs):
-        super(PageScene, self).__init__(*args, **kwargs)
+    def __init__(self, document: Document, draw_background: bool, scene_rect: QRectF, parent: QObject = None):
+        super(PageScene, self).__init__(scene_rect, parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)

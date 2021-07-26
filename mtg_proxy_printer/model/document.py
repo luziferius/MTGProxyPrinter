@@ -137,7 +137,7 @@ class Document(QAbstractItemModel):
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
-            self.move_excess_images_to_free_pages()
+            self.move_excess_cards_to_free_pages()
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -436,7 +436,7 @@ class Document(QAbstractItemModel):
             if cards_to_add := maximum_cards_per_page - len(current_page):
                 logger.debug(f"Found {cards_to_add} empty slots on page {current_index}")
                 while cards_to_add and current_index < last_index:
-                    cards_to_add -= (moved_cards := self._move_images(current_page, self.pages[last_index]))
+                    cards_to_add -= (moved_cards := self._move_cards(current_page, self.pages[last_index]))
                     logger.debug(f"Moved {moved_cards} from page {last_index} to page {current_index}. "
                                  f"Free slots in target: {maximum_cards_per_page-len(current_page)}")
                     if not self.pages[last_index]:
@@ -471,7 +471,7 @@ class Document(QAbstractItemModel):
             result = self.rowCount() - 1
         return result
 
-    def _move_images(self, page_to_fill: CardList, source: CardList, maximum_card_count: int = None) -> int:
+    def _move_cards(self, page_to_fill: CardList, source: CardList, maximum_card_count: int = None) -> int:
         """
         Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
         If maximum_card_count is None, move as many cards as possible.
@@ -509,7 +509,7 @@ class Document(QAbstractItemModel):
                 return index
         raise ValueError("List not found in the page list.")
 
-    def move_excess_images_to_free_pages(self) -> int:
+    def move_excess_cards_to_free_pages(self) -> int:
         """
         If the page capacity is reduced due to increased margins, spacing or reduced page size, images beyond the
         page capacity should be moved from overflowing pages to free slots and potentially new pages at the end.
@@ -527,12 +527,12 @@ class Document(QAbstractItemModel):
             # Fill free slots on other pages first
             while (current_page_length := len(page)) > total_page_capacity and pages_with_free_slots:
                 page_to_fill = pages_with_free_slots.pop(0)
-                moved_cards += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - total_page_capacity)
             # After filling all remaining free slots, it may still contain images for multiple new pages,
             # so add new pages until all excess images are moved.
             while (current_page_length := len(page)) > total_page_capacity:
                 page_to_fill = self.add_page()
-                moved_cards += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - total_page_capacity)
                 if len(page_to_fill) < total_page_capacity:
                     pages_with_free_slots.append(page_to_fill)
         logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
