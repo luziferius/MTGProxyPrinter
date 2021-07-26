@@ -16,8 +16,7 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer,\
-    QPersistentModelIndex
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 from PyQt5.QtTest import QAbstractItemModelTester
@@ -50,7 +49,6 @@ __all__ = [
 class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):
 
     should_update_languages = pyqtSignal()
-    current_page_changed = pyqtSignal(QPersistentModelIndex)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
     loading_state_changed = pyqtSignal(bool)
@@ -109,7 +107,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.page_view: CurrentPageView
         self.page_view.set_document(self.document)
         self.window_size_changed.connect(self.page_view.window_size_changed)
-        self.current_page_changed.connect(self.page_view.current_page_changed)
+        self.document.current_page_changed.connect(self.page_view.on_current_page_changed)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -188,7 +186,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def _setup_document_view(self):
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
         self._select_first_page()
 
     def offer_re_downloading_card_database(self):
@@ -341,26 +339,20 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
-    @pyqtSlot(QModelIndex)
-    def on_selected_page_changed(self, selected: QModelIndex):
-        if selected.isValid():
-            self.current_page_changed.emit(QPersistentModelIndex(selected))
-
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
+
         self.document_view: DocumentView
         to_be_deleted = self.document_view.selectedIndexes()
+        logger.info(f"User selects to delete the currently selected page. Removing page {to_be_deleted[0].row()+1}")
         self.document.remove_pages(to_be_deleted)
-        new_row_selection = self.document.createIndex(
-            min(to_be_deleted[0].row(), self.document.rowCount()-1),
+        new_row_selection = self.document.index(
+            min(to_be_deleted[0].row()-1, self.document.rowCount()-1),
             0
         )
-        old_selection = self.document_view.selectionModel().currentIndex()
         self.document_view.selectionModel().select(
             new_row_selection, QItemSelectionModel.ClearAndSelect)
-        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
-        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
+        self.document.on_ui_selects_new_page(new_row_selection)
 
     @pyqtSlot()
     def on_action_save_document_triggered(self):

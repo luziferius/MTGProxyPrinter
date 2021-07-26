@@ -16,7 +16,6 @@
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex
 from PyQt5.QtWidgets import QTableView
 
-
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
 
@@ -32,36 +31,28 @@ __all__ = [
 
 class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
 
-    current_page_changed = pyqtSignal(QPersistentModelIndex)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super(CurrentPageView, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        self.document = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
-        self.document = document
         self._setup_page_renderer(document)
-        self._setup_page_card_table_view(document)
-
-    def _setup_page_card_table_view(self, document: Document):
-        self.page_card_table_view: QTableView
         self.page_card_table_view.setModel(document)
-        self.current_page_changed.connect(
-            lambda persistent_index: self.page_card_table_view.setRootIndex(
-                persistent_index.sibling(persistent_index.row(), persistent_index.column())
-            ))
-        self.current_page_changed.connect(lambda _: self.page_card_table_view.setColumnHidden(4, True))
+
+    def on_current_page_changed(self, new_page: QPersistentModelIndex):
+        self.page_card_table_view.setRootIndex(new_page.sibling(new_page.row(), new_page.column()))
+        self.page_card_table_view.setColumnHidden(4, True)
+        self.page_renderer.on_current_page_changed(new_page)
 
     def _setup_page_renderer(self, document: Document):
         self.page_renderer: PageRenderer
         self.page_renderer.set_document(document)
         self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
         self.delete_selected_images_button.clicked.connect(self.page_renderer.scene().redraw)
-        self.current_page_changed.connect(self.page_renderer.on_current_page_changed)
         self.settings_changed.connect(self.page_renderer.scene().redraw)
 
     @pyqtSlot()
@@ -69,4 +60,4 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.page_card_table_view: QTableView
         multi_selection = self.page_card_table_view.selectionModel().selectedRows()
         logger.debug(f"User removes {len(multi_selection)} items from the current page.")
-        self.document.remove_card_multi_selection(multi_selection)
+        self.page_card_table_view.model().remove_card_multi_selection(multi_selection)
