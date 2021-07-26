@@ -501,7 +501,7 @@ class Document(QAbstractItemModel):
         return card_count_to_move
 
     def find_page_list_index(self, other: CardList):
-        """Finds the 0-indexed locationof the given CardList in the pages list"""
+        """Finds the 0-indexed location of the given CardList in the pages list"""
         # TODO: Add a a dict based lookup table attribute to the Document: {id(list), position} and use that to find the
         #  position. That has to be updated whenever a page is added or removed.
         for index, page in enumerate(self.pages):
@@ -520,18 +520,23 @@ class Document(QAbstractItemModel):
         if not total_page_capacity:
             raise RuntimeError("Page capacity is zero!")
         overflowing_pages, pages_with_free_slots = self._find_overflowing_and_underflowing_pages(total_page_capacity)
-        moved_images = 0
+        logger.info(
+            f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
+        moved_cards = 0
         for page in overflowing_pages:
             # Fill free slots on other pages first
             while (current_page_length := len(page)) > total_page_capacity and pages_with_free_slots:
                 page_to_fill = pages_with_free_slots.pop(0)
-                moved_images += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
+                moved_cards += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
             # After filling all remaining free slots, it may still contain images for multiple new pages,
             # so add new pages until all excess images are moved.
             while (current_page_length := len(page)) > total_page_capacity:
-                page_to_fill = self.add_page(self.find_page_list_index(page)+1)
-                moved_images += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
-        return moved_images
+                page_to_fill = self.add_page()
+                moved_cards += self._move_images(page_to_fill, page, current_page_length-total_page_capacity)
+                if len(page_to_fill) < total_page_capacity:
+                    pages_with_free_slots.append(page_to_fill)
+        logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
+        return moved_cards
 
     def _find_overflowing_and_underflowing_pages(self, total_page_capacity):
         """
