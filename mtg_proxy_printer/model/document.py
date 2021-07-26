@@ -227,17 +227,17 @@ class Document(QAbstractItemModel):
         Remove all cards in the given multi-selection.
 
         :param indices: List with QModelIndex instances that represents a multi-selection.
-          As returned by a QSelectionModel
+          As returned by a QSelectionModel.
         :return: Number of cards removed
         """
         current_range: typing.List[QModelIndex] = []
-        ranges = []
+        ranges: typing.List[typing.List[QModelIndex]] = []
         for index in indices:
             if not index.parent().isValid():
                 raise RuntimeError("Tried to remove a page in remove_card_multi_selection()!")
             if not current_range or index.row() == current_range[-1].row() + 1:
                 current_range.append(index)
-            elif current_range and index.row() != current_range[-1].row() + 1:
+            else:
                 ranges.append(current_range)
                 current_range = [index]
         if current_range:
