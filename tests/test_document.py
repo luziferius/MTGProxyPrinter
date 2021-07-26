@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import itertools
 import time
 from unittest.mock import MagicMock
 
@@ -127,3 +127,26 @@ def test_remove_pages_removes_middle_page(card_db: CardDatabase):
         calling(document.find_page_list_index).with_args(page_to_delete),
         raises(ValueError), "Wrong page deleted."
     )
+
+
+@pytest.mark.timeout(1)
+def test_compacting_document(card_db):
+    pages_to_fill = 5
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    document = Document(card_db, MagicMock())
+    page_capacity = document.compute_page_card_capacity()
+    document.add_card(card, pages_to_fill*page_capacity)
+    cards_to_remove = 5
+    for page_index in range(1, 4):
+        document.remove_cards(
+            list(map(document.index(page_index, 0).child, range(cards_to_remove), itertools.repeat(0)))
+        )
+        assert_that(document.pages[page_index], has_length(page_capacity-cards_to_remove))
+    for page_index in (0, 4):
+        assert_that(document.pages[page_index], has_length(page_capacity))
+    document.compact_pages()
+    for page in document.pages[:-1]:
+        assert_that(page, has_length(page_capacity))
+
+
+
