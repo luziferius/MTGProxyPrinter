@@ -207,14 +207,18 @@ class Document(QAbstractItemModel):
         if any(index.parent().isValid() for index in indices):
             raise RuntimeError("Tried to remove a Card in remove_pages()!")
         first_index, last_index = indices[0].row(), indices[-1].row()
+        logger.debug(f"Removing pages {first_index} to {last_index}. {self.rowCount()=}")
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
+        logger.debug("BeginRemoveRows() called")
         to_delete = set(index.row() for index in indices)
+        logger.debug(f"Rows to delete: {sorted(to_delete)}")
         remaining = (page for index, page in enumerate(self.pages) if index not in to_delete)
         self.pages[:] = remaining
         self.endRemoveRows()
         if not self.pages:
             self.add_page()
             self.currently_edited_page = self.pages[0]
+            self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
             self.document_cleared.emit()
 
     @pyqtSlot(list)
@@ -295,7 +299,10 @@ class Document(QAbstractItemModel):
             index = self.createIndex(row, column, card_container)
             return index
         else:
-            page = self.pages[row]
+            try:
+                page = self.pages[row]
+            except IndexError as e:
+                raise IndexError(f"Row: {row}. Length: {len(self.pages)}") from e
             return self.createIndex(row, column, page)
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:

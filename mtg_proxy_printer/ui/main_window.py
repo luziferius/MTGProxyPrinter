@@ -28,7 +28,7 @@ import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
 from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
@@ -66,7 +66,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
-        self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
         self._setup_page_view()
         self._setup_loading_state_connections()
@@ -121,6 +120,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.action_new_document.triggered.connect(document.clear_all_data)
+        self.action_compact_document.triggered.connect(document.compact_pages)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
@@ -339,15 +339,17 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
-
         self.document_view: DocumentView
-        to_be_deleted = self.document_view.selectedIndexes()
-        logger.info(f"User selects to delete the currently selected page. Removing page {to_be_deleted[0].row()+1}")
-        self.document.remove_pages(to_be_deleted)
-        new_row_selection = self.document.index(
-            min(to_be_deleted[0].row()-1, self.document.rowCount()-1),
-            0
-        )
+        to_be_deleted = self.document_view.selectedIndexes()[0]
+        logger.info(f"User selects to delete the currently selected page. Removing page {to_be_deleted.row()}")
+        new_row_index: int = min(to_be_deleted.row(), self.document.rowCount()-2)
+        with BlockedSignals(self.document_view.selectionModel()):
+            # Deleting the selected page updates the view’s selection model.
+            # Do not propagate emitted signals due to that.
+            self.document.remove_pages([to_be_deleted])
+
+        logger.debug(f"Page deleted. Updating selection. Will select page {new_row_index}")
+        new_row_selection = self.document.index(new_row_index, 0)
         self.document_view.selectionModel().select(
             new_row_selection, QItemSelectionModel.ClearAndSelect)
         self.document.on_ui_selects_new_page(new_row_selection)
