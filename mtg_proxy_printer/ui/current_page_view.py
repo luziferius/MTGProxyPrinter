@@ -44,6 +44,8 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.page_card_table_view.setModel(document)
 
     def on_current_page_changed(self, new_page: QPersistentModelIndex):
+        self.page_card_table_view: QTableView
+        self.page_card_table_view.clearSelection()
         self.page_card_table_view.setRootIndex(new_page.sibling(new_page.row(), new_page.column()))
         self.page_card_table_view.setColumnHidden(4, True)
         self.page_renderer.on_current_page_changed(new_page)
