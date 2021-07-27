@@ -104,6 +104,13 @@ def _migrate_14_to_15(db: sqlite3.Connection):
     db.execute("UPDATE LastDatabaseUpdate SET newest_card_timestamp = substr(update_timestamp, 0, 11)")
 
 
+def _migrate_15_to_16(db: sqlite3.Connection):
+    # These two indices were useless indices containing a UNIQUE column plus the integer primary key.
+    # The UNIQUE constraint is already implemented by a UNIQUE INDEX, the PK is implicitly always part of the index.
+    db.execute(r"DROP INDEX LanguageIndex")
+    db.execute(r"DROP INDEX SetAbbreviationIndex")
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -119,6 +126,7 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_12_to_13,
         _migrate_13_to_14,
         _migrate_14_to_15,
+        _migrate_15_to_16,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:

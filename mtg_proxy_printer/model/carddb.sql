@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000015;
+PRAGMA user_version = 0000016;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -23,9 +23,6 @@ CREATE TABLE PrintLanguage (
   language_id INTEGER PRIMARY KEY NOT NULL,
   "language" TEXT NOT NULL UNIQUE
 );
-
-CREATE INDEX LanguageIndex ON PrintLanguage ("language", language_id);
-
 
 CREATE TABLE Card (
   -- An abstract card, all prints, variations and languages are considered the same Card for ruling purposes.
@@ -81,7 +78,6 @@ CREATE TABLE "Set" (
   set_uri  TEXT NOT NULL
 );
 
-CREATE INDEX SetAbbreviationIndex ON "Set" ("set", set_id);
 
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
@@ -95,8 +91,6 @@ CREATE TABLE UsedDownloadSettings (
   setting TEXT NOT NULL PRIMARY KEY,
   "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
 );
-
-
 
 CREATE TABLE LastImageUseTimestamps (
   -- Used to store the last image use timestamp and usage count of each image.
