@@ -61,6 +61,8 @@ class CardContainer:
 CardList = typing.List[CardContainer]
 PageList = typing.List[CardList]
 
+INVALID_INDEX = QModelIndex()
+
 
 class Document(QAbstractItemModel):
     """
@@ -147,7 +149,7 @@ class Document(QAbstractItemModel):
     @pyqtSlot(int)
     def add_page(self, position: int = None) -> CardList:
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
-        self.beginInsertRows(QModelIndex(), position, position)
+        self.beginInsertRows(INVALID_INDEX, position, position)
         new_page: CardList = []
         if position == self.rowCount():
             self.pages.append(new_page)
@@ -156,6 +158,8 @@ class Document(QAbstractItemModel):
             self.pages.insert(position, new_page)
             self._recreate_page_index_cache()
         self.endInsertRows()
+        self.currently_edited_page = new_page
+        self.current_page_changed.emit(QPersistentModelIndex(self.index(position, 0)))
         return new_page
 
     @pyqtSlot(Card, int)
@@ -166,8 +170,9 @@ class Document(QAbstractItemModel):
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
         current_page_position = self.find_page_list_index(self.currently_edited_page)
-        copies -= (added_cards := self._add_card(current_page_position, card, copies))
-        logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
+        if len(self.currently_edited_page) < self.compute_page_card_capacity():
+            copies -= (added_cards := self._add_card(current_page_position, card, copies))
+            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < self.rowCount():
             copies -= (added_cards := self._add_card(current_page_position, card, copies))
@@ -214,7 +219,7 @@ class Document(QAbstractItemModel):
             raise RuntimeError("Tried to remove a Card in remove_pages()!")
         first_index, last_index = indices[0].row(), indices[-1].row()
         logger.debug(f"Removing pages {first_index} to {last_index}. {self.rowCount()=}")
-        self.beginRemoveRows(QModelIndex(), first_index, last_index)
+        self.beginRemoveRows(INVALID_INDEX, first_index, last_index)
         logger.debug("BeginRemoveRows() called")
         to_delete = set(index.row() for index in indices)
         logger.debug(f"Rows to delete: {sorted(to_delete)}")
@@ -269,7 +274,7 @@ class Document(QAbstractItemModel):
         self.endRemoveRows()
         return last_index - first_index
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         """
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
         Otherwise returns the number of pages.
@@ -282,7 +287,7 @@ class Document(QAbstractItemModel):
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         if parent.isValid() and parent.parent().isValid():
             return 0  # child columnCount of a Card instance. Always zero.
         elif parent.isValid():
@@ -294,11 +299,12 @@ class Document(QAbstractItemModel):
         data: typing.Union[CardList, CardContainer] = child.internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
-            page_index = self.find_page_list_index(page)
+            page_id = id(page)
+            page_index = self.page_index_cache[page_id]
             return self.createIndex(page_index, 0, page)
-        return QModelIndex()  # Pages have no parent
+        return INVALID_INDEX  # Pages have no parent
 
-    def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
+    def index(self, row: int, column: int, parent: QModelIndex = INVALID_INDEX) -> QModelIndex:
         if parent.isValid():
             card_container = parent.internalPointer()[row]
             index = self.createIndex(row, column, card_container)
