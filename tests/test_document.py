@@ -60,6 +60,7 @@ def test_clear_database_not_clearing_last_image_use_timestamps(card_db: CardData
 def test_document_is_created_empty(card_db: CardDatabase):
     document = Document(card_db, MagicMock())
     assert_that(document.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
+    assert_that(document.total_cards_per_page, is_(equal_to(document.compute_page_card_capacity())))
     assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
     assert_that(document.pages, has_length(1), "Expected creation of a single, empty page.")
     assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
@@ -70,8 +71,7 @@ def test_document_is_created_empty(card_db: CardDatabase):
 def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
-    page_capacity = document.compute_page_card_capacity()
-    document.add_card(card, pages_to_fill*page_capacity)
+    document.add_card(card, pages_to_fill*document.total_cards_per_page)
     assert_that(
         document.pages,
         has_length(pages_to_fill),
@@ -81,7 +81,7 @@ def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
     for page_row, page in enumerate(document.pages):
         assert_that(
             page,
-            has_length(page_capacity),
+            has_length(document.total_cards_per_page),
             "Unexpected number of cards in page."
         )
         assert_that(document.index(page_row, 0).isValid(), is_(True))
@@ -92,10 +92,10 @@ def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
         )
         assert_that(
             document.rowCount(document.index(page_row, 0)),
-            is_(equal_to(page_capacity)),
+            is_(equal_to(document.total_cards_per_page)),
             f"rowCount() of parent index at row {page_row} wrong."
         )
-        for card_index in range(page_capacity):
+        for card_index in range(document.total_cards_per_page):
             assert_that(
                 document.index(page_row, 0).child(card_index, 0).internalPointer(),
                 all_of(
@@ -134,20 +134,19 @@ def test_compacting_document(card_db):
     pages_to_fill = 5
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
-    page_capacity = document.compute_page_card_capacity()
-    document.add_card(card, pages_to_fill*page_capacity)
+    document.add_card(card, pages_to_fill*document.total_cards_per_page)
     cards_to_remove = 6
     for page_index in range(1, 4):
         document.remove_cards(
             list(map(document.index(page_index, 0).child, range(cards_to_remove), itertools.repeat(0)))
         )
-        assert_that(document.pages[page_index], has_length(page_capacity-cards_to_remove))
+        assert_that(document.pages[page_index], has_length(document.total_cards_per_page-cards_to_remove))
     for page_index in (0, 4):
-        assert_that(document.pages[page_index], has_length(page_capacity))
+        assert_that(document.pages[page_index], has_length(document.total_cards_per_page))
     document.compact_pages()
     assert_that(document.pages, has_length(3), "Unexpected page count after compacting")
     for index, page in enumerate(document.pages):
-        assert_that(page, has_length(page_capacity), "Unexpected card count found on a page")
+        assert_that(page, has_length(document.total_cards_per_page), "Unexpected card count found on a page")
         for card_container in page:
             assert_that(
                 card_container.parent,

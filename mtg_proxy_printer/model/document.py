@@ -167,7 +167,7 @@ class Document(QAbstractItemModel):
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
         current_page_position = self.find_page_list_index(self.currently_edited_page)
-        if len(self.currently_edited_page) < self.compute_page_card_capacity():
+        if len(self.currently_edited_page) < self.total_cards_per_page:
             copies -= (added_cards := self._add_card(current_page_position, card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
@@ -190,12 +190,11 @@ class Document(QAbstractItemModel):
         Adds the given card up to count times to the given page. Returns the number of cards actually added.
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
         """
-        page_capacity = self.compute_page_card_capacity()
         page_index = self.index(page_number, 0)
         page_card_count = self.rowCount(page_index)
         first_index, last_index = page_card_count, page_card_count + count - 1
-        if last_index >= page_capacity:
-            last_index = page_capacity - 1
+        if last_index >= self.total_cards_per_page:
+            last_index = self.total_cards_per_page - 1
         cards_inserted = last_index - first_index + 1
         if not cards_inserted:
             logger.debug(f"Trying to add {count} cards into full page {page_number}. Doing nothing")
@@ -439,7 +438,7 @@ class Document(QAbstractItemModel):
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
         logger.info("Compacting document.")
-        maximum_cards_per_page = self.compute_page_card_capacity()
+        maximum_cards_per_page = self.total_cards_per_page
         last_index = self.rowCount() - 1
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
             if cards_to_add := maximum_cards_per_page - len(current_page):
@@ -471,11 +470,10 @@ class Document(QAbstractItemModel):
         """
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return 0
-        single_page_capacity = self.compute_page_card_capacity()
-        maximum_document_capacity = single_page_capacity * self.rowCount()
+        maximum_document_capacity = self.total_cards_per_page * self.rowCount()
         total_cards_in_document = sum(map(len, self.pages))
         if total_cards_in_document:
-            result = (maximum_document_capacity - total_cards_in_document) // single_page_capacity
+            result = (maximum_document_capacity - total_cards_in_document) // self.total_cards_per_page
         else:
             # This is a special case that is not handled correctly by the formula above. If the document
             # is empty, it can not be compacted to zero pages, but one.
@@ -487,12 +485,11 @@ class Document(QAbstractItemModel):
         Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
         If maximum_card_count is None, move as many cards as possible.
         """
-        total_page_capacity = self.compute_page_card_capacity()
         source_card_count = len(source)
         target_card_count = len(page_to_fill)
         if maximum_card_count is None:
             maximum_card_count = source_card_count
-        card_count_to_move = min(maximum_card_count, total_page_capacity - target_card_count)
+        card_count_to_move = min(maximum_card_count, self.total_cards_per_page - target_card_count)
         if not card_count_to_move:
             return 0
         source_page_index = self.index(self.find_page_list_index(source), 0)
@@ -525,25 +522,24 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
-        total_page_capacity = self.compute_page_card_capacity()
-        if not total_page_capacity:
+        if not self.total_cards_per_page:
             raise RuntimeError("Page capacity is zero!")
-        overflowing_pages, pages_with_free_slots = self._find_overflowing_and_underflowing_pages(total_page_capacity)
+        overflowing_pages, pages_with_free_slots = self._find_overflowing_and_underflowing_pages()
         logger.info(
             f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
         moved_cards = 0
         for page in overflowing_pages:
             # Fill free slots on other pages first
-            while (current_page_length := len(page)) > total_page_capacity and pages_with_free_slots:
+            while (current_page_length := len(page)) > self.total_cards_per_page and pages_with_free_slots:
                 page_to_fill = pages_with_free_slots.pop(0)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - total_page_capacity)
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - self.total_cards_per_page)
             # After filling all remaining free slots, it may still contain images for multiple new pages,
             # so add new pages until all excess images are moved.
-            while (current_page_length := len(page)) > total_page_capacity:
+            while (current_page_length := len(page)) > self.total_cards_per_page:
                 page_to_fill = self.add_page()
                 self._set_currently_edited_page(page_to_fill)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - total_page_capacity)
-                if len(page_to_fill) < total_page_capacity:
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - self.total_cards_per_page)
+                if len(page_to_fill) < self.total_cards_per_page:
                     pages_with_free_slots.append(page_to_fill)
         logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
         return moved_cards
@@ -553,7 +549,7 @@ class Document(QAbstractItemModel):
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
-    def _find_overflowing_and_underflowing_pages(self, total_page_capacity):
+    def _find_overflowing_and_underflowing_pages(self):
         """
         Returns two lists of pages: The first contains all pages that are currently overflowing,
         and the second contains that currently have free slots and therefore can fit additional cards.
@@ -561,9 +557,9 @@ class Document(QAbstractItemModel):
         overflowing_pages = []
         pages_with_free_slots: PageList = []
         for page_number, page in enumerate(self.pages):
-            if len(page) > total_page_capacity:
+            if len(page) > self.total_cards_per_page:
                 overflowing_pages.append(page)
-            elif len(page) < total_page_capacity:
+            elif len(page) < self.total_cards_per_page:
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
 
