@@ -342,7 +342,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.document_view: DocumentView
         to_be_deleted = self.document_view.selectedIndexes()[0]
         logger.info(f"User selects to delete the currently selected page. Removing page {to_be_deleted.row()}")
-        new_row_index: int = min(to_be_deleted.row(), self.document.rowCount()-2)
+        new_row_index: int = max(0, min(to_be_deleted.row(), self.document.rowCount()-2))
         with BlockedSignals(self.document_view.selectionModel()):
             # Deleting the selected page updates the view’s selection model.
             # Do not propagate emitted signals due to that.
