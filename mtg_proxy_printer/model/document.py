@@ -299,8 +299,6 @@ class Document(QAbstractItemModel):
         return QModelIndex()  # Pages have no parent
 
     def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
-        if self.rowCount(parent) <= row < 0 or self.columnCount(parent) <= column < 0:
-            return QModelIndex()
         if parent.isValid():
             card_container = parent.internalPointer()[row]
             index = self.createIndex(row, column, card_container)
