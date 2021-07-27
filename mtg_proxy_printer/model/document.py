@@ -135,13 +135,13 @@ class Document(QAbstractItemModel):
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
         previous_card_count = self.total_cards_per_page
+        self.compute_page_row_count.cache_clear()
+        self.compute_page_column_count.cache_clear()
         self.total_cards_per_page = self.compute_page_card_capacity()
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
             self.move_excess_cards_to_free_pages()
-        self.compute_page_row_count.cache_clear()
-        self.compute_page_column_count.cache_clear()
 
     @pyqtSlot()
     @pyqtSlot(int)
