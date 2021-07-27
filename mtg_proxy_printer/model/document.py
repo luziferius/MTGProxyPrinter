@@ -460,9 +460,11 @@ class Document(QAbstractItemModel):
                 if current_index == last_index:  # No more pages available to take cards from
                     logger.debug("No more pages available to take cards from. Finished.")
                     break
-        empty_trailing_pages = [
-            self.index(row, 0) for (row, page) in enumerate(self.pages) if not page
-        ]
+
+        empty_trailing_pages = list(map(
+            self.index, range(last_index+1, self.rowCount()), itertools.repeat(0)
+        ))
+
         logger.debug(f"Removing {len(empty_trailing_pages)} empty, trailing pages.")
         self.remove_pages(empty_trailing_pages)
         logger.info("Compacting done.")
