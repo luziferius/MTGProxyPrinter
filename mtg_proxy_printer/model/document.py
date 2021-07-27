@@ -16,6 +16,7 @@
 import collections
 import dataclasses
 import enum
+import functools
 import itertools
 import pathlib
 import socket
@@ -139,6 +140,8 @@ class Document(QAbstractItemModel):
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
             self.move_excess_cards_to_free_pages()
+        self.compute_page_row_count.cache_clear()
+        self.compute_page_column_count.cache_clear()
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -265,7 +268,7 @@ class Document(QAbstractItemModel):
         del page[first_index:last_index+1]
         self.endRemoveRows()
         return last_index - first_index
-        
+
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
@@ -362,6 +365,7 @@ class Document(QAbstractItemModel):
             f"{count}× {name}" for name, count in names.items()
         )
 
+    @functools.lru_cache(maxsize=1)
     def compute_page_column_count(self) -> int:
         """Returns the total number of card columns that fit on a page."""
         total_width: pint.Quantity = self.page_width * unit_registry.millimeter
@@ -375,6 +379,7 @@ class Document(QAbstractItemModel):
         cards = total_width / (Document.IMAGE_WIDTH+spacing) + 1
         return int(cards.to_tuple()[0])
 
+    @functools.lru_cache(maxsize=1)
     def compute_page_row_count(self) -> int:
         """Returns the total number of card rows that fit on a page."""
         total_height: pint.Quantity = self.page_height * unit_registry.millimeter
