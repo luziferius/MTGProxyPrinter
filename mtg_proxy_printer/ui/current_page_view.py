@@ -48,7 +48,6 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.page_card_table_view.clearSelection()
         self.page_card_table_view.setRootIndex(new_page.sibling(new_page.row(), new_page.column()))
         self.page_card_table_view.setColumnHidden(4, True)
-        self.page_renderer.on_current_page_changed(new_page)
 
     def _setup_page_renderer(self, document: Document):
         self.page_renderer: PageRenderer
