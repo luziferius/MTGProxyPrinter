@@ -92,6 +92,7 @@ class Document(QAbstractItemModel):
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.pages: PageList = []
+        self.page_index_cache: typing.Dict[int, int] = {}  # Mapping from page id() to list index in the page list
         self.add_page()
         self.currently_edited_page = self.pages[0]
         document_settings = settings["documents"]
@@ -147,8 +148,10 @@ class Document(QAbstractItemModel):
         new_page: CardList = []
         if position == self.rowCount():
             self.pages.append(new_page)
+            self.page_index_cache[id(new_page)] = len(self.pages) - 1
         else:
             self.pages.insert(position, new_page)
+            self._recreate_page_index_cache()
         self.endInsertRows()
         return new_page
 
@@ -214,6 +217,7 @@ class Document(QAbstractItemModel):
         logger.debug(f"Rows to delete: {sorted(to_delete)}")
         remaining = (page for index, page in enumerate(self.pages) if index not in to_delete)
         self.pages[:] = remaining
+        self._recreate_page_index_cache()
         self.endRemoveRows()
         if not self.pages:
             self.add_page()
@@ -502,12 +506,10 @@ class Document(QAbstractItemModel):
 
     def find_page_list_index(self, other: CardList):
         """Finds the 0-indexed location of the given CardList in the pages list"""
-        # TODO: Add a a dict based lookup table attribute to the Document: {id(list), position} and use that to find the
-        #  position. That has to be updated whenever a page is added or removed.
-        for index, page in enumerate(self.pages):
-            if page is other:
-                return index
-        raise ValueError("List not found in the page list.")
+        try:
+            return self.page_index_cache[id(other)]
+        except KeyError as k:
+            raise ValueError("List not found in the page list.") from k
 
     def move_excess_cards_to_free_pages(self) -> int:
         """
@@ -590,6 +592,12 @@ class Document(QAbstractItemModel):
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
+
+    def _recreate_page_index_cache(self):
+        self.page_index_cache.clear()
+        self.page_index_cache.update(
+            (id(page), index) for index, page in enumerate(self.pages)
+        )
 
 
 class DocumentLoader(QObject):
