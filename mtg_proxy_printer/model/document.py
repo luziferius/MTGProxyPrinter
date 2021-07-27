@@ -268,8 +268,9 @@ class Document(QAbstractItemModel):
         if not indices:
             return 0
         first_index, last_index = indices[0].row(), indices[-1].row()
-        self.beginRemoveRows(indices[0].parent(), first_index, last_index)
-        page: CardList = indices[0].parent().internalPointer()
+        parent = indices[0].parent()
+        self.beginRemoveRows(parent, first_index, last_index)
+        page: CardList = parent.internalPointer()
         del page[first_index:last_index+1]
         self.endRemoveRows()
         return last_index - first_index
@@ -279,16 +280,15 @@ class Document(QAbstractItemModel):
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
         Otherwise returns the number of pages.
         """
+        if isinstance(parent.internalPointer(), CardContainer):
+            return 0  # child rowCount of a Card instance. Always zero.
         if parent.isValid():
-            if parent.parent().isValid():
-                return 0  # child rowCount of a Card instance. Always zero.
-            else:
-                return len(parent.internalPointer())  # child rowCount of a page. Number of cards in that page
+            return len(parent.internalPointer())  # child rowCount of a page. Number of cards in that page
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
-        if parent.isValid() and parent.parent().isValid():
+        if isinstance(parent.internalPointer(), CardContainer):
             return 0  # child columnCount of a Card instance. Always zero.
         elif parent.isValid():
             return len(PageColumns)  # child columnCount of a page. Number of shown Card fields
@@ -305,10 +305,10 @@ class Document(QAbstractItemModel):
         return INVALID_INDEX  # Pages have no parent
 
     def index(self, row: int, column: int, parent: QModelIndex = INVALID_INDEX) -> QModelIndex:
-        if parent.isValid():
-            card_container = parent.internalPointer()[row]
-            index = self.createIndex(row, column, card_container)
-            return index
+        data = parent.internalPointer()
+        if isinstance(data, list):
+            card_container = data[row]
+            return self.createIndex(row, column, card_container)
         else:
             try:
                 page = self.pages[row]
@@ -319,7 +319,7 @@ class Document(QAbstractItemModel):
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         if not index.isValid():
             return None
-        if index.parent().isValid():  # Card
+        if isinstance(index.internalPointer(), CardContainer):  # Card
             return self._data_card(index, role)
         else:  # Page
             return self._data_page(index, role)
