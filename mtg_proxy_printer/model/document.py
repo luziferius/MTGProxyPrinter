@@ -77,7 +77,6 @@ class Document(QAbstractItemModel):
 
     loading_state_changed = pyqtSignal(bool)
     total_cards_per_page_changed = pyqtSignal(int)
-    document_cleared = pyqtSignal()
     current_page_changed = pyqtSignal(QPersistentModelIndex)
 
     page_header = {
@@ -158,8 +157,6 @@ class Document(QAbstractItemModel):
             self.pages.insert(position, new_page)
             self._recreate_page_index_cache()
         self.endInsertRows()
-        self.currently_edited_page = new_page
-        self.current_page_changed.emit(QPersistentModelIndex(self.index(position, 0)))
         return new_page
 
     @pyqtSlot(Card, int)
@@ -229,9 +226,6 @@ class Document(QAbstractItemModel):
         self.endRemoveRows()
         if not self.pages:
             self.add_page()
-            self.currently_edited_page = self.pages[0]
-            self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
-            self.document_cleared.emit()
 
     @pyqtSlot(list)
     def remove_card_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
@@ -257,6 +251,11 @@ class Document(QAbstractItemModel):
         if ranges:
             ranges.reverse()
             return sum(map(self.remove_cards, ranges))
+
+    def clear_page(self, index: QModelIndex):
+        if isinstance(index.internalPointer(), list):
+            cards = list(map(index.child, range(self.rowCount(index)), itertools.repeat(0)))
+            self.remove_cards(cards)
 
     @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
@@ -310,10 +309,7 @@ class Document(QAbstractItemModel):
             card_container = data[row]
             return self.createIndex(row, column, card_container)
         else:
-            try:
-                page = self.pages[row]
-            except IndexError as e:
-                raise IndexError(f"Row: {row}. Length: {len(self.pages)}") from e
+            page = self.pages[row]
             return self.createIndex(row, column, page)
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
@@ -545,11 +541,17 @@ class Document(QAbstractItemModel):
             # so add new pages until all excess images are moved.
             while (current_page_length := len(page)) > total_page_capacity:
                 page_to_fill = self.add_page()
+                self._set_currently_edited_page(page_to_fill)
                 moved_cards += self._move_cards(page_to_fill, page, current_page_length - total_page_capacity)
                 if len(page_to_fill) < total_page_capacity:
                     pages_with_free_slots.append(page_to_fill)
         logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
         return moved_cards
+
+    def _set_currently_edited_page(self, page: CardList):
+        self.currently_edited_page = page
+        page_position = self.find_page_list_index(page)
+        self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
     def _find_overflowing_and_underflowing_pages(self, total_page_capacity):
         """
