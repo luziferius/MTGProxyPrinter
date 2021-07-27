@@ -29,7 +29,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSign
     QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.settings import settings
@@ -91,6 +91,7 @@ class Document(QAbstractItemModel):
         super(Document, self).__init__(*args, **kwargs)
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
+        self.image_db = image_db
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.pages: PageList = []
@@ -318,6 +319,30 @@ class Document(QAbstractItemModel):
             return self._data_card(index, role)
         else:  # Page
             return self._data_page(index, role)
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        data = index.internalPointer()
+        flags = super(Document, self).flags(index)
+        if isinstance(data, CardContainer) and index.column() == PageColumns.CollectorNumber:
+            flags |= Qt.ItemIsEditable
+        return flags
+
+    def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
+        data = index.internalPointer()
+        if isinstance(data, CardContainer) and role == Qt.EditRole:
+            if index.column() == PageColumns.CollectorNumber:
+                card: Card = index.internalPointer().card
+                card_data = CardIdentificationData(
+                    card.language, card.name, card.set.code, value, is_front=card.is_front)
+                if result := self.card_db.get_cards_from_data(card_data):
+                    new_card = result[0]
+                    # TODO: Find a better way to implement image fetching in this case. The image should be fetched
+                    #  asynchronously.
+                    self.image_db.download_worker.get_image_synchronous(new_card)
+                    data.card = new_card
+                    self.dataChanged.emit(index, index.siblingAtColumn(PageColumns.Image), (Qt.DisplayRole, Qt.EditRole))
+                    return True
+        return False
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
