@@ -132,11 +132,6 @@ def test_translate_card_name(model: CardDatabase, source_name: str, target_langu
     )
 
 
-def test_cards_not_used_since(model: CardDatabase):
-    pytest.skip("Not implemented")
-    pass
-
-
 @pytest.mark.parametrize("usage_count, expected", [
     (-1, []),
     (0, []),

@@ -16,9 +16,10 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
+from PyQt5.QtTest import QAbstractItemModelTester
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
@@ -48,7 +49,6 @@ __all__ = [
 class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):
 
     should_update_languages = pyqtSignal()
-    current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
     loading_state_changed = pyqtSignal(bool)
@@ -62,13 +62,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
         self.image_db = self._create_image_database()
         self.document = self._create_document_instance(arguments)
+        self.tester = QAbstractItemModelTester(self.document, QAbstractItemModelTester.FailureReportingMode.Fatal, self)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
-        self.action_compact_document.triggered.connect(self.document.compact_pages)
         self.page_view: CurrentPageView
-        self.window_size_changed.connect(self.page_view.window_size_changed)
-        self.current_page_changed.connect(self.page_view.current_page_changed)
+        self._setup_page_view()
         self._setup_loading_state_connections()
         self._setup_add_card_widget()
         self._setup_document_view()
@@ -103,18 +102,23 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
 
+    def _setup_page_view(self):
+        self.page_view: CurrentPageView
+        self.page_view.set_document(self.document)
+        self.window_size_changed.connect(self.page_view.window_size_changed)
+        self.document.current_page_changed.connect(self.page_view.on_current_page_changed)
+
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
 
     def _create_document_instance(self, args: Namespace):
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
-        document.document_cleared.connect(self._select_first_page)
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
-        self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
@@ -181,7 +185,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def _setup_document_view(self):
         self.document_view: DocumentView
         self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
         self._select_first_page()
 
     def offer_re_downloading_card_database(self):
@@ -197,12 +201,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.on_action_download_card_data_triggered()
 
     @pyqtSlot()
-    def _select_first_page(self):
-        old_selection = self.document_view.selectionModel().currentIndex()
-        self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
-        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
-        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(self.document.createIndex(0, 0), old_selection)
+    def _select_first_page(self, loading_in_progress: bool = False):
+        if not loading_in_progress:
+            logger.info("Loading finished. Selecting first page.")
+            new_selection = self.document.index(0, 0)
+            self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.document.on_ui_selects_new_page(new_selection)
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)
@@ -246,6 +250,18 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             mtg_proxy_printer.settings.write_settings_to_file()
 
         QApplication.instance().shutdown()
+
+    @pyqtSlot()
+    def on_action_compact_document_triggered(self):
+        # TODO: Investigate, why unsetting the model is needed.
+        #  The document_view’s selection model somehow asks for data using invalid
+        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
+        #  completely disconnect the model, remove the row, then set it again.
+        self.document_view.setModel(None)
+        self.document.compact_pages()
+        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
 
     @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
@@ -302,7 +318,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )
             if result == QMessageBox.Yes:
-                self.document.compact_pages()
+                self.on_action_compact_document_triggered()
             return result
         return QMessageBox.No  # No pages can be saved, assume "No" for this case
 
@@ -334,32 +350,36 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
-    @pyqtSlot(QModelIndex)
-    def on_selected_page_changed(self, selected: QModelIndex):
-        if selected.isValid():
-            new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
-            self.current_page_changed.emit(new_page)
-
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
         self.document_view: DocumentView
-        to_be_deleted = self.document_view.selectedIndexes()
-        self.document.remove_pages(to_be_deleted)
-        new_row_selection = self.document.createIndex(
-            min(to_be_deleted[0].row(), self.document.rowCount()-1),
-            0
-        )
-        old_selection = self.document_view.selectionModel().currentIndex()
-        self.document_view.selectionModel().select(
-            new_row_selection, QItemSelectionModel.ClearAndSelect)
-        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
-        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
+        if self.document.rowCount() == 1:
+            logger.info(f"User selects to delete the only page, so clearing it.")
+            self.document.clear_page(self.document.index(0, 0))
+            return
+        to_be_deleted: int = self.document_view.selectedIndexes()[0].row()
+        logger.info(f"User selects to delete the currently selected page. Will be removing page {to_be_deleted}")
+        logger.debug("Deleting the requested page.")
+        # TODO: Investigate, why unsetting the model is needed.
+        #  The document_view’s selection model somehow asks for data using invalid
+        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
+        #  completely disconnect the model, remove the row, then set it again.
+        self.document_view.setModel(None)
+        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
+        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
+
+        new_row_index = min(to_be_deleted, self.document.rowCount() - 1)
+        logger.debug(f"Selecting page {new_row_index}.")
+        new_row_selection = self.document.index(new_row_index, 0)
+        self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
+        self.document.on_ui_selects_new_page(new_row_selection)
 
     @pyqtSlot()
     def on_action_save_document_triggered(self):
         logger.debug("User clicked on Save")
-        if self.document.file_path is None:
+        if self.document.save_file_path is None:
             logger.debug("No save file path set. Call 'Save as' instead.")
             self.action_save_as.triggered.emit()
         else:

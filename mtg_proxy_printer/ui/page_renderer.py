@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex
+from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 from PyQt5.QtGui import QColor, QPixmap
 import pint
 
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.model.document import Page, Document
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -37,27 +38,75 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
-    def __init__(self, draw_background: bool, *args, **kwargs):
-        super(PageScene, self).__init__(*args, **kwargs)
+    def __init__(self, document: Document, draw_background: bool, scene_rect: QRectF, parent: QObject = None):
+        super(PageScene, self).__init__(scene_rect, parent)
+        self.document = document
+        self.document.rowsInserted.connect(self.on_rows_inserted)
+        self.document.rowsRemoved.connect(self.on_rows_removed)
+        self.document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
+        self.document.rowsMoved.connect(self.on_rows_moved)
+        self.document.current_page_changed.connect(self.on_current_page_changed)
+        self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
         self.draw_background = draw_background
         logger.info(f"Created {self.__class__.__name__} instance. Drawing background: {self.draw_background}")
 
-    @pyqtSlot(QModelIndex, QModelIndex)
-    def draw_cards(self, first_index: QModelIndex, last_index: QModelIndex):
-        logger.info(f"Drawing cards: Indices {first_index.row()} to {last_index.row()}")
-        # Qt includes the last element and Python excludes it, so add one to the range maximum.
-        for row in range(first_index.row(), last_index.row()+1):
-            index = first_index.sibling(row, first_index.column())
-            position = self._compute_position_for_image(index)
-            image: QPixmap = index.sibling(index.row(), 4).data(Qt.DisplayRole)
-            if image is not None:
-                pixmap = self.addPixmap(image)
-                pixmap.setTransformationMode(Qt.SmoothTransformation)
-                pixmap.setPos(position)
+    @pyqtSlot(QPersistentModelIndex)
+    def on_current_page_changed(self, selected_page: QPersistentModelIndex):
+        logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
+        self.selected_page = selected_page
+        self.redraw()
+
+    def _draw_cards(self):
+        if not self.selected_page.isValid():
+            logger.warning("Got invalid persistent model index. Not drawing cards.")
+            return
+        index = self.selected_page.sibling(self.selected_page.row(), 0)
+        images_to_draw = self.selected_page.model().rowCount(index)
+        logger.info(f"Drawing {images_to_draw} cards")
+        for row in range(images_to_draw):
+            self.draw_card(row)
+
+    def draw_card(self, row: int):
+        index = self.selected_page.child(row, PageColumns.Image)
+        position = self._compute_position_for_image(index)
+        image: QPixmap = index.data(Qt.DisplayRole)
+        if image is not None:
+            pixmap = self.addPixmap(image)
+            pixmap.setTransformationMode(Qt.SmoothTransformation)
+            pixmap.setPos(position)
+
+    def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
+        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
+            logger.debug(f"{last-first+1} cards inserted to the currently shown page, drawing them.")
+            for new in range(first, last+1):
+                self.draw_card(new)
+
+    def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
+        if not parent.isValid() and self.selected_page.isValid() and first <= self.selected_page.row() <= last:
+            logger.debug("About to delete the currently shown page. Removing the held index and clearing the view.")
+            self.selected_page = QPersistentModelIndex()
+            self.clear()
+
+    def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
+        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
+            logger.debug(f"Cards {first} to {last} removed from the currently shown page, re-drawing the page.")
+            self.redraw()
+
+    def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
+        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
+            # Cards moved away are treated as if they were deleted
+            logger.debug("Cards moved away from the currently shown page, calling card removal handler.")
+            self.on_rows_removed(parent, start, end)
+        if destination.isValid() and destination.row() == self.selected_page.row():
+            # Moved in cards are treated as if they were added
+            logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
+            self.on_rows_inserted(destination, row, row+end-start-1)
 
     @pyqtSlot()
     def redraw(self):
+        if not self.selected_page.isValid():
+            logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
         if self.draw_background:
@@ -66,19 +115,17 @@ class PageScene(QGraphicsScene):
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
         if settings["documents"].getboolean("print-cut-marker"):
             self._draw_cut_markers()
-        page: Page = self.parent().page
-        self.draw_cards(page.createIndex(0, 0), page.createIndex(page.rowCount(), 0))
+        self._draw_cards()
 
     def _compute_position_for_image(self, index: QModelIndex):
-        document = self.get_document()
-        cards_per_row = document.compute_cards_per_row()
+        cards_per_row = self.document.compute_page_column_count()
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
-        spacing_vertical = document.image_spacing_vertical
-        spacing_horizontal = document.image_spacing_horizontal
+        spacing_vertical = self.document.image_spacing_vertical
+        spacing_horizontal = self.document.image_spacing_horizontal
 
-        x_pos = document.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
-        y_pos = document.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        x_pos = self.document.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
+        y_pos = self.document.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
         document_settings = settings["documents"]
         scaling_horizontal = self.width() / document_settings.getint("paper-width-mm")
         scaling_vertical = self.height() / document_settings.getint("paper-height-mm")
@@ -87,47 +134,41 @@ class PageScene(QGraphicsScene):
             y_pos * scaling_vertical,
         )
 
-    def get_document(self) -> Document:
-        page: Page = self.parent().page
-        document: Document = page.parent()
-        return document
-
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
         line_color = QColor("black")
         logger.info(f"Drawing cut markers")
-        document = self.get_document()
-        self._draw_vertical_markers(document, line_color)
-        self._draw_horizontal_markers(document, line_color)
+        self._draw_vertical_markers(line_color)
+        self._draw_horizontal_markers(line_color)
 
-    def _draw_vertical_markers(self, document, line_color):
-        scaling_horizontal = self.width() / document.page_width
-        column_count = document.compute_cards_per_row()
-        if not document.image_spacing_horizontal:
+    def _draw_vertical_markers(self, line_color):
+        scaling_horizontal = self.width() / self.document.page_width
+        column_count = self.document.compute_page_column_count()
+        if not self.document.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
             column_px = scaling_horizontal * (
-                    document.margin_left +
-                    column * (PageScene.IMAGE_WIDTH + document.image_spacing_horizontal)
+                    self.document.margin_left +
+                    column * (PageScene.IMAGE_WIDTH + self.document.image_spacing_horizontal)
             )
             self._draw_vertical_line(column_px, line_color)
-            if document.image_spacing_horizontal:
+            if self.document.image_spacing_horizontal:
                 offset = 1 + PageScene.IMAGE_WIDTH * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, document, line_color):
-        scaling_vertical = self.height() / document.page_height
-        row_count = document.compute_row_count()
-        if not document.image_spacing_vertical:
+    def _draw_horizontal_markers(self, line_color):
+        scaling_vertical = self.height() / self.document.page_height
+        row_count = self.document.compute_page_row_count()
+        if not self.document.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
             row_px = scaling_vertical * (
-                    document.margin_top +
-                    row * (PageScene.IMAGE_HEIGHT + document.image_spacing_vertical)
+                    self.document.margin_top +
+                    row * (PageScene.IMAGE_HEIGHT + self.document.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
-            if document.image_spacing_vertical:
+            if self.document.image_spacing_vertical:
                 offset = 1 + PageScene.IMAGE_HEIGHT * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
@@ -143,24 +184,12 @@ class PageRenderer(QGraphicsView):
 
     def __init__(self, *args, **kwargs):
         super(PageRenderer, self).__init__(*args, **kwargs)
-        self.page = None
         self.setBackgroundBrush(QColor(200, 200, 200))
-        self.setScene(PageScene(True, self.get_document_page_size(), self))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    @pyqtSlot(Page)
-    def set_page(self, page: Page):
-        if page is None:
-            logger.info("Setting page to None, clearing the view.")
-            self.scene().clear()
-            self.page = page
-        else:
-            logger.info("Switching page, updating the signal connection, then redrawing.")
-            if self.page is not None:
-                self.page.dataChanged.disconnect(self.scene().draw_cards)
-            self.page = page
-            self.page.dataChanged.connect(self.scene().draw_cards)
-            self.scene().redraw()
+    def set_document(self, document: Document):
+        logger.info("Document instance received, creating PageScene.")
+        self.setScene(PageScene(document, True, self.get_document_page_size(), self))
 
     @staticmethod
     def get_document_page_size() -> QRectF:
