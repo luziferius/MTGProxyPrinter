@@ -16,7 +16,7 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel, QTimer, QModelIndex
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 from PyQt5.QtTest import QAbstractItemModelTester
@@ -114,11 +114,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def _create_document_instance(self, args: Namespace):
         document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
-        document.document_cleared.connect(self._select_first_page)
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
+        document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
         self.action_compact_document.triggered.connect(document.compact_pages)
         self.image_db.add_card.connect(document.add_card)
@@ -202,10 +202,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.on_action_download_card_data_triggered()
 
     @pyqtSlot()
-    def _select_first_page(self):
-        new_selection = self.document.index(0, 0)
-        self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
-        self.document.on_ui_selects_new_page(new_selection)
+    def _select_first_page(self, loading_in_progress: bool = False):
+        if not loading_in_progress:
+            logger.info("Loading finished. Selecting first page.")
+            new_selection = self.document.index(0, 0)
+            self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.document.on_ui_selects_new_page(new_selection)
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)
@@ -340,18 +342,27 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
         self.document_view: DocumentView
-        to_be_deleted = self.document_view.selectedIndexes()[0]
-        logger.info(f"User selects to delete the currently selected page. Removing page {to_be_deleted.row()}")
-        new_row_index: int = max(0, min(to_be_deleted.row(), self.document.rowCount()-2))
-        with BlockedSignals(self.document_view.selectionModel()):
-            # Deleting the selected page updates the view’s selection model.
-            # Do not propagate emitted signals due to that.
-            self.document.remove_pages([to_be_deleted])
+        if self.document.rowCount() == 1:
+            logger.info(f"User selects to delete the only page, so clearing it.")
+            self.document.clear_page(self.document.index(0, 0))
+            return
+        to_be_deleted: int = self.document_view.selectedIndexes()[0].row()
+        logger.info(f"User selects to delete the currently selected page. Will be removing page {to_be_deleted}")
+        logger.debug("Deleting the requested page.")
+        # TODO: Investigate, why unsetting the model is needed.
+        #  The document_view’s selection model somehow asks for data using invalid
+        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
+        #  completely disconnect the model, remove the row, then set it again.
+        self.document_view.setModel(None)
+        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
+        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
 
-        logger.debug(f"Page deleted. Updating selection. Will select page {new_row_index}")
+        new_row_index = min(to_be_deleted, self.document.rowCount() - 1)
+        logger.debug(f"Selecting page {new_row_index}.")
         new_row_selection = self.document.index(new_row_index, 0)
-        self.document_view.selectionModel().select(
-            new_row_selection, QItemSelectionModel.ClearAndSelect)
+        self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
         self.document.on_ui_selects_new_page(new_row_selection)
 
     @pyqtSlot()
