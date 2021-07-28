@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import faulthandler
 # Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
 
@@ -23,9 +22,6 @@ from PyQt5.QtWidgets import QApplication
 import mtg_proxy_printer.argument_parser
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.application
-
-
-faulthandler.enable()
 
 # Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
 # when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
