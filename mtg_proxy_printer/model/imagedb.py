@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import io
 import queue
 import itertools
@@ -22,7 +23,7 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize
+from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersistentModelIndex
 from PyQt5.QtGui import QPixmap, QColor
 
 import mtg_proxy_printer.meta_data
@@ -47,6 +48,12 @@ CacheContent = typing.Tuple[str, bool, pathlib.Path]
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 IMAGE_SIZE = QSize(745, 1040)
 
+QueueContentTypes = typing.Union[
+    typing.Tuple[Card, QPersistentModelIndex],
+    typing.Tuple[Card, int],
+    typing.Tuple[None, bool],
+]
+
 
 class ImageDatabase(QObject):
     """
@@ -57,7 +64,8 @@ class ImageDatabase(QObject):
     card_download_starting = pyqtSignal(int)
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
-    add_card = pyqtSignal(Card, int)
+    add_card = pyqtSignal(Card, int)  # Emitted when image retrieval for a to-be-added card completes
+    replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)  # Emitted when an image retrieval for a to-be-replaced card completes
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
@@ -75,8 +83,7 @@ class ImageDatabase(QObject):
         # to save memory.
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
         self.images_on_disk: typing.Set[ImageKey] = set()
-        self.queue: queue.SimpleQueue[
-            typing.Union[typing.Tuple[Card, int], typing.Tuple[None, bool]]] = queue.SimpleQueue()
+        self.queue: queue.SimpleQueue[QueueContentTypes] = queue.SimpleQueue()
         self.download_thread = QThread()
         self.download_worker = ImageDownloader(self)
         self.download_worker.moveToThread(self.download_thread)
@@ -86,6 +93,7 @@ class ImageDatabase(QObject):
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.download_worker.add_card.connect(self.add_card)
+        self.download_worker.replacement_obtained.connect(self.replacement_obtained)
         self.download_thread.started.connect(self.download_worker.scan_disk_image_cache_then_process_queue)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -102,8 +110,12 @@ class ImageDatabase(QObject):
 
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
-    def get_image_asynchronous(self, card: Card, count: int = 1):
+    def get_new_card_image_asynchronous(self, card: Card, count: int = 1):
+        """Asynchronously gets the image for the given card. Emits add_card(card, count) signal when completed."""
         self.queue.put((card, count))
+
+    def get_replacement_card_image_asynchronous(self, card: Card, index: QPersistentModelIndex):
+        self.queue.put((card, index))
 
     def get_deck_asynchronous(self, deck: typing.Counter[Card]):
         self.queue.put((None, True))
@@ -157,6 +169,7 @@ class ImageDownloader(QObject):
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
     add_card = pyqtSignal(Card, int)
+    replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
     """
     Messages if the instance performs a batch operation when it processes image requests for
@@ -185,24 +198,25 @@ class ImageDownloader(QObject):
         logger.info("Start processing download queue")
         last_error_msg = ""
         while self.should_run:
-            card, count = self.queue.get()
+            card, value = self.queue.get()
             if card is None:
-                if not count and last_error_msg:
+                if not value and last_error_msg:
                     self.network_error_occurred.emit(last_error_msg)
                     last_error_msg = ""
-                self.batch_processing_state = count
-                self.batch_processing_state_changed.emit(count)
+                self.batch_processing_state = value
+                self.batch_processing_state_changed.emit(value)
                 continue
             logger.debug("Received image request, processing it…")
+            signal_to_emit = self.add_card if isinstance(value, int) else self.replacement_obtained
             try:
-                self.get_image_synchronous(card, count)
+                self.get_image_synchronous(card)
             except urllib.error.URLError as e:
                 last_error_msg = self._handle_network_error_during_download(card, str(e.reason))
             except socket.timeout as e:
                 last_error_msg = self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
             finally:
                 self.card_download_finished.emit()
-                self.add_card.emit(card, count)
+                signal_to_emit.emit(card, value)
 
         logger.info("Processing download queue stopped")
 
@@ -218,7 +232,7 @@ class ImageDownloader(QObject):
         monitor.io_begin.connect(self.card_download_starting)
         monitor.total_bytes_processed.connect(self.card_download_progress)
 
-    def get_image_synchronous(self, card: Card, count: int = 1):
+    def get_image_synchronous(self, card: Card):
         key: ImageKey = card.scryfall_id, card.is_front
         try:
             pixmap = self.image_database.loaded_images[key]

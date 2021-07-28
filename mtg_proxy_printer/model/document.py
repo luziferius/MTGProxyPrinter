@@ -92,6 +92,7 @@ class Document(QAbstractItemModel):
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
+        self.image_db.replacement_obtained.connect(self._on_replacement_image_received)
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.pages: PageList = []
@@ -334,15 +335,27 @@ class Document(QAbstractItemModel):
                 card: Card = index.internalPointer().card
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-                if result := self.card_db.get_cards_from_data(card_data):
-                    new_card = result[0]
-                    # TODO: Find a better way to implement image fetching in this case. The image should be fetched
-                    #  asynchronously.
-                    self.image_db.download_worker.get_image_synchronous(new_card)
-                    data.card = new_card
-                    self.dataChanged.emit(index, index.siblingAtColumn(PageColumns.Image), (Qt.DisplayRole, Qt.EditRole))
-                    return True
+                return self._request_replacement_card(index, card_data)
         return False
+
+    def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
+        if result := self.card_db.get_cards_from_data(card_data):
+            # Simply choose the first match. The user can’t make a choice at this point, so just use one of
+            # the results.
+            new_card = result[0]
+            self.image_db.get_replacement_card_image_asynchronous(new_card, QPersistentModelIndex(index))
+            return True
+        return False
+
+    @pyqtSlot(Card, QPersistentModelIndex)
+    def _on_replacement_image_received(self, card: Card, index: QPersistentModelIndex):
+        if index.isValid():
+            logger.debug(f'Received image for replaced card printing of "{card.name}".')
+            top_left = index.sibling(index.row(), index.column())
+            bottom_right = top_left.siblingAtColumn(PageColumns.Image)
+            card_container: CardContainer = top_left.internalPointer()
+            card_container.card = card
+            self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""

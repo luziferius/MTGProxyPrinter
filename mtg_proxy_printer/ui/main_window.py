@@ -180,7 +180,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def _setup_add_card_widget(self):
         self.add_card_widget: AddCardWidget
         self.add_card_widget.set_card_database(self.card_database)
-        self.add_card_widget.card_added.connect(self.image_db.get_image_asynchronous)
+        self.add_card_widget.card_added.connect(self.image_db.get_new_card_image_asynchronous)
 
     def _setup_document_view(self):
         self.document_view: DocumentView
