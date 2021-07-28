@@ -64,8 +64,10 @@ class ImageDatabase(QObject):
     card_download_starting = pyqtSignal(int)
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
-    add_card = pyqtSignal(Card, int)  # Emitted when image retrieval for a to-be-added card completes
-    replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)  # Emitted when an image retrieval for a to-be-replaced card completes
+    # Emitted when image retrieval for a to-be-added card completes
+    add_card = pyqtSignal(Card, int)
+    # Emitted when an image retrieval for a to-be-replaced card completes
+    replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
@@ -111,10 +113,17 @@ class ImageDatabase(QObject):
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
     def get_new_card_image_asynchronous(self, card: Card, count: int = 1):
-        """Asynchronously gets the image for the given card. Emits add_card(card, count) signal when completed."""
+        """
+        Asynchronously fetches the image for the given card and stores it in the card instance.
+        Emits add_card(card, count) signal when completed.
+        """
         self.queue.put((card, count))
 
     def get_replacement_card_image_asynchronous(self, card: Card, index: QPersistentModelIndex):
+        """
+        Asynchronously fetches the image for the given card and stores it in the card instance.
+        Emits replacement_obtained(card, index) signal when completed.
+        """
         self.queue.put((card, index))
 
     def get_deck_asynchronous(self, deck: typing.Counter[Card]):
