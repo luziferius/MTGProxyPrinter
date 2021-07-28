@@ -209,8 +209,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         )
         self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
-        for card, count in parsed_deck.items():
-            self.card_list.add_card(card, count)
+        self.card_list.add_cards(parsed_deck)
         self.unparsed_lines_text.setPlainText("\n".join(unparsed_lines))
 
     def cleanupPage(self):

@@ -73,17 +73,12 @@ class CardListModel(QAbstractTableModel):
             elif index.column() == PageColumns.Image:
                 return card.image_file
 
-    @pyqtSlot(Card)
-    @pyqtSlot(Card, int)
-    def add_card(self, card: Card, count: int = 1):
-        first_index, last_index = self.rowCount(), self.rowCount() + count - 1
-        self.beginInsertRows(QModelIndex(), first_index, last_index)
-        self.cards += list(itertools.repeat(card, count))
-        self.endInsertRows()
-        self.dataChanged.emit(
-            self.index(first_index, 0),
-            self.index(last_index, self.columnCount()-1)
-        )
+    def add_cards(self, cards: typing.Counter[Card]):
+        for card, count in cards.items():
+            first_index, last_index = self.rowCount(), self.rowCount() + count - 1
+            self.beginInsertRows(QModelIndex(), first_index, last_index)
+            self.cards += list(itertools.repeat(card, count))
+            self.endInsertRows()
 
     @pyqtSlot(list)
     def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
@@ -95,23 +90,24 @@ class CardListModel(QAbstractTableModel):
         :return: Number of cards removed
         """
         current_range: typing.List[QModelIndex] = []
-        ranges = []
+        ranges: typing.List[typing.List[QModelIndex]] = []
         for index in indices:
             if not current_range or index.row() == current_range[-1].row() + 1:
                 current_range.append(index)
-            if current_range and index.row() != current_range[-1].row() + 1:
+            else:
                 ranges.append(current_range)
-                current_range = []
+                current_range = [index]
         if current_range:
             ranges.append(current_range)
         if ranges:
             ranges.reverse()
             return sum(map(self.remove_cards, ranges))
 
-    @pyqtSlot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
         """
         Remove all cards in the given list of consecutive model indices
+        Only accesses the first and last index in the list to query the first and last row to delete.
+        The intermediate rows are implicit.
 
         :return: Number of cards removed
         """
@@ -119,11 +115,9 @@ class CardListModel(QAbstractTableModel):
             return 0
         first_index, last_index = indices[0].row(), indices[-1].row()
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
-        to_delete = set(index.row() for index in indices)
-        self.cards[:] = [card for index, card in enumerate(self.cards) if index not in to_delete]
-        self.dataChanged.emit(self.index(first_index, 0), self.index(last_index, 0))
+        del self.cards[first_index:last_index+1]
         self.endRemoveRows()
-        return len(to_delete)
+        return last_index - first_index
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
@@ -133,11 +127,4 @@ class CardListModel(QAbstractTableModel):
         return super(CardListModel, self).headerData(section, orientation, role)
 
     def clear(self):
-        self.remove_cards(list(map(
-            self.index,
-            range(self.rowCount()),
-            itertools.repeat(0)
-        )))
-
-    def get_content_as_scryfall_ids(self) -> typing.Iterable[typing.Tuple[str, bool]]:
-        return ((card.scryfall_id, card.is_front) for card in self.cards)
+        self.remove_cards([self.index(0, 0), self.index(self.rowCount(), 0)])
