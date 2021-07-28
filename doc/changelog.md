@@ -2,9 +2,14 @@
 
 # Version \<next>
 
+## Implemented features
+
+- Implemented re-selecting printings of added cards by double-clicking
+  the set or collector number in the table showing the current page.
+
 ## Fixed issues
 
-- Fixed crash, when the user tries to quit the application while a document loads.
+- Fixed crash, when trying to quit the application while a document loads.
 
 ## Other
 

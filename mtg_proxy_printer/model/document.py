@@ -29,7 +29,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSign
     QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.settings import settings
@@ -86,11 +86,14 @@ class Document(QAbstractItemModel):
         PageColumns.Language: "Language",
         PageColumns.Image: "Image",
     }
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
+        self.image_db = image_db
+        self.image_db.replacement_obtained.connect(self._on_replacement_image_received)
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.pages: PageList = []
@@ -119,8 +122,11 @@ class Document(QAbstractItemModel):
     def headerData(
             self, section: typing.Union[int, PageColumns],
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return Document.page_header[section]
+        if orientation == Qt.Horizontal:
+            if role == Qt.DisplayRole:
+                return Document.page_header[section]
+            elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
+                return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
 
     @pyqtSlot()
@@ -318,6 +324,48 @@ class Document(QAbstractItemModel):
             return self._data_card(index, role)
         else:  # Page
             return self._data_page(index, role)
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        data = index.internalPointer()
+        flags = super(Document, self).flags(index)
+        if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
+            flags |= Qt.ItemIsEditable
+        return flags
+
+    def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
+        data = index.internalPointer()
+        if isinstance(data, CardContainer) and role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting model data for column {index.column()} to {value}")
+            card: Card = index.internalPointer().card
+            if index.column() == PageColumns.CollectorNumber:
+                card_data = CardIdentificationData(
+                    card.language, card.name, card.set.code, value, is_front=card.is_front)
+            else:
+                card_data = CardIdentificationData(
+                    card.language, card.name, value, is_front=card.is_front
+                )
+            return self._request_replacement_card(index, card_data)
+        return False
+
+    def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
+        if result := self.card_db.get_cards_from_data(card_data):
+            logger.debug(f"Requesting replacement for card '{card_data.name}' in set {card_data.set_code}")
+            # Simply choose the first match. The user can’t make a choice at this point, so just use one of
+            # the results.
+            new_card = result[0]
+            self.image_db.get_replacement_card_image_asynchronous(new_card, QPersistentModelIndex(index))
+            return True
+        return False
+
+    @pyqtSlot(Card, QPersistentModelIndex)
+    def _on_replacement_image_received(self, card: Card, index: QPersistentModelIndex):
+        if index.isValid():
+            logger.debug(f'Received image for replaced card printing of "{card.name}".')
+            top_left = index.sibling(index.row(), index.column())
+            bottom_right = top_left.siblingAtColumn(PageColumns.Image)
+            card_container: CardContainer = top_left.internalPointer()
+            card_container.card = card
+            self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""

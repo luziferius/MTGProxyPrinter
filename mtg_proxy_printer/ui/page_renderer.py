@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
@@ -46,6 +47,7 @@ class PageScene(QGraphicsScene):
         self.document.rowsAboutToBeRemoved.connect(self.on_rows_about_to_be_removed)
         self.document.rowsMoved.connect(self.on_rows_moved)
         self.document.current_page_changed.connect(self.on_current_page_changed)
+        self.document.dataChanged.connect(self.on_data_changed)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
         self.draw_background = draw_background
@@ -75,6 +77,11 @@ class PageScene(QGraphicsScene):
             pixmap = self.addPixmap(image)
             pixmap.setTransformationMode(Qt.SmoothTransformation)
             pixmap.setPos(position)
+
+    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
+        if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:
+            logger.info("A card on the current page was replaced, redrawing.")
+            self.redraw()
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
