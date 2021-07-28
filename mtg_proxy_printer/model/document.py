@@ -122,8 +122,11 @@ class Document(QAbstractItemModel):
     def headerData(
             self, section: typing.Union[int, PageColumns],
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return Document.page_header[section]
+        if orientation == Qt.Horizontal:
+            if role == Qt.DisplayRole:
+                return Document.page_header[section]
+            elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
+                return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
 
     @pyqtSlot()
