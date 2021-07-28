@@ -6,6 +6,8 @@
 
 - Implemented re-selecting printings of added cards by double-clicking
   the set or collector number in the table showing the current page.
+- Implemented re-selecting printings in the deck import wizard by double-clicking
+  the set or collector number in the table showing the parsing result.
 
 ## Fixed issues
 
