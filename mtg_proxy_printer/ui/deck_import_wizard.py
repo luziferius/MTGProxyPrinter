@@ -25,8 +25,9 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.model.card_list import CardListModel
+from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.current_page_view import ComboBoxItemDelegate
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -186,16 +187,23 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
 
 
 class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(SummaryPage, self).__init__(*args, **kwargs)
-        self.parsed_cards_table: QTableView
         self.setupUi(self)
         self.setCommitPage(True)
-        self.card_list = CardListModel(self)
-        self.parsed_cards_table.setModel(self.card_list)
+        self.card_list = CardListModel(card_db, self)
+        self.combo_box_delegate = self._setup_parsed_cards_table()
         self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
+        self.parsed_cards_table: QTableView
+        self.parsed_cards_table.setModel(self.card_list)
+        delegate = ComboBoxItemDelegate(self.parsed_cards_table)
+        self.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
+        self.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
+        return delegate
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
@@ -225,7 +233,7 @@ class DeckImportWizard(QWizard):
         self.card_db = card_db
         self.addPage(SelectDeckParserPage(card_db, image_db, self))
         self.addPage(LoadListPage(self))
-        self.addPage(SummaryPage(self))
+        self.addPage(SummaryPage(card_db, self))
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self.setBaseSize(800, 600)
         self.setWindowTitle("Import a deck list")

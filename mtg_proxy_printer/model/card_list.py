@@ -19,9 +19,11 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot
 
+from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
+from mtg_proxy_printer.logger import get_logger
 
-from mtg_proxy_printer.model.carddb import Card
-
+logger = get_logger(__name__)
+del get_logger
 CardList = typing.List[Card]
 
 
@@ -44,9 +46,11 @@ class CardListModel(QAbstractTableModel):
         PageColumns.CollectorNumber: "Collector #",
         PageColumns.Language: "Language",
     }
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(CardListModel, self).__init__(*args, **kwargs)
+        self.card_db = card_db
         self.cards: CardList = []
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -69,6 +73,39 @@ class CardListModel(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == PageColumns.Language:
                 return card.language
+
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+        flags = super(CardListModel, self).flags(index)
+        if index.column() in self.EDITABLE_COLUMNS:
+            flags |= Qt.ItemIsEditable
+        return flags
+
+    def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
+        if role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting card list model data for column {index.column()} to {value}")
+            card = self.cards[index.row()]
+            if index.column() == PageColumns.CollectorNumber:
+                card_data = CardIdentificationData(
+                    card.language, card.name, card.set.code, value, is_front=card.is_front)
+            else:
+                card_data = CardIdentificationData(
+                    card.language, card.name, value, is_front=card.is_front
+                )
+            return self._request_replacement_card(index, card_data)
+        return False
+
+    def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
+        if result := self.card_db.get_cards_from_data(card_data):
+            logger.debug(f"Requesting replacement for card '{card_data.name}' in set {card_data.set_code}")
+            # Simply choose the first match. The user can’t make a choice at this point, so just use one of
+            # the results.
+            new_card = result[0]
+            top_left = index.sibling(index.row(), index.column())
+            bottom_right = top_left.siblingAtColumn(PageColumns.CollectorNumber)
+            self.cards[index.row()] = new_card
+            self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            return True
+        return False
 
     def add_cards(self, cards: typing.Counter[Card]):
         for card, count in cards.items():
@@ -119,8 +156,11 @@ class CardListModel(QAbstractTableModel):
     def headerData(
             self, section: typing.Union[int, PageColumns],
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return CardListModel.header[section]
+        if orientation == Qt.Horizontal:
+            if role == Qt.DisplayRole:
+                return CardListModel.header[section]
+            elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
+                return "Double-click on entries to\nswitch the selected printing."
         return super(CardListModel, self).headerData(section, orientation, role)
 
     def clear(self):
