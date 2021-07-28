@@ -193,7 +193,6 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.setCommitPage(True)
         self.card_list = CardListModel(self)
         self.parsed_cards_table.setModel(self.card_list)
-        self.parsed_cards_table.setColumnHidden(4, True)
         self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")

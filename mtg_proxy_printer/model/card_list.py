@@ -43,7 +43,6 @@ class CardListModel(QAbstractTableModel):
         PageColumns.Set: "Set",
         PageColumns.CollectorNumber: "Collector #",
         PageColumns.Language: "Language",
-        PageColumns.Image: "Image",
     }
 
     def __init__(self, *args, **kwargs):
@@ -70,8 +69,6 @@ class CardListModel(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == PageColumns.Language:
                 return card.language
-            elif index.column() == PageColumns.Image:
-                return card.image_file
 
     def add_cards(self, cards: typing.Counter[Card]):
         for card, count in cards.items():
