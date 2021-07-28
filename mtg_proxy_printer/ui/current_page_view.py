@@ -38,18 +38,34 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor: QComboBox, index: QtCore.QModelIndex) -> None:
-        if index.column() == PageColumns.CollectorNumber:
-            model: Document = index.model()
-            items = model.card_db.find_collector_numbers_matching(
+
+        model: Document = index.model()
+        if index.column() == PageColumns.Set:
+            matching_sets = model.card_db.find_sets_matching(
+                index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
+                index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
+            )
+            current_set_code = index.data(Qt.EditRole)
+            current_set_position = 0
+            for position, (set_code, set_name) in enumerate(matching_sets):
+                editor.addItem(set_name, set_code)  # Store the key (set_code) in the UserData role
+                if set_code == current_set_code:
+                    current_set_position = position
+            editor.setCurrentIndex(current_set_position)
+
+        elif index.column() == PageColumns.CollectorNumber:
+            matching_collector_numbers = model.card_db.find_collector_numbers_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
                 index.siblingAtColumn(PageColumns.Set).data(Qt.EditRole),
                 index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
             )
-            editor.addItems(items)
-            editor.setCurrentIndex(items.index(index.data(Qt.EditRole)))
+            for collector_number in matching_collector_numbers:
+                editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
+            editor.setCurrentIndex(matching_collector_numbers.index(index.data(Qt.EditRole)))
 
     def setModelData(self, editor: QComboBox, model: QtCore.QAbstractItemModel, index: QtCore.QModelIndex) -> None:
-        model.setData(index, editor.currentText(), Qt.EditRole)
+        logger.debug(f"Setting data for column {index.column()} to {editor.currentData(Qt.UserRole)}")
+        model.setData(index, editor.currentData(Qt.UserRole), Qt.EditRole)
 
 
 class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
@@ -63,6 +79,7 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         self.page_card_table_view: QTableView
         self.combo_box_delegate = ComboBoxItemDelegate(self.page_card_table_view)
         self.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, self.combo_box_delegate)
+        self.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, self.combo_box_delegate)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):

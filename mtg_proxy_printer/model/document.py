@@ -86,6 +86,7 @@ class Document(QAbstractItemModel):
         PageColumns.Language: "Language",
         PageColumns.Image: "Image",
     }
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -324,22 +325,28 @@ class Document(QAbstractItemModel):
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         data = index.internalPointer()
         flags = super(Document, self).flags(index)
-        if isinstance(data, CardContainer) and index.column() == PageColumns.CollectorNumber:
+        if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
             flags |= Qt.ItemIsEditable
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
         data = index.internalPointer()
-        if isinstance(data, CardContainer) and role == Qt.EditRole:
+        if isinstance(data, CardContainer) and role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting model data for column {index.column()} to {value}")
+            card: Card = index.internalPointer().card
             if index.column() == PageColumns.CollectorNumber:
-                card: Card = index.internalPointer().card
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-                return self._request_replacement_card(index, card_data)
+            else:
+                card_data = CardIdentificationData(
+                    card.language, card.name, value, is_front=card.is_front
+                )
+            return self._request_replacement_card(index, card_data)
         return False
 
     def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
         if result := self.card_db.get_cards_from_data(card_data):
+            logger.debug(f"Requesting replacement for card '{card_data.name}' in set {card_data.set_code}")
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
