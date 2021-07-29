@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QMainWindow
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
@@ -28,7 +28,7 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.central_widget import CentralWidget
+from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, FlatVerticalCentralWidget, TabbedVerticalCentralWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
@@ -62,7 +62,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
-        self.central_widget: CentralWidget
+        self.central_widget: CentralWidgetTypes
         self._setup_central_widget()
         self._setup_loading_state_connections()
         self.action_new_page.triggered.connect(self.document.add_page)
@@ -96,7 +96,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
-        self.central_widget: CentralWidget
+        self.central_widget: CentralWidgetTypes
+        self.central_widget = TabbedVerticalCentralWidget(self)
+        self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
         self.window_size_changed.connect(self.central_widget.window_size_changed)

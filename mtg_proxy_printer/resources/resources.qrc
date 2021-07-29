@@ -3,6 +3,9 @@
     <!-- UI files -->
     <file>ui/about_dialog.ui</file>
     <file>ui/main_window.ui</file>
+    <file>ui/central_widget/flat_vertical.ui</file>
+    <file>ui/central_widget/tabbed_vertical.ui</file>
+
     <file>ui/horizontal_search_layout/add_card_widget.ui</file>
     <file>ui/vertical_search_layout/add_card_widget.ui</file>
     <file>ui/current_page_view.ui</file>

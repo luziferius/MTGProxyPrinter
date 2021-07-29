@@ -16,19 +16,8 @@
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonFollowStyle</enum>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0" colspan="2">
-     <widget class="CentralWidget" name="central_widget" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>9</horstretch>
-        <verstretch>4</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
-    </item>
-   </layout>
+  <widget class="QWidget" name="central_widget">
+   <layout class="QGridLayout" name="gridLayout"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -109,7 +98,8 @@
   </widget>
   <action name="action_quit">
    <property name="icon">
-    <iconset theme="application-exit"/>
+    <iconset theme="application-exit">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Quit</string>
@@ -123,7 +113,8 @@
   </action>
   <action name="action_print">
    <property name="icon">
-    <iconset theme="document-print-direct"/>
+    <iconset theme="document-print-direct">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Print</string>
@@ -137,7 +128,8 @@
   </action>
   <action name="action_print_preview">
    <property name="icon">
-    <iconset theme="document-print-preview"/>
+    <iconset theme="document-print-preview">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Show print preview</string>
@@ -148,7 +140,8 @@
   </action>
   <action name="action_print_pdf">
    <property name="icon">
-    <iconset theme="viewpdf"/>
+    <iconset theme="viewpdf">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Create PDF</string>
@@ -159,7 +152,8 @@
   </action>
   <action name="action_discard_page">
    <property name="icon">
-    <iconset theme="document-close"/>
+    <iconset theme="document-close">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Discard page</string>
@@ -170,7 +164,8 @@
   </action>
   <action name="action_show_settings">
    <property name="icon">
-    <iconset theme="configure"/>
+    <iconset theme="configure">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
@@ -181,7 +176,8 @@
   </action>
   <action name="action_download_card_data">
    <property name="icon">
-    <iconset theme="edit-download"/>
+    <iconset theme="edit-download">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Download card data</string>
@@ -189,7 +185,8 @@
   </action>
   <action name="action_new_page">
    <property name="icon">
-    <iconset theme="document-new"/>
+    <iconset theme="document-new">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>New Page</string>
@@ -200,7 +197,8 @@
   </action>
   <action name="action_save_document">
    <property name="icon">
-    <iconset theme="document-save"/>
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save</string>
@@ -211,7 +209,8 @@
   </action>
   <action name="action_new_document">
    <property name="icon">
-    <iconset theme="document-replace"/>
+    <iconset theme="document-replace">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>New</string>
@@ -222,7 +221,8 @@
   </action>
   <action name="action_load_document">
    <property name="icon">
-    <iconset theme="document-open"/>
+    <iconset theme="document-open">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Load</string>
@@ -233,7 +233,8 @@
   </action>
   <action name="action_save_as">
    <property name="icon">
-    <iconset theme="document-save-as"/>
+    <iconset theme="document-save-as">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save as …</string>
@@ -254,7 +255,8 @@
   </action>
   <action name="action_compact_document">
    <property name="icon">
-    <iconset theme="format-align-vertical-top"/>
+    <iconset theme="format-align-vertical-top">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Compact document</string>
@@ -265,7 +267,8 @@
   </action>
   <action name="action_import_deck_list">
    <property name="icon">
-    <iconset theme="document-import"/>
+    <iconset theme="document-import">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Import Deck list</string>
@@ -276,7 +279,8 @@
   </action>
   <action name="action_cleanup_local_image_cache">
    <property name="icon">
-    <iconset theme="edit-clear-history"/>
+    <iconset theme="edit-clear-history">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Cleanup local image cache</string>
@@ -297,14 +301,6 @@
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>CentralWidget</class>
-   <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.central_widget</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections>
   <connection>

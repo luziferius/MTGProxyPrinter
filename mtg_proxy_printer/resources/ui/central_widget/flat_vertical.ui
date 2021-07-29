@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>current_page_view</class>
- <widget class="QWidget" name="current_page_view">
+ <class>central_widget</class>
+ <widget class="QWidget" name="central_widget">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -84,7 +84,8 @@
       <string>Remove selected</string>
      </property>
      <property name="icon">
-      <iconset theme="edit-delete"/>
+      <iconset theme="edit-delete">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -137,6 +138,9 @@
    <class>PageRenderer</class>
    <extends>QGraphicsView</extends>
    <header>mtg_proxy_printer.ui.page_renderer</header>
+   <slots>
+    <slot>on_resize_event_triggered()</slot>
+   </slots>
   </customwidget>
  </customwidgets>
  <resources/>

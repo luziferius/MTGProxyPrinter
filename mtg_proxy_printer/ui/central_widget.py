@@ -12,9 +12,10 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import typing
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, Qt, QItemSelectionModel
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, Qt, QItemSelectionModel, QObject, QModelIndex, \
+    QAbstractItemModel
 from PyQt5.QtWidgets import QTableView, QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QListView
 
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -37,11 +38,11 @@ __all__ = [
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
 
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QtCore.QModelIndex) -> QComboBox:
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
         editor = QComboBox(parent)
         return editor
 
-    def setEditorData(self, editor: QComboBox, index: QtCore.QModelIndex) -> None:
+    def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
 
         model: Document = index.model()
         if index.column() == PageColumns.Set:
@@ -67,12 +68,12 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
             editor.setCurrentIndex(matching_collector_numbers.index(index.data(Qt.EditRole)))
 
-    def setModelData(self, editor: QComboBox, model: QtCore.QAbstractItemModel, index: QtCore.QModelIndex) -> None:
+    def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
         logger.debug(f"Setting data for column {index.column()} to {editor.currentData(Qt.UserRole)}")
         model.setData(index, editor.currentData(Qt.UserRole), Qt.EditRole)
 
 
-class CentralWidget(*inherits_from_ui_file_with_name("central_widget")):
+class CentralWidget(QWidget):
 
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
@@ -169,3 +170,14 @@ class CentralWidget(*inherits_from_ui_file_with_name("central_widget")):
         new_row_selection = self.document.index(new_row_index, 0)
         self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
         self.document.on_ui_selects_new_page(new_row_selection)
+
+
+class FlatVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/flat_vertical")):
+    pass
+
+
+class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/tabbed_vertical")):
+    pass
+
+
+CentralWidgetTypes = typing.Union[FlatVerticalCentralWidget, TabbedVerticalCentralWidget]
