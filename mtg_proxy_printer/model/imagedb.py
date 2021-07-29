@@ -199,6 +199,8 @@ class ImageDownloader(QObject):
 
     def _create_download_worker(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker:
         download_worker = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(MagicMock(), parent=self)
+        # Not connecting download_worker.download_finished with self.card_download_finished,
+        # because that signal is emitted explicitly by this class.
         download_worker.download_progress.connect(self.card_download_progress)
         download_worker.download_begins.connect(self.card_download_starting)
         return download_worker
