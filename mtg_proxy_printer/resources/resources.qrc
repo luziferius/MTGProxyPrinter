@@ -6,8 +6,6 @@
     <file>ui/horizontal_search_layout/add_card_widget.ui</file>
     <file>ui/vertical_search_layout/add_card_widget.ui</file>
     <file>ui/current_page_view.ui</file>
-    <file>ui/horizontal_search_layout/main_window.ui</file>
-    <file>ui/vertical_search_layout/main_window.ui</file>
     <file>ui/settings_window.ui</file>
 
     <file>ui/deck_import_wizard/load_list_page.ui</file>
