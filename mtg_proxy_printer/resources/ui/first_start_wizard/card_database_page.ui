@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>WizardPage</class>
+ <widget class="QWizardPage" name="WizardPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>534</width>
+    <height>398</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>WizardPage</string>
+  </property>
+  <property name="title">
+   <string>Local card database</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;{application_name} creates a local database on your computer that contains information about all available Magic: The Gathering (TM) cards. It is used for fast card search, deck list imports and also contains URLs to the online image files.&lt;/p&gt;&lt;p&gt;The database is currently empty and has to be filled with card data from Scryfall to be functional. It also has to be updated from time to time, to keep up with newly released cards and sets.&lt;/p&gt;&lt;p&gt;The downloaded card data can be customized in the settings, so that you can omit cards based on certain criteria. For example, you can omit all Silver-bordered cards or cards banned in the formats you are interested in, if those are supported by Scryfall.&lt;/p&gt;&lt;p&gt;If you like, click on the {settings} button below to open the settings window and customize the download filters, then click the {download} button to start the card data download in the background.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="open_settings_button">
+     <property name="text">
+      <string>Settings</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="download_card_data_button">
+     <property name="text">
+      <string>Download card data</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>You can monitor the progress of all background operations in the status bar at the bottom of the main window. You can continue this wizard, while the card data is fetched.</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
