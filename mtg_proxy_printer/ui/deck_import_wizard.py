@@ -27,7 +27,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.current_page_view import ComboBoxItemDelegate
+from mtg_proxy_printer.ui.central_widget import ComboBoxItemDelegate
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger

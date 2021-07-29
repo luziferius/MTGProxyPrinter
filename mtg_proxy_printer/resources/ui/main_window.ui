@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>800</height>
+    <width>1050</width>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,63 +18,13 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="2" column="2" colspan="2">
-     <widget class="CurrentPageView" name="page_view" native="true">
+    <item row="0" column="0" colspan="2">
+     <widget class="CentralWidget" name="central_widget" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>9</horstretch>
         <verstretch>4</verstretch>
        </sizepolicy>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1" rowspan="2">
-     <widget class="AddCardWidget" name="add_card_widget" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>7</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="0" rowspan="2">
-     <widget class="DocumentView" name="document_view">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>5</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="alternatingRowColors">
-       <bool>true</bool>
-      </property>
-      <property name="selectionMode">
-       <enum>QAbstractItemView::SingleSelection</enum>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="document_view_label">
-      <property name="text">
-       <string>All pages:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="1">
-     <widget class="QLabel" name="add_card_widget_label">
-      <property name="text">
-       <string>Add new cards:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="2" colspan="2">
-     <widget class="QLabel" name="page_view_label">
-      <property name="text">
-       <string>Current page:</string>
       </property>
      </widget>
     </item>
@@ -85,8 +35,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
-     <height>30</height>
+     <width>1050</width>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -225,6 +175,9 @@
    <property name="text">
     <string>Settings</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::PreferencesRole</enum>
+   </property>
   </action>
   <action name="action_download_card_data">
    <property name="icon">
@@ -290,6 +243,9 @@
    <property name="text">
     <string>About…</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
   </action>
   <action name="action_show_changelog">
    <property name="text">
@@ -343,26 +299,12 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>DocumentView</class>
-   <extends>QListView</extends>
-   <header>mtg_proxy_printer.ui.document_view</header>
-  </customwidget>
-  <customwidget>
-   <class>AddCardWidget</class>
+   <class>CentralWidget</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.add_card</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>CurrentPageView</class>
-   <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.current_page_view</header>
+   <header>mtg_proxy_printer.ui.central_widget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
- <tabstops>
-  <tabstop>document_view</tabstop>
- </tabstops>
  <resources/>
  <connections>
   <connection>

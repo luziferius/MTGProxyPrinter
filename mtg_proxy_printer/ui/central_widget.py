@@ -14,12 +14,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, Qt, QItemSelectionModel
 from PyQt5.QtWidgets import QTableView, QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
+from mtg_proxy_printer.ui.add_card import AddCardWidget
+from mtg_proxy_printer.ui.document_view import DocumentView
 
 from .common import inherits_from_ui_file_with_name
 
@@ -28,7 +32,7 @@ logger = get_logger(__name__)
 del get_logger
 __all__ = [
     "ComboBoxItemDelegate",
-    "CurrentPageView",
+    "CentralWidget",
 ]
 
 
@@ -69,23 +73,50 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         model.setData(index, editor.currentData(Qt.UserRole), Qt.EditRole)
 
 
-class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
+class CentralWidget(*inherits_from_ui_file_with_name("central_widget")):
 
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
-        super(CurrentPageView, self).__init__(*args, **kwargs)
+        super(CentralWidget, self).__init__(*args, **kwargs)
         self.setupUi(self)
-        self.page_card_table_view: QTableView
-        self.combo_box_delegate = ComboBoxItemDelegate(self.page_card_table_view)
-        self.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, self.combo_box_delegate)
-        self.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, self.combo_box_delegate)
+        self.document = None
+        self.card_db = None
+        self.image_db = None
+        self.combo_box_delegate = self._setup_page_card_table_view()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def set_document(self, document: Document):
-        self._setup_page_renderer(document)
+    def _setup_page_card_table_view(self) -> ComboBoxItemDelegate:
+        self.page_card_table_view: QTableView
+        combo_box_delegate = ComboBoxItemDelegate(self.page_card_table_view)
+        self.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
+        self.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
+        return combo_box_delegate
+
+    def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
+        self.document = document
+        self.card_db = card_db
+        self.image_db = image_db
+        document.loading_state_changed.connect(self.select_first_page)
+        document.current_page_changed.connect(self.on_current_page_changed)
+
         self.page_card_table_view.setModel(document)
+        self._setup_page_renderer(document)
+        self._setup_add_card_widget(card_db, image_db)
+        self._setup_document_view(document)
+
+    def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
+        self.add_card_widget: AddCardWidget
+        self.add_card_widget.set_card_database(card_db)
+        self.add_card_widget.card_added.connect(image_db.get_new_card_image_asynchronous)
+        self.settings_changed.connect(self.add_card_widget.update_selected_language)
+
+    def _setup_document_view(self, document: Document):
+        self.document_view: DocumentView
+        self.document_view.setModel(document)
+        self.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
+        self.select_first_page()
 
     def on_current_page_changed(self, new_page: QPersistentModelIndex):
         self.page_card_table_view: QTableView
@@ -105,3 +136,37 @@ class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
         multi_selection = self.page_card_table_view.selectionModel().selectedRows()
         logger.debug(f"User removes {len(multi_selection)} items from the current page.")
         self.page_card_table_view.model().remove_card_multi_selection(multi_selection)
+
+    @pyqtSlot()
+    def select_first_page(self, loading_in_progress: bool = False):
+        if not loading_in_progress:
+            logger.info("Loading finished. Selecting first page.")
+            new_selection = self.document.index(0, 0)
+            self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.document.on_ui_selects_new_page(new_selection)
+
+    @pyqtSlot()
+    def on_action_discard_page_triggered(self):
+        self.document_view: DocumentView
+        if self.document.rowCount() == 1:
+            logger.info(f"User selects to delete the only page, so clearing it.")
+            self.document.clear_page(self.document.index(0, 0))
+            return
+        to_be_deleted: int = self.document_view.selectedIndexes()[0].row()
+        logger.info(f"User selects to delete the currently selected page. Will be removing page {to_be_deleted}")
+        logger.debug("Deleting the requested page.")
+        # TODO: Investigate, why unsetting the model is needed.
+        #  The document_view’s selection model somehow asks for data using invalid
+        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
+        #  completely disconnect the model, remove the row, then set it again.
+        self.document_view.setModel(None)
+        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
+        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
+
+        new_row_index = min(to_be_deleted, self.document.rowCount() - 1)
+        logger.debug(f"Selecting page {new_row_index}.")
+        new_row_selection = self.document.index(new_row_index, 0)
+        self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
+        self.document.on_ui_selects_new_page(new_row_selection)

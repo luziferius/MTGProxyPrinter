@@ -28,7 +28,7 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.current_page_view import CurrentPageView
+from mtg_proxy_printer.ui.central_widget import CentralWidget
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -45,7 +45,7 @@ __all__ = [
 ]
 
 
-class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):
+class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
     should_update_languages = pyqtSignal()
     window_size_changed = pyqtSignal()
@@ -64,17 +64,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self.language_model = QStringListModel([preferred_language], self)
         self.card_data_downloader = self._create_card_data_downloader()
-        self.page_view: CurrentPageView
-        self._setup_page_view()
+        self.central_widget: CentralWidget
+        self._setup_central_widget()
         self._setup_loading_state_connections()
-        self._setup_add_card_widget()
-        self._setup_document_view()
         self.action_new_page.triggered.connect(self.document.add_page)
         self.should_update_languages.connect(self.update_language_model)
-        self.should_update_languages.connect(self.add_card_widget.update_selected_language)
-        self.settings_changed.connect(self.add_card_widget.update_selected_language)
+        self.should_update_languages.connect(self.central_widget.add_card_widget.update_selected_language)
         self.settings_changed.connect(self.document.apply_settings)
-        self.settings_changed.connect(self.page_view.settings_changed)
+        self.settings_changed.connect(self.central_widget.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
         self.action_show_toolbar: QAction
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
@@ -100,11 +97,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
 
-    def _setup_page_view(self):
-        self.page_view: CurrentPageView
-        self.page_view.set_document(self.document)
-        self.window_size_changed.connect(self.page_view.window_size_changed)
-        self.document.current_page_changed.connect(self.page_view.on_current_page_changed)
+    def _setup_central_widget(self):
+        self.central_widget: CentralWidget
+        self.central_widget.set_data(self.document, self.card_database, self.image_db)
+        self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
+        self.window_size_changed.connect(self.central_widget.window_size_changed)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -116,13 +113,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
-        document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
         self.image_db.add_card.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
                 # Wait until after __init__ finished and the main loop starts
-                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
+                QTimer.singleShot(5, lambda: document.loader.load_document(args.file))
                 logger.info(f'Enqueued loading of document "{args.file}"')
             elif args.file.exists():
                 logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
@@ -154,10 +150,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.action_import_deck_list,
             self.action_new_page,
             self.action_discard_page,
-            self.add_card_widget,
             self.action_show_settings,
             self.action_cleanup_local_image_cache,
-            self.page_view.delete_selected_images_button,
+            self.central_widget,
         ]
 
     def _create_image_database(self):
@@ -175,17 +170,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
 
-    def _setup_add_card_widget(self):
-        self.add_card_widget: AddCardWidget
-        self.add_card_widget.set_card_database(self.card_database)
-        self.add_card_widget.card_added.connect(self.image_db.get_new_card_image_asynchronous)
-
-    def _setup_document_view(self):
-        self.document_view: DocumentView
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
-        self._select_first_page()
-
     def offer_re_downloading_card_database(self):
         settings_changed = self.card_database.check_if_download_settings_changed()
         self.action_download_card_data.setEnabled(self.card_database.allow_updating_card_data())
@@ -197,14 +181,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 QMessageBox.Yes | QMessageBox.No
                 ) == QMessageBox.Yes:
             self.on_action_download_card_data_triggered()
-
-    @pyqtSlot()
-    def _select_first_page(self, loading_in_progress: bool = False):
-        if not loading_in_progress:
-            logger.info("Loading finished. Selecting first page.")
-            new_selection = self.document.index(0, 0)
-            self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
-            self.document.on_ui_selects_new_page(new_selection)
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)
@@ -349,32 +325,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.progress_bar.show()
 
     @pyqtSlot()
-    def on_action_discard_page_triggered(self):
-        self.document_view: DocumentView
-        if self.document.rowCount() == 1:
-            logger.info(f"User selects to delete the only page, so clearing it.")
-            self.document.clear_page(self.document.index(0, 0))
-            return
-        to_be_deleted: int = self.document_view.selectedIndexes()[0].row()
-        logger.info(f"User selects to delete the currently selected page. Will be removing page {to_be_deleted}")
-        logger.debug("Deleting the requested page.")
-        # TODO: Investigate, why unsetting the model is needed.
-        #  The document_view’s selection model somehow asks for data using invalid
-        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
-        #  completely disconnect the model, remove the row, then set it again.
-        self.document_view.setModel(None)
-        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
-        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
-
-        new_row_index = min(to_be_deleted, self.document.rowCount() - 1)
-        logger.debug(f"Selecting page {new_row_index}.")
-        new_row_selection = self.document.index(new_row_index, 0)
-        self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
-        self.document.on_ui_selects_new_page(new_row_selection)
-
-    @pyqtSlot()
     def on_action_save_document_triggered(self):
         logger.debug("User clicked on Save")
         if self.document.save_file_path is None:
@@ -394,7 +344,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
-            self._select_first_page()
+            self.central_widget.select_first_page()
 
     def on_document_loading_failed(self, failed_path: pathlib.Path):
         QMessageBox.critical(
