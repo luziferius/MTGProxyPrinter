@@ -230,7 +230,8 @@ class Document(QAbstractItemModel):
         self._recreate_page_index_cache()
         self.endRemoveRows()
         if not self.pages:
-            self.add_page()
+            self.currently_edited_page = self.add_page()
+            self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
 
     @pyqtSlot(list)
     def remove_card_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
