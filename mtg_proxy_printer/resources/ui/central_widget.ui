@@ -84,7 +84,7 @@
       <string>Remove selected</string>
      </property>
      <property name="icon">
-         <iconset theme="edit-delete"/>
+      <iconset theme="edit-delete"/>
      </property>
     </widget>
    </item>
@@ -106,7 +106,7 @@
     </widget>
    </item>
    <item row="4" column="0" rowspan="3">
-    <widget class="DocumentView" name="document_view">
+    <widget class="QListView" name="document_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>5</horstretch>
@@ -127,11 +127,6 @@
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>DocumentView</class>
-   <extends>QListView</extends>
-   <header>mtg_proxy_printer.ui.document_view</header>
-  </customwidget>
   <customwidget>
    <class>AddCardWidget</class>
    <extends>QWidget</extends>

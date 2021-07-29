@@ -16,7 +16,7 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QTimer
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
@@ -29,8 +29,6 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.central_widget import CentralWidget
-from mtg_proxy_printer.ui.document_view import DocumentView
-from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard

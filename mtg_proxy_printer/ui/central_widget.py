@@ -15,7 +15,7 @@
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, Qt, QItemSelectionModel
-from PyQt5.QtWidgets import QTableView, QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox
+from PyQt5.QtWidgets import QTableView, QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QListView
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
@@ -23,7 +23,6 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.ui.add_card import AddCardWidget
-from mtg_proxy_printer.ui.document_view import DocumentView
 
 from .common import inherits_from_ui_file_with_name
 
@@ -113,7 +112,7 @@ class CentralWidget(*inherits_from_ui_file_with_name("central_widget")):
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
 
     def _setup_document_view(self, document: Document):
-        self.document_view: DocumentView
+        self.document_view: QListView
         self.document_view.setModel(document)
         self.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
@@ -147,7 +146,7 @@ class CentralWidget(*inherits_from_ui_file_with_name("central_widget")):
 
     @pyqtSlot()
     def on_action_discard_page_triggered(self):
-        self.document_view: DocumentView
+        self.document_view: QListView
         if self.document.rowCount() == 1:
             logger.info(f"User selects to delete the only page, so clearing it.")
             self.document.clear_page(self.document.index(0, 0))
