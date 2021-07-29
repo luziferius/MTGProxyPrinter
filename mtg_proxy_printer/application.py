@@ -25,7 +25,7 @@ from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.natsort import str_less_than
-from mtg_proxy_printer.update_checker import newer_application_version_available, newer_card_data_available
+from mtg_proxy_printer.update_checker import UpdateChecker
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
@@ -58,7 +58,7 @@ class Application(QApplication):
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()
-        QTimer.singleShot(0, self._check_for_updates)
+        self.update_checker = self._create_update_checker()
         self._show_changelog_after_update()
         if not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
@@ -68,45 +68,22 @@ class Application(QApplication):
         self.exec_()
         logger.debug("Left event loop.")
 
-    def _check_for_updates(self):
-        self._check_for_application_update_if_enabled()
-        if self.card_db.has_data():
-            self._check_for_card_data_update_if_enabled()
+    def _create_update_checker(self) -> UpdateChecker:
+        update_checker = UpdateChecker(self.card_db, self)
+        update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
+        update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
+        update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
+        QTimer.singleShot(100, self._check_for_undecided_update_settings)
+        QTimer.singleShot(100, update_checker.check_for_updates)
+        return update_checker
 
-    def _check_for_application_update_if_enabled(self):
-        if setting := settings.settings["application"].getboolean("check-for-application-updates"):
-            logger.info("Checking for application updates.")
-            if (newer_version := newer_application_version_available()) is not None:
-                logger.info(f"A new update is available: {newer_version}. Notifying the user.")
-                self.main_window.show_application_update_available_message_box(newer_version)
-            else:
-                logger.debug("No application update found.")
-        elif setting is None:
-            logger.info("No user setting for update set. About to ask.")
-            if self.main_window.ask_user_about_application_update_policy():
-                self._check_for_application_update_if_enabled()
-        else:
-            logger.info("Checking for application updates disabled. Not checking for updates.")
-
-    def _check_for_card_data_update_if_enabled(self):
-        if setting := settings.settings["application"].getboolean("check-for-card-data-updates"):
-            logger.info("Checking for card data updates.")
-            if estimated_new_card_count := newer_card_data_available(self.card_db):
-                logger.info(f"New card data is available. Notifying the user.")
-                self.main_window.show_card_data_update_available_message_box(estimated_new_card_count)
-            else:
-                logger.debug("No new card data found.")
-        elif setting is None:
-            pass
-            # TODO: Currently disabled, because the feature is not working 100%. The user has to manually enable this.
-            #   Do not bother asking to enable/disable, until the update check is working in all cases, when enabled.
-            """
+    def _check_for_undecided_update_settings(self):
+        if settings.settings["application"].getboolean("check-for-application-updates") is None:
+            logger.info("No user setting for application updates set. About to ask.")
+            self.main_window.ask_user_about_application_update_policy()
+        if settings.settings["application"].getboolean("check-for-card-data-updates") is None:
             logger.info("No user setting for card data updates set. About to ask.")
-            if self.main_window.ask_user_about_card_data_update_policy():
-                self._check_for_card_data_update_if_enabled()
-            """
-        else:
-            logger.info("Checking for card data updates disabled. Not checking for updates.")
+            self.main_window.ask_user_about_application_update_policy()
 
     def _show_changelog_after_update(self):
         if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):

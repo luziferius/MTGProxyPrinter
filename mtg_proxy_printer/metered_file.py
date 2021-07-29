@@ -20,6 +20,10 @@ from io import BufferedIOBase
 from PyQt5.QtCore import QObject, pyqtSignal
 from delegateto import delegate
 
+from mtg_proxy_printer.logger import get_logger
+
+logger = get_logger(__name__)
+del get_logger
 __all__ = [
     "MeteredFile",
 ]
@@ -40,10 +44,12 @@ class MeteredFile(QObject):
     io_end = pyqtSignal()
 
     def __init__(self, file: WrappedIoType, expected_size_bytes: int = 0, parent: QObject = None):
+        logger.debug(f"Creating {self.__class__.__name__} instance.")
         super(MeteredFile, self).__init__(parent)
         self.file = file
         self._total_bytes_processed = 0
         self.expected_size_bytes = expected_size_bytes
+        logger.debug(f"Created {self.__class__.__name__} instance.")
 
     def __enter__(self):
         self.io_begin.emit(self.expected_size_bytes)
