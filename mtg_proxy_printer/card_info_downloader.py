@@ -40,7 +40,6 @@ del get_logger
 __all__ = [
     "CardInfoDownloader",
     "store_download_settings",
-    "read_from_url",
     "CardInfoDownloadWorker",
 ]
 
@@ -123,14 +122,16 @@ class CardInfoDownloadWorker(QObject):
         else:
             self.download_finished.emit()
 
-    def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
+    def _wrap_in_metered_file(self, raw_file, file_size):
+        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
         monitor.total_bytes_processed.connect(self.download_progress)
         monitor.io_begin.connect(self.download_begins)
+        return monitor
 
     def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
-        data, _ = read_from_url(BULK_DATA_API_END_POINT, self)
+        data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
             bulk_items = json.load(data)
             for item in bulk_items["data"]:
@@ -156,8 +157,9 @@ class CardInfoDownloadWorker(QObject):
             logger.debug("Request bulk data URL from the Scryfall API.")
             url = self.get_scryfall_bulk_card_data_url(self.requested_item)
             logger.debug(f"Obtained url: {url}")
-        source, monitor = read_from_url(url, self)
-        self._connect_file_monitor(monitor)
+        else:
+            logger.debug(f"Reading from given URL {url}")
+        source, monitor = self.read_from_url(url)
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
             yield from self._read_json_card_data_from_open_file(source, json_path)
@@ -175,8 +177,7 @@ class CardInfoDownloadWorker(QObject):
         if isinstance(url_or_path, Path):
             file_size = url_or_path.stat().st_size
             raw_file = url_or_path.open("rb")
-            with mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self) as file:
-                self._connect_file_monitor(file)
+            with self._wrap_in_metered_file(raw_file, file_size) as file:
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
                 yield from self._read_json_card_data_from_open_file(file, json_path)
@@ -185,8 +186,7 @@ class CardInfoDownloadWorker(QObject):
         else:
             file_size = os.stat(url_or_path).st_size
             raw_file = open(url_or_path, "rb")
-            with mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self) as file:
-                self._connect_file_monitor(file)
+            with self._wrap_in_metered_file(raw_file, file_size) as file:
                 yield from self._read_json_card_data_from_open_file(file, json_path)
 
     @staticmethod
@@ -256,6 +256,26 @@ class CardInfoDownloadWorker(QObject):
         _insert_face_name.cache_clear()
         logger.info(f"Finished import with {index} imported cards.")
 
+    def read_from_url(self, url: str):
+        """
+        Reads a given URL and returns a file-like object that can and should be used as a context manager.
+        """
+        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
+        request = urllib.request.Request(url, headers=headers)
+        response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
+        if (response_code := response.getcode()) >= 300:
+            raise RuntimeError(f"Error from server! Error code: {response_code}")
+        encoding = response.info().get("Content-Encoding")
+        size_bytes = int(response.info().get("Content-Length", "0"))
+        metered_reader = self._wrap_in_metered_file(response, size_bytes)
+        if encoding == "gzip":
+            data = gzip.open(metered_reader, "rb")
+        elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
+            data = metered_reader
+        else:
+            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
+        return data, metered_reader
+
 
 def store_download_settings(db):
     """Store the current download settings in the database"""
@@ -264,27 +284,6 @@ def store_download_settings(db):
         'INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)',
         ((setting, section.getboolean(setting)) for setting in section.keys())
     )
-
-
-def read_from_url(url: str, parent: QObject = None):
-    """
-    Reads a given URL and returns a file-like object that can and should be used as a context manager.
-    """
-    headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-    request = urllib.request.Request(url, headers=headers)
-    response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
-    if (response_code := response.getcode()) >= 300:
-        raise RuntimeError(f"Error from server! Error code: {response_code}")
-    encoding = response.info().get("Content-Encoding")
-    size_bytes = int(response.info().get("Content-Length", "0"))
-    metered_reader = mtg_proxy_printer.metered_file.MeteredFile(response, size_bytes, parent)
-    if encoding == "gzip":
-        data = gzip.open(metered_reader, "rb")
-    elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
-        data = metered_reader
-    else:
-        raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-    return data, metered_reader
 
 
 def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:

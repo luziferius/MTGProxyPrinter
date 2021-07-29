@@ -22,6 +22,7 @@ import socket
 import string
 import typing
 import urllib.error
+from unittest.mock import MagicMock
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersistentModelIndex
 from PyQt5.QtGui import QPixmap, QColor
@@ -193,7 +194,14 @@ class ImageDownloader(QObject):
         self.should_run = True
         self.batch_processing_state: bool = False
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
+        self.download_worker = self._create_download_worker()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_download_worker(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker:
+        download_worker = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(MagicMock(), parent=self)
+        download_worker.download_progress.connect(self.card_download_progress)
+        download_worker.download_begins.connect(self.card_download_starting)
+        return download_worker
 
     def scan_disk_image_cache_then_process_queue(self):
         logger.info("Reading all image IDs of images stored on disk.")
@@ -237,10 +245,6 @@ class ImageDownloader(QObject):
             self.network_error_occurred.emit(reason_str)
         return reason_str
 
-    def _connect_file_monitor(self, monitor: mtg_proxy_printer.metered_file.MeteredFile):
-        monitor.io_begin.connect(self.card_download_starting)
-        monitor.total_bytes_processed.connect(self.card_download_progress)
-
     def get_image_synchronous(self, card: Card):
         key: ImageKey = card.scryfall_id, card.is_front
         try:
@@ -276,8 +280,7 @@ class ImageDownloader(QObject):
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
-        source, monitor = mtg_proxy_printer.card_info_downloader.read_from_url(download_uri, self)
-        self._connect_file_monitor(monitor)
+        source, _ = self.download_worker.read_from_url(download_uri)
         download_path = self.image_database.db_path / target_path.name
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
