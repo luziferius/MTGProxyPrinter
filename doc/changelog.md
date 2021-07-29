@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Application and card data update checks now run in the background, if enabled. This reduces application startup time.
+
 # Version 0.12.0 (2021-07-28) <a name="v0_12_0"></a>
 
 ## Implemented features
