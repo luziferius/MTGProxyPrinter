@@ -79,7 +79,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
     def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
         self.set_name_filter: QLineEdit
         self.set_name_list: QListView
-        model = mtg_proxy_printer.model.string_list.PrettySetListModel([], self.set_name_list)
+        model = mtg_proxy_printer.model.string_list.PrettySetListModel(self.set_name_list)
         self.card_name_model.rowsRemoved.connect(lambda: self.set_name_box.setEnabled(False))
         self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
 
