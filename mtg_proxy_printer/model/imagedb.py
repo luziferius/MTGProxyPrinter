@@ -76,8 +76,8 @@ class ImageDatabase(QObject):
     batch_processing_state_changed = pyqtSignal(bool)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
 
-    def __init__(self, *args, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, **kwargs):
-        super(ImageDatabase, self).__init__(*args, **kwargs)
+    def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
+        super(ImageDatabase, self).__init__(parent)
         self.db_path = db_path
         _migrate_database(db_path)
         self._blank_image = QPixmap()
