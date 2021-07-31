@@ -18,8 +18,9 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QLabel
 
+from mtg_proxy_printer.model.document import PageLayoutSettings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 import mtg_proxy_printer.settings
@@ -38,7 +39,7 @@ check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v i
 
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
-
+    """Implements the Settings window."""
     saved = pyqtSignal()
 
     def __init__(self, language_model: QStringListModel,  *args, **kwargs):
@@ -47,6 +48,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.language_model = language_model
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
+        self.page_layout = self._setup_page_layout()
 
         self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
@@ -62,6 +64,46 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
         self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_page_layout(self) -> PageLayoutSettings:
+        # Implementation note: The signal connections below will also trigger when programmatically populating the
+        # widget values in method _load_document_settings().
+        # Therefore it is not necessary to ever explicitly set the page_layout attributes to the current values.
+        page_layout = PageLayoutSettings()
+        self.page_height.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "page_height", new))
+        self.page_width.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "page_width", new))
+        self.page_margin_top.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_top", new))
+        self.page_margin_bottom.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_bottom", new))
+        self.page_margin_left.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_left", new))
+        self.page_margin_right.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_right", new))
+        self.page_image_spacing_horizontal.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "image_spacing_horizontal", new))
+        self.page_image_spacing_vertical.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "image_spacing_vertical", new))
+        widgets: typing.List[QSpinBox] = [
+            self.page_height,
+            self.page_width,
+            self.page_margin_top,
+            self.page_margin_bottom,
+            self.page_margin_left,
+            self.page_margin_right,
+            self.page_image_spacing_horizontal,
+            self.page_image_spacing_vertical,
+        ]
+        for widget in widgets:
+            widget.valueChanged[int].connect(self.on_page_layout_setting_changed)
+        return page_layout
+
+    @pyqtSlot()
+    def on_page_layout_setting_changed(self):
+        self.page_capacity: QLabel
+        self.page_capacity.setText(str(self.page_layout.compute_page_card_capacity()))
 
     def show(self):
         logger.info("Show the settings window.")
