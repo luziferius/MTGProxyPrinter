@@ -595,7 +595,7 @@ class Document(QAbstractItemModel):
         """
         if not self.total_cards_per_page:
             raise RuntimeError("Page capacity is zero!")
-        overflowing_pages, pages_with_free_slots = self._find_overflowing_and_underflowing_pages()
+        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_underflowing_pages()
         logger.info(
             f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
         moved_cards = 0
@@ -620,17 +620,18 @@ class Document(QAbstractItemModel):
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
-    def _find_overflowing_and_underflowing_pages(self):
+    def find_overflowing_and_underflowing_pages(self, total_cards_per_page: int = None):
         """
         Returns two lists of pages: The first contains all pages that are currently overflowing,
         and the second contains that currently have free slots and therefore can fit additional cards.
         """
+        total_cards_per_page = total_cards_per_page or self.total_cards_per_page
         overflowing_pages = []
         pages_with_free_slots: PageList = []
         for page_number, page in enumerate(self.pages):
-            if len(page) > self.total_cards_per_page:
+            if len(page) > total_cards_per_page:
                 overflowing_pages.append(page)
-            elif len(page) < self.total_cards_per_page:
+            elif len(page) < total_cards_per_page:
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
 

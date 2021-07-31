@@ -18,9 +18,9 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QLabel
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox
 
-from mtg_proxy_printer.model.document import PageLayoutSettings
+from mtg_proxy_printer.model.document import PageLayoutSettings, Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 import mtg_proxy_printer.settings
@@ -42,10 +42,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     """Implements the Settings window."""
     saved = pyqtSignal()
 
-    def __init__(self, language_model: QStringListModel,  *args, **kwargs):
+    def __init__(self, language_model: QStringListModel, document: Document,  *args, **kwargs):
         super(SettingsWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.language_model = language_model
+        self.document = document
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
         self.page_layout = self._setup_page_layout()
@@ -242,6 +243,23 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
+
+        old_page_capacity = self.document.total_cards_per_page
+        new_page_capacity = self.page_layout.compute_page_card_capacity()
+        logger.info(f"accept() called. {old_page_capacity=}, {new_page_capacity=}")
+        if old_page_capacity > new_page_capacity:
+            overflowing_pages = len(self.document.find_overflowing_and_underflowing_pages(new_page_capacity)[0])
+
+            if overflowing_pages and QMessageBox.question(
+                    self, "Overflowing pages found",
+                    f"The new settings reduce the page capacity from {old_page_capacity} to {new_page_capacity} cards. "
+                    f"This causes {overflowing_pages} pages to overflow.\n"
+                    f"The overflowing cards from these pages will be moved automatically to free spaces on "
+                    f"other pages, or new pages at the document end.\nNo cards will be lost, but the "
+                    f"moved away cards will be shuffled around.\n\nContinue to save and apply the new settings?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.No:
+                logger.info("User canceled saving page layout saving due to overflowing images notification.")
+                return
         self.save()
         super(SettingsWindow, self).accept()
 
