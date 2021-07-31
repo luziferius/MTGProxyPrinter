@@ -2,6 +2,12 @@
 
 # Next version (in development)
 
+## Implemented features
+
+- While changing the paper size settings, the settings window displays the resulting page capacity in cards. 
+- The settings window now informs, if changed settings will cause existing pages to overflow and move cards around
+  automatically. The user now has the choice to cancel saving the settings, if they don’t wish for this to happen.
+
 ## Changed features
 
 - Application and card data update checks now run in the background, if enabled. This reduces application startup time.

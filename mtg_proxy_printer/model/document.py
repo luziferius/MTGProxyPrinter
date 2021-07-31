@@ -45,6 +45,7 @@ unit_registry = pint.UnitRegistry()
 __all__ = [
     "PageList",
     "Document",
+    "PageLayoutSettings"
 ]
 
 
@@ -62,6 +63,59 @@ CardList = typing.List[CardContainer]
 PageList = typing.List[CardList]
 
 INVALID_INDEX = QModelIndex()
+
+
+@dataclasses.dataclass
+class PageLayoutSettings:
+    """Stores all page layout attributes, like paper size, margins and spacings"""
+    page_height: int = 0
+    page_width: int = 0
+    margin_top: int = 0
+    margin_bottom: int = 0
+    margin_left: int = 0
+    margin_right: int = 0
+    image_spacing_horizontal: int = 0
+    image_spacing_vertical: int = 0
+
+    def update_from_settings(self):
+        document_settings = settings["documents"]
+        self.page_height = document_settings.getint("paper-height-mm")
+        self.page_width = document_settings.getint("paper-width-mm")
+        self.margin_top = document_settings.getint("margin-top-mm")
+        self.margin_bottom = document_settings.getint("margin-bottom-mm")
+        self.margin_left = document_settings.getint("margin-left-mm")
+        self.margin_right = document_settings.getint("margin-right-mm")
+        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
+        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+
+    def compute_page_column_count(self) -> int:
+        """Returns the total number of card columns that fit on this page."""
+        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+
+        total_width -= margins
+        if total_width < Document.IMAGE_WIDTH:
+            return 0
+        total_width -= Document.IMAGE_WIDTH
+        cards = total_width / (Document.IMAGE_WIDTH+spacing) + 1
+        return int(cards.to_tuple()[0])
+
+    def compute_page_row_count(self) -> int:
+        """Returns the total number of card rows that fit on this page."""
+        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+        total_height -= margins
+        if total_height < Document.IMAGE_HEIGHT:
+            return 0
+        total_height -= Document.IMAGE_HEIGHT
+        cards = total_height / (Document.IMAGE_HEIGHT+spacing) + 1
+        return int(cards.to_tuple()[0])
+
+    def compute_page_card_capacity(self) -> int:
+        """Returns the total number of card images that fit on a single page."""
+        return self.compute_page_row_count() * self.compute_page_column_count()
 
 
 class Document(QAbstractItemModel):
@@ -100,15 +154,8 @@ class Document(QAbstractItemModel):
         self.page_index_cache: typing.Dict[int, int] = {}  # Mapping from page id() to list index in the page list
         self.add_page()
         self.currently_edited_page = self.pages[0]
-        document_settings = settings["documents"]
-        self.page_height = document_settings.getint("paper-height-mm")
-        self.page_width = document_settings.getint("paper-width-mm")
-        self.margin_top = document_settings.getint("margin-top-mm")
-        self.margin_bottom = document_settings.getint("margin-bottom-mm")
-        self.margin_left = document_settings.getint("margin-left-mm")
-        self.margin_right = document_settings.getint("margin-right-mm")
-        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
-        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.page_layout = PageLayoutSettings()
+        self.page_layout.update_from_settings()
         self.total_cards_per_page = self.compute_page_card_capacity()
 
     def on_ui_selects_new_page(self, new_page: QModelIndex):
@@ -132,15 +179,7 @@ class Document(QAbstractItemModel):
     @pyqtSlot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
-        document_settings = settings["documents"]
-        self.page_height = document_settings.getint("paper-height-mm")
-        self.page_width = document_settings.getint("paper-width-mm")
-        self.margin_top = document_settings.getint("margin-top-mm")
-        self.margin_bottom = document_settings.getint("margin-bottom-mm")
-        self.margin_left = document_settings.getint("margin-left-mm")
-        self.margin_right = document_settings.getint("margin-right-mm")
-        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
-        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.page_layout.update_from_settings()
         previous_card_count = self.total_cards_per_page
         self.compute_page_row_count.cache_clear()
         self.compute_page_column_count.cache_clear()
@@ -416,29 +455,12 @@ class Document(QAbstractItemModel):
     @functools.lru_cache(maxsize=1)
     def compute_page_column_count(self) -> int:
         """Returns the total number of card columns that fit on a page."""
-        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
-
-        total_width -= margins
-        if total_width < Document.IMAGE_WIDTH:
-            return 0
-        total_width -= Document.IMAGE_WIDTH
-        cards = total_width / (Document.IMAGE_WIDTH+spacing) + 1
-        return int(cards.to_tuple()[0])
+        return self.page_layout.compute_page_column_count()
 
     @functools.lru_cache(maxsize=1)
     def compute_page_row_count(self) -> int:
         """Returns the total number of card rows that fit on a page."""
-        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
-        total_height -= margins
-        if total_height < Document.IMAGE_HEIGHT:
-            return 0
-        total_height -= Document.IMAGE_HEIGHT
-        cards = total_height / (Document.IMAGE_HEIGHT+spacing) + 1
-        return int(cards.to_tuple()[0])
+        return self.page_layout.compute_page_row_count()
 
     def compute_page_card_capacity(self) -> int:
         """Returns the total number of card images that fit on a single page."""
@@ -573,7 +595,7 @@ class Document(QAbstractItemModel):
         """
         if not self.total_cards_per_page:
             raise RuntimeError("Page capacity is zero!")
-        overflowing_pages, pages_with_free_slots = self._find_overflowing_and_underflowing_pages()
+        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_underflowing_pages()
         logger.info(
             f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
         moved_cards = 0
@@ -598,17 +620,18 @@ class Document(QAbstractItemModel):
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
-    def _find_overflowing_and_underflowing_pages(self):
+    def find_overflowing_and_underflowing_pages(self, total_cards_per_page: int = None):
         """
         Returns two lists of pages: The first contains all pages that are currently overflowing,
         and the second contains that currently have free slots and therefore can fit additional cards.
         """
+        total_cards_per_page = total_cards_per_page or self.total_cards_per_page
         overflowing_pages = []
         pages_with_free_slots: PageList = []
         for page_number, page in enumerate(self.pages):
-            if len(page) > self.total_cards_per_page:
+            if len(page) > total_cards_per_page:
                 overflowing_pages.append(page)
-            elif len(page) < self.total_cards_per_page:
+            elif len(page) < total_cards_per_page:
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>566</width>
-    <height>612</height>
+    <width>650</width>
+    <height>650</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -332,71 +332,10 @@ If so, choose an arbitrary printing.</string>
           <string>Default settings for new documents</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="15" column="1">
-           <widget class="QLabel" name="page_margin_right_label">
-            <property name="text">
-             <string>Right margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_right</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="3">
-           <widget class="QSpinBox" name="page_margin_bottom">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="14" column="1">
-           <widget class="QLabel" name="page_margin_left_label">
-            <property name="text">
-             <string>Left margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_left</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="3">
-           <widget class="QSpinBox" name="page_height">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper height in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="1">
-           <widget class="QLabel" name="page_margin_bottom_label">
-            <property name="text">
-             <string>Bottom Margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_bottom</cstring>
+          <item row="6" column="1" colspan="3">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
@@ -419,13 +358,33 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="16" column="1">
-           <widget class="QLabel" name="page_image_spacing_horizontal_label">
+          <item row="17" column="1">
+           <widget class="QLabel" name="page_image_spacing_vertical_label">
             <property name="text">
-             <string>Horizontal image spacing</string>
+             <string>Vertical image spacing</string>
             </property>
             <property name="buddy">
-             <cstring>page_image_spacing_horizontal</cstring>
+             <cstring>page_image_spacing_vertical</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QLabel" name="page_height_label">
+            <property name="text">
+             <string>Page height</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_height</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="1">
+           <widget class="QLabel" name="page_margin_right_label">
+            <property name="text">
+             <string>Right margin</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_margin_right</cstring>
             </property>
            </widget>
           </item>
@@ -448,6 +407,74 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
+          <item row="12" column="3">
+           <widget class="QSpinBox" name="page_margin_bottom">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="1">
+           <widget class="QLabel" name="page_image_spacing_horizontal_label">
+            <property name="text">
+             <string>Horizontal image spacing</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_image_spacing_horizontal</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="1">
+           <widget class="QLabel" name="page_margin_bottom_label">
+            <property name="text">
+             <string>Bottom Margin</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_margin_bottom</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="3">
+           <widget class="QSpinBox" name="page_height">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Default paper height in millimeters</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="pdf_page_count_limit_label">
+            <property name="text">
+             <string>Split PDFs longer than</string>
+            </property>
+            <property name="buddy">
+             <cstring>pdf_page_count_limit</cstring>
+            </property>
+           </widget>
+          </item>
           <item row="14" column="3">
            <widget class="QSpinBox" name="page_margin_left">
             <property name="sizePolicy">
@@ -467,68 +494,23 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="17" column="1">
-           <widget class="QLabel" name="page_image_spacing_vertical_label">
+          <item row="14" column="1">
+           <widget class="QLabel" name="page_margin_left_label">
             <property name="text">
-             <string>Vertical image spacing</string>
+             <string>Left margin</string>
             </property>
             <property name="buddy">
-             <cstring>page_image_spacing_vertical</cstring>
+             <cstring>page_margin_left</cstring>
             </property>
            </widget>
           </item>
-          <item row="16" column="3">
-           <widget class="QSpinBox" name="page_image_spacing_horizontal">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="1">
-           <widget class="QLabel" name="page_height_label">
+          <item row="10" column="1">
+           <widget class="QLabel" name="page_width_label">
             <property name="text">
-             <string>Page height</string>
+             <string>Page width</string>
             </property>
             <property name="buddy">
-             <cstring>page_height</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1" colspan="3">
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="3">
-           <widget class="QSpinBox" name="page_width">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper width in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
+             <cstring>page_width</cstring>
             </property>
            </widget>
           </item>
@@ -551,13 +533,22 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="10" column="1">
-           <widget class="QLabel" name="page_width_label">
-            <property name="text">
-             <string>Page width</string>
+          <item row="10" column="3">
+           <widget class="QSpinBox" name="page_width">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="buddy">
-             <cstring>page_width</cstring>
+            <property name="toolTip">
+             <string>Default paper width in millimeters</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
             </property>
            </widget>
           </item>
@@ -594,13 +585,36 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
-           <widget class="QLabel" name="pdf_page_count_limit_label">
-            <property name="text">
-             <string>Split PDFs longer than</string>
+          <item row="16" column="3">
+           <widget class="QSpinBox" name="page_image_spacing_horizontal">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="buddy">
-             <cstring>pdf_page_count_limit</cstring>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="1">
+           <widget class="QLabel" name="page_capacity_label">
+            <property name="text">
+             <string>Resulting page capacity:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="3">
+           <widget class="QLabel" name="page_capacity">
+            <property name="text">
+             <string/>
             </property>
            </widget>
           </item>

@@ -16,13 +16,15 @@
 import sys
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.document
+import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.natsort import str_less_than
 from mtg_proxy_printer.update_checker import UpdateChecker
@@ -50,10 +52,15 @@ class Application(QApplication):
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        self.document = self._create_document_instance(args, self.card_db, self.image_db)
+        self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
-        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.args, self.card_db)
+        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
+            self.card_db, self.image_db, self.document, self.language_model
+        )
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
-            self.main_window.language_model, self.main_window)
+            self.language_model, self.document, self.main_window)
         self.settings_window.saved.connect(self.main_window.settings_changed)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
@@ -67,6 +74,29 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _create_document_instance(
+            self,
+            args: Namespace,
+            card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+            image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
+        document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
+        image_db.add_card.connect(document.add_card)
+        if args.file is not None:
+            if args.file.is_file():
+                # Wait until after __init__ finished and the main loop starts
+                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
+                logger.info(f'Enqueued loading of document "{args.file}"')
+            elif args.file.exists():
+                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
+            else:
+                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
+        return document
+
+    def _create_language_model(self):
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        return QStringListModel([preferred_language], self)
+
 
     def _create_update_checker(self) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, self)

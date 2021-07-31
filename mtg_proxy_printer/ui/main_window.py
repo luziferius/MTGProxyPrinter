@@ -16,15 +16,14 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel, QTimer
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
-from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.card_info_downloader
-import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.model.imagedb
-import mtg_proxy_printer.model.document
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.document import Document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -52,28 +51,36 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     settings_changed = pyqtSignal()
     loading_state_changed = pyqtSignal(bool)
 
-    def __init__(self, arguments: Namespace, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
+    def __init__(self,
+                 card_db: CardDatabase,
+                 image_db: ImageDatabase,
+                 document: Document,
+                 language_model: QStringListModel,
+                 *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
         self.setupUi(self)
         self.about_dialog = self._create_about_dialog()
         self.progress_bar = self._create_progress_bar()
-        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
-        self.image_db = self._create_image_database()
-        self.document = self._create_document_instance(arguments)
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
-        self.language_model = QStringListModel([preferred_language], self)
+        self.card_database = card_db
+        self.image_db = image_db
+        self._connect_image_database_signals(image_db)
+        self.document = document
+        self._connect_document_signals(document)
+        self.language_model = language_model
         self.card_data_downloader = self._create_card_data_downloader()
         self.page_view: CurrentPageView
-        self._setup_page_view()
+        self._setup_page_view(document)
         self._setup_loading_state_connections()
-        self._setup_add_card_widget()
-        self._setup_document_view()
-        self.action_new_page.triggered.connect(self.document.add_page)
-        self.should_update_languages.connect(self.update_language_model)
+        self._setup_add_card_widget(card_db, image_db)
+        self._setup_document_view(document)
+        self.action_new_page.triggered.connect(document.add_page)
+        self.should_update_languages.connect(
+            lambda: self.language_model.setStringList(self.card_database.get_all_languages())
+        )
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
-        self.settings_changed.connect(self.document.apply_settings)
+        self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
         self.action_show_toolbar: QAction
@@ -100,9 +107,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
 
-    def _setup_page_view(self):
+    def _setup_page_view(self, document: Document):
         self.page_view: CurrentPageView
-        self.page_view.set_document(self.document)
+        self.page_view.set_document(document)
         self.window_size_changed.connect(self.page_view.window_size_changed)
         self.document.current_page_changed.connect(self.page_view.on_current_page_changed)
 
@@ -110,30 +117,17 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
 
-    def _create_document_instance(self, args: Namespace):
-        document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
+    def _connect_document_signals(self, document: Document):
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
-        self.image_db.add_card.connect(document.add_card)
-        if args.file is not None:
-            if args.file.is_file():
-                # Wait until after __init__ finished and the main loop starts
-                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
-                logger.info(f'Enqueued loading of document "{args.file}"')
-            elif args.file.exists():
-                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
-            else:
-                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
-        return document
 
     def _create_card_data_downloader(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloader:
         downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database)
         downloader.download_finished.connect(self.should_update_languages)
-        downloader.download_finished.connect(self.update_language_model)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.progress_bar.hide)
@@ -160,14 +154,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.page_view.delete_selected_images_button,
         ]
 
-    def _create_image_database(self):
-        image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+    def _connect_image_database_signals(self, image_db: ImageDatabase):
         image_db.card_download_starting.connect(self.show_progress_bar)
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
-        return image_db
 
     def _create_progress_bar(self):
         progress_bar = QProgressBar(self)
@@ -175,15 +167,15 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
 
-    def _setup_add_card_widget(self):
+    def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.add_card_widget: AddCardWidget
-        self.add_card_widget.set_card_database(self.card_database)
-        self.add_card_widget.card_added.connect(self.image_db.get_new_card_image_asynchronous)
+        self.add_card_widget.set_card_database(card_db)
+        self.add_card_widget.card_added.connect(image_db.get_new_card_image_asynchronous)
 
-    def _setup_document_view(self):
+    def _setup_document_view(self, document: Document):
         self.document_view: DocumentView
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
+        self.document_view.setModel(document)
+        self.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self._select_first_page()
 
     def offer_re_downloading_card_database(self):
@@ -213,10 +205,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def showEvent(self, event: QShowEvent):
         super(MainWindow, self).showEvent(event)
         self.window_size_changed.emit()
-
-    @pyqtSlot()
-    def update_language_model(self):
-        self.language_model.setStringList(self.card_database.get_all_languages())
 
     def closeEvent(self, event: QCloseEvent):
         """
