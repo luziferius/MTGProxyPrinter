@@ -16,7 +16,7 @@
 import sys
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -54,12 +54,13 @@ class Application(QApplication):
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
+        self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
-            self.card_db,self.image_db, self.document
+            self.card_db, self.image_db, self.document, self.language_model
         )
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
-            self.main_window.language_model, self.main_window)
+            self.language_model, self.main_window)
         self.settings_window.saved.connect(self.main_window.settings_changed)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
@@ -91,6 +92,11 @@ class Application(QApplication):
             else:
                 logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
         return document
+
+    def _create_language_model(self):
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        return QStringListModel([preferred_language], self)
+
 
     def _create_update_checker(self) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, self)

@@ -55,6 +55,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                  card_db: CardDatabase,
                  image_db: ImageDatabase,
                  document: Document,
+                 language_model: QStringListModel,
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
@@ -66,8 +67,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self._connect_image_database_signals(image_db)
         self.document = document
         self._connect_document_signals(document)
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
-        self.language_model = QStringListModel([preferred_language], self)
+        self.language_model = language_model
         self.card_data_downloader = self._create_card_data_downloader()
         self.page_view: CurrentPageView
         self._setup_page_view(document)
@@ -75,7 +75,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self._setup_add_card_widget(card_db, image_db)
         self._setup_document_view(document)
         self.action_new_page.triggered.connect(document.add_page)
-        self.should_update_languages.connect(self.update_language_model)
+        self.should_update_languages.connect(
+            lambda: self.language_model.setStringList(self.card_database.get_all_languages())
+        )
         self.should_update_languages.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(document.apply_settings)
@@ -126,7 +128,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def _create_card_data_downloader(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloader:
         downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database)
         downloader.download_finished.connect(self.should_update_languages)
-        downloader.download_finished.connect(self.update_language_model)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.progress_bar.hide)
@@ -204,10 +205,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def showEvent(self, event: QShowEvent):
         super(MainWindow, self).showEvent(event)
         self.window_size_changed.emit()
-
-    @pyqtSlot()
-    def update_language_model(self):
-        self.language_model.setStringList(self.card_database.get_all_languages())
 
     def closeEvent(self, event: QCloseEvent):
         """
