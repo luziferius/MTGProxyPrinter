@@ -60,9 +60,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
-        self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.save)
-        self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
-        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_page_layout(self) -> PageLayoutSettings:
@@ -243,14 +240,20 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         return widgets_with_settings
 
+    def accept(self):
+        """Automatically called when the user hits the "Save" button."""
+        self.save()
+        super(SettingsWindow, self).accept()
+
     def reset(self):
         logger.info("User reverts the made changes.")
         self.load_settings(mtg_proxy_printer.settings.settings)
 
-    def hide(self):
+    def reject(self):
+        """Automatically called when the user hits the "Cancel" button or closes the settings window."""
         logger.info("User closes the settings dialog. This will reset any made changes.")
         self.reset()
-        super(SettingsWindow, self).hide()
+        super(SettingsWindow, self).reject()
 
     def save(self):
         logger.info("User saves the configuration to disk.")
