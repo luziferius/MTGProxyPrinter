@@ -22,6 +22,7 @@ import typing
 from itertools import filterfalse
 
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
 import delegateto
 
 from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, clear_database
@@ -67,6 +68,17 @@ class CardIdentificationData:
 class MTGSet:
     code: str
     name: str
+
+    def data(self, role: int):
+        """data getter used for Qt Model API based access"""
+        if role == Qt.EditRole:
+            return self.code
+        elif role == Qt.DisplayRole:
+            return f"{self.name} ({self.code.upper()})"
+        elif role == Qt.ToolTipRole:
+            return self.name
+        else:
+            return None
 
 
 @dataclasses.dataclass(unsafe_hash=True)

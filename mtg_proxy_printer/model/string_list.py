@@ -17,19 +17,13 @@ import typing
 
 from PyQt5.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
 
+from mtg_proxy_printer.model.carddb import MTGSet
+
 
 __all__ = [
     "PrettySetListModel",
 ]
 INVALID = QModelIndex()
-
-
-class SetData(typing.NamedTuple):
-    set_code: str
-    set_name: str
-
-    def __str__(self):
-        return f"{self.set_name} ({self.set_code.upper()})"
 
 
 class PrettySetListModel(QAbstractListModel):
@@ -41,7 +35,7 @@ class PrettySetListModel(QAbstractListModel):
     def __init__(self, parent: QObject = None):
         super(PrettySetListModel, self).__init__(parent)
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
-        self.set_data: typing.List[SetData] = []
+        self.set_data: typing.List[MTGSet] = []
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> typing.Optional[str]:
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
@@ -62,15 +56,9 @@ class PrettySetListModel(QAbstractListModel):
             self.endRemoveRows()
         if data:
             self.beginInsertRows(INVALID, 0, len(data))
-            self.set_data[:] = (SetData(set_code, set_name) for set_code, set_name in data)
+            self.set_data[:] = (MTGSet(set_code, set_name) for set_code, set_name in data)
             self.endInsertRows()
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Optional[str]:
         if index.isValid():
-            row = index.row()
-            if role == Qt.DisplayRole:
-                return str(self.set_data[row])
-            if role == Qt.EditRole:
-                return self.set_data[row].set_code
-            if role == Qt.ToolTipRole:
-                return self.set_data[row].set_name
+            return self.set_data[index.row()].data(role)
