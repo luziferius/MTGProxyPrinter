@@ -22,7 +22,6 @@ import socket
 import string
 import typing
 import urllib.error
-from unittest.mock import MagicMock
 
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersistentModelIndex
 from PyQt5.QtGui import QPixmap, QColor
@@ -198,7 +197,7 @@ class ImageDownloader(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_download_worker(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker:
-        download_worker = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(MagicMock(), parent=self)
+        download_worker = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(None, parent=self)
         # Not connecting download_worker.download_finished with self.card_download_finished,
         # because that signal is emitted explicitly by this class.
         download_worker.download_progress.connect(self.card_download_progress)
