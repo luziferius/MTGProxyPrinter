@@ -15,6 +15,8 @@
 ## Fixed issues
 
 - Fixed interface inconsistency when clicking on the "New Document" button.
+- Prevent the user from entering invalid combinations of paper sizes and margins that result in a page capacity of zero.
+  This prevents the application from entering an invalid state that causes crashes or infinite loops.
 
 # Version 0.12.0 (2021-07-28) <a name="v0_12_0"></a>
 

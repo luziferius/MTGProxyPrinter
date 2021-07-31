@@ -18,7 +18,7 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox, QDialog
 
 from mtg_proxy_printer.model.document import PageLayoutSettings, Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -96,12 +96,24 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         for widget in widgets:
             widget.valueChanged[int].connect(self.on_page_layout_setting_changed)
+            widget.valueChanged[int].connect(self.validate_paper_size_settings)
         return page_layout
 
     @pyqtSlot()
     def on_page_layout_setting_changed(self):
         self.page_capacity: QLabel
-        self.page_capacity.setText(str(self.page_layout.compute_page_card_capacity()))
+        new_capacity = self.page_layout.compute_page_card_capacity()
+        self.page_capacity.setText(str(new_capacity))
+
+    @pyqtSlot()
+    def validate_paper_size_settings(self):
+        pl = self.page_layout
+        min_page_height = pl.margin_bottom + pl.margin_top + self.document.IMAGE_HEIGHT.to_tuple()[0]
+        min_page_width = pl.margin_left + pl.margin_right + self.document.IMAGE_WIDTH.to_tuple()[0]
+        self.page_height: QSpinBox
+        self.page_width: QSpinBox
+        self.page_height.setMinimum(min_page_height)
+        self.page_width.setMinimum(min_page_width)
 
     def show(self):
         logger.info("Show the settings window.")
