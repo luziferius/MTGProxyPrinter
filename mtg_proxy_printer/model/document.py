@@ -434,10 +434,7 @@ class Document(QAbstractItemModel):
             if index.column() == PageColumns.CardName:
                 return card.name
             elif index.column() == PageColumns.Set:
-                if role == Qt.EditRole:
-                    return card.set.code
-                else:
-                    return f"{card.set.name} ({card.set.code.upper()})"
+                return card.set.data(role)
             elif index.column() == PageColumns.CollectorNumber:
                 return card.collector_number
             elif index.column() == PageColumns.Language:
