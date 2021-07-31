@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.12.1 (2021-07-31) <a name="v0_12_1"></a>
 
 ## Implemented features
 
