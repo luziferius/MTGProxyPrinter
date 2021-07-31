@@ -83,7 +83,7 @@ class Application(QApplication):
             self.main_window.ask_user_about_application_update_policy()
         if settings.settings["application"].getboolean("check-for-card-data-updates") is None:
             logger.info("No user setting for card data updates set. About to ask.")
-            self.main_window.ask_user_about_application_update_policy()
+            self.main_window.ask_user_about_card_data_update_policy()
 
     def _show_changelog_after_update(self):
         if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):

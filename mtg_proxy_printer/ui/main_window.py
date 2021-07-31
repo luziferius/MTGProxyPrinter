@@ -435,30 +435,34 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def ask_user_about_application_update_policy(self) -> bool:
         """Executed on start when the application update policy setting is set to None, the default value."""
-        if (result := QMessageBox.question(
-                self, "Check for application updates?",
-                f"Automatically check for application updates whenever you start "
-                f"{mtg_proxy_printer.meta_data.PROGRAMNAME}?\nYou can change this later in the settings.",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-                )) in {QMessageBox.Yes, QMessageBox.No}:
-            logger.info(f"Application update policy set. User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings["application"]["check-for-application-updates"] = str(
-                result == QMessageBox.Yes)
-            mtg_proxy_printer.settings.write_settings_to_file()
-            return True
-        return False
+        name = mtg_proxy_printer.meta_data.PROGRAMNAME
+        return self._ask_user_about_update_policy(
+            title="Check for application updates?",
+            question=f"Automatically check for application updates whenever you start {name}?",
+            logger_message="Application update policy set.",
+            settings_key="check-for-application-updates"
+        )
 
     def ask_user_about_card_data_update_policy(self) -> bool:
         """Executed on start when the card data update policy setting is set to None, the default value."""
+        name = mtg_proxy_printer.meta_data.PROGRAMNAME
+        return self._ask_user_about_update_policy(
+            title="Check for card data updates?",
+            question=f"Automatically check for card data updates on Scryfall whenever you start {name}?",
+            logger_message="Card data update policy set.",
+            settings_key="check-for-card-data-updates"
+        )
+
+    def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str) -> bool:
         if (result := QMessageBox.question(
-                self, "Check for card data updates?",
-                f"Automatically check for card data updates on Scryfall whenever you start "
-                f"{mtg_proxy_printer.meta_data.PROGRAMNAME}?\nYou can change this later in the settings.",
+                self, title,
+                f"{question}\nYou can change this later in the settings.",
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
                 )) in {QMessageBox.Yes, QMessageBox.No}:
-            logger.info(f"Card data update policy set. User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings["application"]["check-for-card-data-updates"] = str(
+            logger.info(f"{logger_message} User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
+            mtg_proxy_printer.settings.settings["application"][settings_key] = str(
                 result == QMessageBox.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
+            logger.debug("Written settings to disk.")
             return True
         return False
