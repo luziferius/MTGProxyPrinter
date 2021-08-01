@@ -16,6 +16,7 @@
 import atexit
 import dataclasses
 import datetime
+import itertools
 import pathlib
 import textwrap
 import typing
@@ -279,7 +280,7 @@ class CardDatabase:
         return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
 
     def find_sets_matching(
-            self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[typing.Tuple[str, str]]:
+            self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -303,7 +304,7 @@ class CardDatabase:
             parameters += [f"{set_name_filter}%"] * 2
 
         query += 'ORDER BY set_name ASC\n'
-        return self.db.execute(query, parameters).fetchall()
+        return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
 
     def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
         query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ? and is_front = ?)'

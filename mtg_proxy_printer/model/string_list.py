@@ -49,14 +49,14 @@ class PrettySetListModel(QAbstractListModel):
     def rowCount(self, parent: QModelIndex = INVALID) -> int:
         return 0 if parent.isValid() else len(self.set_data)
 
-    def set_set_data(self, data: typing.List[typing.Tuple[str, str]]) -> None:
+    def set_set_data(self, data: typing.List[MTGSet]) -> None:
         if self.set_data:
             self.beginRemoveRows(INVALID, 0, self.rowCount())
             self.set_data.clear()
             self.endRemoveRows()
         if data:
             self.beginInsertRows(INVALID, 0, len(data))
-            self.set_data[:] = (MTGSet(set_code, set_name) for set_code, set_name in data)
+            self.set_data[:] = data
             self.endInsertRows()
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Optional[str]:
