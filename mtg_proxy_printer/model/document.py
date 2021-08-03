@@ -171,7 +171,7 @@ class Document(QAbstractItemModel):
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return Document.page_header[section]
+                return Document.page_header.get(section)
             elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)

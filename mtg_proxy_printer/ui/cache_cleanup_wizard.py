@@ -134,7 +134,7 @@ class KnownCardImageModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.header_data)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(KnownCardImageModel, self).headerData(section, orientation, role)
 
@@ -224,7 +224,7 @@ class UnknownCardImageModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.header_data)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(UnknownCardImageModel, self).headerData(section, orientation, role)
 

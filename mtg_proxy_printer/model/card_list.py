@@ -158,7 +158,7 @@ class CardListModel(QAbstractTableModel):
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return CardListModel.header[section]
+                return CardListModel.header.get(section)
             elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(CardListModel, self).headerData(section, orientation, role)
