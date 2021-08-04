@@ -85,6 +85,7 @@ def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str):
 
 def _validate_model_content(list_model):
     assert_that(list_model.rowCount(), is_(equal_to(1)))
+    assert_that(list_model.cards, has_length(1))
     assert_that(list_model.cards[0], has_properties({
         "name": equal_to("Fury Sliver"),
         "set": has_properties({
