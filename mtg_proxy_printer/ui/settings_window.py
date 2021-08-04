@@ -18,7 +18,8 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox, QDialog
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
+    QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox
 
 from mtg_proxy_printer.model.document import PageLayoutSettings, Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name

@@ -48,7 +48,7 @@ def read_path(setting: str) -> str:
 
 class SavePDFDialog(QFileDialog):
 
-    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document, **kwargs):
+    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
         preferred_file_name = document.save_file_path.name if document.save_file_path is not None else ""
         super(SavePDFDialog, self).__init__(parent, "Export as PDF", preferred_file_name, "PDF-Documents (*.pdf)")
         if default_path := read_path("pdf-export-path"):

@@ -45,7 +45,8 @@ unit_registry = pint.UnitRegistry()
 __all__ = [
     "PageList",
     "Document",
-    "PageLayoutSettings"
+    "PageLayoutSettings",
+    "CardContainer",
 ]
 
 

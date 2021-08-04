@@ -97,7 +97,6 @@ class Application(QApplication):
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         return QStringListModel([preferred_language], self)
 
-
     def _create_update_checker(self) -> UpdateChecker:
         update_checker = UpdateChecker(self.card_db, self)
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)

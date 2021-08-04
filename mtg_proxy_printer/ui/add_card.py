@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QTimer, QItemSelection
+from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QListView, QPushButton
 
 import mtg_proxy_printer.model.string_list
