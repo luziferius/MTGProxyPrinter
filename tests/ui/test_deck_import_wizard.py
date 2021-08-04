@@ -76,10 +76,9 @@ def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
     assert_that(wizard.validateCurrentPage(), is_(True))
 
 
-
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str):
-    wizard.load_list_page.deck_list.setPlainText(deck_list)
-    qtbot.waitSignal(wizard.load_list_page.deck_list.textChanged, timeout=1000)
+    with qtbot.wait_signal(wizard.load_list_page.deck_list.textChanged, timeout=1000):
+        wizard.load_list_page.deck_list.setPlainText(deck_list)
     assert_that(wizard.field("deck_list"), is_(equal_to(deck_list)))
     assert_that(wizard.load_list_page.isComplete())
 

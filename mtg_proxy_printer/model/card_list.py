@@ -164,4 +164,7 @@ class CardListModel(QAbstractTableModel):
         return super(CardListModel, self).headerData(section, orientation, role)
 
     def clear(self):
-        self.remove_cards([self.index(0, 0), self.index(self.rowCount(), 0)])
+        logger.debug(f"About to clear {self.__class__.__name__} instance. Removing {self.rowCount()} entries.")
+        self.beginRemoveRows(QModelIndex(), 0, self.rowCount())
+        self.cards.clear()
+        self.endRemoveRows()
