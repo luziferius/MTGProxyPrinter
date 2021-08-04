@@ -17,6 +17,8 @@ from collections import Counter
 import re
 import typing
 
+from PyQt5.QtCore import QObject
+
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -42,8 +44,9 @@ class GenericRegularExpressionDeckParser(ParserBase):
     ))
 
     def __init__(
-            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str]):
-        super(GenericRegularExpressionDeckParser, self).__init__(card_db, image_db)
+            self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
+            parent: QObject = None):
+        super(GenericRegularExpressionDeckParser, self).__init__(card_db, image_db, parent)
         self.parser = regular_expression \
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
@@ -140,10 +143,10 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(MTGArenaParser, self).__init__(
             card_db, image_db,
-            re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?")
+            re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?"), parent
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
@@ -159,10 +162,10 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     These do not contain much information, only the English card name and count,
     so sets and individual printings have to be guessed.
     """
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(MTGOnlineParser, self).__init__(
             card_db, image_db,
-            re.compile(r"(?P<copies>\d+) (?P<name>.+)")
+            re.compile(r"(?P<copies>\d+) (?P<name>.+)"), parent
         )
 
     @property
@@ -174,10 +177,10 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
     A parser for XMage deck files (file extension ".dck").
     """
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(XMageParser, self).__init__(
             card_db, image_db,
-            re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)")
+            re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:

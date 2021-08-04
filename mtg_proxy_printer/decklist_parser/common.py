@@ -16,6 +16,8 @@
 from abc import abstractmethod
 import typing
 
+from PyQt5.QtCore import QObject
+
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 import mtg_proxy_printer.settings
@@ -31,9 +33,10 @@ __all__ = [
 ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 
-class ParserBase:
+class ParserBase(QObject):
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super(ParserBase, self).__init__(parent)
         self.card_db = card_db
         self.image_db = image_db
         self.add_opposing_face = mtg_proxy_printer.settings.settings["images"].getboolean(

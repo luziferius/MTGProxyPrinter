@@ -129,7 +129,7 @@ def test_remove_pages_removes_middle_page(card_db: CardDatabase):
     )
 
 
-@pytest.mark.timeout(0.1)
+@pytest.mark.timeout(0.5)
 def test_compacting_document(card_db):
     pages_to_fill = 5
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
