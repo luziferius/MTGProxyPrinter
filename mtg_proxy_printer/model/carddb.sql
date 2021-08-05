@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000016;
+PRAGMA user_version = 0000017;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -66,7 +66,7 @@ CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, set_id, c
 
 -- Speeds up card name translation. Some deck lists provide the English name plus language code.
 -- These require name translation
-CREATE INDEX CardFace_card_id_index ON CardFace (card_id);
+CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front);
 
 -- Speeds up card instance creation by looking up cards using their scryfall id.
 CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);
