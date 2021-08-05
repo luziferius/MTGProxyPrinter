@@ -441,4 +441,29 @@ class CardDatabase:
         return card
 
     def _translate_card(self, card: Card, language_override: str) -> typing.Optional[Card]:
+        """
+        Tries to translate the given card into the given language.
+        If the card is not available in the requested language, None is returned.
+
+        Uses the Oracle ID to identify all cards and returns the most similar card.
+        """
+        # Implementation note: This query contains the max() aggregate function and bare columns.
+        # See https://sqlite.org/lang_select.html. In this case, the bare columns are taken from a row for which the
+        # computed similarity is equal to the maximum similarity encountered. This avoids creating a B-Tree required
+        # for the alternative "ORDER BY similarity DESC LIMIT 1"
+        query = textwrap.dedent("""
+            SELECT card_name, "set", set_name, collector_number, scryfall_id, png_image_uri,
+            MAX(("set" = ?) + (collector_number = ?)) AS similarity
+            FROM AllPrintings
+            WHERE oracle_id = ? AND language = ? and is_front = ?
+        """)
+        parameters = [card.set.code, card.collector_number, card.oracle_id, language_override, card.is_front]
+        if (result := self.db.execute(query, parameters).fetchone()) is not None:
+            # Ignore the returned similarity value, because it is only used to select the most similar row.
+            name, set_code, set_name, collector_number, scryfall_id, image_uri, _ = result
+            return Card(
+                name, MTGSet(set_code, set_name), collector_number,
+                card.language, scryfall_id, card.is_front, card.oracle_id, image_uri
+            )
         return None
+
