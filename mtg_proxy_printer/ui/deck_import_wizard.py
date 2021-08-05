@@ -78,7 +78,10 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         self.registerField("print-guessing-enable", self.print_guessing_enable)
         self.registerField("print-guessing-prefer-already-downloaded", self.print_guessing_prefer_already_downloaded)
         self.registerField("translate-deck-list-enable", self.translate_deck_list_enable)
-        self.registerField("translate-deck-list-target-language", self.translate_deck_list_target_language)
+        self.registerField(
+            "translate-deck-list-target-language", self.translate_deck_list_target_language,
+            "currentText", self.translate_deck_list_target_language.currentTextChanged
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
@@ -236,10 +239,16 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
+        if self.field("translate-deck-list-enable"):
+            language_override = self.field("translate-deck-list-target-language")
+            logger.info(f"Language override enabled. Will translate deck list to language {language_override}")
+        else:
+            language_override = None
         parsed_deck, unidentified_lines = parser.parse_deck(
             self.field("deck_list"),
             self.field("print-guessing-enable"),
-            self.field("print-guessing-prefer-already-downloaded")
+            self.field("print-guessing-prefer-already-downloaded"),
+            language_override
         )
         self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
