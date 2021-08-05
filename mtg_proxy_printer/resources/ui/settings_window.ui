@@ -283,6 +283,16 @@ If so, choose an arbitrary printing.</string>
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="print_guessing_enable">
+            <property name="toolTip">
+             <string/>
+            </property>
+            <property name="text">
+             <string>Enable print guessing by default, where optional</string>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
             <property name="toolTip">
@@ -293,13 +303,14 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="print_guessing_enable">
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="automatic_deck_list_translation_enable">
             <property name="toolTip">
-             <string/>
+             <string>Always enable automatic deck list translation when importing deck lists.
+This avoids adding foreign language cards, if the deck list happens to contain some.</string>
             </property>
             <property name="text">
-             <string>Enable print guessing by default, where optional</string>
+             <string>Enable translating imported deck lists by default</string>
             </property>
            </widget>
           </item>
@@ -901,6 +912,7 @@ These are not tournament legal.</string>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>tab_widget</tabstop>
   <tabstop>add_card_widget_style_combo_box</tabstop>
   <tabstop>preferred_language_combo_box</tabstop>
   <tabstop>avoid_low_res_images_check_box</tabstop>
@@ -909,9 +921,11 @@ These are not tournament legal.</string>
   <tabstop>document_save_path_browse_button</tabstop>
   <tabstop>pdf_save_path</tabstop>
   <tabstop>pdf_save_path_browse_button</tabstop>
-  <tabstop>enable_cutelog_integration</tabstop>
-  <tabstop>enable_write_log_file</tabstop>
-  <tabstop>log_level_combo_box</tabstop>
+  <tabstop>check_application_updates_enabled</tabstop>
+  <tabstop>check_card_data_updates_enabled</tabstop>
+  <tabstop>print_guessing_enable</tabstop>
+  <tabstop>print_guessing_prefer_already_downloaded</tabstop>
+  <tabstop>automatic_deck_list_translation_enable</tabstop>
   <tabstop>print_cut_marker</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
   <tabstop>page_height</tabstop>
@@ -924,6 +938,7 @@ These are not tournament legal.</string>
   <tabstop>page_image_spacing_vertical</tabstop>
   <tabstop>include_cards_depicting_racism</tabstop>
   <tabstop>include_cards_without_images</tabstop>
+  <tabstop>include_oversized_cards</tabstop>
   <tabstop>include_white_bordered_cards</tabstop>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
@@ -938,6 +953,9 @@ These are not tournament legal.</string>
   <tabstop>include_banned_in_pioneer</tabstop>
   <tabstop>include_banned_in_standard</tabstop>
   <tabstop>include_banned_in_vintage</tabstop>
+  <tabstop>enable_cutelog_integration</tabstop>
+  <tabstop>enable_write_log_file</tabstop>
+  <tabstop>log_level_combo_box</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -948,8 +966,8 @@ These are not tournament legal.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>278</x>
-     <y>605</y>
+     <x>284</x>
+     <y>643</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -964,8 +982,8 @@ These are not tournament legal.</string>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>346</x>
-     <y>605</y>
+     <x>352</x>
+     <y>643</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

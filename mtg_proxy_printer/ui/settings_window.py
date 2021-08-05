@@ -251,6 +251,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.print_guessing_enable, "enable-guessing"),
             (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+            (self.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
         ]
         return widgets_with_settings
 

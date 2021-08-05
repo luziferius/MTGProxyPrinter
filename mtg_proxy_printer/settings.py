@@ -108,6 +108,7 @@ VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
     "enable-guessing": "False",
     "prefer-already-downloaded": "True",
+    "always-translate-deck-lists": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,

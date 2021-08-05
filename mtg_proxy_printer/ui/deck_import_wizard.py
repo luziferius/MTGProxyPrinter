@@ -94,6 +94,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         options = mtg_proxy_printer.settings.settings["print-guessing"]
         self.print_guessing_enable.setChecked(options.getboolean("enable-guessing"))
         self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded"))
+        self.translate_deck_list_enable.setChecked(options.getboolean("always-translate-deck-lists"))
         parser: common.ParserBase = self.field("selected_parser")
         if parser.requires_print_guessing:
             logger.debug("Force-enabling print guessing, because the chosen parser requires it.")
