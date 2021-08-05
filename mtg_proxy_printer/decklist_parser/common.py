@@ -96,6 +96,8 @@ class ParserBase(QObject):
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:
             card_data.name = card_data.name.strip()
+            # Some sources use single forward slashes to separate faces of multi-faced cards.
+            card_data.name = card_data.name.replace(" / ", " // ")
             if "//" in card_data.name:
                 # If this is a split card, try to identify one half
                 card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
