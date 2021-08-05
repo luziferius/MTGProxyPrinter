@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import collections
 from abc import abstractmethod
 import typing
 
@@ -47,10 +47,23 @@ class ParserBase(QObject):
                 "prefer-already-downloaded"
             )
 
-    @abstractmethod
     def parse_deck(self, deck: str,
                    print_guessing: bool,
-                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+                   print_guessing_prefer_already_downloaded: bool,
+                   language_override: str = None) -> ParsedDeck:
+        parsed_deck, unmatched_lines = self.parse_deck_without_translation(
+            deck, print_guessing, print_guessing_prefer_already_downloaded
+        )
+        translated_deck: typing.Counter[Card] = collections.Counter()
+        for card, count in parsed_deck.items():
+            translated_card = self.card_db.translate_card(card, language_override)
+            translated_deck[translated_card] = count
+        return translated_deck, unmatched_lines
+
+    @abstractmethod
+    def parse_deck_without_translation(self, deck: str,
+                                       print_guessing: bool,
+                                       print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
         """
         Parse the given deck.
 
@@ -112,4 +125,3 @@ class ParserBase(QObject):
         if self.add_opposing_face and (opposing_face := self.card_db.get_opposing_face(card)) is not None:
             # Double-faced card
             deck[opposing_face] += count
-
