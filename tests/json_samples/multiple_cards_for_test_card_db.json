@@ -672,5 +672,453 @@
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Forest&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Forest&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
+},
+{
+  "object": "card",
+  "id": "93054b80-fd1f-4200-8d33-2e826a181db0",
+  "oracle_id": "68413337-ddb9-46f8-8c8e-f3d2d672c652",
+  "multiverse_ids": [
+
+  ],
+  "name": "Coercion",
+  "printed_name": "Zwang",
+  "lang": "de",
+  "released_at": "1999-04-21",
+  "uri": "https://api.scryfall.com/cards/93054b80-fd1f-4200-8d33-2e826a181db0",
+  "scryfall_uri": "https://scryfall.com/card/6ed/119/de/zwang?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "placeholder",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/9/3/93054b80-fd1f-4200-8d33-2e826a181db0.jpg?1562820434",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/9/3/93054b80-fd1f-4200-8d33-2e826a181db0.jpg?1562820434",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/9/3/93054b80-fd1f-4200-8d33-2e826a181db0.jpg?1562820434",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/9/3/93054b80-fd1f-4200-8d33-2e826a181db0.png?1562820434",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/3/93054b80-fd1f-4200-8d33-2e826a181db0.jpg?1562820434",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/9/3/93054b80-fd1f-4200-8d33-2e826a181db0.jpg?1562820434"
+  },
+  "mana_cost": "{2}{B}",
+  "cmc": 3.0,
+  "type_line": "Sorcery",
+  "printed_type_line": "Hexerei",
+  "oracle_text": "Target opponent reveals their hand. You choose a card from it. That player discards that card.",
+  "printed_text": "Schau Dir die Karten auf der Hand eines Gegners Deiner Wahl an und bestimme davon eine.Dein Gegner wirft diese Karte ab.",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "78ee1957-d5d4-4551-acae-b1b418e8a50b",
+  "set": "6ed",
+  "set_name": "Classic Sixth Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/78ee1957-d5d4-4551-acae-b1b418e8a50b",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A6ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/6ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/93054b80-fd1f-4200-8d33-2e826a181db0/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A68413337-ddb9-46f8-8c8e-f3d2d672c652&unique=prints",
+  "collector_number": "119",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "DiTerlizzi",
+  "artist_ids": [
+    "ed44dce4-30cf-4c2c-b2e1-a19ba2295690"
+  ],
+  "illustration_id": "a2680d9e-36cf-4f3f-97f6-b1c0ea17722d",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 14581,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Coercion&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Coercion&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Coercion",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Coercion"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Coercion&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Coercion&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Coercion&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+},
+{
+  "object": "card",
+  "id": "4a8337ac-fddc-4af7-a623-e9a8c8323564",
+  "oracle_id": "68413337-ddb9-46f8-8c8e-f3d2d672c652",
+  "multiverse_ids": [
+    14561
+  ],
+  "tcgplayer_id": 2507,
+  "cardmarket_id": 10962,
+  "name": "Coercion",
+  "lang": "en",
+  "released_at": "1999-04-21",
+  "uri": "https://api.scryfall.com/cards/4a8337ac-fddc-4af7-a623-e9a8c8323564",
+  "scryfall_uri": "https://scryfall.com/card/6ed/119/coercion?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/4/a/4a8337ac-fddc-4af7-a623-e9a8c8323564.jpg?1562817271",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/4/a/4a8337ac-fddc-4af7-a623-e9a8c8323564.jpg?1562817271",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/4/a/4a8337ac-fddc-4af7-a623-e9a8c8323564.jpg?1562817271",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/4/a/4a8337ac-fddc-4af7-a623-e9a8c8323564.png?1562817271",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/4/a/4a8337ac-fddc-4af7-a623-e9a8c8323564.jpg?1562817271",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/4/a/4a8337ac-fddc-4af7-a623-e9a8c8323564.jpg?1562817271"
+  },
+  "mana_cost": "{2}{B}",
+  "cmc": 3.0,
+  "type_line": "Sorcery",
+  "oracle_text": "Target opponent reveals their hand. You choose a card from it. That player discards that card.",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "78ee1957-d5d4-4551-acae-b1b418e8a50b",
+  "set": "6ed",
+  "set_name": "Classic Sixth Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/78ee1957-d5d4-4551-acae-b1b418e8a50b",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A6ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/6ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/4a8337ac-fddc-4af7-a623-e9a8c8323564/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A68413337-ddb9-46f8-8c8e-f3d2d672c652&unique=prints",
+  "collector_number": "119",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "A rhino's bargain\n—Femeref expression meaning \"a situation with no choices\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "DiTerlizzi",
+  "artist_ids": [
+    "ed44dce4-30cf-4c2c-b2e1-a19ba2295690"
+  ],
+  "illustration_id": "a2680d9e-36cf-4f3f-97f6-b1c0ea17722d",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 14581,
+  "prices": {
+    "usd": "0.07",
+    "usd_foil": null,
+    "eur": "0.05",
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=14561",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Coercion&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Coercion&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Coercion",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Coercion"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=2507&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Coercion&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Coercion&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+},
+{
+  "object": "card",
+  "id": "15c8d82e-6e65-4d36-bf09-b24dde016581",
+  "oracle_id": "33d405ea-7a9a-4970-b70f-9c05d90dd6f0",
+  "multiverse_ids": [
+    14557
+  ],
+  "mtgo_id": 15462,
+  "mtgo_foil_id": 15463,
+  "tcgplayer_id": 2878,
+  "cardmarket_id": 2893,
+  "name": "Duress",
+  "lang": "en",
+  "released_at": "2001-04-11",
+  "uri": "https://api.scryfall.com/cards/15c8d82e-6e65-4d36-bf09-b24dde016581",
+  "scryfall_uri": "https://scryfall.com/card/7ed/131/duress?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/1/5/15c8d82e-6e65-4d36-bf09-b24dde016581.jpg?1562233281",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/1/5/15c8d82e-6e65-4d36-bf09-b24dde016581.jpg?1562233281",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/1/5/15c8d82e-6e65-4d36-bf09-b24dde016581.jpg?1562233281",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/1/5/15c8d82e-6e65-4d36-bf09-b24dde016581.png?1562233281",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/1/5/15c8d82e-6e65-4d36-bf09-b24dde016581.jpg?1562233281",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/1/5/15c8d82e-6e65-4d36-bf09-b24dde016581.jpg?1562233281"
+  },
+  "mana_cost": "{B}",
+  "cmc": 1.0,
+  "type_line": "Sorcery",
+  "oracle_text": "Target opponent reveals their hand. You choose a noncreature, nonland card from it. That player discards that card.",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "230f38aa-9511-4db8-a3aa-aeddbc3f7bb9",
+  "set": "7ed",
+  "set_name": "Seventh Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/230f38aa-9511-4db8-a3aa-aeddbc3f7bb9",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A7ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/7ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/15c8d82e-6e65-4d36-bf09-b24dde016581/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A33d405ea-7a9a-4970-b70f-9c05d90dd6f0&unique=prints",
+  "collector_number": "131",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "\"Change your mind, or I'll change it for you.\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Pete Venters",
+  "artist_ids": [
+    "d54c4a1a-c0c5-4834-84db-125d341f3ad8"
+  ],
+  "illustration_id": "34748dd1-62a3-4064-82e4-8b37ed215ca8",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 2108,
+  "prices": {
+    "usd": "0.41",
+    "usd_foil": "37.01",
+    "eur": "0.02",
+    "eur_foil": "19.90",
+    "tix": "0.03"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=14557",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Duress",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Duress"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=2878&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Duress&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/15462?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+},
+{
+  "object": "card",
+  "id": "51c6ec30-afb2-41e6-895b-92e070aa86f3",
+  "oracle_id": "33d405ea-7a9a-4970-b70f-9c05d90dd6f0",
+  "multiverse_ids": [
+    182771
+  ],
+  "name": "Duress",
+  "printed_name": "Zwang",
+  "lang": "de",
+  "released_at": "2001-04-11",
+  "uri": "https://api.scryfall.com/cards/51c6ec30-afb2-41e6-895b-92e070aa86f3",
+  "scryfall_uri": "https://scryfall.com/card/7ed/131/de/zwang?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "placeholder",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.png?1562237880",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880"
+  },
+  "mana_cost": "{B}",
+  "cmc": 1.0,
+  "type_line": "Sorcery",
+  "printed_type_line": "Hexerei",
+  "oracle_text": "Target opponent reveals their hand. You choose a noncreature, nonland card from it. That player discards that card.",
+  "printed_text": "Ein Gegner deiner Wahl zeigt die Karten auf seiner Hand offen vor. Bestimme eine Karte davon, die weder eine Kreatur noch ein Land ist. Dieser Spieler wirft diese Karte ab.",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "230f38aa-9511-4db8-a3aa-aeddbc3f7bb9",
+  "set": "7ed",
+  "set_name": "Seventh Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/230f38aa-9511-4db8-a3aa-aeddbc3f7bb9",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A7ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/7ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/51c6ec30-afb2-41e6-895b-92e070aa86f3/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A33d405ea-7a9a-4970-b70f-9c05d90dd6f0&unique=prints",
+  "collector_number": "131",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "„Überleg' es dir anders, oder ich überlege für Dich.\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Pete Venters",
+  "artist_ids": [
+    "d54c4a1a-c0c5-4834-84db-125d341f3ad8"
+  ],
+  "illustration_id": "34748dd1-62a3-4064-82e4-8b37ed215ca8",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 2108,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=182771&printed=true",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Duress",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Duress"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Duress&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Duress&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
 }
 ]

@@ -28,8 +28,11 @@ StringList = typing.List[str]
 OptString = typing.Optional[str]
 
 
-@pytest.fixture()
-def model() -> CardDatabase:
+@pytest.fixture(params=[False, True])
+def model(request) -> CardDatabase:
+    model = create_new_card_database_with_multiple_cards("multiple_cards_for_test_card_db")
+    if request.param:
+        model.db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return create_new_card_database_with_multiple_cards("multiple_cards_for_test_card_db")
 
 
@@ -62,19 +65,19 @@ def test_get_all_languages_with_data(model: CardDatabase):
 
 
 @pytest.mark.parametrize("language, prefix, expected_names", [
-    ("en", None, ["Forest", "Future Sight"]),
+    ("en", None, ["Forest", "Future Sight", "Duress", "Coercion"]),
     ("en", "Fu", ["Future Sight"]),
     ("en", "%or", ["Forest"]),
     ("en", "AAAAAAAA", []),
     ("en", "F%t", ["Forest", "Future Sight"]),
-    ("de", None, ["Wald"]),  # noqa  # A German Forest
+    ("de", None, ["Wald", "Zwang"]),  # noqa  # A German Forest
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])
 def test_get_card_names(model: CardDatabase, language: str, prefix: OptString, expected_names: StringList):
     assert_that(
         model.get_card_names(language, prefix),
-        contains_exactly(*expected_names)
+        contains_inanyorder(*expected_names)
     )
 
 
@@ -143,12 +146,11 @@ def test_translate_card_name(model: CardDatabase, source_name: str, target_langu
 def test_cards_used_less_often_then(model: CardDatabase, usage_count: int, expected: typing.List[int]):
     # Setup
     document = Document(model, MagicMock())
-    card_1 = model.get_card_with_scryfall_id("e2ef9b74-481b-424b-8e33-f0b910f66370", True)
-    document.add_card(card_1, 1)
+    document.add_card(_get_card_from_model(model, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
     document.store_image_usage()
-    card_2 = model.get_card_with_scryfall_id("ffa13d4c-6c5e-44bd-859e-38e79d47a916", True)
-    document.add_card(card_2, 1)
+    document.add_card(_get_card_from_model(model, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1)
     document.store_image_usage()
+    # Test
     assert_that(
         result := model.cards_used_less_often_then([
             ("e2ef9b74-481b-424b-8e33-f0b910f66370", True),
@@ -158,3 +160,13 @@ def test_cards_used_less_often_then(model: CardDatabase, usage_count: int, expec
         contains_exactly(*expected),
         f"Result: {result}"
     )
+
+
+def _get_card_from_model(model: CardDatabase, scryfall_id: str, is_front: bool):
+    card = model.get_card_with_scryfall_id(scryfall_id, is_front)
+    assert_that(card, has_properties({
+        "scryfall_id": equal_to(scryfall_id),
+        "is_front": equal_to(is_front),
+    }), "Wrong card returned")
+    return card
+
