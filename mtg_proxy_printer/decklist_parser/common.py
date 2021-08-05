@@ -115,6 +115,14 @@ class ParserBase(QObject):
                 f"Matching using language, set code and collector number. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
+        if card_data.name and card_data.set_code and (
+                possible_matches := self.card_db.get_cards_from_data(CardIdentificationData(
+                    card_data.language, card_data.name, card_data.set_code
+                ))):
+            logger.debug(
+                f"Matching using language, card name and set code. Found {len(possible_matches)} matches."
+            )
+            return self._determine_best_match(possible_matches)
         if card_data.name and (
                 possible_matches := self.card_db.get_cards_from_data(CardIdentificationData(
                     card_data.language, card_data.name
