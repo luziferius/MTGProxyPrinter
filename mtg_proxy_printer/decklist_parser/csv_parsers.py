@@ -38,10 +38,8 @@ class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
 
-    def parse_deck(self, deck_list: str,
-                   print_guessing: bool,
-                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
-        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
+    def parse_deck_without_translation(self, deck_list: str,
+                                       print_guessing: bool) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
         for source, line in self._read_lines_from_csv(deck_list):

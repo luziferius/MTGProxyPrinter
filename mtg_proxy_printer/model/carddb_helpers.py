@@ -111,6 +111,12 @@ def _migrate_15_to_16(db: sqlite3.Connection):
     db.execute(r"DROP INDEX SetAbbreviationIndex")
 
 
+def _migrate_16_to_17(db: sqlite3.Connection):
+    db.execute(r"DROP INDEX CardFace_card_id_index")
+    # Index was recommended by SQLite’s expert mode, so extend index CardFace_card_id_index with column is_front
+    db.execute(r"CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)")
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -127,6 +133,7 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_13_to_14,
         _migrate_14_to_15,
         _migrate_15_to_16,
+        _migrate_16_to_17
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:

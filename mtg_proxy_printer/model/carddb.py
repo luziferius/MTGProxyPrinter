@@ -32,6 +32,7 @@ import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -90,8 +91,13 @@ class Card:
     language: str = dataclasses.field(compare=True)
     scryfall_id: str = dataclasses.field(compare=True)
     is_front: bool = dataclasses.field(compare=True)
+    oracle_id: str = dataclasses.field(compare=True)
     image_uri: str = dataclasses.field(compare=True)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+
+
+OptionalCard = typing.Optional[Card]
+CardList = typing.List[Card]
 
 
 @delegateto.delegate("db", "commit", "rollback")
@@ -160,6 +166,7 @@ class CardDatabase:
             return True
 
     def get_all_languages(self) -> StringList:
+        """Returns the list of all known languages, sorted ascending."""
         logger.debug("Reading all known languages")
         result = [lang for lang, in self.db.execute(
             "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n")]
@@ -213,18 +220,19 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def get_cards_from_data(self, card: CardIdentificationData) -> typing.List[Card]:
+    def get_cards_from_data(self, card: CardIdentificationData) -> CardList:
         """
         Called with some card identification data and returns all matching cards.
         Returns a list with Card objects, each containing complete information, except for the image pixmap.
         Returns an empty list, if the given data does not match any known card.
         """
-        query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front ' \
-                '-- get_cards_from_data()\n' \
+        query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front, ' \
+                'oracle_id -- get_cards_from_data()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
-                'JOIN "Set" USING (set_id)\n'
+                'JOIN "Set" USING (set_id)\n' \
+                'JOIN Card USING (card_id)'
 
         where_clause = 'WHERE "language" = ?\n'
         parameters = [card.language]
@@ -250,9 +258,11 @@ class CardDatabase:
         )
         result = [
             Card(
-                name, MTGSet(set_code, set_name), collector_number, card.language, scryfall_id, is_front, image_uri
+                name, MTGSet(set_code, set_name), collector_number,
+                card.language, scryfall_id, is_front, oracle_id, image_uri
             )
-            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front in cursor
+            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id
+            in cursor
         ]
         return result
 
@@ -311,20 +321,21 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
         return bool(result)
 
-    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> typing.Optional[Card]:
-        query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri\n' \
+    def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
+        query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri, oracle_id\n' \
                 'FROM AllPrintings\n' \
                 'WHERE scryfall_id = ? AND is_front = ?'
         result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
         if result is None:
             return None
         else:
-            name, set_abbr, set_name, collector_number, language, image_uri = result
+            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id = result
             return Card(
-                name, MTGSet(set_abbr, set_name), collector_number, language, scryfall_id, is_front, image_uri
+                name, MTGSet(set_abbr, set_name), collector_number,
+                language, scryfall_id, is_front, oracle_id, image_uri
             )
 
-    def get_opposing_face(self, card) -> typing.Optional[Card]:
+    def get_opposing_face(self, card) -> OptionalCard:
         """
         Returns the opposing face for double faced cards, or None for single-faced cards.
         """
@@ -426,3 +437,60 @@ class CardDatabase:
             return result[0]
         else:
             return datetime.date.today()
+
+    def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
+        """
+        Returns a new card object representing the card translated into the target language.
+        If no translation is available, or the target language is equal to the source language, returns the given
+        card instance unaltered.
+        """
+        if target_language is None or target_language == to_translate.language:
+            return to_translate
+        if (result := self._translate_card(to_translate, target_language)) is not None:
+            return result
+        return to_translate
+
+    def _translate_card(self, card: Card, language_override: str) -> OptionalCard:
+        """
+        Tries to translate the given card into the given language.
+        If the card is not available in the requested language, None is returned.
+
+        Uses the Oracle ID to identify all cards and returns the most similar card.
+        """
+        # Implementation note: This query contains the max() aggregate function and bare columns.
+        # See https://sqlite.org/lang_select.html. In this case, the bare columns are taken from a row for which the
+        # computed similarity is equal to the maximum similarity encountered. This avoids creating a B-Tree required
+        # for the alternative "ORDER BY similarity DESC LIMIT 1"
+        query = textwrap.dedent("""
+            SELECT card_name, "set", set_name, collector_number, scryfall_id, png_image_uri,
+            MAX(("set" = ?) + (collector_number = ?)) AS similarity
+            FROM AllPrintings
+            WHERE oracle_id = ? AND language = ? AND is_front = ?
+        """)
+        parameters = [card.set.code, card.collector_number, card.oracle_id, language_override, card.is_front]
+        if (result := self.db.execute(query, parameters).fetchone()) is not None:
+            # Ignore the returned similarity value, because it is only used to select the most similar row.
+            name, set_code, set_name, collector_number, scryfall_id, image_uri, _ = result
+            return Card(
+                name, MTGSet(set_code, set_name), collector_number,
+                card.language, scryfall_id, card.is_front, card.oracle_id, image_uri
+            )
+        return None
+
+    def find_all_translated_printings(self, card: Card, language: str) -> CardList:
+        """Returns all printings of the given card in the given language."""
+        query = textwrap.dedent("""
+            SELECT card_name, "set", set_name, collector_number, scryfall_id, png_image_uri
+            FROM AllPrintings
+            WHERE oracle_id = ? AND language = ? AND is_front = ?
+        """)
+        parameters = [card.oracle_id, language, card.is_front]
+        result = [
+            Card(
+                name, MTGSet(set_code, set_name), collector_number,
+                card.language, scryfall_id, card.is_front, card.oracle_id, image_uri
+            )
+            for name, set_code, set_name, collector_number, scryfall_id, image_uri
+            in self.db.execute(query, parameters)
+        ]
+        return result

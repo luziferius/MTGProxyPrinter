@@ -51,11 +51,9 @@ class GenericRegularExpressionDeckParser(ParserBase):
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
 
-    def parse_deck(self, deck_list: str,
-                   print_guessing: bool,
-                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+    def parse_deck_without_translation(self, deck_list: str,
+                                       print_guessing: bool) -> ParsedDeck:
 
-        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
