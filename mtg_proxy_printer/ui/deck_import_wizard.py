@@ -103,6 +103,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
 
     def cleanupPage(self):
         super(LoadListPage, self).cleanupPage()
+        self.translate_deck_list_enable.setChecked(False)
         self.print_guessing_enable.setEnabled(True)
         self.print_guessing_enable.setChecked(False)
         self.print_guessing_prefer_already_downloaded.setChecked(False)

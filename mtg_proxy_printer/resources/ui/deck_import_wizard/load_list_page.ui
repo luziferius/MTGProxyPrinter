@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>455</width>
+    <width>581</width>
     <height>343</height>
    </rect>
   </property>
@@ -77,7 +77,7 @@
    <item row="4" column="0" colspan="2">
     <widget class="QCheckBox" name="print_guessing_enable">
      <property name="toolTip">
-      <string>If checked, choose any printing, if a unique printing is not identified.
+      <string>If checked, choose an arbitrary printing, if a unique printing is not identified.
 If unchecked, each ambiguous card is ignored and reported as unrecognized.</string>
      </property>
      <property name="text">
@@ -88,13 +88,14 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
    <item row="5" column="0" colspan="2">
     <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
      <property name="enabled">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <property name="toolTip">
-      <string>Enabling this can potentially save disk space and download volume, based on the images already downloaded.</string>
+      <string>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
+Enabling this can potentially save disk space and download volume, based on the images already downloaded.</string>
      </property>
      <property name="text">
-      <string>When guessing, prefer printings with already downloaded images</string>
+      <string>When guessing or translating cards, prefer printings with already downloaded images</string>
      </property>
     </widget>
    </item>
@@ -111,34 +112,18 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
  <resources/>
  <connections>
   <connection>
-   <sender>print_guessing_enable</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>print_guessing_prefer_already_downloaded</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>143</x>
-     <y>244</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>143</x>
-     <y>271</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>translate_deck_list_enable</sender>
    <signal>toggled(bool)</signal>
    <receiver>translate_deck_list_target_language</receiver>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>116</x>
-     <y>207</y>
+     <x>122</x>
+     <y>277</y>
     </hint>
     <hint type="destinationlabel">
-     <x>382</x>
-     <y>199</y>
+     <x>557</x>
+     <y>282</y>
     </hint>
    </hints>
   </connection>
