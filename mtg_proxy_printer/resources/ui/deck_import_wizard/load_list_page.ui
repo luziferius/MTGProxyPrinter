@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>442</width>
-    <height>204</height>
+    <width>455</width>
+    <height>343</height>
    </rect>
   </property>
   <property name="title">
@@ -19,8 +19,8 @@
   <property name="subTitle">
    <string>Load a deck file from disk or paste deck list in the text field below</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" colspan="2">
     <widget class="QPushButton" name="deck_list_browse_button">
      <property name="toolTip">
       <string>Opens a file picker and let’s you load a deck file from disk.</string>
@@ -34,21 +34,47 @@
      </property>
     </widget>
    </item>
-   <item>
+   <item row="1" column="0" colspan="2">
     <widget class="QPlainTextEdit" name="deck_list">
      <property name="placeholderText">
       <string>Paste your deck list here or select a file using the button above.</string>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="2" column="0" colspan="2">
     <widget class="Line" name="line">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
     </widget>
    </item>
-   <item>
+   <item row="3" column="0">
+    <widget class="QCheckBox" name="translate_deck_list_enable">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Translate deck list to:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1">
+    <widget class="QComboBox" name="translate_deck_list_target_language">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
     <widget class="QCheckBox" name="print_guessing_enable">
      <property name="toolTip">
       <string>If checked, choose any printing, if a unique printing is not identified.
@@ -59,7 +85,7 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
      </property>
     </widget>
    </item>
-   <item>
+   <item row="5" column="0" colspan="2">
     <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
      <property name="enabled">
       <bool>false</bool>
@@ -74,6 +100,14 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>deck_list_browse_button</tabstop>
+  <tabstop>deck_list</tabstop>
+  <tabstop>translate_deck_list_enable</tabstop>
+  <tabstop>translate_deck_list_target_language</tabstop>
+  <tabstop>print_guessing_enable</tabstop>
+  <tabstop>print_guessing_prefer_already_downloaded</tabstop>
+ </tabstops>
  <resources/>
  <connections>
   <connection>
@@ -83,12 +117,28 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>137</x>
-     <y>164</y>
+     <x>143</x>
+     <y>244</y>
     </hint>
     <hint type="destinationlabel">
-     <x>137</x>
-     <y>184</y>
+     <x>143</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translate_deck_list_enable</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>translate_deck_list_target_language</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>116</x>
+     <y>207</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>382</x>
+     <y>199</y>
     </hint>
    </hints>
   </connection>

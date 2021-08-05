@@ -70,7 +70,7 @@ def test_get_all_languages_with_data(model: CardDatabase):
     ("en", "%or", ["Forest"]),
     ("en", "AAAAAAAA", []),
     ("en", "F%t", ["Forest", "Future Sight"]),
-    ("de", None, ["Wald", "Zwang"]),  # noqa  # A German Forest
+    ("de", None, ["Wald", "Zwang"]),  # noqa  # A German Forest and Duress
     ("es", None, ["Bosque"]),  # noqa  # A Spanish Forest
     ("Nonexisting language", None, []),
 ])

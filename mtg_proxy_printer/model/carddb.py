@@ -160,6 +160,7 @@ class CardDatabase:
             return True
 
     def get_all_languages(self) -> StringList:
+        """Returns the list of all known languages, sorted ascending."""
         logger.debug("Reading all known languages")
         result = [lang for lang, in self.db.execute(
             "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n")]
