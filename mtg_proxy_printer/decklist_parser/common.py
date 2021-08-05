@@ -51,19 +51,32 @@ class ParserBase(QObject):
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool,
                    language_override: str = None) -> ParsedDeck:
-        parsed_deck, unmatched_lines = self.parse_deck_without_translation(
-            deck, print_guessing, print_guessing_prefer_already_downloaded
-        )
+
+        # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
+        # Because it would operate on the cards in the source language. The card choice gets overwritten by the
+        # translation step, so performs unnecessary work that gets thrown away anyways.
+        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
+            if language_override is None else False
+        parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
+
         translated_deck: typing.Counter[Card] = collections.Counter()
         for card, count in parsed_deck.items():
-            translated_card = self.card_db.translate_card(card, language_override)
+            if self.print_guessing_prefer_already_downloaded and \
+                    (all_printings := self.card_db.find_all_translated_printings(card, language_override)):
+                # Choose any printing, based on what is already downloaded. …
+                translated_card = self._determine_best_match(all_printings)
+                # … But if no already downloaded image is found, prefer accurate translations over random selections.
+                if translated_card is all_printings[0]:
+                    translated_card = self.card_db.translate_card(card, language_override)
+            else:
+                translated_card = self.card_db.translate_card(card, language_override)
             translated_deck[translated_card] = count
         return translated_deck, unmatched_lines
 
     @abstractmethod
     def parse_deck_without_translation(self, deck: str,
-                                       print_guessing: bool,
-                                       print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+                                       print_guessing: bool) -> ParsedDeck:
         """
         Parse the given deck.
 
