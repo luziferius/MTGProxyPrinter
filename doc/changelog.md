@@ -2,6 +2,10 @@
 
 # Next version (in development)
 
+- Implemented optional, automatic deck list translations. When enabled, the deck list import wizard will try to 
+  automatically translate all cards in the list into the selected language, where images are available.
+  This can be enabled by default in the settings.
+
 ## Fixed issues
 
 - Fixed duplication of imported deck list entries when going back and forward in the deck
