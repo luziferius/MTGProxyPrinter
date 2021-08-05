@@ -71,6 +71,8 @@ class ParserBase(QObject):
                     translated_card = self.card_db.translate_card(card, language_override)
             else:
                 translated_card = self.card_db.translate_card(card, language_override)
+                logger.debug(f"Translated card '{card.name}' from language {card.language} "
+                             f"to '{translated_card.name}' in {language_override}")
             translated_deck[translated_card] = count
         return translated_deck, unmatched_lines
 

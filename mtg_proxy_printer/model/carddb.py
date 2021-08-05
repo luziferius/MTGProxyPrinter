@@ -468,14 +468,16 @@ class CardDatabase:
             WHERE oracle_id = ? AND language = ? AND is_front = ?
         """)
         parameters = [card.set.code, card.collector_number, card.oracle_id, language_override, card.is_front]
-        if (result := self.db.execute(query, parameters).fetchone()) is not None:
-            # Ignore the returned similarity value, because it is only used to select the most similar row.
-            name, set_code, set_name, collector_number, scryfall_id, image_uri, _ = result
-            return Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                card.language, scryfall_id, card.is_front, card.oracle_id, image_uri
-            )
-        return None
+        # Because of the aggregate function used, no hit will result in a single row consisting of only NULL values.
+        result = self.db.execute(query, parameters).fetchone()
+        name, set_code, set_name, collector_number, scryfall_id, image_uri, similarity = result
+        if similarity is None:
+            logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
+            return None
+        return Card(
+            name, MTGSet(set_code, set_name), collector_number,
+            language_override, scryfall_id, card.is_front, card.oracle_id, image_uri
+        )
 
     def find_all_translated_printings(self, card: Card, language: str) -> CardList:
         """Returns all printings of the given card in the given language."""
@@ -488,7 +490,7 @@ class CardDatabase:
         result = [
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
-                card.language, scryfall_id, card.is_front, card.oracle_id, image_uri
+                language, scryfall_id, card.is_front, card.oracle_id, image_uri
             )
             for name, set_code, set_name, collector_number, scryfall_id, image_uri
             in self.db.execute(query, parameters)
