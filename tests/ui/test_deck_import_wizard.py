@@ -20,6 +20,7 @@ from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 
+from PyQt5.QtCore import QStringListModel
 from PyQt5.QtWidgets import QCheckBox, QWizard
 
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -38,7 +39,8 @@ def card_db() -> CardDatabase:
 
 
 def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot, card_db: CardDatabase):
-    wizard = DeckImportWizard(card_db, MagicMock())
+    language_model = QStringListModel(card_db.get_all_languages(), parent=None)
+    wizard = DeckImportWizard(card_db, MagicMock(), language_model)
     deck_list = "1 Fury Sliver"
     qtbot.add_widget(wizard)
     with qtbot.wait_exposed(wizard):
