@@ -90,6 +90,7 @@ class Card:
     language: str = dataclasses.field(compare=True)
     scryfall_id: str = dataclasses.field(compare=True)
     is_front: bool = dataclasses.field(compare=True)
+    oracle_id: str = dataclasses.field(compare=True)
     image_uri: str = dataclasses.field(compare=True)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
@@ -220,12 +221,13 @@ class CardDatabase:
         Returns a list with Card objects, each containing complete information, except for the image pixmap.
         Returns an empty list, if the given data does not match any known card.
         """
-        query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front ' \
-                '-- get_cards_from_data()\n' \
+        query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front, ' \
+                'oracle_id -- get_cards_from_data()\n' \
                 'FROM CardFace\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
-                'JOIN "Set" USING (set_id)\n'
+                'JOIN "Set" USING (set_id)\n' \
+                'JOIN Card USING (card_id)'
 
         where_clause = 'WHERE "language" = ?\n'
         parameters = [card.language]
@@ -251,9 +253,11 @@ class CardDatabase:
         )
         result = [
             Card(
-                name, MTGSet(set_code, set_name), collector_number, card.language, scryfall_id, is_front, image_uri
+                name, MTGSet(set_code, set_name), collector_number,
+                card.language, scryfall_id, is_front, oracle_id, image_uri
             )
-            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front in cursor
+            for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id
+            in cursor
         ]
         return result
 
@@ -313,16 +317,17 @@ class CardDatabase:
         return bool(result)
 
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> typing.Optional[Card]:
-        query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri\n' \
+        query = 'SELECT card_name, "set", set_name, collector_number, "language", png_image_uri, oracle_id\n' \
                 'FROM AllPrintings\n' \
                 'WHERE scryfall_id = ? AND is_front = ?'
         result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
         if result is None:
             return None
         else:
-            name, set_abbr, set_name, collector_number, language, image_uri = result
+            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id = result
             return Card(
-                name, MTGSet(set_abbr, set_name), collector_number, language, scryfall_id, is_front, image_uri
+                name, MTGSet(set_abbr, set_name), collector_number,
+                language, scryfall_id, is_front, oracle_id, image_uri
             )
 
     def get_opposing_face(self, card) -> typing.Optional[Card]:
@@ -427,3 +432,13 @@ class CardDatabase:
             return result[0]
         else:
             return datetime.date.today()
+
+    def translate_card(self, card: Card, language_override: str = None):
+        if language_override is None or language_override == card.language:
+            return card
+        if (result := self._translate_card(card, language_override)) is not None:
+            return result
+        return card
+
+    def _translate_card(self, card: Card, language_override: str) -> typing.Optional[Card]:
+        return None
