@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import dbm
 import functools
 import gzip
 import json
@@ -201,11 +202,6 @@ class CardInfoDownloadWorker(QObject):
         """
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
-        clear_database(self.model.db, self)
-        if not self.should_run:
-            logger.info(f"Aborting card import due to user request.")
-            self.download_finished.emit()
-            return
         store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
         download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
@@ -226,18 +222,20 @@ class CardInfoDownloadWorker(QObject):
             newest_card_date = _read_card_preview_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
+                _remove_card(self.model, card)
                 continue
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
                 self.download_finished.emit()
                 return
-            language_id = _insert_language(self.model, card["lang"])
-            card_id = _insert_card(self.model, card["oracle_id"])
-            set_id = _insert_set(self.model, card)
+            language_id = _insert_language(self.model, card["lang"])  # Ok
+            card_id = _insert_card(self.model, card["oracle_id"])  # Ok
+            set_id = _insert_set(self.model, card)  # Ok
             _insert_card_faces(self.model, card, language_id, card_id, set_id)
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
                 self.model.db.execute("PRAGMA optimize\n")
+        _clean_unused_data(self.model.db)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
         self.model.db.execute(
@@ -281,7 +279,10 @@ def store_download_settings(db):
     """Store the current download settings in the database"""
     section = mtg_proxy_printer.settings.settings["downloads"]
     db.executemany(
-        'INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)',
+        'INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?) '
+        'ON CONFLICT(setting) DO UPDATE '
+        'SET value = excluded.value '
+        'WHERE value <> excluded.value\n',
         ((setting, section.getboolean(setting)) for setting in section.keys())
     )
 
@@ -303,34 +304,71 @@ def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.dat
     return known_newest_card_date
 
 
+def _clean_unused_data(db: sqlite3.Connection):
+    # Remove all OracleID entries in Card, for which no CardFace is present. These are cards for which all
+    # printings got removed (maybe due to a format ban filter in place).
+    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT card_id FROM CardFace)\n")
+    db.execute("DELETE FROM PrintLanguage WHERE language_id NOT IN (SELECT language_id FROM CardFace)\n")
+    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT set_id FROM CardFace)\n')
+    db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT face_name_id FROM CardFace)\n")
+
+
+def _remove_card(model: CardDatabase, card: JSONType):
+    """
+    Removes the given printing from the database, if it is currently stored in the database.
+    Called on each skipped card, to ensure cards that start to fall under any download filter are removed from
+    the database and do not remain stored locally.
+    """
+    lang = card["lang"]
+    set_code = card["set"]
+    oracle_id = card["oracle_id"]
+    collector_number = card["collector_number"]
+    try:
+        faces = list(_get_card_faces(card))
+    except KeyError:
+        # Card has no image URIs, so skip it
+        return
+    for _, name, _, is_front in faces:
+        parameters = (name, lang, set_code, oracle_id, is_front, collector_number)
+        model.db.execute(
+            'DELETE FROM CardFace '
+            'WHERE (face_name_id, set_id, card_id, is_front, collector_number) IN '
+            '( SELECT'
+            '  (SELECT face_name_id FROM FaceName JOIN PrintLanguage USING (language_id)'
+            '     WHERE card_name = ? AND language = ?) AS face_name_id,'
+            '  (SELECT set_id FROM "Set" where "set" = ?) AS set_id,'
+            '  (SELECT card_id FROM Card where oracle_id = ?) AS card_id,'
+            '  ? AS is_front,'
+            '  ? AS collector_number)\n',
+            parameters
+        )
+
+
 @functools.lru_cache(None)
 def _insert_language(model: CardDatabase, language: str) -> int:
     """
     Inserts the given language into the database and returns the generated ID.
     If the language is already present, just return the ID.
     """
+    parameters = language,
     if result := model.db.execute(
             'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
-            (language,)).fetchone():
+            parameters).fetchone():
         language_id, = result
     else:
         language_id = model.db.execute(
             'INSERT INTO PrintLanguage("language") VALUES (?)\n',
-            (language,)
-        ).lastrowid
+            parameters).lastrowid
     return language_id
 
 
 @functools.lru_cache(None)
 def _insert_card(model: CardDatabase, oracle_id: str) -> int:
     parameters = oracle_id,
-    try:
-        card_id = model.db.execute(
-            'INSERT INTO Card (oracle_id) VALUES (?)\n',
-            parameters
-        ).lastrowid
-    except sqlite3.IntegrityError:
-        card_id, = model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone()
+    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone():
+        card_id, = result
+    else:
+        card_id = model.db.execute('INSERT INTO Card (oracle_id) VALUES (?)\n', parameters).lastrowid
     return card_id
 
 
@@ -341,27 +379,26 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
 
 @functools.lru_cache(None)
 def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
-    if result := model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone():
-        set_id, = result
-    else:
-        set_id = model.db.execute(
-            'INSERT INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?)\n',
-            (set_abbr, set_name, set_uri)
-        ).lastrowid
+    model.db.execute(
+        'INSERT INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?) '
+        'ON CONFLICT ("set") DO '
+        'UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri '
+        'WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri\n',
+        (set_abbr, set_name, set_uri)
+    )
+    set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
     return set_id
 
 
 @functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
-    try:
+    parameters = (printed_name, language_id)
+    if result := model.db.execute(
+            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n', parameters).fetchone():
+        face_name_id, = result
+    else:
         face_name_id = model.db.execute(
-            'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n',
-            (printed_name, language_id)
-        ).lastrowid
-    except sqlite3.IntegrityError:
-        face_name_id, = model.db.execute(
-            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n',
-            (printed_name, language_id)).fetchone()
+            'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n', parameters).lastrowid
     return face_name_id
 
 
@@ -372,8 +409,13 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, ca
         face_name_id = _insert_face_name(model, printed_name, language_id)
         model.db.execute(
             "INSERT INTO CardFace (\n"
-            "card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)\n"
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)\n",
+            "card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) \n"
+            "  ON CONFLICT (face_name_id, set_id, card_id, is_front, collector_number) DO UPDATE "
+            "SET scryfall_id = excluded.scryfall_id, highres_image = excluded.highres_image, "
+            "png_image_uri = excluded.png_image_uri\n"
+            "  WHERE scryfall_id <> excluded.scryfall_id OR highres_image <> excluded.highres_image "
+            "OR png_image_uri <> excluded.png_image_uri\n",
             (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)
         )
 
@@ -408,7 +450,7 @@ def _should_skip_card(
 
 def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str, bool], None, None]:
     """
-    Yields a tuple (Scryfall_id, printed_name, PNG_image_URI) for each face found in the card object.
+    Yields a tuple (Scryfall_id, printed_name, PNG_image_URI, is_front) for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
 
     Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
