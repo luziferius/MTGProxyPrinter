@@ -25,7 +25,6 @@ from itertools import filterfalse
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 import delegateto
-
 from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, clear_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
@@ -346,6 +345,7 @@ class CardDatabase:
             return None
 
     def guess_language_from_name(self, name: str) -> typing.Optional[str]:
+        """Guesses the card language from the card name. Returns None, if no result was found."""
         query = 'SELECT "language"\n' \
                 'FROM FaceName\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
@@ -353,6 +353,7 @@ class CardDatabase:
         return self._read_optional_scalar_from_db(query, (name,))
 
     def is_known_language(self, language: str) -> bool:
+        """Returns true, if the given two-letter code is a known language. Returns False otherwise."""
         query = 'SELECT EXISTS(\n' \
                 'SELECT *\n' \
                 'FROM PrintLanguage\n' \
@@ -395,6 +396,10 @@ class CardDatabase:
             return None
 
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
+        """
+        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the keys
+        from the input list that correspond to cards that were not used since the given date.
+        """
         query = textwrap.dedent("""
             SELECT last_use_date < ? AS last_use_was_before_threshold
             FROM LastImageUseTimestamps
@@ -408,6 +413,11 @@ class CardDatabase:
         return cards_not_used_since
 
     def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
+        """
+        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the keys
+        from the input list that correspond to cards that are used less often than count.
+        If count is zero or less, returns an empty list.
+        """
         if count <= 0:
             return []
         query = textwrap.dedent("""
@@ -425,6 +435,10 @@ class CardDatabase:
         return result
 
     def get_newest_card_date_in_database(self) -> datetime.date:
+        """
+        Returns the latest card timestamp from the LastDatabaseUpdate table.
+        Returns today(), if the table is empty.
+        """
         query = textwrap.dedent("""
             SELECT newest_card_timestamp
             FROM LastDatabaseUpdate
