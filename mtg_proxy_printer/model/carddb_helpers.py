@@ -119,7 +119,6 @@ def _migrate_16_to_17(db: sqlite3.Connection):
 
 def _migrate_17_to_18(db: sqlite3.Connection):
     db.executescript(textwrap.dedent(r"""
-        COMMIT;
         PRAGMA foreign_keys = OFF;
         BEGIN TRANSACTION;
         CREATE TABLE NewFaceName (
