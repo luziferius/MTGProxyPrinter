@@ -25,6 +25,7 @@ import mtg_proxy_printer.model.carddb
 class Namespace:
     database_path: Path
     card_data: Path
+    keep: bool
 
 
 def parse_args() -> Namespace:
@@ -35,6 +36,9 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "card_data", type=Path,
         help="'All cards' bulk data export from the Scryfall API. May be plain-text JSON or GZIP compressed JSON.")
+    parser.add_argument(
+        "-k", "--keep", action="store_true",
+        help="Re-use an existing database, performing an in-place card data update, instead of populating an empty, new database.")
     return parser.parse_args()
 
 
@@ -91,10 +95,13 @@ if __name__ == "__main__":
         print("Running with kernprof. Injecting profile decorator.")
         inject_line_profiler()
     args = parse_args()
-    if args.database_path.exists():
+    if args.database_path.exists() and not args.keep:
         print("Deleting existing database…")
         args.database_path.unlink()
-    print("Creating new database…")
+    if not args.database_path.exists():
+        print("Creating new database…")
+    elif args.keep:
+        print("Re-use existing database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
     cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(cdb)
     print("Starting benchmark…")
