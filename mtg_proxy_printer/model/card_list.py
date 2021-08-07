@@ -158,10 +158,13 @@ class CardListModel(QAbstractTableModel):
             orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
         if orientation == Qt.Horizontal:
             if role == Qt.DisplayRole:
-                return CardListModel.header[section]
+                return CardListModel.header.get(section)
             elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(CardListModel, self).headerData(section, orientation, role)
 
     def clear(self):
-        self.remove_cards([self.index(0, 0), self.index(self.rowCount(), 0)])
+        logger.debug(f"About to clear {self.__class__.__name__} instance. Removing {self.rowCount()} entries.")
+        self.beginRemoveRows(QModelIndex(), 0, self.rowCount()-1)
+        self.cards.clear()
+        self.endRemoveRows()

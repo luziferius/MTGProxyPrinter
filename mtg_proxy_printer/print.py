@@ -51,7 +51,7 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    printer.setPageSizeMM(QSizeF(document.page_width, document.page_height))
+    printer.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
     printer.setResolution(document.DPI.to_tuple()[0])
     # Disable duplex printing by default
     printer.setDoubleSidedPrinting(False)

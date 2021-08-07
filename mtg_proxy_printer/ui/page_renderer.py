@@ -125,14 +125,15 @@ class PageScene(QGraphicsScene):
         self._draw_cards()
 
     def _compute_position_for_image(self, index: QModelIndex):
+        page_layout = self.document.page_layout
         cards_per_row = self.document.compute_page_column_count()
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
-        spacing_vertical = self.document.image_spacing_vertical
-        spacing_horizontal = self.document.image_spacing_horizontal
+        spacing_vertical = page_layout.image_spacing_vertical
+        spacing_horizontal = page_layout.image_spacing_horizontal
 
-        x_pos = self.document.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
-        y_pos = self.document.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        x_pos = page_layout.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
+        y_pos = page_layout.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
         document_settings = settings["documents"]
         scaling_horizontal = self.width() / document_settings.getint("paper-width-mm")
         scaling_vertical = self.height() / document_settings.getint("paper-height-mm")
@@ -149,33 +150,35 @@ class PageScene(QGraphicsScene):
         self._draw_horizontal_markers(line_color)
 
     def _draw_vertical_markers(self, line_color):
-        scaling_horizontal = self.width() / self.document.page_width
+        page_layout = self.document.page_layout
+        scaling_horizontal = self.width() / page_layout.page_width
         column_count = self.document.compute_page_column_count()
-        if not self.document.image_spacing_horizontal:
+        if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
             column_px = scaling_horizontal * (
-                    self.document.margin_left +
-                    column * (PageScene.IMAGE_WIDTH + self.document.image_spacing_horizontal)
+                    page_layout.margin_left +
+                    column * (PageScene.IMAGE_WIDTH + page_layout.image_spacing_horizontal)
             )
             self._draw_vertical_line(column_px, line_color)
-            if self.document.image_spacing_horizontal:
+            if page_layout.image_spacing_horizontal:
                 offset = 1 + PageScene.IMAGE_WIDTH * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
     def _draw_horizontal_markers(self, line_color):
-        scaling_vertical = self.height() / self.document.page_height
+        page_layout = self.document.page_layout
+        scaling_vertical = self.height() / page_layout.page_height
         row_count = self.document.compute_page_row_count()
-        if not self.document.image_spacing_vertical:
+        if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
             row_px = scaling_vertical * (
-                    self.document.margin_top +
-                    row * (PageScene.IMAGE_HEIGHT + self.document.image_spacing_vertical)
+                    page_layout.margin_top +
+                    row * (PageScene.IMAGE_HEIGHT + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
-            if self.document.image_spacing_vertical:
+            if page_layout.image_spacing_vertical:
                 offset = 1 + PageScene.IMAGE_HEIGHT * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")

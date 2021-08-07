@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QTimer, QItemSelection
+from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QListView, QPushButton
 
 import mtg_proxy_printer.model.string_list
@@ -79,7 +79,7 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
     def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
         self.set_name_filter: QLineEdit
         self.set_name_list: QListView
-        model = mtg_proxy_printer.model.string_list.PrettySetListModel([], self.set_name_list)
+        model = mtg_proxy_printer.model.string_list.PrettySetListModel(self.set_name_list)
         self.card_name_model.rowsRemoved.connect(lambda: self.set_name_box.setEnabled(False))
         self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
 
@@ -115,19 +115,17 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
             sets = self.card_database.find_sets_matching(card_name, self.current_language)
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
-            # Converts a recursive call structure into a sequential call structure, which is required here
-            QTimer.singleShot(
-                0, lambda: self.set_name_list.selectionModel().select(
-                        self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect
-                ))
+            self.set_name_filter.clear()
+            self.set_name_list.selectionModel().select(
+                self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
 
     @pyqtSlot(QItemSelection)
     def on_set_name_list_selection_changed(self, current: QItemSelection):
-        logger.debug("Currently selected set changed.")
         self.collector_number_list: QListView
         if not current.indexes():
             self.collector_number_list.selectionModel().clearSelection()
             return
+        logger.debug("Currently selected set changed.")
         current_model_index = current.indexes()[0]
         valid = current_model_index.isValid()
         self.collector_number_box.setEnabled(valid)
@@ -139,11 +137,8 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
             logger.debug(
                 f'Selected: "{set_abbr}", language: {self.current_language}, matching {len(collector_numbers)} prints')
             self.collector_number_model.setStringList(collector_numbers)
-            # Converts a recursive call structure into a sequential call structure, which is required here
-            QTimer.singleShot(
-                0, lambda: self.collector_number_list.selectionModel().select(
-                    self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect
-                ))
+            self.collector_number_list.selectionModel().select(
+                self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
 
     @pyqtSlot(QItemSelection)
     def on_collector_number_list_selection_changed(self, current: QItemSelection):

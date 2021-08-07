@@ -18,8 +18,10 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
+    QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox
 
+from mtg_proxy_printer.model.document import PageLayoutSettings, Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 import mtg_proxy_printer.settings
@@ -38,15 +40,17 @@ check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v i
 
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
-
+    """Implements the Settings window."""
     saved = pyqtSignal()
 
-    def __init__(self, language_model: QStringListModel,  *args, **kwargs):
+    def __init__(self, language_model: QStringListModel, document: Document,  *args, **kwargs):
         super(SettingsWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.language_model = language_model
+        self.document = document
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
+        self.page_layout = self._setup_page_layout()
 
         self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
@@ -58,10 +62,59 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
-        self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.save)
-        self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
-        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_page_layout(self) -> PageLayoutSettings:
+        # Implementation note: The signal connections below will also trigger when programmatically populating the
+        # widget values in method _load_document_settings().
+        # Therefore it is not necessary to ever explicitly set the page_layout attributes to the current values.
+        page_layout = PageLayoutSettings()
+        self.page_height.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "page_height", new))
+        self.page_width.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "page_width", new))
+        self.page_margin_top.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_top", new))
+        self.page_margin_bottom.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_bottom", new))
+        self.page_margin_left.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_left", new))
+        self.page_margin_right.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "margin_right", new))
+        self.page_image_spacing_horizontal.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "image_spacing_horizontal", new))
+        self.page_image_spacing_vertical.valueChanged[int].connect(
+            lambda new: setattr(page_layout, "image_spacing_vertical", new))
+        widgets: typing.List[QSpinBox] = [
+            self.page_height,
+            self.page_width,
+            self.page_margin_top,
+            self.page_margin_bottom,
+            self.page_margin_left,
+            self.page_margin_right,
+            self.page_image_spacing_horizontal,
+            self.page_image_spacing_vertical,
+        ]
+        for widget in widgets:
+            widget.valueChanged[int].connect(self.on_page_layout_setting_changed)
+            widget.valueChanged[int].connect(self.validate_paper_size_settings)
+        return page_layout
+
+    @pyqtSlot()
+    def on_page_layout_setting_changed(self):
+        self.page_capacity: QLabel
+        new_capacity = self.page_layout.compute_page_card_capacity()
+        self.page_capacity.setText(str(new_capacity))
+
+    @pyqtSlot()
+    def validate_paper_size_settings(self):
+        pl = self.page_layout
+        min_page_height = pl.margin_bottom + pl.margin_top + self.document.IMAGE_HEIGHT.to_tuple()[0]
+        min_page_width = pl.margin_left + pl.margin_right + self.document.IMAGE_WIDTH.to_tuple()[0]
+        self.page_height: QSpinBox
+        self.page_width: QSpinBox
+        self.page_height.setMinimum(min_page_height)
+        self.page_width.setMinimum(min_page_width)
 
     def show(self):
         logger.info("Show the settings window.")
@@ -198,17 +251,41 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.print_guessing_enable, "enable-guessing"),
             (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+            (self.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
         ]
         return widgets_with_settings
+
+    def accept(self):
+        """Automatically called when the user hits the "Save" button."""
+
+        old_page_capacity = self.document.total_cards_per_page
+        new_page_capacity = self.page_layout.compute_page_card_capacity()
+        logger.info(f"accept() called. {old_page_capacity=}, {new_page_capacity=}")
+        if old_page_capacity > new_page_capacity:
+            overflowing_pages = len(self.document.find_overflowing_and_underflowing_pages(new_page_capacity)[0])
+
+            if overflowing_pages and QMessageBox.question(
+                    self, "Overflowing pages found",
+                    f"The new settings reduce the page capacity from {old_page_capacity} to {new_page_capacity} cards. "
+                    f"This causes {overflowing_pages} pages to overflow.\n"
+                    f"The overflowing cards from these pages will be moved automatically to free spaces on "
+                    f"other pages, or new pages at the document end.\nNo cards will be lost, but the "
+                    f"moved away cards will be shuffled around.\n\nContinue to save and apply the new settings?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.No:
+                logger.info("User canceled saving page layout saving due to overflowing images notification.")
+                return
+        self.save()
+        super(SettingsWindow, self).accept()
 
     def reset(self):
         logger.info("User reverts the made changes.")
         self.load_settings(mtg_proxy_printer.settings.settings)
 
-    def hide(self):
+    def reject(self):
+        """Automatically called when the user hits the "Cancel" button or closes the settings window."""
         logger.info("User closes the settings dialog. This will reset any made changes.")
         self.reset()
-        super(SettingsWindow, self).hide()
+        super(SettingsWindow, self).reject()
 
     def save(self):
         logger.info("User saves the configuration to disk.")

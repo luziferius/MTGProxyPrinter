@@ -2,9 +2,39 @@
 
 # Next version (in development)
 
+## Implemented features
+
+- Implemented optional, automatic deck list translations. When enabled, the deck list import wizard will try to 
+  automatically translate all cards in the list into the selected language, where images are available.
+  This can be enabled by default in the settings.
+
+## Changed features
+
+- Optimized the card data update process to update the local data in-place instead of
+  wiping everything and starting from scratch. This speeds up the import process and reduces disk writes.
+
+## Fixed issues
+
+- Fixed duplication of imported deck list entries when going back and forward in the deck
+  list import wizard after viewing the parsing result. (Bug was introduced in [version 0.12.0](#v0_12_0).)
+
+# Version 0.12.1 (2021-07-31) <a name="v0_12_1"></a>
+
+## Implemented features
+
+- While changing the paper size settings, the settings window displays the resulting page capacity in cards. 
+- The settings window now informs, if changed settings will cause existing pages to overflow and move cards around
+  automatically. The user now has the choice to cancel saving the settings, if they don’t wish for this to happen.
+
 ## Changed features
 
 - Application and card data update checks now run in the background, if enabled. This reduces application startup time.
+
+## Fixed issues
+
+- Fixed interface inconsistency when clicking on the "New Document" button.
+- Prevent the user from entering invalid combinations of paper sizes and margins that result in a page capacity of zero.
+  This prevents the application from entering an invalid state that causes crashes or infinite loops.
 
 # Version 0.12.0 (2021-07-28) <a name="v0_12_0"></a>
 

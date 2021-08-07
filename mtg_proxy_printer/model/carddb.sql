@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000016;
+PRAGMA user_version = 0000018;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -34,39 +34,37 @@ CREATE TABLE Card (
 
 
 CREATE TABLE FaceName (
-  -- The name of a card face in a given language. Cards are not renamed, so all Card entries share the same names
-  -- across all reprints for a given language.
+  -- The name of a card face in a given language. Cards are not renamed,
+  -- so all Card entries share the same names across all reprints for a given language.
   face_name_id INTEGER PRIMARY KEY NOT NULL,
   card_name    TEXT NOT NULL,
-  language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE
+  language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  UNIQUE (card_name, language_id)
 );
-
 -- Speeds up LIKE matches against card names, used by the Card name search
 CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
--- Used during the import process to speed up finding already inserted card faces
-CREATE INDEX FaceNameCardNameToLanguageIndex ON FaceName(card_name, language_id);
+
 
 CREATE TABLE CardFace (
-  -- The printable card face of a specific card in a specific language. Is the front most of the time, but can be the
-  -- back face for double-faced cards.
+  -- The printable card face of a specific card in a specific language. Is the front most of the time,
+  -- but can be the back face for double-faced cards.
   card_face_id INTEGER NOT NULL PRIMARY KEY,
-  card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,  -- The card to which this face belongs
+  card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   set_id INTEGER NOT NULL REFERENCES "Set"(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
   face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+  is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)),
   collector_number TEXT NOT NULL,
   scryfall_id TEXT NOT NULL,
   highres_image INTEGER NOT NULL,  -- Boolean indicating that the card has high resolution images.
-  png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
+  png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+  UNIQUE(face_name_id, set_id, card_id, is_front, collector_number)  -- Order important: Used to find matching sets
 );
--- Used to find matching sets
-CREATE INDEX CardFaceIDLookup ON CardFace (face_name_id, set_id, card_id);
 -- Used to find matching collector numbers
 CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, set_id, collector_number);
 
 -- Speeds up card name translation. Some deck lists provide the English name plus language code.
 -- These require name translation
-CREATE INDEX CardFace_card_id_index ON CardFace (card_id);
+CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front);
 
 -- Speeds up card instance creation by looking up cards using their scryfall id.
 CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);
@@ -105,7 +103,7 @@ CREATE TABLE LastImageUseTimestamps (
 );
 
 CREATE VIEW AllPrintings AS
-  SELECT card_name, "set", set_name, "language", collector_number, scryfall_id,
+  SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
     highres_image, is_front, png_image_uri, oracle_id
   FROM CardFace
   JOIN FaceName USING(face_name_id)

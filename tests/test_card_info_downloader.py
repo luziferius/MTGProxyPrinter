@@ -156,7 +156,7 @@ def _assert_all_printings_contains(model: mtg_proxy_printer.model.carddb.CardDat
     """Checks card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri, is_front"""
     assert_that(
         model.db.execute(
-            'SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, '
+            'SELECT card_name, set_code, "language", collector_number, scryfall_id, highres_image, '
             'png_image_uri, is_front FROM AllPrintings').fetchall(),
         contains_inanyorder(*test_case.db_all_printings()),
         "CardFace relation contains unexpected data")

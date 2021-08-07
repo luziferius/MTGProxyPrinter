@@ -108,6 +108,7 @@ VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
     "enable-guessing": "False",
     "prefer-already-downloaded": "True",
+    "always-translate-deck-lists": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
@@ -154,6 +155,11 @@ def update_version_string():
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
+    """
+    Called after reading the settings from disk. Ensures that all settings contain valid values and expected types.
+    I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
+    non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
+    """
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])

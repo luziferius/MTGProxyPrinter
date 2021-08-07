@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>566</width>
-    <height>612</height>
+    <width>650</width>
+    <height>650</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -283,6 +283,16 @@ If so, choose an arbitrary printing.</string>
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="print_guessing_enable">
+            <property name="toolTip">
+             <string/>
+            </property>
+            <property name="text">
+             <string>Enable print guessing by default, where optional</string>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
             <property name="toolTip">
@@ -293,13 +303,14 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="print_guessing_enable">
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="automatic_deck_list_translation_enable">
             <property name="toolTip">
-             <string/>
+             <string>Always enable automatic deck list translation when importing deck lists.
+This avoids adding foreign language cards, if the deck list happens to contain some.</string>
             </property>
             <property name="text">
-             <string>Enable print guessing by default, where optional</string>
+             <string>Enable translating imported deck lists by default</string>
             </property>
            </widget>
           </item>
@@ -332,71 +343,10 @@ If so, choose an arbitrary printing.</string>
           <string>Default settings for new documents</string>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <item row="15" column="1">
-           <widget class="QLabel" name="page_margin_right_label">
-            <property name="text">
-             <string>Right margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_right</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="3">
-           <widget class="QSpinBox" name="page_margin_bottom">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="14" column="1">
-           <widget class="QLabel" name="page_margin_left_label">
-            <property name="text">
-             <string>Left margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_left</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="3">
-           <widget class="QSpinBox" name="page_height">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper height in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="1">
-           <widget class="QLabel" name="page_margin_bottom_label">
-            <property name="text">
-             <string>Bottom Margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_bottom</cstring>
+          <item row="6" column="1" colspan="3">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
@@ -419,13 +369,33 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="16" column="1">
-           <widget class="QLabel" name="page_image_spacing_horizontal_label">
+          <item row="17" column="1">
+           <widget class="QLabel" name="page_image_spacing_vertical_label">
             <property name="text">
-             <string>Horizontal image spacing</string>
+             <string>Vertical image spacing</string>
             </property>
             <property name="buddy">
-             <cstring>page_image_spacing_horizontal</cstring>
+             <cstring>page_image_spacing_vertical</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="1">
+           <widget class="QLabel" name="page_height_label">
+            <property name="text">
+             <string>Page height</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_height</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="15" column="1">
+           <widget class="QLabel" name="page_margin_right_label">
+            <property name="text">
+             <string>Right margin</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_margin_right</cstring>
             </property>
            </widget>
           </item>
@@ -448,6 +418,74 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
+          <item row="12" column="3">
+           <widget class="QSpinBox" name="page_margin_bottom">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="16" column="1">
+           <widget class="QLabel" name="page_image_spacing_horizontal_label">
+            <property name="text">
+             <string>Horizontal image spacing</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_image_spacing_horizontal</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="1">
+           <widget class="QLabel" name="page_margin_bottom_label">
+            <property name="text">
+             <string>Bottom Margin</string>
+            </property>
+            <property name="buddy">
+             <cstring>page_margin_bottom</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="3">
+           <widget class="QSpinBox" name="page_height">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Default paper height in millimeters</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="pdf_page_count_limit_label">
+            <property name="text">
+             <string>Split PDFs longer than</string>
+            </property>
+            <property name="buddy">
+             <cstring>pdf_page_count_limit</cstring>
+            </property>
+           </widget>
+          </item>
           <item row="14" column="3">
            <widget class="QSpinBox" name="page_margin_left">
             <property name="sizePolicy">
@@ -467,68 +505,23 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="17" column="1">
-           <widget class="QLabel" name="page_image_spacing_vertical_label">
+          <item row="14" column="1">
+           <widget class="QLabel" name="page_margin_left_label">
             <property name="text">
-             <string>Vertical image spacing</string>
+             <string>Left margin</string>
             </property>
             <property name="buddy">
-             <cstring>page_image_spacing_vertical</cstring>
+             <cstring>page_margin_left</cstring>
             </property>
            </widget>
           </item>
-          <item row="16" column="3">
-           <widget class="QSpinBox" name="page_image_spacing_horizontal">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="1">
-           <widget class="QLabel" name="page_height_label">
+          <item row="10" column="1">
+           <widget class="QLabel" name="page_width_label">
             <property name="text">
-             <string>Page height</string>
+             <string>Page width</string>
             </property>
             <property name="buddy">
-             <cstring>page_height</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="1" colspan="3">
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="3">
-           <widget class="QSpinBox" name="page_width">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper width in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
+             <cstring>page_width</cstring>
             </property>
            </widget>
           </item>
@@ -551,13 +544,22 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="10" column="1">
-           <widget class="QLabel" name="page_width_label">
-            <property name="text">
-             <string>Page width</string>
+          <item row="10" column="3">
+           <widget class="QSpinBox" name="page_width">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="buddy">
-             <cstring>page_width</cstring>
+            <property name="toolTip">
+             <string>Default paper width in millimeters</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
             </property>
            </widget>
           </item>
@@ -594,13 +596,36 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
-           <widget class="QLabel" name="pdf_page_count_limit_label">
-            <property name="text">
-             <string>Split PDFs longer than</string>
+          <item row="16" column="3">
+           <widget class="QSpinBox" name="page_image_spacing_horizontal">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="buddy">
-             <cstring>pdf_page_count_limit</cstring>
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+            <property name="suffix">
+             <string> mm</string>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="1">
+           <widget class="QLabel" name="page_capacity_label">
+            <property name="text">
+             <string>Resulting page capacity:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="18" column="3">
+           <widget class="QLabel" name="page_capacity">
+            <property name="text">
+             <string/>
             </property>
            </widget>
           </item>
@@ -887,6 +912,7 @@ These are not tournament legal.</string>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>tab_widget</tabstop>
   <tabstop>add_card_widget_style_combo_box</tabstop>
   <tabstop>preferred_language_combo_box</tabstop>
   <tabstop>avoid_low_res_images_check_box</tabstop>
@@ -895,9 +921,11 @@ These are not tournament legal.</string>
   <tabstop>document_save_path_browse_button</tabstop>
   <tabstop>pdf_save_path</tabstop>
   <tabstop>pdf_save_path_browse_button</tabstop>
-  <tabstop>enable_cutelog_integration</tabstop>
-  <tabstop>enable_write_log_file</tabstop>
-  <tabstop>log_level_combo_box</tabstop>
+  <tabstop>check_application_updates_enabled</tabstop>
+  <tabstop>check_card_data_updates_enabled</tabstop>
+  <tabstop>print_guessing_enable</tabstop>
+  <tabstop>print_guessing_prefer_already_downloaded</tabstop>
+  <tabstop>automatic_deck_list_translation_enable</tabstop>
   <tabstop>print_cut_marker</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
   <tabstop>page_height</tabstop>
@@ -910,6 +938,7 @@ These are not tournament legal.</string>
   <tabstop>page_image_spacing_vertical</tabstop>
   <tabstop>include_cards_depicting_racism</tabstop>
   <tabstop>include_cards_without_images</tabstop>
+  <tabstop>include_oversized_cards</tabstop>
   <tabstop>include_white_bordered_cards</tabstop>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
@@ -924,6 +953,9 @@ These are not tournament legal.</string>
   <tabstop>include_banned_in_pioneer</tabstop>
   <tabstop>include_banned_in_standard</tabstop>
   <tabstop>include_banned_in_vintage</tabstop>
+  <tabstop>enable_cutelog_integration</tabstop>
+  <tabstop>enable_write_log_file</tabstop>
+  <tabstop>log_level_combo_box</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -934,8 +966,8 @@ These are not tournament legal.</string>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>278</x>
-     <y>605</y>
+     <x>284</x>
+     <y>643</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
@@ -950,8 +982,8 @@ These are not tournament legal.</string>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>346</x>
-     <y>605</y>
+     <x>352</x>
+     <y>643</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>

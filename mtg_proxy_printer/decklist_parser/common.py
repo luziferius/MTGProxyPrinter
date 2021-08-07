@@ -12,9 +12,11 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import collections
 from abc import abstractmethod
 import typing
+
+from PyQt5.QtCore import QObject
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -31,9 +33,10 @@ __all__ = [
 ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 
-class ParserBase:
+class ParserBase(QObject):
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase):
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super(ParserBase, self).__init__(parent)
         self.card_db = card_db
         self.image_db = image_db
         self.add_opposing_face = mtg_proxy_printer.settings.settings["images"].getboolean(
@@ -44,10 +47,38 @@ class ParserBase:
                 "prefer-already-downloaded"
             )
 
-    @abstractmethod
     def parse_deck(self, deck: str,
                    print_guessing: bool,
-                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
+                   print_guessing_prefer_already_downloaded: bool,
+                   language_override: str = None) -> ParsedDeck:
+
+        # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
+        # Because it would operate on the cards in the source language. The card choice gets overwritten by the
+        # translation step, so performs unnecessary work that gets thrown away anyways.
+        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
+            if language_override is None else False
+        parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
+
+        translated_deck: typing.Counter[Card] = collections.Counter()
+        for card, count in parsed_deck.items():
+            if self.print_guessing_prefer_already_downloaded and \
+                    (all_printings := self.card_db.find_all_translated_printings(card, language_override)):
+                # Choose any printing, based on what is already downloaded. …
+                translated_card = self._determine_best_match(all_printings)
+                # … But if no already downloaded image is found, prefer accurate translations over random selections.
+                if translated_card is all_printings[0]:
+                    translated_card = self.card_db.translate_card(card, language_override)
+            else:
+                translated_card = self.card_db.translate_card(card, language_override)
+                logger.debug(f"Translated card '{card.name}' from language {card.language} "
+                             f"to '{translated_card.name}' in {language_override}")
+            translated_deck[translated_card] = count
+        return translated_deck, unmatched_lines
+
+    @abstractmethod
+    def parse_deck_without_translation(self, deck: str,
+                                       print_guessing: bool) -> ParsedDeck:
         """
         Parse the given deck.
 
@@ -67,6 +98,8 @@ class ParserBase:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:
             card_data.name = card_data.name.strip()
+            # Some sources use single forward slashes to separate faces of multi-faced cards.
+            card_data.name = card_data.name.replace(" / ", " // ")
             if "//" in card_data.name:
                 # If this is a split card, try to identify one half
                 card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
@@ -84,6 +117,14 @@ class ParserBase:
                 ))):
             logger.debug(
                 f"Matching using language, set code and collector number. Found {len(possible_matches)} matches."
+            )
+            return self._determine_best_match(possible_matches)
+        if card_data.name and card_data.set_code and (
+                possible_matches := self.card_db.get_cards_from_data(CardIdentificationData(
+                    card_data.language, card_data.name, card_data.set_code
+                ))):
+            logger.debug(
+                f"Matching using language, card name and set code. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
         if card_data.name and (
@@ -109,4 +150,3 @@ class ParserBase:
         if self.add_opposing_face and (opposing_face := self.card_db.get_opposing_face(card)) is not None:
             # Double-faced card
             deck[opposing_face] += count
-
