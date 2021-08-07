@@ -14,9 +14,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 import typing
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, Qt, QItemSelectionModel, QObject, QModelIndex, \
-    QAbstractItemModel
-from PyQt5.QtWidgets import QTableView, QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox, QListView
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, QItemSelectionModel
+from PyQt5.QtWidgets import QTableView, QWidget, QListView
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
@@ -24,53 +23,16 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.ui.add_card import AddCardWidget
-
-from .common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 
 from mtg_proxy_printer.logger import get_logger
+
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
-    "ComboBoxItemDelegate",
     "CentralWidget",
 ]
-
-
-class ComboBoxItemDelegate(QStyledItemDelegate):
-
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QModelIndex) -> QComboBox:
-        editor = QComboBox(parent)
-        return editor
-
-    def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
-
-        model: Document = index.model()
-        if index.column() == PageColumns.Set:
-            matching_sets = model.card_db.find_sets_matching(
-                index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
-                index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
-            )
-            current_set_code = index.data(Qt.EditRole)
-            current_set_position = 0
-            for position, set_data in enumerate(matching_sets):
-                editor.addItem(set_data.name, set_data.code)  # Store the key (set_code) in the UserData role
-                if set_data.code == current_set_code:
-                    current_set_position = position
-            editor.setCurrentIndex(current_set_position)
-
-        elif index.column() == PageColumns.CollectorNumber:
-            matching_collector_numbers = model.card_db.find_collector_numbers_matching(
-                index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
-                index.siblingAtColumn(PageColumns.Set).data(Qt.EditRole),
-                index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
-            )
-            for collector_number in matching_collector_numbers:
-                editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
-            editor.setCurrentIndex(matching_collector_numbers.index(index.data(Qt.EditRole)))
-
-    def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
-        logger.debug(f"Setting data for column {index.column()} to {editor.currentData(Qt.UserRole)}")
-        model.setData(index, editor.currentData(Qt.UserRole), Qt.EditRole)
 
 
 class CentralWidget(QWidget):
