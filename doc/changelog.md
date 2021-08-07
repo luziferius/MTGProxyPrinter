@@ -8,6 +8,11 @@
   automatically translate all cards in the list into the selected language, where images are available.
   This can be enabled by default in the settings.
 
+## Changed features
+
+- Optimized the card data update process to update the local data in-place instead of
+  wiping everything and starting from scratch. This speeds up the import process and reduces disk writes.
+
 ## Fixed issues
 
 - Fixed duplication of imported deck list entries when going back and forward in the deck
