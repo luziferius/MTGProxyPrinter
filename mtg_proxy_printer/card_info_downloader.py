@@ -235,6 +235,9 @@ class CardInfoDownloadWorker(QObject):
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
                 self.model.db.execute("PRAGMA optimize\n")
+        # Populate the sqlite stat tables to give the query optimizer data to work with.
+        # This greatly improves query speed.
+        self.model.db.execute("ANALYZE\n")
         _clean_unused_data(self.model.db)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
@@ -242,8 +245,6 @@ class CardInfoDownloadWorker(QObject):
             "INSERT INTO LastDatabaseUpdate (update_timestamp, newest_card_timestamp) VALUES (?, ?)\n",
             (datetime.datetime.now(), newest_card_date)
         )
-        # Populate the sqlite stat tables to give the query optimizer data to work with.
-        # This greatly improves query speed.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
         # Clear the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
