@@ -117,6 +117,69 @@ def _migrate_16_to_17(db: sqlite3.Connection):
     db.execute(r"CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)")
 
 
+def _migrate_17_to_18(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent(r"""
+        PRAGMA foreign_keys = OFF;
+        BEGIN TRANSACTION;
+        CREATE TABLE NewFaceName (
+          -- The name of a card face in a given language. Cards are not renamed,
+          -- so all Card entries share the same names across all reprints for a given language.
+          face_name_id INTEGER PRIMARY KEY NOT NULL,
+          card_name    TEXT NOT NULL,
+          language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          UNIQUE (card_name, language_id)
+        );
+        CREATE TABLE NewCardFace (
+          -- The printable card face of a specific card in a specific language. Is the front most of the time, 
+          -- but can be the back face for double-faced cards.
+          card_face_id INTEGER NOT NULL PRIMARY KEY,
+          card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          set_id INTEGER NOT NULL REFERENCES "Set"(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+          collector_number TEXT NOT NULL,
+          scryfall_id TEXT NOT NULL,
+          highres_image INTEGER NOT NULL,  -- Boolean indicating that the card has high resolution images.
+          png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+          UNIQUE(face_name_id, set_id, card_id, is_front, collector_number)  -- Order important: Used to find matching sets
+        );
+        INSERT INTO NewFaceName (face_name_id, card_name, language_id) 
+          SELECT face_name_id, card_name, language_id
+          FROM FaceName;
+        INSERT INTO NewCardFace 
+          (card_face_id, card_id, set_id, face_name_id, is_front, collector_number, scryfall_id, highres_image, png_image_uri) 
+        SELECT 
+           card_face_id, card_id, set_id, face_name_id, is_front, collector_number, scryfall_id, highres_image, png_image_uri
+        FROM CardFace;
+        DROP VIEW AllPrintings;
+        DROP TABLE FaceName;
+        DROP TABLE CardFace;
+        ALTER TABLE NewFaceName RENAME TO FaceName;
+        ALTER TABLE NewCardFace RENAME TO CardFace;
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+            highres_image, is_front, png_image_uri, oracle_id
+          FROM CardFace
+          JOIN FaceName USING(face_name_id)
+          JOIN "Set" USING (set_id)
+          JOIN Card USING (card_id)
+          JOIN PrintLanguage USING(language_id)
+        ;
+        -- Re-create some of the automatically deleted indexes.
+        -- Now redundant indexes FaceNameCardNameToLanguageIndex and CardFaceIDLookup remain dropped.
+        CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
+        CREATE INDEX CardFaceToCollectorNumberIndex ON CardFace (face_name_id, set_id, collector_number);
+        CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front);
+        CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);
+        PRAGMA foreign_key_check;
+        ANALYZE;
+        PRAGMA foreign_keys = ON;
+        COMMIT;
+        VACUUM;
+        BEGIN TRANSACTION;
+        """))
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -133,7 +196,8 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_13_to_14,
         _migrate_14_to_15,
         _migrate_15_to_16,
-        _migrate_16_to_17
+        _migrate_16_to_17,
+        _migrate_17_to_18,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:

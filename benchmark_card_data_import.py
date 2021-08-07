@@ -45,12 +45,13 @@ def parse_args() -> Namespace:
 to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker: [
         "populate_database",
-        "read_json_card_data",
     ],
     mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
         "_insert_card_faces",
         "_should_skip_card",
+        "_clean_unused_data",
+        "_remove_card"
     ],
     # Bypass the lru_cache
     mtg_proxy_printer.card_info_downloader._insert_card: [
