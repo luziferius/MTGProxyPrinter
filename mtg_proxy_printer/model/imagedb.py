@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import dataclasses
 import io
 import queue
@@ -50,11 +51,18 @@ __all__ = [
 class ImageKey:
     scryfall_id: str
     is_front: bool
+    is_high_resolution: bool
 
     def format_relative_path(self) -> pathlib.Path:
         """Returns the file system path of the associated image relative to the image database root path."""
-        level1 = "front" if self.is_front else "back"
+        level1 = self.format_level_1_directory_name(self.is_front, self.is_high_resolution)
         return pathlib.Path(level1, self.scryfall_id[:2], f"{self.scryfall_id}.png")
+
+    @staticmethod
+    def format_level_1_directory_name(is_front: bool, is_high_resolution: bool) -> str:
+        side = "front" if is_front else "back"
+        res = "highres" if is_high_resolution else "lowres"
+        return f"{res}_{side}"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -62,7 +70,7 @@ class CacheContent(ImageKey):
     absolute_path: pathlib.Path
 
     def as_key(self):
-        return ImageKey(self.scryfall_id, self.is_front)
+        return ImageKey(self.scryfall_id, self.is_front, self.is_high_resolution)
 
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
@@ -128,7 +136,7 @@ class ImageDatabase(QObject):
         return self._blank_image
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]):
-        return [card for card in possible_matches if ImageKey(card.scryfall_id, card.is_front) in self.images_on_disk]
+        return [card for card in possible_matches if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk]
 
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
@@ -159,9 +167,14 @@ class ImageDatabase(QObject):
         :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
         """
         result: typing.List[CacheContent] = []
-        for directory, is_front in ((self.db_path/"front", True), (self.db_path/"back", False)):
+        data: typing.Iterable[typing.Tuple[pathlib.Path, bool, bool]] = (
+            (self.db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
+             is_front, is_high_resolution)
+            for is_front, is_high_resolution in itertools.product([True, False], repeat=2)
+        )
+        for directory, is_front, is_high_resolution in data:
             result += (
-                CacheContent(path.stem, is_front, path)
+                CacheContent(path.stem, is_front, is_high_resolution, path)
                 for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
         return result
 
@@ -266,7 +279,7 @@ class ImageDownloader(QObject):
         return reason_str
 
     def get_image_synchronous(self, card: Card):
-        key = ImageKey(card.scryfall_id, card.is_front)
+        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         try:
             pixmap = self.image_database.loaded_images[key]
         except KeyError:
@@ -278,7 +291,7 @@ class ImageDownloader(QObject):
         card.image_file = pixmap
 
     def _fetch_image(self, card: Card) -> QPixmap:
-        key = ImageKey(card.scryfall_id, card.is_front)
+        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         cache_file_path = self.image_database.db_path / key.format_relative_path()
         cache_file_path.parent.mkdir(parents=True, exist_ok=True)
         pixmap = None
@@ -315,9 +328,27 @@ class ImageDownloader(QObject):
 def _migrate_database(db_path: pathlib.Path):
     if not db_path.exists():
         db_path.mkdir(parents=True)
-    if not (db_path/"version.txt").exists():
+    version_file = db_path/"version.txt"
+    if not version_file.exists():
         for possible_dir in map("".join, itertools.product(string.hexdigits, string.hexdigits)):
             if (path := db_path/possible_dir).exists():
                 shutil.rmtree(path)
-
-        (db_path/"version.txt").write_text("2")
+        version_file.write_text("2")
+    if version_file.read_text() == "2":
+        old_front = db_path/"front"
+        old_back = db_path/"back"
+        high_res_front = db_path/ImageKey.format_level_1_directory_name(True, True)
+        low_res_front = db_path/ImageKey.format_level_1_directory_name(True, False)
+        high_res_back = db_path/ImageKey.format_level_1_directory_name(False, True)
+        low_res_back = db_path/ImageKey.format_level_1_directory_name(False, False)
+        if old_front.exists():
+            old_front.rename(low_res_front)
+        else:
+            low_res_front.mkdir(exist_ok=True)
+        if old_back.exists():
+            old_back.rename(low_res_back)
+        else:
+            low_res_back.mkdir(exist_ok=True)
+        high_res_front.mkdir(exist_ok=True)
+        high_res_back.mkdir(exist_ok=True)
+        version_file.write_text("3")

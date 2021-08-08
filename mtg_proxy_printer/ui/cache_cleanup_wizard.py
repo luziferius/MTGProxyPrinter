@@ -66,9 +66,10 @@ class KnownCardColumns(enum.IntEnum):
     Set = 1
     CollectorNumber = 2
     IsFront = 3
-    Size = 4
-    ScryfallId = 5
-    FilesystemPath = 6
+    HasHighResolution = 4
+    Size = 5
+    ScryfallId = 6
+    FilesystemPath = 7
 
 
 @dataclasses.dataclass()
@@ -77,6 +78,7 @@ class KnownCardRow:
     set: MTGSet
     collector_number: str
     is_front: bool
+    has_high_resolution: bool
     size: int
     scryfall_id: str
     path: pathlib.Path
@@ -94,6 +96,10 @@ class KnownCardRow:
             data = "Front" if self.is_front else "Back"
         elif column == KnownCardColumns.IsFront and role == Qt.EditRole:
             data = self.is_front
+        elif column == KnownCardColumns.HasHighResolution and role == Qt.EditRole:
+            data = self.has_high_resolution
+        elif column == KnownCardColumns.HasHighResolution and role == Qt.DisplayRole:
+            data = "Yes" if self.has_high_resolution else "No"
         elif column == KnownCardColumns.Size and role == Qt.DisplayRole:
             data = format_size(self.size)
         elif column == KnownCardColumns.Size and role == Qt.EditRole:
@@ -113,15 +119,16 @@ class KnownCardRow:
 
 class KnownCardImageModel(QAbstractTableModel):
 
-    header_data = [
-        "Name",
-        "Set",
-        "Collector #",
-        "Front/Back",
-        "Size",
-        "Scryfall ID",
-        "Path",
-    ]
+    header_data = {
+        KnownCardColumns.Name: "Name",
+        KnownCardColumns.Set: "Set",
+        KnownCardColumns.CollectorNumber: "Collector #",
+        KnownCardColumns.IsFront: "Front/Back",
+        KnownCardColumns.HasHighResolution: "High resolution?",
+        KnownCardColumns.Size: "Size",
+        KnownCardColumns.ScryfallId: "Scryfall ID",
+        KnownCardColumns.FilesystemPath: "Path",
+    }
 
     def __init__(self, parent: QObject):
         super(KnownCardImageModel, self).__init__(parent)
@@ -133,7 +140,7 @@ class KnownCardImageModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> str:
+    def headerData(self, section: KnownCardColumns, orientation: Qt.Orientation, role: int = None) -> str:
         if role == Qt.DisplayRole and orientation == Qt.Horizontal and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(KnownCardImageModel, self).headerData(section, orientation, role)
@@ -150,7 +157,7 @@ class KnownCardImageModel(QAbstractTableModel):
         size_bytes = file_path.stat().st_size
         row = KnownCardRow(
             card.name, card.set, card.collector_number,
-            card.is_front, size_bytes, card.scryfall_id, file_path
+            card.is_front, card.highres_image, size_bytes, card.scryfall_id, file_path,
         )
         self._data.append(row)
         self.endInsertRows()
@@ -171,21 +178,24 @@ class KnownCardImageModel(QAbstractTableModel):
 class UnknownCardColumns(enum.IntEnum):
     ScryfallId = 0
     IsFront = 1
-    Size = 2
-    FilesystemPath = 3
+    HasHighResolution = 2
+    Size = 3
+    FilesystemPath = 4
 
 
 @dataclasses.dataclass()
 class UnknownCardRow:
     scryfall_id: str
     is_front: bool
+    has_high_resolution: bool
     size: int
     path: pathlib.Path
 
     @classmethod
     def from_cache_content(cls, image: ImageCacheContent):
         return cls(
-            image.scryfall_id, image.is_front, image.absolute_path.stat().st_size, image.absolute_path
+            image.scryfall_id, image.is_front, image.is_high_resolution,
+            image.absolute_path.stat().st_size, image.absolute_path
         )
 
     def data(self, column: int, role: int):
@@ -195,6 +205,10 @@ class UnknownCardRow:
             data = "Front" if self.is_front else "Back"
         elif column == UnknownCardColumns.IsFront and role == Qt.EditRole:
             data = self.is_front
+        elif column == UnknownCardColumns.HasHighResolution and role == Qt.EditRole:
+            data = self.has_high_resolution
+        elif column == UnknownCardColumns.HasHighResolution and role == Qt.DisplayRole:
+            data = "Yes" if self.has_high_resolution else "No"
         elif column == UnknownCardColumns.Size and role == Qt.DisplayRole:
             data = format_size(self.size)
         elif column == UnknownCardColumns.Size and role == Qt.EditRole:
@@ -212,12 +226,13 @@ class UnknownCardRow:
 
 class UnknownCardImageModel(QAbstractTableModel):
 
-    header_data = [
-        "Scryfall ID",
-        "Front/Back",
-        "Size",
-        "Path",
-    ]
+    header_data = {
+        UnknownCardColumns.ScryfallId: "Scryfall ID",
+        UnknownCardColumns.IsFront: "Front/Back",
+        UnknownCardColumns.HasHighResolution: "High resolution?",
+        UnknownCardColumns.Size: "Size",
+        UnknownCardColumns.FilesystemPath: "Path",
+    }
 
     def __init__(self, parent: QObject):
         super(UnknownCardImageModel, self).__init__(parent)
@@ -229,7 +244,7 @@ class UnknownCardImageModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> str:
+    def headerData(self, section: UnknownCardColumns, orientation: Qt.Orientation, role: int = None) -> str:
         if role == Qt.DisplayRole and orientation == Qt.Horizontal and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(UnknownCardImageModel, self).headerData(section, orientation, role)
@@ -344,14 +359,16 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
         self.unknown_image_view: QTableView
         self.card_image_view: QTableView
-        selected_images: typing.List[typing.Tuple[str, bool, int]] = [
+        selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
             (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.IsFront).data(Qt.EditRole),
+             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.Size).data(Qt.EditRole))
             for index in self.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
             (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.IsFront).data(Qt.EditRole),
+             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.Size).data(Qt.EditRole))
             for index in self.card_image_view.selectedIndexes() if not index.column()
         ]
@@ -370,7 +387,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/summary
         self.image_count_summary: QLabel
         self.filesize_summary: QLabel
         indices = self.field("selected-images")
-        disk_space_freed = format_size(sum(size_bytes for _, _, size_bytes in indices))
+        disk_space_freed = format_size(sum(size_bytes for _, _, _, size_bytes in indices))
         self.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
         self.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
         logger.debug(f"{self.__class__.__name__} populated.")
@@ -402,8 +419,8 @@ class CacheCleanupWizard(QWizard):
         super(CacheCleanupWizard, self).accept()
         logger.info("User accepted the wizard, deleting entries from the cache.")
         self.image_db.delete_disk_cache_entries((
-            ImageKey(scryfall_id, is_front)
-            for scryfall_id, is_front, _ in self.field("selected-images")
+            ImageKey(scryfall_id, is_front, is_high_resolution)
+            for scryfall_id, is_front, is_high_resolution, _ in self.field("selected-images")
         ))
         self._clear_tooltip_cache()
 
