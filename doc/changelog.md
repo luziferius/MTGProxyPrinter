@@ -7,6 +7,9 @@
 - Implemented optional, automatic deck list translations. When enabled, the deck list import wizard will try to 
   automatically translate all cards in the list into the selected language, where images are available.
   This can be enabled by default in the settings.
+- Automatically replace locally stored low resolution card images with better images, when Scryfall upgrades the
+  provided images to high-resolution scans. Low-resolution card images fetched during set spoilers no longer stay in
+  the image cache indefinitely.
 
 ## Changed features
 
