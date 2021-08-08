@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import dbm
 import functools
 import gzip
 import json
@@ -31,7 +30,7 @@ import http.client
 import ijson
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
-from mtg_proxy_printer.model.carddb import CardDatabase, clear_database
+from mtg_proxy_printer.model.carddb import CardDatabase
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
