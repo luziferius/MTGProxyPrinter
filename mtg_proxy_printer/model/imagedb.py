@@ -128,7 +128,7 @@ class ImageDatabase(QObject):
         return self._blank_image
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]):
-        return [card for card in possible_matches if (card.scryfall_id, card.is_front) in self.images_on_disk]
+        return [card for card in possible_matches if ImageKey(card.scryfall_id, card.is_front) in self.images_on_disk]
 
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
