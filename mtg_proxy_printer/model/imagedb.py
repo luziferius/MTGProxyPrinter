@@ -51,6 +51,11 @@ class ImageKey:
     scryfall_id: str
     is_front: bool
 
+    def format_relative_path(self) -> pathlib.Path:
+        """Returns the file system path of the associated image relative to the image database root path."""
+        level1 = "front" if self.is_front else "back"
+        return pathlib.Path(level1, self.scryfall_id[:2], f"{self.scryfall_id}.png")
+
 
 @dataclasses.dataclass(frozen=True)
 class CacheContent(ImageKey):
@@ -168,9 +173,7 @@ class ImageDatabase(QObject):
         """
         removed: PathSizeList = []
         for image in images:
-            is_front = image.is_front
-            scryfall_id = image.scryfall_id
-            path = self.db_path/("front" if is_front else "back")/scryfall_id[:2]/f"{scryfall_id}.png"
+            path = self.db_path/image.format_relative_path()
             if path.is_file():
                 logger.debug(f"Removing image: {path}")
                 size_bytes = path.stat().st_size
@@ -275,14 +278,9 @@ class ImageDownloader(QObject):
         card.image_file = pixmap
 
     def _fetch_image(self, card: Card) -> QPixmap:
-        cache_file_path = pathlib.Path(
-            self.image_database.db_path,
-            "front" if card.is_front else "back",
-            card.scryfall_id[:2],
-            f"{card.scryfall_id}.png"
-        )
-        if not cache_file_path.parent.exists():
-            cache_file_path.parent.mkdir(parents=True)
+        key = ImageKey(card.scryfall_id, card.is_front)
+        cache_file_path = self.image_database.db_path / key.format_relative_path()
+        cache_file_path.parent.mkdir(parents=True, exist_ok=True)
         pixmap = None
         if cache_file_path.exists():
             pixmap = QPixmap(str(cache_file_path))
