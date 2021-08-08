@@ -26,7 +26,7 @@ from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
-from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -182,6 +182,12 @@ class UnknownCardRow:
     size: int
     path: pathlib.Path
 
+    @classmethod
+    def from_cache_content(cls, image: ImageCacheContent):
+        return cls(
+            image.scryfall_id, image.is_front, image.absolute_path.stat().st_size, image.absolute_path
+        )
+
     def data(self, column: int, role: int):
         if column == UnknownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.scryfall_id
@@ -234,10 +240,10 @@ class UnknownCardImageModel(QAbstractTableModel):
             return row.data(index.column(), role)
         return None
 
-    def add_row(self, scryfall_id: str, is_front: bool, file_path: pathlib.Path):
+    def add_row(self, image: ImageCacheContent):
         position = self.rowCount()
         self.beginInsertRows(INVALID, position, position)
-        row = UnknownCardRow(scryfall_id, is_front, file_path.stat().st_size, file_path)
+        row = UnknownCardRow.from_cache_content(image)
         self._data.append(row)
         self.endInsertRows()
 
@@ -287,12 +293,11 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
-        images_in_cache = self.image_db.get_disk_cache_content()
-        for scryfall_id, is_front, file_path in images_in_cache:
-            if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)) is not None:
-                self.card_image_model.add_row(card, file_path)
+        for image in self.image_db.read_disk_cache_content():
+            if (card := self.card_db.get_card_with_scryfall_id(image.scryfall_id, image.is_front)) is not None:
+                self.card_image_model.add_row(card, image.absolute_path)
             else:
-                self.unknown_image_model.add_row(scryfall_id, is_front, file_path)
+                self.unknown_image_model.add_row(image)
         self._apply_filter()
 
     def _apply_filter(self):
@@ -397,7 +402,7 @@ class CacheCleanupWizard(QWizard):
         super(CacheCleanupWizard, self).accept()
         logger.info("User accepted the wizard, deleting entries from the cache.")
         self.image_db.delete_disk_cache_entries((
-            (scryfall_id, is_front)
+            ImageKey(scryfall_id, is_front)
             for scryfall_id, is_front, _ in self.field("selected-images")
         ))
         self._clear_tooltip_cache()

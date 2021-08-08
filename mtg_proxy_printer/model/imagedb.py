@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import dataclasses
 import io
 import queue
 import itertools
@@ -41,10 +41,25 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",
+    "CacheContent",
+    "ImageKey",
 ]
 
-ImageKey = typing.Tuple[str, bool]
-CacheContent = typing.Tuple[str, bool, pathlib.Path]
+
+@dataclasses.dataclass(frozen=True)
+class ImageKey:
+    scryfall_id: str
+    is_front: bool
+
+
+@dataclasses.dataclass(frozen=True)
+class CacheContent(ImageKey):
+    absolute_path: pathlib.Path
+
+    def as_key(self):
+        return ImageKey(self.scryfall_id, self.is_front)
+
+
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 IMAGE_SIZE = QSize(745, 1040)
 
@@ -132,7 +147,7 @@ class ImageDatabase(QObject):
             self.queue.put((card, count))
         self.queue.put((None, False))
 
-    def get_disk_cache_content(self) -> typing.List[CacheContent]:
+    def read_disk_cache_content(self) -> typing.List[CacheContent]:
         """
         Returns all entries currently in the hard disk image cache.
 
@@ -141,7 +156,7 @@ class ImageDatabase(QObject):
         result: typing.List[CacheContent] = []
         for directory, is_front in ((self.db_path/"front", True), (self.db_path/"back", False)):
             result += (
-                (path.stem, is_front, path)
+                CacheContent(path.stem, is_front, path)
                 for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
         return result
 
@@ -152,16 +167,18 @@ class ImageDatabase(QObject):
         :returns: List with removed paths.
         """
         removed: PathSizeList = []
-        for scryfall_id, is_front in images:
+        for image in images:
+            is_front = image.is_front
+            scryfall_id = image.scryfall_id
             path = self.db_path/("front" if is_front else "back")/scryfall_id[:2]/f"{scryfall_id}.png"
             if path.is_file():
                 logger.debug(f"Removing image: {path}")
                 size_bytes = path.stat().st_size
                 path.unlink()
                 removed.append((path, size_bytes))
-                self.images_on_disk.remove((scryfall_id, is_front))
+                self.images_on_disk.remove(image)
             else:
-                logger.warning(f"Trying to remove image not in the cache. Not present: {scryfall_id=}, {is_front=}")
+                logger.warning(f"Trying to remove image not in the cache. Not present: {image}")
         logger.info(f"Removed {len(removed)} images from the card cache")
         return removed
 
@@ -207,8 +224,7 @@ class ImageDownloader(QObject):
     def scan_disk_image_cache_then_process_queue(self):
         logger.info("Reading all image IDs of images stored on disk.")
         self.image_database.images_on_disk.update(
-            (scryfall_id, is_front)
-            for scryfall_id, is_front, _ in self.image_database.get_disk_cache_content()
+            image.as_key() for image in self.image_database.read_disk_cache_content()
         )
         self.process_queue()
 
@@ -247,7 +263,7 @@ class ImageDownloader(QObject):
         return reason_str
 
     def get_image_synchronous(self, card: Card):
-        key: ImageKey = card.scryfall_id, card.is_front
+        key = ImageKey(card.scryfall_id, card.is_front)
         try:
             pixmap = self.image_database.loaded_images[key]
         except KeyError:
