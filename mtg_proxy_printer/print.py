@@ -79,6 +79,7 @@ class PDFPrinter(QPdfWriter):
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
         self.setResolution(document.DPI.to_tuple()[0])
+        self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.renderer = PageRenderer(parent, render_background=False)
