@@ -20,6 +20,8 @@
 
 - Fixed duplication of imported deck list entries when going back and forward in the deck
   list import wizard after viewing the parsing result. (Bug was introduced in [version 0.12.0](#v0_12_0).)
+- The page preview now renders correctly after changing paper sizes in the settings.
+
 
 # Version 0.12.1 (2021-07-31) <a name="v0_12_1"></a>
 
