@@ -15,7 +15,7 @@
 import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
 from PyQt5.QtGui import QColor, QPixmap
 import pint
 
@@ -192,20 +192,26 @@ class PageScene(QGraphicsScene):
 
 class PageRenderer(QGraphicsView):
 
-    def __init__(self, *args, **kwargs):
-        super(PageRenderer, self).__init__(*args, **kwargs)
+    def __init__(self, parent: QWidget = None, *, render_background: bool = True):
+        super(PageRenderer, self).__init__(parent=parent)
+        self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
+        self.document: Document = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
-        self.setScene(PageScene(document, True, self.get_document_page_size(), self))
+        self.document = document
+        self.setScene(PageScene(document, self.render_background, self.get_document_page_size(), self))
 
-    @staticmethod
-    def get_document_page_size() -> QRectF:
-        document_settings = settings["documents"]
-        height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
-        width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
+    def get_document_page_size(self) -> QRectF:
+        if self.document is None:
+            document_settings = settings["documents"]
+            height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
+            width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
+        else:
+            height: pint.Quantity = self.document.page_layout.page_height * unit_registry.millimeter
+            width: pint.Quantity = self.document.page_layout.page_width * unit_registry.millimeter
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
@@ -219,3 +225,14 @@ class PageRenderer(QGraphicsView):
     def on_resize_event_triggered(self):
         logger.debug("Resize event: Scaling the page view to fit.")
         self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+
+    @pyqtSlot()
+    def on_settings_changed(self):
+        new_page_size = self.get_document_page_size()
+        if self.scene().sceneRect() != new_page_size:
+            logger.debug("Page size changed. Adjusting PageScene dimensions")
+            self.scene().setSceneRect(new_page_size)
+            self.scene().redraw()
+            # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
+            # in the available space or is now too small, so resize the scene to fill the available space.
+            self.on_resize_event_triggered()
