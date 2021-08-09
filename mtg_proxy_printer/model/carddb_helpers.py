@@ -23,7 +23,6 @@ logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "clear_database",
     "migrate_card_database",
 ]
 MigrationScript = typing.Callable[[sqlite3.Connection], None]
@@ -32,7 +31,16 @@ MigrationScript = typing.Callable[[sqlite3.Connection], None]
 def _migrate_9_to_10(db: sqlite3.Connection):
     # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
     # the database using fresh data from Scryfall.
-    clear_database(db, ignore_errors=True)
+    tables_to_clear = [
+        "CardFace",
+        "FaceName",
+        "Card",
+        '"Set"',
+        "PrintLanguage",
+        "UsedDownloadSettings",
+    ]
+    for table in tables_to_clear:
+        db.execute(f"DELETE FROM {table}")
     db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
     db.execute("DROP VIEW AllPrintings")
     db.execute(textwrap.dedent(r"""
@@ -210,37 +218,3 @@ def migrate_card_database(db: sqlite3.Connection):
     if needs_update:
         current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
         logger.info(f"Finished database migrations. {current_schema_version=}")
-
-
-def clear_database(db: sqlite3.Connection, parent=None, ignore_errors: bool = False):
-    """
-    Clears all cards in the database. This allows re-populating with fresh data from Scryfall.
-    This does not clear the LastDatabaseUpdate table to keep the history of performed updates.
-    """
-    # Implementation note: Specify all tables by hand, traversing the FOREIGN KEY constraint inducing DAG from
-    # leaves to roots. This allows SQLite to possibly use the TRUNCATE optimization
-    # (https://sqlite.org/lang_delete.html#the_truncate_optimization) and not spend a whole minute clearing
-    # the tables in a way that doesn’t break foreign keys during the process.
-    logger.info("Clearing current database content")
-    tables_to_clear = [
-        "CardFace",
-        "FaceName",
-        "Card",
-        '"Set"',
-        "PrintLanguage",
-        "UsedDownloadSettings",
-    ]
-    for table in tables_to_clear:
-        logger.debug(f"Clearing table {table}")
-        try:
-            # When this is called from a migration task that requires clearing the database, tables in the table list
-            # that are not present in the outdated database may cause sqlite3.OperationalError: no such table: <name>
-            # Catch this and ignore these errors if ignore_errors is True
-            db.execute(f"DELETE FROM {table}\n")
-        except sqlite3.OperationalError:
-            if not ignore_errors:
-                raise
-        if parent is not None:
-            if not parent.should_run:
-                logger.info("Aborting clear_database()")
-                break

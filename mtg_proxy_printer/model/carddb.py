@@ -25,7 +25,7 @@ from itertools import filterfalse
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 import delegateto
-from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, clear_database
+from mtg_proxy_printer.model.carddb_helpers import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
@@ -51,7 +51,6 @@ __all__ = [
     "MTGSet",
     "Card",
     "CardDatabase",
-    "clear_database",
 ]
 
 
