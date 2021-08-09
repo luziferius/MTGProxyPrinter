@@ -81,7 +81,8 @@ class PDFPrinter(QPdfWriter):
         self.setResolution(document.DPI.to_tuple()[0])
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
-        self.scene = PageScene(document, False, PageRenderer.get_document_page_size(), parent=self)
+        self.renderer = PageRenderer(parent)
+        self.renderer.set_document(document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def print_document(self):
@@ -98,9 +99,10 @@ class PDFPrinter(QPdfWriter):
 
         for index in range(first_index, last_index):
             logger.debug(f"Rendering page {index+1}/{self.document.rowCount()}")
-            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            self.scene.redraw()
-            self.scene.render(self.painter)
+            scene = self.renderer.scene()
+            scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
+            scene.redraw()
+            scene.render(self.painter)
             if index + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()
@@ -109,10 +111,11 @@ class PDFPrinter(QPdfWriter):
 
 class Renderer(QObject):
 
-    def __init__(self, document: Document, *args, **kwargs):
-        super(Renderer, self).__init__(*args, **kwargs)
+    def __init__(self, document: Document, parent: QObject = None):
+        super(Renderer, self).__init__(parent)
         self.document = document
-        self.scene = PageScene(document, False, PageRenderer.get_document_page_size(), parent=self)
+        self.renderer = PageRenderer()
+        self.renderer.set_document(document)
 
     @pyqtSlot(QPrinter)
     def print_document(self, printer: QPrinter):
@@ -122,9 +125,10 @@ class Renderer(QObject):
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")
-            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            self.scene.redraw()
-            self.scene.render(painter)
+            scene = self.renderer.scene()
+            scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
+            scene.redraw()
+            scene.render(painter)
             if index+1 < page_count:
                 printer.newPage()
         painter.end()
