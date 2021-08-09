@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
@@ -51,7 +51,17 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    printer.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
+    page_width = document.page_layout.page_width
+    page_height = document.page_layout.page_height
+    if page_width > page_height:
+        logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
+        printer.setPageOrientation(QPageLayout.Landscape)
+        # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
+        # resulting in correct values.
+        page_size = QSizeF(page_height, page_width)
+    else:
+        page_size = QSizeF(page_width, page_height)
+    printer.setPageSizeMM(page_size)
     printer.setResolution(document.DPI.to_tuple()[0])
     # Disable duplex printing by default
     printer.setDoubleSidedPrinting(False)
