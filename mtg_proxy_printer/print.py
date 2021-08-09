@@ -81,7 +81,7 @@ class PDFPrinter(QPdfWriter):
         self.setResolution(document.DPI.to_tuple()[0])
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
-        self.renderer = PageRenderer(parent)
+        self.renderer = PageRenderer(parent, render_background=False)
         self.renderer.set_document(document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -114,7 +114,7 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.renderer = PageRenderer()
+        self.renderer = PageRenderer(render_background=False)
         self.renderer.set_document(document)
 
     @pyqtSlot(QPrinter)

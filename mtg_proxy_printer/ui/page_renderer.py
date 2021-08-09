@@ -15,7 +15,7 @@
 import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
 from PyQt5.QtGui import QColor, QPixmap
 import pint
 
@@ -192,8 +192,9 @@ class PageScene(QGraphicsScene):
 
 class PageRenderer(QGraphicsView):
 
-    def __init__(self, *args, **kwargs):
-        super(PageRenderer, self).__init__(*args, **kwargs)
+    def __init__(self, parent: QWidget = None, *, render_background: bool = True):
+        super(PageRenderer, self).__init__(parent=parent)
+        self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -201,7 +202,7 @@ class PageRenderer(QGraphicsView):
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(PageScene(document, True, self.get_document_page_size(), self))
+        self.setScene(PageScene(document, self.render_background, self.get_document_page_size(), self))
 
     def get_document_page_size(self) -> QRectF:
         if self.document is None:
