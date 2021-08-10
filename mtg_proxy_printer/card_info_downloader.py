@@ -56,6 +56,14 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 socket.setdefaulttimeout(5)
 
 
+class CardFaceData(typing.NamedTuple):
+    """Information unique to each card face."""
+    scryfall_id: str
+    printed_face_name: str
+    image_uri: str
+    is_front: bool
+
+
 class CardInfoDownloader(QObject):
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
@@ -328,8 +336,8 @@ def _remove_card(model: CardDatabase, card: JSONType):
     except KeyError:
         # Card has no image URIs, so skip it
         return
-    for _, name, _, is_front in faces:
-        parameters = (name, lang, set_code, oracle_id, is_front, collector_number)
+    for face in faces:
+        parameters = (face.printed_face_name, lang, set_code, oracle_id, face.is_front, collector_number)
         model.db.execute(
             'DELETE FROM CardFace '
             'WHERE (face_name_id, set_id, card_id, is_front, collector_number) IN '
@@ -392,6 +400,10 @@ def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri:
 
 @functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
+    """
+    Insert the given, printed face name into the database, if it not already stored. Returns the integer
+    PRIMARY KEY face_name_id, used to reference the inserted face name.
+    """
     parameters = (printed_name, language_id)
     if result := model.db.execute(
             'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n', parameters).fetchone():
@@ -424,8 +436,8 @@ def _should_skip_card(
         card: JSONType, download_enabled: typing.Dict[str, bool],
         skip_cards_banned_in_formats: typing.FrozenSet[str]) -> bool:
     """Determine, if the given card should be included based on the application settings"""
-    legalities = card["legalities"]
-    banned_in_formats = frozenset(format_ for format_, status in legalities.items() if status == "banned")
+    legalities: typing.Dict[str, str] = card["legalities"]
+    banned_in_formats = frozenset(magic_format for magic_format, legality in legalities.items() if legality == "banned")
 
     return any((
         # Racism filter
@@ -444,11 +456,11 @@ def _should_skip_card(
         # Token cards
         card["layout"] == "token" and not download_enabled["download-token"],
         # Specific format legality.
-        banned_in_formats.intersection(skip_cards_banned_in_formats),
+        banned_in_formats.isdisjoint(skip_cards_banned_in_formats),
     ))
 
 
-def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str, bool], None, None]:
+def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None]:
     """
     Yields a tuple (Scryfall_id, printed_name, PNG_image_URI, is_front) for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
@@ -466,7 +478,10 @@ def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, s
             }
         ]
     for face in faces:  # type: JSONType
-        yield card["id"], _get_card_name(face), (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri)
+        item = CardFaceData(
+            card["id"], _get_card_name(face),
+            (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri))
+        yield item
 
 
 def _get_png_image_uri(card: JSONType, face: JSONType):
