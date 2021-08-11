@@ -48,7 +48,7 @@ modification, are permitted provided that the following conditions are met:
   endorse or promote products derived from this software without specific
   prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND ANY
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS “AS IS” AND ANY
 EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE REGENTS AND CONTRIBUTORS BE LIABLE FOR ANY
@@ -507,6 +507,8 @@ apply, that proxy's public statement of acceptance of any version is
 permanent authorization for you to choose that version for the
 Library.
 
+&nbsp;
+
 # PyQt5
 
 Copyright (c) [Riverbank Computing Limited](https://www.riverbankcomputing.com/).
@@ -517,6 +519,7 @@ GNU General Public License version 3 as published by the Free Software Foundatio
 See LICENSE.md (when viewing from the source code archive) or the License tab in the
 MTGProxyPrinter About dialog for details.
 
+&nbsp;
 
 # cx_Freeze
 
