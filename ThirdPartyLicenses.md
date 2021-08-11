@@ -506,3 +506,13 @@ whether future versions of the GNU Lesser General Public License shall
 apply, that proxy's public statement of acceptance of any version is
 permanent authorization for you to choose that version for the
 Library.
+
+# PyQt5
+
+Copyright (c) [Riverbank Computing Limited](https://www.riverbankcomputing.com/).
+
+The included copy is licensed under the terms of the 
+GNU General Public License version 3 as published by the Free Software Foundation.
+
+See LICENSE.md (when viewing from the source code archive) or the License tab in the
+MTGProxyPrinter About dialog for details.
