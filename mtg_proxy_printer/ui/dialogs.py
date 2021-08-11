@@ -17,7 +17,7 @@ import pathlib
 import sys
 
 from PyQt5.QtCore import QFile, pyqtSlot
-from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser
+from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QTabWidget
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.model.carddb
@@ -148,7 +148,7 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
 
     @pyqtSlot()
     def show_changelog(self):
-        self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QWidget, "tab_changelog"))
+        self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QTextBrowser, "changelog_text_browser"))
         self.show()
 
     @staticmethod
