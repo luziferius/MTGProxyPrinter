@@ -38,7 +38,8 @@ def parse_args() -> Namespace:
         help="'All cards' bulk data export from the Scryfall API. May be plain-text JSON or GZIP compressed JSON.")
     parser.add_argument(
         "-k", "--keep", action="store_true",
-        help="Re-use an existing database, performing an in-place card data update, instead of populating an empty, new database.")
+        help="Re-use an existing database, performing an in-place card data update, "
+             "instead of populating an empty, new database.")
     return parser.parse_args()
 
 

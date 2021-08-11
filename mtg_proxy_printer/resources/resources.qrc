@@ -17,6 +17,10 @@
 
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>
+    <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
+    cx_Freeze, because this bundles everything in one package. -->
+    <file alias="ThirdPartyLicenses.md">../../ThirdPartyLicenses.md</file>
+    <file alias="License.md">../../LICENSE.md</file>
 
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
