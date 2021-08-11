@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Show copyright notices of all used software libraries in the 
+
 # Version 0.13.0 (2021-08-09) <a name="v0_13_0"></a>
 
 ## Implemented features
