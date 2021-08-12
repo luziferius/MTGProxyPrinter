@@ -17,7 +17,7 @@ import pathlib
 import sys
 
 from PyQt5.QtCore import QFile, pyqtSlot
-from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QTabWidget
+from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.model.carddb

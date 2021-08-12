@@ -23,7 +23,7 @@ from PyQt5.QtPrintSupport import QPrinter
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
+from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger

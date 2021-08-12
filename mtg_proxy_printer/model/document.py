@@ -214,11 +214,11 @@ class Document(QAbstractItemModel):
         """
         current_page_position = self.find_page_list_index(self.currently_edited_page)
         if len(self.currently_edited_page) < self.total_cards_per_page:
-            copies -= (added_cards := self._add_card(current_page_position, card, copies))
+            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < self.rowCount():
-            copies -= (added_cards := self._add_card(current_page_position, card, copies))
+            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
             current_page_position += 1
         if copies > 0:
@@ -227,11 +227,11 @@ class Document(QAbstractItemModel):
             # Append each new page to the end. If the added amount is not divisible by the page_capacity, this causes
             # the last-added page to be non-full, instead of the first one in document page order.
             self.add_page()
-            copies -= (added_cards := self._add_card(current_page_position, card, copies))
+            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
             current_page_position += 1
 
-    def _add_card(self, page_number: int, card: Card, count: int = 1) -> int:
+    def add_card_to_page(self, page_number: int, card: Card, count: int = 1) -> int:
         """
         Adds the given card up to count times to the given page. Returns the number of cards actually added.
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
@@ -845,7 +845,7 @@ class DocumentLoader(QObject):
 
     @pyqtSlot(Card)
     def _on_add_card(self, card: Card):
-        self.document._add_card(len(self.document.pages)-1, card)
+        self.document.add_card_to_page(len(self.document.pages) - 1, card)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
