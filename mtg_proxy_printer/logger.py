@@ -19,7 +19,8 @@ import logging.handlers
 import pathlib
 import sys
 
-from .meta_data import PROGRAMNAME, data_directories
+from .meta_data import PROGRAMNAME
+from .app_dirs import data_directories
 import mtg_proxy_printer.settings
 
 root_logger = logging.getLogger(PROGRAMNAME)

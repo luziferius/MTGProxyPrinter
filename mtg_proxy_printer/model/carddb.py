@@ -25,6 +25,8 @@ from itertools import filterfalse
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 import delegateto
+
+import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb_helpers import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
@@ -38,7 +40,7 @@ del get_logger
 StringList = typing.List[str]
 OptionalString = typing.Optional[str]
 DEFAULT_DATABASE_LOCATION = pathlib.Path(
-    mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
+    mtg_proxy_printer.app_dirs.data_directories.user_cache_dir,
     "CardDataCache.sqlite3"
 )
 

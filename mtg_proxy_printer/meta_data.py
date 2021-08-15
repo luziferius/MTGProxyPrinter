@@ -13,12 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from appdirs import AppDirs
-
 PROGRAMNAME = "MTGProxyPrinter"
 __version__ = "0.13.0"
 COPYRIGHT = "(C) 2019-2021 Thomas Hess"
-
-data_directories = AppDirs(PROGRAMNAME)
-
-del AppDirs
