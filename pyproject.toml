@@ -2,6 +2,7 @@
 requires = [
     "setuptools>=42",
     "wheel",
-    "PyQt5"
+    "PyQt5",
+    "build",
 ]
 build-backend = "setuptools.build_meta"
