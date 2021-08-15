@@ -5,7 +5,7 @@
 from pathlib import Path
 import subprocess
 
-from setuptools import setup, find_packages
+from setuptools import setup
 import setuptools.command.build_py
 
 main_package = "mtg_proxy_printer"
