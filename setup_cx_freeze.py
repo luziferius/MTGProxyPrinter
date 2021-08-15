@@ -19,11 +19,24 @@ It uses the existing setup.py and extends the parameters to allow building stand
 """
 import atexit
 import pathlib
+import re
 import sys
 
 from cx_Freeze import setup, Executable
 
 import setup as setup_py
+
+meta_data = pathlib.Path(f"{setup_py.main_package}/meta_data.py").read_text()
+version = re.search(
+    r"""^__version__\s*=\s*"(.*)"\s*""",
+    meta_data,
+    re.M
+    ).group(1)
+project_name = re.search(
+    r"""^PROGRAMNAME\s*=\s*"(.*)"\s*""",
+    meta_data,
+    re.M
+    ).group(1)
 
 
 base = "Win32GUI" if sys.platform == "win32" else None
@@ -44,7 +57,7 @@ setup_py.setup_parameters["options"] = {
         # When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
         # causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
         "upgrade_code": "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}",
-        "target_name": f"{setup_py.project_name}-w64-{setup_py.version}.msi",
+        "target_name": f"{project_name}-w64-{version}.msi",
     },
     "build_exe": {
         "packages": [

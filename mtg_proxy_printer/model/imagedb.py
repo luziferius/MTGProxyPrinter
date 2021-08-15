@@ -27,6 +27,7 @@ import urllib.error
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersistentModelIndex
 from PyQt5.QtGui import QPixmap, QColor
 
+import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.model.carddb import Card
@@ -36,7 +37,7 @@ logger = get_logger(__name__)
 del get_logger
 
 DEFAULT_DATABASE_LOCATION = pathlib.Path(
-    mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
+    mtg_proxy_printer.app_dirs.data_directories.user_cache_dir,
     "CardImages"
 )
 __all__ = [

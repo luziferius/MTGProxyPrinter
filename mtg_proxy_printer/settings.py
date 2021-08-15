@@ -19,6 +19,7 @@ import pathlib
 import re
 import typing
 
+import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 
 __all__ = [
@@ -31,7 +32,7 @@ __all__ = [
 ]
 
 
-config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
+config_file_path = pathlib.Path(mtg_proxy_printer.app_dirs.data_directories.user_config_dir, "MTGProxyPrinter.ini")
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.
