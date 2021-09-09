@@ -44,21 +44,6 @@ setup_parameters = dict(
     cmdclass={
         'build_py': BuildWithQtResources,
     },
-    extras_require={
-        "dev": [
-            'cx_Freeze >= 6.6',
-            'pytest-runner',
-            'pytest',
-            'pytest-cov',
-            'pytest-xdist',
-            'pytest-timeout',
-            'pytest-qt',
-            'PyHamcrest >= 1.8.1',
-            'PyQt5-stubs',  # Install the stubs used for type hinting when creating the development environment
-            "sip",
-            "build",
-        ]
-    },
     test_suite="pytest",
 )
 
