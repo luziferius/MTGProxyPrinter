@@ -14,14 +14,16 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+from unittest.mock import patch
 import typing
 
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
-from .helpers import create_new_card_database_with_json_card, assert_model_is_empty
+from .helpers import create_new_card_database_with_json_card, assert_model_is_empty, populate_database, load_json
 
 
 class DatabaseCardFaceData(typing.NamedTuple):
@@ -318,4 +320,21 @@ def test_download_filters(test_case: TestCaseData, filter_name: str, filter_sett
 
 def test_import_card_skips_import_of_card_with_missing_image():
     model = create_new_card_database_with_json_card("missing_image_double_faced_card")
+    assert_model_is_empty(model)
+
+
+def test_re_import_with_changed_download_filter_removes_card():
+    test_case, filter_name = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
+        "oversized_card", (
+            FaceData("Atraxa, Praetors' Voice", True, "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
+        ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api"),
+        "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb"
+    ), "download-oversized-cards"
+    # Pass 1: Populate the database and include the card. The card should be in the database afterwards
+    model = create_new_card_database_with_json_card(test_case.json_name, filter_name, "True")
+    assert_successful_import(model, test_case)
+    # Pass 2: Re-Populate the database, but exclude the card now.
+    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {filter_name: "False"}):
+        populate_database(model, load_json(test_case.json_name))
+    # The card should not be in the database.
     assert_model_is_empty(model)
