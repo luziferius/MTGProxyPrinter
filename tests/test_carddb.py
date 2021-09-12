@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.document import Document
 
 from .helpers import assert_model_is_empty, fill_card_database_with_multiple_cards, fill_card_database_with_json_card
@@ -163,3 +163,65 @@ def _get_card_from_model(card_db: CardDatabase, scryfall_id: str, is_front: bool
         "is_front": equal_to(is_front),
     }), "Wrong card returned")
     return card
+
+
+@pytest.mark.parametrize("json_name, scryfall_id, expected", [
+    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
+    ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
+])
+def test_card_is_oversized(card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+    """
+    Tests that all methods creating Card instances correctly set is_oversized attribute.
+    """
+    fill_card_database_with_json_card(card_db, json_name)
+    assert_that(
+        card_db.get_card_with_scryfall_id(scryfall_id, True),
+        has_property("is_oversized", expected)
+    )
+
+
+@pytest.mark.parametrize("json_name, scryfall_id, expected", [
+    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
+    ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
+])
+def test_translate_card__card_attribute_is_oversized(
+        card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+    fill_card_database_with_json_card(card_db, json_name)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+    # Use the private method to skip the internal shortcut in translate_card()
+    # that skips requested same-language translations.
+    assert_that(
+        card_db._translate_card(card, "en"), all_of(
+            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
+            has_property("is_oversized", expected),
+        ))
+
+
+@pytest.mark.parametrize("json_name, scryfall_id, expected", [
+    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
+    ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
+])
+def test_find_all_translated_printings__card_attribute_is_oversized(
+        card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+    fill_card_database_with_json_card(card_db, json_name)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+    cards = card_db.find_all_translated_printings(card, "en")
+    assert_that(cards, has_length(1))
+    assert_that(
+        cards[0],  all_of(
+            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
+            has_property("is_oversized", expected),
+        ))
+
+
+@pytest.mark.parametrize("json_name, scryfall_id, expected", [
+    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
+    ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
+])
+def test_get_cards_from_data__card_attribute_is_oversized(
+        card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+    fill_card_database_with_json_card(card_db, json_name)
+    card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=True)
+    cards = card_db.get_cards_from_data(card_data)
+    assert_that(cards, has_length(1))
+    assert_that(cards[0], has_property("is_oversized", expected))
