@@ -14,16 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
-from unittest.mock import patch
 import typing
 
 from hamcrest import *
 import pytest
 
-import mtg_proxy_printer.settings
-import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.card_info_downloader
-from .helpers import create_new_card_database_with_json_card, assert_model_is_empty, populate_database, load_json
+from mtg_proxy_printer.model.carddb import CardDatabase
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -125,73 +122,73 @@ class TestCaseData:
         ]
 
 
-def _assert_card_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks Oracle_id"""
     assert_that(
-        model.db.execute('SELECT oracle_id FROM Card').fetchall(),
+        card_db.db.execute('SELECT oracle_id FROM Card').fetchall(),
         contains_inanyorder(*test_case.db_card()),
         f"Card relation contains unexpected data")
 
 
-def _assert_print_language_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_print_language_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks language"""
     assert_that(
-        model.db.execute('SELECT "language" FROM PrintLanguage').fetchall(),
+        card_db.db.execute('SELECT "language" FROM PrintLanguage').fetchall(),
         contains_inanyorder(*test_case.db_print_language()),
         f"PrintLanguage relation contains unexpected data")
 
 
-def _assert_set_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks "set", set_name, scryfall_set_uri"""
     assert_that(
-        model.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
+        card_db.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
         contains_inanyorder(*test_case.db_set()),
         f"Set relation contains unexpected data")
 
 
-def _assert_face_name_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks card_name"""
     assert_that(
-        model.db.execute('SELECT card_name FROM FaceName').fetchall(),
+        card_db.db.execute('SELECT card_name FROM FaceName').fetchall(),
         contains_inanyorder(*test_case.db_face_name()),
         f"FaceName relation contains unexpected data")
 
 
-def _assert_printing_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks collector_number, scryfall_id, is_oversized, highres_image"""
     assert_that(
-        model.db.execute('SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing').fetchall(),
+        card_db.db.execute('SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing').fetchall(),
         contains_inanyorder(*test_case.db_printing()),
         f"Printing relation contains unexpected data")
 
 
-def _assert_card_face_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks png_image_uri, is_front"""
     assert_that(
-        model.db.execute(
+        card_db.db.execute(
             "SELECT png_image_uri, is_front FROM CardFace").fetchall(),
         contains_inanyorder(*test_case.db_card_face()),
         "CardFace relation contains unexpected data")
 
 
-def _assert_all_printings_contains(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
+def _assert_all_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri, is_front"""
     assert_that(
-        model.db.execute(
+        card_db.db.execute(
             'SELECT card_name, set_code, "language", collector_number, scryfall_id, highres_image, '
             'png_image_uri, is_front, is_oversized FROM AllPrintings').fetchall(),
         contains_inanyorder(*test_case.db_all_printings()),
         "CardFace relation contains unexpected data")
 
 
-def assert_successful_import(model: mtg_proxy_printer.model.carddb.CardDatabase, test_case: TestCaseData):
-    _assert_print_language_contains(model, test_case)
-    _assert_card_contains(model, test_case)
-    _assert_set_contains(model, test_case)
-    _assert_printing_contains(model, test_case)
-    _assert_face_name_contains(model, test_case)
-    _assert_card_face_contains(model, test_case)
-    _assert_all_printings_contains(model, test_case)
+def assert_successful_import(card_db: CardDatabase, test_case: TestCaseData):
+    _assert_print_language_contains(card_db, test_case)
+    _assert_card_contains(card_db, test_case)
+    _assert_set_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case)
+    _assert_face_name_contains(card_db, test_case)
+    _assert_card_face_contains(card_db, test_case)
+    _assert_all_printings_contains(card_db, test_case)
 
 
 def generate_test_cases_for_test_card_import():
@@ -225,9 +222,9 @@ def generate_test_cases_for_test_card_import():
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
-def test_card_import(test_case: TestCaseData):
-    model = create_new_card_database_with_json_card(test_case.json_name)
-    assert_successful_import(model, test_case)
+def test_card_import(card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(card_db, test_case.json_name)
+    assert_successful_import(card_db, test_case)
 
 
 def generate_test_cases_for_test_download_filters():
@@ -331,20 +328,20 @@ def generate_test_cases_for_test_download_filters():
 
 @pytest.mark.parametrize("filter_setting", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_download_filters())
-def test_download_filters(test_case: TestCaseData, filter_name: str, filter_setting: bool):
-    model = create_new_card_database_with_json_card(test_case.json_name, filter_name, str(filter_setting))
+def test_download_filters(card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
+    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, str(filter_setting))
     if filter_setting:
-        assert_successful_import(model, test_case)
+        assert_successful_import(card_db, test_case)
     else:
-        assert_model_is_empty(model)
+        assert_model_is_empty(card_db)
 
 
-def test_import_card_skips_import_of_card_with_missing_image():
-    model = create_new_card_database_with_json_card("missing_image_double_faced_card")
-    assert_model_is_empty(model)
+def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "missing_image_double_faced_card")
+    assert_model_is_empty(card_db)
 
 
-def test_re_import_with_changed_download_filter_removes_card():
+def test_re_import_with_changed_download_filter_removes_card(card_db: CardDatabase):
     test_case, filter_name = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
@@ -352,10 +349,9 @@ def test_re_import_with_changed_download_filter_removes_card():
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
     ), "download-oversized-cards"
     # Pass 1: Populate the database and include the card. The card should be in the database afterwards
-    model = create_new_card_database_with_json_card(test_case.json_name, filter_name, "True")
-    assert_successful_import(model, test_case)
+    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "True")
+    assert_successful_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
-    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {filter_name: "False"}):
-        populate_database(model, load_json(test_case.json_name))
+    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
     # The card should not be in the database.
-    assert_model_is_empty(model)
+    assert_model_is_empty(card_db)

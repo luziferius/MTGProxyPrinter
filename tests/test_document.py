@@ -22,15 +22,11 @@ import pytest
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Document, CardContainer
 
-from .helpers import create_new_card_database_with_json_card
-
-
-@pytest.fixture()
-def card_db() -> CardDatabase:
-    return create_new_card_database_with_json_card("regular_english_card")
+from .helpers import fill_card_database_with_json_card
 
 
 def test_document_two_overflow_events_only_add_one_new_page(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     document.add_card(card, document.total_cards_per_page)
@@ -41,6 +37,7 @@ def test_document_two_overflow_events_only_add_one_new_page(card_db: CardDatabas
 
 
 def test_clear_database_not_clearing_last_image_use_timestamps(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     # Add two copies. Should only count as one usage
@@ -58,6 +55,7 @@ def test_clear_database_not_clearing_last_image_use_timestamps(card_db: CardData
 
 
 def test_document_is_created_empty(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     document = Document(card_db, MagicMock())
     assert_that(document.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
     assert_that(document.total_cards_per_page, is_(equal_to(document.compute_page_card_capacity())))
@@ -69,6 +67,7 @@ def test_document_is_created_empty(card_db: CardDatabase):
 
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
 def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())
     document.add_card(card, pages_to_fill*document.total_cards_per_page)
@@ -113,6 +112,7 @@ def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
 
 
 def test_remove_pages_removes_middle_page(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     document = Document(card_db, MagicMock())
     pages_to_create = 10
     for _ in range(pages_to_create-1):  # Create one less, because the document has one page by default
@@ -130,7 +130,8 @@ def test_remove_pages_removes_middle_page(card_db: CardDatabase):
 
 
 @pytest.mark.timeout(0.5)
-def test_compacting_document(card_db):
+def test_compacting_document(card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     pages_to_fill = 5
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())

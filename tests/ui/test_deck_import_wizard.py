@@ -17,7 +17,6 @@ import typing
 from unittest.mock import MagicMock
 
 from hamcrest import *
-import pytest
 from pytestqt.qtbot import QtBot
 
 from PyQt5.QtCore import QStringListModel
@@ -27,18 +26,14 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser
 
-from tests.helpers import create_new_card_database_with_json_card
+from tests.helpers import fill_card_database_with_json_card
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
 
 
-@pytest.fixture()
-def card_db() -> CardDatabase:
-    return create_new_card_database_with_json_card("regular_english_card")
-
-
 def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot, card_db: CardDatabase):
+    fill_card_database_with_json_card(card_db, "regular_english_card")
     language_model = QStringListModel(card_db.get_all_languages(), parent=None)
     wizard = DeckImportWizard(card_db, MagicMock(), language_model)
     deck_list = "1 Fury Sliver"
