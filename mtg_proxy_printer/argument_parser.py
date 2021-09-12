@@ -18,7 +18,7 @@ import dataclasses
 import pathlib
 import typing
 
-import mtg_proxy_printer.meta_data
+from . import meta_data
 
 __all__ = [
     "parse_args",
@@ -33,14 +33,14 @@ class Namespace:
 
 
 def generate_argument_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(mtg_proxy_printer.meta_data.PROGRAMNAME)
+    parser = argparse.ArgumentParser(meta_data.PROGRAMNAME)
     parser.add_argument(
         "file", action="store", nargs="?", type=pathlib.Path,
         help="Document to open at program start"
     )
     parser.add_argument(
         "-v", "--version", action="version",
-        version=f"{mtg_proxy_printer.meta_data.PROGRAMNAME} Version {mtg_proxy_printer.meta_data.__version__}",
+        version=f"{meta_data.PROGRAMNAME} Version {meta_data.__version__}",
         help="Show program version and exit"
     )
     return parser

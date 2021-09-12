@@ -199,9 +199,11 @@ class CardDatabase:
         """Checks, if the given card data represents a unique card printing"""
         query = 'SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()\n' \
                 'FROM CardFace\n' \
+                'JOIN Printing USING (printing_id)\n' \
+                'JOIN "Set" USING (set_id)\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
-                'JOIN "Set" USING (set_id)\n'
+
 
         where_clause = 'WHERE "language" = ?\n'
         parameters = [card.language]
@@ -230,10 +232,11 @@ class CardDatabase:
         query = 'SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front, ' \
                 'oracle_id, highres_image -- get_cards_from_data()\n' \
                 'FROM CardFace\n' \
+                'JOIN Printing USING (printing_id)\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
                 'JOIN "Set" USING (set_id)\n' \
-                'JOIN Card USING (card_id)'
+                'JOIN Card USING (card_id)\n'
 
         where_clause = 'WHERE "language" = ?\n'
         parameters = [card.language]
@@ -282,6 +285,7 @@ class CardDatabase:
         # in the AddCardWidget results in a duplicated entry in the collector number selection list.
         query = 'SELECT DISTINCT collector_number -- find_collector_numbers_matching()\n' \
                 'FROM CardFace\n' \
+                'JOIN Printing USING (printing_id)\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
                 'JOIN "Set" USING (set_id)\n' \
@@ -302,8 +306,9 @@ class CardDatabase:
         :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = 'SELECT DISTINCT "set", set_name  -- find_sets_matching()\n' \
-                'FROM "Set"\n' \
-                'JOIN CardFace USING (set_id)\n' \
+                'FROM CardFace\n' \
+                'JOIN Printing USING (printing_id)\n' \
+                'JOIN "Set" USING (set_id)\n' \
                 'JOIN FaceName USING (face_name_id)\n' \
                 'JOIN PrintLanguage USING (language_id)\n' \
                 'WHERE "language" = ?\n' \
@@ -311,14 +316,16 @@ class CardDatabase:
         parameters = [language, card_name]
         if set_name_filter:
             query += 'AND ("set" LIKE ?\n' \
-                     '    OR set_name LIKE ?\n)'
+                     '    OR set_name LIKE ?)\n'
             parameters += [f"{set_name_filter}%"] * 2
 
         query += 'ORDER BY set_name ASC\n'
         return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
 
     def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
-        query = 'SELECT EXISTS (SELECT scryfall_id FROM CardFace WHERE scryfall_id = ? and is_front = ?)'
+        query = 'SELECT EXISTS (' \
+                'SELECT scryfall_id FROM Printing JOIN CardFace USING(printing_id) ' \
+                'WHERE scryfall_id = ? AND is_front = ?)'
         result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
         return bool(result)
 
@@ -380,13 +387,15 @@ class CardDatabase:
         FROM FaceName
         JOIN PrintLanguage USING(language_id)
         JOIN CardFace USING (face_name_id)
+        JOIN Printing USING (printing_id)
         JOIN Card USING (card_id)
-        WHERE "language" = ? 
+        WHERE "language" = ?
         AND oracle_id IN (
             SELECT oracle_id
             FROM FaceName
             JOIN PrintLanguage USING(language_id)
             JOIN CardFace USING (face_name_id)
+            JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
             WHERE card_name = ? AND "language" = ?
         )"""
