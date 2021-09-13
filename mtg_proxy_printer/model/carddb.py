@@ -264,7 +264,7 @@ class CardDatabase:
         result = [
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
-                card.language, scryfall_id, is_front, oracle_id, image_uri, highres_image, is_oversized
+                card.language, scryfall_id, is_front, oracle_id, image_uri, highres_image, bool(is_oversized)
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
             is_oversized in cursor
@@ -343,7 +343,7 @@ class CardDatabase:
                 is_oversized = result
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
-                language, scryfall_id, is_front, oracle_id, image_uri, highres_image, is_oversized
+                language, scryfall_id, is_front, oracle_id, image_uri, highres_image, bool(is_oversized)
             )
 
     def get_opposing_face(self, card) -> OptionalCard:
@@ -505,7 +505,7 @@ class CardDatabase:
             return None
         return Card(
             name, MTGSet(set_code, set_name), collector_number,
-            language_override, scryfall_id, card.is_front, card.oracle_id, image_uri, highres_image, is_oversized
+            language_override, scryfall_id, card.is_front, card.oracle_id, image_uri, highres_image, bool(is_oversized)
         )
 
     def find_all_translated_printings(self, card: Card, language: str) -> CardList:
@@ -520,7 +520,7 @@ class CardDatabase:
         result = [
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, card.is_front, card.oracle_id, image_uri, highres_image, is_oversized
+                language, scryfall_id, card.is_front, card.oracle_id, image_uri, highres_image, bool(is_oversized)
             )
             for name, set_code, set_name, collector_number, scryfall_id, image_uri, highres_image, is_oversized
             in self.db.execute(query, parameters)

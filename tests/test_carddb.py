@@ -176,7 +176,7 @@ def test_card_is_oversized(card_db: CardDatabase, json_name: str, scryfall_id: s
     fill_card_database_with_json_card(card_db, json_name)
     assert_that(
         card_db.get_card_with_scryfall_id(scryfall_id, True),
-        has_property("is_oversized", expected)
+        has_property("is_oversized", is_(expected))
     )
 
 
@@ -193,7 +193,8 @@ def test_translate_card__card_attribute_is_oversized(
     assert_that(
         card_db._translate_card(card, "en"), all_of(
             is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("is_oversized", expected),
+            has_property("is_oversized", is_(expected)),
+            has_property("is_oversized", instance_of(bool)),
         ))
 
 
@@ -210,7 +211,8 @@ def test_find_all_translated_printings__card_attribute_is_oversized(
     assert_that(
         cards[0],  all_of(
             is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("is_oversized", expected),
+            has_property("is_oversized", is_(expected)),
+            has_property("is_oversized", instance_of(bool)),
         ))
 
 
@@ -224,4 +226,4 @@ def test_get_cards_from_data__card_attribute_is_oversized(
     card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=True)
     cards = card_db.get_cards_from_data(card_data)
     assert_that(cards, has_length(1))
-    assert_that(cards[0], has_property("is_oversized", expected))
+    assert_that(cards[0], has_property("is_oversized", all_of(is_(expected), instance_of(bool))))
