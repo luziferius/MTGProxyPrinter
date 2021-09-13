@@ -84,7 +84,7 @@ class CardListModel(QAbstractTableModel):
                 return card.language
         if card.is_oversized:
             if role == Qt.ToolTipRole:
-                return "Beware: Oversized card! This may not fit in your deck."
+                return "Beware: Potentially oversized card!\nThis card may not fit in your deck."
             elif role == Qt.DecorationRole:
                 return self._oversized_icon
 

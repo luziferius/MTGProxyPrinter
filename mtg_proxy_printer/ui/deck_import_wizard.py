@@ -223,10 +223,22 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.setupUi(self)
         self.setCommitPage(True)
         self.card_list = CardListModel(card_db, self)
+        self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table()
         self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
+        accept_button = self.wizard().button(QWizard.FinishButton)
+        if oversized_cards:
+            accept_button.setIcon(QIcon.fromTheme("data-warning"))
+            accept_button.setToolTip(
+                f"Beware: The card list currently contains {oversized_cards} potentially oversized cards."
+            )
+        else:
+            accept_button.setIcon(QIcon())
+            accept_button.setToolTip("")
 
     def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
