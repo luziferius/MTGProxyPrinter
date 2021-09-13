@@ -18,6 +18,7 @@ import itertools
 import typing
 
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot
+from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
 from mtg_proxy_printer.logger import get_logger
@@ -52,6 +53,7 @@ class CardListModel(QAbstractTableModel):
         super(CardListModel, self).__init__(*args, **kwargs)
         self.card_db = card_db
         self.cards: CardList = []
+        self.oversized_icon = QIcon.fromTheme("data-warning")
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else len(self.cards)
@@ -73,6 +75,11 @@ class CardListModel(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == PageColumns.Language:
                 return card.language
+        if card.is_oversized:
+            if role == Qt.ToolTipRole:
+                return "Beware: Oversized card! This may not fit in your deck."
+            elif role == Qt.DecorationRole:
+                return self.oversized_icon
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super(CardListModel, self).flags(index)
