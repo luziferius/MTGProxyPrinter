@@ -92,9 +92,9 @@ class Card:
     scryfall_id: str = dataclasses.field(compare=True)
     is_front: bool = dataclasses.field(compare=True)
     oracle_id: str = dataclasses.field(compare=True)
-    image_uri: str = dataclasses.field(compare=True)
-    highres_image: bool = dataclasses.field(compare=True)
-    is_oversized: bool = dataclasses.field(compare=True)
+    image_uri: str = dataclasses.field(compare=False)
+    highres_image: bool = dataclasses.field(compare=False)
+    is_oversized: bool = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
 
