@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000019;
+PRAGMA user_version = 0000020;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -72,6 +72,7 @@ CREATE TABLE CardFace (
   png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
   UNIQUE(face_name_id, printing_id, is_front)
 );
+CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id);
 
 CREATE TABLE "Set" (
   set_id   INTEGER PRIMARY KEY NOT NULL,

@@ -261,6 +261,11 @@ def _migrate_18_to_19(db: sqlite3.Connection):
     """))
 
 
+def _migrate_19_to_20(db: sqlite3.Connection):
+    db.execute("CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front"
+               " ON CardFace(is_front, printing_id);")
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -280,6 +285,7 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_16_to_17,
         _migrate_17_to_18,
         _migrate_18_to_19,
+        _migrate_19_to_20,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:
