@@ -188,6 +188,84 @@ def _migrate_17_to_18(db: sqlite3.Connection):
         """))
 
 
+def _migrate_18_to_19(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent(r"""
+        PRAGMA foreign_keys = OFF;
+        BEGIN TRANSACTION;
+        
+        CREATE TABLE Printing (
+          -- A specific printing of a card
+          printing_id INTEGER PRIMARY KEY NOT NULL,
+          card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          set_id INTEGER NOT NULL REFERENCES "Set"(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          collector_number TEXT NOT NULL,
+          scryfall_id TEXT NOT NULL UNIQUE,
+          -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
+          -- so store this to be able to warn the user
+          is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
+          -- Indicates if the card has high resolution images.
+          highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE))
+        );
+        CREATE INDEX Printing_Index_Find_Printing_From_Card_Data 
+          ON Printing(card_id, set_id, collector_number);
+          
+        CREATE TABLE NewCardFace (
+          -- The printable card face of a specific card in a specific language. Is the front most of the time,
+          -- but can be the back face for double-faced cards.
+          card_face_id INTEGER NOT NULL PRIMARY KEY,
+          printing_id INTEGER NOT NULL REFERENCES Printing(printing_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+          png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+          UNIQUE(face_name_id, printing_id, is_front)
+        );
+        DROP VIEW AllPrintings;
+        
+        -- Ignore duplicates based on the scryfall id. This is UNIQUE in the new schema, and duplicates based on that
+        -- can be safely ignored. In the previous schema, all relevant fields for this query are equal, if the 
+        -- scryfall id is equal.
+        INSERT OR IGNORE INTO Printing(card_id, set_id, collector_number, scryfall_id, highres_image, is_oversized)
+          SELECT card_id, set_id, collector_number, scryfall_id, highres_image,
+            -- The patterns below match sets containing oversized cards.
+            -- Note: Scryfall serves regularly sized images for the "% Championship" sets 
+            -- despite being marked as "oversized". Thus those are explicitly not matched.  
+            set_name LIKE '% Oversized' OR set_name LIKE '% Schemes' OR set_name LIKE '% Planes'
+          FROM CardFace JOIN "Set" USING (set_id)
+        ;
+        
+        -- Joining USING (scryfall_id) is fine, because that is UNIQUE in Printing, therefore not creating additional
+        -- rows.
+        INSERT OR IGNORE INTO NewCardFace (printing_id, face_name_id, is_front, png_image_uri)
+          SELECT printing_id, face_name_id, is_front, png_image_uri
+          FROM CardFace JOIN Printing USING (scryfall_id)
+        ;
+        
+        DROP TABLE CardFace;
+        ALTER TABLE NewCardFace RENAME TO CardFace;
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+            highres_image, is_front, is_oversized, png_image_uri, oracle_id
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN "Set" USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING(face_name_id)
+          JOIN PrintLanguage USING(language_id)
+        ;
+        PRAGMA foreign_key_check;
+        ANALYZE;
+        PRAGMA foreign_keys = ON;
+        COMMIT;
+        VACUUM;
+        BEGIN TRANSACTION;
+    """))
+
+
+def _migrate_19_to_20(db: sqlite3.Connection):
+    db.execute("CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front"
+               " ON CardFace(is_front, printing_id);")
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -206,6 +284,8 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_15_to_16,
         _migrate_16_to_17,
         _migrate_17_to_18,
+        _migrate_18_to_19,
+        _migrate_19_to_20,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:

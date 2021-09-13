@@ -58,6 +58,9 @@ to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader._insert_card: [
         "__wrapped__",
     ],
+    mtg_proxy_printer.card_info_downloader._insert_printing: [
+        "__wrapped__",
+    ],
     mtg_proxy_printer.card_info_downloader._insert_face_name: [
         "__wrapped__",
     ],

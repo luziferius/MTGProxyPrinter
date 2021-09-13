@@ -58,10 +58,19 @@ socket.setdefaulttimeout(5)
 
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
-    scryfall_id: str
     printed_face_name: str
     image_uri: str
     is_front: bool
+
+
+class PrintingData(typing.NamedTuple):
+    """Information unique to each card printing."""
+    card_id: int
+    set_id: int
+    collector_number: str
+    scryfall_id: str
+    is_oversized: bool
+    highres_image: bool
 
 
 class CardInfoDownloader(QObject):
@@ -235,16 +244,13 @@ class CardInfoDownloadWorker(QObject):
                 logger.info(f"Aborting card import after {index} cards due to user request.")
                 self.download_finished.emit()
                 return
-            language_id = _insert_language(self.model, card["lang"])  # Ok
-            card_id = _insert_card(self.model, card["oracle_id"])  # Ok
-            set_id = _insert_set(self.model, card)  # Ok
-            _insert_card_faces(self.model, card, language_id, card_id, set_id)
+            language_id = _insert_language(self.model, card["lang"])
+            card_id = _insert_card(self.model, card["oracle_id"])
+            set_id = _insert_set(self.model, card)
+            printing_id = insert_printing(self.model, card, card_id, set_id)
+            _insert_card_faces(self.model, card, language_id, printing_id)
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
-                self.model.db.execute("PRAGMA optimize\n")
-        # Populate the sqlite stat tables to give the query optimizer data to work with.
-        # This greatly improves query speed.
-        self.model.db.execute("ANALYZE\n")
         _clean_unused_data(self.model.db)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
@@ -252,14 +258,10 @@ class CardInfoDownloadWorker(QObject):
             "INSERT INTO LastDatabaseUpdate (update_timestamp, newest_card_timestamp) VALUES (?, ?)\n",
             (datetime.datetime.now(), newest_card_date)
         )
+        # Populate the sqlite stat tables to give the query optimizer data to work with.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
-        # Clear the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
-        # the import. This will lead to assignment of wrong data via invalid foreign key relations.
-        _insert_language.cache_clear()
-        _insert_set_data.cache_clear()
-        _insert_card.cache_clear()
-        _insert_face_name.cache_clear()
+        _clear_lru_caches()
         logger.info(f"Finished import with {index} imported cards.")
 
     def read_from_url(self, url: str):
@@ -281,6 +283,18 @@ class CardInfoDownloadWorker(QObject):
         else:
             raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
         return data, metered_reader
+
+
+def _clear_lru_caches():
+    """
+    Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
+    the import. This will lead to assignment of wrong data via invalid foreign key relations.
+    """
+    _insert_language.cache_clear()
+    _insert_set_data.cache_clear()
+    _insert_card.cache_clear()
+    _insert_face_name.cache_clear()
+    _insert_printing.cache_clear()
 
 
 def store_download_settings(db):
@@ -315,10 +329,14 @@ def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.dat
 def _clean_unused_data(db: sqlite3.Connection):
     # Remove all OracleID entries in Card, for which no CardFace is present. These are cards for which all
     # printings got removed (maybe due to a format ban filter in place).
-    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT card_id FROM CardFace)\n")
-    db.execute("DELETE FROM PrintLanguage WHERE language_id NOT IN (SELECT language_id FROM CardFace)\n")
-    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT set_id FROM CardFace)\n')
     db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT face_name_id FROM CardFace)\n")
+    db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT printing_id FROM CardFace)\n")
+    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT set_id FROM Printing)\n')
+    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT card_id FROM Printing)\n")
+    # SELECT DISTINCT in inner query is a micro-optimization: There are very few languages (around 20)
+    # but many card faces (above 300k), so this reduces the amount of work NOT IN has to perform.
+    # Even with the overhead of building a temporary B-tree, this saves some time.
+    db.execute("DELETE FROM PrintLanguage WHERE language_id NOT IN (SELECT DISTINCT language_id FROM CardFace)\n")
 
 
 def _remove_card(model: CardDatabase, card: JSONType):
@@ -327,7 +345,7 @@ def _remove_card(model: CardDatabase, card: JSONType):
     Called on each skipped card, to ensure cards that start to fall under any download filter are removed from
     the database and do not remain stored locally.
     """
-    lang = card["lang"]
+    language = card["lang"]
     set_code = card["set"]
     oracle_id = card["oracle_id"]
     collector_number = card["collector_number"]
@@ -337,17 +355,16 @@ def _remove_card(model: CardDatabase, card: JSONType):
         # Card has no image URIs, so skip it
         return
     for face in faces:
-        parameters = (face.printed_face_name, lang, set_code, oracle_id, face.is_front, collector_number)
+        parameters = (set_code, oracle_id, collector_number, face.printed_face_name, language, face.is_front)
         model.db.execute(
             'DELETE FROM CardFace '
-            'WHERE (face_name_id, set_id, card_id, is_front, collector_number) IN '
+            'WHERE (printing_id, face_name_id, is_front) IN '
             '( SELECT'
+            '  (SELECT printing_id FROM Printing JOIN "Set" USING (set_id) JOIN Card USING (card_id)'
+            '     WHERE "set" = ? AND oracle_id = ? and collector_number = ?) AS printing_id,'
             '  (SELECT face_name_id FROM FaceName JOIN PrintLanguage USING (language_id)'
             '     WHERE card_name = ? AND language = ?) AS face_name_id,'
-            '  (SELECT set_id FROM "Set" where "set" = ?) AS set_id,'
-            '  (SELECT card_id FROM Card where oracle_id = ?) AS card_id,'
-            '  ? AS is_front,'
-            '  ? AS collector_number)\n',
+            '  ? AS is_front)\n',
             parameters
         )
 
@@ -414,21 +431,55 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
     return face_name_id
 
 
-def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
-    collector_number = card["collector_number"]
-    highres_image = card["highres_image"]
-    for scryfall_id, printed_name, png_image_uri, is_front in _get_card_faces(card):
+def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: int) -> int:
+    data = PrintingData(
+        card_id,
+        set_id,
+        card["collector_number"],
+        card["id"],
+        card["oversized"],
+        card["highres_image"],
+    )
+    return _insert_printing(model, data)
+
+
+@functools.lru_cache(None)
+def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
+    model.db.execute(
+        "INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)\n"
+        "  VALUES (?, ?, ?, ?, ?, ?)\n"
+        "  ON CONFLICT (scryfall_id) DO\n"
+        "  UPDATE SET card_id = excluded.card_id, set_id = excluded.set_id,\n"
+        "             collector_number = excluded.collector_number, is_oversized = excluded.is_oversized,\n"
+        "             highres_image = excluded.highres_image\n"
+        "  WHERE card_id <> excluded.card_id OR set_id <> excluded.set_id OR\n"
+        "        collector_number <> excluded.collector_number OR is_oversized <> excluded.is_oversized OR\n"
+        "        highres_image <> excluded.highres_image",
+        data,
+    )
+    printing_id, = model.db.execute(
+        "SELECT printing_id FROM Printing WHERE scryfall_id = ?\n", (data.scryfall_id,)
+    ).fetchone()
+    return printing_id
+
+
+def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, printing_id: int):
+    """
+        card_face_id INTEGER NOT NULL PRIMARY KEY,
+        printing_id INTEGER NOT NULL REFERENCES Printing(printing_id) ON UPDATE CASCADE ON DELETE CASCADE,
+        face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
+        is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+        png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
+    """
+
+    for printed_name, png_image_uri, is_front in _get_card_faces(card):
         face_name_id = _insert_face_name(model, printed_name, language_id)
         model.db.execute(
-            "INSERT INTO CardFace (\n"
-            "card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) \n"
-            "  ON CONFLICT (face_name_id, set_id, card_id, is_front, collector_number) DO UPDATE "
-            "SET scryfall_id = excluded.scryfall_id, highres_image = excluded.highres_image, "
-            "png_image_uri = excluded.png_image_uri\n"
-            "  WHERE scryfall_id <> excluded.scryfall_id OR highres_image <> excluded.highres_image "
-            "OR png_image_uri <> excluded.png_image_uri\n",
-            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)
+            "INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri) VALUES (?, ?, ?, ?)\n"
+            "  ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE\n"
+            "  SET png_image_uri = excluded.png_image_uri\n"
+            "  WHERE png_image_uri <> excluded.png_image_uri\n",
+            (printing_id, face_name_id, is_front, png_image_uri),
         )
 
 
@@ -479,7 +530,7 @@ def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None
         ]
     for face in faces:  # type: JSONType
         item = CardFaceData(
-            card["id"], _get_card_name(face),
+            _get_card_name(face),
             (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri))
         yield item
 

@@ -2,9 +2,20 @@
 
 # Next version (in development)
 
+## Changed features
+
+- Show copyright notices of many of the used software libraries in the About window.
+
 ## Fixed issues
 
-- Show copyright notices of many of the used software libraries in the About window. 
+- Show warnings in the deck import wizard, if oversized cards are present in the imported card list.
+- Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
+  the import wizard actually imported the unedited deck list, completely discarding any edits done.
+
+## Other
+
+- Larger re-write of the on-disk card database structure. Older versions will not be able to run, after
+  the database is migrated to the latest version. Downgrading the application will require deleting the database file. 
 
 # Version 0.13.0 (2021-08-09) <a name="v0_13_0"></a>
 

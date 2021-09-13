@@ -13,11 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections import Counter
 import enum
 import itertools
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
+from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
 from mtg_proxy_printer.logger import get_logger
@@ -25,6 +27,10 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CardList = typing.List[Card]
+
+__all__ = [
+    "CardListModel",
+]
 
 
 class PageColumns(enum.IntEnum):
@@ -48,10 +54,14 @@ class CardListModel(QAbstractTableModel):
     }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
+    oversized_card_count_changed = pyqtSignal(int)
+
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(CardListModel, self).__init__(*args, **kwargs)
         self.card_db = card_db
         self.cards: CardList = []
+        self.oversized_card_count = 0
+        self._oversized_icon = QIcon.fromTheme("data-warning")
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return 0 if parent.isValid() else len(self.cards)
@@ -73,6 +83,11 @@ class CardListModel(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == PageColumns.Language:
                 return card.language
+        if card.is_oversized:
+            if role == Qt.ToolTipRole:
+                return "Beware: Potentially oversized card!\nThis card may not fit in your deck."
+            elif role == Qt.DecorationRole:
+                return self._oversized_icon
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super(CardListModel, self).flags(index)
@@ -102,9 +117,16 @@ class CardListModel(QAbstractTableModel):
             new_card = result[0]
             top_left = index.sibling(index.row(), index.column())
             bottom_right = top_left.siblingAtColumn(PageColumns.CollectorNumber)
+            old_card = self.cards[index.row()]
             self.cards[index.row()] = new_card
             self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            # Oversized card count only changes, if the flags differ
+            if old_card.is_oversized and not new_card.is_oversized:
+                self._remove_card_handle_oversized_flag(old_card)
+            elif new_card.is_oversized and not old_card.is_oversized:
+                self._add_card_handle_oversized_flag(new_card)
             return True
+        logger.debug("No replacement card found.")
         return False
 
     def add_cards(self, cards: typing.Counter[Card]):
@@ -113,6 +135,17 @@ class CardListModel(QAbstractTableModel):
             self.beginInsertRows(QModelIndex(), first_index, last_index)
             self.cards += list(itertools.repeat(card, count))
             self.endInsertRows()
+            self._add_card_handle_oversized_flag(card, count)
+
+    def _add_card_handle_oversized_flag(self, card: Card, count: int = 1):
+        if card.is_oversized:
+            self.oversized_card_count += count
+            self.oversized_card_count_changed.emit(self.oversized_card_count)
+
+    def _remove_card_handle_oversized_flag(self, card: Card):
+        if card.is_oversized:
+            self.oversized_card_count -= 1
+            self.oversized_card_count_changed.emit(self.oversized_card_count)
 
     @pyqtSlot(list)
     def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
@@ -149,8 +182,11 @@ class CardListModel(QAbstractTableModel):
             return 0
         first_index, last_index = indices[0].row(), indices[-1].row()
         self.beginRemoveRows(QModelIndex(), first_index, last_index)
+        removed_cards = self.cards[first_index:last_index+1]
         del self.cards[first_index:last_index+1]
         self.endRemoveRows()
+        for card in removed_cards:
+            self._remove_card_handle_oversized_flag(card)
         return last_index - first_index
 
     def headerData(
@@ -168,3 +204,9 @@ class CardListModel(QAbstractTableModel):
         self.beginRemoveRows(QModelIndex(), 0, self.rowCount()-1)
         self.cards.clear()
         self.endRemoveRows()
+        if self.oversized_card_count:
+            self.oversized_card_count = 0
+            self.oversized_card_count_changed.emit(self.oversized_card_count)
+
+    def as_deck(self):
+        return Counter(self.cards)
