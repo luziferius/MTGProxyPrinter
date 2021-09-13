@@ -9,6 +9,8 @@
 ## Fixed issues
 
 - Show warnings in the deck import wizard, if oversized cards are present in the imported card list.
+- Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
+  the import wizard actually imported the unedited deck list, completely discarding any edits done.
 
 ## Other
 

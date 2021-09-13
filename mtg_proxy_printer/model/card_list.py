@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from collections import Counter
 import enum
 import itertools
 import typing
@@ -206,3 +207,6 @@ class CardListModel(QAbstractTableModel):
         if self.oversized_card_count:
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
+
+    def as_deck(self):
+        return Counter(self.cards)

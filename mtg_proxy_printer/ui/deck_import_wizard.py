@@ -225,7 +225,6 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.card_list = CardListModel(card_db, self)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table()
-        self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -264,7 +263,6 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             self.field("print-guessing-prefer-already-downloaded"),
             language_override
         )
-        self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
         self.card_list.add_cards(parsed_deck)
         self.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
@@ -305,7 +303,7 @@ class DeckImportWizard(QWizard):
         if self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
-        deck: typing.Counter[Card] = self.field("parsed_deck")
+        deck = self.summary_page.card_list.as_deck()
         # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         self.deck_added.emit(deck)
