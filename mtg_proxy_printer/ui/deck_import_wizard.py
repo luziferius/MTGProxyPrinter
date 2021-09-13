@@ -296,8 +296,12 @@ class DeckImportWizard(QWizard):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
-        logger.info("User finished the import wizard, performing the requested actions")
+        if not self._ask_about_oversized_cards():
+            logger.info("Aborting accept(), because oversized cards are present "
+                        "in the deck list and the user chose to go back.")
+            return
         super(DeckImportWizard, self).accept()
+        logger.info("User finished the import wizard, performing the requested actions")
         if self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
@@ -305,3 +309,13 @@ class DeckImportWizard(QWizard):
         # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         self.deck_added.emit(deck)
+
+    def _ask_about_oversized_cards(self) -> bool:
+        oversized_count = self.summary_page.card_list.oversized_card_count
+        if oversized_count and QMessageBox.question(
+                self, "Oversized cards present",
+                f"There are {oversized_count} possibly oversized cards in the deck list that "
+                f"may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.No:
+            return False
+        return True
