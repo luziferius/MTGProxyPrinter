@@ -61,6 +61,7 @@ class CardFaceData(typing.NamedTuple):
     printed_face_name: str
     image_uri: str
     is_front: bool
+    face_number: int
 
 
 class PrintingData(typing.NamedTuple):
@@ -464,22 +465,16 @@ def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
 
 
 def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, printing_id: int):
-    """
-        card_face_id INTEGER NOT NULL PRIMARY KEY,
-        printing_id INTEGER NOT NULL REFERENCES Printing(printing_id) ON UPDATE CASCADE ON DELETE CASCADE,
-        face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
-        is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-        png_image_uri TEXT NOT NULL  -- URI pointing to the high resolution PNG image
-    """
-
-    for printed_name, png_image_uri, is_front in _get_card_faces(card):
-        face_name_id = _insert_face_name(model, printed_name, language_id)
+    """Inserts all faces of the given card together with their names."""
+    for face in _get_card_faces(card):
+        face_name_id = _insert_face_name(model, face.printed_face_name, language_id)
         model.db.execute(
-            "INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri) VALUES (?, ?, ?, ?)\n"
+            "INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number) "
+            " VALUES (?, ?, ?, ?, ?)\n"
             "  ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE\n"
-            "  SET png_image_uri = excluded.png_image_uri\n"
-            "  WHERE png_image_uri <> excluded.png_image_uri\n",
-            (printing_id, face_name_id, is_front, png_image_uri),
+            "  SET png_image_uri = excluded.png_image_uri, face_number = excluded.face_number\n"
+            "  WHERE png_image_uri <> excluded.png_image_uri OR face_number <> excluded.face_number\n",
+            (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
         )
 
 
@@ -513,26 +508,30 @@ def _should_skip_card(
 
 def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None]:
     """
-    Yields a tuple (Scryfall_id, printed_name, PNG_image_URI, is_front) for each face found in the card object.
+    Yields a CardFaceData object for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
 
     Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
     this function builds a "card_face" object providing only the required information from the card object itself.
     """
     try:
-        faces = card["card_faces"]
+        faces: typing.List[JSONType] = card["card_faces"]
     except KeyError:
-        faces = [
+        faces: typing.List[JSONType] = [
             {
                 "printed_name": _get_card_name(card),
                 "image_uris": card["image_uris"],
             }
         ]
-    for face in faces:  # type: JSONType
-        item = CardFaceData(
+    return (
+        CardFaceData(
             _get_card_name(face),
-            (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri))
-        yield item
+            (image_uri := _get_png_image_uri(card, face)),
+            _is_front_face(image_uri),
+            face_number
+        )
+        for face_number, face in enumerate(faces)
+    )
 
 
 def _get_png_image_uri(card: JSONType, face: JSONType):
