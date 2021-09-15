@@ -395,8 +395,8 @@ class CardDatabase:
         JOIN Printing USING (printing_id)
         JOIN Card USING (card_id)
         WHERE "language" = ?
-        AND oracle_id IN (
-            SELECT oracle_id
+        AND (oracle_id, face_number) IN (
+            SELECT oracle_id, face_number
             FROM FaceName
             JOIN PrintLanguage USING(language_id)
             JOIN CardFace USING (face_name_id)
