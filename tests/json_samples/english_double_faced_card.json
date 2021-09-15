@@ -1,0 +1,160 @@
+{
+  "object": "card",
+  "id": "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d",
+  "oracle_id": "ea9c459a-6047-43aa-968f-a582be4000e8",
+  "multiverse_ids": [
+    435346,
+    435347
+  ],
+  "mtgo_id": 65400,
+  "mtgo_foil_id": 65401,
+  "arena_id": 66349,
+  "tcgplayer_id": 145267,
+  "cardmarket_id": 301405,
+  "name": "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun",
+  "lang": "en",
+  "released_at": "2017-09-29",
+  "uri": "https://api.scryfall.com/cards/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d",
+  "scryfall_uri": "https://scryfall.com/card/xln/191/growing-rites-of-itlimoc-itlimoc-cradle-of-the-sun?utm_source=api",
+  "layout": "transform",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "cmc": 3.0,
+  "type_line": "Legendary Enchantment // Legendary Land",
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [
+    "Transform"
+  ],
+  "produced_mana": [
+    "G"
+  ],
+  "card_faces": [
+    {
+      "object": "card_face",
+      "name": "Growing Rites of Itlimoc",
+      "mana_cost": "{2}{G}",
+      "type_line": "Legendary Enchantment",
+      "oracle_text": "When Growing Rites of Itlimoc enters the battlefield, look at the top four cards of your library. You may reveal a creature card from among them and put it into your hand. Put the rest on the bottom of your library in any order.\nAt the beginning of your end step, if you control four or more creatures, transform Growing Rites of Itlimoc.",
+      "colors": [
+        "G"
+      ],
+      "artist": "Grzegorz Rutkowski",
+      "artist_id": "b5f49d0d-8056-48e3-b614-090e656b4f9c",
+      "illustration_id": "807e1577-8345-4866-81ae-648e1610f828",
+      "image_uris": {
+        "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539",
+        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539"
+      }
+    },
+    {
+      "object": "card_face",
+      "name": "Itlimoc, Cradle of the Sun",
+      "mana_cost": "",
+      "type_line": "Legendary Land",
+      "oracle_text": "(Transforms from Growing Rites of Itlimoc.)\n{T}: Add {G}.\n{T}: Add {G} for each creature you control.",
+      "colors": [
+
+      ],
+      "flavor_text": "Before the Sun Empire was born, humans and merfolk joined their magic to invoke a blessing of fertility on the land.",
+      "artist": "Grzegorz Rutkowski",
+      "artist_id": "b5f49d0d-8056-48e3-b614-090e656b4f9c",
+      "illustration_id": "fe41f4ca-3344-4a68-9f78-4b274498dcc4",
+      "image_uris": {
+        "small": "https://c1.scryfall.com/file/scryfall-cards/small/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "large": "https://c1.scryfall.com/file/scryfall-cards/large/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "png": "https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539",
+        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539",
+        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.jpg?1562562539"
+      }
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "arena",
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "fe0dad85-54bc-4151-9200-d68da84dd0f2",
+  "set": "xln",
+  "set_name": "Ixalan",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/fe0dad85-54bc-4151-9200-d68da84dd0f2",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Axln&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/xln?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Aea9c459a-6047-43aa-968f-a582be4000e8&unique=prints",
+  "collector_number": "191",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Grzegorz Rutkowski",
+  "artist_ids": [
+    "b5f49d0d-8056-48e3-b614-090e656b4f9c"
+  ],
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "compasslanddfc"
+  ],
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 335,
+  "prices": {
+    "usd": "21.84",
+    "usd_foil": "39.25",
+    "usd_etched": null,
+    "eur": "18.15",
+    "eur_foil": "19.98",
+    "tix": "0.02"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=435346",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Growing+Rites+of+Itlimoc",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Growing+Rites+of+Itlimoc"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=145267&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Growing+Rites+of+Itlimoc&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/65400?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

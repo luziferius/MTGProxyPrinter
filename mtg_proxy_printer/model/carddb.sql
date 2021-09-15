@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000020;
+PRAGMA user_version = 0000021;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -62,6 +62,7 @@ CREATE TABLE FaceName (
 -- Speeds up LIKE matches against card names, used by the Card name search
 CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
 
+
 CREATE TABLE CardFace (
   -- The printable card face of a specific card in a specific language. Is the front most of the time,
   -- but can be the back face for double-faced cards.
@@ -70,9 +71,12 @@ CREATE TABLE CardFace (
   face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
   is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
   png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+  -- Enumerates the face on a card. Used to match the exact same face across translated, multi-faced cards
+  face_number INTEGER NOT NULL CHECK (face_number >= 0),
   UNIQUE(face_name_id, printing_id, is_front)
 );
 CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id);
+
 
 CREATE TABLE "Set" (
   set_id   INTEGER PRIMARY KEY NOT NULL,
@@ -109,7 +113,7 @@ CREATE TABLE LastImageUseTimestamps (
 
 CREATE VIEW AllPrintings AS
   SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
-    highres_image, is_front, is_oversized, png_image_uri, oracle_id
+    highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
   FROM Card
   JOIN Printing USING (card_id)
   JOIN "Set" USING (set_id)

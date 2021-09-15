@@ -266,6 +266,51 @@ def _migrate_19_to_20(db: sqlite3.Connection):
                " ON CardFace(is_front, printing_id);")
 
 
+def _migrate_20_to_21(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent(r"""
+        PRAGMA foreign_keys = OFF;
+        BEGIN TRANSACTION;
+        DROP VIEW AllPrintings;
+        CREATE TABLE CardFaceNew (
+          -- The printable card face of a specific card in a specific language. Is the front most of the time,
+          -- but can be the back face for double-faced cards.
+          card_face_id INTEGER NOT NULL PRIMARY KEY,
+          printing_id INTEGER NOT NULL REFERENCES Printing(printing_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+          png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+          -- Enumerates the face on a card. Used to match the exact same face across translated, multi-faced cards
+          face_number INTEGER NOT NULL CHECK (face_number >= 0),
+          UNIQUE(face_name_id, printing_id, is_front)
+        );
+        INSERT INTO CardFaceNew (card_face_id, printing_id, face_name_id, is_front, png_image_uri, face_number)
+        SELECT card_face_id, printing_id, face_name_id, is_front, png_image_uri, 
+               row_number() over (partition by printing_id ORDER BY card_face_id) -1 as face_number
+        FROM FaceName JOIN CardFace USING (face_name_id) JOIN Printing USING (printing_id);
+        DROP TABLE CardFace;
+        ALTER TABLE CardFaceNew RENAME TO CardFace;
+        
+        CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id);
+        
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+            highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN "Set" USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING(face_name_id)
+          JOIN PrintLanguage USING(language_id)
+        ;
+        PRAGMA foreign_key_check;
+        ANALYZE;
+        PRAGMA foreign_keys = ON;
+        COMMIT;
+        VACUUM;
+        BEGIN TRANSACTION;
+    """))
+
+
 def migrate_card_database(db: sqlite3.Connection):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
@@ -286,6 +331,7 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_17_to_18,
         _migrate_18_to_19,
         _migrate_19_to_20,
+        _migrate_20_to_21,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:

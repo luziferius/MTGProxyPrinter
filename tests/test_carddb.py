@@ -227,3 +227,22 @@ def test_get_cards_from_data__card_attribute_is_oversized(
     cards = card_db.get_cards_from_data(card_data)
     assert_that(cards, has_length(1))
     assert_that(cards[0], has_property("is_oversized", all_of(is_(expected), instance_of(bool))))
+
+
+@pytest.mark.parametrize("front", [True, False])
+def test_translate_double_faced_card(card_db: CardDatabase, front: bool):
+    fill_card_database_with_json_card(card_db, "english_double_faced_card")
+    fill_card_database_with_json_card(card_db, "non_english_double_faced_card")
+    english_card = card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", front)
+    non_english_card = card_db.get_card_with_scryfall_id("000847d3-ebde-4580-a00e-61d501e99485", front)
+    assert_that(
+        card_db.translate_card_name(non_english_card.name, english_card.language),
+        is_(equal_to(english_card.name))
+    )
+    assert_that(
+        card_db.translate_card_name(english_card.name, non_english_card.language),
+        is_(equal_to(non_english_card.name))
+    )
+
+
+

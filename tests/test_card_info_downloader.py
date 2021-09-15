@@ -35,6 +35,7 @@ class DatabaseCardFaceData(typing.NamedTuple):
     """Rows stored in the CardFace relation"""
     image_uri: str
     is_front: bool
+    face_number: int
 
 
 class DatabaseSetData(typing.NamedTuple):
@@ -104,8 +105,8 @@ class TestCaseData:
     def db_card_face(self) -> typing.List[DatabaseCardFaceData]:
         return [
             DatabaseCardFaceData(
-                face.image_uri, face.is_front)
-            for face in self.face_data
+                face.image_uri, face.is_front, face_number)
+            for face_number, face in enumerate(self.face_data)
         ]
 
     def db_all_printings(self) -> typing.List[DatabaseAllPrintingsData]:
@@ -163,10 +164,10 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData):
 
 
 def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks png_image_uri, is_front"""
+    """Checks png_image_uri, is_front, face_number"""
     assert_that(
         card_db.db.execute(
-            "SELECT png_image_uri, is_front FROM CardFace").fetchall(),
+            "SELECT png_image_uri, is_front, face_number FROM CardFace").fetchall(),
         contains_inanyorder(*test_case.db_card_face()),
         "CardFace relation contains unexpected data")
 
