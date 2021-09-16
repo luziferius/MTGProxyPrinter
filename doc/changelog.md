@@ -12,7 +12,8 @@
 - Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
   the import wizard actually imported the unedited deck list, completely discarding any edits done.
 - Fixed wrong card translations for cards having multiple names, like double-faced cards or split cards.
-  
+- The card information download no longer locks up the application if a database error occurs. This might happen, if
+  two instances of MTGProxyPrinter try to write to the internal card database at the same time.
 
 ## Other
 
