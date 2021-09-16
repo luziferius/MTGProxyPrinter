@@ -80,6 +80,7 @@ class CardInfoDownloader(QObject):
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = pyqtSignal(bool)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
+    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -96,6 +97,7 @@ class CardInfoDownloader(QObject):
         self.download_worker.download_finished.connect(self.worker_thread.quit)
         self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
+        self.download_worker.other_error_occurred.connect(self.other_error_occurred)
         self.worker_thread.started.connect(self.download_worker.download_card_data)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -116,6 +118,7 @@ class CardInfoDownloadWorker(QObject):
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
+    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -217,6 +220,17 @@ class CardInfoDownloadWorker(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data()
         and populates the database with card data.
         """
+        card_count = 0
+        try:
+            card_count = self._populate_database(card_data)
+        except sqlite3.Error as e:
+            logger.exception(f"Database error occurred: {e}")
+            self.other_error_occurred.emit(str(e))
+        finally:
+            _clear_lru_caches()
+            logger.info(f"Finished import with {card_count} imported cards.")
+
+    def _populate_database(self, card_data: typing.Generator[JSONType, None, None]) -> int:
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
         store_download_settings(self.model.db)
@@ -262,8 +276,7 @@ class CardInfoDownloadWorker(QObject):
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
-        _clear_lru_caches()
-        logger.info(f"Finished import with {index} imported cards.")
+        return index
 
     def read_from_url(self, url: str):
         """
