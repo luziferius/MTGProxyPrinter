@@ -45,24 +45,17 @@ def parse_args() -> Namespace:
 
 to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker: [
-        "populate_database",
+        "_populate_database",
     ],
     mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
         "_insert_card_faces",
         "_should_skip_card",
         "_clean_unused_data",
-        "_remove_card"
-    ],
-    # Bypass the lru_cache
-    mtg_proxy_printer.card_info_downloader._insert_card: [
-        "__wrapped__",
-    ],
-    mtg_proxy_printer.card_info_downloader._insert_printing: [
-        "__wrapped__",
-    ],
-    mtg_proxy_printer.card_info_downloader._insert_face_name: [
-        "__wrapped__",
+        "_remove_card",
+        "_insert_card",
+        "_insert_printing",
+        "_insert_face_name",
     ],
 }
 
@@ -91,7 +84,11 @@ def inject_line_profiler():
                 import warnings
                 warnings.warn(f"""Function "{func_name}" in module/class "{module_.__name__}" not found, skipping.""")
             else:
-                func = profile(func)
+                # Bypass any functools LRU cache
+                if hasattr(func, "__wrapped__"):
+                    func.__wrapped__ = profile(func.__wrapped__)
+                else:
+                    func = profile(func)
                 setattr(module_, func_name, func)
 
 
