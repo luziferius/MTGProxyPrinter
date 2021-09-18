@@ -229,6 +229,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         self.card_data_downloader.cancel_running_operations()
+        self.card_data_downloader.stop_worker_thread()
         self.document.loader.cancel_running_operations()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):

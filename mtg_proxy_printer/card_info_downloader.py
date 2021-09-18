@@ -82,6 +82,9 @@ class CardInfoDownloader(QObject):
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
     other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
 
+    request_import_from_file = pyqtSignal(Path)
+    request_import_from_url = pyqtSignal()
+
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
@@ -91,25 +94,27 @@ class CardInfoDownloader(QObject):
         self.download_worker = CardInfoDownloadWorker(model, requested_item)
         self.worker_thread = QThread()
         self.download_worker.moveToThread(self.worker_thread)
+        self.request_import_from_file.connect(self.download_worker.download_card_data)
+        self.request_import_from_url.connect(self.download_worker.download_card_data)
         self.download_worker.download_begins.connect(self.download_begins)
+        self.download_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
         self.download_worker.download_progress.connect(self.download_progress)
         self.download_worker.download_finished.connect(self.download_finished)
-        self.download_worker.download_finished.connect(self.worker_thread.quit)
         self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.download_worker.other_error_occurred.connect(self.other_error_occurred)
-        self.worker_thread.started.connect(self.download_worker.download_card_data)
-        logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def populate_database(self):
-        self.working_state_changed.emit(True)
-        logger.info("Running the background worker")
         self.worker_thread.start()
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def cancel_running_operations(self):
         if self.worker_thread.isRunning():
             logger.info("Cancelling currently running card download")
             self.download_worker.should_run = False
+
+    def stop_worker_thread(self):
+        self.worker_thread.quit()
+        self.worker_thread.wait(100)
+        logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
 
 
 class CardInfoDownloadWorker(QObject):
