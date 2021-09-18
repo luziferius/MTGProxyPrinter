@@ -65,6 +65,7 @@ class Application(QApplication):
         self.settings_window.saved.connect(self.main_window.settings_changed)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self._connect_card_data_download_signals(self.card_info_downloader, self.main_window)
         self.main_window.show()
         self.update_checker = self._create_update_checker()
         self._show_changelog_after_update()
@@ -75,6 +76,14 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _connect_card_data_download_signals(
+            self, card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader,
+            main_window: mtg_proxy_printer.ui.main_window.MainWindow):
+        card_info_downloader.download_begins.connect(
+            lambda: main_window.action_download_card_data.setDisabled(True)
+        )
+        main_window.action_download_card_data.triggered.connect(card_info_downloader.populate_database)
 
     def _create_document_instance(
             self,

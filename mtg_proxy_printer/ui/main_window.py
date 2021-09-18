@@ -189,7 +189,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 "If you decline, you can do this later using the Settings menu.",
                 QMessageBox.Yes | QMessageBox.No
                 ) == QMessageBox.Yes:
-            self.on_action_download_card_data_triggered()
+            self.action_download_card_data.trigger()
 
     @pyqtSlot()
     def _select_first_page(self, loading_in_progress: bool = False):
@@ -220,7 +220,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
         # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.triggered.emit()
+        self.action_quit.trigger()
 
     @pyqtSlot()
     def on_action_quit_triggered(self):
@@ -333,12 +333,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         if should_download:
             self.action_download_card_data.trigger()
 
-    @pyqtSlot()
-    def on_action_download_card_data_triggered(self):
-        logger.info(f"User downloads the card data from Scryfall.")
-        self.action_download_card_data.setDisabled(True)
-        self.card_data_downloader.populate_database()
-
     @pyqtSlot(int)
     def show_progress_bar(self, expected_total_item_count: int):
         self.progress_bar.reset()
@@ -376,7 +370,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.debug("User clicked on Save")
         if self.document.save_file_path is None:
             logger.debug("No save file path set. Call 'Save as' instead.")
-            self.action_save_as.triggered.emit()
+            self.action_save_as.trigger()
         else:
             logger.debug("About to save the document")
             self.document.save_to_disk()
@@ -425,7 +419,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                     f"There are {estimated_card_count} new cards available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
-            self.on_action_download_card_data_triggered()
+            self.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.action_download_card_data.setEnabled(True)
