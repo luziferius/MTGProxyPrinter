@@ -52,12 +52,13 @@ class Application(QApplication):
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
         self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
         self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
-            self.card_db, self.image_db, self.document, self.language_model
+            self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             self.language_model, self.document, self.main_window)

@@ -20,7 +20,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionM
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
-import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -53,6 +53,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def __init__(self,
                  card_db: CardDatabase,
+                 card_info_downloader: CardInfoDownloader,
                  image_db: ImageDatabase,
                  document: Document,
                  language_model: QStringListModel,
@@ -68,7 +69,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.document = document
         self._connect_document_signals(document)
         self.language_model = language_model
-        self.card_data_downloader = self._create_card_data_downloader()
+        self.card_data_downloader = card_info_downloader
+        self._connect_card_info_downloader_signals(card_info_downloader)
         self.page_view: CurrentPageView
         self._setup_page_view(document)
         self._setup_loading_state_connections()
@@ -125,8 +127,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
 
-    def _create_card_data_downloader(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloader:
-        downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database)
+    def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
@@ -134,7 +135,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         downloader.working_state_changed.connect(self.loading_state_changed)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
         downloader.other_error_occurred.connect(self.on_error_occurred)
-        return downloader
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
         return [
