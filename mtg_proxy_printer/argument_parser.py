@@ -30,6 +30,7 @@ __all__ = [
 class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""
     file: pathlib.Path = None
+    card_data: pathlib.Path = None
 
 
 def generate_argument_parser() -> argparse.ArgumentParser:
@@ -42,6 +43,12 @@ def generate_argument_parser() -> argparse.ArgumentParser:
         "-v", "--version", action="version",
         version=f"{meta_data.PROGRAMNAME} Version {meta_data.__version__}",
         help="Show program version and exit"
+    )
+    parser.add_argument(
+        "--card-data", type=pathlib.Path,
+        help="Populate the internal card database using the 'All cards' bulk data export from the Scryfall API. "
+             "Path to a plain-text JSON or GZIP compressed JSON file. See https://scryfall.com/docs/api/bulk-data for "
+             "more details about the supported file format and download links."
     )
     return parser
 
