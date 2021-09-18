@@ -152,13 +152,13 @@ class UpdateChecker(QObject):
     _card_update_check_requested = pyqtSignal()
     _application_update_check_requested = pyqtSignal()
 
-    def __init__(self, card_db: CardDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, perform_card_data_update_check: bool, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(UpdateChecker, self).__init__(parent)
+        self.perform_card_data_update_check = perform_card_data_update_check
         self.background_thread = QThread()
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
-
         self.background_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -182,7 +182,8 @@ class UpdateChecker(QObject):
 
     def check_for_updates(self):
         self._check_for_application_updates()
-        self._check_for_card_data_updates()
+        if self.perform_card_data_update_check:
+            self._check_for_card_data_updates()
 
     def _check_for_card_data_updates(self):
         self._start_background_thread_if_not_running()

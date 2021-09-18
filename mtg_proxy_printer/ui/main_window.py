@@ -20,7 +20,7 @@ from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QItemSelectionM
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
-import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
@@ -53,6 +53,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     def __init__(self,
                  card_db: CardDatabase,
+                 card_info_downloader: CardInfoDownloader,
                  image_db: ImageDatabase,
                  document: Document,
                  language_model: QStringListModel,
@@ -68,7 +69,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.document = document
         self._connect_document_signals(document)
         self.language_model = language_model
-        self.card_data_downloader = self._create_card_data_downloader()
+        self.card_data_downloader = card_info_downloader
+        self._connect_card_info_downloader_signals(card_info_downloader)
         self.page_view: CurrentPageView
         self._setup_page_view(document)
         self._setup_loading_state_connections()
@@ -125,8 +127,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
 
-    def _create_card_data_downloader(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloader:
-        downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database)
+    def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
@@ -134,7 +135,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         downloader.working_state_changed.connect(self.loading_state_changed)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
         downloader.other_error_occurred.connect(self.on_error_occurred)
-        return downloader
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
         return [
@@ -189,7 +189,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 "If you decline, you can do this later using the Settings menu.",
                 QMessageBox.Yes | QMessageBox.No
                 ) == QMessageBox.Yes:
-            self.on_action_download_card_data_triggered()
+            self.action_download_card_data.trigger()
 
     @pyqtSlot()
     def _select_first_page(self, loading_in_progress: bool = False):
@@ -220,7 +220,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
         # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.triggered.emit()
+        self.action_quit.trigger()
 
     @pyqtSlot()
     def on_action_quit_triggered(self):
@@ -229,6 +229,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
         self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         self.card_data_downloader.cancel_running_operations()
+        self.card_data_downloader.stop_worker_thread()
         self.document.loader.cancel_running_operations()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
@@ -333,12 +334,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         if should_download:
             self.action_download_card_data.trigger()
 
-    @pyqtSlot()
-    def on_action_download_card_data_triggered(self):
-        logger.info(f"User downloads the card data from Scryfall.")
-        self.action_download_card_data.setDisabled(True)
-        self.card_data_downloader.populate_database()
-
     @pyqtSlot(int)
     def show_progress_bar(self, expected_total_item_count: int):
         self.progress_bar.reset()
@@ -376,7 +371,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.debug("User clicked on Save")
         if self.document.save_file_path is None:
             logger.debug("No save file path set. Call 'Save as' instead.")
-            self.action_save_as.triggered.emit()
+            self.action_save_as.trigger()
         else:
             logger.debug("About to save the document")
             self.document.save_to_disk()
@@ -425,7 +420,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                     f"There are {estimated_card_count} new cards available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
-            self.on_action_download_card_data_triggered()
+            self.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.action_download_card_data.setEnabled(True)

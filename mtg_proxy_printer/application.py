@@ -52,28 +52,43 @@ class Application(QApplication):
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
         self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
         self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
-            self.card_db, self.image_db, self.document, self.language_model
+            self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             self.language_model, self.document, self.main_window)
         self.settings_window.saved.connect(self.main_window.settings_changed)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self._connect_card_data_download_signals(self.card_info_downloader, self.main_window)
         self.main_window.show()
-        self.update_checker = self._create_update_checker()
+        # Don’t do the card data update check, if the user imports card data via command line arguments
+        self.update_checker = self._create_update_checker(not (args.card_data and args.card_data.is_file()))
         self._show_changelog_after_update()
-        if not self.card_db.has_data():
+        if args.card_data and args.card_data.is_file():
+            logger.info(f"User imports card data from file {args.card_data}")
+            self.card_info_downloader.request_import_from_file.emit(args.card_data)
+        elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    @staticmethod
+    def _connect_card_data_download_signals(
+            card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader,
+            main_window: mtg_proxy_printer.ui.main_window.MainWindow):
+        card_info_downloader.download_begins.connect(
+            lambda: main_window.action_download_card_data.setDisabled(True)
+        )
+        main_window.action_download_card_data.triggered.connect(card_info_downloader.request_import_from_url)
 
     def _create_document_instance(
             self,
@@ -97,8 +112,8 @@ class Application(QApplication):
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         return QStringListModel([preferred_language], self)
 
-    def _create_update_checker(self) -> UpdateChecker:
-        update_checker = UpdateChecker(self.card_db, self)
+    def _create_update_checker(self, perform_card_data_update_check: bool) -> UpdateChecker:
+        update_checker = UpdateChecker(self.card_db, perform_card_data_update_check, self)
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
         update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)

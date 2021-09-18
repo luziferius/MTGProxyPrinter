@@ -2,6 +2,7 @@
 
 # Next version (in development)
 
+
 ## Changed features
 
 - Show copyright notices of many of the used software libraries in the About window.
@@ -17,6 +18,8 @@
 
 ## Other
 
+- Import card data from a file via command line argument --card-data. Mostly useful for debugging, but can also be used
+  to update the card database of a PC without internet access.
 - Larger re-write of the on-disk card database structure. Older versions will not be able to run, after
   the database is migrated to the latest version. Downgrading the application will require deleting the database file. 
 
