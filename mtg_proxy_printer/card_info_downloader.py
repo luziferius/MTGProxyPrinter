@@ -258,7 +258,7 @@ class CardInfoDownloadWorker(QObject):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
                 self.download_finished.emit()
-                return
+                return index
             language_id = _insert_language(self.model, card["lang"])
             card_id = _insert_card(self.model, card["oracle_id"])
             set_id = _insert_set(self.model, card)
