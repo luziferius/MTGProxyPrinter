@@ -265,7 +265,7 @@ class CardDatabase:
         result = [
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
-                card.language, scryfall_id, is_front, oracle_id, image_uri,
+                card.language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 highres_image, bool(is_oversized), face_number,
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
@@ -345,7 +345,7 @@ class CardDatabase:
                 is_oversized, face_number = result
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
-                language, scryfall_id, is_front, oracle_id, image_uri,
+                language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 highres_image, bool(is_oversized), face_number
             )
 
