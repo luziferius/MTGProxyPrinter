@@ -22,7 +22,7 @@ import pytest
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.document import Document
 
-from .helpers import assert_model_is_empty, fill_card_database_with_multiple_cards, fill_card_database_with_json_card, \
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
     fill_card_database_with_json_cards
 
 StringList = typing.List[str]
@@ -47,7 +47,21 @@ def test_get_all_languages_without_data(card_db: CardDatabase):
 
 
 def test_get_all_languages_with_data(card_db: CardDatabase):
-    fill_card_database_with_multiple_cards(card_db, "multiple_cards_for_test_card_db")
+    fill_card_database_with_json_cards(
+        card_db,
+        [
+            "english_Coercion",
+            "english_Duress",
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "english_card_Future_Sight_MH1",
+            "english_card_Future_Sight_MTGO_promo",
+            "german_Coercion_with_faulty_translation",
+            "german_basic_Forest",
+            "spanish_basic_Forest",
+            "german_Duress",
+        ],
+    )
     assert_that(
         card_db.get_all_languages(),
         contains_exactly("de", "en", "es")
@@ -65,7 +79,21 @@ def test_get_all_languages_with_data(card_db: CardDatabase):
     ("Nonexisting language", None, []),
 ])
 def test_get_card_names(card_db: CardDatabase, language: str, prefix: OptString, expected_names: StringList):
-    fill_card_database_with_multiple_cards(card_db, "multiple_cards_for_test_card_db")
+    fill_card_database_with_json_cards(
+        card_db,
+        [
+            "english_Coercion",
+            "english_Duress",
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "english_card_Future_Sight_MH1",
+            "english_card_Future_Sight_MTGO_promo",
+            "german_Coercion_with_faulty_translation",
+            "german_basic_Forest",
+            "spanish_basic_Forest",
+            "german_Duress",
+        ],
+    )
     assert_that(
         card_db.get_card_names(language, prefix),
         contains_inanyorder(*expected_names)
@@ -80,7 +108,21 @@ def test_get_card_names(card_db: CardDatabase, language: str, prefix: OptString,
     ("Unknown", None),
 ])
 def test_guess_language_from_name(card_db: CardDatabase, name: str, expected: OptString):
-    fill_card_database_with_multiple_cards(card_db, "multiple_cards_for_test_card_db")
+    fill_card_database_with_json_cards(
+        card_db,
+        [
+            "english_Coercion",
+            "english_Duress",
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "english_card_Future_Sight_MH1",
+            "english_card_Future_Sight_MTGO_promo",
+            "german_Coercion_with_faulty_translation",
+            "german_basic_Forest",
+            "spanish_basic_Forest",
+            "german_Duress",
+        ],
+    )
     assert_that(
         card_db.guess_language_from_name(name),
         is_(equal_to(expected))
@@ -95,7 +137,21 @@ def test_guess_language_from_name(card_db: CardDatabase, name: str, expected: Op
     ("Unknown", False),
 ])
 def test_is_known_language(card_db: CardDatabase, language: str, expected: bool):
-    fill_card_database_with_multiple_cards(card_db, "multiple_cards_for_test_card_db")
+    fill_card_database_with_json_cards(
+        card_db,
+        [
+            "english_Coercion",
+            "english_Duress",
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "english_card_Future_Sight_MH1",
+            "english_card_Future_Sight_MTGO_promo",
+            "german_Coercion_with_faulty_translation",
+            "german_basic_Forest",
+            "spanish_basic_Forest",
+            "german_Duress",
+        ],
+    )
     assert_that(
         card_db.is_known_language(language),
         is_(equal_to(expected))
@@ -121,8 +177,24 @@ def test_is_known_language(card_db: CardDatabase, language: str, expected: bool)
     ("Wald", "de", "wrong source", None),
     ("Bosque", "es", "wrong source", None),
 ])
-def test_translate_card_name(card_db: CardDatabase, source_name: str, target_language: str, source_language: OptString, expected: OptString):
-    fill_card_database_with_multiple_cards(card_db, "multiple_cards_for_test_card_db")
+def test_translate_card_name(
+        card_db: CardDatabase, source_name: str, target_language: str,
+        source_language: OptString, expected: OptString):
+    fill_card_database_with_json_cards(
+        card_db,
+        [
+            "english_Coercion",
+            "english_Duress",
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "english_card_Future_Sight_MH1",
+            "english_card_Future_Sight_MTGO_promo",
+            "german_Coercion_with_faulty_translation",
+            "german_basic_Forest",
+            "spanish_basic_Forest",
+            "german_Duress",
+        ],
+    )
     assert_that(
         card_db.translate_card_name(source_name, target_language, source_language),
         is_(equal_to(expected))
@@ -139,7 +211,21 @@ def test_translate_card_name(card_db: CardDatabase, source_name: str, target_lan
 ])
 def test_cards_used_less_often_then(card_db: CardDatabase, usage_count: int, expected: typing.List[int]):
     # Setup
-    fill_card_database_with_multiple_cards(card_db, "multiple_cards_for_test_card_db")
+    fill_card_database_with_json_cards(
+        card_db,
+        [
+            "english_Coercion",
+            "english_Duress",
+            "english_basic_Forest",
+            "english_basic_Forest_2",
+            "english_card_Future_Sight_MH1",
+            "english_card_Future_Sight_MTGO_promo",
+            "german_Coercion_with_faulty_translation",
+            "german_basic_Forest",
+            "spanish_basic_Forest",
+            "german_Duress",
+        ],
+    )
     document = Document(card_db, MagicMock())
     document.add_card(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
     document.store_image_usage()

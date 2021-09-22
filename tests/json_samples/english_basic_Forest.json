@@ -1,0 +1,109 @@
+{
+  "object": "card",
+  "id": "7ef83f4c-d3ff-4905-a16d-f2bae673a5b2",
+  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+  "multiverse_ids": [
+
+  ],
+  "arena_id": 75553,
+  "name": "Forest",
+  "lang": "en",
+  "released_at": "2020-08-13",
+  "uri": "https://api.scryfall.com/cards/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2",
+  "scryfall_uri": "https://scryfall.com/card/anb/112/forest?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.jpg?1597375433",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.jpg?1597375433",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.jpg?1597375433",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.png?1597375433",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.jpg?1597375433",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.jpg?1597375433"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Basic Land — Forest",
+  "oracle_text": "({T}: Add {G}.)",
+  "colors": [
+
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [
+
+  ],
+  "produced_mana": [
+    "G"
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "arena"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set": "anb",
+  "set_name": "Arena Beginner Set",
+  "set_type": "starter",
+  "set_uri": "https://api.scryfall.com/sets/fb2d12a7-a385-4ec0-b7fd-e2ff1796d7a8",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aanb&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/anb?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ab34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6&unique=prints",
+  "collector_number": "112",
+  "digital": true,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Jonas De Ro",
+  "artist_ids": [
+    "561ebf9e-8d93-4b57-8156-8826d0c19601"
+  ],
+  "illustration_id": "f57af5fd-1135-4584-bd83-fff6675d639c",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Forest",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Forest"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Forest&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Forest&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

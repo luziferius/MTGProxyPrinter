@@ -103,25 +103,6 @@ def fill_card_database_with_json_card(
     return card_db
 
 
-def fill_card_database_with_multiple_cards(
-        card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    data = load_multi_card_json(json_file_name)
-    # Either both None or both set non-empty
-    assert (option is None and value is None) or (bool(option) and bool(value))
-    if option is None:
-        populate_database(card_db, data)
-    else:
-        assert_that(
-            mtg_proxy_printer.settings.settings["downloads"],
-            has_key(option),
-            f"Test setup failed: Download settings do not contain expected setting: {option}"
-        )
-        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-            populate_database(card_db, data)
-    return card_db
-
-
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
     assert_that(
         card_db.db.execute(f'SELECT * FROM "{name}"').fetchall(),
