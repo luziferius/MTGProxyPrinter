@@ -20,15 +20,14 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import CardListModel
 
-from tests.helpers import fill_card_database_with_json_card
+from tests.helpers import fill_card_database_with_json_cards
 
 OVERSIZED_ID = "650722b4-d72b-4745-a1a5-00a34836282b"
 REGULAR_ID = "0000579f-7b35-4ed3-b44c-db2a538066fe"
 
 
 def _populate_card_db_and_create_model(card_db: CardDatabase) -> CardListModel:
-    fill_card_database_with_json_card(card_db, "oversized_card")
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+    fill_card_database_with_json_cards(card_db, ["oversized_card", "regular_english_card"])
     model = CardListModel(card_db)
     return model
 

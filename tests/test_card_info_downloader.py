@@ -15,12 +15,13 @@
 
 import dataclasses
 import typing
+import unittest.mock
 
 from hamcrest import *
 import pytest
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -126,17 +127,17 @@ class TestCaseData:
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks Oracle_id"""
     assert_that(
-        card_db.db.execute('SELECT oracle_id FROM Card').fetchall(),
+        data := card_db.db.execute('SELECT oracle_id FROM Card').fetchall(),
         contains_inanyorder(*test_case.db_card()),
-        f"Card relation contains unexpected data")
+        f"Card relation contains unexpected data: {data}")
 
 
 def _assert_print_language_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks language"""
     assert_that(
-        card_db.db.execute('SELECT "language" FROM PrintLanguage').fetchall(),
+        data := card_db.db.execute('SELECT "language" FROM PrintLanguage').fetchall(),
         contains_inanyorder(*test_case.db_print_language()),
-        f"PrintLanguage relation contains unexpected data")
+        f"PrintLanguage relation contains unexpected data: {data}")
 
 
 def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
@@ -150,46 +151,53 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
 def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks card_name"""
     assert_that(
-        card_db.db.execute('SELECT card_name FROM FaceName').fetchall(),
+        data := card_db.db.execute('SELECT card_name FROM FaceName').fetchall(),
         contains_inanyorder(*test_case.db_face_name()),
-        f"FaceName relation contains unexpected data")
+        f"FaceName relation contains unexpected data: {data}")
 
 
 def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks collector_number, scryfall_id, is_oversized, highres_image"""
     assert_that(
-        card_db.db.execute('SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing').fetchall(),
+        data := [
+            (collector_number, scryfall_id, bool(is_oversized), bool(highres_image))
+            for collector_number, scryfall_id, is_oversized, highres_image
+            in card_db.db.execute('SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing')
+         ],
         contains_inanyorder(*test_case.db_printing()),
-        f"Printing relation contains unexpected data")
+        f"Printing relation contains unexpected data: {data}")
 
 
 def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks png_image_uri, is_front, face_number"""
     assert_that(
-        card_db.db.execute(
-            "SELECT png_image_uri, is_front, face_number FROM CardFace").fetchall(),
+        data := card_db.db.execute("SELECT png_image_uri, is_front, face_number FROM CardFace").fetchall(),
         contains_inanyorder(*test_case.db_card_face()),
-        "CardFace relation contains unexpected data")
+        f"CardFace relation contains unexpected data: {data}")
 
 
 def _assert_all_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
-    """Checks card_name, "set", "language", collector_number, scryfall_id, highres_image, png_image_uri, is_front"""
+    """
+    Checks
+      card_name, set_code, "language", collector_number, scryfall_id,
+      highres_image, png_image_uri, is_front, is_oversized
+    """
     assert_that(
-        card_db.db.execute(
+        data := card_db.db.execute(
             'SELECT card_name, set_code, "language", collector_number, scryfall_id, highres_image, '
             'png_image_uri, is_front, is_oversized FROM AllPrintings').fetchall(),
         contains_inanyorder(*test_case.db_all_printings()),
-        "CardFace relation contains unexpected data")
+        f"AllPrintings relation contains unexpected data: {data}")
 
 
 def assert_successful_import(card_db: CardDatabase, test_case: TestCaseData):
-    _assert_print_language_contains(card_db, test_case)
-    _assert_card_contains(card_db, test_case)
-    _assert_set_contains(card_db, test_case)
-    _assert_printing_contains(card_db, test_case)
-    _assert_face_name_contains(card_db, test_case)
-    _assert_card_face_contains(card_db, test_case)
     _assert_all_printings_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case)
+    _assert_card_face_contains(card_db, test_case)
+    _assert_face_name_contains(card_db, test_case)
+    _assert_set_contains(card_db, test_case)
+    _assert_card_contains(card_db, test_case)
+    _assert_print_language_contains(card_db, test_case)
 
 
 def generate_test_cases_for_test_card_import():
@@ -356,3 +364,132 @@ def test_re_import_with_changed_download_filter_removes_card(card_db: CardDataba
     fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
     # The card should not be in the database.
     assert_model_is_empty(card_db)
+
+
+def test_updates_language(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the language
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "pl", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"lang": test_case.language}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_card_oracle_id(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the oracle_id ID
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-000000000000", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"oracle_id": test_case.oracle_id}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_set_code(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified set code
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsa", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"set": test_case.set.set_code}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_set_name(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the set name
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral Altered", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"set_name": test_case.set.set_name}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_set_uri(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the set URI
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsa"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"scryfall_set_uri": test_case.set.set_uri}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_printing_collector_number(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the collector_number
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "1234", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"collector_number": test_case.collector_number}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_printing_is_oversized(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the oversized boolean
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", True,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"oversized": test_case.is_oversized}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+
+
+def test_updates_printing_highres_image(card_db: CardDatabase):
+    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the highres_image boolean
+        "regular_english_card", False, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"highres_image": test_case.highres_image}):
+        fill_card_database_with_json_card(card_db, json_data)
+    assert_successful_import(card_db, test_case)
+

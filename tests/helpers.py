@@ -52,19 +52,22 @@ def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data
 
 
 @functools.lru_cache()
-def load_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
-    return [json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))]
+def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
+    return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
 
 
 @functools.lru_cache()
 def load_multi_card_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
-    return list(ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item"))
+    return list(
+        ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item")
+    )
 
 
-def fill_card_database_with_json_card(
+def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    data = load_json(json_file_name)
+        json_names: typing.List[str],
+        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    data = list(map(load_json, json_names))
     # Either both None or both set non-empty
     assert (option is None and value is None) or (bool(option) and bool(value))
     if option is None:
@@ -77,6 +80,26 @@ def fill_card_database_with_json_card(
         )
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
             populate_database(card_db, data)
+    return card_db
+
+
+def fill_card_database_with_json_card(
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+        json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
+        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    data = load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
+    # Either both None or both set non-empty
+    assert (option is None and value is None) or (bool(option) and bool(value))
+    if option is None:
+        populate_database(card_db, [data])
+    else:
+        assert_that(
+            mtg_proxy_printer.settings.settings["downloads"],
+            has_key(option),
+            f"Test setup failed: Download settings do not contain expected setting: {option}"
+        )
+        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
+            populate_database(card_db, [data])
     return card_db
 
 

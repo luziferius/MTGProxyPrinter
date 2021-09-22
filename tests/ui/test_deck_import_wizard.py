@@ -29,7 +29,7 @@ from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser
 from mtg_proxy_printer.model.card_list import PageColumns
 
-from tests.helpers import fill_card_database_with_json_card
+from tests.helpers import fill_card_database_with_json_card, fill_card_database_with_json_cards
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
@@ -126,8 +126,7 @@ class DeckReceiver(QObject):
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_card(card_db, "regular_english_card")
-    fill_card_database_with_json_card(card_db, "regular_english_card_reprint")
+    fill_card_database_with_json_cards(card_db, ["regular_english_card", "regular_english_card_reprint"])
     language_model = QStringListModel(card_db.get_all_languages(), parent=None)
     wizard = DeckImportWizard(card_db, MagicMock(), language_model)
     deck_list = "2 Fury Sliver (TSP) 157"

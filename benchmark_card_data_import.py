@@ -52,7 +52,6 @@ to_be_profiled_functions = {
         "_insert_card_faces",
         "_should_skip_card",
         "_clean_unused_data",
-        "_remove_card",
         "_insert_card",
         "_insert_printing",
         "_insert_face_name",
