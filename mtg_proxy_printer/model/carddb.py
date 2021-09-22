@@ -528,7 +528,7 @@ class CardDatabase:
                 highres_image, bool(is_oversized), face_number
             )
             for name, set_code, set_name, collector_number, scryfall_id, image_uri,
-                highres_image, is_oversized, face_number
+            highres_image, is_oversized, face_number
             in self.db.execute(query, parameters)
         ]
         return result

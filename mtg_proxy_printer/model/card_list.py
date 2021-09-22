@@ -30,6 +30,7 @@ CardList = typing.List[Card]
 
 __all__ = [
     "CardListModel",
+    "PageColumns",
 ]
 
 

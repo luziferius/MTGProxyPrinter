@@ -16,7 +16,6 @@
 import typing
 from unittest.mock import MagicMock
 
-import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 

@@ -492,4 +492,3 @@ def test_updates_printing_highres_image(card_db: CardDatabase):
     with unittest.mock.patch.dict(json_data, {"highres_image": test_case.highres_image}):
         fill_card_database_with_json_card(card_db, json_data)
     assert_successful_import(card_db, test_case)
-

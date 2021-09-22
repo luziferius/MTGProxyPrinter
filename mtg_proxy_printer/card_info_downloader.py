@@ -474,7 +474,6 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, pr
     return face_ids
 
 
-
 def _should_skip_card(
         card: JSONType, download_enabled: typing.Dict[str, bool],
         skip_cards_banned_in_formats: typing.FrozenSet[str]) -> bool:
