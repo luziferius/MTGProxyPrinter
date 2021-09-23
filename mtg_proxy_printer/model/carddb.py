@@ -152,7 +152,7 @@ class CardDatabase:
 
         currently_disabled_settings = set(itertools.filterfalse(section.getboolean, section.keys()))
         database_disabled_settings = set(item for item, in self.db.execute(
-            cached_dedent(r'''\
+            cached_dedent('''\
             SELECT setting -- check_if_download_settings_changed()
                 FROM UsedDownloadSettings
                 WHERE "value" = ?
