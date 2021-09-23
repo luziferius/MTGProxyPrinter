@@ -30,7 +30,7 @@ import http.client
 import ijson
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
@@ -320,11 +320,13 @@ def _clear_lru_caches():
 def store_download_settings(db):
     """Store the current download settings in the database"""
     section = mtg_proxy_printer.settings.settings["downloads"]
-    db.executemany(
-        'INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?) '
-        'ON CONFLICT(setting) DO UPDATE '
-        'SET value = excluded.value '
-        'WHERE value <> excluded.value\n',
+    db.executemany(cached_dedent(
+        '''\
+        INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)
+            ON CONFLICT(setting) DO UPDATE
+                SET value = excluded.value
+                WHERE value <> excluded.value
+        '''),
         ((setting, section.getboolean(setting)) for setting in section.keys())
     )
 
@@ -348,18 +350,21 @@ def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.dat
 
 def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     """Purges all excess data, like printings that are no longer in the import data."""
-    db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace"))
+    db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
     excess_face_ids = db_face_ids.difference(new_face_ids)
     logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
-    db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
-    db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
-    db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
+    db.executemany('DELETE FROM CardFace WHERE card_face_id = ?\n', excess_face_ids)
+    db.execute('DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n')
+    db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
     db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
-    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
-    db.execute(
-        "DELETE FROM PrintLanguage WHERE language_id NOT IN "
-        "(SELECT FaceName.language_id FROM FaceName)\n"
-    )
+    db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
+    db.execute(cached_dedent('''\
+    DELETE FROM PrintLanguage
+        WHERE language_id NOT IN (
+            SELECT FaceName.language_id
+            FROM FaceName
+        )
+    '''))
 
 
 @functools.lru_cache(None)
@@ -397,11 +402,14 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
 
 @functools.lru_cache(None)
 def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
-    model.db.execute(
-        'INSERT INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?) '
-        'ON CONFLICT ("set") DO '
-        'UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri '
-        'WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri\n',
+    model.db.execute(cached_dedent(
+        '''\
+        INSERT INTO "Set" ("set", set_name, set_uri)
+            VALUES (?, ?, ?)
+            ON CONFLICT ("set") DO
+            UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri
+            WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri
+        '''),
         (set_abbr, set_name, set_uri)
     )
     set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
@@ -438,20 +446,29 @@ def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: i
 
 @functools.lru_cache(None)
 def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
-    model.db.execute(
-        "INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)\n"
-        "  VALUES (?, ?, ?, ?, ?, ?)\n"
-        "  ON CONFLICT (scryfall_id) DO\n"
-        "  UPDATE SET card_id = excluded.card_id, set_id = excluded.set_id,\n"
-        "             collector_number = excluded.collector_number, is_oversized = excluded.is_oversized,\n"
-        "             highres_image = excluded.highres_image\n"
-        "  WHERE card_id <> excluded.card_id OR set_id <> excluded.set_id OR\n"
-        "        collector_number <> excluded.collector_number OR is_oversized <> excluded.is_oversized OR\n"
-        "        highres_image <> excluded.highres_image",
-        data,
+    model.db.execute(cached_dedent(
+        '''\
+        INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (scryfall_id) DO UPDATE
+                SET card_id = excluded.card_id,
+                    set_id = excluded.set_id,
+                    collector_number = excluded.collector_number,
+                    is_oversized = excluded.is_oversized,
+                    highres_image = excluded.highres_image
+            WHERE card_id <> excluded.card_id
+               OR set_id <> excluded.set_id
+               OR collector_number <> excluded.collector_number
+               OR is_oversized <> excluded.is_oversized
+               OR highres_image <> excluded.highres_image
+        '''), data,
     )
-    printing_id, = model.db.execute(
-        "SELECT printing_id FROM Printing WHERE scryfall_id = ?\n", (data.scryfall_id,)
+    printing_id, = model.db.execute(cached_dedent(
+        '''\
+        SELECT printing_id
+            FROM Printing
+            WHERE scryfall_id = ?
+        '''), (data.scryfall_id,)
     ).fetchone()
     return printing_id
 
@@ -461,12 +478,15 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, pr
     face_ids: IntTuples = []
     for face in _get_card_faces(card):
         face_name_id = _insert_face_name(model, face.printed_face_name, language_id)
-        face_id: typing.Tuple[int] = model.db.execute(
-            "INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number) "
-            " VALUES (?, ?, ?, ?, ?)\n"
-            "  ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE\n"
-            "  SET png_image_uri = excluded.png_image_uri, face_number = excluded.face_number\n"
-            "  RETURNING card_face_id\n",
+        face_id: typing.Tuple[int] = model.db.execute(cached_dedent(
+            '''\
+            INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
+                SET png_image_uri = excluded.png_image_uri,
+                    face_number = excluded.face_number
+                RETURNING card_face_id
+            '''),
             (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
         ).fetchone()
         if face_id is not None:
