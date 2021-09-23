@@ -3,15 +3,19 @@
 # Next version (in development)
 
 
+## Implemented features
+
+- Show warnings in the deck import wizard, if oversized cards are present in the imported card list.
+
 ## Changed features
 
 - Show copyright notices of many of the used software libraries in the About window.
 - Improved the accuracy of the card data update checker, if it is enabled in the settings.
   It should now only report available updates, if Scryfall actually has new data.
+- Reduced application bundle size for Windows by 25%.
 
 ## Fixed issues
 
-- Show warnings in the deck import wizard, if oversized cards are present in the imported card list.
 - Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
   the import wizard actually imported the unedited deck list, completely discarding any edits done.
 - Fixed wrong card translations for cards having multiple names, like double-faced cards or split cards.
@@ -20,8 +24,8 @@
 
 ## Other
 
-- Import card data from a file via command line argument --card-data. Mostly useful for debugging, but can also be used
-  to update the card database of a PC without internet access.
+- Support importing card data from a file via command line argument `--card-data`.
+  Mostly useful for debugging, but can also be used to update the card database of a PC without internet access.
 - Larger re-write of the on-disk card database structure. Older versions will not be able to run, after
   the database is migrated to the latest version. Downgrading the application will require deleting the database file. 
 
