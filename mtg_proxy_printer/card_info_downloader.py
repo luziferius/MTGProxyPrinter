@@ -251,13 +251,13 @@ class CardInfoDownloadWorker(QObject):
             if not enabled)
         skipped_cards = 0
         index = 0
-        newest_card_date = datetime.date.today()
+        newest_card_date = datetime.date(1970, 1, 1)
         face_ids: IntTuples = []
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            newest_card_date = _read_card_preview_date(card, newest_card_date)
+            newest_card_date = _read_card_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
@@ -272,6 +272,7 @@ class CardInfoDownloadWorker(QObject):
             face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
+        logger.debug(f"Newest card imported: {newest_card_date}")
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
@@ -331,12 +332,18 @@ def store_download_settings(db):
     )
 
 
-def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
+def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
     """
-    Newer cards have their previewed date set. Return that, if it is newer than the given date.
+    If the card’s set release is older than the given date and is in the past, return the release date.
+
+    Newer cards have their previewed date set. Return that, if it is newer than the given date,
+    even if it is in the future.
 
     This will be used to determine if newer card data is available online.
     """
+    release_date = datetime.date.fromisoformat(card.get("released_at", "1970-01-01"))
+    if known_newest_card_date < release_date < datetime.date.today():
+        return release_date
     try:
         if date_str := card["preview"]["previewed_at"]:
             card_date = datetime.date.fromisoformat(date_str)
