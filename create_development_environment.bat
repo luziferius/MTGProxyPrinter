@@ -28,6 +28,7 @@ del Qt5PositioningQuick.dll Qt5Qml.dll Qt5QmlModels.dll Qt5QmlWorkerScript.dll Q
 del Qt5Quick3DAssetImport.dll Qt5Quick3DRender.dll Qt5Quick3DRuntimeRender.dll Qt5Quick3DUtils.dll Qt5QuickControls2.dll
 del Qt5QuickParticles.dll Qt5QuickShapes.dll Qt5QuickTemplates2.dll Qt5QuickTest.dll Qt5QuickWidgets.dll Qt5RemoteObjects.dll
 del Qt5Sensors.dll Qt5SerialPort.dll Qt5Sql.dll Qt5Test.dll Qt5WebChannel.dll Qt5WebSockets.dll Qt5WebView.dll Qt5XmlPatterns.dll
+del libcrypto-1_1-x64.dll libssl-1_1-x64.dll
 popd
 
 
