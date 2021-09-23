@@ -1,7 +1,7 @@
 # Changelog
 
-# Next version (in development)
 
+# Version 0.14.0 (2021-09-23) <a name="v0_14_0"></a>
 
 ## Implemented features
 
@@ -9,7 +9,7 @@
 
 ## Changed features
 
-- Show copyright notices of many of the used software libraries in the About window.
+- Show copyright notices for many of the used software libraries in the About window.
 - Improved the accuracy of the card data update checker, if it is enabled in the settings.
   It should now only report available updates, if Scryfall actually has new data.
 - Reduced application bundle size for Windows by 25%.
@@ -17,10 +17,11 @@
 ## Fixed issues
 
 - Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
-  the import wizard actually imported the unedited deck list, completely discarding any edits done.
-- Fixed wrong card translations for cards having multiple names, like double-faced cards or split cards.
+  the import wizard actually imported the unedited deck list, completely discarding any edits done. This now works
+  as expected.
+- Fixed potentially wrong card translations for cards having multiple names, like double-faced cards or split cards.
 - The card information download no longer locks up the application if a database error occurs. This might happen, if
-  two instances of MTGProxyPrinter try to write to the internal card database at the same time.
+  two instances of MTGProxyPrinter try to write to the internal, local card database at the same time.
 
 ## Other
 

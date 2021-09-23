@@ -20,6 +20,10 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `delegateto`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
 
+### System libraries
+
+- `SQLite3` >= 3.35.0
+
 ### Test Requirements
 
 These libraries are required to run the unit tests.
