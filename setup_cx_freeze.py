@@ -78,6 +78,7 @@ setup_py.setup_parameters["options"] = {
             "pint.testsuite",  # Ignore the internal test suite
             "importlib_metadata",
             # All unused PyQt components
+            "PyQt5.QtXmlPatterns",
             "PyQt5.QtNfc",
             "PyQt5.QtQml",
             "PyQt5.QtSql",
