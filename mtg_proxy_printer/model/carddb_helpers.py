@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import sqlite3
 import textwrap
+import time
 import typing
 
 import mtg_proxy_printer.sqlite_helpers
@@ -310,6 +312,52 @@ def _migrate_20_to_21(db: sqlite3.Connection):
     VACUUM;
     BEGIN TRANSACTION;
     """))
+import urllib.parse
+
+def _migrate_21_to_22(db: sqlite3.Connection):
+    # Full edit procedure not needed here, because the table has no indices or foreign keys associated
+    from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
+
+    class CardDatabaseMock(typing.NamedTuple):
+        db: sqlite3.Connection
+
+        def commit_transaction(self):
+            self.db.commit()
+
+    dw = CardInfoDownloadWorker(CardDatabaseMock(db))
+    updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;")
+    data = []
+    for id_, timestamp in updates:
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
+        })
+        card_count = next(dw.read_json_card_data(
+            f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
+        ))
+        data.append((id_, timestamp, card_count))
+        time.sleep(0.1)  # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
+
+    logger.info(f"Acquired data for upgrade to schema version 22: {data}")
+    db.executescript(textwrap.dedent("""\
+    CREATE TABLE LastDatabaseUpdateNew (
+      -- Contains the history of all performed card data updates
+      update_id             INTEGER NOT NULL PRIMARY KEY,
+      update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+      reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
+    );
+    """))
+    db.executemany(
+        "INSERT INTO LastDatabaseUpdateNew (update_id, update_timestamp, reported_card_count) VALUES (?, ?, ?)\n",
+        data
+    )
+    db.executescript(textwrap.dedent("""
+    DROP TABLE LastDatabaseUpdate;
+    ALTER TABLE LastDatabaseUpdateNew RENAME TO LastDatabaseUpdate;
+    """))
 
 
 def migrate_card_database(db: sqlite3.Connection):
@@ -333,6 +381,7 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_18_to_19,
         _migrate_19_to_20,
         _migrate_20_to_21,
+        _migrate_21_to_22,
     ]
     for source_version, migrator_script in enumerate(migration_scripts, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:

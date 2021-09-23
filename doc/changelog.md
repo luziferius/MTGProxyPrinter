@@ -6,6 +6,8 @@
 ## Changed features
 
 - Show copyright notices of many of the used software libraries in the About window.
+- Improved the accuracy of the card data update checker, if it is enabled in the settings.
+  It should now only report available updates, if Scryfall actually has new data.
 
 ## Fixed issues
 

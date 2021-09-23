@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000021;
+PRAGMA user_version = 0000022;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -90,7 +90,7 @@ CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
   update_id             INTEGER NOT NULL PRIMARY KEY,
   update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  newest_card_timestamp TIMESTAMP WITH TIME ZONE NULL
+  reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
 
 CREATE TABLE UsedDownloadSettings (

@@ -251,13 +251,11 @@ class CardInfoDownloadWorker(QObject):
             if not enabled)
         skipped_cards = 0
         index = 0
-        newest_card_date = datetime.date.today()
         face_ids: IntTuples = []
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            newest_card_date = _read_card_preview_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
@@ -275,9 +273,12 @@ class CardInfoDownloadWorker(QObject):
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
-        self.model.db.execute(
-            "INSERT INTO LastDatabaseUpdate (update_timestamp, newest_card_timestamp) VALUES (?, ?)\n",
-            (datetime.datetime.now(), newest_card_date)
+        self.model.db.execute(cached_dedent(
+            """\
+            INSERT INTO LastDatabaseUpdate (update_timestamp, reported_card_count)
+                VALUES (?, ?)
+            """),
+            (datetime.datetime.now(), index)
         )
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         self.model.db.execute("ANALYZE\n")
@@ -331,20 +332,18 @@ def store_download_settings(db):
     )
 
 
-def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
+def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
     """
-    Newer cards have their previewed date set. Return that, if it is newer than the given date.
+    If the card’s set release is older than the given date and is in the past, return the release date.
+
+    Newer cards have their previewed date set. Return that, if it is newer than the given date,
+    even if it is in the future.
 
     This will be used to determine if newer card data is available online.
     """
-    try:
-        if date_str := card["preview"]["previewed_at"]:
-            card_date = datetime.date.fromisoformat(date_str)
-            if card_date > known_newest_card_date:
-                # Found card from a future set
-                return card_date
-    except KeyError:
-        pass
+    release_date = datetime.date.fromisoformat(card.get("released_at", "1970-01-01"))
+    if known_newest_card_date < release_date < datetime.date.today():
+        return release_date
     return known_newest_card_date
 
 
