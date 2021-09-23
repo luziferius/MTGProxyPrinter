@@ -492,23 +492,20 @@ class CardDatabase:
                 result.append(index)
         return result
 
-    def get_newest_card_date_in_database(self) -> datetime.date:
+    def get_total_cards_in_last_update(self) -> int:
         """
         Returns the latest card timestamp from the LastDatabaseUpdate table.
         Returns today(), if the table is empty.
         """
         query = cached_dedent("""\
-        SELECT newest_card_timestamp -- get_newest_card_date_in_database?()
+        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update?()
             FROM LastDatabaseUpdate
-            WHERE update_id = (
-              SELECT MAX(update_id)
-              FROM LastDatabaseUpdate
-        )""")
-        result = [datetime.date.fromisoformat(date) for date, in self.db.execute(query)]
-        if result:
-            return result[0]
+        """)
+        id_, total_cards_in_last_update = self.db.execute(query).fetchone()
+        if id_ is not None:
+            return total_cards_in_last_update
         else:
-            return datetime.date.today()
+            return 0
 
     def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
         """

@@ -251,13 +251,11 @@ class CardInfoDownloadWorker(QObject):
             if not enabled)
         skipped_cards = 0
         index = 0
-        newest_card_date = datetime.date(1970, 1, 1)
         face_ids: IntTuples = []
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            newest_card_date = _read_card_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
@@ -272,13 +270,15 @@ class CardInfoDownloadWorker(QObject):
             face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
-        logger.debug(f"Newest card imported: {newest_card_date}")
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
-        self.model.db.execute(
-            "INSERT INTO LastDatabaseUpdate (update_timestamp, newest_card_timestamp) VALUES (?, ?)\n",
-            (datetime.datetime.now(), newest_card_date)
+        self.model.db.execute(cached_dedent(
+            """\
+            INSERT INTO LastDatabaseUpdate (update_timestamp, reported_card_count)
+                VALUES (?, ?)
+            """),
+            (datetime.datetime.now(), index)
         )
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         self.model.db.execute("ANALYZE\n")
@@ -344,14 +344,6 @@ def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> da
     release_date = datetime.date.fromisoformat(card.get("released_at", "1970-01-01"))
     if known_newest_card_date < release_date < datetime.date.today():
         return release_date
-    try:
-        if date_str := card["preview"]["previewed_at"]:
-            card_date = datetime.date.fromisoformat(date_str)
-            if card_date > known_newest_card_date:
-                # Found card from a future set
-                return card_date
-    except KeyError:
-        pass
     return known_newest_card_date
 
 
