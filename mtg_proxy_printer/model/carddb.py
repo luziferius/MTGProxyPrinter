@@ -106,6 +106,7 @@ CardList = typing.List[Card]
 
 @functools.lru_cache(None)
 def cached_dedent(text: str):
+    """Wraps textwrap.dedent() in a LRU cache."""
     return textwrap.dedent(text)
 
 
@@ -152,9 +153,10 @@ class CardDatabase:
         currently_disabled_settings = set(itertools.filterfalse(section.getboolean, section.keys()))
         database_disabled_settings = set(item for item, in self.db.execute(
             cached_dedent(r'''\
-            SELECT setting 
+            SELECT setting -- check_if_download_settings_changed()
                 FROM UsedDownloadSettings
-                WHERE "value" = ?'''),
+                WHERE "value" = ?
+            '''),
             (False,)
         ))
         result = currently_disabled_settings != database_disabled_settings
@@ -168,7 +170,7 @@ class CardDatabase:
 
     def allow_updating_card_data(self) -> bool:
         query = cached_dedent('''\
-            SELECT update_timestamp
+            SELECT update_timestamp -- allow_updating_card_data()
                 FROM LastDatabaseUpdate
                 ORDER BY update_timestamp DESC
                 LIMIT 1
@@ -351,7 +353,7 @@ class CardDatabase:
 
     def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
         query = cached_dedent('''\
-        SELECT EXISTS (
+        SELECT EXISTS ( -- is_scryfall_id_known()
             SELECT scryfall_id
             FROM Printing JOIN
             CardFace USING(printing_id)
@@ -363,7 +365,7 @@ class CardDatabase:
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number
+            highres_image, is_oversized, face_number -- get_card_with_scryfall_id()
             FROM AllPrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
@@ -392,7 +394,7 @@ class CardDatabase:
     def guess_language_from_name(self, name: str) -> typing.Optional[str]:
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
-        SELECT "language"
+        SELECT "language" -- guess_language_from_name()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             WHERE card_name LIKE ?
@@ -402,7 +404,7 @@ class CardDatabase:
     def is_known_language(self, language: str) -> bool:
         """Returns true, if the given two-letter code is a known language. Returns False otherwise."""
         query = cached_dedent('''
-        SELECT EXISTS(
+        SELECT EXISTS( -- is_known_language()
             SELECT *
             FROM PrintLanguage
             WHERE "language" = ?
@@ -424,7 +426,7 @@ class CardDatabase:
         if not source_language:
             source_language = self.guess_language_from_name(name) or "en"
         query = cached_dedent("""\
-        SELECT DISTINCT card_name
+        SELECT DISTINCT card_name -- translate_card_name()
             FROM FaceName
             JOIN PrintLanguage USING(language_id)
             JOIN CardFace USING (face_name_id)
@@ -455,7 +457,7 @@ class CardDatabase:
         from the input list that correspond to cards that were not used since the given date.
         """
         query = cached_dedent("""\
-        SELECT last_use_date < ? AS last_use_was_before_threshold
+        SELECT last_use_date < ? AS last_use_was_before_threshold -- cards_not_used_since()
             FROM LastImageUseTimestamps
             WHERE scryfall_id = ?
               AND is_front = ?
@@ -476,7 +478,7 @@ class CardDatabase:
         if count <= 0:
             return []
         query = cached_dedent("""\
-        SELECT NOT EXISTS (
+        SELECT NOT EXISTS ( -- cards_used_less_often_then()
             SELECT scryfall_id
             FROM LastImageUseTimestamps
             WHERE scryfall_id = ?
@@ -496,7 +498,7 @@ class CardDatabase:
         Returns today(), if the table is empty.
         """
         query = cached_dedent("""\
-        SELECT newest_card_timestamp
+        SELECT newest_card_timestamp -- get_newest_card_date_in_database?()
             FROM LastDatabaseUpdate
             WHERE update_id = (
               SELECT MAX(update_id)
@@ -532,8 +534,10 @@ class CardDatabase:
         # computed similarity is equal to the maximum similarity encountered. This avoids creating a B-Tree required
         # for the alternative "ORDER BY similarity DESC LIMIT 1"
         query = cached_dedent("""\
-        SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri, highres_image,
-            is_oversized, face_number, MAX((set_code = ?) + (collector_number = ?)) AS similarity
+        SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
+               scryfall_id, png_image_uri, highres_image,
+               is_oversized, face_number,
+               MAX((set_code = ?) + (collector_number = ?)) AS similarity
             FROM AllPrintings
             WHERE oracle_id = ? AND language = ? AND is_front = ?
         """)
@@ -555,7 +559,7 @@ class CardDatabase:
         """Returns all printings of the given card in the given language."""
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
-               highres_image, is_oversized, face_number
+               highres_image, is_oversized, face_number -- find_all_translated_printings()
             FROM AllPrintings
             WHERE oracle_id = ? AND language = ? AND is_front = ?
         """)
