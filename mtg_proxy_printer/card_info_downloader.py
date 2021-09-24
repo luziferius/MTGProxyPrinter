@@ -276,7 +276,7 @@ class CardInfoDownloadWorker(QObject):
         self.model.db.execute(cached_dedent(
             """\
             INSERT INTO LastDatabaseUpdate (reported_card_count)
-                VALUES (?, ?)
+                VALUES (?)
             """),
             (index,)
         )
