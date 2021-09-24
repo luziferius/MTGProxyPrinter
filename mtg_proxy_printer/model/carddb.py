@@ -507,10 +507,7 @@ class CardDatabase:
             FROM LastDatabaseUpdate
         """)
         id_, total_cards_in_last_update = self.db.execute(query).fetchone()
-        if id_ is not None:
-            return total_cards_in_last_update
-        else:
-            return 0
+        return 0 if id_ is None else total_cards_in_last_update
 
     def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
         """

@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 import typing
 import unittest.mock
@@ -424,3 +425,12 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_
             card_db.allow_updating_card_data(),
             is_(True)
         )
+
+def test_get_total_cards_in_last_update(card_db: CardDatabase):
+    cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
+    card_data = [load_json("regular_english_card")]
+    cidw.populate_database(card_data)
+    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
+    card_data.append(load_json("english_basic_Forest"))
+    cidw.populate_database(card_data)
+    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
