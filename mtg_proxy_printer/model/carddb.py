@@ -112,10 +112,17 @@ def cached_dedent(text: str):
 
 @delegateto.delegate("db", "commit", "rollback")
 class CardDatabase:
-
+    """
+    Holds the connection to the local SQLite database that contains the relevant card data.
+    Provides methods for data access.
+    """
     MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
+        """
+        :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
+            purposes.
+        """
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(
             db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
