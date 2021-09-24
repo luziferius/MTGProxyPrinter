@@ -12,18 +12,20 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import datetime
 import typing
+import unittest.mock
 from unittest.mock import MagicMock
 
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY
+import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.model.document import Document
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
-    fill_card_database_with_json_cards
+    fill_card_database_with_json_cards, load_json
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
@@ -395,3 +397,30 @@ def test_get_opposing_face__card_attribute_is_front(
     card = card_db.get_opposing_face(card_db.get_cards_from_data(card_data)[0])
     assert_that(card, is_(not_none()))
     assert_that(card, has_property("is_front", all_of(is_not(is_front), instance_of(bool))))
+
+
+def test_allow_updating_card_data_on_empty_database_returns_true(card_db: CardDatabase):
+    assert_that(card_db.allow_updating_card_data(), is_(True))
+
+
+def test_allow_updating_card_data_on_freshly_populated_database_returns_false(card_db: CardDatabase):
+    cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
+    card_data = [load_json("regular_english_card")]
+    cidw.populate_database(card_data)
+    assert_that(card_db.allow_updating_card_data(), is_(False))
+
+
+@pytest.mark.parametrize("delta_days", [0, 1, 2])
+def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_db: CardDatabase, delta_days: int):
+    cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
+    card_data = [load_json("regular_english_card")]
+    cidw.populate_database(card_data)
+    today = datetime.date.today()
+    now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
+    with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.datetime.date") as mock_date:
+        mock_date.today.return_value = now
+        assert_that(datetime.date.today(), is_not(today))
+        assert_that(
+            card_db.allow_updating_card_data(),
+            is_(True)
+        )

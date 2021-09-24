@@ -176,20 +176,18 @@ class CardDatabase:
         return bool(result)
 
     def allow_updating_card_data(self) -> bool:
-        query = cached_dedent('''\
-            SELECT update_timestamp -- allow_updating_card_data()
-                FROM LastDatabaseUpdate
-                ORDER BY update_timestamp DESC
-                LIMIT 1
-            ''')
-        if result := self.db.execute(query).fetchone():
-            last_timestamp_str, = result
-            last_timestamp = datetime.datetime.fromisoformat(last_timestamp_str).date()
-            now = datetime.datetime.now().date()
-            allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= now
-            return allow_update or self.check_if_download_settings_changed()
-        else:
-            return True
+        """
+        Returns True, if it should be allowed to update the internal card database, False otherwise.
+        This is determined by the timestamp of the last database update performed.
+        If the database is empty, downloading the card data is always allowed.
+        """
+        # The MAX aggregate returns NULL on an empty database. So use a timestamp in 1970 to return True then.
+        query = "SELECT COALESCE(MAX(update_timestamp), '1970-01-01 00:00:00') FROM LastDatabaseUpdate\n"
+        result, = self.db.execute(query).fetchone()
+        last_timestamp = datetime.datetime.fromisoformat(result).date()
+        allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.date.today()
+        return allow_update or self.check_if_download_settings_changed()
+
 
     def get_all_languages(self) -> StringList:
         """Returns the list of all known languages, sorted ascending."""
