@@ -275,10 +275,10 @@ class CardInfoDownloadWorker(QObject):
         # Store the timestamp of this import.
         self.model.db.execute(cached_dedent(
             """\
-            INSERT INTO LastDatabaseUpdate (update_timestamp, reported_card_count)
+            INSERT INTO LastDatabaseUpdate (reported_card_count)
                 VALUES (?, ?)
             """),
-            (datetime.datetime.now(), index)
+            (index,)
         )
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         self.model.db.execute("ANALYZE\n")
