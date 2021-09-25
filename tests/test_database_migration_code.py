@@ -149,3 +149,4 @@ def test_migrate_card_database(card_db: CardDatabase):
         contains_exactly(
             *card_db.db.execute(query).fetchall()
         ))
+

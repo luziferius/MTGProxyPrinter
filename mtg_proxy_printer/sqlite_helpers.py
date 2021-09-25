@@ -53,8 +53,8 @@ def open_database(
     should_create_schema = db_path == ":memory:" or not db_path.exists()
     db = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     logger.debug(f"Connected SQLite database {location}.")
-    # Both settings are volatile, thus have to be set for each opened connection
-    db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")
+    # These settings are volatile, thus have to be set for each opened connection
+    db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000; PRAGMA trusted_schema = OFF;")
     logger.debug("Enabled SQLite3 foreign keys support.")
     if should_create_schema:
         populate_database_schema(db, schema_name)
