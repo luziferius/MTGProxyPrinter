@@ -25,11 +25,11 @@ import socket
 import typing
 import urllib.error
 import urllib.request
-import http.client
 
 import ijson
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
+from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.metered_file
@@ -46,8 +46,7 @@ __all__ = [
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
-# Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
-supported_encodings = ("gzip", "identity")
+
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 IntTuples = typing.List[typing.Tuple[int]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
@@ -118,13 +117,7 @@ class CardInfoDownloader(QObject):
         logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
 
 
-class CardInfoDownloadWorker(QObject):
-
-    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
-    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
-    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
+class CardInfoDownloadWorker(DownloaderBase):
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -148,12 +141,6 @@ class CardInfoDownloadWorker(QObject):
             self.model.db.rollback()
         else:
             self.download_finished.emit()
-
-    def _wrap_in_metered_file(self, raw_file, file_size):
-        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
-        monitor.total_bytes_processed.connect(self.download_progress)
-        monitor.io_begin.connect(self.download_begins)
-        return monitor
 
     def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
@@ -284,26 +271,6 @@ class CardInfoDownloadWorker(QObject):
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
         return index
-
-    def read_from_url(self, url: str):
-        """
-        Reads a given URL and returns a file-like object that can and should be used as a context manager.
-        """
-        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        request = urllib.request.Request(url, headers=headers)
-        response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
-        if (response_code := response.getcode()) >= 300:
-            raise RuntimeError(f"Error from server! Error code: {response_code}")
-        encoding = response.info().get("Content-Encoding")
-        size_bytes = int(response.info().get("Content-Length", "0"))
-        metered_reader = self._wrap_in_metered_file(response, size_bytes)
-        if encoding == "gzip":
-            data = gzip.open(metered_reader, "rb")
-        elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
-            data = metered_reader
-        else:
-            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-        return data, metered_reader
 
 
 def _clear_lru_caches():

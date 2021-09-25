@@ -729,9 +729,9 @@ class DocumentLoader(QObject):
             # images to the document on it’s own, interfering with the loading process, in particular with emitting page
             # breaks. Thus create a separate instance and use it synchronously inside this worker thread.
             self.image_loader = ImageDownloader(image_db, self)
-            self.image_loader.card_download_starting.connect(image_db.card_download_starting)
-            self.image_loader.card_download_finished.connect(image_db.card_download_finished)
-            self.image_loader.card_download_progress.connect(image_db.card_download_progress)
+            self.image_loader.download_begins.connect(image_db.card_download_starting)
+            self.image_loader.download_finished.connect(image_db.card_download_finished)
+            self.image_loader.download_progress.connect(image_db.card_download_progress)
             self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
             self.network_errors_during_load: typing.Counter[str] = collections.Counter()
             self.finished.connect(self.propagate_errors_during_load)

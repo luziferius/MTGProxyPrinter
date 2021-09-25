@@ -28,8 +28,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersist
 from PyQt5.QtGui import QPixmap, QColor
 
 import mtg_proxy_printer.app_dirs
-import mtg_proxy_printer.meta_data
-import mtg_proxy_printer.metered_file
+import mtg_proxy_printer.downloader_base
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.card_info_downloader
@@ -118,9 +117,9 @@ class ImageDatabase(QObject):
         self.download_thread = QThread()
         self.download_worker = ImageDownloader(self)
         self.download_worker.moveToThread(self.download_thread)
-        self.download_worker.card_download_starting.connect(self.card_download_starting)
-        self.download_worker.card_download_finished.connect(self.card_download_finished)
-        self.download_worker.card_download_progress.connect(self.card_download_progress)
+        self.download_worker.download_begins.connect(self.card_download_starting)
+        self.download_worker.download_finished.connect(self.card_download_finished)
+        self.download_worker.download_progress.connect(self.card_download_progress)
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.download_worker.add_card.connect(self.add_card)
@@ -203,7 +202,7 @@ class ImageDatabase(QObject):
         return removed
 
 
-class ImageDownloader(QObject):
+class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
     This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
     a QThread. To perform it’s tasks, it offers multiple Qt Signals that broadcast it’s state changes
@@ -211,12 +210,13 @@ class ImageDownloader(QObject):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
-    card_download_starting = pyqtSignal(int)
-    card_download_finished = pyqtSignal()
-    card_download_progress = pyqtSignal(int)
+    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
+    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
+    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
+    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
+    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     add_card = pyqtSignal(Card, int)
     replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
     """
     Messages if the instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
@@ -230,16 +230,7 @@ class ImageDownloader(QObject):
         self.should_run = True
         self.batch_processing_state: bool = False
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
-        self.download_worker = self._create_download_worker()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _create_download_worker(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker:
-        download_worker = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(None, parent=self)
-        # Not connecting download_worker.download_finished with self.card_download_finished,
-        # because that signal is emitted explicitly by this class.
-        download_worker.download_progress.connect(self.card_download_progress)
-        download_worker.download_begins.connect(self.card_download_starting)
-        return download_worker
 
     def scan_disk_image_cache_then_process_queue(self):
         logger.info("Reading all image IDs of images stored on disk.")
@@ -269,7 +260,7 @@ class ImageDownloader(QObject):
             except socket.timeout as e:
                 last_error_msg = self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
             finally:
-                self.card_download_finished.emit()
+                self.download_finished.emit()
                 signal_to_emit.emit(card, value)
 
         logger.info("Processing download queue stopped")
@@ -317,7 +308,7 @@ class ImageDownloader(QObject):
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
-        source, _ = self.download_worker.read_from_url(download_uri)
+        source, _ = self.read_from_url(download_uri)
         download_path = self.image_database.db_path / target_path.name
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
