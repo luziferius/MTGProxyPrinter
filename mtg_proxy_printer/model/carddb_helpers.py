@@ -18,6 +18,7 @@ import sqlite3
 import textwrap
 import time
 import typing
+import urllib.parse
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
@@ -39,12 +40,11 @@ def _migrate_9_to_10(db: sqlite3.Connection):
         "Card",
         '"Set"',
         "PrintLanguage",
-        "UsedDownloadSettings",
     ]
     for table in tables_to_clear:
         db.execute(f"DELETE FROM {table}")
     db.executescript(textwrap.dedent("""\
-    ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1";
+    ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1;
     DROP VIEW AllPrintings;
     CREATE VIEW AllPrintings AS
       SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
@@ -312,7 +312,7 @@ def _migrate_20_to_21(db: sqlite3.Connection):
     VACUUM;
     BEGIN TRANSACTION;
     """))
-import urllib.parse
+
 
 def _migrate_21_to_22(db: sqlite3.Connection):
     # Full edit procedure not needed here, because the table has no indices or foreign keys associated

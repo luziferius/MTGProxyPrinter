@@ -188,7 +188,6 @@ class CardDatabase:
         allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.date.today()
         return allow_update or self.check_if_download_settings_changed()
 
-
     def get_all_languages(self) -> StringList:
         """Returns the list of all known languages, sorted ascending."""
         logger.debug("Reading all known languages")
