@@ -56,13 +56,6 @@ def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
     return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
 
 
-@functools.lru_cache()
-def load_multi_card_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
-    return list(
-        ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item")
-    )
-
-
 def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
