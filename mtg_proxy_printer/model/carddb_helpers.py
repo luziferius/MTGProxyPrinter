@@ -14,11 +14,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import socket
 import sqlite3
 import textwrap
 import time
 import typing
+import urllib.error
 import urllib.parse
+
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
@@ -335,9 +338,12 @@ def _migrate_21_to_22(db: sqlite3.Connection):
             "unique": "prints",
             "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
         })
-        card_count = next(dw.read_json_card_data(
-            f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
-        ))
+        try:
+            card_count = next(dw.read_json_card_data(
+                f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
+            ))
+        except (urllib.error.URLError, socket.error):
+            card_count = 0
         data.append((id_, timestamp, card_count))
         time.sleep(0.1)  # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
 
