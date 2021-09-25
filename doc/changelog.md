@@ -5,7 +5,7 @@
 ## Fixed issues
 
 - Fixed bug in database migration code that prevented upgrading the application from ancient alpha versions.
-
+- The download progress bar properly disappears, after images finish downloading during the document loading process.
 
 # Version 0.14.0 (2021-09-23) <a name="v0_14_0"></a>
 
