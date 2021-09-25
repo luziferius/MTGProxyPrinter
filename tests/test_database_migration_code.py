@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3
+import textwrap
 
 from hamcrest import *
 
@@ -85,4 +86,47 @@ def test_migrate_card_database():
         db.execute("PRAGMA user_version").fetchone()[0],
         is_(equal_to(_read_current_database_schema_version("carddb"))),
     )
-    # TODO: Validate the table columns and indices.
+    assert_that(
+        [name for name, in db.execute(textwrap.dedent("""\
+        SELECT name FROM sqlite_schema
+          WHERE type = 'table'
+            AND name NOT LIKE 'sqlite_%'
+        """))],
+        contains_inanyorder(
+            "PrintLanguage",
+            "Card",
+            "Printing",
+            "FaceName",
+            "CardFace",
+            "Set",
+            "LastDatabaseUpdate",
+            "UsedDownloadSettings",
+            "LastImageUseTimestamps",
+        ),
+        "Unexpected tables present or tables missing."
+    )
+    assert_that(
+        [name for name, in db.execute(textwrap.dedent("""\
+        SELECT name FROM sqlite_schema
+          WHERE type = 'index'
+            AND name NOT LIKE 'sqlite_%'
+        """))],
+        contains_inanyorder(
+            "Printing_Index_Find_Printing_From_Card_Data",
+            "FaceNameLanguageToCardNameIndex",
+            "CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front",
+        ),
+        "Unexpected indices present or indices missing."
+    )
+    assert_that(
+        [name for name, in db.execute(textwrap.dedent("""\
+        SELECT name FROM sqlite_schema
+          WHERE type = 'view'
+            AND name NOT LIKE 'sqlite_%'
+        """))],
+        contains_inanyorder(
+            "AllPrintings",
+        ),
+        "Unexpected views present or views missing"
+    )
+    # TODO: Validate the table and view columns

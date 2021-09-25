@@ -360,15 +360,7 @@ def _migrate_21_to_22(db: sqlite3.Connection):
     """))
 
 
-def migrate_card_database(db: sqlite3.Connection):
-    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-    needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
-    if needs_update:
-        logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
-    else:
-        logger.info("Database schema recent, not running any database migrations")
-        return
-    migration_scripts: typing.List[MigrationScript] = [
+MIGRATION_SCRIPTS: typing.List[MigrationScript] = [
         _migrate_9_to_10,
         _migrate_10_to_11,
         _migrate_11_to_12,
@@ -383,11 +375,21 @@ def migrate_card_database(db: sqlite3.Connection):
         _migrate_20_to_21,
         _migrate_21_to_22,
     ]
-    for source_version, migrator_script in enumerate(migration_scripts, start=9):
+
+
+def migrate_card_database(db: sqlite3.Connection):
+    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
+    needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
+    if needs_update:
+        logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
+    else:
+        logger.info("Database schema recent, not running any database migrations")
+        return
+    for source_version, migration_script in enumerate(MIGRATION_SCRIPTS, start=9):
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:
             logger.info(f"Running migration task for schema version {source_version}")
             db.execute("BEGIN TRANSACTION")
-            migrator_script(db)
+            migration_script(db)
             db.commit()
             db.execute(f"PRAGMA user_version = {source_version+1}")
 
