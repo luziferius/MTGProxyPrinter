@@ -31,7 +31,6 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.logger import get_logger
-import mtg_proxy_printer.card_info_downloader
 logger = get_logger(__name__)
 del get_logger
 
@@ -210,11 +209,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
-    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
-    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
-    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     add_card = pyqtSignal(Card, int)
     replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
     """
@@ -229,6 +223,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.queue = image_db.queue
         self.should_run = True
         self.batch_processing_state: bool = False
+        # Reference to the currently opened file. Used here to be able to force close it in case the user wants to quit
+        # or cancel the download process.
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -308,7 +304,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
-        source, _ = self.read_from_url(download_uri)
+        source, metered_source = self.read_from_url(download_uri)
+        metered_source.total_bytes_processed.connect(self.download_progress)
         download_path = self.image_database.db_path / target_path.name
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
@@ -323,6 +320,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.currently_opened_file = None
             if download_path.is_file():
                 download_path.unlink()
+            self.download_finished.emit()
 
 
 def _migrate_database(db_path: pathlib.Path):

@@ -21,6 +21,9 @@ import urllib.request
 from PyQt5.QtCore import QObject, pyqtSignal
 
 import mtg_proxy_printer.metered_file
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 # Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
 supported_encodings = ("gzip", "identity")
