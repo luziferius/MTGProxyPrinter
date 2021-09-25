@@ -19,6 +19,7 @@ import textwrap
 from hamcrest import *
 
 from mtg_proxy_printer.sqlite_helpers import _read_current_database_schema_version
+from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.carddb_helpers import migrate_card_database
 
 # Pulled from check-in [43d8e4f754efc85d7f52ce9f8c87e93a6ed31e39de862a44a18d28b0590c113c].
@@ -78,7 +79,7 @@ COMMIT;
 """
 
 
-def test_migrate_card_database():
+def test_migrate_card_database(card_db: CardDatabase):
     db = sqlite3.connect(":memory:")
     db.executescript(OLDEST_SUPPORTED_SCHEMA)
     migrate_card_database(db)
@@ -129,4 +130,22 @@ def test_migrate_card_database():
         ),
         "Unexpected views present or views missing"
     )
-    # TODO: Validate the table and view columns
+    # Query the table and view definitions.
+    query = textwrap.dedent("""\
+    SELECT   s.type, s.name,
+             p.cid AS column_id, p.name AS column_name, p.type AS column_type,
+             p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
+             p.pk AS column_primary_key_component
+      FROM   sqlite_schema AS s
+      JOIN   pragma_table_info((s.name)) AS p
+     WHERE   s.type IN ('table', 'view')
+       AND   s.name NOT LIKE 'sqlite_%'
+    ORDER BY s.name, column_id
+    ;
+    """)
+    # Verify that the migrated database contains exactly the same columns as a database created from the newest schema.
+    assert_that(
+        db.execute(query).fetchall(),
+        contains_exactly(
+            *card_db.db.execute(query).fetchall()
+        ))
