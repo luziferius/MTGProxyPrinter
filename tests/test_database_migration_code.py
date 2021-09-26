@@ -79,65 +79,23 @@ COMMIT;
 """
 
 
-def test_migrate_card_database(card_db: CardDatabase):
-    db = sqlite3.connect(":memory:")
-    db.executescript(OLDEST_SUPPORTED_SCHEMA)
-    migrate_card_database(db)
+def test_migrated_card_database_contains_expected_tables_and_views(card_db: CardDatabase):
+    migrated_db = sqlite3.connect(":memory:")
+    fresh_db = card_db.db
+    migrated_db.executescript(OLDEST_SUPPORTED_SCHEMA)
+    migrate_card_database(migrated_db)
     assert_that(
-        db.execute("PRAGMA user_version").fetchone()[0],
+        migrated_db.execute("PRAGMA user_version").fetchone()[0],
         is_(equal_to(_read_current_database_schema_version("carddb"))),
     )
-    assert_that(
-        [name for name, in db.execute(textwrap.dedent("""\
-        SELECT name FROM sqlite_schema
-          WHERE type = 'table'
-            AND name NOT LIKE 'sqlite_%'
-        """))],
-        contains_inanyorder(
-            "PrintLanguage",
-            "Card",
-            "Printing",
-            "FaceName",
-            "CardFace",
-            "Set",
-            "LastDatabaseUpdate",
-            "UsedDownloadSettings",
-            "LastImageUseTimestamps",
-        ),
-        "Unexpected tables present or tables missing."
-    )
-    assert_that(
-        [name for name, in db.execute(textwrap.dedent("""\
-        SELECT name FROM sqlite_schema
-          WHERE type = 'index'
-            AND name NOT LIKE 'sqlite_%'
-        """))],
-        contains_inanyorder(
-            "Printing_Index_Find_Printing_From_Card_Data",
-            "FaceNameLanguageToCardNameIndex",
-            "CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front",
-        ),
-        "Unexpected indices present or indices missing."
-    )
-    assert_that(
-        [name for name, in db.execute(textwrap.dedent("""\
-        SELECT name FROM sqlite_schema
-          WHERE type = 'view'
-            AND name NOT LIKE 'sqlite_%'
-        """))],
-        contains_inanyorder(
-            "AllPrintings",
-        ),
-        "Unexpected views present or views missing"
-    )
     # Query the table and view definitions.
-    query = textwrap.dedent("""\
+    tables_and_views_query = textwrap.dedent("""\
     SELECT   s.type, s.name,
              p.cid AS column_id, p.name AS column_name, p.type AS column_type,
              p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
              p.pk AS column_primary_key_component
       FROM   sqlite_schema AS s
-      JOIN   pragma_table_info((s.name)) AS p
+      JOIN   pragma_table_info(s.name) AS p
      WHERE   s.type IN ('table', 'view')
        AND   s.name NOT LIKE 'sqlite_%'
     ORDER BY s.name, column_id
@@ -145,8 +103,35 @@ def test_migrate_card_database(card_db: CardDatabase):
     """)
     # Verify that the migrated database contains exactly the same columns as a database created from the newest schema.
     assert_that(
-        db.execute(query).fetchall(),
+        migrated_db.execute(tables_and_views_query).fetchall(),
         contains_exactly(
-            *card_db.db.execute(query).fetchall()
+            *fresh_db.execute(tables_and_views_query).fetchall()
         ))
 
+
+def test_migrated_card_database_contains_expected_indices(card_db: CardDatabase):
+    migrated_db = sqlite3.connect(":memory:")
+    fresh_db = card_db.db
+    migrated_db.executescript(OLDEST_SUPPORTED_SCHEMA)
+    migrate_card_database(migrated_db)
+    assert_that(
+        migrated_db.execute("PRAGMA user_version").fetchone()[0],
+        is_(equal_to(_read_current_database_schema_version("carddb"))),
+    )
+    # Note: Also include the “sqlite_autoindex*” indices that are
+    # automatically created for UNIQUE and PRIMARY KEY constraints.
+    indices_query = textwrap.dedent("""\
+    SELECT   s.name AS index_name,
+             p.seqno AS index_column_sequence_number,
+             p.cid AS column_id,
+             p.name AS column_name
+      FROM   sqlite_schema AS s
+      JOIN   pragma_index_info(s.name) AS p
+     WHERE   s.type = 'index'
+    ORDER BY index_name ASC, index_column_sequence_number ASC
+    ;""")
+    assert_that(
+        migrated_db.execute(indices_query).fetchall(),
+        contains_exactly(
+            *fresh_db.execute(indices_query).fetchall()
+        ))

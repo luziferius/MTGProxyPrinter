@@ -14,12 +14,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
-import random
-import tempfile
 from tempfile import TemporaryDirectory
 import unittest.mock
 
-import pytest
 from PyQt5.QtCore import QStringListModel
 from PyQt5.QtGui import QPixmap, QColor
 from PyQt5.QtWidgets import QApplication
@@ -67,7 +64,6 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbo
             if image_db.download_thread.isRunning():
                 image_db.download_thread.quit()
                 image_db.download_thread.wait(100)
-
             if cid.worker_thread.isRunning():
                 cid.worker_thread.quit()
                 cid.worker_thread.wait(100)
@@ -93,4 +89,3 @@ def _create_save_file(temp_path: pathlib.Path):
     save_file.commit()
     save_file.close()
     return save_file_path
-
