@@ -70,9 +70,10 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbo
 
 
 def _create_mock_image(temp_path: pathlib.Path) -> pathlib.Path:
-    mock_image_path = temp_path / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
-    source_image = QPixmap(745, 1040)
+    mock_image_path = temp_path / 'temp' / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
+    source_image = QPixmap(745, 1040)  # Size of a PNG card image, as specified in the Scryfall API documentation
     source_image.fill(QColor("white"))
+    mock_image_path.parent.mkdir(parents=True, exist_ok=False)
     source_image.save(str(mock_image_path), "PNG", 100)
     assert_that(mock_image_path.is_file(), is_(True))
     return mock_image_path
