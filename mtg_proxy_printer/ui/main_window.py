@@ -417,7 +417,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
                     self, "New card data available",
-                    f"There are {estimated_card_count} new cards available on Scryfall. Update the local data now?",
+                    f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
             self.action_download_card_data.trigger()
