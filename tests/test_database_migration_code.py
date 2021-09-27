@@ -13,14 +13,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
+import socket
 import sqlite3
 import textwrap
+import unittest.mock
+import urllib.error
 
 from hamcrest import *
+import pytest
 
+import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.sqlite_helpers import _read_current_database_schema_version
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.carddb_helpers import migrate_card_database
+from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, MIGRATION_SCRIPTS, _migrate_21_to_22
 
 # Pulled from check-in [43d8e4f754efc85d7f52ce9f8c87e93a6ed31e39de862a44a18d28b0590c113c].
 # NOTE: Removed all SQL comments present in the original file.
@@ -135,3 +141,52 @@ def test_migrated_card_database_contains_expected_indices(card_db: CardDatabase)
         contains_exactly(
             *fresh_db.execute(indices_query).fetchall()
         ))
+
+
+@pytest.fixture()
+def card_db_at_version_21() -> sqlite3.Connection:
+    previous_patches = MIGRATION_SCRIPTS[:MIGRATION_SCRIPTS.index((21, _migrate_21_to_22))]
+    db = sqlite3.connect(":memory:")
+    db.executescript(OLDEST_SUPPORTED_SCHEMA)
+    migrate_card_database(db, previous_patches)
+    assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(21)))
+    today_tuple = str(datetime.date.today()),
+    db.execute("INSERT INTO LastDatabaseUpdate (newest_card_timestamp) values (?)", today_tuple)
+    db.commit()
+    return db
+
+
+@pytest.mark.parametrize("possible_error", [urllib.error.URLError("Test case"), socket.error()])
+def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_values(
+        card_db_at_version_21: sqlite3.Connection, possible_error: BaseException):
+    with unittest.mock.patch(
+            "mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker.read_json_card_data") as mock:
+        mock.side_effect = possible_error
+        migrate_card_database(
+            card_db_at_version_21,
+            ((21, _migrate_21_to_22),)
+        )
+        assert_that(card_db_at_version_21.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
+        mock.assert_called_once()
+    assert_that(
+        card_db_at_version_21.execute("SELECT MAX(update_id), reported_card_count FROM LastDatabaseUpdate").fetchall(),
+        contains_exactly((1, 0))
+    )
+
+
+@pytest.mark.parametrize("expected", [1, 300000])
+def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from_api(
+        card_db_at_version_21: sqlite3.Connection, expected):
+    with unittest.mock.patch(
+            "mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker.read_json_card_data") as mock:
+        mock.return_value = iter((expected,))
+        migrate_card_database(
+            card_db_at_version_21,
+            ((21, _migrate_21_to_22),)
+        )
+        assert_that(card_db_at_version_21.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
+        mock.assert_called_once()
+    assert_that(
+        card_db_at_version_21.execute("SELECT MAX(update_id), reported_card_count FROM LastDatabaseUpdate").fetchall(),
+        contains_exactly((1, expected))
+    )

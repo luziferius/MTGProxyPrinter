@@ -32,6 +32,7 @@ __all__ = [
     "migrate_card_database",
 ]
 MigrationScript = typing.Callable[[sqlite3.Connection], None]
+MigrationScriptListing = typing.Tuple[typing.Tuple[int, MigrationScript], ...]
 
 
 def _migrate_9_to_10(db: sqlite3.Connection):
@@ -319,7 +320,6 @@ def _migrate_20_to_21(db: sqlite3.Connection):
 
 def _migrate_21_to_22(db: sqlite3.Connection):
     # Full edit procedure not needed here, because the table has no indices or foreign keys associated
-    from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
 
     class CardDatabaseMock(typing.NamedTuple):
         db: sqlite3.Connection
@@ -327,7 +327,9 @@ def _migrate_21_to_22(db: sqlite3.Connection):
         def commit_transaction(self):
             self.db.commit()
 
-    dw = CardInfoDownloadWorker(CardDatabaseMock(db))
+    # Import locally to break a cyclic dependency
+    import mtg_proxy_printer.card_info_downloader
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(CardDatabaseMock(db))
     updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;")
     data = []
     for id_, timestamp in updates:
@@ -366,38 +368,40 @@ def _migrate_21_to_22(db: sqlite3.Connection):
     """))
 
 
-MIGRATION_SCRIPTS: typing.List[MigrationScript] = [
-        _migrate_9_to_10,
-        _migrate_10_to_11,
-        _migrate_11_to_12,
-        _migrate_12_to_13,
-        _migrate_13_to_14,
-        _migrate_14_to_15,
-        _migrate_15_to_16,
-        _migrate_16_to_17,
-        _migrate_17_to_18,
-        _migrate_18_to_19,
-        _migrate_19_to_20,
-        _migrate_20_to_21,
-        _migrate_21_to_22,
-    ]
+MIGRATION_SCRIPTS: MigrationScriptListing = (
+    (9, _migrate_9_to_10),
+    (10, _migrate_10_to_11),
+    (11, _migrate_11_to_12),
+    (12, _migrate_12_to_13),
+    (13, _migrate_13_to_14),
+    (14, _migrate_14_to_15),
+    (15, _migrate_15_to_16),
+    (16, _migrate_16_to_17),
+    (17, _migrate_17_to_18),
+    (18, _migrate_18_to_19),
+    (19, _migrate_19_to_20),
+    (20, _migrate_20_to_21),
+    (21, _migrate_21_to_22),
+)
 
 
-def migrate_card_database(db: sqlite3.Connection):
+def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationScriptListing = MIGRATION_SCRIPTS):
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
     if needs_update:
         logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
+        if migration_scripts is not MIGRATION_SCRIPTS:
+            logger.debug(f"Custom migration scripts passed: {migration_scripts}")
     else:
         logger.info("Database schema recent, not running any database migrations")
         return
-    for source_version, migration_script in enumerate(MIGRATION_SCRIPTS, start=9):
+    for source_version, migration_script in migration_scripts:
         if db.execute("PRAGMA user_version").fetchone()[0] == source_version:
             logger.info(f"Running migration task for schema version {source_version}")
             db.execute("BEGIN TRANSACTION")
             migration_script(db)
+            db.execute(f"PRAGMA user_version = {source_version + 1}")
             db.commit()
-            db.execute(f"PRAGMA user_version = {source_version+1}")
 
     if needs_update:
         current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
