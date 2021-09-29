@@ -151,13 +151,13 @@ class KnownCardImageModel(QAbstractTableModel):
             return row.data(index.column(), role)
         return None
 
-    def add_row(self, card: Card, file_path: pathlib.Path):
+    def add_row(self, card: Card, image: ImageCacheContent):
         position = self.rowCount()
         self.beginInsertRows(INVALID, position, position)
-        size_bytes = file_path.stat().st_size
+        size_bytes = image.absolute_path.stat().st_size
         row = KnownCardRow(
             card.name, card.set, card.collector_number,
-            card.is_front, card.highres_image, size_bytes, card.scryfall_id, file_path,
+            image.is_front, image.is_high_resolution, size_bytes, card.scryfall_id, image.absolute_path,
         )
         self._data.append(row)
         self.endInsertRows()
@@ -310,7 +310,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         super(CardFilterPage, self).initializePage()
         for image in self.image_db.read_disk_cache_content():
             if (card := self.card_db.get_card_with_scryfall_id(image.scryfall_id, image.is_front)) is not None:
-                self.card_image_model.add_row(card, image.absolute_path)
+                self.card_image_model.add_row(card, image)
             else:
                 self.unknown_image_model.add_row(image)
         self._apply_filter()

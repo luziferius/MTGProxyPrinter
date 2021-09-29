@@ -7,6 +7,8 @@
 - Fixed bug in database migration code that prevented upgrading the application from ancient alpha versions.
 - The download progress bar properly disappears, after images finish downloading during the document loading process.
 - Removed online requirement for the card database update when upgrading from version 0.13.0 or before.
+- Fixed broken image cache cleanup for locally stored low resolution images, if the equivalent high resolution
+  image is available for download from Scryfall.
 
 # Version 0.14.0 (2021-09-23) <a name="v0_14_0"></a>
 
