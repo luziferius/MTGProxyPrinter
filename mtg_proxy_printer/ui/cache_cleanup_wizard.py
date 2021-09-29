@@ -130,7 +130,7 @@ class KnownCardImageModel(QAbstractTableModel):
         KnownCardColumns.FilesystemPath: "Path",
     }
 
-    def __init__(self, parent: QObject):
+    def __init__(self, parent: QObject = None):
         super(KnownCardImageModel, self).__init__(parent)
         self._data: typing.List[KnownCardRow] = []
 
@@ -234,7 +234,7 @@ class UnknownCardImageModel(QAbstractTableModel):
         UnknownCardColumns.FilesystemPath: "Path",
     }
 
-    def __init__(self, parent: QObject):
+    def __init__(self, parent: QObject = None):
         super(UnknownCardImageModel, self).__init__(parent)
         self._data: typing.List[UnknownCardRow] = []
 
