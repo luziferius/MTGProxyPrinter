@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.14.1 (2021-09-29) <a name="v0_14_1"></a>
 
 ## Fixed issues
 
