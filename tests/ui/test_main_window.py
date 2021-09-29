@@ -41,7 +41,7 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbo
         cid = CardInfoDownloader(card_db)
         document = Document(card_db, image_db)
         try:
-            mock_image_path = _create_mock_image(temp_path)
+            mock_image_path = _create_mock_image(image_db, temp_path)
             save_file_path = _create_save_file(temp_path)
             main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
             QApplication.instance().shutdown = unittest.mock.MagicMock()
@@ -69,12 +69,10 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbo
                 cid.worker_thread.wait(100)
 
 
-def _create_mock_image(temp_path: pathlib.Path) -> pathlib.Path:
+def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:
     mock_image_path = temp_path / 'temp' / "0000579f-7b35-4ed3-b44c-db2a538066fe.png"
-    source_image = QPixmap(745, 1040)  # Size of a PNG card image, as specified in the Scryfall API documentation
-    source_image.fill(QColor("white"))
     mock_image_path.parent.mkdir(parents=True, exist_ok=False)
-    source_image.save(str(mock_image_path), "PNG", 100)
+    image_db.blank_image.save(str(mock_image_path), "PNG", 100)
     assert_that(mock_image_path.is_file(), is_(True))
     return mock_image_path
 
