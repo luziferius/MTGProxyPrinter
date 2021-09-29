@@ -400,6 +400,53 @@ def test_get_opposing_face__card_attribute_is_front(
     assert_that(card, has_property("is_front", all_of(is_not(is_front), instance_of(bool))))
 
 
+@pytest.mark.parametrize("is_front", [True, False])
+@pytest.mark.parametrize("json_name, scryfall_id, highres_image", [
+    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+    ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False),
+])
+def test_find_all_translated_printings__card_attribute_highres_image(
+        card_db: CardDatabase, json_name: str, scryfall_id: str, highres_image: bool, is_front: bool):
+    fill_card_database_with_json_card(card_db, json_name)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+    cards = card_db.find_all_translated_printings(card, "en")
+    assert_that(cards, has_length(1))
+    assert_that(
+        cards[0],  all_of(
+            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
+            has_property("highres_image", is_(highres_image)),
+            has_property("highres_image", instance_of(bool)),
+        ))
+
+
+@pytest.mark.parametrize("is_front", [True, False])
+@pytest.mark.parametrize("json_name, scryfall_id, highres_image", [
+    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+    ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False),
+])
+def test_get_cards_from_data__card_attribute_highres_image(
+        card_db: CardDatabase, json_name: str, scryfall_id: str, highres_image: bool, is_front: bool):
+    fill_card_database_with_json_card(card_db, json_name)
+    card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=is_front)
+    cards = card_db.get_cards_from_data(card_data)
+    assert_that(cards, has_length(1))
+    assert_that(cards[0], has_property("highres_image", all_of(is_(highres_image), instance_of(bool))))
+
+
+@pytest.mark.parametrize("is_front", [True, False])
+@pytest.mark.parametrize("json_name, scryfall_id, highres_image", [
+    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+    ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False),
+])
+def test_get_opposing_face__card_attribute_highres_image(
+        card_db: CardDatabase, json_name: str, scryfall_id: str, highres_image: bool, is_front: bool):
+    fill_card_database_with_json_card(card_db, json_name)
+    card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=is_front)
+    card = card_db.get_opposing_face(card_db.get_cards_from_data(card_data)[0])
+    assert_that(card, is_(not_none()))
+    assert_that(card, has_property("highres_image", all_of(is_(highres_image), instance_of(bool))))
+
+
 def test_allow_updating_card_data_on_empty_database_returns_true(card_db: CardDatabase):
     assert_that(card_db.allow_updating_card_data(), is_(True))
 
