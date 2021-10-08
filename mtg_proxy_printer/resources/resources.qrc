@@ -21,9 +21,14 @@
 
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>
+    <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
+    cx_Freeze, because this bundles everything in one package. -->
+    <file alias="ThirdPartyLicenses.md">../../ThirdPartyLicenses.md</file>
+    <file alias="License.md">../../LICENSE.md</file>
 
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
+    <!-- actions -->
     <!-- 16x16 -->
     <file>icons/breeze/actions/16/application-exit.svg</file>
     <file>icons/breeze/actions/16/configure.svg</file>
@@ -106,5 +111,11 @@
     <file>icons/breeze/actions/32/edit-delete.svg</file>
     <file>icons/breeze/actions/32/go-next.svg</file>
     <file>icons/breeze/actions/32/go-previous.svg</file>
+    
+    <!-- status icons -->
+    <!-- 16x16 -->
+    <file>icons/breeze/status/16/data-warning.svg</file>
+    <!-- 22x22 -->
+    <file>icons/breeze/status/22/data-warning.svg</file>
 </qresource>
 </RCC>

@@ -133,6 +133,8 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.setupUi(self)
         self._setup_about_text()
         self._setup_changelog_text()
+        self._setup_license_text()
+        self._setup_third_party_license_text()
         self.mtg_proxy_printer_version_label: QLabel
         self.python_version_label: QLabel
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
@@ -146,8 +148,15 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
 
     @pyqtSlot()
     def show_changelog(self):
-        self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QWidget, "tab_changelog"))
+        self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QTextBrowser, "changelog_text_browser"))
         self.show()
+
+    @staticmethod
+    def _get_file_path(resource_path: str, fallback_filesystem_path: str) -> str:
+        if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES:
+            return resource_path
+        else:
+            return mtg_proxy_printer.ui.common.RESOURCE_PATH_PREFIX + fallback_filesystem_path
 
     def _setup_about_text(self):
         self.about_text: QTextBrowser
@@ -155,19 +164,29 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
             application_name=mtg_proxy_printer.meta_data.PROGRAMNAME)
         self.about_text.setMarkdown(formatted_about_text)
 
+    def _setup_license_text(self):
+        self.license_text_browser: QTextBrowser
+        file_path = self._get_file_path(":/License.md", "/../../LICENSE.md")
+        self._set_text_browser_with_markdown_file_content(file_path, self.license_text_browser)
+
+    def _setup_third_party_license_text(self):
+        self.third_party_license_text_browser: QTextBrowser
+        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../ThirdPartyLicenses.md")
+        self._set_text_browser_with_markdown_file_content(file_path, self.third_party_license_text_browser)
+
     def _setup_changelog_text(self):
         self.changelog_text_browser: QTextBrowser
-        if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES:
-            file_path = ":/changelog.md"
-        else:
-            file_path = mtg_proxy_printer.ui.common.RESOURCE_PATH_PREFIX + "/../../doc/changelog.md"
-        changelog_file = QFile(file_path, self)
-        changelog_file.open(QFile.ReadOnly)
+        file_path = self._get_file_path(":/changelog.md", "/../../doc/changelog.md")
+        self._set_text_browser_with_markdown_file_content(file_path, self.changelog_text_browser)
+
+    def _set_text_browser_with_markdown_file_content(self, file_path: str, text_browser: QTextBrowser):
+        file = QFile(file_path, self)
+        file.open(QFile.ReadOnly)
         try:
-            changelog_text = bytes(changelog_file.readAll()).decode("utf-8")
+            content = bytes(file.readAll()).decode("utf-8")
         finally:
-            changelog_file.close()
-        self.changelog_text_browser.setMarkdown(changelog_text)
+            file.close()
+        text_browser.setMarkdown(content)
 
 
 class PrintPreviewDialog(QPrintPreviewDialog):

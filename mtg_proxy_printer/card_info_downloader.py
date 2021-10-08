@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import dbm
 import functools
 import gzip
 import json
@@ -26,12 +25,12 @@ import socket
 import typing
 import urllib.error
 import urllib.request
-import http.client
 
 import ijson
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
-from mtg_proxy_printer.model.carddb import CardDatabase, clear_database
+from mtg_proxy_printer.downloader_base import DownloaderBase
+from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
@@ -47,14 +46,32 @@ __all__ = [
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
-# Offer accepting gzip, as that is supported by the Scryfall server and reduces network data use by 80-90%
-supported_encodings = ("gzip", "identity")
+
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
+IntTuples = typing.List[typing.Tuple[int]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
+
+
+class CardFaceData(typing.NamedTuple):
+    """Information unique to each card face."""
+    printed_face_name: str
+    image_uri: str
+    is_front: bool
+    face_number: int
+
+
+class PrintingData(typing.NamedTuple):
+    """Information unique to each card printing."""
+    card_id: int
+    set_id: int
+    collector_number: str
+    scryfall_id: str
+    is_oversized: bool
+    highres_image: bool
 
 
 class CardInfoDownloader(QObject):
@@ -63,6 +80,10 @@ class CardInfoDownloader(QObject):
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = pyqtSignal(bool)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
+    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
+
+    request_import_from_file = pyqtSignal(Path)
+    request_import_from_url = pyqtSignal()
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -73,32 +94,30 @@ class CardInfoDownloader(QObject):
         self.download_worker = CardInfoDownloadWorker(model, requested_item)
         self.worker_thread = QThread()
         self.download_worker.moveToThread(self.worker_thread)
+        self.request_import_from_file.connect(self.download_worker.download_card_data)
+        self.request_import_from_url.connect(self.download_worker.download_card_data)
         self.download_worker.download_begins.connect(self.download_begins)
+        self.download_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
         self.download_worker.download_progress.connect(self.download_progress)
         self.download_worker.download_finished.connect(self.download_finished)
-        self.download_worker.download_finished.connect(self.worker_thread.quit)
         self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
-        self.worker_thread.started.connect(self.download_worker.download_card_data)
-        logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def populate_database(self):
-        self.working_state_changed.emit(True)
-        logger.info("Running the background worker")
+        self.download_worker.other_error_occurred.connect(self.other_error_occurred)
         self.worker_thread.start()
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def cancel_running_operations(self):
         if self.worker_thread.isRunning():
             logger.info("Cancelling currently running card download")
             self.download_worker.should_run = False
 
+    def stop_worker_thread(self):
+        self.worker_thread.quit()
+        self.worker_thread.wait(100)
+        logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
 
-class CardInfoDownloadWorker(QObject):
 
-    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
-    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
+class CardInfoDownloadWorker(DownloaderBase):
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -122,12 +141,6 @@ class CardInfoDownloadWorker(QObject):
             self.model.db.rollback()
         else:
             self.download_finished.emit()
-
-    def _wrap_in_metered_file(self, raw_file, file_size):
-        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
-        monitor.total_bytes_processed.connect(self.download_progress)
-        monitor.io_begin.connect(self.download_begins)
-        return monitor
 
     def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
@@ -200,6 +213,17 @@ class CardInfoDownloadWorker(QObject):
         Takes an iterable returned by card_info_importer.read_json_card_data()
         and populates the database with card data.
         """
+        card_count = 0
+        try:
+            card_count = self._populate_database(card_data)
+        except sqlite3.Error as e:
+            logger.exception(f"Database error occurred: {e}")
+            self.other_error_occurred.emit(str(e))
+        finally:
+            _clear_lru_caches()
+            logger.info(f"Finished import with {card_count} imported cards.")
+
+    def _populate_database(self, card_data: typing.Generator[JSONType, None, None]) -> int:
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
         store_download_settings(self.model.db)
@@ -214,135 +238,99 @@ class CardInfoDownloadWorker(QObject):
             if not enabled)
         skipped_cards = 0
         index = 0
-        newest_card_date = datetime.date.today()
+        face_ids: IntTuples = []
         for index, card in enumerate(card_data, start=1):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            newest_card_date = _read_card_preview_date(card, newest_card_date)
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
-                _remove_card(self.model, card)
                 continue
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
                 self.download_finished.emit()
-                return
-            language_id = _insert_language(self.model, card["lang"])  # Ok
-            card_id = _insert_card(self.model, card["oracle_id"])  # Ok
-            set_id = _insert_set(self.model, card)  # Ok
-            _insert_card_faces(self.model, card, language_id, card_id, set_id)
+                return index
+            language_id = _insert_language(self.model, card["lang"])
+            card_id = _insert_card(self.model, card["oracle_id"])
+            set_id = _insert_set(self.model, card)
+            printing_id = insert_printing(self.model, card, card_id, set_id)
+            face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
-                self.model.db.execute("PRAGMA optimize\n")
-        # Populate the sqlite stat tables to give the query optimizer data to work with.
-        # This greatly improves query speed.
-        self.model.db.execute("ANALYZE\n")
-        _clean_unused_data(self.model.db)
+        _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
-        self.model.db.execute(
-            "INSERT INTO LastDatabaseUpdate (update_timestamp, newest_card_timestamp) VALUES (?, ?)\n",
-            (datetime.datetime.now(), newest_card_date)
+        self.model.db.execute(cached_dedent(
+            """\
+            INSERT INTO LastDatabaseUpdate (reported_card_count)
+                VALUES (?)
+            """),
+            (index,)
         )
+        # Populate the sqlite stat tables to give the query optimizer data to work with.
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
-        # Clear the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
-        # the import. This will lead to assignment of wrong data via invalid foreign key relations.
-        _insert_language.cache_clear()
-        _insert_set_data.cache_clear()
-        _insert_card.cache_clear()
-        _insert_face_name.cache_clear()
-        logger.info(f"Finished import with {index} imported cards.")
+        return index
 
-    def read_from_url(self, url: str):
-        """
-        Reads a given URL and returns a file-like object that can and should be used as a context manager.
-        """
-        headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        request = urllib.request.Request(url, headers=headers)
-        response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
-        if (response_code := response.getcode()) >= 300:
-            raise RuntimeError(f"Error from server! Error code: {response_code}")
-        encoding = response.info().get("Content-Encoding")
-        size_bytes = int(response.info().get("Content-Length", "0"))
-        metered_reader = self._wrap_in_metered_file(response, size_bytes)
-        if encoding == "gzip":
-            data = gzip.open(metered_reader, "rb")
-        elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
-            data = metered_reader
-        else:
-            raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-        return data, metered_reader
+
+def _clear_lru_caches():
+    """
+    Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
+    the import. This will lead to assignment of wrong data via invalid foreign key relations.
+    """
+    _insert_language.cache_clear()
+    _insert_set_data.cache_clear()
+    _insert_card.cache_clear()
+    _insert_face_name.cache_clear()
+    _insert_printing.cache_clear()
 
 
 def store_download_settings(db):
     """Store the current download settings in the database"""
     section = mtg_proxy_printer.settings.settings["downloads"]
-    db.executemany(
-        'INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?) '
-        'ON CONFLICT(setting) DO UPDATE '
-        'SET value = excluded.value '
-        'WHERE value <> excluded.value\n',
+    db.executemany(cached_dedent(
+        '''\
+        INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)
+            ON CONFLICT(setting) DO UPDATE
+                SET value = excluded.value
+                WHERE value <> excluded.value
+        '''),
         ((setting, section.getboolean(setting)) for setting in section.keys())
     )
 
 
-def _read_card_preview_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
+def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
     """
-    Newer cards have their previewed date set. Return that, if it is newer than the given date.
+    If the card’s set release is older than the given date and is in the past, return the release date.
+
+    Newer cards have their previewed date set. Return that, if it is newer than the given date,
+    even if it is in the future.
 
     This will be used to determine if newer card data is available online.
     """
-    try:
-        if date_str := card["preview"]["previewed_at"]:
-            card_date = datetime.date.fromisoformat(date_str)
-            if card_date > known_newest_card_date:
-                # Found card from a future set
-                return card_date
-    except KeyError:
-        pass
+    release_date = datetime.date.fromisoformat(card.get("released_at", "1970-01-01"))
+    if known_newest_card_date < release_date < datetime.date.today():
+        return release_date
     return known_newest_card_date
 
 
-def _clean_unused_data(db: sqlite3.Connection):
-    # Remove all OracleID entries in Card, for which no CardFace is present. These are cards for which all
-    # printings got removed (maybe due to a format ban filter in place).
-    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT card_id FROM CardFace)\n")
-    db.execute("DELETE FROM PrintLanguage WHERE language_id NOT IN (SELECT language_id FROM CardFace)\n")
-    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT set_id FROM CardFace)\n')
-    db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT face_name_id FROM CardFace)\n")
-
-
-def _remove_card(model: CardDatabase, card: JSONType):
-    """
-    Removes the given printing from the database, if it is currently stored in the database.
-    Called on each skipped card, to ensure cards that start to fall under any download filter are removed from
-    the database and do not remain stored locally.
-    """
-    lang = card["lang"]
-    set_code = card["set"]
-    oracle_id = card["oracle_id"]
-    collector_number = card["collector_number"]
-    try:
-        faces = list(_get_card_faces(card))
-    except KeyError:
-        # Card has no image URIs, so skip it
-        return
-    for _, name, _, is_front in faces:
-        parameters = (name, lang, set_code, oracle_id, is_front, collector_number)
-        model.db.execute(
-            'DELETE FROM CardFace '
-            'WHERE (face_name_id, set_id, card_id, is_front, collector_number) IN '
-            '( SELECT'
-            '  (SELECT face_name_id FROM FaceName JOIN PrintLanguage USING (language_id)'
-            '     WHERE card_name = ? AND language = ?) AS face_name_id,'
-            '  (SELECT set_id FROM "Set" where "set" = ?) AS set_id,'
-            '  (SELECT card_id FROM Card where oracle_id = ?) AS card_id,'
-            '  ? AS is_front,'
-            '  ? AS collector_number)\n',
-            parameters
+def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
+    """Purges all excess data, like printings that are no longer in the import data."""
+    db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
+    excess_face_ids = db_face_ids.difference(new_face_ids)
+    logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
+    db.executemany('DELETE FROM CardFace WHERE card_face_id = ?\n', excess_face_ids)
+    db.execute('DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n')
+    db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
+    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
+    db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
+    db.execute(cached_dedent('''\
+    DELETE FROM PrintLanguage
+        WHERE language_id NOT IN (
+            SELECT FaceName.language_id
+            FROM FaceName
         )
+    '''))
 
 
 @functools.lru_cache(None)
@@ -380,11 +368,14 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
 
 @functools.lru_cache(None)
 def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
-    model.db.execute(
-        'INSERT INTO "Set" ("set", set_name, set_uri) VALUES (?, ?, ?) '
-        'ON CONFLICT ("set") DO '
-        'UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri '
-        'WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri\n',
+    model.db.execute(cached_dedent(
+        '''\
+        INSERT INTO "Set" ("set", set_name, set_uri)
+            VALUES (?, ?, ?)
+            ON CONFLICT ("set") DO
+            UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri
+            WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri
+        '''),
         (set_abbr, set_name, set_uri)
     )
     set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
@@ -393,6 +384,10 @@ def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri:
 
 @functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
+    """
+    Insert the given, printed face name into the database, if it not already stored. Returns the integer
+    PRIMARY KEY face_name_id, used to reference the inserted face name.
+    """
     parameters = (printed_name, language_id)
     if result := model.db.execute(
             'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n', parameters).fetchone():
@@ -403,30 +398,74 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
     return face_name_id
 
 
-def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, card_id: int, set_id: int):
-    collector_number = card["collector_number"]
-    highres_image = card["highres_image"]
-    for scryfall_id, printed_name, png_image_uri, is_front in _get_card_faces(card):
-        face_name_id = _insert_face_name(model, printed_name, language_id)
-        model.db.execute(
-            "INSERT INTO CardFace (\n"
-            "card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?) \n"
-            "  ON CONFLICT (face_name_id, set_id, card_id, is_front, collector_number) DO UPDATE "
-            "SET scryfall_id = excluded.scryfall_id, highres_image = excluded.highres_image, "
-            "png_image_uri = excluded.png_image_uri\n"
-            "  WHERE scryfall_id <> excluded.scryfall_id OR highres_image <> excluded.highres_image "
-            "OR png_image_uri <> excluded.png_image_uri\n",
-            (card_id, set_id, face_name_id, collector_number, scryfall_id, highres_image, png_image_uri, is_front)
-        )
+def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: int) -> int:
+    data = PrintingData(
+        card_id,
+        set_id,
+        card["collector_number"],
+        card["id"],
+        card["oversized"],
+        card["highres_image"],
+    )
+    return _insert_printing(model, data)
+
+
+@functools.lru_cache(None)
+def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
+    model.db.execute(cached_dedent(
+        '''\
+        INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT (scryfall_id) DO UPDATE
+                SET card_id = excluded.card_id,
+                    set_id = excluded.set_id,
+                    collector_number = excluded.collector_number,
+                    is_oversized = excluded.is_oversized,
+                    highres_image = excluded.highres_image
+            WHERE card_id <> excluded.card_id
+               OR set_id <> excluded.set_id
+               OR collector_number <> excluded.collector_number
+               OR is_oversized <> excluded.is_oversized
+               OR highres_image <> excluded.highres_image
+        '''), data,
+    )
+    printing_id, = model.db.execute(cached_dedent(
+        '''\
+        SELECT printing_id
+            FROM Printing
+            WHERE scryfall_id = ?
+        '''), (data.scryfall_id,)
+    ).fetchone()
+    return printing_id
+
+
+def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, printing_id: int) -> IntTuples:
+    """Inserts all faces of the given card together with their names."""
+    face_ids: IntTuples = []
+    for face in _get_card_faces(card):
+        face_name_id = _insert_face_name(model, face.printed_face_name, language_id)
+        face_id: typing.Tuple[int] = model.db.execute(cached_dedent(
+            '''\
+            INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
+                SET png_image_uri = excluded.png_image_uri,
+                    face_number = excluded.face_number
+                RETURNING card_face_id
+            '''),
+            (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+        ).fetchone()
+        if face_id is not None:
+            face_ids.append(face_id)
+    return face_ids
 
 
 def _should_skip_card(
         card: JSONType, download_enabled: typing.Dict[str, bool],
         skip_cards_banned_in_formats: typing.FrozenSet[str]) -> bool:
     """Determine, if the given card should be included based on the application settings"""
-    legalities = card["legalities"]
-    banned_in_formats = frozenset(format_ for format_, status in legalities.items() if status == "banned")
+    legalities: typing.Dict[str, str] = card["legalities"]
+    banned_in_formats = frozenset(magic_format for magic_format, legality in legalities.items() if legality == "banned")
 
     return any((
         # Racism filter
@@ -445,29 +484,36 @@ def _should_skip_card(
         # Token cards
         card["layout"] == "token" and not download_enabled["download-token"],
         # Specific format legality.
-        banned_in_formats.intersection(skip_cards_banned_in_formats),
+        not banned_in_formats.isdisjoint(skip_cards_banned_in_formats),
     ))
 
 
-def _get_card_faces(card: JSONType) -> typing.Generator[typing.Tuple[str, str, str, bool], None, None]:
+def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None]:
     """
-    Yields a tuple (Scryfall_id, printed_name, PNG_image_URI, is_front) for each face found in the card object.
+    Yields a CardFaceData object for each face found in the card object.
     The printed name falls back to the English name, if the card has no printed_name key.
 
     Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
     this function builds a "card_face" object providing only the required information from the card object itself.
     """
     try:
-        faces = card["card_faces"]
+        faces: typing.List[JSONType] = card["card_faces"]
     except KeyError:
-        faces = [
+        faces: typing.List[JSONType] = [
             {
                 "printed_name": _get_card_name(card),
                 "image_uris": card["image_uris"],
             }
         ]
-    for face in faces:  # type: JSONType
-        yield card["id"], _get_card_name(face), (image_uri := _get_png_image_uri(card, face)), _is_front_face(image_uri)
+    return (
+        CardFaceData(
+            _get_card_name(face),
+            (image_uri := _get_png_image_uri(card, face)),
+            _is_front_face(image_uri),
+            face_number
+        )
+        for face_number, face in enumerate(faces)
+    )
 
 
 def _get_png_image_uri(card: JSONType, face: JSONType):

@@ -84,8 +84,6 @@ class ParserBase(QObject):
 
         :param deck: A Path instance to a deck file or a multiline Python string that contains the deck list.
         :param print_guessing: Guess a printing, if a line doesn’t identify a unique printing
-        :param print_guessing_prefer_already_downloaded: If a printing is guessed, prefer one with an already
-          downloaded image
         :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
         """
         pass

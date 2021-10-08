@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import dataclasses
 import io
 import queue
 import itertools
@@ -26,25 +27,51 @@ import urllib.error
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersistentModelIndex
 from PyQt5.QtGui import QPixmap, QColor
 
-import mtg_proxy_printer.meta_data
-import mtg_proxy_printer.metered_file
+import mtg_proxy_printer.app_dirs
+import mtg_proxy_printer.downloader_base
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.logger import get_logger
-import mtg_proxy_printer.card_info_downloader
 logger = get_logger(__name__)
 del get_logger
 
 DEFAULT_DATABASE_LOCATION = pathlib.Path(
-    mtg_proxy_printer.meta_data.data_directories.user_cache_dir,
+    mtg_proxy_printer.app_dirs.data_directories.user_cache_dir,
     "CardImages"
 )
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",
+    "CacheContent",
+    "ImageKey",
 ]
 
-ImageKey = typing.Tuple[str, bool]
-CacheContent = typing.Tuple[str, bool, pathlib.Path]
+
+@dataclasses.dataclass(frozen=True)
+class ImageKey:
+    scryfall_id: str
+    is_front: bool
+    is_high_resolution: bool
+
+    def format_relative_path(self) -> pathlib.Path:
+        """Returns the file system path of the associated image relative to the image database root path."""
+        level1 = self.format_level_1_directory_name(self.is_front, self.is_high_resolution)
+        return pathlib.Path(level1, self.scryfall_id[:2], f"{self.scryfall_id}.png")
+
+    @staticmethod
+    def format_level_1_directory_name(is_front: bool, is_high_resolution: bool) -> str:
+        side = "front" if is_front else "back"
+        res = "highres" if is_high_resolution else "lowres"
+        return f"{res}_{side}"
+
+
+@dataclasses.dataclass(frozen=True)
+class CacheContent(ImageKey):
+    absolute_path: pathlib.Path
+
+    def as_key(self):
+        return ImageKey(self.scryfall_id, self.is_front, self.is_high_resolution)
+
+
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 IMAGE_SIZE = QSize(745, 1040)
 
@@ -89,9 +116,9 @@ class ImageDatabase(QObject):
         self.download_thread = QThread()
         self.download_worker = ImageDownloader(self)
         self.download_worker.moveToThread(self.download_thread)
-        self.download_worker.card_download_starting.connect(self.card_download_starting)
-        self.download_worker.card_download_finished.connect(self.card_download_finished)
-        self.download_worker.card_download_progress.connect(self.card_download_progress)
+        self.download_worker.download_begins.connect(self.card_download_starting)
+        self.download_worker.download_finished.connect(self.card_download_finished)
+        self.download_worker.download_progress.connect(self.card_download_progress)
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.download_worker.add_card.connect(self.add_card)
@@ -108,7 +135,10 @@ class ImageDatabase(QObject):
         return self._blank_image
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]):
-        return [card for card in possible_matches if (card.scryfall_id, card.is_front) in self.images_on_disk]
+        return [
+            card for card in possible_matches
+            if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
+        ]
 
     @pyqtSlot(Card)
     @pyqtSlot(Card, int)
@@ -132,16 +162,21 @@ class ImageDatabase(QObject):
             self.queue.put((card, count))
         self.queue.put((None, False))
 
-    def get_disk_cache_content(self) -> typing.List[CacheContent]:
+    def read_disk_cache_content(self) -> typing.List[CacheContent]:
         """
         Returns all entries currently in the hard disk image cache.
 
         :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
         """
         result: typing.List[CacheContent] = []
-        for directory, is_front in ((self.db_path/"front", True), (self.db_path/"back", False)):
+        data: typing.Iterable[typing.Tuple[pathlib.Path, bool, bool]] = (
+            (self.db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
+             is_front, is_high_resolution)
+            for is_front, is_high_resolution in itertools.product([True, False], repeat=2)
+        )
+        for directory, is_front, is_high_resolution in data:
             result += (
-                (path.stem, is_front, path)
+                CacheContent(path.stem, is_front, is_high_resolution, path)
                 for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
         return result
 
@@ -152,21 +187,21 @@ class ImageDatabase(QObject):
         :returns: List with removed paths.
         """
         removed: PathSizeList = []
-        for scryfall_id, is_front in images:
-            path = self.db_path/("front" if is_front else "back")/scryfall_id[:2]/f"{scryfall_id}.png"
+        for image in images:
+            path = self.db_path/image.format_relative_path()
             if path.is_file():
                 logger.debug(f"Removing image: {path}")
                 size_bytes = path.stat().st_size
                 path.unlink()
                 removed.append((path, size_bytes))
-                self.images_on_disk.remove((scryfall_id, is_front))
+                self.images_on_disk.remove(image)
             else:
-                logger.warning(f"Trying to remove image not in the cache. Not present: {scryfall_id=}, {is_front=}")
+                logger.warning(f"Trying to remove image not in the cache. Not present: {image}")
         logger.info(f"Removed {len(removed)} images from the card cache")
         return removed
 
 
-class ImageDownloader(QObject):
+class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
     This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
     a QThread. To perform it’s tasks, it offers multiple Qt Signals that broadcast it’s state changes
@@ -174,12 +209,8 @@ class ImageDownloader(QObject):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
-    card_download_starting = pyqtSignal(int)
-    card_download_finished = pyqtSignal()
-    card_download_progress = pyqtSignal(int)
     add_card = pyqtSignal(Card, int)
     replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
     """
     Messages if the instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
@@ -192,23 +223,15 @@ class ImageDownloader(QObject):
         self.queue = image_db.queue
         self.should_run = True
         self.batch_processing_state: bool = False
+        # Reference to the currently opened file. Used here to be able to force close it in case the user wants to quit
+        # or cancel the download process.
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
-        self.download_worker = self._create_download_worker()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _create_download_worker(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker:
-        download_worker = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(None, parent=self)
-        # Not connecting download_worker.download_finished with self.card_download_finished,
-        # because that signal is emitted explicitly by this class.
-        download_worker.download_progress.connect(self.card_download_progress)
-        download_worker.download_begins.connect(self.card_download_starting)
-        return download_worker
 
     def scan_disk_image_cache_then_process_queue(self):
         logger.info("Reading all image IDs of images stored on disk.")
         self.image_database.images_on_disk.update(
-            (scryfall_id, is_front)
-            for scryfall_id, is_front, _ in self.image_database.get_disk_cache_content()
+            image.as_key() for image in self.image_database.read_disk_cache_content()
         )
         self.process_queue()
 
@@ -233,7 +256,7 @@ class ImageDownloader(QObject):
             except socket.timeout as e:
                 last_error_msg = self._handle_network_error_during_download(card, f"Reading from socket failed: {e}")
             finally:
-                self.card_download_finished.emit()
+                self.download_finished.emit()
                 signal_to_emit.emit(card, value)
 
         logger.info("Processing download queue stopped")
@@ -247,7 +270,7 @@ class ImageDownloader(QObject):
         return reason_str
 
     def get_image_synchronous(self, card: Card):
-        key: ImageKey = card.scryfall_id, card.is_front
+        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         try:
             pixmap = self.image_database.loaded_images[key]
         except KeyError:
@@ -259,14 +282,9 @@ class ImageDownloader(QObject):
         card.image_file = pixmap
 
     def _fetch_image(self, card: Card) -> QPixmap:
-        cache_file_path = pathlib.Path(
-            self.image_database.db_path,
-            "front" if card.is_front else "back",
-            card.scryfall_id[:2],
-            f"{card.scryfall_id}.png"
-        )
-        if not cache_file_path.parent.exists():
-            cache_file_path.parent.mkdir(parents=True)
+        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+        cache_file_path = self.image_database.db_path / key.format_relative_path()
+        cache_file_path.parent.mkdir(parents=True, exist_ok=True)
         pixmap = None
         if cache_file_path.exists():
             pixmap = QPixmap(str(cache_file_path))
@@ -277,11 +295,17 @@ class ImageDownloader(QObject):
             logger.debug("Image not in disk cache, downloading from Scryfall")
             self._download_image_from_scryfall(card, cache_file_path)
             pixmap = QPixmap(str(cache_file_path))
+            low_resolution_image_path = self.image_database.db_path / ImageKey(
+                card.scryfall_id, card.is_front, False).format_relative_path()
+            if low_resolution_image_path.exists():
+                logger.info("Removing outdated low-resolution image")
+                low_resolution_image_path.unlink()
         return pixmap
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
-        source, _ = self.download_worker.read_from_url(download_uri)
+        source, metered_source = self.read_from_url(download_uri)
+        metered_source.total_bytes_processed.connect(self.download_progress)
         download_path = self.image_database.db_path / target_path.name
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
@@ -296,14 +320,33 @@ class ImageDownloader(QObject):
             self.currently_opened_file = None
             if download_path.is_file():
                 download_path.unlink()
+            self.download_finished.emit()
 
 
 def _migrate_database(db_path: pathlib.Path):
     if not db_path.exists():
         db_path.mkdir(parents=True)
-    if not (db_path/"version.txt").exists():
+    version_file = db_path/"version.txt"
+    if not version_file.exists():
         for possible_dir in map("".join, itertools.product(string.hexdigits, string.hexdigits)):
             if (path := db_path/possible_dir).exists():
                 shutil.rmtree(path)
-
-        (db_path/"version.txt").write_text("2")
+        version_file.write_text("2")
+    if version_file.read_text() == "2":
+        old_front = db_path/"front"
+        old_back = db_path/"back"
+        high_res_front = db_path/ImageKey.format_level_1_directory_name(True, True)
+        low_res_front = db_path/ImageKey.format_level_1_directory_name(True, False)
+        high_res_back = db_path/ImageKey.format_level_1_directory_name(False, True)
+        low_res_back = db_path/ImageKey.format_level_1_directory_name(False, False)
+        if old_front.exists():
+            old_front.rename(low_res_front)
+        else:
+            low_res_front.mkdir(exist_ok=True)
+        if old_back.exists():
+            old_back.rename(low_res_back)
+        else:
+            low_res_back.mkdir(exist_ok=True)
+        high_res_front.mkdir(exist_ok=True)
+        high_res_back.mkdir(exist_ok=True)
+        version_file.write_text("3")

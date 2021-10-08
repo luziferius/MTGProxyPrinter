@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
 import random
 import re
 import socket
@@ -71,25 +72,35 @@ class BackgroundWorker(QObject):
             return
         logger.info("Checking for card data updates.")
         try:
-            if result := self._is_newer_card_data_available():
-                logger.info(f"New card data is available. Notifying the user.")
-                self.card_data_update_found.emit(result)
+            total_cards_available, total_cards_in_last_update = self._is_newer_card_data_available()
+            if total_cards_available and total_cards_available > total_cards_in_last_update:
+                new_cards = total_cards_available - total_cards_in_last_update
+                logger.info(f"New card data is available: {new_cards} new cards. Notifying the user.")
+                self.card_data_update_found.emit(new_cards)
             else:
                 logger.debug("No new card data found.")
         finally:
             self.job_completed.emit()
 
-    def _is_newer_card_data_available(self) -> int:
-        newest_card_in_database = self.card_db.get_newest_card_date_in_database()
-        query = urllib.parse.quote(f"date>{newest_card_in_database.isoformat()}")
-        url = f"https://api.scryfall.com/cards/search?order=date&dir=asc&q={query}"
+    def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
+        total_cards_in_last_update = self.card_db.get_total_cards_in_last_update()
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": "date>1970-01-01"
+        })
+        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
         logger.debug(f"Card data update query URL: {url}")
         try:
-            items = next(self.dw.read_json_card_data(url, "total_cards"))
+            total_cards_available = next(self.dw.read_json_card_data(url, "total_cards"))
         except (urllib.error.URLError, socket.timeout, StopIteration):
             # TODO: Perform better notification in any error case
-            items = 0
-        return items
+            total_cards_available = 0
+        logger.debug(f"Total cards currently available: {total_cards_available}")
+        logger.debug(f"Total cards during last update: {total_cards_in_last_update}")
+        return total_cards_available, total_cards_in_last_update
 
     def perform_application_update_check(self):
         if not settings.settings["application"].getboolean("check-for-application-updates"):
@@ -152,13 +163,13 @@ class UpdateChecker(QObject):
     _card_update_check_requested = pyqtSignal()
     _application_update_check_requested = pyqtSignal()
 
-    def __init__(self, card_db: CardDatabase, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, perform_card_data_update_check: bool, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(UpdateChecker, self).__init__(parent)
+        self.perform_card_data_update_check = perform_card_data_update_check
         self.background_thread = QThread()
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
-
         self.background_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -182,7 +193,8 @@ class UpdateChecker(QObject):
 
     def check_for_updates(self):
         self._check_for_application_updates()
-        self._check_for_card_data_updates()
+        if self.perform_card_data_update_check:
+            self._check_for_card_data_updates()
 
     def _check_for_card_data_updates(self):
         self._start_background_thread_if_not_running()

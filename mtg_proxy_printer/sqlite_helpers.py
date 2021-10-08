@@ -53,8 +53,8 @@ def open_database(
     should_create_schema = db_path == ":memory:" or not db_path.exists()
     db = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     logger.debug(f"Connected SQLite database {location}.")
-    # Both settings are volatile, thus have to be set for each opened connection
-    db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000;")
+    # These settings are volatile, thus have to be set for each opened connection
+    db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000; PRAGMA trusted_schema = OFF;")
     logger.debug("Enabled SQLite3 foreign keys support.")
     if should_create_schema:
         populate_database_schema(db, schema_name)
@@ -83,10 +83,15 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> i
 
     """
     database_user_version: int = db.execute("PRAGMA user_version\n").fetchone()[0]
-    schema = pkg_resources.resource_string("mtg_proxy_printer.model", f"{schema_name}.sql").decode("utf-8")
-    latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
+    latest_user_version = _read_current_database_schema_version(schema_name)
     if database_user_version != latest_user_version:
         message = f"Schema version mismatch in the opened database. " \
                   f"Expected schema version {latest_user_version}, got {database_user_version}."
         logger.warning(message)
     return latest_user_version - database_user_version
+
+
+def _read_current_database_schema_version(schema_name: str) -> int:
+    schema = pkg_resources.resource_string("mtg_proxy_printer.model", f"{schema_name}.sql").decode("utf-8")
+    latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
+    return latest_user_version

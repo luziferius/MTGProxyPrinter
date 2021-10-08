@@ -223,10 +223,21 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.setupUi(self)
         self.setCommitPage(True)
         self.card_list = CardListModel(card_db, self)
+        self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table()
-        self.registerField("parsed_deck", self)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
+        accept_button = self.wizard().button(QWizard.FinishButton)
+        if oversized_cards:
+            accept_button.setIcon(QIcon.fromTheme("data-warning"))
+            accept_button.setToolTip(
+                f"Beware: The card list currently contains {oversized_cards} potentially oversized cards."
+            )
+        else:
+            accept_button.setIcon(QIcon())
+            accept_button.setToolTip("")
 
     def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
@@ -252,7 +263,6 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             self.field("print-guessing-prefer-already-downloaded"),
             language_override
         )
-        self.setField("parsed_deck", parsed_deck)
         self.unparsed_lines_text: QPlainTextEdit
         self.card_list.add_cards(parsed_deck)
         self.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
@@ -284,12 +294,26 @@ class DeckImportWizard(QWizard):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
-        logger.info("User finished the import wizard, performing the requested actions")
+        if not self._ask_about_oversized_cards():
+            logger.info("Aborting accept(), because oversized cards are present "
+                        "in the deck list and the user chose to go back.")
+            return
         super(DeckImportWizard, self).accept()
+        logger.info("User finished the import wizard, performing the requested actions")
         if self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
-        deck: typing.Counter[Card] = self.field("parsed_deck")
+        deck = self.summary_page.card_list.as_deck()
         # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         self.deck_added.emit(deck)
+
+    def _ask_about_oversized_cards(self) -> bool:
+        oversized_count = self.summary_page.card_list.oversized_card_count
+        if oversized_count and QMessageBox.question(
+                self, "Oversized cards present",
+                f"There are {oversized_count} possibly oversized cards in the deck list that "
+                f"may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.No:
+            return False
+        return True

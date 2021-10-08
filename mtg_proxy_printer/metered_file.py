@@ -37,7 +37,9 @@ WrappedIoType = Union[BufferedIOBase, BinaryIO]
     "seekable", "readable", "writable", "close", "fileno", "flush", "isatty", "tell", "truncate", "detach",  # noqa
 )
 class MeteredFile(QObject):
-    """Takes a file-like object and monitors read and write progress."""
+    """
+    Takes a file-like object and monitors read and write progress.
+    """
 
     io_begin = pyqtSignal(int)
     total_bytes_processed = pyqtSignal(int)

@@ -18,6 +18,11 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `pint`
 - `PyQt5`
 - `delegateto`
+- `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
+
+### System libraries
+
+- `SQLite3` >= 3.35.0
 
 ### Test Requirements
 
@@ -25,12 +30,18 @@ These libraries are required to run the unit tests.
 
 - `pytest`
 - `PyHamcrest`
+- `pytest-qt`
 - `pytest-cov` (Optional, for code coverage reports).
 
 ## Install
 
-To install the newest version, execute `pip install http://1337net.duckdns.org:8080/MTGProxyPrinter/zip/MTGProxyPrinter.zip?r=release`  
-Install the latest development snapshot: From the cloned repository root directory, execute `pip install .`
+To install from a fossil checkout or a downloaded and unpacked source code archive, execute `pip install .` 
+from the repository root directory (where `setup.py`, `setup.cfg` and `pyproject.toml` are located).
+
+To install the newest, released version from source, execute  
+`pip install http://1337net.duckdns.org:8080/MTGProxyPrinter/zip/MTGProxyPrinter.zip?r=release`  
+To install the latest development snapshot, execute  
+`pip install http://1337net.duckdns.org:8080/MTGProxyPrinter/zip/MTGProxyPrinter.zip?r=trunk`  
 
 
 ## Usage
@@ -46,16 +57,22 @@ You can select images and remove them, if you accidentally added the wrong cards
 
 You can save and load documents to continue working on your documents later and create PDF documents for printing.
 
-### Important note about printing
+### Important note about printing with PDF documents
 
-Before printing, make sure to disable any kind of scaling, like “fit to page”, “scale to fit” or similar settings in your printer’s settings.
-When using a PDF document to print, also check your PDF viewer’s printer settings for any scaling option and disable them.
-The created documents contain images precisely sized to be exactly the size of Magic cards. If your printer scales them down (intended to not “lose”
-the white border around the page), the images will be too small, so do a single-page test run the first time you use this program.
+Before printing, make sure to disable any kind of scaling, like “fit to page”, “scale to fit” or 
+similar settings in your printer’s settings and your PDF viewer’s printer settings.  
+The created documents contain images precisely sized to be exactly the size of Magic cards.
+If your printer scales them down (intended to not “lose” the border around the page),
+the images will be too small, so do a single-page test run the first time you use this program.
 
-These scaling options are enabled by default and are intended to prevent cropping with borderless photo prints, but do more harm than good for any
-document that is not a full-page, borderless photo.
+These scaling options are enabled by default and are intended to prevent cropping with borderless photo prints,
+but do more harm than good for any document that is not a full-page, borderless photo.
 
+#### Ink saving tip
+
+Before you print for the first time with a given printer or PDF viewer, enable the “Print cut markers” in the 
+MTGProxyPrinter settings and then print or export a single empty page. If a real Magic card fits precisely into
+one cell of the printed grid, your system is set up correctly for high quality, non-scaled print-outs.
 
 ## License
 
@@ -87,4 +104,4 @@ system theme is present, and are sourced from Breeze icon theme created by the K
 These fall under the LGPL either version 3 of the License, or
 (at your option) any later version.
 
-See the LICENSE-ICONS file for details.
+See the [ThirdPartyLicenses.md](./ThirdPartyLicenses.md) file for details.

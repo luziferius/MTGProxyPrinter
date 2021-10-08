@@ -47,29 +47,27 @@ def setup_settings_for_testing():
         mtg_proxy_printer.settings.settings["downloads"][setting] = str(True)
 
 
-def populate_database(model, data):
-    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(model).populate_database(data)
+def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
+    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db).populate_database(data)
 
 
 @functools.lru_cache()
-def load_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
-    return [json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))]
+def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
+    return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
 
 
-@functools.lru_cache()
-def load_multi_card_json(name: str) -> typing.List[mtg_proxy_printer.card_info_downloader.JSONType]:
-    return list(ijson.items(pkg_resources.resource_string("tests.json_samples", f"{name}.json"), "item"))
-
-
-def create_new_card_database_with_json_card(
-        json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    new_model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_json(json_file_name)
-
+def fill_card_database_with_json_cards(
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
+        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    data = [
+        load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
+        for json_file_or_name in json_files_or_names
+    ]
     # Either both None or both set non-empty
     assert (option is None and value is None) or (bool(option) and bool(value))
     if option is None:
-        populate_database(new_model, data)
+        populate_database(card_db, data)
     else:
         assert_that(
             mtg_proxy_printer.settings.settings["downloads"],
@@ -77,41 +75,28 @@ def create_new_card_database_with_json_card(
             f"Test setup failed: Download settings do not contain expected setting: {option}"
         )
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-            populate_database(new_model, data)
-    return new_model
+            populate_database(card_db, data)
+    return card_db
 
 
-def create_new_card_database_with_multiple_cards(
-        json_file_name: str, option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    new_model = mtg_proxy_printer.model.carddb.CardDatabase(":memory:")
-    data = load_multi_card_json(json_file_name)
-
-    # Either both None or both set non-empty
-    assert (option is None and value is None) or (bool(option) and bool(value))
-    if option is None:
-        populate_database(new_model, data)
-    else:
-        assert_that(
-            mtg_proxy_printer.settings.settings["downloads"],
-            has_key(option),
-            f"Test setup failed: Download settings do not contain expected setting: {option}"
-        )
-        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-            populate_database(new_model, data)
-    return new_model
+def fill_card_database_with_json_card(
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+        json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
+        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    return fill_card_database_with_json_cards(card_db, [json_file_or_name], option, value)
 
 
-def assert_relation_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
+def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
     assert_that(
-        model.db.execute(f'SELECT * FROM "{name}"').fetchall(),
+        card_db.db.execute(f'SELECT * FROM "{name}"').fetchall(),
         is_(empty()), f"{name} contains unexpected data"
     )
 
 
-def assert_model_is_empty(model: mtg_proxy_printer.model.carddb.CardDatabase):
+def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase):
     """
     Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
     download settings.
     """
     for relation in ("PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"):
-        assert_relation_is_empty(model, relation)
+        assert_relation_is_empty(card_db, relation)

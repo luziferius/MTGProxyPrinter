@@ -1,12 +1,54 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.14.1 (2021-09-29) <a name="v0_14_1"></a>
+
+## Fixed issues
+
+- Fixed bug in database migration code that prevented upgrading the application from ancient alpha versions.
+- The download progress bar properly disappears, after images finish downloading during the document loading process.
+- Removed online requirement for the card database update when upgrading from version 0.13.0 or before.
+- Fixed broken image cache cleanup for locally stored low resolution images, if the equivalent high resolution
+  image is available for download from Scryfall.
+
+# Version 0.14.0 (2021-09-23) <a name="v0_14_0"></a>
+
+## Implemented features
+
+- Show warnings in the deck import wizard, if oversized cards are present in the imported card list.
+
+## Changed features
+
+- Show copyright notices for many of the used software libraries in the About window.
+- Improved the accuracy of the card data update checker, if it is enabled in the settings.
+  It should now only report available updates, if Scryfall actually has new data.
+- Reduced application bundle size for Windows by 25%.
+
+## Fixed issues
+
+- Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
+  the import wizard actually imported the unedited deck list, completely discarding any edits done. This now works
+  as expected.
+- Fixed potentially wrong card translations for cards having multiple names, like double-faced cards or split cards.
+- The card information download no longer locks up the application if a database error occurs. This might happen, if
+  two instances of MTGProxyPrinter try to write to the internal, local card database at the same time.
+
+## Other
+
+- Support importing card data from a file via command line argument `--card-data`.
+  Mostly useful for debugging, but can also be used to update the card database of a PC without internet access.
+- Larger re-write of the on-disk card database structure. Older versions will not be able to run, after
+  the database is migrated to the latest version. Downgrading the application will require deleting the database file. 
+
+# Version 0.13.0 (2021-08-09) <a name="v0_13_0"></a>
 
 ## Implemented features
 
 - Implemented optional, automatic deck list translations. When enabled, the deck list import wizard will try to 
   automatically translate all cards in the list into the selected language, where images are available.
   This can be enabled by default in the settings.
+- Automatically replace locally stored low resolution card images with better images, when Scryfall upgrades the
+  provided images to high-resolution scans. Low-resolution card images fetched during set spoilers no longer stay in
+  the image cache indefinitely.
 
 ## Changed features
 
@@ -17,6 +59,12 @@
 
 - Fixed duplication of imported deck list entries when going back and forward in the deck
   list import wizard after viewing the parsing result. (Bug was introduced in [version 0.12.0](#v0_12_0).)
+- The page preview now renders correctly after changing paper sizes in the settings.
+- PDFs exported now use the actual, configured paper size, instead of defaulting to the system default value.
+  Exporting documents in landscape mode or using esoteric paper sizes now creates usable, correct PDF files.
+- Printing documents in landscape mode now works as expected, outputting correctly scaled printouts. Additionally, 
+  the print preview dialog now has the appropriate mode (portrait or landscape) pre-selected, 
+  based on the configured paper size.
 
 # Version 0.12.1 (2021-07-31) <a name="v0_12_1"></a>
 
