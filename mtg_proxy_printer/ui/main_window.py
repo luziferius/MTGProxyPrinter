@@ -126,6 +126,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         document.loading_state_changed.connect(self._select_first_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
+        self.action_compact_document.triggered.connect(document.compact_pages)
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         downloader.download_finished.connect(self.should_update_languages)
@@ -240,18 +241,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         QApplication.instance().shutdown()
 
     @pyqtSlot()
-    def on_action_compact_document_triggered(self):
-        # TODO: Investigate, why unsetting the model is needed.
-        #  The document_view’s selection model somehow asks for data using invalid
-        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
-        #  completely disconnect the model, remove the row, then set it again.
-        self.document_view.setModel(None)
-        self.document.compact_pages()
-        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
-
-    @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
         wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
@@ -314,7 +303,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )
             if result == QMessageBox.Yes:
-                self.on_action_compact_document_triggered()
+                self.document.compact_pages()
             return result
         return QMessageBox.No  # No pages can be saved, assume "No" for this case
 
