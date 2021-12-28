@@ -4,5 +4,42 @@ requires = [
     "wheel",
     "PyQt5",
     "build",
+    "tox >= 3.8",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+
+envlist =
+    py3{8,9,10}
+
+
+[testenv]
+
+# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
+# This also prevents unwanted user interactions with the widgets under test
+setenv =
+    QT_QPA_PLATFORM = offscreen
+
+# This can be used in combination with the default platform plugin to visibly render the Qt widgets under test
+#passenv =
+#    DISPLAY
+
+commands =
+    pytest tests
+
+deps =
+    cx_Freeze >= 6.6
+    pytest
+    pytest-cov
+    pytest-timeout
+    pytest-qt
+    PyHamcrest >= 1.8.1
+    build
+    PyQt5
+    ijson >= 3.1.0
+    pint
+    delegateto >= 1.5
+"""
