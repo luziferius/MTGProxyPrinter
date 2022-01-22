@@ -275,9 +275,10 @@ class CardInfoDownloadWorker(DownloaderBase):
         self.model.commit()
         return index
 
-    def _parse_single_printing(self, card, face_ids):
+    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
         language_id = _insert_language(self.model, card["lang"])
-        card_id = _insert_card(self.model, card["oracle_id"])
+        oracle_id = _get_oracle_id(card)
+        card_id = _insert_card(self.model, oracle_id)
         set_id = _insert_set(self.model, card)
         printing_id = insert_printing(self.model, card, card_id, set_id)
         face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
@@ -538,6 +539,20 @@ def _get_png_image_uri(card: JSONType, face: JSONType):
         return face["image_uris"]["png"]
     except KeyError:
         return card["image_uris"]["png"]
+
+
+def _get_oracle_id(card: JSONType) -> str:
+    """
+    Reads the oracle_id property of the given card.
+
+    This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
+    card object does not contain the oracle_id.
+    """
+    try:
+        return card["oracle_id"]
+    except KeyError:
+        return card["card_faces"][0]["oracle_id"]
+
 
 
 def _is_front_face(image_uri: str) -> bool:

@@ -228,6 +228,13 @@ def generate_test_cases_for_test_card_import():
         ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
+    yield TestCaseData(  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+        "double_faced_card_without_top_level_oracle_id", False, (
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", True),
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", False),
+        ), DatabaseSetData("sld", "Secret Lair Drop", "https://scryfall.com/sets/sld?utm_source=api"),
+        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-ac79dc2892a4", False,
+    )
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
@@ -382,15 +389,24 @@ def test_updates_language(card_db: CardDatabase):
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_card_oracle_id(card_db: CardDatabase):
-    test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the oracle_id ID
+@pytest.mark.parametrize("test_case", [
+    TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the oracle_id ID
         "regular_english_card", True, (
             FaceData("Fury Sliver",
                      "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
                      True),
         ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-000000000000", False,
+    ),
+    TestCaseData(  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+        "double_faced_card_without_top_level_oracle_id", False, (
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", True),
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", False),
+        ), DatabaseSetData("sld", "Secret Lair Drop", "https://scryfall.com/sets/sld?utm_source=api"),
+        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-000000000000", False,
     )
+])
+def test_updates_card_oracle_id(card_db: CardDatabase, test_case: TestCaseData):
     json_data = load_json(test_case.json_name)
     fill_card_database_with_json_card(card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"oracle_id": test_case.oracle_id}):
