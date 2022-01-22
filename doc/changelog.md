@@ -1,5 +1,13 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Fixed broken card data download, which was caused by a change in the Scryfall API.
+- Prevent application crashes should the card data format received from the API change again in the future.
+  The application will now show an error message if it is unable to process the data.
+
 # Version 0.14.1 (2021-09-29) <a name="v0_14_1"></a>
 
 ## Fixed issues

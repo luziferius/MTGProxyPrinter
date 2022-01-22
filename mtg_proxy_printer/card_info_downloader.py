@@ -219,6 +219,9 @@ class CardInfoDownloadWorker(DownloaderBase):
         except sqlite3.Error as e:
             logger.exception(f"Database error occurred: {e}")
             self.other_error_occurred.emit(str(e))
+        except Exception as e:
+            logger.exception(f"Error in parsing step")
+            self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
         finally:
             _clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")
@@ -240,21 +243,21 @@ class CardInfoDownloadWorker(DownloaderBase):
         index = 0
         face_ids: IntTuples = []
         for index, card in enumerate(card_data, start=1):
+            if not self.should_run:
+                logger.info(f"Aborting card import after {index} cards due to user request.")
+                self.download_finished.emit()
+                return index
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
-            if not self.should_run:
-                logger.info(f"Aborting card import after {index} cards due to user request.")
-                self.download_finished.emit()
-                return index
-            language_id = _insert_language(self.model, card["lang"])
-            card_id = _insert_card(self.model, card["oracle_id"])
-            set_id = _insert_set(self.model, card)
-            printing_id = insert_printing(self.model, card, card_id, set_id)
-            face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
+            try:
+                face_ids = self._parse_single_printing(card, face_ids)
+            except Exception as e:
+                logger.exception(f"Error while parsing card at position {index}. {card=}")
+                raise RuntimeError(f"Error while parsing card at position {index}: {e}")
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
         _clean_unused_data(self.model.db, face_ids)
@@ -271,6 +274,15 @@ class CardInfoDownloadWorker(DownloaderBase):
         self.model.db.execute("ANALYZE\n")
         self.model.commit()
         return index
+
+    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
+        language_id = _insert_language(self.model, card["lang"])
+        oracle_id = _get_oracle_id(card)
+        card_id = _insert_card(self.model, oracle_id)
+        set_id = _insert_set(self.model, card)
+        printing_id = insert_printing(self.model, card, card_id, set_id)
+        face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
+        return face_ids
 
 
 def _clear_lru_caches():
@@ -527,6 +539,20 @@ def _get_png_image_uri(card: JSONType, face: JSONType):
         return face["image_uris"]["png"]
     except KeyError:
         return card["image_uris"]["png"]
+
+
+def _get_oracle_id(card: JSONType) -> str:
+    """
+    Reads the oracle_id property of the given card.
+
+    This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
+    card object does not contain the oracle_id.
+    """
+    try:
+        return card["oracle_id"]
+    except KeyError:
+        return card["card_faces"][0]["oracle_id"]
+
 
 
 def _is_front_face(image_uri: str) -> bool:

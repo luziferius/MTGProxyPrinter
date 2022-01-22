@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import dataclasses
 import datetime
 import typing
 import unittest.mock
@@ -30,6 +31,44 @@ from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
+
+
+class DatabaseSetData(typing.NamedTuple):
+    """Row data stored in the Set relation"""
+    set_code: str
+    set_name: str
+    set_uri: str
+
+
+@dataclasses.dataclass(frozen=True)
+class FaceData:
+    """Contains all data that is unique per card face."""
+    # Implementation note: Implemented as a frozen dataclass,
+    # because this is not meant to be fed directly into an _assert_* method expecting a list of tuples.
+    name: str
+    image_uri: str
+    is_front: bool
+
+
+@dataclasses.dataclass(frozen=True)
+class TestCaseData:
+    """
+    Contains the JSON document name and all card data parsed from the JSON. This is sufficient to construct a test
+    case and contains all validation data. The methods db_*() return lists of tuples suitable to test database content.
+    """
+    # Implementation note: Implemented as a frozen dataclass,
+    # because this is not meant to be fed directly into an _assert_* method expecting a list of tuples.
+    json_name: str
+    highres_image: bool
+    face_data: typing.Tuple[FaceData, ...]
+    set: DatabaseSetData
+    language: str
+    collector_number: str
+    scryfall_id: str
+    oracle_id: str
+    is_oversized: bool
+
+    __test__ = False  # Instruct PyTest to not collect this as a Test class, even if the name starts with "Test"
 
 
 def test_has_data_on_empty_database_returns_false(card_db: CardDatabase):
@@ -55,12 +94,7 @@ def test_get_all_languages_with_data(card_db: CardDatabase):
         [
             "english_Coercion",
             "english_Duress",
-            "english_basic_Forest",
-            "english_basic_Forest_2",
-            "english_card_Future_Sight_MH1",
-            "english_card_Future_Sight_MTGO_promo",
             "german_Coercion_with_faulty_translation",
-            "german_basic_Forest",
             "spanish_basic_Forest",
             "german_Duress",
         ],
@@ -270,21 +304,56 @@ def test_card_is_oversized(card_db: CardDatabase, json_name: str, scryfall_id: s
     )
 
 
-@pytest.mark.parametrize("json_name, scryfall_id, expected", [
-    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
-    ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
+@pytest.mark.parametrize("test_case", [
+    TestCaseData(  # English "Fury Sliver" from Time Spiral.
+        "regular_english_card", True, (
+            FaceData("Fury Sliver", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979", True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    ),
+    TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
+        "oversized_card", True, (
+            FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
+        ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api"),
+        "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
+    ),
 ])
-def test_translate_card__card_attribute_is_oversized(
-        card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
-    fill_card_database_with_json_card(card_db, json_name)
-    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+def test__translate_card(card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(card_db, test_case.json_name)
+    card = card_db.get_card_with_scryfall_id(test_case.scryfall_id, test_case.face_data[0].is_front)
     # Use the private method to skip the internal shortcut in translate_card()
     # that skips requested same-language translations.
     assert_that(
         card_db._translate_card(card, "en"), all_of(
             is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("is_oversized", is_(expected)),
-            has_property("is_oversized", instance_of(bool)),
+            has_properties({
+                "is_oversized": all_of(
+                    is_(test_case.is_oversized),
+                    instance_of(bool),
+                ),
+                "name": is_(equal_to(test_case.face_data[0].name)),
+                "is_front": all_of(
+                    is_(test_case.face_data[0].is_front),
+                    instance_of(bool),
+                ),
+                "oracle_id": is_(equal_to(test_case.oracle_id)),
+                "scryfall_id": is_(equal_to(test_case.scryfall_id)),
+                "language": is_(equal_to(test_case.language)),
+                "image_uri": is_(equal_to(test_case.face_data[0].image_uri)),
+                "collector_number": is_(equal_to(test_case.collector_number)),
+                "face_number": all_of(
+                    is_(card.face_number),
+                    instance_of(int),
+                ),
+                "highres_image": all_of(
+                    is_(test_case.highres_image),
+                    instance_of(bool),
+                ),
+                "set": has_properties({
+                    "name": test_case.set.set_name,
+                    "code": test_case.set.set_code,
+                }),
+            }),
         ))
 
 
@@ -472,6 +541,7 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_
             card_db.allow_updating_card_data(),
             is_(True)
         )
+
 
 def test_get_total_cards_in_last_update(card_db: CardDatabase):
     cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
