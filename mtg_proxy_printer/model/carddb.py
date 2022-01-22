@@ -389,11 +389,7 @@ class CardDatabase:
         """
         Returns the opposing face for double faced cards, or None for single-faced cards.
         """
-        other_side = not card.is_front
-        if self.is_scryfall_id_known(card.scryfall_id, other_side):
-            return self.get_card_with_scryfall_id(card.scryfall_id, other_side)
-        else:
-            return None
+        return self.get_card_with_scryfall_id(card.scryfall_id, not card.is_front)
 
     def guess_language_from_name(self, name: str) -> typing.Optional[str]:
         """Guesses the card language from the card name. Returns None, if no result was found."""
