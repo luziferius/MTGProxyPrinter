@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
 
 ## Fixed issues
 

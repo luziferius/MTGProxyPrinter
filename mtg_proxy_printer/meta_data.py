@@ -14,5 +14,5 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.14.1"
+__version__ = "0.14.2"
 COPYRIGHT = "(C) 2019-2021 Thomas Hess"
