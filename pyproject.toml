@@ -12,9 +12,8 @@ build-backend = "setuptools.build_meta"
 legacy_tox_ini = """
 [tox]
 
-envlist =
-    py3{8,9,10}
-
+envlist = 
+    py3{8,9,10}-{unit_tests,test_create_bundle}
 
 [testenv]
 
@@ -27,19 +26,24 @@ setenv =
 #passenv =
 #    DISPLAY
 
-commands =
-    pytest tests
 
 deps =
-    cx_Freeze >= 6.6
-    pytest
-    pytest-cov
-    pytest-timeout
-    pytest-qt
-    PyHamcrest >= 1.8.1
+    test_create_bundle: cx_Freeze >= 6.6
+    unit_tests: pytest
+    unit_tests: pytest-cov
+    unit_tests: pytest-timeout
+    unit_tests: pytest-qt
+    unit_tests: PyHamcrest >= 1.8.1
     build
     PyQt5
     ijson >= 3.1.0
     pint
     delegateto >= 1.5
+
+
+commands = 
+    unit_tests: pytest tests
+    test_create_bundle: python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
+    test_create_bundle: {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --version
+
 """
