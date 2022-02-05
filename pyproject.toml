@@ -11,10 +11,10 @@ build-backend = "setuptools.build_meta"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-minversion = 2.0
+minversion = 3.18
 
 envlist = 
-    py3-unit_tests, py3-test_create_bundle-{linux,windows}
+    py3-unit_tests, py3-{test_,}create_bundle
 
 [testenv]
 skip_install = True
@@ -71,13 +71,32 @@ passenv =
     DISPLAY
     QT_*
 
-[testenv:py3-test_create_bundle-{linux,windows}]
+[testenv:py3-test_create_bundle]
 
 deps =
     {[testenv]deps}
     cx_Freeze >= 6.6
 
+
 commands =
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
+    windows: {toxinidir}{/}clean_windows_build.bat build{/}bundle_test
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --version
+
+
+
+[testenv:py3-create_bundle]
+
+deps =
+    {[testenv]deps}
+    cx_Freeze >= 6.6
+
+
+commands =
+    python setup_cx_freeze.py build_exe
+    windows: {toxinidir}{/}clean_windows_build.bat
+    windows: python setup_cx_freeze.py bdist_msi --skip-build
+
+
+
 """
