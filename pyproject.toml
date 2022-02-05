@@ -11,39 +11,73 @@ build-backend = "setuptools.build_meta"
 [tool.tox]
 legacy_tox_ini = """
 [tox]
+minversion = 2.0
 
 envlist = 
-    py3{8,9,10}-{unit_tests,test_create_bundle}
+    py3-unit_tests, py3-test_create_bundle-{linux,windows}
 
 [testenv]
+skip_install = True
+
+
+platform =
+    linux: linux
+#    macos: darwin
+    windows: win32
+
+
+deps =
+    appdirs >= 1.4.3
+    build
+    PyQt5
+    ijson >= 3.1.0
+    pint
+    delegateto == 1.5
+
+
+[testenv:py3-unit_tests]
 
 # Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
 # This also prevents unwanted user interactions with the widgets under test
 setenv =
     QT_QPA_PLATFORM = offscreen
 
-# This can be used in combination with the default platform plugin to visibly render the Qt widgets under test
-#passenv =
-#    DISPLAY
+deps =
+    {[testenv]deps}
+    pytest
+    pytest-cov
+    pytest-timeout
+    pytest-qt
+    PyHamcrest >= 1.8.1
 
+commands =
+    pytest tests
+
+[testenv:py3-visible_unit_tests]
+# Runs the unit tests with the default Qt platform plugin,
+# causing them to visibly spawn GUI windows for tests of view logic.
+# Can be used to inspect the actions and GUI states manually.
+# Not part of the environment list, so isn’t run automatically.
 
 deps =
-    test_create_bundle: cx_Freeze >= 6.6
-    unit_tests: pytest
-    unit_tests: pytest-cov
-    unit_tests: pytest-timeout
-    unit_tests: pytest-qt
-    unit_tests: PyHamcrest >= 1.8.1
-    build
-    PyQt5
-    ijson >= 3.1.0
-    pint
-    delegateto >= 1.5
+    {[testenv:py3-unit_tests]deps}
 
+commands =
+   {[testenv:py3-unit_tests]commands}
 
-commands = 
-    unit_tests: pytest tests
-    test_create_bundle: python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
-    test_create_bundle: {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --version
+# Pass DISPLAY, to allow rendering on screen. Also pass all other Qt-related environment variables,
+# like QT_SCREEN_SCALE_FACTORS
+passenv =
+    DISPLAY
+    QT_*
 
+[testenv:py3-test_create_bundle-{linux,windows}]
+
+deps =
+    {[testenv]deps}
+    cx_Freeze >= 6.6
+
+commands =
+    python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
+    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --version
 """
