@@ -9,5 +9,5 @@ IF EXIST "venv" (
 
 :: Create a platform-dependent, portable build in the build directory
 :: and an MSI-based installer in the dist directory.
-:: Also creates a cross-platform Python sdist and wheel package.
-tox -e py3-package
+:: Also creates a cross-platform Python sdist and wheel package in the dist directory.
+tox -e py3-package-windows

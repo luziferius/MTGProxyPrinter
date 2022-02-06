@@ -85,7 +85,7 @@ commands =
 
 
 
-[testenv:py3-package]
+[testenv:py3-package-{windows,linux}]
 
 deps =
     {[testenv]deps}
