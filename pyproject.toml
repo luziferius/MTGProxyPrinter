@@ -14,7 +14,7 @@ legacy_tox_ini = """
 minversion = 3.18
 
 envlist = 
-    py3-unit_tests, py3-{test_,}create_bundle
+    py3-{unit_tests, test_create_bundle}
 
 [testenv]
 skip_install = True
@@ -80,12 +80,12 @@ deps =
 
 commands =
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
-    windows: {toxinidir}{/}clean_windows_build.bat build{/}bundle_test
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --version
 
 
 
-[testenv:py3-create_bundle]
+[testenv:py3-package]
 
 deps =
     {[testenv]deps}
@@ -93,8 +93,9 @@ deps =
 
 
 commands =
+    python -m build
     python setup_cx_freeze.py build_exe
-    windows: {toxinidir}{/}clean_windows_build.bat
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
     windows: python setup_cx_freeze.py bdist_msi --skip-build
 
 

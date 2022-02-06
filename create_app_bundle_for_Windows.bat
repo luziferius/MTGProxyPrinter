@@ -8,7 +8,6 @@ IF EXIST "venv" (
 )
 
 :: Create a platform-dependent, portable build in the build directory
-:: and an MSI-based installer in the dist directory
-python setup_cx_freeze.py build_exe
-call clean_windows_build.bat
-python setup_cx_freeze.py bdist_msi --skip-build
+:: and an MSI-based installer in the dist directory.
+:: Also creates a cross-platform Python sdist and wheel package.
+tox -e py3-package
