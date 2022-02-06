@@ -41,6 +41,7 @@ deps =
 # This also prevents unwanted user interactions with the widgets under test
 setenv =
     QT_QPA_PLATFORM = offscreen
+    PYTHONDEVMODE = 1
 
 deps =
     {[testenv]deps}
@@ -70,6 +71,9 @@ commands =
 passenv =
     DISPLAY
     QT_*
+    
+setenv = 
+   PYTHONDEVMODE = 1
 
 [testenv:py3-test_create_bundle]
 
