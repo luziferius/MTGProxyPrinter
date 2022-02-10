@@ -7,5 +7,5 @@ if [ ! -e "venv" ]; then
 fi
 
 source venv/bin/activate
+tox -e py3-package-linux
 
-python setup_cx_freeze.py build

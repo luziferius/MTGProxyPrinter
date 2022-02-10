@@ -16,9 +16,13 @@
 import argparse
 from pathlib import Path
 import dataclasses
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
+
 
 
 @dataclasses.dataclass()
