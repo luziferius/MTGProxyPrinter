@@ -134,9 +134,11 @@ class CardInfoDownloadWorker(DownloaderBase):
             data = self.read_json_card_data(url)
             self.populate_database(data)
         except urllib.error.URLError as e:
+            logger.exception("Handling URLError during card data download.")
             self.network_error_occurred.emit(str(e.reason))
             self.model.db.rollback()
         except socket.timeout as e:
+            logger.exception("Handling socket timeout error during card data download.")
             self.network_error_occurred.emit(f"Reading from socket failed: {e}")
             self.model.db.rollback()
         else:

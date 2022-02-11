@@ -60,6 +60,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
+        self.card_data_download_in_progress = False
         self.setupUi(self)
         self.about_dialog = self._create_about_dialog()
         self.progress_bar = self._create_progress_bar()
@@ -129,6 +130,13 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.action_compact_document.triggered.connect(document.compact_pages)
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
+        # Do not connect the card_info_downloader.working_state_changed
+        # signal to not re-enable the action when completed. This action in particular should remain disabled.
+        downloader.download_begins.connect(
+            lambda: self.action_download_card_data.setDisabled(True)
+        )
+        downloader.download_finished.connect(lambda: setattr(self, "card_data_download_in_progress", False))
+        self.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
@@ -240,6 +248,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
         QApplication.instance().shutdown()
 
+    def on_action_download_card_data_triggered(self):
+        self.card_data_download_in_progress = True
+
     @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
@@ -285,6 +296,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             f"Check your internet connection. Reported error message:\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
+        if self.card_data_download_in_progress:
+            self.action_download_card_data.setEnabled(True)
+            self.card_data_download_in_progress = False
 
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
