@@ -817,11 +817,11 @@ class DocumentLoader(QObject):
                 if user_version == 2:
                     query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
                     FROM Card
-                    ORDER BY page, slot ASC"""
+                    ORDER BY page ASC, slot ASC"""
                 elif user_version == 3:
                     query = r"""SELECT page, slot, scryfall_id, is_front
                     FROM Card
-                    ORDER BY page, slot ASC"""
+                    ORDER BY page ASC, slot ASC"""
                 else:
                     raise UnknownDocumentFormatException(f"Unknown Save file version: {user_version}")
                 data = [
