@@ -679,11 +679,19 @@ class Document(QAbstractItemModel):
         )
 
 
+class UnknownDocumentFormatException(Exception):
+    pass
+
+
+class InvalidDocumentFile(Exception):
+    pass
+
+
 class DocumentLoader(QObject):
     """
     Implements asynchronous background document loading.
     Loading a document can take a long time, if it includes downloading all card images and still takes a noticeable
-    time when the card images have to be loaded from disk.
+    time when the card images have to be loaded from a slow hard disk.
 
     This class uses a QThread with a background worker to push that work off the GUI thread to keep the application
     responsive during a loading process.
@@ -752,17 +760,20 @@ class DocumentLoader(QObject):
             self.network_errors_during_load[error] += 1
 
         def load_document(self):
-            unknown_ids = 0
             self.should_run = True
             try:
                 unknown_ids = self._load_document()
             except sqlite3.DatabaseError:
-                logger.warning(f"Selected file is not an MTGProxyPrinter document. Not loading it.")
+                logger.warning(f"Selected file is not a known MTGProxyPrinter document. Not loading it.")
                 self.loading_file_failed.emit(self.save_path)
-            finally:
+            except UnknownDocumentFormatException:
+                logger.warning("Unknown document file version encountered. Can’t load file.")
+                self.loading_file_failed.emit(self.save_path)
+            else:
                 if unknown_ids:
                     self.unknown_scryfall_ids_found.emit(unknown_ids)
                 self.loading_file_successful.emit(self.save_path)
+            finally:
                 self.finished.emit()
 
         def _load_document(self) -> int:
@@ -801,15 +812,18 @@ class DocumentLoader(QObject):
                     save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
                 if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
                     raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
-
-                if db.execute("PRAGMA user_version").fetchone()[0] == 2:
+                user_version = db.execute("PRAGMA user_version").fetchone()[0]
+                logger.info(f"{user_version=}")
+                if user_version == 2:
                     query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
                     FROM Card
                     ORDER BY page, slot ASC"""
-                else:
+                elif user_version == 3:
                     query = r"""SELECT page, slot, scryfall_id, is_front
                     FROM Card
                     ORDER BY page, slot ASC"""
+                else:
+                    raise UnknownDocumentFormatException(f"Unknown Save file version: {user_version}")
                 data = [
                     (page, slot, scryfall_id, bool(is_front))
                     for page, slot, scryfall_id, is_front in db.execute(query)
