@@ -33,6 +33,7 @@ deps =
     ijson >= 3.1.0
     pint
     delegateto == 1.5
+    PyHamcrest >= 1.8.1
 
 
 [testenv:py3-unit_tests]
@@ -49,7 +50,6 @@ deps =
     pytest-cov
     pytest-timeout
     pytest-qt >= 2.0
-    PyHamcrest >= 1.8.1
 
 commands =
     pytest tests
