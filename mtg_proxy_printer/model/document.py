@@ -24,6 +24,7 @@ import sqlite3
 import typing
 import urllib.error
 
+from hamcrest import assert_that, contains_exactly, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in
 import pint
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QObject, QThread, \
     QPersistentModelIndex
@@ -323,7 +324,7 @@ class Document(QAbstractItemModel):
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         """
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
-        Otherwise returns the number of pages.
+        Otherwise, returns the number of pages.
         """
         if isinstance(parent.internalPointer(), CardContainer):
             return 0  # child rowCount of a Card instance. Always zero.
@@ -733,8 +734,8 @@ class DocumentLoader(QObject):
             self.card_db = card_db
             self.image_db = image_db
             # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
-            # That one lives in it’s own thread and runs asynchronously and is connected in a way that it adds loaded
-            # images to the document on it’s own, interfering with the loading process, in particular with emitting page
+            # That one lives in its own thread and runs asynchronously and is connected in a way that it adds loaded
+            # images to the document on its own, interfering with the loading process, in particular with emitting page
             # breaks. Thus create a separate instance and use it synchronously inside this worker thread.
             self.image_loader = ImageDownloader(image_db, self)
             self.image_loader.download_begins.connect(image_db.card_download_starting)
@@ -768,6 +769,9 @@ class DocumentLoader(QObject):
                 self.loading_file_failed.emit(self.save_path)
             except UnknownDocumentFormatException:
                 logger.warning("Unknown document file version encountered. Can’t load file.")
+                self.loading_file_failed.emit(self.save_path)
+            except InvalidDocumentFile:
+                logger.warning("Invalid data found in save file. Can’t load file.")
                 self.loading_file_failed.emit(self.save_path)
             else:
                 if unknown_ids:
@@ -807,13 +811,13 @@ class DocumentLoader(QObject):
 
         @staticmethod
         def _read_data_from_save_path(save_file_path: pathlib.Path) -> DocumentSaveFormat:
-            logger.info("Reading data from save file")
+            logger.info(f"Reading data from save file {save_file_path}")
+            data = []
             with mtg_proxy_printer.sqlite_helpers.open_database(
                     save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
                 if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
                     raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
                 user_version = db.execute("PRAGMA user_version").fetchone()[0]
-                logger.info(f"{user_version=}")
                 if user_version == 2:
                     query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
                     FROM Card
@@ -824,10 +828,19 @@ class DocumentLoader(QObject):
                     ORDER BY page ASC, slot ASC"""
                 else:
                     raise UnknownDocumentFormatException(f"Unknown Save file version: {user_version}")
-                data = [
-                    (page, slot, scryfall_id, bool(is_front))
-                    for page, slot, scryfall_id, is_front in db.execute(query)
-                ]
+                for row_number, row_data in enumerate(db.execute(query)):
+                    try:
+                        assert_that(row_data, contains_exactly(
+                            all_of(instance_of(int), greater_than_or_equal_to(0)),
+                            all_of(instance_of(int), greater_than_or_equal_to(0)),
+                            all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+                            is_in((0, 1))
+                        ), f"Invalid data found in the save data at row {row_number}. Aborting")
+                    except AssertionError as e:
+                        logger.exception(f"Invalid data found: {e}")
+                        raise InvalidDocumentFile from e
+                    page, slot, scryfall_id, is_front = row_data
+                    data.append((page, slot, scryfall_id, bool(is_front)))
             return data
 
         def cancel_running_operations(self):
