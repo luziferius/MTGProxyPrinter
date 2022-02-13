@@ -36,7 +36,7 @@ def card_db(request) -> CardDatabase:
 @pytest.fixture(params=[False, True])
 def empty_save_database(request) -> sqlite3.Connection:
     db = mtg_proxy_printer.sqlite_helpers.open_database(
-            ":memory:", "document", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+            ":memory:", "document", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=False)
     if request.param:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return db
