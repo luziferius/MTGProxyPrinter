@@ -79,7 +79,7 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    with open_database(save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
+    with open_database(save_file_path, "document-v3", Document.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
         save_file.execute(
             "INSERT INTO Card (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)",
             (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe")

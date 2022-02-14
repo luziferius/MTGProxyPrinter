@@ -21,6 +21,7 @@ import itertools
 import pathlib
 import socket
 import sqlite3
+import textwrap
 import typing
 import urllib.error
 
@@ -485,7 +486,7 @@ class Document(QAbstractItemModel):
             in itertools.chain.from_iterable(cards)
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                self.save_file_path, "document-v3", self.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
             _migrate_database(db)
             db.execute("DELETE FROM Card")
@@ -814,7 +815,7 @@ class DocumentLoader(QObject):
             logger.info(f"Reading data from save file {save_file_path}")
             data = []
             with mtg_proxy_printer.sqlite_helpers.open_database(
-                    save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                    save_file_path, "document-v3", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
                 if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
                     raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
                 user_version = db.execute("PRAGMA user_version").fetchone()[0]
@@ -843,7 +844,7 @@ class DocumentLoader(QObject):
                     data.append((page, slot, scryfall_id, bool(is_front)))
             return data
 
-        def cancel_running_operations(self):
+    def cancel_running_operations(self):
             self.should_run = False
             if self.image_loader.currently_opened_file is not None:
                 # Force aborting the download by closing the input stream
