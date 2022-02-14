@@ -57,7 +57,7 @@ class DocumentLoader(QObject):
 
     loading_state_changed = pyqtSignal(bool)
     unknown_scryfall_ids_found = pyqtSignal(int)
-    loading_file_failed = pyqtSignal(pathlib.Path)
+    loading_file_failed = pyqtSignal(pathlib.Path, str)
     # Emitted when downloading required images during the loading process failed due to network issues.
     network_error_occurred = pyqtSignal(str)
 
@@ -79,7 +79,7 @@ class DocumentLoader(QObject):
         new_page = pyqtSignal()
         add_card = pyqtSignal(Card)
         finished = pyqtSignal()
-        loading_file_failed = pyqtSignal(pathlib.Path)
+        loading_file_failed = pyqtSignal(pathlib.Path, str)
         document_clear_requested = pyqtSignal()
         unknown_scryfall_ids_found = pyqtSignal(int)
         loading_file_successful = pyqtSignal(pathlib.Path)
@@ -124,7 +124,7 @@ class DocumentLoader(QObject):
             except AssertionError as e:
                 logger.warning("Selected file is not a known MTGProxyPrinter document or contains invalid data."
                                "Not loading it.")
-                self.loading_file_failed.emit(self.save_path)
+                self.loading_file_failed.emit(self.save_path, str(e))
             else:
                 if unknown_ids:
                     self.unknown_scryfall_ids_found.emit(unknown_ids)
