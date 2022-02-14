@@ -28,6 +28,7 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 
 from tests.helpers import fill_card_database_with_json_card
@@ -79,12 +80,9 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    save_file = open_database(save_file_path, "document", Document.MIN_SUPPORTED_SQLITE_VERSION)
-    save_file.execute("BEGIN TRANSACTION")
-    save_file.execute(
-        "INSERT INTO Card (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)",
-        (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe")
-    )
-    save_file.commit()
-    save_file.close()
+    with open_database(save_file_path, "document-v3", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
+        save_file.execute(
+            "INSERT INTO Card (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)",
+            (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe")
+        )
     return save_file_path

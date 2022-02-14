@@ -391,12 +391,13 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         if dialog.exec_() == LoadDocumentDialog.Accepted:
             self._select_first_page()
 
-    def on_document_loading_failed(self, failed_path: pathlib.Path):
+    def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
         QMessageBox.critical(
             self, "Document loading failed",
             f"Loading file \"{failed_path}\" failed. The file was not recognized as an "
             f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
-            f"\"{self.action_import_deck_list.text()}\" function instead.",
+            f"\"{self.action_import_deck_list.text()}\" function instead.\n"
+            f"Reported failure reason: {reason}",
             QMessageBox.Ok, QMessageBox.Ok
         )
 
