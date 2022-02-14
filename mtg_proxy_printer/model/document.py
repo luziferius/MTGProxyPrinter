@@ -799,6 +799,11 @@ class DocumentLoader(QObject):
 
         @staticmethod
         def _read_data_from_save_path(save_file_path: pathlib.Path) -> DocumentSaveFormat:
+            """
+            Reads the data from disk into a list.
+
+            :raises AssertionError: If the save file structure is invalid or contains invalid data.
+            """
             logger.info(f"Reading data from save file {save_file_path}")
             data = []
             with mtg_proxy_printer.sqlite_helpers.open_database(
@@ -836,8 +841,7 @@ class DocumentLoader(QObject):
             user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
             try:
                 db_known_good = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
-                    f"document-v{user_schema_version}",
-                    Document.MIN_SUPPORTED_SQLITE_VERSION)
+                    f"document-v{user_schema_version}", Document.MIN_SUPPORTED_SQLITE_VERSION)
             except FileNotFoundError as e:
                 raise AssertionError(f"Unknown save file version: {user_schema_version}") from e
             tables_and_views_query = textwrap.dedent("""\
@@ -866,14 +870,12 @@ class DocumentLoader(QObject):
             with db_known_good:
                 assert_that(
                     db_unsafe.execute(tables_and_views_query).fetchall(),
-                    contains_exactly(
-                        *db_known_good.execute(tables_and_views_query).fetchall()
-                    ), "Given save file inconsistent: Unexpected tables or views")
+                    contains_exactly(*db_known_good.execute(tables_and_views_query).fetchall()),
+                    "Given save file inconsistent: Unexpected tables or views")
                 assert_that(
                     db_unsafe.execute(indices_query).fetchall(),
-                    contains_exactly(
-                        *db_known_good.execute(indices_query).fetchall()
-                    ), "Given save file inconsistent: Unexpected indices")
+                    contains_exactly(*db_known_good.execute(indices_query).fetchall()),
+                    "Given save file inconsistent: Unexpected indices")
             return user_schema_version
 
         def cancel_running_operations(self):
