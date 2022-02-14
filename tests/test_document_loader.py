@@ -88,10 +88,10 @@ def test_valid_data_loads_correctly(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=100, raising=True,
+        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, raising=True,
                               check_params_cb=lambda value: not value), \
                 qtbot.waitSignal(loader.worker.loading_file_successful, timeout=100), \
-                qtbot.waitSignal(document_with_filled_card_db.loading_state_changed, timeout=100,
+                qtbot.waitSignal(document_with_filled_card_db.loading_state_changed, timeout=1000,
                                  check_params_cb=lambda value: not value):
             loader.load_document(save_path)
         mock.assert_called_once()
@@ -123,7 +123,7 @@ def test_invalid_data_in_page_column_raises_exception(
     loader = document_with_filled_card_db.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=10, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
                 qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
                 qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
                 qtbot.assertNotEmitted(loader.worker.new_page), \
@@ -149,7 +149,7 @@ def test_invalid_data_in_slot_column_raises_exception(
     loader = document_with_filled_card_db.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=10, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
                 qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
                 qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
                 qtbot.assertNotEmitted(loader.worker.new_page), \
@@ -175,7 +175,7 @@ def test_invalid_data_in_is_front_column_raises_exception(
     loader = document_with_filled_card_db.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=10, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
                 qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
                 qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
                 qtbot.assertNotEmitted(loader.worker.new_page), \
@@ -201,7 +201,7 @@ def test_invalid_data_in_is_front_column_raises_exception(
     loader = document_with_filled_card_db.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=10, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
                 qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
                 qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
                 qtbot.assertNotEmitted(loader.worker.new_page), \
@@ -232,7 +232,7 @@ def test_protects_against_infinite_save_data(
     loader = document_with_filled_card_db.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=100, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
                 qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
                 qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
                 qtbot.assertNotEmitted(loader.worker.new_page), \
