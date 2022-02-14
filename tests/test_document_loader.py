@@ -12,11 +12,12 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import contextlib
 import pathlib
 import sqlite3
 import unittest.mock
-
+import textwrap
 
 from pytestqt.qtbot import QtBot
 import pytest
@@ -25,6 +26,7 @@ from hamcrest import *
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 from mtg_proxy_printer.model.carddb import CardDatabase
 import mtg_proxy_printer.model.document
+import mtg_proxy_printer.sqlite_helpers
 from tests.helpers import fill_card_database_with_json_card
 
 
@@ -52,7 +54,7 @@ def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Conn
         assert_that(
             calling(mtg_proxy_printer.model.document.DocumentLoader.Worker._read_data_from_save_path).with_args(
                 "Value ignored by mock"),
-            raises(mtg_proxy_printer.model.document.UnknownDocumentFormatException)
+            raises(AssertionError)
         )
         mock.assert_called_once()
 
@@ -85,10 +87,10 @@ def test_valid_data_loads_correctly(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=10, raising=True,
+        with qtbot.waitSignal(loader.loading_state_changed, timeout=100, raising=True,
                               check_params_cb=lambda value: not value), \
-                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=10), \
-                qtbot.waitSignal(document_with_filled_card_db.loading_state_changed, timeout=10,
+                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=100), \
+                qtbot.waitSignal(document_with_filled_card_db.loading_state_changed, timeout=100,
                                  check_params_cb=lambda value: not value):
             loader.load_document(save_path)
         mock.assert_called_once()
@@ -199,6 +201,37 @@ def test_invalid_data_in_is_front_column_raises_exception(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=10, raising=True), \
+                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
+                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
+                qtbot.assertNotEmitted(loader.worker.new_page), \
+                qtbot.assertNotEmitted(loader.worker.add_card), \
+                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+        mock.assert_called_once()
+    assert_document_is_empty(document_with_filled_card_db)
+    assert_that(document_with_filled_card_db.save_file_path, is_(none()))
+
+
+def test_protects_against_infinite_save_data(
+        qtbot: QtBot, document_with_filled_card_db: mtg_proxy_printer.model.document.Document,
+        empty_save_database: sqlite3.Connection):
+    empty_save_database.execute("DROP TABLE Card")
+    # LIMIT clause in the definition below is a safety measure.
+    empty_save_database.execute(textwrap.dedent("""\
+        CREATE VIEW Card (page, slot, scryfall_id, is_front) AS 
+            WITH RECURSIVE card_gen (page, slot, scryfall_id, is_front) AS (
+                SELECT 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 1
+                UNION ALL 
+                SELECT 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 1
+                FROM card_gen
+                LIMIT 100000
+            )
+        SELECT * FROM card_gen
+        """))
+    loader = document_with_filled_card_db.loader
+    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
+        mock.return_value = empty_save_database
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=100, raising=True), \
                 qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
                 qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
                 qtbot.assertNotEmitted(loader.worker.new_page), \

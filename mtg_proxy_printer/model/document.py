@@ -681,14 +681,6 @@ class Document(QAbstractItemModel):
         )
 
 
-class UnknownDocumentFormatException(Exception):
-    pass
-
-
-class InvalidDocumentFile(Exception):
-    pass
-
-
 class DocumentLoader(QObject):
     """
     Implements asynchronous background document loading.
@@ -765,14 +757,9 @@ class DocumentLoader(QObject):
             self.should_run = True
             try:
                 unknown_ids = self._load_document()
-            except sqlite3.DatabaseError:
-                logger.warning(f"Selected file is not a known MTGProxyPrinter document. Not loading it.")
-                self.loading_file_failed.emit(self.save_path)
-            except UnknownDocumentFormatException:
-                logger.warning("Unknown document file version encountered. Can’t load file.")
-                self.loading_file_failed.emit(self.save_path)
-            except InvalidDocumentFile:
-                logger.warning("Invalid data found in save file. Can’t load file.")
+            except AssertionError as e:
+                logger.warning("Selected file is not a known MTGProxyPrinter document or contains invalid data."
+                               "Not loading it.")
                 self.loading_file_failed.emit(self.save_path)
             else:
                 if unknown_ids:
@@ -816,9 +803,7 @@ class DocumentLoader(QObject):
             data = []
             with mtg_proxy_printer.sqlite_helpers.open_database(
                     save_file_path, "document-v3", Document.MIN_SUPPORTED_SQLITE_VERSION) as db:
-                if db.execute("PRAGMA application_id").fetchone()[0] != 41325044:
-                    raise sqlite3.DatabaseError("Not an MTGProxyPrinter save file!")
-                user_version = db.execute("PRAGMA user_version").fetchone()[0]
+                user_version = DocumentLoader.Worker._validate_database_schema(db)
                 if user_version == 2:
                     query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
                     FROM Card
@@ -827,24 +812,71 @@ class DocumentLoader(QObject):
                     query = r"""SELECT page, slot, scryfall_id, is_front
                     FROM Card
                     ORDER BY page ASC, slot ASC"""
-                else:
-                    raise UnknownDocumentFormatException(f"Unknown Save file version: {user_version}")
                 for row_number, row_data in enumerate(db.execute(query)):
-                    try:
-                        assert_that(row_data, contains_exactly(
-                            all_of(instance_of(int), greater_than_or_equal_to(0)),
-                            all_of(instance_of(int), greater_than_or_equal_to(0)),
-                            all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
-                            is_in((0, 1))
-                        ), f"Invalid data found in the save data at row {row_number}. Aborting")
-                    except AssertionError as e:
-                        logger.exception(f"Invalid data found: {e}")
-                        raise InvalidDocumentFile from e
+                    assert_that(row_data, contains_exactly(
+                        all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+                        is_in((0, 1))
+                    ), f"Invalid data found in the save data at row {row_number}. Aborting")
                     page, slot, scryfall_id, is_front = row_data
                     data.append((page, slot, scryfall_id, bool(is_front)))
             return data
 
-    def cancel_running_operations(self):
+        @staticmethod
+        def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
+            """
+            Validates the database schema of the user-provided file against a known-good schema.
+
+            :raises InvalidDocumentFile: If the provided file contains an invalid schema
+            :returns: Database schema version
+            """
+            if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
+                raise AssertionError("Not an MTGProxyPrinter save file!")
+            user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
+            try:
+                db_known_good = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
+                    f"document-v{user_schema_version}",
+                    Document.MIN_SUPPORTED_SQLITE_VERSION)
+            except FileNotFoundError as e:
+                raise AssertionError(f"Unknown save file version: {user_schema_version}") from e
+            tables_and_views_query = textwrap.dedent("""\
+                SELECT   s.type, s.name,
+                         p.cid AS column_id, p.name AS column_name, p.type AS column_type,
+                         p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
+                         p.pk AS column_primary_key_component
+                  FROM   sqlite_schema AS s
+                  JOIN   pragma_table_info(s.name) AS p
+                 WHERE   s.type IN ('table', 'view')
+                   AND   s.name NOT LIKE 'sqlite_%'
+                ORDER BY s.name, column_id
+                ;""")
+            indices_query = textwrap.dedent("""\
+                -- Note: Also include the “sqlite_autoindex*” indices that are
+                -- automatically created for UNIQUE and PRIMARY KEY constraints.
+                SELECT   s.name AS index_name,
+                         p.seqno AS index_column_sequence_number,
+                         p.cid AS column_id,
+                         p.name AS column_name
+                  FROM   sqlite_schema AS s
+                  JOIN   pragma_index_info(s.name) AS p
+                 WHERE   s.type = 'index'
+                ORDER BY index_name ASC, index_column_sequence_number ASC
+                ;""")
+            with db_known_good:
+                assert_that(
+                    db_unsafe.execute(tables_and_views_query).fetchall(),
+                    contains_exactly(
+                        *db_known_good.execute(tables_and_views_query).fetchall()
+                    ), "Given save file inconsistent: Unexpected tables or views")
+                assert_that(
+                    db_unsafe.execute(indices_query).fetchall(),
+                    contains_exactly(
+                        *db_known_good.execute(indices_query).fetchall()
+                    ), "Given save file inconsistent: Unexpected indices")
+            return user_schema_version
+
+        def cancel_running_operations(self):
             self.should_run = False
             if self.image_loader.currently_opened_file is not None:
                 # Force aborting the download by closing the input stream
