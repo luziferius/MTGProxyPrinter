@@ -33,6 +33,10 @@ __all__ = [
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
+    """
+    Implements the editor for the Set and CollectorNumber columns.
+    It is based on a QComboBox to only allow the user to choose between valid choices.
+    """
 
     def createEditor(self, parent: QWidget, option: QStyleOptionViewItem, index: QtCore.QModelIndex) -> QComboBox:
         editor = QComboBox(parent)
@@ -70,6 +74,10 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
 
 class CurrentPageView(*inherits_from_ui_file_with_name("current_page_view")):
+    """
+    Displays the currently selected page.
+    Contains the visual page renderer and the table that lists the content.
+    """
 
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
