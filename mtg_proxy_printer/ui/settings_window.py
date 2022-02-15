@@ -262,7 +262,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         new_page_capacity = self.page_layout.compute_page_card_capacity()
         logger.info(f"accept() called. {old_page_capacity=}, {new_page_capacity=}")
         if old_page_capacity > new_page_capacity:
-            overflowing_pages = len(self.document.find_overflowing_and_underflowing_pages(new_page_capacity)[0])
+            overflowing_pages = len(self.document.find_overflowing_and_non_full_pages(new_page_capacity)[0])
 
             if overflowing_pages and QMessageBox.question(
                     self, "Overflowing pages found",
@@ -365,7 +365,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
-            logger.debug("User selected a new default document save path.")
+            logger.info("User selected a new default document save path.")
             self.document_save_path.setText(location)
 
     @pyqtSlot()
