@@ -1,5 +1,14 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- MTGProxyPrinter now validates the save file format to prevent Denial of Service attacks 
+  via maliciously crafted save files.
+- It is now possible to retry downloading card data updates, 
+  if the download fails due to a flaky internet connection.
+
 # Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
 
 ## Fixed issues
