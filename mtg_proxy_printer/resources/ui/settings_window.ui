@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_general">
       <attribute name="title">
@@ -337,7 +337,14 @@ This avoids adding foreign language cards, if the deck list happens to contain s
        <string>Page size &amp;&amp; Printing</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
-       <item row="0" column="1">
+       <item row="3" column="0" colspan="2">
+        <widget class="PageConfigWidget" name="page_configuration_group_box">
+         <property name="title">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
         <widget class="QSpinBox" name="pdf_page_count_limit">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -356,295 +363,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="pdf_page_count_limit_label">
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically split PDF documents, if they get longer than this many pages. Set to zero to disable splitting.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;When printing PDFs using a USB flash drive directly connected to the printer, the printer may refuse to print documents exceeding some arbitrary size limit.&lt;/p&gt;&lt;p&gt;To work around this limitation, you can enable this option and limit the number of pages per PDF. If the document has more pages, it will be exported into multiple PDF documents automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string>Split PDF documents longer than</string>
-         </property>
-         <property name="buddy">
-          <cstring>pdf_page_count_limit</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <widget class="QGroupBox" name="page_configuration_group_box">
-         <property name="title">
-          <string>Default settings for new documents</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="6" column="1" colspan="3">
-           <widget class="Line" name="line">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-           </widget>
-          </item>
-          <item row="17" column="3">
-           <widget class="QSpinBox" name="page_image_spacing_vertical">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space above and below of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="17" column="1">
-           <widget class="QLabel" name="page_image_spacing_vertical_label">
-            <property name="text">
-             <string>Vertical image spacing</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_image_spacing_vertical</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="1">
-           <widget class="QLabel" name="page_height_label">
-            <property name="text">
-             <string>Page height</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_height</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="15" column="1">
-           <widget class="QLabel" name="page_margin_right_label">
-            <property name="text">
-             <string>Right margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_right</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="15" column="3">
-           <widget class="QSpinBox" name="page_margin_right">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="3">
-           <widget class="QSpinBox" name="page_margin_bottom">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="16" column="1">
-           <widget class="QLabel" name="page_image_spacing_horizontal_label">
-            <property name="text">
-             <string>Horizontal image spacing</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_image_spacing_horizontal</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="1">
-           <widget class="QLabel" name="page_margin_bottom_label">
-            <property name="text">
-             <string>Bottom Margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_bottom</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="8" column="3">
-           <widget class="QSpinBox" name="page_height">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper height in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="14" column="3">
-           <widget class="QSpinBox" name="page_margin_left">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="14" column="1">
-           <widget class="QLabel" name="page_margin_left_label">
-            <property name="text">
-             <string>Left margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_left</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="1">
-           <widget class="QLabel" name="page_width_label">
-            <property name="text">
-             <string>Page width</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_width</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="11" column="3">
-           <widget class="QSpinBox" name="page_margin_top">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="10" column="3">
-           <widget class="QSpinBox" name="page_width">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>Default paper width in millimeters</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="11" column="1">
-           <widget class="QLabel" name="page_margin_top_label">
-            <property name="text">
-             <string>Top margin</string>
-            </property>
-            <property name="buddy">
-             <cstring>page_margin_top</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="3">
-           <widget class="QCheckBox" name="print_cut_marker">
-            <property name="toolTip">
-             <string>Enable printing additional lines to aid cutting the printed sheets.</string>
-            </property>
-            <property name="text">
-             <string>Print cut markers</string>
-            </property>
-           </widget>
-          </item>
-          <item row="16" column="3">
-           <widget class="QSpinBox" name="page_image_spacing_horizontal">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="suffix">
-             <string> mm</string>
-            </property>
-            <property name="maximum">
-             <number>10000</number>
-            </property>
-           </widget>
-          </item>
-          <item row="18" column="1">
-           <widget class="QLabel" name="page_capacity_label">
-            <property name="text">
-             <string>Resulting page capacity:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="18" column="3">
-           <widget class="QLabel" name="page_capacity">
-            <property name="toolTip">
-             <string>Number of regular-size cards fitting on each page, based on the page size and spacings configured</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="3" column="0" colspan="2">
+       <item row="4" column="0" colspan="2">
         <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -656,6 +375,19 @@ This avoids adding foreign language cards, if the deck list happens to contain s
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="pdf_page_count_limit_label">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically split PDF documents, if they get longer than this many pages. Set to zero to disable splitting.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;When printing PDFs using a USB flash drive directly connected to the printer, the printer may refuse to print documents exceeding some arbitrary size limit.&lt;/p&gt;&lt;p&gt;To work around this limitation, you can enable this option and limit the number of pages per PDF. If the document has more pages, it will be exported into multiple PDF documents automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>Split PDF documents longer than</string>
+         </property>
+         <property name="buddy">
+          <cstring>pdf_page_count_limit</cstring>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -923,6 +655,14 @@ These are not tournament legal.</string>
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PageConfigWidget</class>
+   <extends>QGroupBox</extends>
+   <header>mtg_proxy_printer.ui.page_config_widget</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>tab_widget</tabstop>
   <tabstop>add_card_widget_style_combo_box</tabstop>
@@ -939,15 +679,6 @@ These are not tournament legal.</string>
   <tabstop>print_guessing_prefer_already_downloaded</tabstop>
   <tabstop>automatic_deck_list_translation_enable</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
-  <tabstop>print_cut_marker</tabstop>
-  <tabstop>page_height</tabstop>
-  <tabstop>page_width</tabstop>
-  <tabstop>page_margin_top</tabstop>
-  <tabstop>page_margin_bottom</tabstop>
-  <tabstop>page_margin_left</tabstop>
-  <tabstop>page_margin_right</tabstop>
-  <tabstop>page_image_spacing_horizontal</tabstop>
-  <tabstop>page_image_spacing_vertical</tabstop>
   <tabstop>include_cards_depicting_racism</tabstop>
   <tabstop>include_cards_without_images</tabstop>
   <tabstop>include_oversized_cards</tabstop>

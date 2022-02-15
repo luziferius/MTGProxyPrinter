@@ -19,10 +19,11 @@ import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QSpinBox, QFileDialog, QLineEdit, QLabel, QMessageBox
+    QSpinBox, QFileDialog, QLineEdit, QMessageBox
 
-from mtg_proxy_printer.model.document import PageLayoutSettings, Document
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
@@ -50,8 +51,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.document = document
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
-        self.page_layout = self._setup_page_layout()
-
+        self.page_configuration_group_box: PageConfigWidget
+        self.page_configuration_group_box.setTitle("Default settings for new documents")
         self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
         self.add_card_widget_style_combo_box.addItem("Vertical layout", "vertical")
@@ -64,58 +65,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_page_layout(self) -> PageLayoutSettings:
-        # Implementation note: The signal connections below will also trigger when programmatically populating the
-        # widget values in method _load_document_settings().
-        # Therefore, it is not necessary to ever explicitly set the page_layout attributes to the current values.
-        page_layout = PageLayoutSettings()
-        self.page_height.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "page_height", new))
-        self.page_width.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "page_width", new))
-        self.page_margin_top.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_top", new))
-        self.page_margin_bottom.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_bottom", new))
-        self.page_margin_left.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_left", new))
-        self.page_margin_right.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_right", new))
-        self.page_image_spacing_horizontal.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "image_spacing_horizontal", new))
-        self.page_image_spacing_vertical.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "image_spacing_vertical", new))
-        widgets: typing.List[QSpinBox] = [
-            self.page_height,
-            self.page_width,
-            self.page_margin_top,
-            self.page_margin_bottom,
-            self.page_margin_left,
-            self.page_margin_right,
-            self.page_image_spacing_horizontal,
-            self.page_image_spacing_vertical,
-        ]
-        for widget in widgets:
-            widget.valueChanged[int].connect(self.on_page_layout_setting_changed)
-            widget.valueChanged[int].connect(self.validate_paper_size_settings)
-        return page_layout
-
-    @pyqtSlot()
-    def on_page_layout_setting_changed(self):
-        self.page_capacity: QLabel
-        new_capacity = self.page_layout.compute_page_card_capacity()
-        self.page_capacity.setText(str(new_capacity))
-
-    @pyqtSlot()
-    def validate_paper_size_settings(self):
-        pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + self.document.IMAGE_HEIGHT.to_tuple()[0]
-        min_page_width = pl.margin_left + pl.margin_right + self.document.IMAGE_WIDTH.to_tuple()[0]
-        self.page_height: QSpinBox
-        self.page_width: QSpinBox
-        self.page_height.setMinimum(min_page_height)
-        self.page_width.setMinimum(min_page_width)
-
     def show(self):
         logger.info("Show the settings window.")
         self.load_settings(mtg_proxy_printer.settings.settings)
@@ -126,6 +75,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_look_and_feel_settings(settings)
         self._load_images_settings(settings)
         self._load_download_settings(settings)
+        self.page_configuration_group_box: PageConfigWidget
+        self.page_configuration_group_box.load_document_settings_from_config(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
         self._load_debug_settings(settings)
@@ -161,10 +112,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _load_document_settings(self, settings: configparser.ConfigParser):
         document_section = settings["documents"]
-        widgets_with_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_with_settings:
-            widget.setValue(document_section.getint(setting))
-        self.print_cut_marker.setChecked(document_section.getboolean("print-cut-marker"))
+        self.pdf_page_count_limit.setValue(document_section.getint("pdf-page-count-limit"))
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
         download_section = settings["downloads"]
@@ -257,9 +205,9 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
-
+        self.page_configuration_group_box: PageConfigWidget
         old_page_capacity = self.document.total_cards_per_page
-        new_page_capacity = self.page_layout.compute_page_card_capacity()
+        new_page_capacity = self.page_configuration_group_box.page_layout.compute_page_card_capacity()
         logger.info(f"accept() called. {old_page_capacity=}, {new_page_capacity=}")
         if old_page_capacity > new_page_capacity:
             overflowing_pages = len(self.document.find_overflowing_and_non_full_pages(new_page_capacity)[0])
@@ -292,6 +240,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._save_look_and_feel_settings()
         self._save_images_settings()
         self._save_downloads_settings()
+        self.page_configuration_group_box: PageConfigWidget
+        self.page_configuration_group_box.save_document_settings_to_config()
         self._save_documents_settings()
         self._save_save_path_settings()
         self._save_debug_settings()
@@ -326,10 +276,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
-        widgets_and_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_and_settings:
-            documents_section[setting] = str(widget.value())
-        documents_section["print-cut-marker"] = str(self.print_cut_marker.isChecked())
+        documents_section["pdf-page-count-limit"] = str(self.pdf_page_count_limit.value())
 
     def _save_save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-save-paths"]
