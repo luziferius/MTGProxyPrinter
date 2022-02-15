@@ -31,8 +31,8 @@ __all__ = [
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
 
 
-def create_in_memory_database(schema_name: str,
-        min_supported_sqlite_version: typing.Tuple[int, int, int],
+def create_in_memory_database(
+        schema_name: str, min_supported_sqlite_version: typing.Tuple[int, int, int],
         check_same_thread: bool = True) -> sqlite3.Connection:
     if sqlite3.sqlite_version_info < min_supported_sqlite_version:
         raise sqlite3.NotSupportedError(
@@ -96,7 +96,7 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> i
     Returns the difference between the latest database schema version and the connected database schema version.
 
     :returns: - Positive integer, if the database is outdated
-              - Zero if it is up to date
+              - Zero if it is up-to-date
               - Negative integer, if the database was created by a later version that created a newer schema.
 
     """

@@ -106,7 +106,7 @@ CardList = typing.List[Card]
 
 @functools.lru_cache(None)
 def cached_dedent(text: str):
-    """Wraps textwrap.dedent() in a LRU cache."""
+    """Wraps textwrap.dedent() in an LRU cache."""
     return textwrap.dedent(text)
 
 

@@ -67,7 +67,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _setup_page_layout(self) -> PageLayoutSettings:
         # Implementation note: The signal connections below will also trigger when programmatically populating the
         # widget values in method _load_document_settings().
-        # Therefore it is not necessary to ever explicitly set the page_layout attributes to the current values.
+        # Therefore, it is not necessary to ever explicitly set the page_layout attributes to the current values.
         page_layout = PageLayoutSettings()
         self.page_height.valueChanged[int].connect(
             lambda new: setattr(page_layout, "page_height", new))

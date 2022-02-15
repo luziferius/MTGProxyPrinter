@@ -82,7 +82,7 @@ def test_action_download_card_data(qtbot: QtBot, main_window: MainWindow, handle
             unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as message_box_mock:
         downloader_mock.side_effect = validate_prior_to_error
         with qtbot.waitSignal(main_window.loading_state_changed, timeout=1000,
-                                 check_params_cb=lambda value: not value):
+                              check_params_cb=lambda value: not value):
             action.trigger()
         message_box_mock.assert_called_once()
         downloader_mock.assert_called_once()

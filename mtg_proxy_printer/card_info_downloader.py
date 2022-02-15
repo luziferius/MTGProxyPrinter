@@ -556,7 +556,6 @@ def _get_oracle_id(card: JSONType) -> str:
         return card["card_faces"][0]["oracle_id"]
 
 
-
 def _is_front_face(image_uri: str) -> bool:
     """
     Determine if the PNG image URI is a front or back face. The API does not expose which side a face is, so get that
@@ -570,7 +569,7 @@ def _is_front_face(image_uri: str) -> bool:
 
 def _get_card_name(card_or_face: JSONType) -> str:
     # Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
-    # English cards only have name, so use that as a fallback.
+    # English cards only have the “name” attribute, so use that as a fallback.
     try:
         return card_or_face["printed_name"]
     except KeyError:

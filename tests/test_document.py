@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import itertools
 import time
 from unittest.mock import MagicMock
@@ -66,7 +67,7 @@ def test_document_is_created_empty(card_db: CardDatabase):
 
 
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
-def test_add_card_and_rowCount(card_db: CardDatabase, pages_to_fill: int):
+def test_add_card_and_row_count(card_db: CardDatabase, pages_to_fill: int):
     fill_card_database_with_json_card(card_db, "regular_english_card")
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = Document(card_db, MagicMock())

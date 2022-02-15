@@ -120,8 +120,6 @@ class Document(QAbstractItemModel):
     This holds a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
-
-
     DPI: pint.Quantity = 300 / unit_registry.inch
     IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
     IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")

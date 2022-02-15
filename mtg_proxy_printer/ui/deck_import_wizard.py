@@ -23,7 +23,7 @@ from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
-from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -130,13 +130,13 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
 
 class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/select_deck_parser_page")):
     """
-    This page allows the user to chose which format their deck list uses.
-    The result will be used to chose an appropriate parser implementation.
+    This page allows the user to choose which format their deck list uses.
+    The result will be used to choose an appropriate parser implementation.
     """
     # Implementation note: Each QRadioButton has a signal/slot connection to the isComplete() slot method defined
     # in the loaded UI file. This is required to properly update the "complete" attribute on user input
     # and emit the completeChanged() Qt Signal whenever that attribute changes.
-    # When adding new radio buttons, also add the appropriate connection. Otherwise the “Next” button will stay
+    # When adding new radio buttons, also add the appropriate connection. Otherwise, the “Next” button will stay
     # disabled when the user selects it.
 
     selected_parser_changed = pyqtSignal(common.ParserBase)

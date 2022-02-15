@@ -19,7 +19,6 @@ import typing
 from unittest.mock import patch, MagicMock
 import pkg_resources
 
-import ijson
 from hamcrest import assert_that, is_, empty, has_key
 
 import mtg_proxy_printer.model

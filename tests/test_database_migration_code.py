@@ -23,7 +23,6 @@ import urllib.error
 from hamcrest import *
 import pytest
 
-import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.sqlite_helpers import _read_current_database_schema_version
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, MIGRATION_SCRIPTS, _migrate_21_to_22

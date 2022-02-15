@@ -204,7 +204,7 @@ class ImageDatabase(QObject):
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
     This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
-    a QThread. To perform it’s tasks, it offers multiple Qt Signals that broadcast it’s state changes
+    a QThread. To perform its tasks, it offers multiple Qt Signals that broadcast its state changes
     over thread-safe signal connections.
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.

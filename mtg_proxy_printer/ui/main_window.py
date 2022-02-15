@@ -219,7 +219,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     def closeEvent(self, event: QCloseEvent):
         """
         This function is automatically called when the window is closed using the close [X] button in the window
-        decorations or by right clicking in the system window list and using the close action, or similar ways to close
+        decorations or by right-clicking in the system window list and using the close action, or similar ways to close
         the window.
         Just ignore this event and simulate that the user used action_quit instead.
 

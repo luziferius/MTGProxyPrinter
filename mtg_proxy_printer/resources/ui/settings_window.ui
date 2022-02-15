@@ -98,7 +98,7 @@ Vertical adds a tall search area between the page list and the currently edited 
              </sizepolicy>
             </property>
             <property name="toolTip">
-             <string>The preferred card image language. Will fallback to English, if the card is unavailable in the preferred language.</string>
+             <string>The preferred card image language. Will fall back to English, if the card is unavailable in the preferred language.</string>
             </property>
            </widget>
           </item>
