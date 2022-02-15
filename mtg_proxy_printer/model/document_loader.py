@@ -22,7 +22,12 @@ import typing
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
-from hamcrest import assert_that, contains_exactly, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in
+from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in
+try:
+    from hamcrest import contains_exactly
+except ImportError:
+    # Compatibility with PyHamcrest < 1.10
+    from hamcrest import contains as contains_exactly
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
