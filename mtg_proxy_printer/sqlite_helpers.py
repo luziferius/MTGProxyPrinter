@@ -26,6 +26,7 @@ del get_logger
 __all__ = [
     "open_database",
     "check_database_schema_version",
+    "create_in_memory_database",
 ]
 
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
