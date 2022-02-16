@@ -28,11 +28,12 @@ except ImportError:
     # Compatibility with PyHamcrest < 1.10
     from hamcrest import contains as contains_exactly
 import pytest
+from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.model.carddb import CardDatabase, Card
 from mtg_proxy_printer.model.document import Document, CardContainer
-from mtg_proxy_printer.model.document_loader import DocumentLoader
+from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 
 from .helpers import fill_card_database_with_json_card
 
@@ -41,6 +42,12 @@ from .helpers import fill_card_database_with_json_card
 def document(card_db: CardDatabase) -> Document:
     fill_card_database_with_json_card(card_db, "regular_english_card")
     document = Document(card_db, MagicMock())
+    yield document
+    document.loader.worker_thread.quit()
+    document.loader.worker_thread.wait(100)
+
+@pytest.fixture
+def document_custom_layout(document: Document) -> Document:
     document.page_layout.page_height = 300
     document.page_layout.page_width = 200
     document.page_layout.margin_top = 20
@@ -50,9 +57,22 @@ def document(card_db: CardDatabase) -> Document:
     document.page_layout.image_spacing_horizontal = 3
     document.page_layout.image_spacing_vertical = 2
     document.page_layout.draw_cut_markers = True
+    document.on_page_layout_updated()
     yield document
-    document.loader.worker_thread.quit()
-    document.loader.worker_thread.wait(100)
+
+
+def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
+    default_layout = PageLayoutSettings()
+    default_layout.update_from_settings()
+    assert_that(
+        document_custom_layout.total_cards_per_page,
+        is_not(equal_to(default_layout.compute_page_card_capacity())),
+        "Test setup failed."
+    )
+    with qtbot.waitSignal(document_custom_layout.total_cards_per_page_changed, timeout=1000):
+        document_custom_layout.clear_all_data()
+
+    assert_that(document_custom_layout.page_layout, is_(equal_to(default_layout)))
 
 
 def test_document_two_overflow_events_only_add_one_new_page(document: Document):
@@ -186,20 +206,20 @@ def test_save_migration(document: Document, source_version: int):
         _validate_saved_document_settings(document)
 
 
-def test_create_save(document: Document):
+def test_create_save(document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
     assert_that(
-        set(dataclasses.astuple(document.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document.page_layout)),
+        set(dataclasses.astuple(document_custom_layout.page_layout)),
+        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
         "Setup failed. Duplicate values in page layout settings"
     )
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, document.total_cards_per_page)
+    card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    document_custom_layout.add_card(card, document_custom_layout.total_cards_per_page)
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
-        document.save_as(save_dir)
+        document_custom_layout.save_as(save_dir)
         _validate_database_schema(save_dir)
-        _validate_saved_document_settings(document)
+        _validate_saved_document_settings(document_custom_layout)
 
 
 def _create_save_file(temp_path: pathlib.Path, source_version: int):

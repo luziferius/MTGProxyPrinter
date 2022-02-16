@@ -588,6 +588,8 @@ class Document(QAbstractItemModel):
     @pyqtSlot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
         self.clear()
+        self.page_layout.update_from_settings()
+        self.on_page_layout_updated()
         self.save_file_path = None
 
     def store_image_usage(self):
