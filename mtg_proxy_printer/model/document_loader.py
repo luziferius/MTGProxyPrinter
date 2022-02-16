@@ -182,7 +182,7 @@ class DocumentLoader(QObject):
                     query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
                     FROM Card
                     ORDER BY page ASC, slot ASC"""
-                elif user_version == 3:
+                elif user_version in {3,4}:
                     query = r"""SELECT page, slot, scryfall_id, is_front
                     FROM Card
                     ORDER BY page ASC, slot ASC"""
