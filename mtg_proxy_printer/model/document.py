@@ -65,6 +65,7 @@ class Document(QAbstractItemModel):
     loading_state_changed = pyqtSignal(bool)
     total_cards_per_page_changed = pyqtSignal(int)
     current_page_changed = pyqtSignal(QPersistentModelIndex)
+    page_layout_changed = pyqtSignal()
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -124,6 +125,7 @@ class Document(QAbstractItemModel):
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
             self.move_excess_cards_to_free_pages()
+        self.page_layout_changed.emit()
 
     @pyqtSlot()
     @pyqtSlot(int)

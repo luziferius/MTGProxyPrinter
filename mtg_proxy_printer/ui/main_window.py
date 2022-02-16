@@ -85,6 +85,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         self.settings_changed.connect(self.add_card_widget.update_selected_language)
         self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.page_view.settings_changed)
+        document.page_layout_changed.connect(self.page_view.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
         self.action_show_toolbar: QAction
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
