@@ -19,6 +19,7 @@ import enum
 import functools
 import itertools
 import pathlib
+import textwrap
 import typing
 
 import pint
@@ -73,6 +74,7 @@ class PageLayoutSettings:
     margin_right: int = 0
     image_spacing_horizontal: int = 0
     image_spacing_vertical: int = 0
+    draw_cut_markers: bool = False
 
     def update_from_settings(self):
         document_settings = settings["documents"]
@@ -84,6 +86,7 @@ class PageLayoutSettings:
         self.margin_right = document_settings.getint("margin-right-mm")
         self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
 
     def compute_page_column_count(self) -> int:
         """Returns the total number of card columns that fit on this page."""
@@ -478,7 +481,7 @@ class Document(QAbstractItemModel):
             in itertools.chain.from_iterable(cards)
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document-v3", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                self.save_file_path, "document-v4", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
             _migrate_database(db)
             db.execute("DELETE FROM Card")
@@ -486,6 +489,14 @@ class Document(QAbstractItemModel):
                 "INSERT INTO Card (page, slot, scryfall_id, is_front) VALUES (?, ?, ?, ?)",
                 flattened_data
             )
+            db.execute(
+                textwrap.dedent("""\
+                    INSERT INTO DocumentSettings (rowid, page_height, page_width,
+                          margin_top, margin_bottom, margin_left, margin_right,
+                          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
+                      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """),
+                dataclasses.astuple(self.page_layout))
             db.commit()
             db.execute("VACUUM")
 
@@ -675,5 +686,34 @@ class Document(QAbstractItemModel):
 
 def _migrate_database(db):
     if db.execute("PRAGMA user_version").fetchone()[0] == 2:
-        db.execute("ALTER TABLE Card ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
+        db.executescript(textwrap.dedent("""\
+        ALTER TABLE Card RENAME TO Card_old;
+        CREATE TABLE Card (
+          page INTEGER NOT NULL CHECK (page > 0),
+          slot INTEGER NOT NULL CHECK (slot > 0),
+          is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+          scryfall_id TEXT NOT NULL,
+          PRIMARY KEY(page, slot)
+        ) WITHOUT ROWID;
+        INSERT INTO Card (page, slot, scryfall_id, is_front)
+            SELECT page, slot, scryfall_id, 1 AS is_front
+            FROM Card_old;
+        DROP TABLE Card_old;
+        VACUUM;
+        """))
         db.execute(f"PRAGMA user_version = 3")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 3:
+        db.execute(textwrap.dedent("""\
+        CREATE TABLE DocumentSettings (
+          rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
+          page_height INTEGER NOT NULL CHECK (page_height > 0),
+          page_width INTEGER NOT NULL CHECK (page_width > 0),
+          margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
+          margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
+          margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
+          margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
+          image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
+          image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
+          draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (0, 1))
+        );"""))
+        db.execute(f"PRAGMA user_version = 4")
