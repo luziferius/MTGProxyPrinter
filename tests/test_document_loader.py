@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import itertools
 import pathlib
 import sqlite3
 import unittest.mock
@@ -46,7 +47,7 @@ def document_with_filled_card_db(card_db: CardDatabase) -> mtg_proxy_printer.mod
     document.loader.worker_thread.wait(100)
 
 
-@pytest.mark.parametrize("version", [-1, 0, 1, 4, 5])
+@pytest.mark.parametrize("version", [-1, 0, 1, 5, 6])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
     empty_save_database.execute(f"PRAGMA user_version = {version};")
     assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
@@ -103,101 +104,24 @@ def test_valid_data_loads_correctly(
     assert_that(document_with_filled_card_db.save_file_path, is_(equal_to(save_path)))
 
 
-@pytest.mark.parametrize("page", [
-    -1, 1.3, -1000.2, "", "ABC", b"binary"
-])
-def test_invalid_data_in_page_column_raises_exception(
+@pytest.mark.parametrize("data", itertools.chain(
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe")),
+    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe")),
+    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe")),
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"]),
+))
+def test_invalid_data_in_card_columns_raises_exception(
         qtbot: QtBot, document_with_filled_card_db: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection, page):
-    with disabled_check_constraints(empty_save_database):
-        empty_save_database.execute(
-            'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)',
-            (page, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe"))
+        empty_save_database: sqlite3.Connection, data):
+    # Replace the Card table with one that has no implicit type casting
+    empty_save_database.execute("DROP TABLE Card")
+    empty_save_database.execute("CREATE TABLE Card (page BLOB, slot BLOB, is_front BLOB, scryfall_id BLOB)")
+    empty_save_database.execute('INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)', data)
     assert_that(
         empty_save_database.execute("SELECT page, slot, is_front, scryfall_id FROM Card").fetchall(),
-        contains_exactly(
-            equal_to((page, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe"))
-        ),
+        contains_exactly(equal_to(data)),
         "Setup failed: Data mismatch"
     )
-    loader = document_with_filled_card_db.loader
-    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
-        mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
-        mock.assert_called_once()
-    assert_document_is_empty(document_with_filled_card_db)
-    assert_that(document_with_filled_card_db.save_file_path, is_(none()))
-
-
-@pytest.mark.parametrize("slot", [
-    -1, 1.3, -1000.2, "", "ABC", b"binary"
-])
-def test_invalid_data_in_slot_column_raises_exception(
-        qtbot: QtBot, document_with_filled_card_db: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection, slot):
-    with disabled_check_constraints(empty_save_database):
-        empty_save_database.execute(
-            'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)',
-            (1, slot, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe"))
-
-    loader = document_with_filled_card_db.loader
-    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
-        mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
-        mock.assert_called_once()
-    assert_document_is_empty(document_with_filled_card_db)
-    assert_that(document_with_filled_card_db.save_file_path, is_(none()))
-
-
-@pytest.mark.parametrize("is_front", [
-    -1, 1.3, -1000.2, "", "ABC", b"binary"
-])
-def test_invalid_data_in_is_front_column_raises_exception(
-        qtbot: QtBot, document_with_filled_card_db: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection, is_front):
-    with disabled_check_constraints(empty_save_database):
-        empty_save_database.execute(
-            'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)',
-            (1, 1, is_front, "0000579f-7b35-4ed3-b44c-db2a538066fe"))
-
-    loader = document_with_filled_card_db.loader
-    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
-        mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
-            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
-        mock.assert_called_once()
-    assert_document_is_empty(document_with_filled_card_db)
-    assert_that(document_with_filled_card_db.save_file_path, is_(none()))
-
-
-@pytest.mark.parametrize("scryfall_id", [
-    -1, 1.3, -1000.2, "", "ABC", b"binary"
-])
-def test_invalid_data_in_is_front_column_raises_exception(
-        qtbot: QtBot, document_with_filled_card_db: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection, scryfall_id):
-    with disabled_check_constraints(empty_save_database):
-        empty_save_database.execute(
-            'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)',
-            (1, 1, True, scryfall_id))
-
     loader = document_with_filled_card_db.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
