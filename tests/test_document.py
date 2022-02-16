@@ -222,6 +222,30 @@ def test_create_save(document_custom_layout: Document):
         _validate_saved_document_settings(document_custom_layout)
 
 
+def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: Document):
+    """Tests that saving a new document uses the newest database schema version"""
+    assert_that(
+        set(dataclasses.astuple(document_custom_layout.page_layout)),
+        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
+        "Setup failed. Duplicate values in page layout settings"
+    )
+    card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    document_custom_layout.add_card(card, document_custom_layout.total_cards_per_page)
+    with TemporaryDirectory() as temp_dir:
+        save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
+        document_custom_layout.save_as(save_dir)
+        _validate_database_schema(save_dir)
+        _validate_saved_document_settings(document_custom_layout)
+        document_custom_layout.page_layout.page_height = 1000
+        with qtbot.waitSignal(document_custom_layout.page_layout_changed):
+            document_custom_layout.on_page_layout_updated()
+        document_custom_layout.save_to_disk()
+        with qtbot.waitSignal(document_custom_layout.loading_state_changed, check_params_cb=lambda value: not value):
+            document_custom_layout.loader.load_document(save_dir)
+        assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
+
+
+
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
     """Creates an empty document save file at the given path and using the given schema version."""
     save_file_path = temp_path/"test.mtgproxies"

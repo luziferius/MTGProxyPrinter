@@ -431,7 +431,7 @@ class Document(QAbstractItemModel):
             )
             db.execute(
                 textwrap.dedent("""\
-                    INSERT INTO DocumentSettings (rowid, page_height, page_width,
+                    INSERT OR REPLACE INTO DocumentSettings (rowid, page_height, page_width,
                           margin_top, margin_bottom, margin_left, margin_right,
                           image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
                       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
