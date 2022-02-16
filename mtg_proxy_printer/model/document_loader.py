@@ -202,7 +202,7 @@ class DocumentLoader(QObject):
             """
             Validates the database schema of the user-provided file against a known-good schema.
 
-            :raises InvalidDocumentFile: If the provided file contains an invalid schema
+            :raises AssertionError: If the provided file contains an invalid schema
             :returns: Database schema version
             """
             if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
