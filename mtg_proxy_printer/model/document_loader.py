@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import dataclasses
 import pathlib
 import socket
 import sqlite3
@@ -21,18 +22,23 @@ import textwrap
 import typing
 import urllib.error
 
+import pint
 from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
-from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in
+from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
+    has_properties, greater_than, is_
+
 try:
     from hamcrest import contains_exactly
 except ImportError:
     # Compatibility with PyHamcrest < 1.10
     from hamcrest import contains as contains_exactly
 
+import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -43,9 +49,65 @@ del get_logger
 __all__ = [
     "DocumentSaveFormat",
     "DocumentLoader",
+    "PageLayoutSettings"
 ]
 
 DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
+
+
+@dataclasses.dataclass
+class PageLayoutSettings:
+    """Stores all page layout attributes, like paper size, margins and spacings"""
+    page_height: int = 0
+    page_width: int = 0
+    margin_top: int = 0
+    margin_bottom: int = 0
+    margin_left: int = 0
+    margin_right: int = 0
+    image_spacing_horizontal: int = 0
+    image_spacing_vertical: int = 0
+    draw_cut_markers: bool = False
+
+    def update_from_settings(self):
+        document_settings = mtg_proxy_printer.settings.settings["documents"]
+        self.page_height = document_settings.getint("paper-height-mm")
+        self.page_width = document_settings.getint("paper-width-mm")
+        self.margin_top = document_settings.getint("margin-top-mm")
+        self.margin_bottom = document_settings.getint("margin-bottom-mm")
+        self.margin_left = document_settings.getint("margin-left-mm")
+        self.margin_right = document_settings.getint("margin-right-mm")
+        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
+        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
+
+    def compute_page_column_count(self) -> int:
+        """Returns the total number of card columns that fit on this page."""
+        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+
+        total_width -= margins
+        if total_width < IMAGE_WIDTH:
+            return 0
+        total_width -= IMAGE_WIDTH
+        cards = total_width / (IMAGE_WIDTH+spacing) + 1
+        return int(cards.to_tuple()[0])
+
+    def compute_page_row_count(self) -> int:
+        """Returns the total number of card rows that fit on this page."""
+        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+        total_height -= margins
+        if total_height < IMAGE_HEIGHT:
+            return 0
+        total_height -= IMAGE_HEIGHT
+        cards = total_height / (IMAGE_HEIGHT+spacing) + 1
+        return int(cards.to_tuple()[0])
+
+    def compute_page_card_capacity(self) -> int:
+        """Returns the total number of card images that fit on a single page."""
+        return self.compute_page_row_count() * self.compute_page_column_count()
 
 
 class DocumentLoader(QObject):
@@ -90,6 +152,7 @@ class DocumentLoader(QObject):
         loading_file_successful = pyqtSignal(pathlib.Path)
         network_error_occurred = pyqtSignal(str)
         request_blank_pixmap = pyqtSignal(Card)
+        document_settings_loaded = pyqtSignal(PageLayoutSettings)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -127,8 +190,8 @@ class DocumentLoader(QObject):
             try:
                 unknown_ids = self._load_document()
             except AssertionError as e:
-                logger.warning("Selected file is not a known MTGProxyPrinter document or contains invalid data."
-                               "Not loading it.")
+                logger.exception(
+                    "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
                 self.loading_file_failed.emit(self.save_path, str(e))
             else:
                 if unknown_ids:
@@ -138,12 +201,13 @@ class DocumentLoader(QObject):
                 self.finished.emit()
 
         def _load_document(self) -> int:
-            data = self._read_data_from_save_path(self.save_path)
+            card_data, page_settings = self._read_data_from_save_path(self.save_path)
             self.document_clear_requested.emit()
+            self.document_settings_loaded.emit(page_settings)
             logger.info("Start filling pages with cards from loaded data")
             current_page = 1
             unknown_ids = 0
-            for page_number, slot, scryfall_id, is_front in data:
+            for page_number, slot, scryfall_id, is_front in card_data:
                 if not self.should_run:
                     logger.info("Cancel request received, stop processing the card list.")
                     return unknown_ids
@@ -167,35 +231,87 @@ class DocumentLoader(QObject):
             return unknown_ids
 
         @staticmethod
-        def _read_data_from_save_path(save_file_path: pathlib.Path) -> DocumentSaveFormat:
+        def _read_data_from_save_path(save_file_path: pathlib.Path):
             """
             Reads the data from disk into a list.
 
             :raises AssertionError: If the save file structure is invalid or contains invalid data.
             """
             logger.info(f"Reading data from save file {save_file_path}")
-            data = []
+
             with mtg_proxy_printer.sqlite_helpers.open_database(
-                    save_file_path, "document-v3", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                    save_file_path, "document-v4", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
                 user_version = DocumentLoader.Worker._validate_database_schema(db)
-                if user_version == 2:
-                    query = r"""SELECT page, slot, scryfall_id, 1 AS is_front
-                    FROM Card
-                    ORDER BY page ASC, slot ASC"""
-                elif user_version in {3,4}:
-                    query = r"""SELECT page, slot, scryfall_id, is_front
-                    FROM Card
-                    ORDER BY page ASC, slot ASC"""
-                for row_number, row_data in enumerate(db.execute(query)):
-                    assert_that(row_data, contains_exactly(
-                        all_of(instance_of(int), greater_than_or_equal_to(0)),
-                        all_of(instance_of(int), greater_than_or_equal_to(0)),
-                        all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
-                        is_in((0, 1))
-                    ), f"Invalid data found in the save data at row {row_number}. Aborting")
-                    page, slot, scryfall_id, is_front = row_data
-                    data.append((page, slot, scryfall_id, bool(is_front)))
-            return data
+                card_data = DocumentLoader.Worker._read_card_data_from_database(db, user_version)
+                settings = DocumentLoader.Worker._read_page_layout_data_from_database(db, user_version)
+            return card_data, settings
+
+        @staticmethod
+        def _read_card_data_from_database(db: sqlite3.Connection, user_version: int) -> DocumentSaveFormat:
+            card_data = []
+            if user_version == 2:
+                query = textwrap.dedent("""\
+                    SELECT page, slot, scryfall_id, 1 AS is_front
+                        FROM Card
+                        ORDER BY page ASC, slot ASC""")
+            elif user_version in {3, 4}:
+                query = textwrap.dedent("""\
+                    SELECT page, slot, scryfall_id, is_front
+                        FROM Card
+                        ORDER BY page ASC, slot ASC""")
+            else:
+                raise AssertionError(f"Unknown database schema version: {user_version}")
+            for row_number, row_data in enumerate(db.execute(query)):
+                assert_that(row_data, contains_exactly(
+                    all_of(instance_of(int), greater_than_or_equal_to(0)),
+                    all_of(instance_of(int), greater_than_or_equal_to(0)),
+                    all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+                    is_in((0, 1))
+                ), f"Invalid data found in the save data at row {row_number}. Aborting")
+                page, slot, scryfall_id, is_front = row_data
+                card_data.append((page, slot, scryfall_id, bool(is_front)))
+            return card_data
+
+        @staticmethod
+        def _read_page_layout_data_from_database(db, user_version):
+            if user_version == 4:
+                assert_that(
+                    db.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
+                    contains_exactly(1),
+                )
+                document_settings_query = textwrap.dedent("""\
+                    SELECT page_height, page_width,
+                           margin_top, margin_bottom, margin_left, margin_right,
+                           image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
+                        FROM DocumentSettings
+                        WHERE rowid == 1
+                    """)
+                settings = PageLayoutSettings(*db.execute(document_settings_query).fetchone())
+                assert_that(
+                    settings,
+                    has_properties(
+                        page_height=all_of(instance_of(int), greater_than(0)),
+                        page_width=all_of(instance_of(int), greater_than(0)),
+                        margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        draw_cut_markers=is_in((0, 1)),
+                    ),
+                    "Document settings contain invalid data or data types"
+                )
+                assert_that(
+                    settings.compute_page_card_capacity(),
+                    is_(greater_than_or_equal_to(1)),
+                    "Document settings invalid: At least one card has to fit on a page."
+                )
+                settings.draw_cut_markers = bool(settings.draw_cut_markers)
+            else:
+                settings = PageLayoutSettings()
+                settings.update_from_settings()
+            return settings
 
         @staticmethod
         def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
@@ -262,6 +378,7 @@ class DocumentLoader(QObject):
         self.worker.document_clear_requested.connect(self.document.clear)
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
+        self.worker.document_settings_loaded.connect(self.on_document_settings_loaded)
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
         self.worker.loading_file_failed.connect(self.loading_file_failed)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
@@ -270,6 +387,11 @@ class DocumentLoader(QObject):
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
+
+    @pyqtSlot(PageLayoutSettings)
+    def on_document_settings_loaded(self, settings: PageLayoutSettings):
+        self.document.page_layout = settings
+        self.document.on_page_layout_updated()
 
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()

@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
+import dataclasses
 import itertools
 import pathlib
 import sqlite3
@@ -85,13 +86,28 @@ def test_valid_data_loads_correctly(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)',
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe")
     )
+    page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
+        page_height=300, page_width=200,
+        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
+        image_spacing_horizontal=3, image_spacing_vertical=2, draw_cut_markers=True,
+    )
+    assert_that(page_layout.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
+    empty_save_database.execute(
+        textwrap.dedent("""\
+            INSERT INTO DocumentSettings (rowid, page_height, page_width,
+                  margin_top, margin_bottom, margin_left, margin_right,
+                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
+              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """),
+        dataclasses.astuple(page_layout))
     loader = document_with_filled_card_db.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, raising=True,
                               check_params_cb=lambda value: not value), \
-                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=100), \
+                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000), \
+                qtbot.waitSignal(document_with_filled_card_db.total_cards_per_page_changed, timeout=1000), \
                 qtbot.waitSignal(document_with_filled_card_db.loading_state_changed, timeout=1000,
                                  check_params_cb=lambda value: not value):
             loader.load_document(save_path)
@@ -102,6 +118,11 @@ def test_valid_data_loads_correctly(
     assert_that(document_with_filled_card_db.rowCount(page_index), is_(1))
     assert_that(page_index.child(0, mtg_proxy_printer.model.document.PageColumns.CardName).data(), is_("Fury Sliver"))
     assert_that(document_with_filled_card_db.save_file_path, is_(equal_to(save_path)))
+    assert_that(document_with_filled_card_db.page_layout, is_(equal_to(page_layout)))
+    assert_that(
+        document_with_filled_card_db.total_cards_per_page,
+        is_(equal_to(page_layout.compute_page_card_capacity()))
+    )
 
 
 @pytest.mark.parametrize("data", itertools.chain(

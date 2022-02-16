@@ -22,27 +22,21 @@ import pathlib
 import textwrap
 import typing
 
-import pint
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat
+from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
-
-unit_registry = pint.UnitRegistry()
-
 __all__ = [
     "PageList",
     "Document",
-    "PageLayoutSettings",
     "CardContainer",
 ]
 
@@ -53,7 +47,7 @@ class DocumentColumns(enum.IntEnum):
 
 @dataclasses.dataclass
 class CardContainer:
-    parent: list
+    parent: "CardList"
     card: Card
 
 
@@ -63,70 +57,11 @@ PageList = typing.List[CardList]
 INVALID_INDEX = QModelIndex()
 
 
-@dataclasses.dataclass
-class PageLayoutSettings:
-    """Stores all page layout attributes, like paper size, margins and spacings"""
-    page_height: int = 0
-    page_width: int = 0
-    margin_top: int = 0
-    margin_bottom: int = 0
-    margin_left: int = 0
-    margin_right: int = 0
-    image_spacing_horizontal: int = 0
-    image_spacing_vertical: int = 0
-    draw_cut_markers: bool = False
-
-    def update_from_settings(self):
-        document_settings = settings["documents"]
-        self.page_height = document_settings.getint("paper-height-mm")
-        self.page_width = document_settings.getint("paper-width-mm")
-        self.margin_top = document_settings.getint("margin-top-mm")
-        self.margin_bottom = document_settings.getint("margin-bottom-mm")
-        self.margin_left = document_settings.getint("margin-left-mm")
-        self.margin_right = document_settings.getint("margin-right-mm")
-        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
-        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
-        self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
-
-    def compute_page_column_count(self) -> int:
-        """Returns the total number of card columns that fit on this page."""
-        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
-
-        total_width -= margins
-        if total_width < Document.IMAGE_WIDTH:
-            return 0
-        total_width -= Document.IMAGE_WIDTH
-        cards = total_width / (Document.IMAGE_WIDTH+spacing) + 1
-        return int(cards.to_tuple()[0])
-
-    def compute_page_row_count(self) -> int:
-        """Returns the total number of card rows that fit on this page."""
-        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
-        total_height -= margins
-        if total_height < Document.IMAGE_HEIGHT:
-            return 0
-        total_height -= Document.IMAGE_HEIGHT
-        cards = total_height / (Document.IMAGE_HEIGHT+spacing) + 1
-        return int(cards.to_tuple()[0])
-
-    def compute_page_card_capacity(self) -> int:
-        """Returns the total number of card images that fit on a single page."""
-        return self.compute_page_row_count() * self.compute_page_column_count()
-
-
 class Document(QAbstractItemModel):
     """
     This holds a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
-    DPI: pint.Quantity = 300 / unit_registry.inch
-    IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
-    IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
-
     loading_state_changed = pyqtSignal(bool)
     total_cards_per_page_changed = pyqtSignal(int)
     current_page_changed = pyqtSignal(QPersistentModelIndex)
@@ -178,6 +113,9 @@ class Document(QAbstractItemModel):
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
         self.page_layout.update_from_settings()
+        self.on_page_layout_updated()
+
+    def on_page_layout_updated(self):
         previous_card_count = self.total_cards_per_page
         self.compute_page_row_count.cache_clear()
         self.compute_page_column_count.cache_clear()

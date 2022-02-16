@@ -25,6 +25,7 @@ from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.logger import get_logger
+import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
 del get_logger
 
@@ -62,7 +63,7 @@ def create_qprinter(document: Document) -> QPrinter:
     else:
         page_size = QSizeF(page_width, page_height)
     printer.setPageSizeMM(page_size)
-    printer.setResolution(document.DPI.to_tuple()[0])
+    printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
     # Disable duplex printing by default
     printer.setDoubleSidedPrinting(False)
     printer.setDuplex(QPrinter.DuplexNone)
@@ -88,7 +89,7 @@ class PDFPrinter(QPdfWriter):
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
-        self.setResolution(document.DPI.to_tuple()[0])
+        self.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
         self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))

@@ -21,7 +21,9 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.model.document import PageLayoutSettings, Document
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.units_and_sizes import IMAGE_WIDTH, IMAGE_HEIGHT
 
 
 class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0], QGroupBox):
@@ -71,8 +73,8 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
         pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + Document.IMAGE_HEIGHT.to_tuple()[0]
-        min_page_width = pl.margin_left + pl.margin_right + Document.IMAGE_WIDTH.to_tuple()[0]
+        min_page_height = pl.margin_bottom + pl.margin_top + IMAGE_HEIGHT.to_tuple()[0]
+        min_page_width = pl.margin_left + pl.margin_right + IMAGE_WIDTH.to_tuple()[0]
         self.page_height: QSpinBox
         self.page_width: QSpinBox
         self.page_height.setMinimum(min_page_height)
