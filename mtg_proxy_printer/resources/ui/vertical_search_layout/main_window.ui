@@ -121,6 +121,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <addaction name="action_edit_document_settings"/>
     <addaction name="action_compact_document"/>
     <addaction name="separator"/>
     <addaction name="action_new_page"/>
@@ -305,6 +306,17 @@
    </property>
    <property name="toolTip">
     <string>Minimize page count: Fill empty slots on pages by moving cards from the end of the document</string>
+   </property>
+  </action>
+  <action name="action_edit_document_settings">
+   <property name="icon">
+    <iconset theme="document-properties"/>
+   </property>
+   <property name="text">
+    <string>Edit document settings</string>
+   </property>
+   <property name="toolTip">
+    <string>Configure page size, margins, image spacings for the currently edited document.</string>
    </property>
   </action>
   <action name="action_import_deck_list">
