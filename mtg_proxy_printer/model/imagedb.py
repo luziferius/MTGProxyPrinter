@@ -129,12 +129,17 @@ class ImageDatabase(QObject):
 
     @property
     def blank_image(self):
+        """Returns a static, empty QPixmap in the size of a regular magic card."""
         if self._blank_image.isNull():
             self._blank_image = QPixmap(IMAGE_SIZE)
             self._blank_image.fill(QColor("white"))
         return self._blank_image
 
-    def filter_already_downloaded(self, possible_matches: typing.List[Card]):
+    def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
+        """
+        Takes a list of cards and returns a new list containing all cards from the source list that have
+        already downloaded images. The order of cards is preserved.
+        """
         return [
             card for card in possible_matches
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
@@ -229,6 +234,10 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def scan_disk_image_cache_then_process_queue(self):
+        """
+        Performs two tasks in order: Scans the image cache on disk, then starts to process the download request queue.
+        This is done to perform both tasks asynchronously and not block the application GUI/startup.
+        """
         logger.info("Reading all image IDs of images stored on disk.")
         self.image_database.images_on_disk.update(
             image.as_key() for image in self.image_database.read_disk_cache_content()
