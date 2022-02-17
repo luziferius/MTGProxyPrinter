@@ -19,6 +19,7 @@ from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 
+import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.page_config_widget
 
 
@@ -65,3 +66,25 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
         new_value = not previous
         checkbox_widget.setChecked(new_value)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
+
+
+@pytest.mark.parametrize("attribute_name", [
+    "page_height",
+    "page_width",
+    "margin_top",
+    "margin_bottom",
+    "margin_left",
+    "margin_right",
+    "image_spacing_horizontal",
+    "image_spacing_vertical",
+])
+def test_load_document_settings_from_config(qtbot: QtBot, attribute_name: str):
+    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+    qtbot.addWidget(widget)
+    widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+    assert_that(widget.page_layout, has_property(attribute_name))
+    spinbox_widget: QSpinBox = getattr(widget, attribute_name)
+    assert_that(
+        spinbox_widget.value(),
+        is_(equal_to(getattr(widget.page_layout, attribute_name)))
+    )

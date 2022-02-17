@@ -88,24 +88,24 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         widgets_with_settings = self._get_document_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setValue(document_section.getint(setting))
-        self.print_cut_marker.setChecked(document_section.getboolean("print-cut-marker"))
+        self.draw_cut_markers.setChecked(document_section.getboolean("print-cut-marker"))
 
     def save_document_settings_to_config(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
         widgets_and_settings = self._get_document_settings_widgets()
         for widget, setting in widgets_and_settings:
             documents_section[setting] = str(widget.value())
-        documents_section["print-cut-marker"] = str(self.print_cut_marker.isChecked())
+        documents_section["print-cut-marker"] = str(self.draw_cut_markers.isChecked())
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
             (self.page_height, "paper-height-mm"),
             (self.page_width, "paper-width-mm"),
-            (self.page_margin_top, "margin-top-mm"),
-            (self.page_margin_bottom, "margin-bottom-mm"),
-            (self.page_margin_left, "margin-left-mm"),
-            (self.page_margin_right, "margin-right-mm"),
-            (self.page_image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.page_image_spacing_vertical, "image-spacing-vertical-mm"),
+            (self.margin_top, "margin-top-mm"),
+            (self.margin_bottom, "margin-bottom-mm"),
+            (self.margin_left, "margin-left-mm"),
+            (self.margin_right, "margin-right-mm"),
+            (self.image_spacing_horizontal, "image-spacing-horizontal-mm"),
+            (self.image_spacing_vertical, "image-spacing-vertical-mm"),
         ]
         return widgets_with_settings
