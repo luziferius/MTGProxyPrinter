@@ -16,8 +16,8 @@
 import configparser
 import typing
 
-from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel
+from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -42,18 +42,21 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
             lambda new: setattr(page_layout, "page_height", new))
         self.page_width.valueChanged[int].connect(
             lambda new: setattr(page_layout, "page_width", new))
-        self.page_margin_top.valueChanged[int].connect(
+        self.margin_top.valueChanged[int].connect(
             lambda new: setattr(page_layout, "margin_top", new))
-        self.page_margin_bottom.valueChanged[int].connect(
+        self.margin_bottom.valueChanged[int].connect(
             lambda new: setattr(page_layout, "margin_bottom", new))
-        self.page_margin_left.valueChanged[int].connect(
+        self.margin_left.valueChanged[int].connect(
             lambda new: setattr(page_layout, "margin_left", new))
-        self.page_margin_right.valueChanged[int].connect(
+        self.margin_right.valueChanged[int].connect(
             lambda new: setattr(page_layout, "margin_right", new))
-        self.page_image_spacing_horizontal.valueChanged[int].connect(
+        self.image_spacing_horizontal.valueChanged[int].connect(
             lambda new: setattr(page_layout, "image_spacing_horizontal", new))
-        self.page_image_spacing_vertical.valueChanged[int].connect(
+        self.image_spacing_vertical.valueChanged[int].connect(
             lambda new: setattr(page_layout, "image_spacing_vertical", new))
+        self.draw_cut_markers: QCheckBox
+        self.draw_cut_markers.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
         return page_layout
 
     @pyqtSlot()

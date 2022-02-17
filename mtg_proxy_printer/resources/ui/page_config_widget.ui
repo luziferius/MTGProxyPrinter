@@ -22,7 +22,7 @@
     </widget>
    </item>
    <item row="17" column="3">
-    <widget class="QSpinBox" name="page_image_spacing_vertical">
+    <widget class="QSpinBox" name="image_spacing_vertical">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -41,12 +41,12 @@
     </widget>
    </item>
    <item row="17" column="1">
-    <widget class="QLabel" name="page_image_spacing_vertical_label">
+    <widget class="QLabel" name="image_spacing_vertical_label">
      <property name="text">
       <string>Vertical image spacing</string>
      </property>
      <property name="buddy">
-      <cstring>page_image_spacing_vertical</cstring>
+      <cstring>image_spacing_vertical</cstring>
      </property>
     </widget>
    </item>
@@ -61,17 +61,17 @@
     </widget>
    </item>
    <item row="15" column="1">
-    <widget class="QLabel" name="page_margin_right_label">
+    <widget class="QLabel" name="margin_right_label">
      <property name="text">
       <string>Right margin</string>
      </property>
      <property name="buddy">
-      <cstring>page_margin_right</cstring>
+      <cstring>margin_right</cstring>
      </property>
     </widget>
    </item>
    <item row="15" column="3">
-    <widget class="QSpinBox" name="page_margin_right">
+    <widget class="QSpinBox" name="margin_right">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -90,7 +90,7 @@
     </widget>
    </item>
    <item row="12" column="3">
-    <widget class="QSpinBox" name="page_margin_bottom">
+    <widget class="QSpinBox" name="margin_bottom">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -109,22 +109,22 @@
     </widget>
    </item>
    <item row="16" column="1">
-    <widget class="QLabel" name="page_image_spacing_horizontal_label">
+    <widget class="QLabel" name="image_spacing_horizontal_label">
      <property name="text">
       <string>Horizontal image spacing</string>
      </property>
      <property name="buddy">
-      <cstring>page_image_spacing_horizontal</cstring>
+      <cstring>image_spacing_horizontal</cstring>
      </property>
     </widget>
    </item>
    <item row="12" column="1">
-    <widget class="QLabel" name="page_margin_bottom_label">
+    <widget class="QLabel" name="margin_bottom_label">
      <property name="text">
       <string>Bottom Margin</string>
      </property>
      <property name="buddy">
-      <cstring>page_margin_bottom</cstring>
+      <cstring>margin_bottom</cstring>
      </property>
     </widget>
    </item>
@@ -148,7 +148,7 @@
     </widget>
    </item>
    <item row="14" column="3">
-    <widget class="QSpinBox" name="page_margin_left">
+    <widget class="QSpinBox" name="margin_left">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -167,12 +167,12 @@
     </widget>
    </item>
    <item row="14" column="1">
-    <widget class="QLabel" name="page_margin_left_label">
+    <widget class="QLabel" name="margin_left_label">
      <property name="text">
       <string>Left margin</string>
      </property>
      <property name="buddy">
-      <cstring>page_margin_left</cstring>
+      <cstring>margin_left</cstring>
      </property>
     </widget>
    </item>
@@ -187,7 +187,7 @@
     </widget>
    </item>
    <item row="11" column="3">
-    <widget class="QSpinBox" name="page_margin_top">
+    <widget class="QSpinBox" name="margin_top">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -225,17 +225,17 @@
     </widget>
    </item>
    <item row="11" column="1">
-    <widget class="QLabel" name="page_margin_top_label">
+    <widget class="QLabel" name="margin_top_label">
      <property name="text">
       <string>Top margin</string>
      </property>
      <property name="buddy">
-      <cstring>page_margin_top</cstring>
+      <cstring>margin_top</cstring>
      </property>
     </widget>
    </item>
    <item row="0" column="3">
-    <widget class="QCheckBox" name="print_cut_marker">
+    <widget class="QCheckBox" name="draw_cut_markers">
      <property name="toolTip">
       <string>Enable printing additional lines to aid cutting the printed sheets.</string>
      </property>
@@ -245,7 +245,7 @@
     </widget>
    </item>
    <item row="16" column="3">
-    <widget class="QSpinBox" name="page_image_spacing_horizontal">
+    <widget class="QSpinBox" name="image_spacing_horizontal">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -284,15 +284,15 @@ based on the page size and spacings configured</string>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>print_cut_marker</tabstop>
+  <tabstop>draw_cut_markers</tabstop>
   <tabstop>page_height</tabstop>
   <tabstop>page_width</tabstop>
-  <tabstop>page_margin_top</tabstop>
-  <tabstop>page_margin_bottom</tabstop>
-  <tabstop>page_margin_left</tabstop>
-  <tabstop>page_margin_right</tabstop>
-  <tabstop>page_image_spacing_horizontal</tabstop>
-  <tabstop>page_image_spacing_vertical</tabstop>
+  <tabstop>margin_top</tabstop>
+  <tabstop>margin_bottom</tabstop>
+  <tabstop>margin_left</tabstop>
+  <tabstop>margin_right</tabstop>
+  <tabstop>image_spacing_horizontal</tabstop>
+  <tabstop>image_spacing_vertical</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -361,7 +361,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_top</sender>
+   <sender>margin_top</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>on_page_layout_setting_changed()</slot>
@@ -377,7 +377,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_top</sender>
+   <sender>margin_top</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -393,7 +393,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_bottom</sender>
+   <sender>margin_bottom</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>on_page_layout_setting_changed()</slot>
@@ -409,7 +409,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_bottom</sender>
+   <sender>margin_bottom</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -425,7 +425,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_left</sender>
+   <sender>margin_left</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>on_page_layout_setting_changed()</slot>
@@ -441,7 +441,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_left</sender>
+   <sender>margin_left</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -457,7 +457,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_right</sender>
+   <sender>margin_right</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>on_page_layout_setting_changed()</slot>
@@ -473,7 +473,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_margin_right</sender>
+   <sender>margin_right</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -489,7 +489,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_image_spacing_horizontal</sender>
+   <sender>image_spacing_horizontal</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>on_page_layout_setting_changed()</slot>
@@ -505,7 +505,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_image_spacing_horizontal</sender>
+   <sender>image_spacing_horizontal</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -521,7 +521,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_image_spacing_vertical</sender>
+   <sender>image_spacing_vertical</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>on_page_layout_setting_changed()</slot>
@@ -537,7 +537,7 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>page_image_spacing_vertical</sender>
+   <sender>image_spacing_vertical</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
    <slot>validate_paper_size_settings()</slot>
