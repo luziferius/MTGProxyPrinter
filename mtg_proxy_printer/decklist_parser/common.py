@@ -90,6 +90,10 @@ class ParserBase(QObject):
 
     @property
     def requires_print_guessing(self) -> bool:
+        """
+        Subclasses can overwrite this and return True to indicate that the format does not work without
+        print guessing enabled, most likely because the format contains insufficient information for accurate parsing.
+        """
         return False
 
     def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
@@ -100,7 +104,7 @@ class ParserBase(QObject):
             card_data.name = card_data.name.replace(" / ", " // ")
             if "//" in card_data.name:
                 # If this is a split card, try to identify one half
-                card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
+                card_data.name = card_data.name.split("//")[0 if card_data.is_front else 1].strip()
                 logger.debug(f"Card seems to be a split card. Using this part of the name: {card_data.name}")
         if self.card_db.is_valid_and_unique_card(card_data):
             logger.debug("Card is uniquely identified after post-processing the name")
