@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import functools
 import io
 import queue
 import itertools
@@ -106,7 +107,6 @@ class ImageDatabase(QObject):
         super(ImageDatabase, self).__init__(parent)
         self.db_path = db_path
         _migrate_database(db_path)
-        self._blank_image = QPixmap()
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
@@ -128,12 +128,12 @@ class ImageDatabase(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
-        if self._blank_image.isNull():
-            self._blank_image = QPixmap(IMAGE_SIZE)
-            self._blank_image.fill(QColor("white"))
-        return self._blank_image
+        pixmap = QPixmap(IMAGE_SIZE)
+        pixmap.fill(QColor("white"))
+        return pixmap
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
