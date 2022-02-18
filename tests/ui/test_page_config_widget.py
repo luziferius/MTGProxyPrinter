@@ -111,3 +111,59 @@ def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, a
         assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
     checkbox_widget: QCheckBox = getattr(widget, attribute_name)
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
+
+
+@pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
+@pytest.mark.parametrize("settings_name, attribute_name, min_value", [
+    ("paper-height-mm", "page_height", 108),
+    ("paper-width-mm", "page_width", 77),
+    ("margin-top-mm", "margin_top", 0),
+    ("margin-bottom-mm", "margin_bottom", 0),
+    ("margin-left-mm", "margin_left", 0),
+    ("margin-right-mm", "margin_right", 0),
+    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
+    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+])
+def test_save_integer_document_settings_to_config(
+        qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
+    """
+    Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
+    to ensure that at least one image fits on a page.
+    """
+    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+    qtbot.addWidget(widget)
+    document_settings = mtg_proxy_printer.settings.settings["documents"]
+    widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+    original_value = document_settings[settings_name]
+    with unittest.mock.patch.dict(document_settings, {settings_name: original_value}):
+        expected = str(max(min_value, value))
+        spinbox_widget: QSpinBox = getattr(widget, attribute_name)
+        spinbox_widget.setValue(spinbox_widget.value()+10000)
+        with qtbot.waitSignal(spinbox_widget.valueChanged, timeout=100):
+            spinbox_widget.setValue(value)
+        widget.save_document_settings_to_config()
+        assert_that(document_settings, has_entry(settings_name, equal_to(expected)))
+    assert_that(document_settings, has_entry(settings_name, equal_to(original_value)))
+
+
+@pytest.mark.parametrize("value", [True, False])
+@pytest.mark.parametrize("settings_name, attribute_name", [
+    ("print-cut-marker", "draw_cut_markers"),
+])
+def test_save_boolean_document_settings_to_config(
+        qtbot: QtBot, settings_name: str, attribute_name: str, value: bool):
+    """
+    Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
+    to ensure that at least one image fits on a page.
+    """
+    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+    qtbot.addWidget(widget)
+    document_settings = mtg_proxy_printer.settings.settings["documents"]
+    widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+    original_value = document_settings[settings_name]
+    with unittest.mock.patch.dict(document_settings, {settings_name: original_value}):
+        checkbox_widget: QCheckBox = getattr(widget, attribute_name)
+        checkbox_widget.setChecked(value)
+        widget.save_document_settings_to_config()
+        assert_that(document_settings, has_entry(settings_name, equal_to(str(value))))
+    assert_that(document_settings, has_entry(settings_name, equal_to(original_value)))
