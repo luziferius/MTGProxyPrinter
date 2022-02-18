@@ -187,3 +187,41 @@ def test_protects_against_infinite_save_data(
         mock.assert_called_once()
     assert_document_is_empty(document_with_filled_card_db)
     assert_that(document_with_filled_card_db.save_file_path, is_(none()))
+
+
+def test_protects_against_infinite_settings_data(
+        qtbot: QtBot, document_with_filled_card_db: mtg_proxy_printer.model.document.Document,
+        empty_save_database: sqlite3.Connection):
+    empty_save_database.execute("DROP TABLE DocumentSettings")
+    # LIMIT clause in the definition below is a safety measure.
+    empty_save_database.execute(textwrap.dedent("""\
+        CREATE VIEW DocumentSettings (
+          rowid, page_height, page_width,
+          margin_top, margin_bottom, margin_left, margin_right,
+          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers) AS 
+        WITH RECURSIVE settings_gen (
+          rowid, page_height, page_width,
+          margin_top, margin_bottom, margin_left, margin_right,
+          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
+        ) AS (
+                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1
+                UNION ALL 
+                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1
+                FROM settings_gen
+                LIMIT 100000
+            )
+        SELECT * FROM settings_gen
+        """))
+    loader = document_with_filled_card_db.loader
+    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
+        mock.return_value = empty_save_database
+        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
+                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
+                qtbot.assertNotEmitted(loader.worker.new_page), \
+                qtbot.assertNotEmitted(loader.worker.add_card), \
+                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+        mock.assert_called_once()
+    assert_document_is_empty(document_with_filled_card_db)
+    assert_that(document_with_filled_card_db.save_file_path, is_(none()))
