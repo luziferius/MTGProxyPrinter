@@ -81,7 +81,7 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
     ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
     ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
 ])
-def test_load_document_settings_from_config(
+def test_load_integer_document_settings_from_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
