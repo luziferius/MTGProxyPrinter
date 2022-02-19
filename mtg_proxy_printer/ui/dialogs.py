@@ -17,7 +17,7 @@ import pathlib
 import sys
 
 from PyQt5.QtCore import QFile, pyqtSlot
-from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QDialog
+from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QDialogButtonBox
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.model.carddb
@@ -214,7 +214,7 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialog"), QDialog):
+class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialog")):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         super(DocumentSettingsDialog, self).__init__(parent)
@@ -224,6 +224,19 @@ class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialo
         self.page_config_groupbox: PageConfigWidget
         self.page_config_groupbox.load_from_page_layout(document.page_layout)
         self.page_config_groupbox.setTitle("These settings only affect the current document")
+        self.button_box: QDialogButtonBox
+        self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
+            lambda: logger.info("User reverts the document settings to the values from the global configuration")
+        )
+        self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
+            lambda: self.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        )
+        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(
+            lambda: logger.info("User resets made changes")
+        )
+        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(
+            lambda: self.page_config_groupbox.load_from_page_layout(self.document.page_layout)
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):
@@ -233,3 +246,4 @@ class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialo
         self.document.on_page_layout_updated()
         super(DocumentSettingsDialog, self).accept()
         logger.debug("Saving settings in the document done.")
+
