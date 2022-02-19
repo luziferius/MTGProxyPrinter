@@ -20,10 +20,13 @@ from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import IMAGE_WIDTH, IMAGE_HEIGHT
+from mtg_proxy_printer.logger import get_logger
+
+logger = get_logger(__name__)
+del get_logger
 
 
 class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0], QGroupBox):
@@ -31,6 +34,7 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         super(PageConfigWidget, self).__init__(parent)
         self.setupUi(self)
         self.page_layout = self._setup_page_layout()
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_page_layout(self) -> PageLayoutSettings:
         # Implementation note: The signal connections below will also trigger
@@ -84,18 +88,39 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         self.page_width.setMinimum(min_page_width)
 
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
+        logger.debug(f"About to load document settings from the global settings")
         document_section = settings["documents"]
         widgets_with_settings = self._get_document_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setValue(document_section.getint(setting))
         self.draw_cut_markers.setChecked(document_section.getboolean("print-cut-marker"))
+        logger.debug(f"Loading from settings finished")
+
+    def load_from_page_layout(self, other: PageLayoutSettings):
+        """Loads the page layout from another PageLayoutSettings instance"""
+        logger.debug(f"About to load document settings from a document instance")
+        layout = self.page_layout
+        for key in layout.__annotations__.keys():
+            value = getattr(other, key)
+            setattr(self.page_layout, key, value)
+            widget = getattr(self, key)
+            with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
+                if isinstance(widget, QSpinBox):
+                    widget.setValue(value)
+                else:
+                    widget.setChecked(value)
+        self.validate_paper_size_settings()
+        self.on_page_layout_setting_changed()
+        logger.debug(f"Loading from document settings finished")
 
     def save_document_settings_to_config(self):
+        logger.info("About to save document settings to the global settings")
         documents_section = mtg_proxy_printer.settings.settings["documents"]
         widgets_and_settings = self._get_document_settings_widgets()
         for widget, setting in widgets_and_settings:
             documents_section[setting] = str(widget.value())
         documents_section["print-cut-marker"] = str(self.draw_cut_markers.isChecked())
+        logger.debug("Saving done.")
 
     def _get_document_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [

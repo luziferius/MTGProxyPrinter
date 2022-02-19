@@ -42,7 +42,6 @@ from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
-
 logger = get_logger(__name__)
 del get_logger
 

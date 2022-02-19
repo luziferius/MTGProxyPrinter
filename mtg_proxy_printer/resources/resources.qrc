@@ -15,6 +15,7 @@
     <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
     <file>ui/cache_cleanup_wizard/summary_page.ui</file>
     <file>ui/page_config_widget.ui</file>
+    <file>ui/page_config_dialog.ui</file>
 
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>

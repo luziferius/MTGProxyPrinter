@@ -31,7 +31,7 @@ from mtg_proxy_printer.ui.current_page_view import CurrentPageView
 from mtg_proxy_printer.ui.document_view import DocumentView
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog
+    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
@@ -383,8 +383,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             logger.debug("Saved.")
 
     @pyqtSlot()
+    def on_action_edit_document_settings_triggered(self):
+        logger.info("User wants to edit the document settings. Showing the editor dialog")
+        dialog = DocumentSettingsDialog(self.document, self)
+        dialog.exec_()
+
+    @pyqtSlot()
     def on_action_save_as_triggered(self):
-        dialog = SaveDocumentAsDialog(self, self.document)
+        dialog = SaveDocumentAsDialog(self, self.document)  # TODO: Unify argument order. Put the parent at the end
         dialog.exec_()
 
     @pyqtSlot()
