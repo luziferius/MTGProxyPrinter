@@ -2,6 +2,12 @@
 
 # Next version (in development)
 
+## Implemented features
+
+- Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
+  the stored settings overwrite the default values set in the application settings.
+  - The Edit menu in the main window has a new option to edit these document settings for the current document only.
+
 ## Fixed issues
 
 - MTGProxyPrinter now validates the save file format to prevent Denial of Service attacks 

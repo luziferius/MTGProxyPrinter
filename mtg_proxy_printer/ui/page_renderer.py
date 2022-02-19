@@ -130,7 +130,7 @@ class PageScene(QGraphicsScene):
             white = QColor("white")
             logger.debug(f"Drawing background rectangle")
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
-        if settings["documents"].getboolean("print-cut-marker"):
+        if self.document.page_layout.draw_cut_markers:
             self._draw_cut_markers()
         self._draw_cards()
 
@@ -242,10 +242,13 @@ class PageRenderer(QGraphicsView):
     @pyqtSlot()
     def on_settings_changed(self):
         new_page_size = self.get_document_page_size()
-        if self.scene().sceneRect() != new_page_size:
+        old_size = self.scene().sceneRect()
+        if old_size != new_page_size:
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.scene().setSceneRect(new_page_size)
-            self.scene().redraw()
+        self.scene().redraw()
+        if old_size != new_page_size:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so resize the scene to fill the available space.
             self.on_resize_event_triggered()
+

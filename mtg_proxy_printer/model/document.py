@@ -19,29 +19,24 @@ import enum
 import functools
 import itertools
 import pathlib
+import textwrap
 import typing
 
-import pint
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat
+from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
-
-unit_registry = pint.UnitRegistry()
-
 __all__ = [
     "PageList",
     "Document",
-    "PageLayoutSettings",
     "CardContainer",
 ]
 
@@ -52,7 +47,7 @@ class DocumentColumns(enum.IntEnum):
 
 @dataclasses.dataclass
 class CardContainer:
-    parent: list
+    parent: "CardList"
     card: Card
 
 
@@ -62,71 +57,15 @@ PageList = typing.List[CardList]
 INVALID_INDEX = QModelIndex()
 
 
-@dataclasses.dataclass
-class PageLayoutSettings:
-    """Stores all page layout attributes, like paper size, margins and spacings"""
-    page_height: int = 0
-    page_width: int = 0
-    margin_top: int = 0
-    margin_bottom: int = 0
-    margin_left: int = 0
-    margin_right: int = 0
-    image_spacing_horizontal: int = 0
-    image_spacing_vertical: int = 0
-
-    def update_from_settings(self):
-        document_settings = settings["documents"]
-        self.page_height = document_settings.getint("paper-height-mm")
-        self.page_width = document_settings.getint("paper-width-mm")
-        self.margin_top = document_settings.getint("margin-top-mm")
-        self.margin_bottom = document_settings.getint("margin-bottom-mm")
-        self.margin_left = document_settings.getint("margin-left-mm")
-        self.margin_right = document_settings.getint("margin-right-mm")
-        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
-        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
-
-    def compute_page_column_count(self) -> int:
-        """Returns the total number of card columns that fit on this page."""
-        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
-
-        total_width -= margins
-        if total_width < Document.IMAGE_WIDTH:
-            return 0
-        total_width -= Document.IMAGE_WIDTH
-        cards = total_width / (Document.IMAGE_WIDTH+spacing) + 1
-        return int(cards.to_tuple()[0])
-
-    def compute_page_row_count(self) -> int:
-        """Returns the total number of card rows that fit on this page."""
-        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
-        total_height -= margins
-        if total_height < Document.IMAGE_HEIGHT:
-            return 0
-        total_height -= Document.IMAGE_HEIGHT
-        cards = total_height / (Document.IMAGE_HEIGHT+spacing) + 1
-        return int(cards.to_tuple()[0])
-
-    def compute_page_card_capacity(self) -> int:
-        """Returns the total number of card images that fit on a single page."""
-        return self.compute_page_row_count() * self.compute_page_column_count()
-
-
 class Document(QAbstractItemModel):
     """
     This holds a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
-    DPI: pint.Quantity = 300 / unit_registry.inch
-    IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
-    IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
-
     loading_state_changed = pyqtSignal(bool)
     total_cards_per_page_changed = pyqtSignal(int)
     current_page_changed = pyqtSignal(QPersistentModelIndex)
+    page_layout_changed = pyqtSignal()
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -175,6 +114,9 @@ class Document(QAbstractItemModel):
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
         self.page_layout.update_from_settings()
+        self.on_page_layout_updated()
+
+    def on_page_layout_updated(self):
         previous_card_count = self.total_cards_per_page
         self.compute_page_row_count.cache_clear()
         self.compute_page_column_count.cache_clear()
@@ -183,6 +125,7 @@ class Document(QAbstractItemModel):
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
             self.move_excess_cards_to_free_pages()
+        self.page_layout_changed.emit()
 
     @pyqtSlot()
     @pyqtSlot(int)
@@ -478,7 +421,7 @@ class Document(QAbstractItemModel):
             in itertools.chain.from_iterable(cards)
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document-v3", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                self.save_file_path, "document-v4", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
             _migrate_database(db)
             db.execute("DELETE FROM Card")
@@ -486,6 +429,14 @@ class Document(QAbstractItemModel):
                 "INSERT INTO Card (page, slot, scryfall_id, is_front) VALUES (?, ?, ?, ?)",
                 flattened_data
             )
+            db.execute(
+                textwrap.dedent("""\
+                    INSERT OR REPLACE INTO DocumentSettings (rowid, page_height, page_width,
+                          margin_top, margin_bottom, margin_left, margin_right,
+                          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
+                      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """),
+                dataclasses.astuple(self.page_layout))
             db.commit()
             db.execute("VACUUM")
 
@@ -639,6 +590,8 @@ class Document(QAbstractItemModel):
     @pyqtSlot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
         self.clear()
+        self.page_layout.update_from_settings()
+        self.on_page_layout_updated()
         self.save_file_path = None
 
     def store_image_usage(self):
@@ -675,5 +628,34 @@ class Document(QAbstractItemModel):
 
 def _migrate_database(db):
     if db.execute("PRAGMA user_version").fetchone()[0] == 2:
-        db.execute("ALTER TABLE Card ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1")
+        db.executescript(textwrap.dedent("""\
+        ALTER TABLE Card RENAME TO Card_old;
+        CREATE TABLE Card (
+          page INTEGER NOT NULL CHECK (page > 0),
+          slot INTEGER NOT NULL CHECK (slot > 0),
+          is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+          scryfall_id TEXT NOT NULL,
+          PRIMARY KEY(page, slot)
+        ) WITHOUT ROWID;
+        INSERT INTO Card (page, slot, scryfall_id, is_front)
+            SELECT page, slot, scryfall_id, 1 AS is_front
+            FROM Card_old;
+        DROP TABLE Card_old;
+        VACUUM;
+        """))
         db.execute(f"PRAGMA user_version = 3")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 3:
+        db.execute(textwrap.dedent("""\
+        CREATE TABLE DocumentSettings (
+          rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
+          page_height INTEGER NOT NULL CHECK (page_height > 0),
+          page_width INTEGER NOT NULL CHECK (page_width > 0),
+          margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
+          margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
+          margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
+          margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
+          image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
+          image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
+          draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (0, 1))
+        );"""))
+        db.execute(f"PRAGMA user_version = 4")
