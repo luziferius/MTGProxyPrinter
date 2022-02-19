@@ -5,7 +5,8 @@
 ## Implemented features
 
 - Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
-  the stored settings are used instead of the default values set in the application settings.
+  the stored settings overwrite the default values set in the application settings.
+  - The Edit menu in the main window has a new option to edit these document settings for the current document only.
 
 ## Fixed issues
 
