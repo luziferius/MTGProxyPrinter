@@ -427,7 +427,7 @@ English placeholder images with an overlay text stating
 “This card is not available in the selected language.”</string>
             </property>
             <property name="text">
-             <string>Include cards with placholder images</string>
+             <string>Include cards with placeholder images</string>
             </property>
            </widget>
           </item>
@@ -436,7 +436,7 @@ English placeholder images with an overlay text stating
             <property name="toolTip">
              <string>These cards are larger than regular Magic cards and can’t be included in decks.
 Includes Archenemy schemes, Planechase planes and
-oversized commander creature or planeswalker cards included in some pre-constructed Commander decks.</string>
+oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
             </property>
             <property name="text">
              <string>Include oversized cards</string>
@@ -464,7 +464,11 @@ These are not tournament legal.</string>
           <item>
            <widget class="QCheckBox" name="include_funny_cards">
             <property name="toolTip">
-             <string>“Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some black-bordered promotional cards, in addition to all silver-bordered cards.</string>
+             <string>“Funny” cards, not legal in any constructed format.
+This includes full-art Contraptions from Unstable,
+cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
+some black-bordered promotional cards with non-standard back faces,
+and all silver-bordered cards.</string>
             </property>
             <property name="text">
              <string>Include “funny” cards</string>
