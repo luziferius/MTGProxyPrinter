@@ -145,9 +145,8 @@ class PageScene(QGraphicsScene):
 
         x_pos = page_layout.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
         y_pos = page_layout.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
-        document_settings = settings["documents"]
-        scaling_horizontal = self.width() / document_settings.getint("paper-width-mm")
-        scaling_vertical = self.height() / document_settings.getint("paper-height-mm")
+        scaling_horizontal = self.width() / page_layout.page_width
+        scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
             x_pos * scaling_horizontal,
             y_pos * scaling_vertical,
