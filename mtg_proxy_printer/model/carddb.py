@@ -453,8 +453,8 @@ class CardDatabase:
 
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
         """
-        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the keys
-        from the input list that correspond to cards that were not used since the given date.
+        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
+        into the input list that correspond to cards that were not used since the given date.
         """
         query = cached_dedent("""\
         SELECT last_use_date < ? AS last_use_was_before_threshold -- cards_not_used_since()
@@ -471,8 +471,8 @@ class CardDatabase:
 
     def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
         """
-        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the keys
-        from the input list that correspond to cards that are used less often than count.
+        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
+        into the input list that correspond to cards that are used less often than the given count.
         If count is zero or less, returns an empty list.
         """
         if count <= 0:
@@ -498,7 +498,7 @@ class CardDatabase:
         Returns today(), if the table is empty.
         """
         query = cached_dedent("""\
-        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update?()
+        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update()
             FROM LastDatabaseUpdate
         """)
         id_, total_cards_in_last_update = self.db.execute(query).fetchone()
@@ -526,7 +526,9 @@ class CardDatabase:
         # Implementation note: This query contains the max() aggregate function and bare columns.
         # See https://sqlite.org/lang_select.html. In this case, the bare columns are taken from a row for which the
         # computed similarity is equal to the maximum similarity encountered. This avoids creating a B-Tree required
-        # for the alternative "ORDER BY similarity DESC LIMIT 1"
+        # for the alternative, appending a clause like "ORDER BY similarity DESC LIMIT 1"
+        # This was chosen as a performance optimization,
+        # because card translation can take considerable time during a deck list import.
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
                scryfall_id, png_image_uri, highres_image,
