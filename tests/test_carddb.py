@@ -502,6 +502,31 @@ def test_get_cards_from_data__card_attribute_highres_image(
     assert_that(cards[0], has_property("highres_image", all_of(is_(highres_image), instance_of(bool))))
 
 
+@pytest.mark.parametrize("card_count_data", [
+    [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
+    [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)],
+])
+def test_get_cards_from_data_order_by_print_count_enabled(card_db: CardDatabase, card_count_data):
+    fill_card_database_with_json_cards(card_db, ["english_basic_Forest", "english_basic_Forest_2"])
+    card_db.db.executemany(
+        "INSERT INTO LastImageUseTimestamps (scryfall_id, is_front, usage_count) VALUES (?, 1, ?)",
+        card_count_data
+    )
+    card_data = CardIdentificationData("en", name="Forest")
+    cards = card_db.get_cards_from_data(card_data, order_by_print_count=True)
+    assert_that(
+        cards,
+        contains_exactly(
+            has_property("scryfall_id", equal_to(
+                card_count_data[0 if card_count_data[0][1] > card_count_data[1][1] else 1][0]
+            )),
+            has_property("scryfall_id", equal_to(
+                card_count_data[1 if card_count_data[0][1] > card_count_data[1][1] else 0][0]
+            )),
+        )
+    )
+
+
 @pytest.mark.parametrize("is_front", [True, False])
 @pytest.mark.parametrize("json_name, scryfall_id, highres_image", [
     ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),

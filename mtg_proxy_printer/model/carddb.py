@@ -250,11 +250,14 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def get_cards_from_data(self, card: CardIdentificationData) -> CardList:
+    def get_cards_from_data(self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         """
         Called with some card identification data and returns all matching cards.
         Returns a list with Card objects, each containing complete information, except for the image pixmap.
         Returns an empty list, if the given data does not match any known card.
+
+         :param card: card identification data container that contains values to find cards
+         :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
         query = cached_dedent('''\
         SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front,
@@ -266,7 +269,8 @@ class CardDatabase:
             JOIN "Set" USING (set_id)
             JOIN Card USING (card_id)
         ''')
-
+        if order_by_print_count:
+            query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
         where_clause = '    WHERE "language" = ?\n'
         parameters = [card.language]
         if card.name:
@@ -285,6 +289,8 @@ class CardDatabase:
             where_clause += '    AND scryfall_id = ?\n'
             parameters.append(card.scryfall_id)
         query += where_clause
+        if order_by_print_count:
+            query += '    ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
         cursor = self.db.execute(
             query,
             parameters
@@ -507,6 +513,13 @@ class CardDatabase:
     def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
         """
         Returns a new card object representing the card translated into the target language.
+
+        The translation step tries to be as faithful as possible to the original printing by matching as many
+        properties as possible, but may have to choose a printing another Magic set, if the source set does not
+        contain the card in the desired language. For example, translating an Alpha printing of a card will always
+        yield a Card in a different set. Also, multi-language support for printings of promotional cards in the Scryfall
+        database is limited.
+
         If no translation is available, or the target language is equal to the source language, returns the given
         card instance unaltered.
         """
