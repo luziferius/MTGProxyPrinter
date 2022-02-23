@@ -10,8 +10,8 @@
 
 ## Fixed issues
 
-- MTGProxyPrinter now validates the save file format to prevent Denial of Service attacks 
-  via maliciously crafted save files.
+- MTGProxyPrinter now validates the save file format when loading documents
+  to prevent Denial of Service attacks via maliciously crafted save files.
 - It is now possible to retry downloading card data updates, 
   if the download fails due to a flaky internet connection.
 
@@ -292,8 +292,8 @@
 
 - Adding multiple cards in quick succession, for example by double-clicking the "Add" button,
   no longer freezes the GUI. The cards are now properly added in the correct order
-- Adding a card that requires an image download and then adding the same card again, while the download
-  is still in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
+- Adding a card that requires an image download and then adding the same card again, while the download is still
+  in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
 - Fixed application hangs until a long running operation is completed when trying to quit the application
   while a document is being loaded or a deck list import is running
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 
