@@ -308,7 +308,7 @@ class CardDatabase:
         :param card_name: Card name, matched exactly
         :param set_abbr: Set abbreviation, matched exactly
         :param language: Card language, matched exactly
-        :return: Naturally sorted list of collector numbers, i.e. "2" before "10".
+        :return: Naturally sorted list of collector numbers, i.e. ["2", "10"]
         """
         # Implementation note: DISTINCT is required for double-faced cards where both sides have the same name.
         # This can be art-series cards or double-faced tokens (e.g. from C16). Without this, selecting such card

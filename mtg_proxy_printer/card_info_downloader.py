@@ -75,6 +75,14 @@ class PrintingData(typing.NamedTuple):
 
 
 class CardInfoDownloader(QObject):
+    """
+    Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
+    Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
+    purposes.
+
+    This is the public interface. The actual implementation resides in the CardInfoDownloadWorker class, which
+    is run asynchronously in another thread.
+    """
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
@@ -118,7 +126,9 @@ class CardInfoDownloader(QObject):
 
 
 class CardInfoDownloadWorker(DownloaderBase):
-
+    """
+    This class implements the actual data download and import
+    """
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
@@ -233,10 +243,13 @@ class CardInfoDownloadWorker(DownloaderBase):
         self.model.begin_transaction()
         store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
-        download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
+        # Parse the boolean download settings only once per import to save multiple seconds during the import
+        download_enabled: typing.Dict[str, bool] = {
             key: ds.getboolean(key)
             for key in ds.keys()
         }
+        # The settings keys are formatted like “banned-in-FORMAT”, where FORMAT is a format name as listed on Scryfall,
+        # like “standard” or “modern”. So the last element of the split("-") output gets the plain format name.
         skip_cards_banned_in_formats = frozenset(
             key.split("-")[-1]
             for key, enabled in download_enabled.items()
@@ -291,6 +304,7 @@ def _clear_lru_caches():
     """
     Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
+    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
     """
     _insert_language.cache_clear()
     _insert_set_data.cache_clear()
@@ -376,6 +390,8 @@ def _insert_card(model: CardDatabase, oracle_id: str) -> int:
 
 
 def _insert_set(model: CardDatabase, card: JSONType) -> int:
+    # Can’t use lru_cache here, because each card object is unique. So extract a hashable parameter set
+    # and delegate to a cacheable function.
     set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
     return _insert_set_data(model, set_abbr, set_name, set_uri)
 
