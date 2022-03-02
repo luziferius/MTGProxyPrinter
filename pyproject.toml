@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=51, !=60.7.*",
+    "setuptools>=51, !=60.7.*, != 60.8.0",
     "wheel",
     "PyQt5",
     "build",
@@ -36,7 +36,7 @@ deps =
     PyHamcrest >= 1.8.1
 
 build_deps =
-    setuptools>=51, !=60.7.*
+    setuptools>=51, !=60.7.*, != 60.8.0
 
 
 [testenv:py3-unit_tests]
