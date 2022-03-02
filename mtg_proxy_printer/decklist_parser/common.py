@@ -58,15 +58,17 @@ class ParserBase(QObject):
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
         parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        # Now reset to the state as passed in
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
 
         translated_deck: typing.Counter[Card] = collections.Counter()
         for card, count in parsed_deck.items():
             if self.print_guessing_prefer_already_downloaded and \
-                    (all_printings := self.card_db.find_all_translated_printings(card, language_override)):
+                    (all_printings := self.card_db.find_all_translated_printings(
+                        card, language_override, order_by_print_count=True)):
                 # Choose any printing, based on what is already downloaded. …
                 translated_card = self._determine_best_match(all_printings)
-                # … But if no already downloaded image is found, prefer accurate translations over random selections.
+                # … But if no already downloaded image is found, prefer accurate translations to random selections.
                 if translated_card is all_printings[0]:
                     translated_card = self.card_db.translate_card(card, language_override)
             else:

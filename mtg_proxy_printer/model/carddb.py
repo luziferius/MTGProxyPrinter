@@ -564,14 +564,24 @@ class CardDatabase:
             bool(highres_image), bool(is_oversized), face_number
         )
 
-    def find_all_translated_printings(self, card: Card, language: str) -> CardList:
+    def find_all_translated_printings(
+            self, card: Card, language: str, /, *, order_by_print_count: bool = False) -> CardList:
         """Returns all printings of the given card in the given language."""
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
                highres_image, is_oversized, face_number -- find_all_translated_printings()
             FROM AllPrintings
+            {join_clause}
             WHERE oracle_id = ? AND language = ? AND is_front = ?
+            {order_by_clause}
         """)
+        if order_by_print_count:
+            join_clause = "LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)"
+            order_by_clause = "ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST"
+        else:
+            join_clause = order_by_clause = ""
+        # format in both cases to always replace the format specifiers
+        query = query.format(join_clause=join_clause, order_by_clause=order_by_clause)
         parameters = [card.oracle_id, language, card.is_front]
         result = [
             Card(
