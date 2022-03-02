@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=51",
+    "setuptools>=51, !=60.7.*",
     "wheel",
     "PyQt5",
     "build",
@@ -35,6 +35,9 @@ deps =
     delegateto == 1.5
     PyHamcrest >= 1.8.1
 
+build_deps =
+    setuptools>=51, !=60.7.*
+
 
 [testenv:py3-unit_tests]
 
@@ -50,6 +53,8 @@ deps =
     pytest-cov
     pytest-timeout
     pytest-qt >= 2.0
+    PyHamcrest >= 2.0.0
+    {[testenv]build_deps}
 
 commands =
     pytest tests
@@ -80,6 +85,7 @@ setenv =
 deps =
     {[testenv]deps}
     cx_Freeze >= 6.6
+    {[testenv]build_deps}
 
 
 commands =
