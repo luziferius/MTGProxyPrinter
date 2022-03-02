@@ -11,7 +11,7 @@
 ## Changed features
 
 - Smarter printing selection when the option to prefer already downloaded printings is enabled:
-  MTGProxyPrinter will now prefer printing that were printed/exported more often over less often used printings.
+  MTGProxyPrinter will now prefer printings that were printed/exported more often over less often used printings.
   Uses image usage information already available since version 0.9.0
 
 ## Fixed issues
