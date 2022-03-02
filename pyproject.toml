@@ -81,11 +81,16 @@ deps =
     {[testenv]deps}
     cx_Freeze >= 6.6
 
+# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
+# This also prevents unwanted user interactions with the widgets under test
+setenv =
+    QT_QPA_PLATFORM = offscreen
+    PYTHONDEVMODE = 1
 
 commands =
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
-    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --version
+    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
 
 
 
@@ -94,7 +99,6 @@ commands =
 deps =
     {[testenv]deps}
     cx_Freeze >= 6.6
-
 
 commands =
     python -m build
