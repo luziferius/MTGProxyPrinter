@@ -61,9 +61,7 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbo
             if document.loader.worker_thread.isRunning():
                 document.loader.worker_thread.quit()
                 document.loader.worker_thread.wait(100)
-            if image_db.download_thread.isRunning():
-                image_db.download_thread.quit()
-                image_db.download_thread.wait(100)
+            image_db.quit_background_thread()
             if cid.worker_thread.isRunning():
                 cid.worker_thread.quit()
                 cid.worker_thread.wait(100)

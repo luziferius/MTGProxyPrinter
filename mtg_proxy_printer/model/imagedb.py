@@ -135,6 +135,12 @@ class ImageDatabase(QObject):
         pixmap.fill(QColor("white"))
         return pixmap
 
+    def quit_background_thread(self):
+        self.download_worker.should_run = False
+        self.queue.put((None, None))  # Unblock the background thread if it is waiting in the queue
+        self.download_thread.quit()
+        self.download_thread.wait(100)
+
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
         Takes a list of cards and returns a new list containing all cards from the source list that have
@@ -249,6 +255,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         last_error_msg = ""
         while self.should_run:
             card, value = self.queue.get()
+            if not self.should_run:
+                break
             if card is None:
                 if not value and last_error_msg:
                     self.network_error_occurred.emit(last_error_msg)

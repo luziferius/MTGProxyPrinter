@@ -44,8 +44,10 @@ def document_with_filled_card_db(card_db: CardDatabase) -> mtg_proxy_printer.mod
     document = mtg_proxy_printer.model.document.Document(card_db, image_db)
     assert_document_is_empty(document)
     yield document
+    image_db.quit_background_thread()
     document.loader.worker_thread.quit()
     document.loader.worker_thread.wait(100)
+    assert_that(image_db.download_thread.isRunning(), is_(False))
 
 
 @pytest.mark.parametrize("version", [-1, 0, 1, 5, 6])
