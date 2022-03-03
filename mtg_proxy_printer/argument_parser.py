@@ -31,6 +31,7 @@ class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""
     file: pathlib.Path = None
     card_data: pathlib.Path = None
+    test_exit_on_launch: bool = False
 
 
 def generate_argument_parser() -> argparse.ArgumentParser:
@@ -43,6 +44,10 @@ def generate_argument_parser() -> argparse.ArgumentParser:
         "-v", "--version", action="version",
         version=f"{meta_data.PROGRAMNAME} Version {meta_data.__version__}",
         help="Show program version and exit"
+    )
+    parser.add_argument(
+        "--test-exit-on-launch", action="store_true",
+        help=f"Used for testing purposes. Causes {meta_data.PROGRAMNAME} to exit immediately after start."
     )
     parser.add_argument(
         "--card-data", type=pathlib.Path,
