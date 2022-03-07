@@ -14,7 +14,7 @@ legacy_tox_ini = """
 minversion = 3.18
 
 envlist = 
-    py3-{unit_tests, test_create_bundle}
+    py3-{unit_tests, test_create_bundle}-{windows, linux}
 
 [testenv]
 skip_install = True
@@ -38,23 +38,27 @@ deps =
 build_deps =
     setuptools>=51, !=60.7.*, != 60.8.0
 
-
-[testenv:py3-unit_tests]
-
-# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
-# This also prevents unwanted user interactions with the widgets under test
-setenv =
-    QT_QPA_PLATFORM = offscreen
-    PYTHONDEVMODE = 1
-
-deps =
-    {[testenv]deps}
+test_deps =
     pytest
     pytest-cov
     pytest-timeout
     pytest-qt >= 2.0
     PyHamcrest >= 2.0.0
     {[testenv]build_deps}
+
+
+[testenv:py3-unit_tests-{windows, linux}]
+
+# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
+# This also prevents unwanted user interactions with the widgets under test.
+# Offscreen rendering causes a segmentation fault on Windows, so simply show the GUI under test on Windows
+setenv =
+    linux: QT_QPA_PLATFORM = offscreen
+    PYTHONDEVMODE = 1
+
+deps =
+    {[testenv]deps}
+    {[testenv]test_deps}
 
 commands =
     pytest tests
@@ -66,10 +70,11 @@ commands =
 # Not part of the environment list, so isn’t run automatically.
 
 deps =
-    {[testenv:py3-unit_tests]deps}
+    {[testenv]deps}
+    {[testenv]test_deps}
 
 commands =
-   {[testenv:py3-unit_tests]commands}
+    pytest tests
 
 # Pass DISPLAY, to allow rendering on screen. Also pass all other Qt-related environment variables,
 # like QT_SCREEN_SCALE_FACTORS
@@ -80,7 +85,7 @@ passenv =
 setenv = 
    PYTHONDEVMODE = 1
 
-[testenv:py3-test_create_bundle]
+[testenv:py3-test_create_bundle-{windows, linux}]
 
 deps =
     {[testenv]deps}
@@ -90,7 +95,7 @@ deps =
 # Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
 # This also prevents unwanted user interactions with the widgets under test
 setenv =
-    QT_QPA_PLATFORM = offscreen
+    linux: QT_QPA_PLATFORM = offscreen
     PYTHONDEVMODE = 1
 
 commands =
