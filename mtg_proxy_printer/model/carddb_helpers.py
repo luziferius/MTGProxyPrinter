@@ -93,8 +93,8 @@ def _migrate_12_to_13(db: sqlite3.Connection):
     db.execute(textwrap.dedent("""\
     CREATE TABLE LastImageUseTimestamps (
       -- Used to store the last image use timestamp and usage count of each image.
-      -- The usage count measures how often an image was part of a printed or exported document. Printing multiple copies
-      -- in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
+      -- The usage count measures how often an image was part of a printed or exported document. Printing multiple
+      -- copies in a document still counts as a single use. Saving/loading is not enough to count as a "use". 
       scryfall_id TEXT NOT NULL,
       is_front INTEGER NOT NULL CHECK (is_front in (0, 1)),
       usage_count INTEGER NOT NULL CHECK (usage_count > 0) DEFAULT 1,
@@ -161,9 +161,11 @@ def _migrate_17_to_18(db: sqlite3.Connection):
       SELECT face_name_id, card_name, language_id
       FROM FaceName;
     INSERT INTO NewCardFace 
-      (card_face_id, card_id, set_id, face_name_id, is_front, collector_number, scryfall_id, highres_image, png_image_uri) 
+      (card_face_id, card_id, set_id, face_name_id, is_front,
+       collector_number, scryfall_id, highres_image, png_image_uri) 
     SELECT 
-       card_face_id, card_id, set_id, face_name_id, is_front, collector_number, scryfall_id, highres_image, png_image_uri
+       card_face_id, card_id, set_id, face_name_id, is_front,
+       collector_number, scryfall_id, highres_image, png_image_uri
     FROM CardFace;
     DROP VIEW AllPrintings;
     DROP TABLE FaceName;

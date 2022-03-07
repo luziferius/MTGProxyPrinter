@@ -57,8 +57,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
-            # Convert the Match instance to a dict, in order to have get() with a default. The default is used,
-            # if the used RE doesn’t contain named groups for some of the attributes.
+            # Convert the Match instance to a dict, in order to have the get() method with a default.
+            # The default is used, if the used RE doesn’t contain named groups for some of the defined attributes.
             if match := self.parser.match(line):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))

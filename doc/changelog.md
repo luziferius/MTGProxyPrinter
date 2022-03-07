@@ -1,5 +1,34 @@
 # Changelog
 
+# Next version (in development)
+
+## Implemented features
+
+- Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
+  the stored settings overwrite the default values set in the application settings.
+  - The Edit menu in the main window has a new option to edit these document settings for the current document only.
+
+## Changed features
+
+- Smarter printing selection when the option to prefer already downloaded printings is enabled:
+  MTGProxyPrinter will now prefer printings that were printed/exported more often over less often used printings.
+  Uses image usage information already available since version 0.9.0
+
+## Fixed issues
+
+- MTGProxyPrinter now validates the save file format when loading documents
+  to prevent Denial of Service attacks via maliciously crafted save files.
+- It is now possible to retry downloading card data updates, 
+  if the download fails due to a flaky internet connection.
+
+# Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
+
+## Fixed issues
+
+- Fixed broken card data download, which was caused by a change in the Scryfall API.
+- Prevent application crashes should the card data format received from the API change again in the future.
+  The application will now show an error message if it is unable to process the data.
+
 # Version 0.14.1 (2021-09-29) <a name="v0_14_1"></a>
 
 ## Fixed issues
@@ -269,8 +298,8 @@
 
 - Adding multiple cards in quick succession, for example by double-clicking the "Add" button,
   no longer freezes the GUI. The cards are now properly added in the correct order
-- Adding a card that requires an image download and then adding the same card again, while the download
-  is still in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
+- Adding a card that requires an image download and then adding the same card again, while the download is still
+  in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
 - Fixed application hangs until a long running operation is completed when trying to quit the application
   while a document is being loaded or a deck list import is running
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 

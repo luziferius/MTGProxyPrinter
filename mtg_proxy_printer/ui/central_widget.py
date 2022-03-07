@@ -62,7 +62,6 @@ class CentralWidget(QWidget):
         self.image_db = image_db
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
-
         self.page_card_table_view.setModel(document)
         self._setup_page_renderer(document)
         self._setup_add_card_widget(card_db, image_db)
@@ -91,6 +90,7 @@ class CentralWidget(QWidget):
         self.page_renderer.set_document(document)
         self.settings_changed.connect(self.page_renderer.on_settings_changed)
         self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
+        document.page_layout_changed.connect(self.page_renderer.on_settings_changed)
 
     @pyqtSlot()
     def on_delete_selected_images_button_clicked(self):

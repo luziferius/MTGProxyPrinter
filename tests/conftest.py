@@ -17,9 +17,11 @@
 This module is automatically discovered by pytest and all pytest
 fixtures defined here are available in all test modules.
 """
+import sqlite3
 
 import pytest
 
+import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardDatabase
 
 
@@ -29,3 +31,12 @@ def card_db(request) -> CardDatabase:
     if request.param:
         card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return card_db
+
+
+@pytest.fixture(params=[False, True])
+def empty_save_database(request) -> sqlite3.Connection:
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+            ":memory:", "document-v4", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=False)
+    if request.param:
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
+    return db

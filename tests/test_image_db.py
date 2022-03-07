@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +13,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.14.2"
-COPYRIGHT = "(C) 2019-2021 Thomas Hess"
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from hamcrest import *
+import pytest
+
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+
+
+@pytest.fixture()
+def image_db():
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        image_db = ImageDatabase(temp_path)
+        yield image_db
+
+
+def test_quit_background_thread(image_db: ImageDatabase):
+    image_db.quit_background_thread()
+    assert_that(image_db.download_thread.isRunning(), is_(False))

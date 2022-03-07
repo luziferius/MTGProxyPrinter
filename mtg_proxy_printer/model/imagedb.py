@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import functools
 import io
 import queue
 import itertools
@@ -106,7 +107,6 @@ class ImageDatabase(QObject):
         super(ImageDatabase, self).__init__(parent)
         self.db_path = db_path
         _migrate_database(db_path)
-        self._blank_image = QPixmap()
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
         # instead of loading it from disk again. This prevents duplicated file loads in distinct QPixmap instances
         # to save memory.
@@ -128,13 +128,24 @@ class ImageDatabase(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
+    @functools.lru_cache(maxsize=1)
     def blank_image(self):
-        if self._blank_image.isNull():
-            self._blank_image = QPixmap(IMAGE_SIZE)
-            self._blank_image.fill(QColor("white"))
-        return self._blank_image
+        """Returns a static, empty QPixmap in the size of a regular magic card."""
+        pixmap = QPixmap(IMAGE_SIZE)
+        pixmap.fill(QColor("white"))
+        return pixmap
 
-    def filter_already_downloaded(self, possible_matches: typing.List[Card]):
+    def quit_background_thread(self):
+        self.download_worker.should_run = False
+        self.queue.put((None, None))  # Unblock the background thread if it is waiting in the queue
+        self.download_thread.quit()
+        self.download_thread.wait(100)
+
+    def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
+        """
+        Takes a list of cards and returns a new list containing all cards from the source list that have
+        already downloaded images. The order of cards is preserved.
+        """
         return [
             card for card in possible_matches
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
@@ -204,7 +215,7 @@ class ImageDatabase(QObject):
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
     This class performs image downloads from Scryfall. It is designed to be used as an asynchronous worker inside
-    a QThread. To perform it’s tasks, it offers multiple Qt Signals that broadcast it’s state changes
+    a QThread. To perform its tasks, it offers multiple Qt Signals that broadcast its state changes
     over thread-safe signal connections.
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
@@ -229,6 +240,10 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def scan_disk_image_cache_then_process_queue(self):
+        """
+        Performs two tasks in order: Scans the image cache on disk, then starts to process the download request queue.
+        This is done to perform both tasks asynchronously and not block the application GUI/startup.
+        """
         logger.info("Reading all image IDs of images stored on disk.")
         self.image_database.images_on_disk.update(
             image.as_key() for image in self.image_database.read_disk_cache_content()
@@ -240,6 +255,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         last_error_msg = ""
         while self.should_run:
             card, value = self.queue.get()
+            if not self.should_run:
+                break
             if card is None:
                 if not value and last_error_msg:
                     self.network_error_occurred.emit(last_error_msg)
@@ -295,12 +312,15 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             logger.debug("Image not in disk cache, downloading from Scryfall")
             self._download_image_from_scryfall(card, cache_file_path)
             pixmap = QPixmap(str(cache_file_path))
-            low_resolution_image_path = self.image_database.db_path / ImageKey(
-                card.scryfall_id, card.is_front, False).format_relative_path()
-            if low_resolution_image_path.exists():
-                logger.info("Removing outdated low-resolution image")
-                low_resolution_image_path.unlink()
+            self._remove_outdated_low_resolution_image(card)
         return pixmap
+
+    def _remove_outdated_low_resolution_image(self, card):
+        low_resolution_image_path = self.image_database.db_path / ImageKey(
+            card.scryfall_id, card.is_front, False).format_relative_path()
+        if low_resolution_image_path.exists():
+            logger.info("Removing outdated low-resolution image")
+            low_resolution_image_path.unlink()
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri

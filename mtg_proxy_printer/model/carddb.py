@@ -106,7 +106,7 @@ CardList = typing.List[Card]
 
 @functools.lru_cache(None)
 def cached_dedent(text: str):
-    """Wraps textwrap.dedent() in a LRU cache."""
+    """Wraps textwrap.dedent() in an LRU cache."""
     return textwrap.dedent(text)
 
 
@@ -250,11 +250,14 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def get_cards_from_data(self, card: CardIdentificationData) -> CardList:
+    def get_cards_from_data(self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         """
         Called with some card identification data and returns all matching cards.
         Returns a list with Card objects, each containing complete information, except for the image pixmap.
         Returns an empty list, if the given data does not match any known card.
+
+         :param card: card identification data container that contains values to find cards
+         :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
         query = cached_dedent('''\
         SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front,
@@ -266,7 +269,8 @@ class CardDatabase:
             JOIN "Set" USING (set_id)
             JOIN Card USING (card_id)
         ''')
-
+        if order_by_print_count:
+            query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
         where_clause = '    WHERE "language" = ?\n'
         parameters = [card.language]
         if card.name:
@@ -285,6 +289,8 @@ class CardDatabase:
             where_clause += '    AND scryfall_id = ?\n'
             parameters.append(card.scryfall_id)
         query += where_clause
+        if order_by_print_count:
+            query += '    ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
         cursor = self.db.execute(
             query,
             parameters
@@ -308,7 +314,7 @@ class CardDatabase:
         :param card_name: Card name, matched exactly
         :param set_abbr: Set abbreviation, matched exactly
         :param language: Card language, matched exactly
-        :return: Naturally sorted list of collector numbers, i.e. "2" before "10".
+        :return: Naturally sorted list of collector numbers, i.e. ["2", "10"]
         """
         # Implementation note: DISTINCT is required for double-faced cards where both sides have the same name.
         # This can be art-series cards or double-faced tokens (e.g. from C16). Without this, selecting such card
@@ -389,11 +395,7 @@ class CardDatabase:
         """
         Returns the opposing face for double faced cards, or None for single-faced cards.
         """
-        other_side = not card.is_front
-        if self.is_scryfall_id_known(card.scryfall_id, other_side):
-            return self.get_card_with_scryfall_id(card.scryfall_id, other_side)
-        else:
-            return None
+        return self.get_card_with_scryfall_id(card.scryfall_id, not card.is_front)
 
     def guess_language_from_name(self, name: str) -> typing.Optional[str]:
         """Guesses the card language from the card name. Returns None, if no result was found."""
@@ -457,8 +459,8 @@ class CardDatabase:
 
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
         """
-        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the keys
-        from the input list that correspond to cards that were not used since the given date.
+        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
+        into the input list that correspond to cards that were not used since the given date.
         """
         query = cached_dedent("""\
         SELECT last_use_date < ? AS last_use_was_before_threshold -- cards_not_used_since()
@@ -475,8 +477,8 @@ class CardDatabase:
 
     def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
         """
-        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the keys
-        from the input list that correspond to cards that are used less often than count.
+        Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
+        into the input list that correspond to cards that are used less often than the given count.
         If count is zero or less, returns an empty list.
         """
         if count <= 0:
@@ -502,7 +504,7 @@ class CardDatabase:
         Returns today(), if the table is empty.
         """
         query = cached_dedent("""\
-        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update?()
+        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update()
             FROM LastDatabaseUpdate
         """)
         id_, total_cards_in_last_update = self.db.execute(query).fetchone()
@@ -511,6 +513,13 @@ class CardDatabase:
     def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
         """
         Returns a new card object representing the card translated into the target language.
+
+        The translation step tries to be as faithful as possible to the original printing by matching as many
+        properties as possible, but may have to choose a printing another Magic set, if the source set does not
+        contain the card in the desired language. For example, translating an Alpha printing of a card will always
+        yield a Card in a different set. Also, multi-language support for printings of promotional cards in the Scryfall
+        database is limited.
+
         If no translation is available, or the target language is equal to the source language, returns the given
         card instance unaltered.
         """
@@ -530,7 +539,9 @@ class CardDatabase:
         # Implementation note: This query contains the max() aggregate function and bare columns.
         # See https://sqlite.org/lang_select.html. In this case, the bare columns are taken from a row for which the
         # computed similarity is equal to the maximum similarity encountered. This avoids creating a B-Tree required
-        # for the alternative "ORDER BY similarity DESC LIMIT 1"
+        # for the alternative, appending a clause like "ORDER BY similarity DESC LIMIT 1"
+        # This was chosen as a performance optimization,
+        # because card translation can take considerable time during a deck list import.
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
                scryfall_id, png_image_uri, highres_image,
@@ -553,14 +564,24 @@ class CardDatabase:
             bool(highres_image), bool(is_oversized), face_number
         )
 
-    def find_all_translated_printings(self, card: Card, language: str) -> CardList:
+    def find_all_translated_printings(
+            self, card: Card, language: str, /, *, order_by_print_count: bool = False) -> CardList:
         """Returns all printings of the given card in the given language."""
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
                highres_image, is_oversized, face_number -- find_all_translated_printings()
             FROM AllPrintings
+            {join_clause}
             WHERE oracle_id = ? AND language = ? AND is_front = ?
+            {order_by_clause}
         """)
+        if order_by_print_count:
+            join_clause = "LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)"
+            order_by_clause = "ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST"
+        else:
+            join_clause = order_by_clause = ""
+        # format in both cases to always replace the format specifiers
+        query = query.format(join_clause=join_clause, order_by_clause=order_by_clause)
         parameters = [card.oracle_id, language, card.is_front]
         result = [
             Card(

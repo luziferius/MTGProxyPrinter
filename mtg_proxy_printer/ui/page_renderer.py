@@ -36,10 +36,18 @@ __all__ = [
 
 
 class PageScene(QGraphicsScene):
+    """This class implements the low-level rendering of the currently selected page on a blank canvas."""
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
     def __init__(self, document: Document, draw_background: bool, scene_rect: QRectF, parent: QObject = None):
+        """
+        :param document: The document instance
+        :param draw_background: Boolean. If enabled, draw a white background. By default, the scene is transparent,
+          so a white background is required for on-screen rendering. When printing on PDF or paper, this can be skipped
+        :param scene_rect: Size of the canvas, i.e. page size in pixels
+        :param parent: Optional Qt parent object
+        """
         super(PageScene, self).__init__(scene_rect, parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
@@ -55,6 +63,7 @@ class PageScene(QGraphicsScene):
 
     @pyqtSlot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
+        """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
         self.redraw()
@@ -112,6 +121,7 @@ class PageScene(QGraphicsScene):
 
     @pyqtSlot()
     def redraw(self):
+        """Wipes the scene and re-draws everything"""
         if not self.selected_page.isValid():
             logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
@@ -120,11 +130,12 @@ class PageScene(QGraphicsScene):
             white = QColor("white")
             logger.debug(f"Drawing background rectangle")
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
-        if settings["documents"].getboolean("print-cut-marker"):
+        if self.document.page_layout.draw_cut_markers:
             self._draw_cut_markers()
         self._draw_cards()
 
-    def _compute_position_for_image(self, index: QModelIndex):
+    def _compute_position_for_image(self, index: QModelIndex) -> QPointF:
+        """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout = self.document.page_layout
         cards_per_row = self.document.compute_page_column_count()
         column = index.row() % cards_per_row
@@ -134,9 +145,8 @@ class PageScene(QGraphicsScene):
 
         x_pos = page_layout.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
         y_pos = page_layout.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
-        document_settings = settings["documents"]
-        scaling_horizontal = self.width() / document_settings.getint("paper-width-mm")
-        scaling_vertical = self.height() / document_settings.getint("paper-height-mm")
+        scaling_horizontal = self.width() / page_layout.page_width
+        scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
             x_pos * scaling_horizontal,
             y_pos * scaling_vertical,
@@ -191,7 +201,9 @@ class PageScene(QGraphicsScene):
 
 
 class PageRenderer(QGraphicsView):
-
+    """
+    This class displays an internally held PageScene instance on screen.
+    """
     def __init__(self, parent: QWidget = None, *, render_background: bool = True):
         super(PageRenderer, self).__init__(parent=parent)
         self.render_background = render_background
@@ -229,10 +241,13 @@ class PageRenderer(QGraphicsView):
     @pyqtSlot()
     def on_settings_changed(self):
         new_page_size = self.get_document_page_size()
-        if self.scene().sceneRect() != new_page_size:
+        old_size = self.scene().sceneRect()
+        if old_size != new_page_size:
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.scene().setSceneRect(new_page_size)
-            self.scene().redraw()
+        self.scene().redraw()
+        if old_size != new_page_size:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so resize the scene to fill the available space.
             self.on_resize_event_triggered()
+

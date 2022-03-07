@@ -30,7 +30,7 @@ import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, FlatVerticalCentralWidget, TabbedVerticalCentralWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog
+    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
@@ -59,6 +59,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
+        self.card_data_download_in_progress = False
         self.setupUi(self)
         self.about_dialog = self._create_about_dialog()
         self.progress_bar = self._create_progress_bar()
@@ -123,8 +124,16 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.action_new_page.triggered.connect(document.add_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
+        self.action_compact_document.triggered.connect(document.compact_pages)
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
+        # Do not connect the card_info_downloader.working_state_changed
+        # signal to not re-enable the action when completed. This action in particular should remain disabled.
+        downloader.download_begins.connect(
+            lambda: self.action_download_card_data.setDisabled(True)
+        )
+        downloader.download_finished.connect(lambda: setattr(self, "card_data_download_in_progress", False))
+        self.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
@@ -138,6 +147,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self.action_new_document,
             self.action_save_as,
             self.action_save_document,
+            self.action_edit_document_settings,
             self.action_compact_document,
             self.action_load_document,
             self.action_print,
@@ -187,7 +197,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     def closeEvent(self, event: QCloseEvent):
         """
         This function is automatically called when the window is closed using the close [X] button in the window
-        decorations or by right clicking in the system window list and using the close action, or similar ways to close
+        decorations or by right-clicking in the system window list and using the close action, or similar ways to close
         the window.
         Just ignore this event and simulate that the user used action_quit instead.
 
@@ -216,17 +226,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
         QApplication.instance().shutdown()
 
-    @pyqtSlot()
-    def on_action_compact_document_triggered(self):
-        # TODO: Investigate, why unsetting the model is needed.
-        #  The document_view’s selection model somehow asks for data using invalid
-        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
-        #  completely disconnect the model, remove the row, then set it again.
-        self.document_view.setModel(None)
-        self.document.compact_pages()
-        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
+    def on_action_download_card_data_triggered(self):
+        self.card_data_download_in_progress = True
 
     @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
@@ -273,6 +274,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             f"Check your internet connection. Reported error message:\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
+        if self.card_data_download_in_progress:
+            self.action_download_card_data.setEnabled(True)
+            self.card_data_download_in_progress = False
 
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
@@ -291,7 +295,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )
             if result == QMessageBox.Yes:
-                self.on_action_compact_document_triggered()
+                self.document.compact_pages()
             return result
         return QMessageBox.No  # No pages can be saved, assume "No" for this case
 
@@ -329,8 +333,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             logger.debug("Saved.")
 
     @pyqtSlot()
+    def on_action_edit_document_settings_triggered(self):
+        logger.info("User wants to edit the document settings. Showing the editor dialog")
+        dialog = DocumentSettingsDialog(self.document, self)
+        dialog.exec_()
+
+    @pyqtSlot()
     def on_action_save_as_triggered(self):
-        dialog = SaveDocumentAsDialog(self, self.document)
+        dialog = SaveDocumentAsDialog(self, self.document)  # TODO: Unify argument order. Put the parent at the end
         dialog.exec_()
 
     @pyqtSlot()
@@ -339,12 +349,13 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if dialog.exec_() == LoadDocumentDialog.Accepted:
             self.central_widget.select_first_page()
 
-    def on_document_loading_failed(self, failed_path: pathlib.Path):
+    def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
         QMessageBox.critical(
             self, "Document loading failed",
             f"Loading file \"{failed_path}\" failed. The file was not recognized as an "
             f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
-            f"\"{self.action_import_deck_list.text()}\" function instead.",
+            f"\"{self.action_import_deck_list.text()}\" function instead.\n"
+            f"Reported failure reason: {reason}",
             QMessageBox.Ok, QMessageBox.Ok
         )
 

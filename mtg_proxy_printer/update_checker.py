@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
 import random
 import re
 import socket
@@ -22,8 +21,9 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 
+from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -163,14 +163,18 @@ class UpdateChecker(QObject):
     _card_update_check_requested = pyqtSignal()
     _application_update_check_requested = pyqtSignal()
 
-    def __init__(self, card_db: CardDatabase, perform_card_data_update_check: bool, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(UpdateChecker, self).__init__(parent)
-        self.perform_card_data_update_check = perform_card_data_update_check
+        self.perform_card_data_update_check = not (args.card_data and args.card_data.is_file())
         self.background_thread = QThread()
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
         self.background_thread.start()
+        if args.test_exit_on_launch:
+            logger.info("Update check will not run, because immediate application exit is requested.")
+        else:
+            QTimer.singleShot(100, self.check_for_updates)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_background_worker(self, card_db: CardDatabase, thread_to_use: QThread) -> BackgroundWorker:
@@ -180,7 +184,6 @@ class UpdateChecker(QObject):
         worker.application_update_found.connect(self.application_update_found)
         worker.job_completed.connect(self._on_job_completed)
         worker.network_error_occurred.connect(self.network_error_occurred)
-
         self._card_update_check_requested.connect(worker.perform_card_data_update_check)
         self._application_update_check_requested.connect(worker.perform_application_update_check)
         worker.moveToThread(thread_to_use)

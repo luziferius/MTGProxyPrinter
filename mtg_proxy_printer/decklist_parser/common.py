@@ -58,15 +58,17 @@ class ParserBase(QObject):
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
         parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        # Now reset to the state as passed in
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
 
         translated_deck: typing.Counter[Card] = collections.Counter()
         for card, count in parsed_deck.items():
             if self.print_guessing_prefer_already_downloaded and \
-                    (all_printings := self.card_db.find_all_translated_printings(card, language_override)):
+                    (all_printings := self.card_db.find_all_translated_printings(
+                        card, language_override, order_by_print_count=True)):
                 # Choose any printing, based on what is already downloaded. …
                 translated_card = self._determine_best_match(all_printings)
-                # … But if no already downloaded image is found, prefer accurate translations over random selections.
+                # … But if no already downloaded image is found, prefer accurate translations to random selections.
                 if translated_card is all_printings[0]:
                     translated_card = self.card_db.translate_card(card, language_override)
             else:
@@ -90,6 +92,10 @@ class ParserBase(QObject):
 
     @property
     def requires_print_guessing(self) -> bool:
+        """
+        Subclasses can overwrite this and return True to indicate that the format does not work without
+        print guessing enabled, most likely because the format contains insufficient information for accurate parsing.
+        """
         return False
 
     def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
@@ -100,7 +106,7 @@ class ParserBase(QObject):
             card_data.name = card_data.name.replace(" / ", " // ")
             if "//" in card_data.name:
                 # If this is a split card, try to identify one half
-                card_data.name = card_data.name.split("//")[1 if card_data.is_front is False else 0].strip()
+                card_data.name = card_data.name.split("//")[0 if card_data.is_front else 1].strip()
                 logger.debug(f"Card seems to be a split card. Using this part of the name: {card_data.name}")
         if self.card_db.is_valid_and_unique_card(card_data):
             logger.debug("Card is uniquely identified after post-processing the name")
@@ -109,26 +115,28 @@ class ParserBase(QObject):
             if (guessed_language := self.card_db.guess_language_from_name(card_data.name)) is not None:
                 card_data.language = guessed_language
         if card_data.set_code and card_data.collector_number and (
-                possible_matches := self.card_db.get_cards_from_data(CardIdentificationData(
-                    card_data.language, set_code=card_data.set_code,
-                    collector_number=card_data.collector_number, is_front=card_data.is_front
-                ))):
+                possible_matches := self.card_db.get_cards_from_data(
+                    CardIdentificationData(
+                        card_data.language, set_code=card_data.set_code,
+                        collector_number=card_data.collector_number, is_front=card_data.is_front),
+                    order_by_print_count=self.print_guessing_prefer_already_downloaded)):
             logger.debug(
                 f"Matching using language, set code and collector number. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
         if card_data.name and card_data.set_code and (
-                possible_matches := self.card_db.get_cards_from_data(CardIdentificationData(
-                    card_data.language, card_data.name, card_data.set_code
-                ))):
+                possible_matches := self.card_db.get_cards_from_data(
+                    CardIdentificationData(card_data.language, card_data.name, card_data.set_code),
+                    order_by_print_count=self.print_guessing_prefer_already_downloaded)):
             logger.debug(
                 f"Matching using language, card name and set code. Found {len(possible_matches)} matches."
             )
             return self._determine_best_match(possible_matches)
         if card_data.name and (
-                possible_matches := self.card_db.get_cards_from_data(CardIdentificationData(
-                    card_data.language, card_data.name
-                ))):
+                possible_matches := self.card_db.get_cards_from_data(
+                    CardIdentificationData(card_data.language, card_data.name),
+                    order_by_print_count=self.print_guessing_prefer_already_downloaded
+                )):
             logger.debug(
                 f"Matching using language and card name. Found {len(possible_matches)} matches."
             )

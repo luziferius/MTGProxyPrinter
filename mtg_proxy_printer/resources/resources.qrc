@@ -8,7 +8,6 @@
 
     <file>ui/horizontal_search_layout/add_card_widget.ui</file>
     <file>ui/vertical_search_layout/add_card_widget.ui</file>
-    <file>ui/current_page_view.ui</file>
     <file>ui/settings_window.ui</file>
 
     <file>ui/deck_import_wizard/load_list_page.ui</file>
@@ -18,6 +17,8 @@
     <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
     <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
     <file>ui/cache_cleanup_wizard/summary_page.ui</file>
+    <file>ui/page_config_widget.ui</file>
+    <file>ui/page_config_dialog.ui</file>
 
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>
@@ -40,6 +41,7 @@
     <file>icons/breeze/actions/16/document-print-direct.svg</file>
     <file>icons/breeze/actions/16/document-print-preview.svg</file>
     <file>icons/breeze/actions/16/document-print.svg</file>
+    <file>icons/breeze/actions/16/document-properties.svg</file>
     <file>icons/breeze/actions/16/document-replace.svg</file>
     <file>icons/breeze/actions/16/document-save.svg</file>
     <file>icons/breeze/actions/16/document-save-as.svg</file>
@@ -62,6 +64,7 @@
     <file>icons/breeze/actions/22/document-print-direct.svg</file>
     <file>icons/breeze/actions/22/document-print-preview.svg</file>
     <file>icons/breeze/actions/22/document-print.svg</file>
+    <file>icons/breeze/actions/22/document-properties.svg</file>
     <file>icons/breeze/actions/22/document-replace.svg</file>
     <file>icons/breeze/actions/22/document-save.svg</file>
     <file>icons/breeze/actions/22/document-save-as.svg</file>
@@ -84,6 +87,7 @@
     <file>icons/breeze/actions/24/document-print-direct.svg</file>
     <file>icons/breeze/actions/24/document-print-preview.svg</file>
     <file>icons/breeze/actions/24/document-print.svg</file>
+    <file>icons/breeze/actions/24/document-properties.svg</file>
     <file>icons/breeze/actions/24/document-replace.svg</file>
     <file>icons/breeze/actions/24/document-save.svg</file>
     <file>icons/breeze/actions/24/document-save-as.svg</file>
@@ -105,6 +109,7 @@
     <file>icons/breeze/actions/32/document-open.svg</file>
     <file>icons/breeze/actions/32/document-print-direct.svg</file>
     <file>icons/breeze/actions/32/document-print.svg</file>
+    <file>icons/breeze/actions/32/document-properties.svg</file>
     <file>icons/breeze/actions/32/document-replace.svg</file>
     <file>icons/breeze/actions/32/document-save.svg</file>
     <file>icons/breeze/actions/32/document-save-as.svg</file>

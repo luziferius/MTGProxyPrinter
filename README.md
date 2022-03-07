@@ -18,6 +18,7 @@ These external libraries are used in the code. They can be installed from PyPI.
 - `pint`
 - `PyQt5`
 - `delegateto`
+- `PyHamcrest`
 - `cx_Freeze` (Stand-alone bundles only. Used by the installer for Windows®-based platforms.)
 
 ### System libraries
@@ -29,7 +30,6 @@ These external libraries are used in the code. They can be installed from PyPI.
 These libraries are required to run the unit tests.
 
 - `pytest`
-- `PyHamcrest`
 - `pytest-qt`
 - `pytest-cov` (Optional, for code coverage reports).
 

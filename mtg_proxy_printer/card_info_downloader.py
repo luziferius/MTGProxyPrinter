@@ -75,6 +75,14 @@ class PrintingData(typing.NamedTuple):
 
 
 class CardInfoDownloader(QObject):
+    """
+    Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
+    Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
+    purposes.
+
+    This is the public interface. The actual implementation resides in the CardInfoDownloadWorker class, which
+    is run asynchronously in another thread.
+    """
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
     download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
@@ -118,7 +126,9 @@ class CardInfoDownloader(QObject):
 
 
 class CardInfoDownloadWorker(DownloaderBase):
-
+    """
+    This class implements the actual data download and import
+    """
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
@@ -134,9 +144,11 @@ class CardInfoDownloadWorker(DownloaderBase):
             data = self.read_json_card_data(url)
             self.populate_database(data)
         except urllib.error.URLError as e:
+            logger.exception("Handling URLError during card data download.")
             self.network_error_occurred.emit(str(e.reason))
             self.model.db.rollback()
         except socket.timeout as e:
+            logger.exception("Handling socket timeout error during card data download.")
             self.network_error_occurred.emit(f"Reading from socket failed: {e}")
             self.model.db.rollback()
         else:
@@ -219,6 +231,9 @@ class CardInfoDownloadWorker(DownloaderBase):
         except sqlite3.Error as e:
             logger.exception(f"Database error occurred: {e}")
             self.other_error_occurred.emit(str(e))
+        except Exception as e:
+            logger.exception(f"Error in parsing step")
+            self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
         finally:
             _clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")
@@ -228,10 +243,13 @@ class CardInfoDownloadWorker(DownloaderBase):
         self.model.begin_transaction()
         store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
-        download_enabled: typing.Dict[str, bool] = {  # Parse the boolean download settings only once per import
+        # Parse the boolean download settings only once per import to save multiple seconds during the import
+        download_enabled: typing.Dict[str, bool] = {
             key: ds.getboolean(key)
             for key in ds.keys()
         }
+        # The settings keys are formatted like “banned-in-FORMAT”, where FORMAT is a format name as listed on Scryfall,
+        # like “standard” or “modern”. So the last element of the split("-") output gets the plain format name.
         skip_cards_banned_in_formats = frozenset(
             key.split("-")[-1]
             for key, enabled in download_enabled.items()
@@ -240,21 +258,21 @@ class CardInfoDownloadWorker(DownloaderBase):
         index = 0
         face_ids: IntTuples = []
         for index, card in enumerate(card_data, start=1):
+            if not self.should_run:
+                logger.info(f"Aborting card import after {index} cards due to user request.")
+                self.download_finished.emit()
+                return index
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 continue
-            if not self.should_run:
-                logger.info(f"Aborting card import after {index} cards due to user request.")
-                self.download_finished.emit()
-                return index
-            language_id = _insert_language(self.model, card["lang"])
-            card_id = _insert_card(self.model, card["oracle_id"])
-            set_id = _insert_set(self.model, card)
-            printing_id = insert_printing(self.model, card, card_id, set_id)
-            face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
+            try:
+                face_ids = self._parse_single_printing(card, face_ids)
+            except Exception as e:
+                logger.exception(f"Error while parsing card at position {index}. {card=}")
+                raise RuntimeError(f"Error while parsing card at position {index}: {e}")
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
         _clean_unused_data(self.model.db, face_ids)
@@ -272,11 +290,21 @@ class CardInfoDownloadWorker(DownloaderBase):
         self.model.commit()
         return index
 
+    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
+        language_id = _insert_language(self.model, card["lang"])
+        oracle_id = _get_oracle_id(card)
+        card_id = _insert_card(self.model, oracle_id)
+        set_id = _insert_set(self.model, card)
+        printing_id = insert_printing(self.model, card, card_id, set_id)
+        face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
+        return face_ids
+
 
 def _clear_lru_caches():
     """
     Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
+    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
     """
     _insert_language.cache_clear()
     _insert_set_data.cache_clear()
@@ -362,6 +390,8 @@ def _insert_card(model: CardDatabase, oracle_id: str) -> int:
 
 
 def _insert_set(model: CardDatabase, card: JSONType) -> int:
+    # Can’t use lru_cache here, because each card object is unique. So extract a hashable parameter set
+    # and delegate to a cacheable function.
     set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
     return _insert_set_data(model, set_abbr, set_name, set_uri)
 
@@ -529,6 +559,19 @@ def _get_png_image_uri(card: JSONType, face: JSONType):
         return card["image_uris"]["png"]
 
 
+def _get_oracle_id(card: JSONType) -> str:
+    """
+    Reads the oracle_id property of the given card.
+
+    This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
+    card object does not contain the oracle_id.
+    """
+    try:
+        return card["oracle_id"]
+    except KeyError:
+        return card["card_faces"][0]["oracle_id"]
+
+
 def _is_front_face(image_uri: str) -> bool:
     """
     Determine if the PNG image URI is a front or back face. The API does not expose which side a face is, so get that
@@ -542,7 +585,7 @@ def _is_front_face(image_uri: str) -> bool:
 
 def _get_card_name(card_or_face: JSONType) -> str:
     # Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
-    # English cards only have name, so use that as a fallback.
+    # English cards only have the “name” attribute, so use that as a fallback.
     try:
         return card_or_face["printed_name"]
     except KeyError:

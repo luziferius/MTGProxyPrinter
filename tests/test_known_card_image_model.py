@@ -55,10 +55,8 @@ def environment(card_db: CardDatabase):
         image_db.blank_image.save(str(front_image), "PNG")
         image_db.blank_image.save(str(back_image), "PNG")
         yield Environment(card_db, image_db, front_image, back_image)
-        if image_db.download_thread.isRunning():
-            logger.info("Stopping ImageDatabase background downloader thread.")
-            image_db.download_thread.quit()
-            image_db.download_thread.wait(100)
+        logger.info("Stopping ImageDatabase background downloader thread.")
+        image_db.quit_background_thread()
 
 
 @pytest.mark.parametrize("is_front", [True, False])
