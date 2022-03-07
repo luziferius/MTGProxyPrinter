@@ -387,27 +387,27 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.action_download_card_data.setEnabled(True)
 
-    def ask_user_about_application_update_policy(self) -> bool:
+    def ask_user_about_application_update_policy(self):
         """Executed on start when the application update policy setting is set to None, the default value."""
         name = mtg_proxy_printer.meta_data.PROGRAMNAME
-        return self._ask_user_about_update_policy(
+        self._ask_user_about_update_policy(
             title="Check for application updates?",
             question=f"Automatically check for application updates whenever you start {name}?",
             logger_message="Application update policy set.",
             settings_key="check-for-application-updates"
         )
 
-    def ask_user_about_card_data_update_policy(self) -> bool:
+    def ask_user_about_card_data_update_policy(self):
         """Executed on start when the card data update policy setting is set to None, the default value."""
         name = mtg_proxy_printer.meta_data.PROGRAMNAME
-        return self._ask_user_about_update_policy(
+        self._ask_user_about_update_policy(
             title="Check for card data updates?",
             question=f"Automatically check for card data updates on Scryfall whenever you start {name}?",
             logger_message="Card data update policy set.",
             settings_key="check-for-card-data-updates"
         )
 
-    def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str) -> bool:
+    def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str):
         if (result := QMessageBox.question(
                 self, title,
                 f"{question}\nYou can change this later in the settings.",
@@ -418,5 +418,3 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 result == QMessageBox.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
-            return True
-        return False
