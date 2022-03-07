@@ -47,7 +47,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             current_set_code = index.data(Qt.EditRole)
             current_set_position = 0
             for position, set_data in enumerate(matching_sets):
-                editor.addItem(set_data.name, set_data.code)  # Store the key (set_code) in the UserData role
+                editor.addItem(set_data.data(Qt.DisplayRole), set_data.data(Qt.EditRole))
                 if set_data.code == current_set_code:
                     current_set_position = position
             editor.setCurrentIndex(current_set_position)
