@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import errno
 import functools
 import io
 import queue
@@ -140,6 +141,7 @@ class ImageDatabase(QObject):
         self.queue.put((None, None))  # Unblock the background thread if it is waiting in the queue
         self.download_thread.quit()
         self.download_thread.wait(100)
+        logger.info(f"{self.__class__.__name__} background downloader thread stopped.")
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
@@ -206,10 +208,19 @@ class ImageDatabase(QObject):
                 path.unlink()
                 removed.append((path, size_bytes))
                 self.images_on_disk.remove(image)
+                self._delete_image_parent_directory_if_empty(path)
             else:
                 logger.warning(f"Trying to remove image not in the cache. Not present: {image}")
         logger.info(f"Removed {len(removed)} images from the card cache")
         return removed
+
+    @staticmethod
+    def _delete_image_parent_directory_if_empty(image_path: pathlib.Path):
+        try:
+            image_path.parent.rmdir()
+        except OSError as e:
+            if e.errno != errno.ENOTEMPTY:
+                raise e
 
 
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
@@ -324,9 +335,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
+        download_path = self.image_database.db_path / target_path.name
         source, metered_source = self.read_from_url(download_uri)
         metered_source.total_bytes_processed.connect(self.download_progress)
-        download_path = self.image_database.db_path / target_path.name
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
@@ -335,7 +346,10 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
                 self.currently_opened_file = source
                 shutil.copyfileobj(source, file_in_cache)
             if self.should_run:
+                logger.debug(f"Moving downloaded image into the image cache at {target_path}")
                 shutil.move(download_path, target_path)
+            else:
+                logger.info("Download aborted, not moving potentially incomplete download into the cache.")
         finally:
             self.currently_opened_file = None
             if download_path.is_file():
