@@ -390,7 +390,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
 
     @pyqtSlot()
     def on_action_save_as_triggered(self):
-        dialog = SaveDocumentAsDialog(self, self.document)  # TODO: Unify argument order. Put the parent at the end
+        dialog = SaveDocumentAsDialog(self.document, self)
         dialog.exec_()
 
     @pyqtSlot()

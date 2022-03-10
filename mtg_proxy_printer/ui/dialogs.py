@@ -77,7 +77,7 @@ class SavePDFDialog(QFileDialog):
 
 class SaveDocumentAsDialog(QFileDialog):
 
-    def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document, **kwargs):
+    def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
         super(SaveDocumentAsDialog, self).__init__(
             parent, "Save document as …", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
         if default_path := read_path("document-save-path"):
