@@ -18,11 +18,14 @@ This module is automatically discovered by pytest and all pytest
 fixtures defined here are available in all test modules.
 """
 import sqlite3
+from unittest.mock import MagicMock
 
 import pytest
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.document import Document
+from tests.helpers import fill_card_database_with_json_card
 
 
 @pytest.fixture(params=[False, True])
@@ -40,3 +43,12 @@ def empty_save_database(request) -> sqlite3.Connection:
     if request.param:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return db
+
+
+@pytest.fixture
+def document(card_db: CardDatabase) -> Document:
+    fill_card_database_with_json_card(card_db, "regular_english_card")
+    document = Document(card_db, MagicMock())
+    yield document
+    document.loader.worker_thread.quit()
+    document.loader.worker_thread.wait(100)

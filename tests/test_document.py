@@ -19,9 +19,9 @@ import pathlib
 from tempfile import TemporaryDirectory
 import textwrap
 import time
-from unittest.mock import MagicMock
 
 from hamcrest import *
+
 try:
     from hamcrest import contains_exactly
 except ImportError:
@@ -31,20 +31,10 @@ import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.model.carddb import CardDatabase, Card
+from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.model.document import Document, CardContainer
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 
-from .helpers import fill_card_database_with_json_card
-
-
-@pytest.fixture
-def document(card_db: CardDatabase) -> Document:
-    fill_card_database_with_json_card(card_db, "regular_english_card")
-    document = Document(card_db, MagicMock())
-    yield document
-    document.loader.worker_thread.quit()
-    document.loader.worker_thread.wait(100)
 
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
@@ -112,7 +102,7 @@ def test_document_is_created_empty(document: Document):
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
 def test_add_card_and_row_count(document: Document, pages_to_fill: int):
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, pages_to_fill*document.total_cards_per_page)
+    document.add_card(card, pages_to_fill * document.total_cards_per_page)
     assert_that(
         document.pages,
         has_length(pages_to_fill),
@@ -161,8 +151,8 @@ def test_remove_pages_removes_middle_page(document: Document):
     assert_that(document.pages, has_length(pages_to_create), "Unexpected page count before deletion.")
     page_to_delete = document.pages[5]
     document.remove_pages([document.index(5, 0)])
-    assert_that(document.rowCount(), is_(equal_to(pages_to_create-1)), "Unexpected page count after deletion.")
-    assert_that(document.pages, has_length(pages_to_create-1), "Unexpected page count after deletion.")
+    assert_that(document.rowCount(), is_(equal_to(pages_to_create - 1)), "Unexpected page count after deletion.")
+    assert_that(document.pages, has_length(pages_to_create - 1), "Unexpected page count after deletion.")
     assert_that(
         calling(document.find_page_list_index).with_args(page_to_delete),
         raises(ValueError), "Wrong page deleted."
@@ -173,13 +163,13 @@ def test_remove_pages_removes_middle_page(document: Document):
 def test_compacting_document(document: Document):
     pages_to_fill = 5
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, pages_to_fill*document.total_cards_per_page)
+    document.add_card(card, pages_to_fill * document.total_cards_per_page)
     cards_to_remove = 6
     for page_index in range(1, 4):
         document.remove_cards(
             list(map(document.index(page_index, 0).child, range(cards_to_remove), itertools.repeat(0)))
         )
-        assert_that(document.pages[page_index], has_length(document.total_cards_per_page-cards_to_remove))
+        assert_that(document.pages[page_index], has_length(document.total_cards_per_page - cards_to_remove))
     for page_index in (0, 4):
         assert_that(document.pages[page_index], has_length(document.total_cards_per_page))
     document.compact_pages()
