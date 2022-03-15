@@ -340,6 +340,18 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("leg", "Legends", "https://scryfall.com/sets/leg?utm_source=api"),
         "en", "145", "f2b9983e-20d4-4d12-9e2c-ec6d9a345787", "f5ca7b13-8003-4361-b827-7095c89f2750", False,
     ), "download-banned-in-vintage"
+    yield TestCaseData(
+        "digital_only_card", False, (
+            FaceData("Angel of Eternal Dawn", "https://c1.scryfall.com/file/scryfall-cards/png/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.png?1645416649", True),
+        ), DatabaseSetData("y22", "Alchemy: Innistrad", "https://scryfall.com/sets/y22?utm_source=api"),
+        "en", "1", "7a7640d4-72e0-42e4-96ea-eaedc7ffb304", "9fb2f004-96a4-49ba-9f62-ba60fa27c895", False,
+    ), "download-digital-cards"
+    yield TestCaseData(
+        "digital_reprint", False, (
+            FaceData("Serra Ascendant", "https://c1.scryfall.com/file/scryfall-cards/png/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.png?1576794512", True),
+        ), DatabaseSetData("ha1", "Historic Anthology 1", "https://scryfall.com/sets/ha1?utm_source=api"),
+        "en", "1", "b72e71c7-a65c-481d-8ad7-77bfb5d66d73", "27ad3e00-6ffb-48f7-8469-8868d066d1e2", False,
+    ), "download-digital-cards"
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])
@@ -358,12 +370,13 @@ def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDataba
 
 
 def test_re_import_with_changed_download_filter_removes_card(card_db: CardDatabase):
-    test_case, filter_name = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
+    test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
         ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api"),
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
-    ), "download-oversized-cards"
+    )
+    filter_name = "download-oversized-cards"
     # Pass 1: Populate the database and include the card. The card should be in the database afterwards
     fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "True")
     assert_successful_import(card_db, test_case)

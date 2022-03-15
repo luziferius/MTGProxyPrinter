@@ -178,6 +178,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             (self.include_banned_in_standard, "download-banned-in-standard"),
             (self.include_banned_in_vintage, "download-banned-in-vintage"),
             (self.include_token, "download-token"),
+            (self.include_digital_cards, "download-digital-cards"),
         ]
         return widgets_with_settings
 

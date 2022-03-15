@@ -78,6 +78,7 @@ DEFAULT_SETTINGS["downloads"] = {
     "download-funny-cards": "True",
     "download-non-traditional-cards": "True",
     "download-token": "True",
+    "download-digital-cards": "True",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",

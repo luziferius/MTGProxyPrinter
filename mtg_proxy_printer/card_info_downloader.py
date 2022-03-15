@@ -513,6 +513,7 @@ def _should_skip_card(
         card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
         # Token cards
         card["layout"] == "token" and not download_enabled["download-token"],
+        card["digital"] is True and not download_enabled["download-digital-cards"],
         # Specific format legality.
         not banned_in_formats.isdisjoint(skip_cards_banned_in_formats),
     ))

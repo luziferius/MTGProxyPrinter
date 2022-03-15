@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="tab_general">
       <attribute name="title">
@@ -408,8 +408,8 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          <property name="title">
           <string>General download filters</string>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_4">
-          <item>
+         <layout class="QGridLayout" name="gridLayout">
+          <item row="0" column="0">
            <widget class="QCheckBox" name="include_cards_depicting_racism">
             <property name="toolTip">
              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable downloading cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Changing this option only takes effect when re-building the program’s card database by completely omitting the cards or including them during the download process.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -419,7 +419,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
             </property>
            </widget>
           </item>
-          <item>
+          <item row="1" column="0">
            <widget class="QCheckBox" name="include_cards_without_images">
             <property name="toolTip">
              <string>Include non-English cards with low-resolution,
@@ -431,37 +431,7 @@ English placeholder images with an overlay text stating
             </property>
            </widget>
           </item>
-          <item>
-           <widget class="QCheckBox" name="include_oversized_cards">
-            <property name="toolTip">
-             <string>These cards are larger than regular Magic cards and can’t be included in decks.
-Includes Archenemy schemes, Planechase planes and
-oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
-            </property>
-            <property name="text">
-             <string>Include oversized cards</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="include_white_bordered_cards">
-            <property name="text">
-             <string>Include white-bordered cards</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="include_gold_bordered_cards">
-            <property name="toolTip">
-             <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
-These are not tournament legal.</string>
-            </property>
-            <property name="text">
-             <string>Include gold-bordered cards</string>
-            </property>
-           </widget>
-          </item>
-          <item>
+          <item row="5" column="0">
            <widget class="QCheckBox" name="include_funny_cards">
             <property name="toolTip">
              <string>“Funny” cards, not legal in any constructed format.
@@ -475,10 +445,50 @@ and all silver-bordered cards.</string>
             </property>
            </widget>
           </item>
-          <item>
+          <item row="6" column="0">
            <widget class="QCheckBox" name="include_token">
             <property name="text">
              <string>Include Token cards</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QCheckBox" name="include_gold_bordered_cards">
+            <property name="toolTip">
+             <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+These are not tournament legal.</string>
+            </property>
+            <property name="text">
+             <string>Include gold-bordered cards</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="include_oversized_cards">
+            <property name="toolTip">
+             <string>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
+            </property>
+            <property name="text">
+             <string>Include oversized cards</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QCheckBox" name="include_white_bordered_cards">
+            <property name="text">
+             <string>Include white-bordered cards</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="include_digital_cards">
+            <property name="toolTip">
+             <string>Include cards and printings that are only available on digital platforms</string>
+            </property>
+            <property name="text">
+             <string>Include digital cards</string>
             </property>
            </widget>
           </item>
@@ -690,6 +700,7 @@ and all silver-bordered cards.</string>
   <tabstop>include_gold_bordered_cards</tabstop>
   <tabstop>include_funny_cards</tabstop>
   <tabstop>include_token</tabstop>
+  <tabstop>include_digital_cards</tabstop>
   <tabstop>include_banned_in_brawl</tabstop>
   <tabstop>include_banned_in_commander</tabstop>
   <tabstop>include_banned_in_historic</tabstop>
