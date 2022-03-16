@@ -25,7 +25,7 @@ import pytest
 
 from mtg_proxy_printer.sqlite_helpers import _read_current_database_schema_version
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.model.carddb_helpers import migrate_card_database, MIGRATION_SCRIPTS, _migrate_21_to_22
+from mtg_proxy_printer.model.carddb_migrations import migrate_card_database, MIGRATION_SCRIPTS, _migrate_21_to_22
 
 # Pulled from check-in [43d8e4f754efc85d7f52ce9f8c87e93a6ed31e39de862a44a18d28b0590c113c].
 # NOTE: Removed all SQL comments present in the original file.

@@ -27,7 +27,7 @@ from PyQt5.QtCore import Qt
 import delegateto
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.model.carddb_helpers import migrate_card_database
+from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
