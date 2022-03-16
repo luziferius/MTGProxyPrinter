@@ -36,7 +36,8 @@ MigrationScriptListing = typing.Tuple[typing.Tuple[int, MigrationScript], ...]
 
 
 def _migrate_9_to_10(db: sqlite3.Connection):
-    # It wasn’t stored if a card was a front or back face. This information can only be obtained by re-populating
+    # Schema version 9 did not store if a card was a front or back face.
+    # This information can only be obtained by re-populating
     # the database using fresh data from Scryfall.
     tables_to_clear = [
         "CardFace",

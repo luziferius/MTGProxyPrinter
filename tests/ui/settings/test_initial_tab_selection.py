@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt5.QtCore import QStringListModel
-from PyQt5.QtWidgets import QTabWidget
 
 from hamcrest import *
 from pytestqt.qtbot import QtBot
@@ -28,6 +27,7 @@ def test_first_tab_is_selected_when_shown(qtbot: QtBot, document):
     qtbot.addWidget(dialog)
     with qtbot.waitExposed(dialog):
         dialog.show()
-    tab_widget: QTabWidget
-    tab_widget = dialog.tab_widget
-    assert_that(tab_widget.currentIndex(), is_(0), "Wrong initial tab selected. Fix the settings window UI file.")
+    assert_that(
+        dialog.tab_widget.currentIndex(), is_(0),
+        "Wrong initial tab selected. Fix the settings window UI file."
+    )
