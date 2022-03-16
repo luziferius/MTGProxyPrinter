@@ -13,6 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+This module contains the database migration logic that is used to upgrade the schema of existing card databases
+to the newest schema version supported.
+
+To add a new migration function:
+- Write function _migrate_{source_version}_to_{target_version} that performs the schema migration
+- Append an entry with a reference to the added function to the MIGRATION_SCRIPTS tuple
+"""
+
 import datetime
 import socket
 import sqlite3
@@ -31,6 +40,7 @@ del get_logger
 __all__ = [
     "migrate_card_database",
 ]
+
 MigrationScript = typing.Callable[[sqlite3.Connection], None]
 MigrationScriptListing = typing.Tuple[typing.Tuple[int, MigrationScript], ...]
 
@@ -372,6 +382,8 @@ def _migrate_21_to_22(db: sqlite3.Connection):
 
 
 MIGRATION_SCRIPTS: MigrationScriptListing = (
+    # First component of each tuple contains the source schema version, second contains the migration script function.
+    # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
     (9, _migrate_9_to_10),
     (10, _migrate_10_to_11),
     (11, _migrate_11_to_12),
@@ -389,6 +401,17 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
 
 
 def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationScriptListing = MIGRATION_SCRIPTS):
+    """
+    Upgrades the database schema of the given Card Database to the latest supported schema version.
+
+    Given migration scripts are only executed, if their associated starting schema version matches the current database
+    schema version right before it is executed. Each migration script must upgrade to the next schema version. Functions
+    that combine multiple version upgrades in one SQL script are not supported.
+
+    :param db: card database, given as a plain sqlite3 database connection object
+    :param migration_scripts: List of migration script functions to run, if applicable. Defaults to a built-in list of
+      migration scripts. Should only be passed explicitly for testing purposes.
+    """
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
     needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
     if needs_update:
