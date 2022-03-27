@@ -157,4 +157,4 @@ class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_nam
     pass
 
 
-CentralWidgetTypes = typing.Union[ColumnarCentralWidget, TabbedVerticalCentralWidget]
+CentralWidgetTypes = typing.Union[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget]
