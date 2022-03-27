@@ -96,7 +96,7 @@ DEFAULT_SETTINGS["default-save-paths"] = {
     "pdf-export-path": "",
 }
 DEFAULT_SETTINGS["gui"] = {
-    "central-widget-layout": "horizontal",
+    "central-widget-layout": "columnar",
     "show-toolbar": "True",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
