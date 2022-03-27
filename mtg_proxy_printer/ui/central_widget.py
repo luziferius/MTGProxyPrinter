@@ -141,6 +141,14 @@ class ColumnarCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("cen
     pass
 
 
+class GroupedCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/grouped")):
+    """
+    This layout uses group boxes and is optimized for (near) square screens between 3:4 and 4:3.
+    It tries to effectively use vertical space.
+    """
+    pass
+
+
 class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/tabbed_vertical")):
     """
     This layout uses tabs to only show one columnar widget at a time, optimized for very narrow screens, like

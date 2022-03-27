@@ -4,6 +4,7 @@
     <file>ui/about_dialog.ui</file>
     <file>ui/main_window.ui</file>
     <file>ui/central_widget/columnar.ui</file>
+    <file>ui/central_widget/grouped.ui</file>
     <file>ui/central_widget/tabbed_vertical.ui</file>
 
     <file>ui/add_card_widget/horizontal.ui</file>
