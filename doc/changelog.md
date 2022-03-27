@@ -7,9 +7,12 @@
 - Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
   the stored settings overwrite the default values set in the application settings.
   - The Edit menu in the main window has a new option to edit these document settings for the current document only.
-- Added new card download filter for digital cards. The new filter includes both digital “reprints” of existing cards
-  and digital-only cards that aren’t available as physical cards at all.
-- Added a new user interface layout that uses tabs to only show one part at a time.
+  - Older save files do not contain the relevant data and have to be saved explicitly to perform a save file migration.
+- Added new card download filter that allows excluding digital cards.
+  The new filter matches both digital “reprints” of existing cards
+  (for example Magic Online-exclusive promotional card versions)
+  and digital-only cards that aren’t available as physical cards at all (like the Magic Arena Alchemy cards).
+- Added a new user interface layout that uses tabs to only show one part of the main window at a time.
   This is mainly useful for small and high-DPI monitors in portrait mode, i.e. when using 
   a monitor with an aspect ratio of 9:16.
 
