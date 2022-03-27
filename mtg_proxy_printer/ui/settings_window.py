@@ -55,7 +55,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.page_configuration_group_box.setTitle("Default settings for new documents")
         self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
-        self.add_card_widget_style_combo_box.addItem("Vertical layout", "vertical")
+        self.add_card_widget_style_combo_box.addItem("Columnar layout", "columnar")
+        self.add_card_widget_style_combo_box.addItem("Tabbed layout", "tabbed")
 
         self.log_level_combo_box: QComboBox
         self.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
@@ -92,7 +93,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _load_look_and_feel_settings(self, settings: configparser.ConfigParser):
         self.add_card_widget_style_combo_box: QComboBox
         gui_section = settings["gui"]
-        search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["search-widget-layout"])
+        search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["central-widget-layout"])
         self.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
 
     def _load_images_settings(self, settings: configparser.ConfigParser):
@@ -260,7 +261,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _save_look_and_feel_settings(self):
         gui_section = mtg_proxy_printer.settings.settings["gui"]
         self.add_card_widget_style_combo_box: QComboBox
-        gui_section["search-widget-layout"] = self.add_card_widget_style_combo_box.currentData(Qt.UserRole)
+        gui_section["central-widget-layout"] = self.add_card_widget_style_combo_box.currentData(Qt.UserRole)
 
     def _save_images_settings(self):
         images_section = mtg_proxy_printer.settings.settings["images"]

@@ -164,9 +164,9 @@ CentralWidgetTypes = typing.Union[ColumnarCentralWidget, GroupedCentralWidget, T
 
 def get_configured_central_widget_layout_class():
     gui_settings = mtg_proxy_printer.settings.settings["gui"]
-    configured_layout = gui_settings["search-widget-layout"]
+    configured_layout = gui_settings["central-widget-layout"]
     if configured_layout == "horizontal":
         return GroupedCentralWidget
-    if configured_layout == "vertical":
+    if configured_layout == "columnar":
         return ColumnarCentralWidget
     return TabbedVerticalCentralWidget

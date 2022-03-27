@@ -37,7 +37,6 @@ from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
-layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
 __all__ = [
     "MainWindow",
 ]
@@ -58,7 +57,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                  language_model: QStringListModel,
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
+        logger.info(f"Creating {self.__class__.__name__} instance.")
         self.card_data_download_in_progress = False
         self.setupUi(self)
         self.about_dialog = self._create_about_dialog()
