@@ -105,8 +105,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
+        central_widget_class = get_configured_central_widget_layout_class()
+        logger.debug(f"Using central widget class {central_widget_class.__name__}")
         self.central_widget: CentralWidgetTypes
-        self.central_widget = get_configured_central_widget_layout_class()(self)
+        self.central_widget = central_widget_class(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
