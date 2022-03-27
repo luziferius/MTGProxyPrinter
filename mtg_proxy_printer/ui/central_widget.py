@@ -32,7 +32,7 @@ logger = get_logger(__name__)
 del get_logger
 __all__ = [
     "TabbedVerticalCentralWidget",
-    "FlatVerticalCentralWidget",
+    "ColumnarCentralWidget",
     "CentralWidgetTypes",
 ]
 
@@ -136,12 +136,17 @@ class CentralWidget(QWidget):
         self.document.on_ui_selects_new_page(new_row_selection)
 
 
-class FlatVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/flat_vertical")):
+class ColumnarCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/columnar")):
+    """This layout uses columns and is optimized for wide screens."""
     pass
 
 
 class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/tabbed_vertical")):
+    """
+    This layout uses tabs to only show one columnar widget at a time, optimized for very narrow screens, like
+    16:9 screens in portrait mode (i.e. 9:16).
+    """
     pass
 
 
-CentralWidgetTypes = typing.Union[FlatVerticalCentralWidget, TabbedVerticalCentralWidget]
+CentralWidgetTypes = typing.Union[ColumnarCentralWidget, TabbedVerticalCentralWidget]

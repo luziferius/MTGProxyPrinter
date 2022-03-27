@@ -28,7 +28,7 @@ from mtg_proxy_printer.model.document import Document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, FlatVerticalCentralWidget, TabbedVerticalCentralWidget
+from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, ColumnarCentralWidget, TabbedVerticalCentralWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
@@ -107,7 +107,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
     def _setup_central_widget(self):
         self.central_widget: CentralWidgetTypes
-        self.central_widget = FlatVerticalCentralWidget(self)
+        self.central_widget = ColumnarCentralWidget(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
