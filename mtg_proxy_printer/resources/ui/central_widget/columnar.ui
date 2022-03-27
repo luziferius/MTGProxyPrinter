@@ -97,7 +97,7 @@
     </widget>
    </item>
    <item row="4" column="1" rowspan="3">
-    <widget class="AddCardWidget" name="add_card_widget" native="true">
+    <widget class="VerticalAddCardWidget" name="add_card_widget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>7</horstretch>
@@ -129,7 +129,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>AddCardWidget</class>
+   <class>VerticalAddCardWidget</class>
    <extends>QWidget</extends>
    <header>mtg_proxy_printer.ui.add_card</header>
    <container>1</container>

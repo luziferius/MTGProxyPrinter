@@ -31,16 +31,18 @@ layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
 
 __all__ = [
     "AddCardWidget",
+    "VerticalAddCardWidget",
+    "HorizontalAddCardWidget",
 ]
 
 
-class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/add_card_widget")):
+class AddCardWidget(QWidget):
 
     card_added = pyqtSignal(mtg_proxy_printer.model.carddb.Card, int)
 
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
-        logger.debug(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
+        logger.debug(f"Creating {self.__class__.__name__} instance")
         self.setupUi(self)
         self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = None
         self.language_model = self._setup_language_combo_box()
@@ -264,3 +266,11 @@ class AddCardWidget(*inherits_from_ui_file_with_name(f"{layout}_search_layout/ad
             return selected[0].data(Qt.DisplayRole)
         else:
             return None
+
+
+class VerticalAddCardWidget(AddCardWidget, *inherits_from_ui_file_with_name(f"add_card_widget/vertical")):
+    pass
+
+
+class HorizontalAddCardWidget(AddCardWidget, *inherits_from_ui_file_with_name(f"add_card_widget/horizontal")):
+    pass

@@ -33,7 +33,7 @@
        <string>All pages</string>
       </attribute>
      </widget>
-     <widget class="AddCardWidget" name="add_card_widget">
+     <widget class="VerticalAddCardWidget" name="add_card_widget">
       <attribute name="title">
        <string>Add new cards</string>
       </attribute>
@@ -104,7 +104,7 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>AddCardWidget</class>
+   <class>VerticalAddCardWidget</class>
    <extends>QWidget</extends>
    <header>mtg_proxy_printer.ui.add_card</header>
    <container>1</container>

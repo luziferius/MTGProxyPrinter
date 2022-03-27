@@ -6,8 +6,8 @@
     <file>ui/central_widget/columnar.ui</file>
     <file>ui/central_widget/tabbed_vertical.ui</file>
 
-    <file>ui/horizontal_search_layout/add_card_widget.ui</file>
-    <file>ui/vertical_search_layout/add_card_widget.ui</file>
+    <file>ui/add_card_widget/horizontal.ui</file>
+    <file>ui/add_card_widget/vertical.ui</file>
     <file>ui/settings_window.ui</file>
 
     <file>ui/deck_import_wizard/load_list_page.ui</file>

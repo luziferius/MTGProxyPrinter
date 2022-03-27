@@ -15,6 +15,7 @@
 
 import typing
 
+import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
@@ -22,7 +23,7 @@ from PyQt5.QtCore import Qt, QPoint, QRect, QItemSelectionModel
 from PyQt5.QtWidgets import QDialogButtonBox
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
-from mtg_proxy_printer.ui.add_card import AddCardWidget
+from mtg_proxy_printer.ui.add_card import HorizontalAddCardWidget, VerticalAddCardWidget
 
 from tests.helpers import fill_card_database_with_json_card
 
@@ -30,7 +31,8 @@ StringList = typing.List[str]
 OptString = typing.Optional[str]
 
 
-def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase):
+@pytest.mark.parametrize("widget_class", [HorizontalAddCardWidget, VerticalAddCardWidget])
+def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase, widget_class):
     """
     Test for bug /tktview/cca01cfe00adc56c520bcefa7cf45e1f95447267
     "Art-Series cards crash the application", found in v0.11.0
@@ -39,7 +41,7 @@ def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase
     expected_card_identification_data = CardIdentificationData(
         "en", "Clearwater Pathway", "aznr", "25"
     )
-    qtbot.add_widget(add_card_widget := AddCardWidget())
+    qtbot.add_widget(add_card_widget := widget_class())
     add_card_widget.set_card_database(card_db)
     add_card_widget.copies_input.setValue(1)
     add_card_widget.card_name_list.setSelection(QRect(1, 1, 1, 1), QItemSelectionModel.ClearAndSelect)
