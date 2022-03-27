@@ -34,6 +34,7 @@ del get_logger
 __all__ = [
     "TabbedVerticalCentralWidget",
     "ColumnarCentralWidget",
+    "GroupedCentralWidget",
     "CentralWidgetTypes",
     "get_configured_central_widget_layout_class",
 ]
