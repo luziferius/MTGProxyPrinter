@@ -17,6 +17,7 @@ import typing
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, QItemSelectionModel
 from PyQt5.QtWidgets import QTableView, QWidget, QListView
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -34,6 +35,7 @@ __all__ = [
     "TabbedVerticalCentralWidget",
     "ColumnarCentralWidget",
     "CentralWidgetTypes",
+    "get_configured_central_widget_layout_class",
 ]
 
 
@@ -158,3 +160,13 @@ class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_nam
 
 
 CentralWidgetTypes = typing.Union[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget]
+
+
+def get_configured_central_widget_layout_class():
+    gui_settings = mtg_proxy_printer.settings.settings["gui"]
+    configured_layout = gui_settings["search-widget-layout"]
+    if configured_layout == "horizontal":
+        return GroupedCentralWidget
+    if configured_layout == "vertical":
+        return ColumnarCentralWidget
+    return TabbedVerticalCentralWidget
