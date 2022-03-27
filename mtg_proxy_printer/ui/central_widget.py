@@ -1,0 +1,176 @@
+# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+import typing
+
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, QItemSelectionModel
+from PyQt5.QtWidgets import QTableView, QWidget, QListView
+
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.card_list import PageColumns
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.ui.page_renderer import PageRenderer
+from mtg_proxy_printer.ui.add_card import AddCardWidget
+from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+
+from mtg_proxy_printer.logger import get_logger
+
+logger = get_logger(__name__)
+del get_logger
+__all__ = [
+    "TabbedVerticalCentralWidget",
+    "ColumnarCentralWidget",
+    "GroupedCentralWidget",
+    "CentralWidgetTypes",
+    "get_configured_central_widget_layout_class",
+]
+
+
+class CentralWidget(QWidget):
+
+    window_size_changed = pyqtSignal()
+    settings_changed = pyqtSignal()
+
+    def __init__(self, *args, **kwargs):
+        super(CentralWidget, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+        self.document = None
+        self.card_db = None
+        self.image_db = None
+        self.combo_box_delegate = self._setup_page_card_table_view()
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_page_card_table_view(self) -> ComboBoxItemDelegate:
+        self.page_card_table_view: QTableView
+        combo_box_delegate = ComboBoxItemDelegate(self.page_card_table_view)
+        self.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
+        self.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
+        return combo_box_delegate
+
+    def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
+        self.document = document
+        self.card_db = card_db
+        self.image_db = image_db
+        document.loading_state_changed.connect(self.select_first_page)
+        document.current_page_changed.connect(self.on_current_page_changed)
+        self.page_card_table_view.setModel(document)
+        self._setup_page_renderer(document)
+        self._setup_add_card_widget(card_db, image_db)
+        self._setup_document_view(document)
+
+    def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
+        self.add_card_widget: AddCardWidget
+        self.add_card_widget.set_card_database(card_db)
+        self.add_card_widget.card_added.connect(image_db.get_new_card_image_asynchronous)
+        self.settings_changed.connect(self.add_card_widget.update_selected_language)
+
+    def _setup_document_view(self, document: Document):
+        self.document_view: QListView
+        self.document_view.setModel(document)
+        self.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
+        self.select_first_page()
+
+    def on_current_page_changed(self, new_page: QPersistentModelIndex):
+        self.page_card_table_view: QTableView
+        self.page_card_table_view.clearSelection()
+        self.page_card_table_view.setRootIndex(new_page.sibling(new_page.row(), new_page.column()))
+        self.page_card_table_view.setColumnHidden(PageColumns.Image, True)
+
+    def _setup_page_renderer(self, document: Document):
+        self.page_renderer: PageRenderer
+        self.page_renderer.set_document(document)
+        self.settings_changed.connect(self.page_renderer.on_settings_changed)
+        self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
+        document.page_layout_changed.connect(self.page_renderer.on_settings_changed)
+
+    @pyqtSlot()
+    def on_delete_selected_images_button_clicked(self):
+        self.page_card_table_view: QTableView
+        multi_selection = self.page_card_table_view.selectionModel().selectedRows()
+        logger.debug(f"User removes {len(multi_selection)} items from the current page.")
+        self.page_card_table_view.model().remove_card_multi_selection(multi_selection)
+
+    @pyqtSlot()
+    def select_first_page(self, loading_in_progress: bool = False):
+        if not loading_in_progress:
+            logger.info("Loading finished. Selecting first page.")
+            new_selection = self.document.index(0, 0)
+            self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.document.on_ui_selects_new_page(new_selection)
+
+    @pyqtSlot()
+    def on_action_discard_page_triggered(self):
+        self.document_view: QListView
+        if self.document.rowCount() == 1:
+            logger.info(f"User selects to delete the only page, so clearing it.")
+            self.document.clear_page(self.document.index(0, 0))
+            return
+        to_be_deleted: int = self.document_view.selectedIndexes()[0].row()
+        logger.info(f"User selects to delete the currently selected page. Will be removing page {to_be_deleted}")
+        logger.debug("Deleting the requested page.")
+        # TODO: Investigate, why unsetting the model is needed.
+        #  The document_view’s selection model somehow asks for data using invalid
+        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
+        #  completely disconnect the model, remove the row, then set it again.
+        self.document_view.setModel(None)
+        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
+        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
+        self.document_view.setModel(self.document)
+        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
+
+        new_row_index = min(to_be_deleted, self.document.rowCount() - 1)
+        logger.debug(f"Selecting page {new_row_index}.")
+        new_row_selection = self.document.index(new_row_index, 0)
+        self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
+        self.document.on_ui_selects_new_page(new_row_selection)
+
+
+class ColumnarCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/columnar")):
+    """This layout uses columns and is optimized for wide screens."""
+    pass
+
+
+class GroupedCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/grouped")):
+    """
+    This layout uses group boxes and is optimized for (near) square screens between 3:4 and 4:3.
+    It tries to effectively use vertical space.
+    """
+    pass
+
+
+class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/tabbed_vertical")):
+    """
+    This layout uses tabs to only show one columnar widget at a time, optimized for very narrow screens, like
+    16:9 screens in portrait mode (i.e. 9:16).
+    """
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        # The page renderer has to be scaled to fill when it’s tab is activated to ensure it fills the available space.
+        self.tab_widget.currentChanged.connect(lambda _: self.window_size_changed.emit())
+
+
+CentralWidgetTypes = typing.Union[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget]
+
+
+def get_configured_central_widget_layout_class():
+    gui_settings = mtg_proxy_printer.settings.settings["gui"]
+    configured_layout = gui_settings["central-widget-layout"]
+    if configured_layout == "horizontal":
+        return GroupedCentralWidget
+    if configured_layout == "columnar":
+        return ColumnarCentralWidget
+    return TabbedVerticalCentralWidget

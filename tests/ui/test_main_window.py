@@ -21,6 +21,7 @@ from PyQt5.QtCore import QStringListModel
 from PyQt5.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 from hamcrest import *
+import pytest
 
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
@@ -29,13 +30,17 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
-
+from mtg_proxy_printer.ui.central_widget import ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget
 from tests.helpers import fill_card_database_with_json_card
 
 
-def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbot: QtBot, card_db: CardDatabase):
+@pytest.mark.parametrize("central_widget_class", [ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
+def test_main_window_hides_progress_bar_after_downloading_image_during_load(
+        qtbot: QtBot, card_db: CardDatabase, central_widget_class):
     fill_card_database_with_json_card(card_db, "regular_english_card")
-    with TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory() as temp_dir, unittest.mock.patch(
+            "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
+            return_value=central_widget_class):
         temp_path = pathlib.Path(temp_dir)
         image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)

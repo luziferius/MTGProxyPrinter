@@ -2,15 +2,19 @@
 <qresource prefix="/">
     <!-- UI files -->
     <file>ui/about_dialog.ui</file>
-    <file>ui/horizontal_search_layout/add_card_widget.ui</file>
-    <file>ui/vertical_search_layout/add_card_widget.ui</file>
-    <file>ui/current_page_view.ui</file>
-    <file>ui/horizontal_search_layout/main_window.ui</file>
-    <file>ui/vertical_search_layout/main_window.ui</file>
+    <file>ui/main_window.ui</file>
+    <file>ui/central_widget/columnar.ui</file>
+    <file>ui/central_widget/grouped.ui</file>
+    <file>ui/central_widget/tabbed_vertical.ui</file>
+
+    <file>ui/add_card_widget/horizontal.ui</file>
+    <file>ui/add_card_widget/vertical.ui</file>
     <file>ui/settings_window.ui</file>
+
     <file>ui/deck_import_wizard/load_list_page.ui</file>
     <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>
     <file>ui/deck_import_wizard/parser_result_page.ui</file>
+
     <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
     <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
     <file>ui/cache_cleanup_wizard/summary_page.ui</file>

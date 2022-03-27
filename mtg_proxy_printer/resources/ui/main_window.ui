@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>800</height>
+    <width>1050</width>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,49 +16,16 @@
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonFollowStyle</enum>
   </property>
-  <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1" colspan="2">
-     <widget class="AddCardWidget" name="add_card_widget" native="true"/>
-    </item>
-    <item row="0" column="0" rowspan="2">
-     <widget class="DocumentView" name="document_view">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>4</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="alternatingRowColors">
-       <bool>true</bool>
-      </property>
-      <property name="selectionMode">
-       <enum>QAbstractItemView::SingleSelection</enum>
-      </property>
-      <property name="selectionBehavior">
-       <enum>QAbstractItemView::SelectRows</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="1" colspan="2">
-     <widget class="CurrentPageView" name="page_view" native="true">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>10</horstretch>
-        <verstretch>4</verstretch>
-       </sizepolicy>
-      </property>
-     </widget>
-    </item>
-   </layout>
+  <widget class="QWidget" name="central_widget">
+   <layout class="QGridLayout" name="gridLayout"/>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
-     <height>28</height>
+     <width>1050</width>
+     <height>29</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -132,7 +99,8 @@
   </widget>
   <action name="action_quit">
    <property name="icon">
-    <iconset theme="application-exit"/>
+    <iconset theme="application-exit">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Quit</string>
@@ -146,13 +114,14 @@
   </action>
   <action name="action_print">
    <property name="icon">
-    <iconset theme="document-print-direct"/>
+    <iconset theme="document-print-direct">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Print</string>
    </property>
    <property name="toolTip">
-    <string>Print the current document</string>
+    <string>Print the current documents</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
@@ -160,7 +129,8 @@
   </action>
   <action name="action_print_preview">
    <property name="icon">
-    <iconset theme="document-print-preview"/>
+    <iconset theme="document-print-preview">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Show print preview</string>
@@ -171,7 +141,8 @@
   </action>
   <action name="action_print_pdf">
    <property name="icon">
-    <iconset theme="viewpdf"/>
+    <iconset theme="viewpdf">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>&amp;Create PDF</string>
@@ -182,7 +153,8 @@
   </action>
   <action name="action_discard_page">
    <property name="icon">
-    <iconset theme="document-close"/>
+    <iconset theme="document-close">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Discard page</string>
@@ -193,15 +165,20 @@
   </action>
   <action name="action_show_settings">
    <property name="icon">
-    <iconset theme="configure"/>
+    <iconset theme="configure">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Settings</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::PreferencesRole</enum>
+   </property>
   </action>
   <action name="action_download_card_data">
    <property name="icon">
-    <iconset theme="edit-download"/>
+    <iconset theme="edit-download">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Download card data</string>
@@ -209,7 +186,8 @@
   </action>
   <action name="action_new_page">
    <property name="icon">
-    <iconset theme="document-new"/>
+    <iconset theme="document-new">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>New Page</string>
@@ -220,7 +198,8 @@
   </action>
   <action name="action_save_document">
    <property name="icon">
-    <iconset theme="document-save"/>
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save</string>
@@ -231,7 +210,8 @@
   </action>
   <action name="action_new_document">
    <property name="icon">
-    <iconset theme="document-replace"/>
+    <iconset theme="document-replace">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>New</string>
@@ -242,7 +222,8 @@
   </action>
   <action name="action_load_document">
    <property name="icon">
-    <iconset theme="document-open"/>
+    <iconset theme="document-open">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Load</string>
@@ -253,7 +234,8 @@
   </action>
   <action name="action_save_as">
    <property name="icon">
-    <iconset theme="document-save-as"/>
+    <iconset theme="document-save-as">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Save as …</string>
@@ -263,6 +245,9 @@
    <property name="text">
     <string>About…</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
   </action>
   <action name="action_show_changelog">
    <property name="text">
@@ -271,7 +256,8 @@
   </action>
   <action name="action_compact_document">
    <property name="icon">
-    <iconset theme="format-align-vertical-top"/>
+    <iconset theme="format-align-vertical-top">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Compact document</string>
@@ -293,7 +279,8 @@
   </action>
   <action name="action_import_deck_list">
    <property name="icon">
-    <iconset theme="document-import"/>
+    <iconset theme="document-import">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Import Deck list</string>
@@ -304,7 +291,8 @@
   </action>
   <action name="action_cleanup_local_image_cache">
    <property name="icon">
-    <iconset theme="edit-clear-history"/>
+    <iconset theme="edit-clear-history">
+     <normaloff>.</normaloff>.</iconset>
    </property>
    <property name="text">
     <string>Cleanup local image cache</string>
@@ -325,28 +313,6 @@
    </property>
   </action>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>DocumentView</class>
-   <extends>QListView</extends>
-   <header>mtg_proxy_printer.ui.document_view</header>
-  </customwidget>
-  <customwidget>
-   <class>AddCardWidget</class>
-   <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.add_card</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>CurrentPageView</class>
-   <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.current_page_view</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
- <tabstops>
-  <tabstop>document_view</tabstop>
- </tabstops>
  <resources/>
  <connections>
   <connection>

@@ -97,10 +97,10 @@ DEFAULT_SETTINGS["default-save-paths"] = {
     "pdf-export-path": "",
 }
 DEFAULT_SETTINGS["gui"] = {
-    "search-widget-layout": "horizontal",
+    "central-widget-layout": "columnar",
     "show-toolbar": "True",
 }
-VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
+VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
@@ -126,6 +126,7 @@ def read_settings_from_file():
         settings.read_dict(DEFAULT_SETTINGS)
     else:
         settings.read(config_file_path)
+        migrate_settings(settings)
         read_sections = set(settings.sections())
         known_sections = set(DEFAULT_SETTINGS.sections())
         # Synchronize sections
@@ -236,7 +237,7 @@ def _validate_application_section(section: configparser.SectionProxy):
 
 def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
-    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
+    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
@@ -286,6 +287,22 @@ def _validate_string_is_in_set(
 
 def _restore_default(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     section[key] = defaults[key]
+
+
+def migrate_settings(settings: configparser.ConfigParser):
+    _migrate_layout_setting(settings)
+
+
+def _migrate_layout_setting(settings: configparser.ConfigParser):
+    try:
+        gui_section = settings["gui"]
+        layout = gui_section["search-widget-layout"]
+    except KeyError:
+        return
+    else:
+        if layout == "vertical":
+            layout = "columnar"
+        gui_section["central-widget-layout"] = layout
 
 
 # Read the settings from file during module import

@@ -9,16 +9,21 @@
   - The Edit menu in the main window has a new option to edit these document settings for the current document only.
 - Added new card download filter for digital cards. The new filter includes both digital “reprints” of existing cards
   and digital-only cards that aren’t available as physical cards at all.
+- Added a new user interface layout that uses tabs to only show one part at a time.
+  This is mainly useful for small and high-DPI monitors in portrait mode, i.e. when using 
+  a monitor with an aspect ratio of 9:16.
 
 ## Changed features
 
 - Smarter printing selection when the option to prefer already downloaded printings is enabled:
   MTGProxyPrinter will now prefer printings that were printed/exported more often over less often used printings.
   Uses image usage information already available since version 0.9.0
+- Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
+  because it shows the main window content in four columns.
 
 ## Fixed issues
 
-- MTGProxyPrinter now validates the save file format when loading documents
+- MTGProxyPrinter now validates the document save file format when loading documents
   to prevent Denial of Service attacks via maliciously crafted save files.
 - It is now possible to retry downloading card data updates, 
   if the download fails due to a flaky internet connection.

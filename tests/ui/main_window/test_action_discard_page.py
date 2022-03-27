@@ -28,15 +28,18 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.main_window import MainWindow
+from mtg_proxy_printer.ui.central_widget import ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget
 
 from tests.helpers import fill_card_database_with_json_card
 
 
-@pytest.fixture
-def main_window(card_db: CardDatabase) -> MainWindow:
+@pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
+def main_window(card_db: CardDatabase, request) -> MainWindow:
     fill_card_database_with_json_card(card_db, "regular_english_card")
     card_db = CardDatabase(":memory:")
-    with TemporaryDirectory() as temp_dir:
+    with TemporaryDirectory() as temp_dir, unittest.mock.patch(
+            "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
+            return_value=request.param):
         temp_path = pathlib.Path(temp_dir)
         image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)
@@ -58,16 +61,16 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbo
     qtbot.add_widget(main_window)
     with qtbot.wait_exposed(main_window, timeout=100):
         main_window.show()
-    assert_that(main_window.document_view.selectionModel().selectedRows(0), has_length(1))
-    assert_that(main_window.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
+    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0), has_length(1))
+    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(1)))
     with qtbot.wait_signal(main_window.action_new_page.triggered, timeout=100):
         main_window.action_new_page.trigger()
-    assert_that(main_window.document_view.selectionModel().selectedRows(0), has_length(1))
-    assert_that(main_window.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
+    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0), has_length(1))
+    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(2)))
     with qtbot.wait_signal(main_window.action_discard_page.triggered, timeout=100):
         main_window.action_discard_page.trigger()
-    assert_that(main_window.document_view.selectionModel().selectedRows(0), has_length(1))
-    assert_that(main_window.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
+    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0), has_length(1))
+    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(1)))

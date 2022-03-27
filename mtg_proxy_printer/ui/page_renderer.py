@@ -235,7 +235,6 @@ class PageRenderer(QGraphicsView):
 
     @pyqtSlot()
     def on_resize_event_triggered(self):
-        logger.debug("Resize event: Scaling the page view to fit.")
         self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
 
     @pyqtSlot()
