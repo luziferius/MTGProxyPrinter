@@ -21,7 +21,8 @@ import re
 import typing
 
 __all__ = [
-    "natural_sorted"
+    "natural_sorted",
+    "str_less_than",
 ]
 
 _NUMBER_GROUP_REG_EXP = re.compile(r"([0-9]+)")
@@ -47,3 +48,14 @@ def natural_sorted(unsorted: typing.Iterable[str], reverse: bool = False):
     Sort the given iterable in the way that humans expect.
     """
     return sorted(unsorted, key=alphanum_key, reverse=reverse)
+
+
+def str_less_than(first: str, other: str, /):
+    """
+    Compare two strings using natural sorting
+    :return: True, if the first string is less than the second, False otherwise
+    """
+    if first == other:
+        return False
+    s1, s2 = natural_sorted((first, other))
+    return s1 == first

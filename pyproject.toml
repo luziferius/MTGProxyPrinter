@@ -1,6 +1,122 @@
 [build-system]
 requires = [
-    "setuptools>=42",
-    "wheel"
+    "setuptools>=51, !=60.7.*, != 60.8.0",
+    "wheel",
+    "PyQt5",
+    "build",
+    "tox >= 3.8",
 ]
 build-backend = "setuptools.build_meta"
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+minversion = 3.18
+
+envlist = 
+    py3-{unit_tests, test_create_bundle}-{windows, linux}
+
+[testenv]
+skip_install = True
+
+
+platform =
+    linux: linux
+#    macos: darwin
+    windows: win32
+
+
+deps =
+    appdirs >= 1.4.3
+    build
+    PyQt5
+    ijson >= 3.1.0
+    pint
+    delegateto == 1.5
+    PyHamcrest >= 1.8.1
+
+build_deps =
+    setuptools>=51, !=60.7.*, != 60.8.0
+
+test_deps =
+    pytest
+    pytest-cov
+    pytest-timeout
+    pytest-qt >= 2.0
+    PyHamcrest >= 2.0.0
+    {[testenv]build_deps}
+
+
+[testenv:py3-unit_tests-{windows, linux}]
+
+# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
+# This also prevents unwanted user interactions with the widgets under test.
+# Offscreen rendering causes a segmentation fault on Windows, so simply show the GUI under test on Windows
+setenv =
+    linux: QT_QPA_PLATFORM = offscreen
+    PYTHONDEVMODE = 1
+
+deps =
+    {[testenv]deps}
+    {[testenv]test_deps}
+
+commands =
+    pytest tests
+
+[testenv:py3-visible_unit_tests]
+# Runs the unit tests with the default Qt platform plugin,
+# causing them to visibly spawn GUI windows for tests of view logic.
+# Can be used to inspect the actions and GUI states manually.
+# Not part of the environment list, so isn’t run automatically.
+
+deps =
+    {[testenv]deps}
+    {[testenv]test_deps}
+
+commands =
+    pytest tests
+
+# Pass DISPLAY, to allow rendering on screen. Also pass all other Qt-related environment variables,
+# like QT_SCREEN_SCALE_FACTORS
+passenv =
+    DISPLAY
+    QT_*
+    
+setenv = 
+   PYTHONDEVMODE = 1
+
+[testenv:py3-test_create_bundle-{windows, linux}]
+
+deps =
+    {[testenv]deps}
+    cx_Freeze >= 6.6
+    {[testenv]build_deps}
+
+# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
+# This also prevents unwanted user interactions with the widgets under test
+setenv =
+    linux: QT_QPA_PLATFORM = offscreen
+    PYTHONDEVMODE = 1
+
+commands =
+    python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
+    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
+
+
+
+[testenv:py3-package-{windows,linux}]
+
+deps =
+    {[testenv]deps}
+    cx_Freeze >= 6.6
+
+commands =
+    python -m build
+    python setup_cx_freeze.py build_exe
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
+    windows: python setup_cx_freeze.py bdist_msi --skip-build
+
+
+
+"""

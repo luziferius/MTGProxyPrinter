@@ -18,6 +18,8 @@ import collections
 import csv
 import typing
 
+from PyQt5.QtCore import QObject
+
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
@@ -36,10 +38,8 @@ class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
 
-    def parse_deck(self, deck_list: str,
-                   print_guessing: bool,
-                   print_guessing_prefer_already_downloaded: bool) -> ParsedDeck:
-        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
+    def parse_deck_without_translation(self, deck_list: str,
+                                       print_guessing: bool) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
         for source, line in self._read_lines_from_csv(deck_list):
@@ -124,8 +124,8 @@ class TappedOutCSVParser(BaseCSVParser):
     DIALECT_NAME = "tappedout_com"
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 include_maybe_board: bool = False, include_acquire_board: bool = False):
-        super(TappedOutCSVParser, self).__init__(card_db, image_db)
+                 include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
+        super(TappedOutCSVParser, self).__init__(card_db, image_db, parent)
         self.include_acquire_board = include_acquire_board
         self.include_maybe_board = include_maybe_board
 

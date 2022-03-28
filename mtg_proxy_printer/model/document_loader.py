@@ -1,0 +1,418 @@
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import collections
+import dataclasses
+import pathlib
+import socket
+import sqlite3
+import textwrap
+import typing
+import urllib.error
+
+import pint
+from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
+from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
+    has_properties, greater_than, is_
+
+try:
+    from hamcrest import contains_exactly
+except ImportError:
+    # Compatibility with PyHamcrest < 1.10
+    from hamcrest import contains as contains_exactly
+
+import mtg_proxy_printer.settings
+import mtg_proxy_printer.sqlite_helpers
+from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
+from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
+
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
+logger = get_logger(__name__)
+del get_logger
+
+__all__ = [
+    "DocumentSaveFormat",
+    "DocumentLoader",
+    "PageLayoutSettings"
+]
+
+DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
+
+
+@dataclasses.dataclass
+class PageLayoutSettings:
+    """Stores all page layout attributes, like paper size, margins and spacings"""
+    page_height: int = 0
+    page_width: int = 0
+    margin_top: int = 0
+    margin_bottom: int = 0
+    margin_left: int = 0
+    margin_right: int = 0
+    image_spacing_horizontal: int = 0
+    image_spacing_vertical: int = 0
+    draw_cut_markers: bool = False
+
+    def update_from_settings(self):
+        document_settings = mtg_proxy_printer.settings.settings["documents"]
+        self.page_height = document_settings.getint("paper-height-mm")
+        self.page_width = document_settings.getint("paper-width-mm")
+        self.margin_top = document_settings.getint("margin-top-mm")
+        self.margin_bottom = document_settings.getint("margin-bottom-mm")
+        self.margin_left = document_settings.getint("margin-left-mm")
+        self.margin_right = document_settings.getint("margin-right-mm")
+        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
+        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
+        self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
+
+    def compute_page_column_count(self) -> int:
+        """Returns the total number of card columns that fit on this page."""
+        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+
+        total_width -= margins
+        if total_width < IMAGE_WIDTH:
+            return 0
+        total_width -= IMAGE_WIDTH
+        cards = total_width / (IMAGE_WIDTH+spacing) + 1
+        return int(cards.to_tuple()[0])
+
+    def compute_page_row_count(self) -> int:
+        """Returns the total number of card rows that fit on this page."""
+        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
+        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
+        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+        total_height -= margins
+        if total_height < IMAGE_HEIGHT:
+            return 0
+        total_height -= IMAGE_HEIGHT
+        cards = total_height / (IMAGE_HEIGHT+spacing) + 1
+        return int(cards.to_tuple()[0])
+
+    def compute_page_card_capacity(self) -> int:
+        """Returns the total number of card images that fit on a single page."""
+        return self.compute_page_row_count() * self.compute_page_column_count()
+
+
+class DocumentLoader(QObject):
+    """
+    Implements asynchronous background document loading.
+    Loading a document can take a long time, if it includes downloading all card images and still takes a noticeable
+    time when the card images have to be loaded from a slow hard disk.
+
+    This class uses a QThread with a background worker to push that work off the GUI thread to keep the application
+    responsive during a loading process.
+    """
+
+    MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
+
+    loading_state_changed = pyqtSignal(bool)
+    unknown_scryfall_ids_found = pyqtSignal(int)
+    loading_file_failed = pyqtSignal(pathlib.Path, str)
+    # Emitted when downloading required images during the loading process failed due to network issues.
+    network_error_occurred = pyqtSignal(str)
+
+    class Worker(QObject):
+        """
+        This is the worker object that runs inside the DocumentLoader’s internal QThread.
+
+        It iterates over the loaded data and creates a stream of events that, when executed sequentially,
+        load the document. It does not directly edit the Document instance.
+        Events are created by simply emitting the defined Qt Signals. The DocumentLoader living in the GUI thread will
+        receive these and update the document living in the same thread accordingly.
+        This prevents issues with QObject instances getting parents assigned across threads.
+
+        Because the thread emits the signals after each long-running I/O process (image loading or downloading)
+        finished, processing the generated events in the GUI thread is fast.
+        """
+
+        # These signals are used to enqueue a stream of commands across thread boundaries.
+        new_page = pyqtSignal()
+        add_card = pyqtSignal(Card)
+        finished = pyqtSignal()
+        loading_file_failed = pyqtSignal(pathlib.Path, str)
+        document_clear_requested = pyqtSignal()
+        unknown_scryfall_ids_found = pyqtSignal(int)
+        loading_file_successful = pyqtSignal(pathlib.Path)
+        network_error_occurred = pyqtSignal(str)
+        request_blank_pixmap = pyqtSignal(Card)
+        document_settings_loaded = pyqtSignal(PageLayoutSettings)
+
+        def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
+            super(DocumentLoader.Worker, self).__init__(None)
+            self.card_db = card_db
+            self.image_db = image_db
+            # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
+            # That one lives in its own thread and runs asynchronously and is connected in a way that it adds loaded
+            # images to the document on its own, interfering with the loading process, in particular with emitting page
+            # breaks. Thus create a separate instance and use it synchronously inside this worker thread.
+            self.image_loader = ImageDownloader(image_db, self)
+            self.image_loader.download_begins.connect(image_db.card_download_starting)
+            self.image_loader.download_finished.connect(image_db.card_download_finished)
+            self.image_loader.download_progress.connect(image_db.card_download_progress)
+            self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
+            self.network_errors_during_load: typing.Counter[str] = collections.Counter()
+            self.finished.connect(self.propagate_errors_during_load)
+            self.document = document
+            self.save_path = pathlib.Path()
+            self.should_run: bool = True
+
+        def propagate_errors_during_load(self):
+            if error_count := sum(self.network_errors_during_load.values()):
+                self.network_error_occurred.emit(
+                    f"Error count: {error_count}. Most common error message:\n"
+                    f"{self.network_errors_during_load.most_common(1)[0][0]}"
+                )
+                self.network_errors_during_load.clear()
+
+        def on_network_error_occurred(self, card: Card, error: str):
+            card.image_file = self.image_db.blank_image
+            self.network_errors_during_load[error] += 1
+
+        def load_document(self):
+            self.should_run = True
+            try:
+                unknown_ids = self._load_document()
+            except AssertionError as e:
+                logger.exception(
+                    "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
+                self.loading_file_failed.emit(self.save_path, str(e))
+            else:
+                if unknown_ids:
+                    self.unknown_scryfall_ids_found.emit(unknown_ids)
+                self.loading_file_successful.emit(self.save_path)
+            finally:
+                self.finished.emit()
+
+        def _load_document(self) -> int:
+            card_data, page_settings = self._read_data_from_save_path(self.save_path)
+            self.document_clear_requested.emit()
+            self.document_settings_loaded.emit(page_settings)
+            logger.info("Start filling pages with cards from loaded data")
+            current_page = 1
+            unknown_ids = 0
+            for page_number, slot, scryfall_id, is_front in card_data:
+                if not self.should_run:
+                    logger.info("Cancel request received, stop processing the card list.")
+                    return unknown_ids
+                if current_page != page_number:
+                    current_page = page_number
+                    self.new_page.emit()
+                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+                if card is None:
+                    # If the save file was tampered with or the database used to save contained more cards than the
+                    # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
+                    unknown_ids += 1
+                    logger.info(f"Unknown ID found in document: {scryfall_id=}, {is_front=}")
+                    continue
+                try:
+                    self.image_loader.get_image_synchronous(card)
+                except urllib.error.URLError as e:
+                    self.on_network_error_occurred(card, str(e.reason))
+                except socket.timeout as e:
+                    self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
+                self.add_card.emit(card)
+            return unknown_ids
+
+        @staticmethod
+        def _read_data_from_save_path(save_file_path: pathlib.Path):
+            """
+            Reads the data from disk into a list.
+
+            :raises AssertionError: If the save file structure is invalid or contains invalid data.
+            """
+            logger.info(f"Reading data from save file {save_file_path}")
+
+            with mtg_proxy_printer.sqlite_helpers.open_database(
+                    save_file_path, "document-v4", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                user_version = DocumentLoader.Worker._validate_database_schema(db)
+                card_data = DocumentLoader.Worker._read_card_data_from_database(db, user_version)
+                settings = DocumentLoader.Worker._read_page_layout_data_from_database(db, user_version)
+            return card_data, settings
+
+        @staticmethod
+        def _read_card_data_from_database(db: sqlite3.Connection, user_version: int) -> DocumentSaveFormat:
+            card_data = []
+            if user_version == 2:
+                query = textwrap.dedent("""\
+                    SELECT page, slot, scryfall_id, 1 AS is_front
+                        FROM Card
+                        ORDER BY page ASC, slot ASC""")
+            elif user_version in {3, 4}:
+                query = textwrap.dedent("""\
+                    SELECT page, slot, scryfall_id, is_front
+                        FROM Card
+                        ORDER BY page ASC, slot ASC""")
+            else:
+                raise AssertionError(f"Unknown database schema version: {user_version}")
+            for row_number, row_data in enumerate(db.execute(query)):
+                assert_that(row_data, contains_exactly(
+                    all_of(instance_of(int), greater_than_or_equal_to(0)),
+                    all_of(instance_of(int), greater_than_or_equal_to(0)),
+                    all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
+                    is_in((0, 1))
+                ), f"Invalid data found in the save data at row {row_number}. Aborting")
+                page, slot, scryfall_id, is_front = row_data
+                card_data.append((page, slot, scryfall_id, bool(is_front)))
+            return card_data
+
+        @staticmethod
+        def _read_page_layout_data_from_database(db, user_version):
+            if user_version == 4:
+                assert_that(
+                    db.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
+                    contains_exactly(1),
+                )
+                document_settings_query = textwrap.dedent("""\
+                    SELECT page_height, page_width,
+                           margin_top, margin_bottom, margin_left, margin_right,
+                           image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
+                        FROM DocumentSettings
+                        WHERE rowid == 1
+                    """)
+                settings = PageLayoutSettings(*db.execute(document_settings_query).fetchone())
+                assert_that(
+                    settings,
+                    has_properties(
+                        page_height=all_of(instance_of(int), greater_than(0)),
+                        page_width=all_of(instance_of(int), greater_than(0)),
+                        margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                        draw_cut_markers=is_in((0, 1)),
+                    ),
+                    "Document settings contain invalid data or data types"
+                )
+                assert_that(
+                    settings.compute_page_card_capacity(),
+                    is_(greater_than_or_equal_to(1)),
+                    "Document settings invalid: At least one card has to fit on a page."
+                )
+                settings.draw_cut_markers = bool(settings.draw_cut_markers)
+            else:
+                settings = PageLayoutSettings()
+                settings.update_from_settings()
+            return settings
+
+        @staticmethod
+        def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
+            """
+            Validates the database schema of the user-provided file against a known-good schema.
+
+            :raises AssertionError: If the provided file contains an invalid schema
+            :returns: Database schema version
+            """
+            if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
+                raise AssertionError("Not an MTGProxyPrinter save file!")
+            user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
+            try:
+                db_known_good = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
+                    f"document-v{user_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
+            except FileNotFoundError as e:
+                raise AssertionError(f"Unknown save file version: {user_schema_version}") from e
+            tables_and_views_query = textwrap.dedent("""\
+                SELECT   s.type, s.name,
+                         p.cid AS column_id, p.name AS column_name, p.type AS column_type,
+                         p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
+                         p.pk AS column_primary_key_component
+                  FROM   sqlite_schema AS s
+                  JOIN   pragma_table_info(s.name) AS p
+                 WHERE   s.type IN ('table', 'view')
+                   AND   s.name NOT LIKE 'sqlite_%'
+                ORDER BY s.name, column_id
+                ;""")
+            indices_query = textwrap.dedent("""\
+                -- Note: Also include the “sqlite_autoindex*” indices that are
+                -- automatically created for UNIQUE and PRIMARY KEY constraints.
+                SELECT   s.name AS index_name,
+                         p.seqno AS index_column_sequence_number,
+                         p.cid AS column_id,
+                         p.name AS column_name
+                  FROM   sqlite_schema AS s
+                  JOIN   pragma_index_info(s.name) AS p
+                 WHERE   s.type = 'index'
+                ORDER BY index_name ASC, index_column_sequence_number ASC
+                ;""")
+            with db_known_good:
+                assert_that(
+                    db_unsafe.execute(tables_and_views_query).fetchall(),
+                    contains_exactly(*db_known_good.execute(tables_and_views_query).fetchall()),
+                    "Given save file inconsistent: Unexpected tables or views")
+                assert_that(
+                    db_unsafe.execute(indices_query).fetchall(),
+                    contains_exactly(*db_known_good.execute(indices_query).fetchall()),
+                    "Given save file inconsistent: Unexpected indices")
+            return user_schema_version
+
+        def cancel_running_operations(self):
+            self.should_run = False
+            if self.image_loader.currently_opened_file is not None:
+                # Force aborting the download by closing the input stream
+                self.image_loader.currently_opened_file.close()
+
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
+        super(DocumentLoader, self).__init__(None)
+        self.document = document
+        self.worker_thread = QThread()
+        self.worker = self.Worker(card_db, image_db, document)
+        self.worker.moveToThread(self.worker_thread)
+        self.worker.document_clear_requested.connect(self.document.clear)
+        self.worker.new_page.connect(self.document.add_page)
+        self.worker.add_card.connect(self._on_add_card)
+        self.worker.document_settings_loaded.connect(self.on_document_settings_loaded)
+        # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
+        self.worker.loading_file_failed.connect(self.loading_file_failed)
+        self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
+        self.worker.loading_file_successful.connect(self.on_loading_file_successful)
+        self.worker.network_error_occurred.connect(self.network_error_occurred)
+        self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
+        self.worker_thread.started.connect(self.worker.load_document)
+
+    @pyqtSlot(PageLayoutSettings)
+    def on_document_settings_loaded(self, settings: PageLayoutSettings):
+        self.document.page_layout = settings
+        self.document.on_page_layout_updated()
+
+    def is_running(self) -> bool:
+        return self.worker_thread.isRunning()
+
+    @pyqtSlot(Card)
+    def _on_add_card(self, card: Card):
+        self.document.add_card_to_page(len(self.document.pages) - 1, card)
+
+    def load_document(self, save_file_path: pathlib.Path):
+        logger.info(f"Loading document from {save_file_path}")
+        self.loading_state_changed.emit(True)
+        self.worker.save_path = save_file_path
+        self.worker_thread.start()
+
+    def on_loading_file_successful(self, file_path: pathlib.Path):
+        self.document.save_file_path = file_path
+
+    def cancel_running_operations(self):
+        """
+        Can be called to cancel loading a document.
+        This forces the worker thread to abort any running image downloads.
+        """
+        if not self.worker_thread.isRunning():
+            return
+        self.worker.cancel_running_operations()

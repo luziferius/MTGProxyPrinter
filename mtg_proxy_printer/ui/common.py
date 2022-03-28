@@ -19,10 +19,10 @@ from PyQt5.QtCore import QFile, QUrl, QObject
 from PyQt5.QtWidgets import QLabel
 from PyQt5 import uic
 
-from mtg_proxy_printer.meta_data import PROGRAMNAME
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+
 __all__ = [
     "RESOURCE_PATH_PREFIX",
     "ICON_PATH_PREFIX",
@@ -32,15 +32,9 @@ __all__ = [
     "inherits_from_ui_file_with_name",
 ]
 
-
 try:
     import mtg_proxy_printer.ui.compiled_resources
 except ModuleNotFoundError:
-    import warnings
-    # No compiled resource module found. Load bare files from disk instead.
-    warn_msg = f"Compiled Qt resources file not found. If {PROGRAMNAME} is launched directly from the source " \
-               "directory, this is expected and harmless. If not, this indicates a failure in the resource compilation."
-    warnings.warn(warn_msg)
     RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources")
     ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources" / "icons")
     HAS_COMPILED_RESOURCES = False

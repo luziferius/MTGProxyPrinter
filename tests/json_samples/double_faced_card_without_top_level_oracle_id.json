@@ -1,0 +1,154 @@
+{
+  "object": "card",
+  "id": "087c3a0d-c710-4451-989e-596b55352184",
+  "multiverse_ids": [],
+  "tcgplayer_id": 259215,
+  "name": "Stitch in Time // Stitch in Time",
+  "lang": "en",
+  "released_at": "2022-04-22",
+  "uri": "https://api.scryfall.com/cards/087c3a0d-c710-4451-989e-596b55352184",
+  "scryfall_uri": "https://scryfall.com/card/sld/382/stitch-in-time-stitch-in-time?utm_source=api",
+  "layout": "reversible_card",
+  "highres_image": false,
+  "image_status": "lowres",
+  "color_identity": [
+    "R",
+    "U"
+  ],
+  "keywords": [],
+  "card_faces": [
+    {
+      "object": "card_face",
+      "oracle_id": "59b2a90e-542f-4fb0-b290-ac79dc2892a4",
+      "layout": "normal",
+      "name": "Stitch in Time",
+      "mana_cost": "{1}{U}{R}",
+      "cmc": 3,
+      "type_line": "Sorcery",
+      "oracle_text": "Flip a coin. If you win the flip, take an extra turn after this one.",
+      "colors": [
+        "R",
+        "U"
+      ],
+      "flavor_text": "\"I believe the spell to have a 50% failure rate. I must be careful, lest I lose my sanity to the unbending force of pure, untempered time.\"\n—Journal of Sigbar the Cautious",
+      "artist": "Micha Huigen",
+      "artist_id": "e89041e3-0b4b-4df1-9900-fdeb015e0a71",
+      "illustration_id": "80541dd1-39bd-4707-8fcb-fd5b1c812e92",
+      "image_uris": {
+        "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835",
+        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835"
+      }
+    },
+    {
+      "object": "card_face",
+      "oracle_id": "59b2a90e-542f-4fb0-b290-ac79dc2892a4",
+      "layout": "normal",
+      "name": "Stitch in Time",
+      "flavor_name": "",
+      "mana_cost": "{1}{U}{R}",
+      "cmc": 3,
+      "type_line": "Sorcery",
+      "oracle_text": "Flip a coin. If you win the flip, take an extra turn after this one.",
+      "colors": [
+        "R",
+        "U"
+      ],
+      "flavor_text": "\"According to the strange journal I found, the spell succeeds half the time. Why, if I cast it twice, that's a guaranteed success!\"\n—Rantings of Sigbar the Wild",
+      "artist": "Micha Huigen",
+      "artist_id": "e89041e3-0b4b-4df1-9900-fdeb015e0a71",
+      "illustration_id": "4219d608-ebde-41b7-b9d8-8c2e08663185",
+      "image_uris": {
+        "small": "https://c1.scryfall.com/file/scryfall-cards/small/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "large": "https://c1.scryfall.com/file/scryfall-cards/large/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "png": "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835",
+        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
+        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835"
+      }
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "4d92a8a7-ccb0-437d-abdc-9d70fc5ed672",
+  "set": "sld",
+  "set_name": "Secret Lair Drop",
+  "set_type": "box",
+  "set_uri": "https://api.scryfall.com/sets/4d92a8a7-ccb0-437d-abdc-9d70fc5ed672",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Asld&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/sld?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/087c3a0d-c710-4451-989e-596b55352184/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A59b2a90e-542f-4fb0-b290-ac79dc2892a4&unique=prints",
+  "collector_number": "382",
+  "digital": false,
+  "rarity": "rare",
+  "artist": "Micha Huigen",
+  "artist_ids": [
+    "e89041e3-0b4b-4df1-9900-fdeb015e0a71"
+  ],
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "inverted"
+  ],
+  "security_stamp": "oval",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "edhrec_rank": 4293,
+  "prices": {
+    "usd": null,
+    "usd_foil": "20.00",
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Stitch+in+Time+%2F%2F+Stitch+in+Time&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Stitch+in+Time+%2F%2F+Stitch+in+Time&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Stitch+in+Time+%2F%2F+Stitch+in+Time",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Stitch+in+Time+%2F%2F+Stitch+in+Time"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=259215&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Stitch+in+Time+%2F%2F+Stitch+in+Time&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Stitch+in+Time+%2F%2F+Stitch+in+Time&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

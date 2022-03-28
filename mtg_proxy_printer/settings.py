@@ -19,6 +19,7 @@ import pathlib
 import re
 import typing
 
+import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 
 __all__ = [
@@ -27,16 +28,31 @@ __all__ = [
     "read_settings_from_file",
     "write_settings_to_file",
     "validate_settings",
+    "update_version_string",
 ]
 
-config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
+
+config_file_path = pathlib.Path(mtg_proxy_printer.app_dirs.data_directories.user_config_dir, "MTGProxyPrinter.ini")
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
+# Support three-valued boolean logic by adding values that parse to None, instead of True/False.
+# This will be used to store “unset” boolean settings.
+configparser.ConfigParser.BOOLEAN_STATES.update({
+    "-1": None,
+    "unknown": None,
+    "none": None,
+})
 
 # TODO: Single-source these properties somewhere. The Document class holds similar constants.
 CARD_WIDTH = 63
 CARD_HEIGHT = 88
 
+VERSION_CHECK_RE = re.compile(
+    # sourced from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+    r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+)
 
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
@@ -62,14 +78,15 @@ DEFAULT_SETTINGS["downloads"] = {
     "download-funny-cards": "True",
     "download-non-traditional-cards": "True",
     "download-token": "True",
+    "download-digital-cards": "True",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",
     "paper-width-mm": "210",
     "margin-top-mm": "10",
     "margin-bottom-mm": "10",
-    "margin-left-mm": "10",
-    "margin-right-mm": "10",
+    "margin-left-mm": "7",
+    "margin-right-mm": "7",
     "image-spacing-horizontal-mm": "0",
     "image-spacing-vertical-mm": "0",
     "print-cut-marker": "False",
@@ -80,10 +97,10 @@ DEFAULT_SETTINGS["default-save-paths"] = {
     "pdf-export-path": "",
 }
 DEFAULT_SETTINGS["gui"] = {
-    "search-widget-layout": "horizontal",
+    "central-widget-layout": "columnar",
     "show-toolbar": "True",
 }
-VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
+VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
@@ -93,6 +110,12 @@ VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
     "enable-guessing": "False",
     "prefer-already-downloaded": "True",
+    "always-translate-deck-lists": "False",
+}
+DEFAULT_SETTINGS["application"] = {
+    "last-used-version": mtg_proxy_printer.meta_data.__version__,
+    "check-for-application-updates": "None",
+    "check-for-card-data-updates": "None",
 }
 
 
@@ -103,6 +126,7 @@ def read_settings_from_file():
         settings.read_dict(DEFAULT_SETTINGS)
     else:
         settings.read(config_file_path)
+        migrate_settings(settings)
         read_sections = set(settings.sections())
         known_sections = set(DEFAULT_SETTINGS.sections())
         # Synchronize sections
@@ -129,10 +153,20 @@ def write_settings_to_file():
         settings.write(config_file)
 
 
+def update_version_string():
+    settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
+
+
 def validate_settings(read_settings: configparser.ConfigParser):
+    """
+    Called after reading the settings from disk. Ensures that all settings contain valid values and expected types.
+    I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
+    non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
+    """
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
+    _validate_application_section(read_settings["application"])
     _validate_gui_section(read_settings["gui"])
     _validate_debug_section(read_settings["debug"])
     _validate_print_guessing_section(read_settings["print-guessing"])
@@ -151,7 +185,7 @@ def _validate_images_section(section: configparser.SectionProxy):
     language = section["preferred-language"]
     if not re.fullmatch(r"[a-z]{2}", language):
         # Only syntactic validation: Language contains a string of exactly two lower case ascii letters
-        section["preferred-language"] = defaults["preferred-language"]
+        _restore_default(section, defaults, "preferred-language")
 
 
 def _validate_documents_section(section: configparser.SectionProxy):
@@ -193,9 +227,17 @@ def _validate_documents_section(section: configparser.SectionProxy):
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 
 
+def _validate_application_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["application"]
+    if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
+        section["last-used-version"] = defaults["last-used-version"]
+    for option in ("check-for-application-updates", "check-for-card-data-updates"):
+        _validate_three_valued_boolean(section, defaults, option)
+
+
 def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
-    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
+    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
@@ -214,9 +256,17 @@ def _validate_print_guessing_section(section: configparser.SectionProxy):
 
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
+        if section.getboolean(key) is None:
+            raise ValueError
+    except ValueError:
+        _restore_default(section, defaults, key)
+
+
+def _validate_three_valued_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
         section.getboolean(key)
     except ValueError:
-        section[key] = defaults[key]
+        _restore_default(section, defaults, key)
 
 
 def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
@@ -224,7 +274,7 @@ def _validate_non_negative_int(section: configparser.SectionProxy, defaults: con
         if section.getint(key) < 0:
             raise ValueError
     except ValueError:
-        section[key] = defaults[key]
+        _restore_default(section, defaults, key)
 
 
 def _validate_string_is_in_set(
@@ -232,7 +282,27 @@ def _validate_string_is_in_set(
         valid_options: typing.Set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
-        section[key] = defaults[key]
+        _restore_default(section, defaults, key)
+
+
+def _restore_default(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    section[key] = defaults[key]
+
+
+def migrate_settings(settings: configparser.ConfigParser):
+    _migrate_layout_setting(settings)
+
+
+def _migrate_layout_setting(settings: configparser.ConfigParser):
+    try:
+        gui_section = settings["gui"]
+        layout = gui_section["search-widget-layout"]
+    except KeyError:
+        return
+    else:
+        if layout == "vertical":
+            layout = "columnar"
+        gui_section["central-widget-layout"] = layout
 
 
 # Read the settings from file during module import

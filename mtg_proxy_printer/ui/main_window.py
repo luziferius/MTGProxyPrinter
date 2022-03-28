@@ -16,73 +16,80 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel, QModelIndex, Qt, QItemSelectionModel, QTimer
+
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
 
-from mtg_proxy_printer.argument_parser import Namespace
-import mtg_proxy_printer.card_info_downloader
-import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.model.imagedb
-import mtg_proxy_printer.model.document
+from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.model.document import Document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.current_page_view import CurrentPageView
-from mtg_proxy_printer.ui.document_view import DocumentView
-from mtg_proxy_printer.ui.add_card import AddCardWidget
+from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, get_configured_central_widget_layout_class
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog
+    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
-layout = mtg_proxy_printer.settings.settings["gui"]["search-widget-layout"]
 __all__ = [
     "MainWindow",
 ]
 
 
-class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_window")):
+class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
     should_update_languages = pyqtSignal()
-    current_page_changed = pyqtSignal(mtg_proxy_printer.model.document.Page)
     window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
     loading_state_changed = pyqtSignal(bool)
 
-    def __init__(self, arguments: Namespace, card_db: mtg_proxy_printer.model.carddb.CardDatabase, *args, **kwargs):
+    def __init__(self,
+                 card_db: CardDatabase,
+                 card_info_downloader: CardInfoDownloader,
+                 image_db: ImageDatabase,
+                 document: Document,
+                 language_model: QStringListModel,
+                 *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        logger.info(f"Creating {self.__class__.__name__} instance using the {layout} layout.")
+        logger.info(f"Creating {self.__class__.__name__} instance.")
+        self.card_data_download_in_progress = False
         self.setupUi(self)
-        self.about_dialog = AboutMTGProxyPrinterDialog(self)
+        self.about_dialog = self._create_about_dialog()
         self.progress_bar = self._create_progress_bar()
-        self.card_database: mtg_proxy_printer.model.carddb.CardDatabase = card_db
-        self.image_db = self._create_image_database()
-        self.document = self._create_document_instance(arguments)
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
-        self.language_model = QStringListModel([preferred_language], self)
-        self.card_data_downloader = self._create_card_data_downloader()
-        self.action_compact_document.triggered.connect(self.document.compact_pages)
-        self.page_view: CurrentPageView
-        self.window_size_changed.connect(self.page_view.window_size_changed)
-        self.current_page_changed.connect(self.page_view.current_page_changed)
+        self.card_database = card_db
+        self.image_db = image_db
+        self._connect_image_database_signals(image_db)
+        self.document = document
+        self._connect_document_signals(document)
+        self.language_model = language_model
+        self.card_data_downloader = card_info_downloader
+        self._connect_card_info_downloader_signals(card_info_downloader)
+        self.central_widget: CentralWidgetTypes
+        self._setup_central_widget()
         self._setup_loading_state_connections()
-        self._setup_add_card_widget()
-        self._setup_document_view()
-        self.action_new_page.triggered.connect(self.document.add_page)
-        self.should_update_languages.connect(self.update_language_model)
-        self.should_update_languages.connect(self.add_card_widget.update_selected_language)
-        self.settings_changed.connect(self.add_card_widget.update_selected_language)
-        self.settings_changed.connect(self.document.apply_settings)
-        self.settings_changed.connect(self.page_view.settings_changed)
+        self.should_update_languages.connect(
+            lambda: self.language_model.setStringList(self.card_database.get_all_languages())
+        )
+        self.should_update_languages.connect(self.central_widget.add_card_widget.update_selected_language)
+        self.settings_changed.connect(document.apply_settings)
+        self.settings_changed.connect(self.central_widget.settings_changed)
         self.settings_changed.connect(self.offer_re_downloading_card_database)
         self.action_show_toolbar: QAction
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_about_dialog(self) -> AboutMTGProxyPrinterDialog:
+        about_dialog = AboutMTGProxyPrinterDialog(self)
+        self.action_show_about_dialog.triggered.connect(about_dialog.show_about)
+        self.action_show_changelog.triggered.connect(about_dialog.show_changelog)
+        return about_dialog
 
     def _setup_platform_dependent_default_shortcuts(self):
         actions_with_shortcuts: typing.List[typing.Tuple[QAction, QKeySequence.StandardKey]] = [
@@ -97,47 +104,51 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
 
+    def _setup_central_widget(self):
+        central_widget_class = get_configured_central_widget_layout_class()
+        logger.debug(f"Using central widget class {central_widget_class.__name__}")
+        self.central_widget: CentralWidgetTypes
+        self.central_widget = central_widget_class(self)
+        self.setCentralWidget(self.central_widget)
+        self.central_widget.set_data(self.document, self.card_database, self.image_db)
+        self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
+        self.window_size_changed.connect(self.central_widget.window_size_changed)
+
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
 
-    def _create_document_instance(self, args: Namespace):
-        document = mtg_proxy_printer.model.document.Document(self.card_database, self.image_db, self)
-        document.document_cleared.connect(self._select_first_page)
+    def _connect_document_signals(self, document: Document):
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
-        self.current_page_changed.connect(document.on_currently_edited_page_changed)
+        self.action_new_page.triggered.connect(document.add_page)
         self.action_new_document.triggered.connect(document.clear_all_data)
-        self.image_db.add_card.connect(document.add_card)
-        if args.file is not None:
-            if args.file.is_file():
-                # Wait until after __init__ finished and the main loop starts
-                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
-                logger.info(f'Enqueued loading of document "{args.file}"')
-            elif args.file.exists():
-                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
-            else:
-                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
-        return document
+        self.action_compact_document.triggered.connect(document.compact_pages)
 
-    def _create_card_data_downloader(self) -> mtg_proxy_printer.card_info_downloader.CardInfoDownloader:
-        downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_database)
+    def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
+        # Do not connect the card_info_downloader.working_state_changed
+        # signal to not re-enable the action when completed. This action in particular should remain disabled.
+        downloader.download_begins.connect(
+            lambda: self.action_download_card_data.setDisabled(True)
+        )
+        downloader.download_finished.connect(lambda: setattr(self, "card_data_download_in_progress", False))
+        self.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.download_finished.connect(self.should_update_languages)
-        downloader.download_finished.connect(self.update_language_model)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.progress_bar.hide)
         downloader.working_state_changed.connect(self.loading_state_changed)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
-        return downloader
+        downloader.other_error_occurred.connect(self.on_error_occurred)
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
         return [
             self.action_new_document,
             self.action_save_as,
             self.action_save_document,
+            self.action_edit_document_settings,
             self.action_compact_document,
             self.action_load_document,
             self.action_print,
@@ -146,37 +157,23 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             self.action_import_deck_list,
             self.action_new_page,
             self.action_discard_page,
-            self.add_card_widget,
             self.action_show_settings,
             self.action_cleanup_local_image_cache,
-            self.page_view.delete_selected_images_button,
+            self.central_widget,
         ]
 
-    def _create_image_database(self):
-        image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+    def _connect_image_database_signals(self, image_db: ImageDatabase):
         image_db.card_download_starting.connect(self.show_progress_bar)
         image_db.card_download_finished.connect(self.progress_bar.hide)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
-        return image_db
 
     def _create_progress_bar(self):
         progress_bar = QProgressBar(self)
         progress_bar.hide()
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
-
-    def _setup_add_card_widget(self):
-        self.add_card_widget: AddCardWidget
-        self.add_card_widget.set_card_database(self.card_database)
-        self.add_card_widget.card_added.connect(self.image_db.get_image_asynchronous)
-
-    def _setup_document_view(self):
-        self.document_view: DocumentView
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.on_selected_page_changed)
-        self._select_first_page()
 
     def offer_re_downloading_card_database(self):
         settings_changed = self.card_database.check_if_download_settings_changed()
@@ -188,15 +185,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
                 "If you decline, you can do this later using the Settings menu.",
                 QMessageBox.Yes | QMessageBox.No
                 ) == QMessageBox.Yes:
-            self.on_action_download_card_data_triggered()
-
-    @pyqtSlot()
-    def _select_first_page(self):
-        old_selection = self.document_view.selectionModel().currentIndex()
-        self.document_view.selectionModel().select(self.document.createIndex(0, 0), QItemSelectionModel.Select)
-        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
-        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(self.document.createIndex(0, 0), old_selection)
+            self.action_download_card_data.trigger()
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)
@@ -206,14 +195,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         super(MainWindow, self).showEvent(event)
         self.window_size_changed.emit()
 
-    @pyqtSlot()
-    def update_language_model(self):
-        self.language_model.setStringList(self.card_database.get_all_languages())
-
     def closeEvent(self, event: QCloseEvent):
         """
         This function is automatically called when the window is closed using the close [X] button in the window
-        decorations or by right clicking in the system window list and using the close action, or similar ways to close
+        decorations or by right-clicking in the system window list and using the close action, or similar ways to close
         the window.
         Just ignore this event and simulate that the user used action_quit instead.
 
@@ -223,22 +208,27 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
         # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.triggered.emit()
+        self.action_quit.trigger()
 
     @pyqtSlot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
         # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
-        logger.debug("Quit action confirmed. Exiting…")
+        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
         self.card_data_downloader.cancel_running_operations()
+        self.card_data_downloader.stop_worker_thread()
+        self.document.loader.cancel_running_operations()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+
         QApplication.instance().shutdown()
+
+    def on_action_download_card_data_triggered(self):
+        self.card_data_download_in_progress = True
 
     @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
@@ -249,7 +239,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
     @pyqtSlot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
-        wizard = DeckImportWizard(self.card_database, self.image_db, parent=self)
+        wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
         wizard.clear_document.connect(self.document.clear_all_data)
         wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
         wizard.show()
@@ -285,6 +275,17 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             f"Check your internet connection. Reported error message:\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
+        if self.card_data_download_in_progress:
+            self.action_download_card_data.setEnabled(True)
+            self.card_data_download_in_progress = False
+
+    def on_error_occurred(self, message: str):
+        QMessageBox.critical(
+            self, "Error",
+            f"Operation failed, because an internal error occurred.\n"
+            f"Reported error message:\n{message}",
+            QMessageBox.Ok, QMessageBox.Ok)
+        self.loading_state_changed.emit(False)
 
     def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
@@ -315,72 +316,47 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
         if should_download:
             self.action_download_card_data.trigger()
 
-    @pyqtSlot()
-    def on_action_download_card_data_triggered(self):
-        logger.info(f"User downloads the card data from Scryfall.")
-        self.action_download_card_data.setDisabled(True)
-        self.card_data_downloader.populate_database()
-
     @pyqtSlot(int)
     def show_progress_bar(self, expected_total_item_count: int):
         self.progress_bar.reset()
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
-    @pyqtSlot(QModelIndex)
-    def on_selected_page_changed(self, selected: QModelIndex):
-        if selected.isValid():
-            new_page: mtg_proxy_printer.model.document.Page = selected.data(Qt.EditRole)
-            self.current_page_changed.emit(new_page)
-
-    @pyqtSlot()
-    def on_action_discard_page_triggered(self):
-        self.document_view: DocumentView
-        to_be_deleted = self.document_view.selectedIndexes()
-        self.document.remove_pages(to_be_deleted)
-        new_row_selection = self.document.createIndex(
-            min(to_be_deleted[0].row(), self.document.rowCount()-1),
-            0
-        )
-        old_selection = self.document_view.selectionModel().currentIndex()
-        self.document_view.selectionModel().select(
-            new_row_selection, QItemSelectionModel.ClearAndSelect)
-        # Programmatically selecting the first page in the document seems to not emit this signal, like it happens
-        # when the user clicks on one. So manually emit this signal to properly initialize the page_view state.
-        self.document_view.selectionModel().currentChanged.emit(new_row_selection, old_selection)
-
     @pyqtSlot()
     def on_action_save_document_triggered(self):
         logger.debug("User clicked on Save")
-        if self.document.file_path is None:
+        if self.document.save_file_path is None:
             logger.debug("No save file path set. Call 'Save as' instead.")
-            self.action_save_as.triggered.emit()
+            self.action_save_as.trigger()
         else:
             logger.debug("About to save the document")
             self.document.save_to_disk()
             logger.debug("Saved.")
 
     @pyqtSlot()
+    def on_action_edit_document_settings_triggered(self):
+        logger.info("User wants to edit the document settings. Showing the editor dialog")
+        dialog = DocumentSettingsDialog(self.document, self)
+        dialog.exec_()
+
+    @pyqtSlot()
     def on_action_save_as_triggered(self):
-        dialog = SaveDocumentAsDialog(self, self.document)
+        dialog = SaveDocumentAsDialog(self.document, self)
         dialog.exec_()
 
     @pyqtSlot()
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
-            self._select_first_page()
+            self.central_widget.select_first_page()
 
-    @pyqtSlot()
-    def on_action_show_about_dialog_triggered(self):
-        self.about_dialog.show()
-
-    def on_document_loading_failed(self, failed_path: pathlib.Path):
+    def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
         QMessageBox.critical(
             self, "Document loading failed",
             f"Loading file \"{failed_path}\" failed. The file was not recognized as an "
             f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
-            f"\"{self.action_import_deck_list.text()}\" function instead.",
+            f"\"{self.action_import_deck_list.text()}\" function instead.\n"
+            f"Reported failure reason: {reason}",
             QMessageBox.Ok, QMessageBox.Ok
         )
 
@@ -392,3 +368,54 @@ class MainWindow(*inherits_from_ui_file_with_name(f"{layout}_search_layout/main_
             f"data may be outdated or the document was created using a less restrictive download filter.",
             QMessageBox.Ok, QMessageBox.Ok
         )
+
+    def show_application_update_available_message_box(self, newer_version: str):
+        QMessageBox.information(
+            self, "Update available",
+            f"An application update is available: Version {newer_version}\n\n"
+            f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.",
+            QMessageBox.Ok, QMessageBox.Ok
+        )
+
+    def show_card_data_update_available_message_box(self, estimated_card_count: int):
+        if QMessageBox.question(
+                    self, "New card data available",
+                    f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                ) == QMessageBox.Yes:
+            self.action_download_card_data.trigger()
+        else:
+            # If the user declines to perform the update now, allow them to perform it later by enabling the action.
+            self.action_download_card_data.setEnabled(True)
+
+    def ask_user_about_application_update_policy(self):
+        """Executed on start when the application update policy setting is set to None, the default value."""
+        name = mtg_proxy_printer.meta_data.PROGRAMNAME
+        self._ask_user_about_update_policy(
+            title="Check for application updates?",
+            question=f"Automatically check for application updates whenever you start {name}?",
+            logger_message="Application update policy set.",
+            settings_key="check-for-application-updates"
+        )
+
+    def ask_user_about_card_data_update_policy(self):
+        """Executed on start when the card data update policy setting is set to None, the default value."""
+        name = mtg_proxy_printer.meta_data.PROGRAMNAME
+        self._ask_user_about_update_policy(
+            title="Check for card data updates?",
+            question=f"Automatically check for card data updates on Scryfall whenever you start {name}?",
+            logger_message="Card data update policy set.",
+            settings_key="check-for-card-data-updates"
+        )
+
+    def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str):
+        if (result := QMessageBox.question(
+                self, title,
+                f"{question}\nYou can change this later in the settings.",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+                )) in {QMessageBox.Yes, QMessageBox.No}:
+            logger.info(f"{logger_message} User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
+            mtg_proxy_printer.settings.settings["application"][settings_key] = str(
+                result == QMessageBox.Yes)
+            mtg_proxy_printer.settings.write_settings_to_file()
+            logger.debug("Written settings to disk.")
