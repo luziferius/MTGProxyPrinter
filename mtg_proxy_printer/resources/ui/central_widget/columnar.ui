@@ -28,7 +28,7 @@
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>8</horstretch>
-       <verstretch>10</verstretch>
+       <verstretch>1</verstretch>
       </sizepolicy>
      </property>
      <property name="acceptDrops">
@@ -43,8 +43,8 @@
     <widget class="QTableView" name="page_card_table_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>5</horstretch>
-       <verstretch>10</verstretch>
+       <horstretch>8</horstretch>
+       <verstretch>1</verstretch>
       </sizepolicy>
      </property>
      <property name="lineWidth">
@@ -100,8 +100,8 @@
     <widget class="VerticalAddCardWidget" name="add_card_widget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>7</horstretch>
-       <verstretch>0</verstretch>
+       <horstretch>6</horstretch>
+       <verstretch>1</verstretch>
       </sizepolicy>
      </property>
     </widget>
@@ -110,8 +110,8 @@
     <widget class="QListView" name="document_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>5</horstretch>
-       <verstretch>0</verstretch>
+       <horstretch>4</horstretch>
+       <verstretch>1</verstretch>
       </sizepolicy>
      </property>
      <property name="alternatingRowColors">
