@@ -1,0 +1,101 @@
+# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+from hamcrest import *
+import pytest
+from pytestqt.qtbot import QtBot
+
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.card_list import CardListModel
+
+from tests.helpers import fill_card_database_with_json_cards
+
+OVERSIZED_ID = "650722b4-d72b-4745-a1a5-00a34836282b"
+REGULAR_ID = "0000579f-7b35-4ed3-b44c-db2a538066fe"
+
+
+def _populate_card_db_and_create_model(card_db: CardDatabase) -> CardListModel:
+    fill_card_database_with_json_cards(card_db, ["oversized_card", "regular_english_card"])
+    model = CardListModel(card_db)
+    return model
+
+
+@pytest.mark.parametrize("count", [1, 2, 10])
+def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase, count: int):
+    model = _populate_card_db_and_create_model(card_db)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == count)):
+        model.add_cards({oversized: count})
+    assert_that(model.oversized_card_count, is_(equal_to(count)))
+
+
+def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(card_db)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    model.add_cards({oversized: 10})
+    assert_that(model.oversized_card_count, is_(equal_to(10)))
+
+    with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == 8)):
+        model.remove_cards([model.index(0, 0), model.index(1, 0)])
+    assert_that(model.oversized_card_count, is_(equal_to(8)))
+
+
+def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(card_db)
+    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    regular_data = CardIdentificationData(
+        regular.language, scryfall_id=regular.scryfall_id, is_front=regular.is_front)
+
+    with qtbot.wait_signal(model.oversized_card_count_changed, timeout=100, check_params_cb=(lambda value: value == 1)):
+        model.add_cards({oversized: 1, regular: 1})
+    oversized_index = model.index(0, 0)
+    regular_index = model.index(1, 0)
+    assert_that(model.cards[0].is_oversized, is_(True))
+    assert_that(model.cards[oversized_index.row()].is_oversized, is_(True))
+    assert_that(model.cards[1].is_oversized, is_(False))
+    assert_that(model.cards[regular_index.row()].is_oversized, is_(False))
+    assert_that(model.oversized_card_count, is_(1))
+
+    with qtbot.wait_signal(model.oversized_card_count_changed, timeout=100):
+        assert_that(model._request_replacement_card(oversized_index, regular_data), is_(True))
+    assert_that(model.cards[0].is_oversized, is_(False))
+    assert_that(model.cards[1].is_oversized, is_(False))
+    assert_that(model.oversized_card_count, is_(0))
+
+
+def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(card_db)
+    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    oversized_data = CardIdentificationData(
+        oversized.language, scryfall_id=oversized.scryfall_id, is_front=oversized.is_front)
+
+    with qtbot.wait_signal(model.oversized_card_count_changed, timeout=100, check_params_cb=(lambda value: value == 1)):
+        model.add_cards({oversized: 1, regular: 1})
+
+    oversized_index = model.index(0, 0)
+    regular_index = model.index(1, 0)
+    assert_that(model.cards[0].is_oversized, is_(True))
+    assert_that(model.cards[oversized_index.row()].is_oversized, is_(True))
+    assert_that(model.cards[1].is_oversized, is_(False))
+    assert_that(model.cards[regular_index.row()].is_oversized, is_(False))
+    assert_that(model.oversized_card_count, is_(1))
+
+    with qtbot.wait_signal(model.oversized_card_count_changed, timeout=100):
+        assert_that(model._request_replacement_card(regular_index, oversized_data), is_(True))
+    assert_that(model.cards[0].is_oversized, is_(True))
+    assert_that(model.cards[1].is_oversized, is_(True))
+    assert_that(model.oversized_card_count, is_(2))

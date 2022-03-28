@@ -1,5 +1,128 @@
 # Changelog
 
+# Next version (in development)
+
+## Implemented features
+
+- Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
+  the stored settings overwrite the default values set in the application settings.
+  - The Edit menu in the main window has a new option to edit these document settings for the current document only.
+  - Older save files do not contain the relevant data and have to be saved explicitly to perform a save file migration.
+- Added new card download filter that allows excluding digital cards.
+  The new filter matches both digital “reprints” of existing cards
+  (for example Magic Online-exclusive promotional card versions)
+  and digital-only cards that aren’t available as physical cards at all (like the Magic Arena Alchemy cards).
+- Added a new user interface layout that uses tabs to only show one part of the main window at a time.
+  This is mainly useful for small and high-DPI monitors in portrait mode, i.e. when using 
+  a monitor with an aspect ratio of 9:16.
+
+## Changed features
+
+- Smarter printing selection when the option to prefer already downloaded printings is enabled:
+  MTGProxyPrinter will now prefer printings that were printed/exported more often over less often used printings.
+  Uses image usage information already available since version 0.9.0
+- Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
+  because it shows the main window content in four columns.
+
+## Fixed issues
+
+- MTGProxyPrinter now validates the document save file format when loading documents
+  to prevent Denial of Service attacks via maliciously crafted save files.
+- It is now possible to retry downloading card data updates, 
+  if the download fails due to a flaky internet connection.
+
+# Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
+
+## Fixed issues
+
+- Fixed broken card data download, which was caused by a change in the Scryfall API.
+- Prevent application crashes should the card data format received from the API change again in the future.
+  The application will now show an error message if it is unable to process the data.
+
+# Version 0.14.1 (2021-09-29) <a name="v0_14_1"></a>
+
+## Fixed issues
+
+- Fixed bug in database migration code that prevented upgrading the application from ancient alpha versions.
+- The download progress bar properly disappears, after images finish downloading during the document loading process.
+- Removed online requirement for the card database update when upgrading from version 0.13.0 or before.
+- Fixed broken image cache cleanup for locally stored low resolution images, if the equivalent high resolution
+  image is available for download from Scryfall.
+
+# Version 0.14.0 (2021-09-23) <a name="v0_14_0"></a>
+
+## Implemented features
+
+- Show warnings in the deck import wizard, if oversized cards are present in the imported card list.
+
+## Changed features
+
+- Show copyright notices for many of the used software libraries in the About window.
+- Improved the accuracy of the card data update checker, if it is enabled in the settings.
+  It should now only report available updates, if Scryfall actually has new data.
+- Reduced application bundle size for Windows by 25%.
+
+## Fixed issues
+
+- Fixed broken printing selection in the deck list import wizard. Although it looked like it selected another printing,
+  the import wizard actually imported the unedited deck list, completely discarding any edits done. This now works
+  as expected.
+- Fixed potentially wrong card translations for cards having multiple names, like double-faced cards or split cards.
+- The card information download no longer locks up the application if a database error occurs. This might happen, if
+  two instances of MTGProxyPrinter try to write to the internal, local card database at the same time.
+
+## Other
+
+- Support importing card data from a file via command line argument `--card-data`.
+  Mostly useful for debugging, but can also be used to update the card database of a PC without internet access.
+- Larger re-write of the on-disk card database structure. Older versions will not be able to run, after
+  the database is migrated to the latest version. Downgrading the application will require deleting the database file. 
+
+# Version 0.13.0 (2021-08-09) <a name="v0_13_0"></a>
+
+## Implemented features
+
+- Implemented optional, automatic deck list translations. When enabled, the deck list import wizard will try to 
+  automatically translate all cards in the list into the selected language, where images are available.
+  This can be enabled by default in the settings.
+- Automatically replace locally stored low resolution card images with better images, when Scryfall upgrades the
+  provided images to high-resolution scans. Low-resolution card images fetched during set spoilers no longer stay in
+  the image cache indefinitely.
+
+## Changed features
+
+- Optimized the card data update process to update the local data in-place instead of
+  wiping everything and starting from scratch. This speeds up the import process and reduces disk writes.
+
+## Fixed issues
+
+- Fixed duplication of imported deck list entries when going back and forward in the deck
+  list import wizard after viewing the parsing result. (Bug was introduced in [version 0.12.0](#v0_12_0).)
+- The page preview now renders correctly after changing paper sizes in the settings.
+- PDFs exported now use the actual, configured paper size, instead of defaulting to the system default value.
+  Exporting documents in landscape mode or using esoteric paper sizes now creates usable, correct PDF files.
+- Printing documents in landscape mode now works as expected, outputting correctly scaled printouts. Additionally, 
+  the print preview dialog now has the appropriate mode (portrait or landscape) pre-selected, 
+  based on the configured paper size.
+
+# Version 0.12.1 (2021-07-31) <a name="v0_12_1"></a>
+
+## Implemented features
+
+- While changing the paper size settings, the settings window displays the resulting page capacity in cards. 
+- The settings window now informs, if changed settings will cause existing pages to overflow and move cards around
+  automatically. The user now has the choice to cancel saving the settings, if they don’t wish for this to happen.
+
+## Changed features
+
+- Application and card data update checks now run in the background, if enabled. This reduces application startup time.
+
+## Fixed issues
+
+- Fixed interface inconsistency when clicking on the "New Document" button.
+- Prevent the user from entering invalid combinations of paper sizes and margins that result in a page capacity of zero.
+  This prevents the application from entering an invalid state that causes crashes or infinite loops.
+
 # Version 0.12.0 (2021-07-28) <a name="v0_12_0"></a>
 
 ## Implemented features
@@ -185,8 +308,8 @@
 
 - Adding multiple cards in quick succession, for example by double-clicking the "Add" button,
   no longer freezes the GUI. The cards are now properly added in the correct order
-- Adding a card that requires an image download and then adding the same card again, while the download
-  is still in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
+- Adding a card that requires an image download and then adding the same card again, while the download is still
+  in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
 - Fixed application hangs until a long running operation is completed when trying to quit the application
   while a document is being loaded or a deck list import is running
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 

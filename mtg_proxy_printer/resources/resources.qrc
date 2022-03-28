@@ -2,24 +2,35 @@
 <qresource prefix="/">
     <!-- UI files -->
     <file>ui/about_dialog.ui</file>
-    <file>ui/horizontal_search_layout/add_card_widget.ui</file>
-    <file>ui/vertical_search_layout/add_card_widget.ui</file>
-    <file>ui/current_page_view.ui</file>
-    <file>ui/horizontal_search_layout/main_window.ui</file>
-    <file>ui/vertical_search_layout/main_window.ui</file>
+    <file>ui/main_window.ui</file>
+    <file>ui/central_widget/columnar.ui</file>
+    <file>ui/central_widget/grouped.ui</file>
+    <file>ui/central_widget/tabbed_vertical.ui</file>
+
+    <file>ui/add_card_widget/horizontal.ui</file>
+    <file>ui/add_card_widget/vertical.ui</file>
     <file>ui/settings_window.ui</file>
+
     <file>ui/deck_import_wizard/load_list_page.ui</file>
     <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>
     <file>ui/deck_import_wizard/parser_result_page.ui</file>
+
     <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
     <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
     <file>ui/cache_cleanup_wizard/summary_page.ui</file>
+    <file>ui/page_config_widget.ui</file>
+    <file>ui/page_config_dialog.ui</file>
 
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>
+    <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
+    cx_Freeze, because this bundles everything in one package. -->
+    <file alias="ThirdPartyLicenses.md">../../ThirdPartyLicenses.md</file>
+    <file alias="License.md">../../LICENSE.md</file>
 
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
+    <!-- actions -->
     <!-- 16x16 -->
     <file>icons/breeze/actions/16/application-exit.svg</file>
     <file>icons/breeze/actions/16/configure.svg</file>
@@ -31,6 +42,7 @@
     <file>icons/breeze/actions/16/document-print-direct.svg</file>
     <file>icons/breeze/actions/16/document-print-preview.svg</file>
     <file>icons/breeze/actions/16/document-print.svg</file>
+    <file>icons/breeze/actions/16/document-properties.svg</file>
     <file>icons/breeze/actions/16/document-replace.svg</file>
     <file>icons/breeze/actions/16/document-save.svg</file>
     <file>icons/breeze/actions/16/document-save-as.svg</file>
@@ -53,6 +65,7 @@
     <file>icons/breeze/actions/22/document-print-direct.svg</file>
     <file>icons/breeze/actions/22/document-print-preview.svg</file>
     <file>icons/breeze/actions/22/document-print.svg</file>
+    <file>icons/breeze/actions/22/document-properties.svg</file>
     <file>icons/breeze/actions/22/document-replace.svg</file>
     <file>icons/breeze/actions/22/document-save.svg</file>
     <file>icons/breeze/actions/22/document-save-as.svg</file>
@@ -75,6 +88,7 @@
     <file>icons/breeze/actions/24/document-print-direct.svg</file>
     <file>icons/breeze/actions/24/document-print-preview.svg</file>
     <file>icons/breeze/actions/24/document-print.svg</file>
+    <file>icons/breeze/actions/24/document-properties.svg</file>
     <file>icons/breeze/actions/24/document-replace.svg</file>
     <file>icons/breeze/actions/24/document-save.svg</file>
     <file>icons/breeze/actions/24/document-save-as.svg</file>
@@ -96,11 +110,18 @@
     <file>icons/breeze/actions/32/document-open.svg</file>
     <file>icons/breeze/actions/32/document-print-direct.svg</file>
     <file>icons/breeze/actions/32/document-print.svg</file>
+    <file>icons/breeze/actions/32/document-properties.svg</file>
     <file>icons/breeze/actions/32/document-replace.svg</file>
     <file>icons/breeze/actions/32/document-save.svg</file>
     <file>icons/breeze/actions/32/document-save-as.svg</file>
     <file>icons/breeze/actions/32/edit-delete.svg</file>
     <file>icons/breeze/actions/32/go-next.svg</file>
     <file>icons/breeze/actions/32/go-previous.svg</file>
+    
+    <!-- status icons -->
+    <!-- 16x16 -->
+    <file>icons/breeze/status/16/data-warning.svg</file>
+    <!-- 22x22 -->
+    <file>icons/breeze/status/22/data-warning.svg</file>
 </qresource>
 </RCC>

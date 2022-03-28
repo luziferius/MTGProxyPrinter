@@ -18,9 +18,12 @@ import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QSpinBox, QFileDialog, QLineEdit
+from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
+    QSpinBox, QFileDialog, QLineEdit, QMessageBox
 
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
@@ -38,19 +41,22 @@ check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v i
 
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
-
+    """Implements the Settings window."""
     saved = pyqtSignal()
 
-    def __init__(self, language_model: QStringListModel,  *args, **kwargs):
+    def __init__(self, language_model: QStringListModel, document: Document,  *args, **kwargs):
         super(SettingsWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.language_model = language_model
+        self.document = document
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
-
+        self.page_configuration_group_box: PageConfigWidget
+        self.page_configuration_group_box.setTitle("Default settings for new documents")
         self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
-        self.add_card_widget_style_combo_box.addItem("Vertical layout", "vertical")
+        self.add_card_widget_style_combo_box.addItem("Columnar layout", "columnar")
+        self.add_card_widget_style_combo_box.addItem("Tabbed layout", "tabbed")
 
         self.log_level_combo_box: QComboBox
         self.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
@@ -58,9 +64,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
-        self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.save)
-        self.button_box.button(QDialogButtonBox.Save).clicked.connect(self.hide)
-        self.button_box.button(QDialogButtonBox.Cancel).clicked.connect(self.hide)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def show(self):
@@ -73,6 +76,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self._load_look_and_feel_settings(settings)
         self._load_images_settings(settings)
         self._load_download_settings(settings)
+        self.page_configuration_group_box: PageConfigWidget
+        self.page_configuration_group_box.load_document_settings_from_config(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
         self._load_debug_settings(settings)
@@ -88,7 +93,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _load_look_and_feel_settings(self, settings: configparser.ConfigParser):
         self.add_card_widget_style_combo_box: QComboBox
         gui_section = settings["gui"]
-        search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["search-widget-layout"])
+        search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["central-widget-layout"])
         self.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
 
     def _load_images_settings(self, settings: configparser.ConfigParser):
@@ -108,10 +113,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _load_document_settings(self, settings: configparser.ConfigParser):
         document_section = settings["documents"]
-        widgets_with_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_with_settings:
-            widget.setValue(document_section.getint(setting))
-        self.print_cut_marker.setChecked(document_section.getboolean("print-cut-marker"))
+        self.pdf_page_count_limit.setValue(document_section.getint("pdf-page-count-limit"))
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
         download_section = settings["downloads"]
@@ -177,6 +179,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             (self.include_banned_in_standard, "download-banned-in-standard"),
             (self.include_banned_in_vintage, "download-banned-in-vintage"),
             (self.include_token, "download-token"),
+            (self.include_digital_cards, "download-digital-cards"),
         ]
         return widgets_with_settings
 
@@ -198,23 +201,49 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.print_guessing_enable, "enable-guessing"),
             (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+            (self.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
         ]
         return widgets_with_settings
+
+    def accept(self):
+        """Automatically called when the user hits the "Save" button."""
+        self.page_configuration_group_box: PageConfigWidget
+        old_page_capacity = self.document.total_cards_per_page
+        new_page_capacity = self.page_configuration_group_box.page_layout.compute_page_card_capacity()
+        logger.info(f"accept() called. {old_page_capacity=}, {new_page_capacity=}")
+        if old_page_capacity > new_page_capacity:
+            overflowing_pages = len(self.document.find_overflowing_and_non_full_pages(new_page_capacity)[0])
+
+            if overflowing_pages and QMessageBox.question(
+                    self, "Overflowing pages found",
+                    f"The new settings reduce the page capacity from {old_page_capacity} to {new_page_capacity} cards. "
+                    f"This causes {overflowing_pages} pages to overflow.\n"
+                    f"The overflowing cards from these pages will be moved automatically to free spaces on "
+                    f"other pages, or new pages at the document end.\nNo cards will be lost, but the "
+                    f"moved away cards will be shuffled around.\n\nContinue to save and apply the new settings?",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.No:
+                logger.info("User canceled saving page layout saving due to overflowing images notification.")
+                return
+        self.save()
+        super(SettingsWindow, self).accept()
 
     def reset(self):
         logger.info("User reverts the made changes.")
         self.load_settings(mtg_proxy_printer.settings.settings)
 
-    def hide(self):
+    def reject(self):
+        """Automatically called when the user hits the "Cancel" button or closes the settings window."""
         logger.info("User closes the settings dialog. This will reset any made changes.")
         self.reset()
-        super(SettingsWindow, self).hide()
+        super(SettingsWindow, self).reject()
 
     def save(self):
         logger.info("User saves the configuration to disk.")
         self._save_look_and_feel_settings()
         self._save_images_settings()
         self._save_downloads_settings()
+        self.page_configuration_group_box: PageConfigWidget
+        self.page_configuration_group_box.save_document_settings_to_config()
         self._save_documents_settings()
         self._save_save_path_settings()
         self._save_debug_settings()
@@ -233,7 +262,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _save_look_and_feel_settings(self):
         gui_section = mtg_proxy_printer.settings.settings["gui"]
         self.add_card_widget_style_combo_box: QComboBox
-        gui_section["search-widget-layout"] = self.add_card_widget_style_combo_box.currentData(Qt.UserRole)
+        gui_section["central-widget-layout"] = self.add_card_widget_style_combo_box.currentData(Qt.UserRole)
 
     def _save_images_settings(self):
         images_section = mtg_proxy_printer.settings.settings["images"]
@@ -249,10 +278,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
-        widgets_and_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_and_settings:
-            documents_section[setting] = str(widget.value())
-        documents_section["print-cut-marker"] = str(self.print_cut_marker.isChecked())
+        documents_section["pdf-page-count-limit"] = str(self.pdf_page_count_limit.value())
 
     def _save_save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-save-paths"]
@@ -288,7 +314,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
-            logger.debug("User selected a new default document save path.")
+            logger.info("User selected a new default document save path.")
             self.document_save_path.setText(location)
 
     @pyqtSlot()

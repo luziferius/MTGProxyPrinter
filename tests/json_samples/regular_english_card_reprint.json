@@ -1,0 +1,125 @@
+{
+  "object": "card",
+  "id": "a8a64329-09fc-4e0d-b7d1-378635f2801a",
+  "oracle_id": "44623693-51d6-49ad-8cd7-140505caf02f",
+  "multiverse_ids": [
+    509529
+  ],
+  "tcgplayer_id": 233928,
+  "cardmarket_id": 545126,
+  "name": "Fury Sliver",
+  "lang": "en",
+  "released_at": "2021-03-19",
+  "uri": "https://api.scryfall.com/cards/a8a64329-09fc-4e0d-b7d1-378635f2801a",
+  "scryfall_uri": "https://scryfall.com/card/tsr/164/fury-sliver?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.jpg?1619396979",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.jpg?1619396979",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.jpg?1619396979",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.jpg?1619396979",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.jpg?1619396979"
+  },
+  "mana_cost": "{5}{R}",
+  "cmc": 6.0,
+  "type_line": "Creature — Sliver",
+  "oracle_text": "All Sliver creatures have double strike.",
+  "power": "3",
+  "toughness": "3",
+  "colors": [
+    "R"
+  ],
+  "color_identity": [
+    "R"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "paupercommander": "restricted",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "11e90d1b-0502-43e6-b056-e24836523c13",
+  "set": "tsr",
+  "set_name": "Time Spiral Remastered",
+  "set_type": "masters",
+  "set_uri": "https://api.scryfall.com/sets/11e90d1b-0502-43e6-b056-e24836523c13",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atsr&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/tsr?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/a8a64329-09fc-4e0d-b7d1-378635f2801a/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A44623693-51d6-49ad-8cd7-140505caf02f&unique=prints",
+  "collector_number": "164",
+  "digital": false,
+  "rarity": "uncommon",
+  "flavor_text": "\"A rift opened, and our arrows were abruptly stilled. To move was to push the world. But the sliver's claw still twitched, red wounds appeared in Thed's chest, and ribbons of blood hung in the air.\"\n—Adom Capashen, Benalish hero",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Paolo Parente",
+  "artist_ids": [
+    "d48dd097-720d-476a-8722-6a02854ae28b"
+  ],
+  "illustration_id": "2fcca987-364c-4738-a75b-099d8a26d614",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 5190,
+  "preview": {
+    "source": "Luca Van Deun",
+    "source_uri": "https://twitter.com/LegenVD/status/1366803619190874114",
+    "previewed_at": "2021-03-02"
+  },
+  "prices": {
+    "usd": "0.38",
+    "usd_foil": "0.95",
+    "usd_etched": null,
+    "eur": "0.10",
+    "eur_foil": "0.58",
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=509529",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Fury+Sliver&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Fury+Sliver&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Fury+Sliver",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Fury+Sliver"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=233928&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Fury+Sliver&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Fury+Sliver&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

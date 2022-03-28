@@ -1,0 +1,113 @@
+{
+  "object": "card",
+  "id": "51c6ec30-afb2-41e6-895b-92e070aa86f3",
+  "oracle_id": "33d405ea-7a9a-4970-b70f-9c05d90dd6f0",
+  "multiverse_ids": [
+    182771
+  ],
+  "name": "Duress",
+  "printed_name": "Zwang",
+  "lang": "de",
+  "released_at": "2001-04-11",
+  "uri": "https://api.scryfall.com/cards/51c6ec30-afb2-41e6-895b-92e070aa86f3",
+  "scryfall_uri": "https://scryfall.com/card/7ed/131/de/zwang?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "placeholder",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.png?1562237880",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/5/1/51c6ec30-afb2-41e6-895b-92e070aa86f3.jpg?1562237880"
+  },
+  "mana_cost": "{B}",
+  "cmc": 1.0,
+  "type_line": "Sorcery",
+  "printed_type_line": "Hexerei",
+  "oracle_text": "Target opponent reveals their hand. You choose a noncreature, nonland card from it. That player discards that card.",
+  "printed_text": "Ein Gegner deiner Wahl zeigt die Karten auf seiner Hand offen vor. Bestimme eine Karte davon, die weder eine Kreatur noch ein Land ist. Dieser Spieler wirft diese Karte ab.",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "230f38aa-9511-4db8-a3aa-aeddbc3f7bb9",
+  "set": "7ed",
+  "set_name": "Seventh Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/230f38aa-9511-4db8-a3aa-aeddbc3f7bb9",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A7ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/7ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/51c6ec30-afb2-41e6-895b-92e070aa86f3/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A33d405ea-7a9a-4970-b70f-9c05d90dd6f0&unique=prints",
+  "collector_number": "131",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "„Überleg' es dir anders, oder ich überlege für Dich.\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Pete Venters",
+  "artist_ids": [
+    "d54c4a1a-c0c5-4834-84db-125d341f3ad8"
+  ],
+  "illustration_id": "34748dd1-62a3-4064-82e4-8b37ed215ca8",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 2108,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=182771&printed=true",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Duress",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Duress"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Duress&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Duress&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

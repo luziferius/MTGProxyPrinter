@@ -15,7 +15,7 @@
 import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
 from PyQt5.QtGui import QColor, QPixmap
 import pint
 
@@ -36,10 +36,18 @@ __all__ = [
 
 
 class PageScene(QGraphicsScene):
+    """This class implements the low-level rendering of the currently selected page on a blank canvas."""
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
     def __init__(self, document: Document, draw_background: bool, scene_rect: QRectF, parent: QObject = None):
+        """
+        :param document: The document instance
+        :param draw_background: Boolean. If enabled, draw a white background. By default, the scene is transparent,
+          so a white background is required for on-screen rendering. When printing on PDF or paper, this can be skipped
+        :param scene_rect: Size of the canvas, i.e. page size in pixels
+        :param parent: Optional Qt parent object
+        """
         super(PageScene, self).__init__(scene_rect, parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
@@ -55,6 +63,7 @@ class PageScene(QGraphicsScene):
 
     @pyqtSlot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
+        """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
         self.redraw()
@@ -112,6 +121,7 @@ class PageScene(QGraphicsScene):
 
     @pyqtSlot()
     def redraw(self):
+        """Wipes the scene and re-draws everything"""
         if not self.selected_page.isValid():
             logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
@@ -120,22 +130,23 @@ class PageScene(QGraphicsScene):
             white = QColor("white")
             logger.debug(f"Drawing background rectangle")
             self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
-        if settings["documents"].getboolean("print-cut-marker"):
+        if self.document.page_layout.draw_cut_markers:
             self._draw_cut_markers()
         self._draw_cards()
 
-    def _compute_position_for_image(self, index: QModelIndex):
+    def _compute_position_for_image(self, index: QModelIndex) -> QPointF:
+        """Returns the page-absolute position of the top-left pixel of the given image."""
+        page_layout = self.document.page_layout
         cards_per_row = self.document.compute_page_column_count()
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
-        spacing_vertical = self.document.image_spacing_vertical
-        spacing_horizontal = self.document.image_spacing_horizontal
+        spacing_vertical = page_layout.image_spacing_vertical
+        spacing_horizontal = page_layout.image_spacing_horizontal
 
-        x_pos = self.document.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
-        y_pos = self.document.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
-        document_settings = settings["documents"]
-        scaling_horizontal = self.width() / document_settings.getint("paper-width-mm")
-        scaling_vertical = self.height() / document_settings.getint("paper-height-mm")
+        x_pos = page_layout.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
+        y_pos = page_layout.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        scaling_horizontal = self.width() / page_layout.page_width
+        scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
             x_pos * scaling_horizontal,
             y_pos * scaling_vertical,
@@ -149,33 +160,35 @@ class PageScene(QGraphicsScene):
         self._draw_horizontal_markers(line_color)
 
     def _draw_vertical_markers(self, line_color):
-        scaling_horizontal = self.width() / self.document.page_width
+        page_layout = self.document.page_layout
+        scaling_horizontal = self.width() / page_layout.page_width
         column_count = self.document.compute_page_column_count()
-        if not self.document.image_spacing_horizontal:
+        if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
             column_px = scaling_horizontal * (
-                    self.document.margin_left +
-                    column * (PageScene.IMAGE_WIDTH + self.document.image_spacing_horizontal)
+                    page_layout.margin_left +
+                    column * (PageScene.IMAGE_WIDTH + page_layout.image_spacing_horizontal)
             )
             self._draw_vertical_line(column_px, line_color)
-            if self.document.image_spacing_horizontal:
+            if page_layout.image_spacing_horizontal:
                 offset = 1 + PageScene.IMAGE_WIDTH * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
     def _draw_horizontal_markers(self, line_color):
-        scaling_vertical = self.height() / self.document.page_height
+        page_layout = self.document.page_layout
+        scaling_vertical = self.height() / page_layout.page_height
         row_count = self.document.compute_page_row_count()
-        if not self.document.image_spacing_vertical:
+        if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
             row_px = scaling_vertical * (
-                    self.document.margin_top +
-                    row * (PageScene.IMAGE_HEIGHT + self.document.image_spacing_vertical)
+                    page_layout.margin_top +
+                    row * (PageScene.IMAGE_HEIGHT + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
-            if self.document.image_spacing_vertical:
+            if page_layout.image_spacing_vertical:
                 offset = 1 + PageScene.IMAGE_HEIGHT * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
@@ -188,21 +201,29 @@ class PageScene(QGraphicsScene):
 
 
 class PageRenderer(QGraphicsView):
-
-    def __init__(self, *args, **kwargs):
-        super(PageRenderer, self).__init__(*args, **kwargs)
+    """
+    This class displays an internally held PageScene instance on screen.
+    """
+    def __init__(self, parent: QWidget = None, *, render_background: bool = True):
+        super(PageRenderer, self).__init__(parent=parent)
+        self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
+        self.document: Document = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
-        self.setScene(PageScene(document, True, self.get_document_page_size(), self))
+        self.document = document
+        self.setScene(PageScene(document, self.render_background, self.get_document_page_size(), self))
 
-    @staticmethod
-    def get_document_page_size() -> QRectF:
-        document_settings = settings["documents"]
-        height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
-        width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
+    def get_document_page_size(self) -> QRectF:
+        if self.document is None:
+            document_settings = settings["documents"]
+            height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
+            width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
+        else:
+            height: pint.Quantity = self.document.page_layout.page_height * unit_registry.millimeter
+            width: pint.Quantity = self.document.page_layout.page_width * unit_registry.millimeter
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
@@ -214,5 +235,18 @@ class PageRenderer(QGraphicsView):
 
     @pyqtSlot()
     def on_resize_event_triggered(self):
-        logger.debug("Resize event: Scaling the page view to fit.")
         self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+
+    @pyqtSlot()
+    def on_settings_changed(self):
+        new_page_size = self.get_document_page_size()
+        old_size = self.scene().sceneRect()
+        if old_size != new_page_size:
+            logger.debug("Page size changed. Adjusting PageScene dimensions")
+            self.scene().setSceneRect(new_page_size)
+        self.scene().redraw()
+        if old_size != new_page_size:
+            # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
+            # in the available space or is now too small, so resize the scene to fill the available space.
+            self.on_resize_event_triggered()
+

@@ -16,16 +16,18 @@
 import sys
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer
+from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.document
+import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.natsort import str_less_than
-from mtg_proxy_printer.update_checker import newer_application_version_available, newer_card_data_available
+from mtg_proxy_printer.update_checker import UpdateChecker
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
@@ -50,17 +52,29 @@ class Application(QApplication):
         self.args: Namespace = args
         logger.debug("Opening Database")
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
+        self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        self.document = self._create_document_instance(args, self.card_db, self.image_db)
+        self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
-        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(self.args, self.card_db)
+        self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
+            self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
+        )
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
-            self.main_window.language_model, self.main_window)
+            self.language_model, self.document, self.main_window)
         self.settings_window.saved.connect(self.main_window.settings_changed)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()
-        QTimer.singleShot(0, self._check_for_updates)
-        self._show_changelog_after_update()
-        if not self.card_db.has_data():
+        if args.test_exit_on_launch:
+            logger.info("Enqueue application exit to run when event loop starts.")
+            QTimer.singleShot(0, self.shutdown)
+        self.update_checker = self._create_update_checker(args)
+        self._show_changelog_after_update(args)
+        if args.card_data and args.card_data.is_file():
+            logger.info(f"User imports card data from file {args.card_data}")
+            self.card_info_downloader.request_import_from_file.emit(args.card_data)
+        elif not self.card_db.has_data() and not args.test_exit_on_launch:
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
@@ -68,47 +82,49 @@ class Application(QApplication):
         self.exec_()
         logger.debug("Left event loop.")
 
-    def _check_for_updates(self):
-        self._check_for_application_update_if_enabled()
-        if self.card_db.has_data():
-            self._check_for_card_data_update_if_enabled()
-
-    def _check_for_application_update_if_enabled(self):
-        if setting := settings.settings["application"].getboolean("check-for-application-updates"):
-            logger.info("Checking for application updates.")
-            if (newer_version := newer_application_version_available()) is not None:
-                logger.info(f"A new update is available: {newer_version}. Notifying the user.")
-                self.main_window.show_application_update_available_message_box(newer_version)
+    def _create_document_instance(
+            self,
+            args: Namespace,
+            card_db: mtg_proxy_printer.model.carddb.CardDatabase,
+            image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
+        document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
+        image_db.add_card.connect(document.add_card)
+        if args.file is not None:
+            if args.file.is_file():
+                # Wait until after __init__ finished and the main loop starts
+                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
+                logger.info(f'Enqueued loading of document "{args.file}"')
+            elif args.file.exists():
+                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
             else:
-                logger.debug("No application update found.")
-        elif setting is None:
-            logger.info("No user setting for update set. About to ask.")
-            if self.main_window.ask_user_about_application_update_policy():
-                self._check_for_application_update_if_enabled()
-        else:
-            logger.info("Checking for application updates disabled. Not checking for updates.")
+                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
+        return document
 
-    def _check_for_card_data_update_if_enabled(self):
-        if setting := settings.settings["application"].getboolean("check-for-card-data-updates"):
-            logger.info("Checking for card data updates.")
-            if estimated_new_card_count := newer_card_data_available(self.card_db):
-                logger.info(f"New card data is available. Notifying the user.")
-                self.main_window.show_card_data_update_available_message_box(estimated_new_card_count)
-            else:
-                logger.debug("No new card data found.")
-        elif setting is None:
-            pass
-            # TODO: Currently disabled, because the feature is not working 100%. The user has to manually enable this.
-            #   Do not bother asking to enable/disable, until the update check is working in all cases, when enabled.
-            """
+    def _create_language_model(self):
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        return QStringListModel([preferred_language], self)
+
+    def _create_update_checker(self, args: Namespace) -> UpdateChecker:
+        # Don’t do the card data update check, if the user imports card data via command line arguments
+        update_checker = UpdateChecker(self.card_db, args, self)
+        update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
+        update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
+        update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
+        if not args.test_exit_on_launch:
+            QTimer.singleShot(100, self._check_for_undecided_update_settings)
+        return update_checker
+
+    def _check_for_undecided_update_settings(self):
+        if settings.settings["application"].getboolean("check-for-application-updates") is None:
+            logger.info("No user setting for application updates set. About to ask.")
+            self.main_window.ask_user_about_application_update_policy()
+        if settings.settings["application"].getboolean("check-for-card-data-updates") is None:
             logger.info("No user setting for card data updates set. About to ask.")
-            if self.main_window.ask_user_about_card_data_update_policy():
-                self._check_for_card_data_update_if_enabled()
-            """
-        else:
-            logger.info("Checking for card data updates disabled. Not checking for updates.")
+            self.main_window.ask_user_about_card_data_update_policy()
 
-    def _show_changelog_after_update(self):
+    def _show_changelog_after_update(self, args: Namespace):
+        if args.test_exit_on_launch:
+            return
         if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):
             logger.info(
                 f'Updated application from {settings.settings["application"]["last-used-version"]} '

@@ -33,7 +33,7 @@
    <item>
     <widget class="QGroupBox" name="individual_filter_group">
      <property name="toolTip">
-      <string>Select images for removal based on any matching criterium.</string>
+      <string>Select images for removal based on any matching criterion.</string>
      </property>
      <property name="title">
       <string>Select images for deletion, if …</string>
