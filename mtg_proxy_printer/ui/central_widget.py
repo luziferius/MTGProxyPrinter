@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import math
 import typing
 
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, QItemSelectionModel
@@ -89,6 +90,16 @@ class CentralWidget(QWidget):
         self.page_card_table_view.clearSelection()
         self.page_card_table_view.setRootIndex(new_page.sibling(new_page.row(), new_page.column()))
         self.page_card_table_view.setColumnHidden(PageColumns.Image, True)
+        # The size adjustments have to be done here,
+        # because the width can only be set after the model root index to show has been set
+        default_column_width = 102
+        for column, scaling_factor in (
+                (PageColumns.CardName, 1.7),
+                (PageColumns.Set, 2),
+                (PageColumns.CollectorNumber, 0.95),
+                (PageColumns.Language, 0.8)):
+            new_size = math.floor(default_column_width * scaling_factor)
+            self.page_card_table_view.setColumnWidth(column, new_size)
 
     def _setup_page_renderer(self, document: Document):
         self.page_renderer: PageRenderer
