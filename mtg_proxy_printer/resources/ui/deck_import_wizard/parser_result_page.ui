@@ -6,7 +6,7 @@
    <string>Import a deck list for printing</string>
   </property>
   <property name="subTitle">
-   <string>Below is the parsing result. The table on top shows all identified cards. The text field at the bottom shows all unidentified lines, that were not successfully parsed as cards.</string>
+   <string>Below is the parsing result. The table on top shows all identified cards. You can change printing choices by double-clicking the Set or Collector# cells. The text field at the bottom shows all unidentified lines, that were not successfully parsed as cards.</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -35,14 +35,11 @@ If unchecked, append the cards found below to the document.</string>
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>1</verstretch>
+       <verstretch>60</verstretch>
       </sizepolicy>
      </property>
      <property name="sizeAdjustPolicy">
       <enum>QAbstractScrollArea::AdjustToContents</enum>
-     </property>
-     <property name="editTriggers">
-      <set>QAbstractItemView::NoEditTriggers</set>
      </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
@@ -64,7 +61,7 @@ If unchecked, append the cards found below to the document.</string>
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>1</verstretch>
+       <verstretch>40</verstretch>
       </sizepolicy>
      </property>
      <property name="sizeAdjustPolicy">

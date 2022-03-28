@@ -17,13 +17,13 @@ import typing
 
 from PyQt5.QtCore import QAbstractListModel, Qt, QObject, QModelIndex
 
+from mtg_proxy_printer.model.carddb import MTGSet
 
-StringList = typing.List[str]
-StringDict = typing.Dict[int, str]
 
 __all__ = [
     "PrettySetListModel",
 ]
+INVALID = QModelIndex()
 
 
 class PrettySetListModel(QAbstractListModel):
@@ -32,42 +32,33 @@ class PrettySetListModel(QAbstractListModel):
         0: "Set",
     }
 
-    def __init__(self, data: typing.List[typing.Tuple[str, str]], parent: QObject = None):
+    def __init__(self, parent: QObject = None):
         super(PrettySetListModel, self).__init__(parent)
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
-        self.set_codes: StringDict = {}
-        self.set_names: StringDict = {}
-        self.set_set_data(data)
+        self.set_data: typing.List[MTGSet] = []
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = None) -> typing.Optional[str]:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> typing.Optional[str]:
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             # Returns None for unknown columns
             return PrettySetListModel.header.get(section)
         return super(PrettySetListModel, self).headerData(section, orientation, role)
 
-    def columnCount(self, parent: QModelIndex = None) -> int:
-        return 1
+    def columnCount(self, parent: QModelIndex = INVALID) -> int:
+        return 0 if parent.isValid() else len(self.header)
 
-    def rowCount(self, parent: QModelIndex = None) -> int:
-        return len(self.set_codes)
+    def rowCount(self, parent: QModelIndex = INVALID) -> int:
+        return 0 if parent.isValid() else len(self.set_data)
 
-    def set_set_data(self, data: typing.List[typing.Tuple[str, str]]) -> None:
-        self.beginRemoveRows(QModelIndex(), 0, self.rowCount())
-        self.set_codes.clear()
-        self.set_names.clear()
-        self.endRemoveRows()
-        self.beginInsertRows(QModelIndex(), 0, len(data))
-        for index, (code, name) in enumerate(data):
-            self.set_codes[index] = code
-            self.set_names[index] = name
-        self.endInsertRows()
+    def set_set_data(self, data: typing.List[MTGSet]) -> None:
+        if self.set_data:
+            self.beginRemoveRows(INVALID, 0, self.rowCount())
+            self.set_data.clear()
+            self.endRemoveRows()
+        if data:
+            self.beginInsertRows(INVALID, 0, len(data))
+            self.set_data[:] = data
+            self.endInsertRows()
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Optional[str]:
         if index.isValid():
-            row = index.row()
-            if role == Qt.DisplayRole:
-                return f"{self.set_names[row]} ({self.set_codes[row].upper()})"
-            if role == Qt.EditRole:
-                return self.set_codes[row]
-            if role == Qt.ToolTipRole:
-                return self.set_names[row]
+            return self.set_data[index.row()].data(role)

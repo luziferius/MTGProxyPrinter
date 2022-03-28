@@ -1,5 +1,6 @@
-include LICENSE
+include LICENSE.md
+include ThirdPartyLicenses.md
 include mtg_proxy_printer/model/carddb.sql
-include mtg_proxy_printer/model/document.sql
+include mtg_proxy_printer/model/document-v*.sql
+graft mtg_proxy_printer/resources
 prune tests
-prune pyinstaller_hooks

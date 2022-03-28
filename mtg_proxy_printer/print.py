@@ -16,15 +16,16 @@
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot
-from PyQt5.QtGui import QPainter, QPdfWriter
+from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot, QPersistentModelIndex
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
-from mtg_proxy_printer.model.document import Document, Page
-from mtg_proxy_printer.ui.page_renderer import PageScene, PageRenderer
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.logger import get_logger
+import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
 del get_logger
 
@@ -43,7 +44,7 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
     logger.info(f'Exporting document with {document.rowCount()} pages as PDF to "{file_path}"')
     total_documents = math.ceil(document.rowCount()/pages_to_print)
     for document_index in range(total_documents):
-        logger.info(f"Creating PDF ({document_index+1}/{total_documents+1}) with {pages_to_print} pages.")
+        logger.info(f"Creating PDF ({document_index+1}/{total_documents}) with up to {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
     document.store_image_usage()
@@ -51,8 +52,18 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    printer.setPageSizeMM(QSizeF(document.page_width, document.page_height))
-    printer.setResolution(document.DPI.to_tuple()[0])
+    page_width = document.page_layout.page_width
+    page_height = document.page_layout.page_height
+    if page_width > page_height:
+        logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
+        printer.setPageOrientation(QPageLayout.Landscape)
+        # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
+        # resulting in correct values.
+        page_size = QSizeF(page_height, page_width)
+    else:
+        page_size = QSizeF(page_width, page_height)
+    printer.setPageSizeMM(page_size)
+    printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
     # Disable duplex printing by default
     printer.setDoubleSidedPrinting(False)
     printer.setDuplex(QPrinter.DuplexNone)
@@ -78,12 +89,12 @@ class PDFPrinter(QPdfWriter):
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
-        self.setResolution(document.DPI.to_tuple()[0])
+        self.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
+        self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
-        # PageScene reads the Page instance from the parent QObject. So store it here before starting any rendering
-        self.page = None
-        self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
+        self.renderer = PageRenderer(parent, render_background=False)
+        self.renderer.set_document(document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def print_document(self):
@@ -96,16 +107,15 @@ class PDFPrinter(QPdfWriter):
                 self.logicalDpiY()/self.resolution()
             )
         first_index = self.document_index * self.pages_to_print
-        last_index = (self.document_index + 1) * self.pages_to_print
+        last_index = min((self.document_index + 1) * self.pages_to_print, self.document.rowCount())
 
-        pages_to_process = self.document.pages[first_index:last_index]
-        page_count = len(pages_to_process)
-        for index, page in enumerate(pages_to_process, start=1):
-            logger.debug(f"Rendering page {index}/{page_count}")
-            self.page = page
-            self.scene.redraw()
-            self.scene.render(self.painter)
-            if index < page_count:  # Avoid including a trailing, empty page
+        for index in range(first_index, last_index):
+            logger.debug(f"Rendering page {index+1}/{self.document.rowCount()}")
+            scene = self.renderer.scene()
+            scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
+            scene.redraw()
+            scene.render(self.painter)
+            if index + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()
         logger.info("Writing document finished.")
@@ -113,22 +123,25 @@ class PDFPrinter(QPdfWriter):
 
 class Renderer(QObject):
 
-    def __init__(self, document: Document, *args, **kwargs):
-        super(Renderer, self).__init__(*args, **kwargs)
+    def __init__(self, document: Document, parent: QObject = None):
+        super(Renderer, self).__init__(parent)
         self.document = document
-        self.page: Page = None
-        self.scene = PageScene(False, PageRenderer.get_document_page_size(), parent=self)
+        self.renderer = PageRenderer(render_background=False)
+        self.renderer.set_document(document)
 
     @pyqtSlot(QPrinter)
     def print_document(self, printer: QPrinter):
+        logger.info("Begin printing document.")
         painter = QPainter(printer)
         painter.setRenderHint(QPainter.LosslessImageRendering)
         page_count = self.document.rowCount()
-        for index, page in enumerate(self.document.pages, start=1):
-            self.page = page
-            self.scene.redraw()
-            self.scene.render(painter)
-            if index < page_count:
+        for index in range(page_count):
+            logger.debug(f"Printing page {index+1}/{page_count}")
+            scene = self.renderer.scene()
+            scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
+            scene.redraw()
+            scene.render(painter)
+            if index+1 < page_count:
                 printer.newPage()
         painter.end()
-        self.page = None
+        logger.info("Printing document finished.")

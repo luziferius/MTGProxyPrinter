@@ -1,0 +1,113 @@
+{
+  "object": "card",
+  "id": "ffa13d4c-6c5e-44bd-859e-38e79d47a916",
+  "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
+  "multiverse_ids": [
+    492569
+  ],
+  "name": "Forest",
+  "printed_name": "Bosque",
+  "lang": "es",
+  "released_at": "2020-09-25",
+  "uri": "https://api.scryfall.com/cards/ffa13d4c-6c5e-44bd-859e-38e79d47a916",
+  "scryfall_uri": "https://scryfall.com/card/znr/280/es/bosque?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "lowres",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.jpg?1615068408",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.jpg?1615068408",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.jpg?1615068408",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.jpg?1615068408",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.jpg?1615068408"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Basic Land — Forest",
+  "printed_type_line": "Tierra básica — Bosque",
+  "oracle_text": "({T}: Add {G}.)",
+  "colors": [
+
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [
+
+  ],
+  "produced_mana": [
+    "G"
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "arena",
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set": "znr",
+  "set_name": "Zendikar Rising",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/f4e01fa7-b254-42dd-849f-69b58027a8c4",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aznr&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/znr?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/ffa13d4c-6c5e-44bd-859e-38e79d47a916/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ab34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6&unique=prints",
+  "collector_number": "280",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Tianhua X",
+  "artist_ids": [
+    "da0e98c9-28a9-41ed-a617-ea94737438c0"
+  ],
+  "illustration_id": "45be4e62-ce07-4f59-96ac-e6593c7b5a41",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": true,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=492569&printed=true",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Forest",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Forest"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Forest&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Forest&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

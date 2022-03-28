@@ -21,18 +21,20 @@ import urllib.parse
 import urllib.error
 
 import ijson
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
 
+from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.card_info_downloader import read_from_url, CardInfoDownloadWorker
+from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "newer_application_version_available",
-    "newer_card_data_available",
+    "UpdateChecker",
 ]
 
 StringList = typing.List[str]
@@ -44,54 +46,168 @@ KNOWN_APPLICATION_MIRRORS: StringList = [
 ]
 
 
-def get_application_mirrors() -> StringList:
-    mirrors = KNOWN_APPLICATION_MIRRORS.copy()
-    random.shuffle(mirrors)
-    return mirrors
+class BackgroundWorker(QObject):
 
+    job_completed = pyqtSignal()  # Emitted whenever a background task finishes, both successful or unsuccessful
+    card_data_update_found = pyqtSignal(int)
+    application_update_found = pyqtSignal(str)
+    network_error_occurred = pyqtSignal(str)
 
-def read_available_application_versions() -> StringList:
-    """
-    Reads the available versions from any known mirror
-    :returns: List of all released versions, sorted descending.
-    """
-    tags = []
-    for mirror in get_application_mirrors():
+    def __init__(self, card_db: CardDatabase, parent: QObject = None):
+        logger.info(f"Creating {self.__class__.__name__} instance.")
+        super(BackgroundWorker, self).__init__(parent)
+        self.card_db = card_db
+        self.dw = None
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def on_thread_started(self):
+        logger.debug(f"{self.__class__.__name__} event loop started, creating DownloadWorker")
+        self.dw = CardInfoDownloadWorker(self.card_db)
+        self.dw.network_error_occurred.connect(self.network_error_occurred)
+
+    def perform_card_data_update_check(self):
+        if not settings.settings["application"].getboolean("check-for-card-data-updates"):
+            logger.info("Checking for card data updates disabled. Not checking for updates.")
+            self.job_completed.emit()
+            return
+        logger.info("Checking for card data updates.")
         try:
-            if tags := _read_available_application_versions_from_mirror(mirror):
-                break
-        except (urllib.error.URLError, socket.timeout) as e:
-            logger.warning(f"Failed to read update from mirror {mirror}. Reason: {e}")
-            continue
-    return tags
+            total_cards_available, total_cards_in_last_update = self._is_newer_card_data_available()
+            if total_cards_available and total_cards_available > total_cards_in_last_update:
+                new_cards = total_cards_available - total_cards_in_last_update
+                logger.info(f"New card data is available: {new_cards} new cards. Notifying the user.")
+                self.card_data_update_found.emit(new_cards)
+            else:
+                logger.debug("No new card data found.")
+        finally:
+            self.job_completed.emit()
+
+    def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
+        total_cards_in_last_update = self.card_db.get_total_cards_in_last_update()
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": "date>1970-01-01"
+        })
+        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
+        logger.debug(f"Card data update query URL: {url}")
+        try:
+            total_cards_available = next(self.dw.read_json_card_data(url, "total_cards"))
+        except (urllib.error.URLError, socket.timeout, StopIteration):
+            # TODO: Perform better notification in any error case
+            total_cards_available = 0
+        logger.debug(f"Total cards currently available: {total_cards_available}")
+        logger.debug(f"Total cards during last update: {total_cards_in_last_update}")
+        return total_cards_available, total_cards_in_last_update
+
+    def perform_application_update_check(self):
+        if not settings.settings["application"].getboolean("check-for-application-updates"):
+            logger.info("Application update check disabled, not performing update check.")
+            self.job_completed.emit()
+            return
+        logger.info("Checking for application updates.")
+        try:
+            if result := self._is_newer_application_version_available():
+                logger.info(f"A new update is available: {result}. Notifying the user.")
+                self.application_update_found.emit(result)
+            else:
+                logger.debug("No application update found.")
+        finally:
+            self.job_completed.emit()
+
+    def _is_newer_application_version_available(self) -> OptStr:
+        available_versions = self._read_available_application_versions()
+        if available_versions and str_less_than(mtg_proxy_printer.meta_data.__version__, available_versions[0]):
+            return available_versions[0]
+        return None
+
+    @staticmethod
+    def _get_application_mirrors() -> StringList:
+        mirrors = KNOWN_APPLICATION_MIRRORS.copy()
+        random.shuffle(mirrors)
+        return mirrors
+
+    def _read_available_application_versions(self) -> StringList:
+        """
+        Reads the available versions from any known mirror
+        :returns: List of all released versions, sorted descending.
+        """
+        tags = []
+        for mirror in BackgroundWorker._get_application_mirrors():
+            try:
+                if tags := self._read_available_application_versions_from_mirror(mirror):
+                    break
+            except (urllib.error.URLError, socket.timeout) as e:
+                logger.warning(f"Failed to read update from mirror {mirror}. Reason: {e}")
+                continue
+        return tags
+
+    def _read_available_application_versions_from_mirror(self, mirror):
+        data, _ = self.dw.read_from_url(f"{mirror}/json/tag/list/")
+        items = ijson.items(data, "payload.tags.item")
+        matches = filter(
+            None,
+            map(VERSION_TAG_MATCHER.fullmatch, items)
+        )
+        return natural_sorted((match["version"] for match in matches), reverse=True)
 
 
-def _read_available_application_versions_from_mirror(mirror):
-    data, _ = read_from_url(f"{mirror}/json/tag/list/")
-    items = ijson.items(data, "payload.tags.item")
-    matches = filter(
-        None,
-        map(VERSION_TAG_MATCHER.fullmatch, items)
-    )
-    return natural_sorted((match["version"] for match in matches), reverse=True)
+class UpdateChecker(QObject):
 
+    card_data_update_found = pyqtSignal(int)
+    application_update_found = pyqtSignal(str)
+    network_error_occurred = pyqtSignal(str)
 
-def newer_application_version_available() -> OptStr:
-    available_versions = read_available_application_versions()
-    if available_versions and str_less_than(mtg_proxy_printer.meta_data.__version__, available_versions[0]):
-        return available_versions[0]
-    return None
+    _card_update_check_requested = pyqtSignal()
+    _application_update_check_requested = pyqtSignal()
 
+    def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
+        logger.info(f"Creating {self.__class__.__name__} instance.")
+        super(UpdateChecker, self).__init__(parent)
+        self.perform_card_data_update_check = not (args.card_data and args.card_data.is_file())
+        self.background_thread = QThread()
+        self.worker = self._create_background_worker(card_db, self.background_thread)
+        self.running_background_jobs: int = 0
+        self.background_thread.start()
+        if args.test_exit_on_launch:
+            logger.info("Update check will not run, because immediate application exit is requested.")
+        else:
+            QTimer.singleShot(100, self.check_for_updates)
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
-def newer_card_data_available(card_db: CardDatabase) -> int:
-    newest_card_in_database = card_db.get_newest_card_date_in_database()
-    dw = CardInfoDownloadWorker(card_db)
-    query = urllib.parse.quote(f"date>{newest_card_in_database.isoformat()}")
-    url = f"https://api.scryfall.com/cards/search?order=date&dir=asc&q={query}"
-    logger.debug(f"Card data update query URL: {url}")
-    try:
-        items = next(dw.read_json_card_data(url, "total_cards"))
-    except (urllib.error.URLError, socket.timeout, StopIteration):
-        # TODO: Perform better notification in any error case
-        items = 0
-    return items
+    def _create_background_worker(self, card_db: CardDatabase, thread_to_use: QThread) -> BackgroundWorker:
+        worker = BackgroundWorker(card_db)
+        thread_to_use.started.connect(worker.on_thread_started)
+        worker.card_data_update_found.connect(self.card_data_update_found)
+        worker.application_update_found.connect(self.application_update_found)
+        worker.job_completed.connect(self._on_job_completed)
+        worker.network_error_occurred.connect(self.network_error_occurred)
+        self._card_update_check_requested.connect(worker.perform_card_data_update_check)
+        self._application_update_check_requested.connect(worker.perform_application_update_check)
+        worker.moveToThread(thread_to_use)
+        return worker
+
+    def _on_job_completed(self):
+        self.running_background_jobs -= 1
+        if not self.running_background_jobs:
+            self.background_thread.quit()
+
+    def check_for_updates(self):
+        self._check_for_application_updates()
+        if self.perform_card_data_update_check:
+            self._check_for_card_data_updates()
+
+    def _check_for_card_data_updates(self):
+        self._start_background_thread_if_not_running()
+        self._card_update_check_requested.emit()
+
+    def _check_for_application_updates(self):
+        self._start_background_thread_if_not_running()
+        self._application_update_check_requested.emit()
+
+    def _start_background_thread_if_not_running(self):
+        if not self.running_background_jobs:
+            self.background_thread.start()
+        self.running_background_jobs += 1

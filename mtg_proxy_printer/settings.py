@@ -19,6 +19,7 @@ import pathlib
 import re
 import typing
 
+import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 
 __all__ = [
@@ -31,7 +32,7 @@ __all__ = [
 ]
 
 
-config_file_path = pathlib.Path(mtg_proxy_printer.meta_data.data_directories.user_config_dir, "MTGProxyPrinter.ini")
+config_file_path = pathlib.Path(mtg_proxy_printer.app_dirs.data_directories.user_config_dir, "MTGProxyPrinter.ini")
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.
@@ -77,14 +78,15 @@ DEFAULT_SETTINGS["downloads"] = {
     "download-funny-cards": "True",
     "download-non-traditional-cards": "True",
     "download-token": "True",
+    "download-digital-cards": "True",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",
     "paper-width-mm": "210",
     "margin-top-mm": "10",
     "margin-bottom-mm": "10",
-    "margin-left-mm": "10",
-    "margin-right-mm": "10",
+    "margin-left-mm": "7",
+    "margin-right-mm": "7",
     "image-spacing-horizontal-mm": "0",
     "image-spacing-vertical-mm": "0",
     "print-cut-marker": "False",
@@ -95,10 +97,10 @@ DEFAULT_SETTINGS["default-save-paths"] = {
     "pdf-export-path": "",
 }
 DEFAULT_SETTINGS["gui"] = {
-    "search-widget-layout": "horizontal",
+    "central-widget-layout": "columnar",
     "show-toolbar": "True",
 }
-VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "vertical"}
+VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
@@ -108,6 +110,7 @@ VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
     "enable-guessing": "False",
     "prefer-already-downloaded": "True",
+    "always-translate-deck-lists": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
@@ -123,6 +126,7 @@ def read_settings_from_file():
         settings.read_dict(DEFAULT_SETTINGS)
     else:
         settings.read(config_file_path)
+        migrate_settings(settings)
         read_sections = set(settings.sections())
         known_sections = set(DEFAULT_SETTINGS.sections())
         # Synchronize sections
@@ -154,6 +158,11 @@ def update_version_string():
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
+    """
+    Called after reading the settings from disk. Ensures that all settings contain valid values and expected types.
+    I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
+    non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
+    """
     _validate_download_section(read_settings["downloads"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
@@ -228,7 +237,7 @@ def _validate_application_section(section: configparser.SectionProxy):
 
 def _validate_gui_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["gui"]
-    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "search-widget-layout")
+    _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
@@ -278,6 +287,22 @@ def _validate_string_is_in_set(
 
 def _restore_default(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     section[key] = defaults[key]
+
+
+def migrate_settings(settings: configparser.ConfigParser):
+    _migrate_layout_setting(settings)
+
+
+def _migrate_layout_setting(settings: configparser.ConfigParser):
+    try:
+        gui_section = settings["gui"]
+        layout = gui_section["search-widget-layout"]
+    except KeyError:
+        return
+    else:
+        if layout == "vertical":
+            layout = "columnar"
+        gui_section["central-widget-layout"] = layout
 
 
 # Read the settings from file during module import
