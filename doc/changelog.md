@@ -31,6 +31,9 @@
   to prevent Denial of Service attacks via maliciously crafted save files.
 - It is now possible to retry downloading card data updates, 
   if the download fails due to a flaky internet connection.
+- Fixed broken custom regular expression deck parser option in the deck import wizard. This option did not work at all.
+- Fixed broken Tappedout deck list parser. The options to include the maybe-board and acquire-board
+  did nothing when enabled and now work as intended.
 
 # Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
 

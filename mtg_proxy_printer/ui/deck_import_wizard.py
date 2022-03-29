@@ -163,6 +163,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.card_db = card_db
         self.image_db = image_db
         self._selected_parser = None
+        self.parser_creator: typing.Callable[[], None] = (lambda: None)
         self.custom_re_input: QLineEdit
         self.custom_re_input.setToolTip(
             f"Enter a Regular Expression containing at least one supported, named group.\n\n"
@@ -175,29 +176,47 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self)
         self.select_parser_mtg_arena.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.MTGArenaParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_mtg_arena_parser)
         )
         self.select_parser_mtg_online.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.MTGOnlineParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_mtg_online_parser)
         )
         self.select_parser_xmage.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.XMageParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_xmage_parser)
         )
         self.select_parser_scryfall_csv.pressed.connect(
-            lambda: setattr(self, "selected_parser", csv_parsers.ScryfallCSVParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_scryfall_csv_parser)
         )
         self.select_parser_tappedout_csv.pressed.connect(
-            lambda: setattr(self, "selected_parser", csv_parsers.TappedOutCSVParser(
-                self.card_db, self.image_db,
-                self.tappedout_include_maybe_board.isChecked(), self.tappedout_include_acquire_board.isChecked(), self
-            ))
+            lambda: setattr(self, "parser_creator", self._create_tappedout_csv_parser)
         )
         self.select_parser_custom_re.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.GenericRegularExpressionDeckParser(
-                self.card_db, self.image_db, self.field("custom_re"), self
-            ))
+            lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_mtg_arena_parser(self):
+        self.selected_parser = re_parsers.MTGArenaParser(self.card_db, self.image_db, self)
+
+    def _create_mtg_online_parser(self):
+        self.selected_parser = re_parsers.MTGOnlineParser(self.card_db, self.image_db, self)
+
+    def _create_xmage_parser(self):
+        self.selected_parser = re_parsers.XMageParser(self.card_db, self.image_db, self)
+
+    def _create_scryfall_csv_parser(self):
+        self.selected_parser = csv_parsers.ScryfallCSVParser(self.card_db, self.image_db, self)
+
+    def _create_tappedout_csv_parser(self):
+        self.selected_parser = csv_parsers.TappedOutCSVParser(
+            self.card_db, self.image_db,
+            self.tappedout_include_maybe_board.isChecked(), self.tappedout_include_acquire_board.isChecked(), self
+        )
+
+    def _create_generic_re_parser(self):
+        self.selected_parser = re_parsers.GenericRegularExpressionDeckParser(
+            self.card_db, self.image_db, self.field("custom_re"), self
+        )
 
     @pyqtSlot()
     def isComplete(self) -> bool:
@@ -215,6 +234,11 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             self.complete = acceptable
             self.completeChanged.emit()
         return acceptable
+
+    def validatePage(self) -> bool:
+        self.parser_creator()
+        logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
+        return super().validatePage()
 
 
 class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
