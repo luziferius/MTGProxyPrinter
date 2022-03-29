@@ -23,6 +23,7 @@
   Uses image usage information already available since version 0.9.0
 - Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
   because it shows the main window content in four columns.
+- Improved sorting behaviour in the image cache cleanup wizard, when sorting the image table by collector number.
 
 ## Fixed issues
 

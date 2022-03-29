@@ -20,11 +20,11 @@ import functools
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel,\
-    QSortFilterProxyModel
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
+from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -293,7 +293,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.unknown_image_view: QTableView
         self.card_image_view: QTableView
         self.card_image_model = KnownCardImageModel(parent=self)
-        self.card_image_sort_model = QSortFilterProxyModel(self)
+        self.card_image_sort_model = NaturallySortedSortFilterProxyModel(self)
         self.card_image_sort_model.setSourceModel(self.card_image_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
         self.card_image_view.setModel(self.card_image_sort_model)
