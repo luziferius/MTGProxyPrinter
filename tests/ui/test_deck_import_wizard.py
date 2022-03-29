@@ -34,19 +34,19 @@ StringList = typing.List[str]
 OptString = typing.Optional[str]
 
 
-def create_wizard(card_db: CardDatabase, cards: StringList) -> DeckImportWizard:
+def create_and_show_wizard(qtbot: QtBot, card_db: CardDatabase, cards: StringList) -> DeckImportWizard:
     fill_card_database_with_json_cards(card_db, cards)
     language_model = QStringListModel(card_db.get_all_languages(), parent=None)
     wizard = DeckImportWizard(card_db, MagicMock(), language_model)
+    qtbot.add_widget(wizard)
+    with qtbot.wait_exposed(wizard):
+        wizard.show()
     return wizard
 
 
 def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot, card_db: CardDatabase):
-    wizard = create_wizard(card_db, ["regular_english_card"])
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
     deck_list = "1 Fury Sliver"
-    qtbot.add_widget(wizard)
-    with qtbot.wait_exposed(wizard):
-        wizard.show()
     _select_magic_online_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list)
@@ -130,11 +130,8 @@ class DeckReceiver(QObject):
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
-    wizard = create_wizard(card_db, ["regular_english_card", "regular_english_card_reprint"])
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
     deck_list = "2 Fury Sliver (TSP) 157"
-    qtbot.add_widget(wizard)
-    with qtbot.wait_exposed(wizard):
-        wizard.show()
     _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list)
@@ -197,3 +194,69 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "image_file": is_(none()),
         }),
     ))
+
+
+def test_complete_button_disabled_if_zero_cards_identified(qtbot: QtBot, card_db: CardDatabase):
+    """
+    If there are zero identified cards, the Finish button must be disabled, so that the wizard can’t be completed.
+    """
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
+    deck_list = "Invalid deck list"
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
+    assert_that(wizard.summary_page.isComplete(), is_(False))
+    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
+
+
+def test_complete_button_enabled_if_one_card_identified(qtbot: QtBot, card_db: CardDatabase):
+    """
+    If there is at least one identified card, the Finish button must be enabled.
+    """
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
+    deck_list = "1 Fury Sliver (TSP) 157"
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must be empty!")
+    assert_that(wizard.summary_page.isComplete(), is_(True))
+    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
+
+
+def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: QtBot, card_db: CardDatabase):
+    """
+    Test that going back and changing the deck list updates the isComplete()
+    value of the SummaryPage and the Finish button enabled state.
+    """
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
+    invalid_deck_list = "Invalid deck list"
+    valid_deck_list = "1 Fury Sliver (TSP) 157"
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    _input_deck_list(qtbot, wizard, invalid_deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
+    assert_that(wizard.summary_page.isComplete(), is_(False))
+    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
+
+    # Transition from invalid to valid state
+    _move_wizard_backward(qtbot, wizard)
+    _input_deck_list(qtbot, wizard, valid_deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must be empty!")
+    assert_that(wizard.summary_page.isComplete(), is_(True))
+    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
+
+    # Transition from valid to invalid state
+    _move_wizard_backward(qtbot, wizard)
+    _input_deck_list(qtbot, wizard, invalid_deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
+    assert_that(wizard.summary_page.isComplete(), is_(False))
+    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))

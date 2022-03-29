@@ -273,6 +273,10 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         super(SummaryPage, self).cleanupPage()
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
+    @pyqtSlot()
+    def isComplete(self) -> bool:
+        return self.card_list.rowCount() > 0
+
 
 class DeckImportWizard(QWizard):
     deck_added = pyqtSignal(collections.Counter)
