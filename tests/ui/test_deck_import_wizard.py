@@ -28,16 +28,21 @@ from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser
 from mtg_proxy_printer.model.card_list import PageColumns
 
-from tests.helpers import fill_card_database_with_json_card, fill_card_database_with_json_cards
+from tests.helpers import fill_card_database_with_json_cards
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
 
 
-def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+def create_wizard(card_db: CardDatabase, cards: StringList) -> DeckImportWizard:
+    fill_card_database_with_json_cards(card_db, cards)
     language_model = QStringListModel(card_db.get_all_languages(), parent=None)
     wizard = DeckImportWizard(card_db, MagicMock(), language_model)
+    return wizard
+
+
+def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot, card_db: CardDatabase):
+    wizard = create_wizard(card_db, ["regular_english_card"])
     deck_list = "1 Fury Sliver"
     qtbot.add_widget(wizard)
     with qtbot.wait_exposed(wizard):
@@ -125,9 +130,7 @@ class DeckReceiver(QObject):
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
-    fill_card_database_with_json_cards(card_db, ["regular_english_card", "regular_english_card_reprint"])
-    language_model = QStringListModel(card_db.get_all_languages(), parent=None)
-    wizard = DeckImportWizard(card_db, MagicMock(), language_model)
+    wizard = create_wizard(card_db, ["regular_english_card", "regular_english_card_reprint"])
     deck_list = "2 Fury Sliver (TSP) 157"
     qtbot.add_widget(wizard)
     with qtbot.wait_exposed(wizard):
