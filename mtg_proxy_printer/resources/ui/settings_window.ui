@@ -33,7 +33,7 @@
           <item row="0" column="0">
            <widget class="QLabel" name="add_card_widget_style_label">
             <property name="text">
-             <string>Preferred card search layout:</string>
+             <string>Main window layout</string>
             </property>
             <property name="buddy">
              <cstring>add_card_widget_style_combo_box</cstring>
@@ -217,10 +217,20 @@ Uncheck to disable this automatism.</string>
        </item>
        <item>
         <widget class="QGroupBox" name="update_check_group_box">
+         <property name="toolTip">
+          <string/>
+         </property>
          <property name="title">
           <string>Automatic update checks</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_9">
+          <item>
+           <widget class="QLabel" name="update_check_label">
+            <property name="text">
+             <string>Update checks are performed at application start, if enabled.</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QCheckBox" name="check_application_updates_enabled">
             <property name="toolTip">
@@ -379,7 +389,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
        <item row="1" column="0">
         <widget class="QLabel" name="pdf_page_count_limit_label">
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically split PDF documents, if they get longer than this many pages. Set to zero to disable splitting.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;When printing PDFs using a USB flash drive directly connected to the printer, the printer may refuse to print documents exceeding some arbitrary size limit.&lt;/p&gt;&lt;p&gt;To work around this limitation, you can enable this option and limit the number of pages per PDF. If the document has more pages, it will be exported into multiple PDF documents automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically split PDF documents, if they get longer than this many pages. Set to zero to disable splitting.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;When printing PDFs using a USB flash drive directly connected to a printer, it may refuse to print documents exceeding some arbitrary size limit.&lt;/p&gt;&lt;p&gt;To work around this limitation, you can enable this option and limit the number of pages per PDF. If the document has more pages, it will be exported into multiple PDF documents automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="text">
           <string>Split PDF documents longer than</string>
