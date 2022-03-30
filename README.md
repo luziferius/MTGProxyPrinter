@@ -29,6 +29,7 @@ These external libraries are used in the code. They can be installed from PyPI.
 
 These libraries are required to run the unit tests.
 
+- `tox` (Also used to build redistributable archives/installers)
 - `pytest`
 - `pytest-qt`
 - `pytest-cov` (Optional, for code coverage reports).
