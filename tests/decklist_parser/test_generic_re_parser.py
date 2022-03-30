@@ -1,0 +1,42 @@
+# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import unittest.mock
+
+from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.decklist_parser.re_parsers import GenericRegularExpressionDeckParser
+
+from tests.helpers import fill_card_database_with_json_cards
+
+import pytest
+from hamcrest import *
+
+
+@pytest.mark.parametrize("prefer_already_downloaded", [True, False])
+def test_generic_re_parser_with_card_name_only_list(
+        card_db: CardDatabase, prefer_already_downloaded: bool):
+    fill_card_database_with_json_cards(card_db, ["regular_english_card", "regular_english_card_reprint"])
+    card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    image_db = unittest.mock.MagicMock()
+    image_db.filter_already_downloaded.return_value = [card]
+    parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
+    deck = "Fury Sliver"
+    assert_that(
+        parser.parse_deck(deck, True, prefer_already_downloaded),
+        contains_exactly(
+            has_value(1),
+            is_(empty())
+        )
+    )

@@ -12,8 +12,9 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import typing
 
-from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel
+from PyQt5.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
 from PyQt5.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox
 
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -37,10 +38,12 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         return editor
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
-
-        model: Document = index.model()
+        model: typing.Union[Document, QSortFilterProxyModel] = index.model()
+        source_model: Document = model
+        while hasattr(source_model, "sourceModel"):
+            source_model = source_model.sourceModel()
         if index.column() == PageColumns.Set:
-            matching_sets = model.card_db.find_sets_matching(
+            matching_sets = source_model.card_db.find_sets_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
                 index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
             )
@@ -53,7 +56,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             editor.setCurrentIndex(current_set_position)
 
         elif index.column() == PageColumns.CollectorNumber:
-            matching_collector_numbers = model.card_db.find_collector_numbers_matching(
+            matching_collector_numbers = source_model.card_db.find_collector_numbers_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
                 index.siblingAtColumn(PageColumns.Set).data(Qt.EditRole),
                 index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),

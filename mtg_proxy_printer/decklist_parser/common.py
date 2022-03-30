@@ -51,13 +51,14 @@ class ParserBase(QObject):
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool,
                    language_override: str = None) -> ParsedDeck:
-
+        logger.info("About to parse deck")
         # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
         # Because it would operate on the cards in the source language. The card choice gets overwritten by the
         # translation step, so performs unnecessary work that gets thrown away anyways.
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
         parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        logger.debug(f"Parsed {sum(parsed_deck.values())} cards. Not identified: {len(unmatched_lines)} lines")
         # Now reset to the state as passed in
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
 

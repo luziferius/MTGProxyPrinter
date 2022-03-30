@@ -15,6 +15,8 @@
 - Added a new user interface layout that uses tabs to only show one part of the main window at a time.
   This is mainly useful for small and high-DPI monitors in portrait mode, i.e. when using 
   a monitor with an aspect ratio of 9:16.
+- The card table in the deck import wizard is now sortable by clicking on any of the header cells. When sorted, the
+  cards will be added to the document in the same order.
 
 ## Changed features
 
@@ -31,6 +33,9 @@
   to prevent Denial of Service attacks via maliciously crafted save files.
 - It is now possible to retry downloading card data updates, 
   if the download fails due to a flaky internet connection.
+- Fixed broken custom regular expression deck parser option in the deck import wizard. This option did not work at all.
+- Fixed broken Tappedout deck list parser. The options to include the maybe-board and acquire-board
+  did nothing when enabled and now work as intended.
 
 # Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
 

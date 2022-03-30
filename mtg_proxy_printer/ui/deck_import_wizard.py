@@ -18,14 +18,16 @@ import pathlib
 import re
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel, Qt
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
+
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
+from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 from mtg_proxy_printer.logger import get_logger
@@ -163,6 +165,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.card_db = card_db
         self.image_db = image_db
         self._selected_parser = None
+        self.parser_creator: typing.Callable[[], None] = (lambda: None)
         self.custom_re_input: QLineEdit
         self.custom_re_input.setToolTip(
             f"Enter a Regular Expression containing at least one supported, named group.\n\n"
@@ -175,29 +178,47 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self)
         self.select_parser_mtg_arena.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.MTGArenaParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_mtg_arena_parser)
         )
         self.select_parser_mtg_online.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.MTGOnlineParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_mtg_online_parser)
         )
         self.select_parser_xmage.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.XMageParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_xmage_parser)
         )
         self.select_parser_scryfall_csv.pressed.connect(
-            lambda: setattr(self, "selected_parser", csv_parsers.ScryfallCSVParser(self.card_db, self.image_db, self))
+            lambda: setattr(self, "parser_creator", self._create_scryfall_csv_parser)
         )
         self.select_parser_tappedout_csv.pressed.connect(
-            lambda: setattr(self, "selected_parser", csv_parsers.TappedOutCSVParser(
-                self.card_db, self.image_db,
-                self.tappedout_include_maybe_board.isChecked(), self.tappedout_include_acquire_board.isChecked(), self
-            ))
+            lambda: setattr(self, "parser_creator", self._create_tappedout_csv_parser)
         )
         self.select_parser_custom_re.pressed.connect(
-            lambda: setattr(self, "selected_parser", re_parsers.GenericRegularExpressionDeckParser(
-                self.card_db, self.image_db, self.field("custom_re"), self
-            ))
+            lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_mtg_arena_parser(self):
+        self.selected_parser = re_parsers.MTGArenaParser(self.card_db, self.image_db, self)
+
+    def _create_mtg_online_parser(self):
+        self.selected_parser = re_parsers.MTGOnlineParser(self.card_db, self.image_db, self)
+
+    def _create_xmage_parser(self):
+        self.selected_parser = re_parsers.XMageParser(self.card_db, self.image_db, self)
+
+    def _create_scryfall_csv_parser(self):
+        self.selected_parser = csv_parsers.ScryfallCSVParser(self.card_db, self.image_db, self)
+
+    def _create_tappedout_csv_parser(self):
+        self.selected_parser = csv_parsers.TappedOutCSVParser(
+            self.card_db, self.image_db,
+            self.tappedout_include_maybe_board.isChecked(), self.tappedout_include_acquire_board.isChecked(), self
+        )
+
+    def _create_generic_re_parser(self):
+        self.selected_parser = re_parsers.GenericRegularExpressionDeckParser(
+            self.card_db, self.image_db, self.field("custom_re"), self
+        )
 
     @pyqtSlot()
     def isComplete(self) -> bool:
@@ -216,6 +237,11 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             self.completeChanged.emit()
         return acceptable
 
+    def validatePage(self) -> bool:
+        self.parser_creator()
+        logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
+        return super().validatePage()
+
 
 class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
@@ -223,10 +249,17 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.setupUi(self)
         self.setCommitPage(True)
         self.card_list = CardListModel(card_db, self)
+        self.card_list_sort_model = self._create_sort_model(self.card_list)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
-        self.combo_box_delegate = self._setup_parsed_cards_table()
+        self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
+        proxy_model = NaturallySortedSortFilterProxyModel(self)
+        proxy_model.setSourceModel(source_model)
+        proxy_model.setSortRole(Qt.EditRole)
+        return proxy_model
 
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
         accept_button = self.wizard().button(QWizard.FinishButton)
@@ -239,9 +272,9 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon())
             accept_button.setToolTip("")
 
-    def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
+    def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
-        self.parsed_cards_table.setModel(self.card_list)
+        self.parsed_cards_table.setModel(model)
         delegate = ComboBoxItemDelegate(self.parsed_cards_table)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
@@ -273,6 +306,10 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         super(SummaryPage, self).cleanupPage()
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
+    @pyqtSlot()
+    def isComplete(self) -> bool:
+        return self.card_list.rowCount() > 0
+
 
 class DeckImportWizard(QWizard):
     deck_added = pyqtSignal(collections.Counter)
@@ -303,7 +340,7 @@ class DeckImportWizard(QWizard):
         if self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
-        deck = self.summary_page.card_list.as_deck()
+        deck = self.summary_page.card_list.as_deck(self.summary_page.card_list_sort_model.row_sort_order())
         # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         self.deck_added.emit(deck)
