@@ -72,3 +72,10 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         if isinstance(left_data, str) and isinstance(right_data, str):
             return str_less_than(left_data, right_data)
         return super().lessThan(left, right)
+
+    def row_sort_order(self) -> typing.List[int]:
+        """Returns the row numbers of the source model in the current sort order."""
+        return [
+            self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
+        ]
+

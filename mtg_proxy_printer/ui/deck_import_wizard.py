@@ -340,7 +340,7 @@ class DeckImportWizard(QWizard):
         if self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
             self.clear_document.emit()
-        deck = self.summary_page.card_list.as_deck()
+        deck = self.summary_page.card_list.as_deck(self.summary_page.card_list_sort_model.row_sort_order())
         # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
         logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
         self.deck_added.emit(deck)

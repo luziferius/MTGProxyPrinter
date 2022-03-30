@@ -15,6 +15,8 @@
 - Added a new user interface layout that uses tabs to only show one part of the main window at a time.
   This is mainly useful for small and high-DPI monitors in portrait mode, i.e. when using 
   a monitor with an aspect ratio of 9:16.
+- The card table in the deck import wizard is now sortable by clicking on any of the header cells. When sorted, the
+  cards will be added to the document in the same order.
 
 ## Changed features
 
