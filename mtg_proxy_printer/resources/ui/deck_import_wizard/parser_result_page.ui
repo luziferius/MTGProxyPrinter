@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>WizardPage</class>
  <widget class="QWizardPage" name="WizardPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>425</width>
+    <height>278</height>
+   </rect>
+  </property>
   <property name="title">
    <string>Import a deck list for printing</string>
   </property>
@@ -19,7 +27,8 @@ If unchecked, append the cards found below to the document.</string>
       <string>Replace the current document content with the found cards</string>
      </property>
      <property name="icon">
-      <iconset theme="document-replace"/>
+      <iconset theme="document-replace">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -35,13 +44,16 @@ If unchecked, append the cards found below to the document.</string>
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>60</verstretch>
+       <verstretch>65</verstretch>
       </sizepolicy>
      </property>
      <property name="sizeAdjustPolicy">
       <enum>QAbstractScrollArea::AdjustToContents</enum>
      </property>
      <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="sortingEnabled">
       <bool>true</bool>
      </property>
      <attribute name="horizontalHeaderDefaultSectionSize">
@@ -61,7 +73,7 @@ If unchecked, append the cards found below to the document.</string>
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
        <horstretch>0</horstretch>
-       <verstretch>40</verstretch>
+       <verstretch>35</verstretch>
       </sizepolicy>
      </property>
      <property name="sizeAdjustPolicy">

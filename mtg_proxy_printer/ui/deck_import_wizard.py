@@ -18,14 +18,16 @@ import pathlib
 import re
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel, Qt
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
+
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
+from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 from mtg_proxy_printer.logger import get_logger
@@ -247,10 +249,17 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.setupUi(self)
         self.setCommitPage(True)
         self.card_list = CardListModel(card_db, self)
+        self.card_list_sort_model = self._create_sort_model(self.card_list)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
-        self.combo_box_delegate = self._setup_parsed_cards_table()
+        self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
         self.registerField("should_replace_document", self.should_replace_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
+        proxy_model = NaturallySortedSortFilterProxyModel(self)
+        proxy_model.setSourceModel(source_model)
+        proxy_model.setSortRole(Qt.EditRole)
+        return proxy_model
 
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
         accept_button = self.wizard().button(QWizard.FinishButton)
@@ -263,9 +272,9 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon())
             accept_button.setToolTip("")
 
-    def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
+    def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
-        self.parsed_cards_table.setModel(self.card_list)
+        self.parsed_cards_table.setModel(model)
         delegate = ComboBoxItemDelegate(self.parsed_cards_table)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
