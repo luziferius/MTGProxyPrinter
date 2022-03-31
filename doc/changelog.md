@@ -17,6 +17,9 @@
   a monitor with an aspect ratio of 9:16.
 - The card table in the deck import wizard is now sortable by clicking on any of the header cells. When sorted, the
   cards will be added to the document in the same order.
+- When loading a document that contains printings matching a download filter, the affected printings are now
+  replaced with other, available printings, if possible. When migrating from older versions of MTGProxyPrinter,
+  the internal card database has to be refreshed for this to work.
 
 ## Changed features
 
