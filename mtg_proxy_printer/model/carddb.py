@@ -300,10 +300,35 @@ class CardDatabase:
         query += "\n    ".join(where_clause)
         if order_by_print_count:
             query += 'ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
-        cursor = self.db.execute(
-            query,
-            where_parameters
-        )
+        result = self._get_card_from_data(query, where_parameters)
+        return result
+
+    def get_replacement_card_for_unknown_printing(
+            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        query = cached_dedent('''\
+        SELECT card_name, set_code, set_name, collector_number, png_image_uri,
+               AllPrintings.scryfall_id, is_front, oracle_id, highres_image,
+               is_oversized, face_number, AllPrintings.language -- get_replacement_card_for_unknown_printing()
+            FROM RemovedPrintings
+            JOIN AllPrintings USING (oracle_id)
+            LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
+            WHERE RemovedPrintings.scryfall_id = ?
+            AND is_front = ?
+            ORDER BY 
+                -- Match with original language first, fall back to preferred language, then fall back to English
+               (4*(AllPrintings.language == RemovedPrintings.language) +
+                2*(AllPrintings.language == ?) +
+                  (AllPrintings.language == 'en')) DESC NULLS LAST
+        ''')
+        if order_by_print_count:
+            query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
+        # Break any remaining ties by preferring high resolution images over low resolution images
+        query += '        , AllPrintings.highres_image DESC\n'
+        return self._get_card_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
+
+    def _get_card_from_data(self, query, parameters):
+        cursor = self.db.execute(query, parameters)
         result = [
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
@@ -311,7 +336,7 @@ class CardDatabase:
                 bool(highres_image), bool(is_oversized), face_number,
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-            is_oversized, face_number, language in cursor
+                is_oversized, face_number, language in cursor
         ]
         return result
 

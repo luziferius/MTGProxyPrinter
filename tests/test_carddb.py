@@ -15,6 +15,7 @@
 
 import dataclasses
 import datetime
+import textwrap
 import typing
 import unittest.mock
 from unittest.mock import MagicMock
@@ -541,22 +542,45 @@ def test_get_cards_from_data_works_on_oracle_id_alone(
     scryfall_ids = ["7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", "e2ef9b74-481b-424b-8e33-f0b910f66370"]
     card_data = CardIdentificationData(language, oracle_id=oracle_id)
     cards = card_db.get_cards_from_data(card_data)
+
     assert_that(
         cards,
         contains_inanyorder(
             has_properties({
                 "name": equal_to("Forest"),
+                "set": has_properties({
+                    "code": "anb",
+                    "name": "Arena Beginner Set",
+                }),
                 "language": equal_to("en"),
                 "scryfall_id": equal_to(scryfall_ids[0]),
             }),
             has_properties({
                 "name": equal_to("Forest"),
+                "set": has_properties({
+                    "code": "znr",
+                    "name": "Zendikar Rising",
+                }),
                 "language": equal_to("en"),
                 "scryfall_id": equal_to(scryfall_ids[1]),
             }),
         ),
     )
 
+
+def test_get_replacement_card(
+        qtbot, card_db: CardDatabase):
+    fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "german_basic_Forest"])
+    card_db.db.executemany(
+        textwrap.dedent("""\
+            INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+                VALUES (?, ?, ?)
+            """), [
+            ("english-id", "en", "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"),
+            ("german-id", "de", "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc"),
+            ("non-english-id", "invalid", "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"),
+        ])
+    card_db.get_replacement_card_for_unknown_printing(CardIdentificationData(scryfall_id="english-id", language="en"))
 
 @pytest.mark.parametrize("card_count_data", [
     [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
