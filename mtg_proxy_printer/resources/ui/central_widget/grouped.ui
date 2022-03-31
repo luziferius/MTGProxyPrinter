@@ -14,6 +14,52 @@
    <property name="bottomMargin">
     <number>0</number>
    </property>
+   <item row="5" column="3" rowspan="3">
+    <widget class="PageRenderer" name="page_renderer">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>7</horstretch>
+       <verstretch>10</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="acceptDrops">
+      <bool>false</bool>
+     </property>
+     <property name="renderHints">
+      <set>QPainter::Antialiasing|QPainter::HighQualityAntialiasing</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" rowspan="7" colspan="2">
+    <widget class="QListView" name="document_view">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>3</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="alternatingRowColors">
+      <bool>true</bool>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="2">
+    <widget class="QPushButton" name="delete_selected_images_button">
+     <property name="text">
+      <string>Remove selected</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-delete">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
    <item row="5" column="2" rowspan="2">
     <widget class="QTableView" name="page_card_table_view">
      <property name="sizePolicy">
@@ -39,40 +85,6 @@
      </attribute>
     </widget>
    </item>
-   <item row="5" column="3" rowspan="3">
-    <widget class="PageRenderer" name="page_renderer">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>7</horstretch>
-       <verstretch>10</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="acceptDrops">
-      <bool>false</bool>
-     </property>
-     <property name="renderHints">
-      <set>QPainter::Antialiasing|QPainter::HighQualityAntialiasing</set>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="2">
-    <widget class="QPushButton" name="delete_selected_images_button">
-     <property name="text">
-      <string>Remove selected</string>
-     </property>
-     <property name="icon">
-      <iconset theme="edit-delete">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0">
-    <widget class="QLabel" name="document_view_label">
-     <property name="text">
-      <string>All pages:</string>
-     </property>
-    </widget>
-   </item>
    <item row="1" column="2" rowspan="2" colspan="2">
     <widget class="HorizontalAddCardWidget" name="add_card_widget" native="true">
      <property name="sizePolicy">
@@ -83,29 +95,17 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="2">
-    <widget class="QLabel" name="add_card_widget_label">
+   <item row="0" column="0" colspan="2">
+    <widget class="QLabel" name="document_view_label">
      <property name="text">
-      <string>Add new cards:</string>
+      <string>All pages:</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="0" rowspan="7" colspan="2">
-    <widget class="QListView" name="document_view">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>3</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="alternatingRowColors">
-      <bool>true</bool>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SingleSelection</enum>
-     </property>
-     <property name="selectionBehavior">
-      <enum>QAbstractItemView::SelectRows</enum>
+   <item row="0" column="2" colspan="2">
+    <widget class="QLabel" name="add_card_widget_label">
+     <property name="text">
+      <string>Add new cards:</string>
      </property>
     </widget>
    </item>
