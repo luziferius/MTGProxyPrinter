@@ -381,6 +381,15 @@ def _migrate_21_to_22(db: sqlite3.Connection):
     """))
 
 
+def _migrate_22_to_23(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent("""\
+        CREATE TABLE RemovedPrintings (
+          scryfall_id TEXT NOT NULL PRIMARY KEY,
+          oracle_id TEXT NOT NULL
+        );
+        """))
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -397,6 +406,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (19, _migrate_19_to_20),
     (20, _migrate_20_to_21),
     (21, _migrate_21_to_22),
+    (22, _migrate_22_to_23),
 )
 
 

@@ -19,7 +19,7 @@ import typing
 from unittest.mock import patch, MagicMock
 import pkg_resources
 
-from hamcrest import assert_that, is_, empty, has_key
+from hamcrest import assert_that, is_, empty, has_key, contains_inanyorder
 
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
@@ -92,10 +92,15 @@ def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabas
     )
 
 
-def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase):
+def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, test_case = None):
     """
     Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
     download settings.
     """
     for relation in ("PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"):
         assert_relation_is_empty(card_db, relation)
+    if test_case:
+        assert_that(
+            card_db.db.execute("SELECT scryfall_id, oracle_id FROM RemovedPrintings"),
+            contains_inanyorder((test_case.scryfall_id, test_case.oracle_id))
+        )

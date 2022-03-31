@@ -361,12 +361,15 @@ def test_download_filters(card_db: CardDatabase, test_case: TestCaseData, filter
     if filter_setting:
         assert_successful_import(card_db, test_case)
     else:
-        assert_model_is_empty(card_db)
+        assert_model_is_empty(card_db, test_case)
 
 
 def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDatabase):
     fill_card_database_with_json_card(card_db, "missing_image_double_faced_card")
-    assert_model_is_empty(card_db)
+    assert_model_is_empty(
+        card_db, TestCaseData(
+            "", False, tuple(), DatabaseSetData("", "", ""), "", "",
+            "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
 
 
 def test_re_import_with_changed_download_filter_removes_card(card_db: CardDatabase):
@@ -383,7 +386,7 @@ def test_re_import_with_changed_download_filter_removes_card(card_db: CardDataba
     # Pass 2: Re-Populate the database, but exclude the card now.
     fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
     # The card should not be in the database.
-    assert_model_is_empty(card_db)
+    assert_model_is_empty(card_db, test_case)
 
 
 def test_updates_language(card_db: CardDatabase):
