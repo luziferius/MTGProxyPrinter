@@ -375,14 +375,15 @@ def test_find_all_translated_printings__card_attribute_is_oversized(
         ))
 
 
+@pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("json_name, scryfall_id, expected", [
     ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
     ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
 ])
 def test_get_cards_from_data__card_attribute_is_oversized(
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool, language: OptString):
     fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=True)
+    card_data = CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True)
     cards = card_db.get_cards_from_data(card_data)
     assert_that(cards, has_length(1))
     assert_that(cards[0], has_property("is_oversized", all_of(is_(expected), instance_of(bool))))
@@ -441,15 +442,16 @@ def test_find_all_translated_printings__card_attribute_is_front(
         ))
 
 
+@pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("is_front", [True, False])
 @pytest.mark.parametrize("json_name, scryfall_id", [
     ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"),
     ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e"),
 ])
 def test_get_cards_from_data__card_attribute_is_front(
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, is_front: bool):
+        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, is_front: bool, language: OptString):
     fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=is_front)
+    card_data = CardIdentificationData(language, scryfall_id=scryfall_id, is_front=is_front)
     cards = card_db.get_cards_from_data(card_data)
     assert_that(cards, has_length(1))
     assert_that(cards[0], has_property("is_front", all_of(is_(is_front), instance_of(bool))))
@@ -488,31 +490,35 @@ def test_find_all_translated_printings__card_attribute_highres_image(
         ))
 
 
+@pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("is_front", [True, False])
 @pytest.mark.parametrize("json_name, scryfall_id, highres_image", [
     ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
     ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False),
 ])
 def test_get_cards_from_data__card_attribute_highres_image(
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, highres_image: bool, is_front: bool):
+        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str,
+        highres_image: bool, is_front: bool, language: OptString):
     fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card_data = CardIdentificationData("en", scryfall_id=scryfall_id, is_front=is_front)
+    card_data = CardIdentificationData(language, scryfall_id=scryfall_id, is_front=is_front)
     cards = card_db.get_cards_from_data(card_data)
     assert_that(cards, has_length(1))
     assert_that(cards[0], has_property("highres_image", all_of(is_(highres_image), instance_of(bool))))
 
 
+@pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("card_count_data", [
     [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
     [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)],
 ])
-def test_get_cards_from_data_order_by_print_count_enabled(qtbot, card_db: CardDatabase, card_count_data):
+def test_get_cards_from_data_order_by_print_count_enabled(
+        qtbot, card_db: CardDatabase, language: OptString, card_count_data):
     fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
     card_db.db.executemany(
         "INSERT INTO LastImageUseTimestamps (scryfall_id, is_front, usage_count) VALUES (?, 1, ?)",
         card_count_data
     )
-    card_data = CardIdentificationData("en", name="Forest")
+    card_data = CardIdentificationData(language, name="Forest")
     cards = card_db.get_cards_from_data(card_data, order_by_print_count=True)
     assert_that(
         cards,
@@ -524,6 +530,31 @@ def test_get_cards_from_data_order_by_print_count_enabled(qtbot, card_db: CardDa
                 card_count_data[1 if card_count_data[0][1] > card_count_data[1][1] else 0][0]
             )),
         )
+    )
+
+
+@pytest.mark.parametrize("language", ["en", None])
+def test_get_cards_from_data_works_on_oracle_id_alone(
+        qtbot, card_db: CardDatabase, language: OptString):
+    fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
+    oracle_id = "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"
+    scryfall_ids = ["7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", "e2ef9b74-481b-424b-8e33-f0b910f66370"]
+    card_data = CardIdentificationData(language, oracle_id=oracle_id)
+    cards = card_db.get_cards_from_data(card_data)
+    assert_that(
+        cards,
+        contains_inanyorder(
+            has_properties({
+                "name": equal_to("Forest"),
+                "language": equal_to("en"),
+                "scryfall_id": equal_to(scryfall_ids[0]),
+            }),
+            has_properties({
+                "name": equal_to("Forest"),
+                "language": equal_to("en"),
+                "scryfall_id": equal_to(scryfall_ids[1]),
+            }),
+        ),
     )
 
 
