@@ -374,6 +374,19 @@ def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: Car
             "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
 
 
+def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: CardDatabase):
+    fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
+    assert_model_is_empty(
+        card_db, TestCaseData(
+            "", False, tuple(), DatabaseSetData("", "", ""), "", "",
+            "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
+    fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
+    assert_model_is_empty(
+        card_db, TestCaseData(
+            "", False, tuple(), DatabaseSetData("", "", ""), "", "",
+            "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
+
+
 def test_re_import_with_enabled_download_filter_removes_card(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (

@@ -270,8 +270,11 @@ class CardInfoDownloadWorker(DownloaderBase):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
                     INSERT INTO RemovedPrintings (scryfall_id, oracle_id)
-                    VALUES (?, ?);
-                    """), (card["id"], _get_oracle_id(card)))
+                      VALUES (?, ?)
+                      ON CONFLICT (scryfall_id) DO UPDATE
+                        SET oracle_id = excluded.oracle_id
+                        WHERE oracle_id <> excluded.oracle_id
+                    ;"""), (card["id"], _get_oracle_id(card)))
                 continue
             try:
                 face_ids = self._parse_single_printing(card, face_ids)
