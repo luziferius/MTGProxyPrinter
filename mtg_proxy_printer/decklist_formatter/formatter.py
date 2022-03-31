@@ -61,7 +61,9 @@ class FormatterBase(QObject):
         card_data = CardIdentificationData(
             "en", translated_name, non_english_card.set.code, is_front=non_english_card.is_front
         )
-        if translated_card := self.card_db.get_cards_from_data(card_data)[0]:
+        possible_cards = self.card_db.get_cards_from_data(card_data)
+        if possible_cards:
+            translated_card = possible_cards[0]
             self._format_name_of_double_faced_cards(translated_card)
             return translated_card
         elif translated_card := self.parser.guess_printing(card_data):
