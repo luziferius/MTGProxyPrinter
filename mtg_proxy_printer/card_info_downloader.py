@@ -269,12 +269,14 @@ class CardInfoDownloadWorker(DownloaderBase):
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
-                    INSERT INTO RemovedPrintings (scryfall_id, oracle_id)
-                      VALUES (?, ?)
+                    INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+                      VALUES (?, ?, ?)
                       ON CONFLICT (scryfall_id) DO UPDATE
-                        SET oracle_id = excluded.oracle_id
+                        SET oracle_id = excluded.oracle_id,
+                            language = excluded.language
                         WHERE oracle_id <> excluded.oracle_id
-                    ;"""), (card["id"], _get_oracle_id(card)))
+                           OR language <> excluded.language
+                    ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
                 face_ids = self._parse_single_printing(card, face_ids)

@@ -385,6 +385,8 @@ def _migrate_22_to_23(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
         CREATE TABLE RemovedPrintings (
           scryfall_id TEXT NOT NULL PRIMARY KEY,
+          -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
+          language TEXT NOT NULL,
           oracle_id TEXT NOT NULL
         );
         """))

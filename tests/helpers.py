@@ -106,6 +106,6 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
         assert_relation_is_empty(card_db, relation)
     if test_case:
         assert_that(
-            card_db.db.execute("SELECT scryfall_id, oracle_id FROM RemovedPrintings"),
-            contains_inanyorder((test_case.scryfall_id, test_case.oracle_id))
+            card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings"),
+            contains_inanyorder((test_case.scryfall_id, test_case.language, test_case.oracle_id))
         )
