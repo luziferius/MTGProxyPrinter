@@ -35,7 +35,13 @@ class FormatterBase(QObject):
         self.parser = mtg_proxy_printer.decklist_parser.common.ParserBase(self.card_db, image_db)
 
     def format(self, document: Document) -> str:
-        # Work on a copy of the card objects. This prevents side-effects when formatting card names of double-faced
+        """Format the given document as a deck list."""
+        # FIXME: Handle some corner cases:
+        #  What about a document that contains back faces without any fronts?
+        #  What about mismatched front and back faces? Which printing should be chosen for formats that allow
+        #  specifying the exact print?
+
+        # Work on a copy of the card objects. This prevents side effects when formatting card names of double-faced
         # cards
         cards: typing.Iterable[Card] = map(copy.copy, itertools.chain.from_iterable(document))
         counted_cards = collections.Counter()
