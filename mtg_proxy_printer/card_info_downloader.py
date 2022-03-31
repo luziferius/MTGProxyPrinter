@@ -357,13 +357,20 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
     db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
     db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
-    db.execute(cached_dedent('''\
+    db.execute(cached_dedent("""\
+    DELETE FROM RemovedPrintings
+      WHERE scryfall_id IN (
+        SELECT Printing.scryfall_id
+        FROM Printing
+      )
+    """))
+    db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
         WHERE language_id NOT IN (
-            SELECT FaceName.language_id
-            FROM FaceName
+          SELECT FaceName.language_id
+          FROM FaceName
         )
-    '''))
+    """))
 
 
 @functools.lru_cache(None)

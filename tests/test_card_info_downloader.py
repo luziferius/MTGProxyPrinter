@@ -372,7 +372,7 @@ def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDataba
             "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
 
 
-def test_re_import_with_changed_download_filter_removes_card(card_db: CardDatabase):
+def test_re_import_with_enabled_download_filter_removes_card(card_db: CardDatabase):
     test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
@@ -387,6 +387,29 @@ def test_re_import_with_changed_download_filter_removes_card(card_db: CardDataba
     fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
     # The card should not be in the database.
     assert_model_is_empty(card_db, test_case)
+
+
+def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(card_db: CardDatabase):
+    test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
+        "oversized_card", True, (
+            FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
+        ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api"),
+        "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
+    )
+    filter_name = "download-oversized-cards"
+    # Pass 1: Populate the database and exclude the card. The card should not be in the database afterwards
+    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
+    assert_model_is_empty(card_db, test_case)
+    # Pass 2: Re-Populate the database, but include the card now.
+    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "True")
+    # The card should be in the database. The RemovedPrintings table should be empty
+    assert_successful_import(card_db, test_case)
+    assert_that(
+        card_db.db.execute("SELECT scryfall_id, oracle_id FROM RemovedPrintings").fetchall(),
+        is_(empty()),
+        "RemovedPrintings table not properly cleaned up."
+    )
+
 
 
 def test_updates_language(card_db: CardDatabase):
