@@ -46,8 +46,8 @@ def empty_save_database(request) -> sqlite3.Connection:
 
 
 @pytest.fixture
-def document(card_db: CardDatabase) -> Document:
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+def document(qtbot, card_db: CardDatabase) -> Document:
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     document = Document(card_db, MagicMock())
     yield document
     document.loader.worker_thread.quit()

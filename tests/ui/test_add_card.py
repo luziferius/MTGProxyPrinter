@@ -37,7 +37,7 @@ def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase
     Test for bug /tktview/cca01cfe00adc56c520bcefa7cf45e1f95447267
     "Art-Series cards crash the application", found in v0.11.0
     """
-    fill_card_database_with_json_card(card_db, "english_double_faced_art_series_card")
+    fill_card_database_with_json_card(qtbot, card_db, "english_double_faced_art_series_card")
     expected_card_identification_data = CardIdentificationData(
         "en", "Clearwater Pathway", "aznr", "25"
     )

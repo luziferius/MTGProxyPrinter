@@ -37,7 +37,7 @@ OptString = typing.Optional[str]
 
 
 def create_and_show_wizard(qtbot: QtBot, card_db: CardDatabase, cards: StringList) -> DeckImportWizard:
-    fill_card_database_with_json_cards(card_db, cards)
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
     language_model = QStringListModel(card_db.get_all_languages(), parent=None)
     wizard = DeckImportWizard(card_db, MagicMock(), language_model)
     qtbot.add_widget(wizard)

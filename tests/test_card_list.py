@@ -26,15 +26,15 @@ OVERSIZED_ID = "650722b4-d72b-4745-a1a5-00a34836282b"
 REGULAR_ID = "0000579f-7b35-4ed3-b44c-db2a538066fe"
 
 
-def _populate_card_db_and_create_model(card_db: CardDatabase) -> CardListModel:
-    fill_card_database_with_json_cards(card_db, ["oversized_card", "regular_english_card"])
+def _populate_card_db_and_create_model(qtbot, card_db: CardDatabase) -> CardListModel:
+    fill_card_database_with_json_cards(qtbot, card_db, ["oversized_card", "regular_english_card"])
     model = CardListModel(card_db)
     return model
 
 
 @pytest.mark.parametrize("count", [1, 2, 10])
 def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase, count: int):
-    model = _populate_card_db_and_create_model(card_db)
+    model = _populate_card_db_and_create_model(qtbot, card_db)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == count)):
         model.add_cards({oversized: count})
@@ -42,7 +42,7 @@ def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardD
 
 
 def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(card_db)
+    model = _populate_card_db_and_create_model(qtbot, card_db)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     model.add_cards({oversized: 10})
     assert_that(model.oversized_card_count, is_(equal_to(10)))
@@ -53,7 +53,7 @@ def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: Ca
 
 
 def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(card_db)
+    model = _populate_card_db_and_create_model(qtbot, card_db)
     regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     regular_data = CardIdentificationData(
@@ -77,7 +77,7 @@ def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: Q
 
 
 def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: QtBot, card_db: CardDatabase):
-    model = _populate_card_db_and_create_model(card_db)
+    model = _populate_card_db_and_create_model(qtbot, card_db)
     regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     oversized_data = CardIdentificationData(

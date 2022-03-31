@@ -34,8 +34,8 @@ from tests.helpers import fill_card_database_with_json_card
 
 
 @pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
-def main_window(card_db: CardDatabase, request) -> MainWindow:
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     card_db = CardDatabase(":memory:")
     with TemporaryDirectory() as temp_dir, unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",

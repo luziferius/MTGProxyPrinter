@@ -21,7 +21,8 @@ from hamcrest import *
 import pytest
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, \
+    fill_card_database_with_json_cards
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -238,8 +239,8 @@ def generate_test_cases_for_test_card_import():
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
-def test_card_import(card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(card_db, test_case.json_name)
+def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
     assert_successful_import(card_db, test_case)
 
 
@@ -356,23 +357,24 @@ def generate_test_cases_for_test_download_filters():
 
 @pytest.mark.parametrize("filter_setting", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_download_filters())
-def test_download_filters(card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
-    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, str(filter_setting))
+def test_download_filters(
+        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, str(filter_setting))
     if filter_setting:
         assert_successful_import(card_db, test_case)
     else:
         assert_model_is_empty(card_db, test_case)
 
 
-def test_import_card_skips_import_of_card_with_missing_image(card_db: CardDatabase):
-    fill_card_database_with_json_card(card_db, "missing_image_double_faced_card")
+def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: CardDatabase):
+    fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_model_is_empty(
         card_db, TestCaseData(
             "", False, tuple(), DatabaseSetData("", "", ""), "", "",
             "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
 
 
-def test_re_import_with_enabled_download_filter_removes_card(card_db: CardDatabase):
+def test_re_import_with_enabled_download_filter_removes_card(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
@@ -381,15 +383,15 @@ def test_re_import_with_enabled_download_filter_removes_card(card_db: CardDataba
     )
     filter_name = "download-oversized-cards"
     # Pass 1: Populate the database and include the card. The card should be in the database afterwards
-    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "True")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "True")
     assert_successful_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
-    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "False")
     # The card should not be in the database.
     assert_model_is_empty(card_db, test_case)
 
 
-def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(card_db: CardDatabase):
+def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
@@ -398,10 +400,10 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
     )
     filter_name = "download-oversized-cards"
     # Pass 1: Populate the database and exclude the card. The card should not be in the database afterwards
-    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "False")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "False")
     assert_model_is_empty(card_db, test_case)
     # Pass 2: Re-Populate the database, but include the card now.
-    fill_card_database_with_json_card(card_db, test_case.json_name, filter_name, "True")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "True")
     # The card should be in the database. The RemovedPrintings table should be empty
     assert_successful_import(card_db, test_case)
     assert_that(
@@ -411,8 +413,7 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
     )
 
 
-
-def test_updates_language(card_db: CardDatabase):
+def test_updates_language(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the language
         "regular_english_card", True, (
             FaceData("Fury Sliver",
@@ -422,9 +423,9 @@ def test_updates_language(card_db: CardDatabase):
         "pl", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"lang": test_case.language}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
@@ -445,15 +446,15 @@ def test_updates_language(card_db: CardDatabase):
         "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-000000000000", False,
     )
 ])
-def test_updates_card_oracle_id(card_db: CardDatabase, test_case: TestCaseData):
+def test_updates_card_oracle_id(qtbot, card_db: CardDatabase, test_case: TestCaseData):
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"oracle_id": test_case.oracle_id}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_set_code(card_db: CardDatabase):
+def test_updates_set_code(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified set code
         "regular_english_card", True, (
             FaceData("Fury Sliver",
@@ -463,13 +464,13 @@ def test_updates_set_code(card_db: CardDatabase):
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"set": test_case.set.set_code}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_set_name(card_db: CardDatabase):
+def test_updates_set_name(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the set name
         "regular_english_card", True, (
             FaceData("Fury Sliver",
@@ -479,13 +480,13 @@ def test_updates_set_name(card_db: CardDatabase):
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"set_name": test_case.set.set_name}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_set_uri(card_db: CardDatabase):
+def test_updates_set_uri(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the set URI
         "regular_english_card", True, (
             FaceData("Fury Sliver",
@@ -495,13 +496,13 @@ def test_updates_set_uri(card_db: CardDatabase):
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"scryfall_set_uri": test_case.set.set_uri}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_printing_collector_number(card_db: CardDatabase):
+def test_updates_printing_collector_number(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the collector_number
         "regular_english_card", True, (
             FaceData("Fury Sliver",
@@ -511,13 +512,13 @@ def test_updates_printing_collector_number(card_db: CardDatabase):
         "en", "1234", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"collector_number": test_case.collector_number}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_printing_is_oversized(card_db: CardDatabase):
+def test_updates_printing_is_oversized(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the oversized boolean
         "regular_english_card", True, (
             FaceData("Fury Sliver",
@@ -527,13 +528,13 @@ def test_updates_printing_is_oversized(card_db: CardDatabase):
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", True,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"oversized": test_case.is_oversized}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)
 
 
-def test_updates_printing_highres_image(card_db: CardDatabase):
+def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
     test_case = TestCaseData(  # English "Fury Sliver" from Time Spiral. Modified the highres_image boolean
         "regular_english_card", False, (
             FaceData("Fury Sliver",
@@ -543,7 +544,7 @@ def test_updates_printing_highres_image(card_db: CardDatabase):
         "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
     )
     json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(card_db, json_data)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"highres_image": test_case.highres_image}):
-        fill_card_database_with_json_card(card_db, json_data)
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_successful_import(card_db, test_case)

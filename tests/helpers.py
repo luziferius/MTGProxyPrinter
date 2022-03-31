@@ -20,6 +20,7 @@ from unittest.mock import patch, MagicMock
 import pkg_resources
 
 from hamcrest import assert_that, is_, empty, has_key, contains_inanyorder
+from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
@@ -46,8 +47,10 @@ def setup_settings_for_testing():
         mtg_proxy_printer.settings.settings["downloads"][setting] = str(True)
 
 
-def populate_database(card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
-    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db).populate_database(data)
+def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
+    with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
+        dw.populate_database(data)
 
 
 @functools.lru_cache()
@@ -56,6 +59,7 @@ def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
 
 
 def fill_card_database_with_json_cards(
+        qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
         option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
@@ -66,7 +70,7 @@ def fill_card_database_with_json_cards(
     # Either both None or both set non-empty
     assert (option is None and value is None) or (bool(option) and bool(value))
     if option is None:
-        populate_database(card_db, data)
+        populate_database(qtbot, card_db, data)
     else:
         assert_that(
             mtg_proxy_printer.settings.settings["downloads"],
@@ -74,15 +78,16 @@ def fill_card_database_with_json_cards(
             f"Test setup failed: Download settings do not contain expected setting: {option}"
         )
         with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-            populate_database(card_db, data)
+            populate_database(qtbot, card_db, data)
     return card_db
 
 
 def fill_card_database_with_json_card(
+        qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
         option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    return fill_card_database_with_json_cards(card_db, [json_file_or_name], option, value)
+    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], option, value)
 
 
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):
@@ -92,7 +97,7 @@ def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabas
     )
 
 
-def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, test_case = None):
+def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, test_case=None):
     """
     Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
     download settings.
