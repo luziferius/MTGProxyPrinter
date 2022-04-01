@@ -35,7 +35,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import Card, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
@@ -122,7 +122,7 @@ class DocumentLoader(QObject):
     MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
     loading_state_changed = pyqtSignal(bool)
-    unknown_scryfall_ids_found = pyqtSignal(int)
+    unknown_scryfall_ids_found = pyqtSignal(int, int)
     loading_file_failed = pyqtSignal(pathlib.Path, str)
     # Emitted when downloading required images during the loading process failed due to network issues.
     network_error_occurred = pyqtSignal(str)
@@ -147,7 +147,7 @@ class DocumentLoader(QObject):
         finished = pyqtSignal()
         loading_file_failed = pyqtSignal(pathlib.Path, str)
         document_clear_requested = pyqtSignal()
-        unknown_scryfall_ids_found = pyqtSignal(int)
+        unknown_scryfall_ids_found = pyqtSignal(int, int)
         loading_file_successful = pyqtSignal(pathlib.Path)
         network_error_occurred = pyqtSignal(str)
         request_blank_pixmap = pyqtSignal(Card)
@@ -187,25 +187,28 @@ class DocumentLoader(QObject):
         def load_document(self):
             self.should_run = True
             try:
-                unknown_ids = self._load_document()
+                unknown_ids, migrated_ids = self._load_document()
             except AssertionError as e:
                 logger.exception(
                     "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
                 self.loading_file_failed.emit(self.save_path, str(e))
             else:
-                if unknown_ids:
-                    self.unknown_scryfall_ids_found.emit(unknown_ids)
+                if unknown_ids or migrated_ids:
+                    self.unknown_scryfall_ids_found.emit(unknown_ids, migrated_ids)
                 self.loading_file_successful.emit(self.save_path)
             finally:
                 self.finished.emit()
 
-        def _load_document(self) -> int:
+        def _load_document(self) -> (int, int):
             card_data, page_settings = self._read_data_from_save_path(self.save_path)
             self.document_clear_requested.emit()
             self.document_settings_loaded.emit(page_settings)
             logger.info("Start filling pages with cards from loaded data")
+            prefer_already_downloaded = mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
+                "prefer-already-downloaded")
             current_page = 1
             unknown_ids = 0
+            migrated_ids = 0
             for page_number, slot, scryfall_id, is_front in card_data:
                 if not self.should_run:
                     logger.info("Cancel request received, stop processing the card list.")
@@ -215,11 +218,15 @@ class DocumentLoader(QObject):
                     self.new_page.emit()
                 card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
                 if card is None:
-                    # If the save file was tampered with or the database used to save contained more cards than the
-                    # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
-                    unknown_ids += 1
-                    logger.info(f"Unknown ID found in document: {scryfall_id=}, {is_front=}")
-                    continue
+                    card = self._find_replacement_card(scryfall_id, is_front, prefer_already_downloaded)
+                    if card:
+                        migrated_ids += 1
+                    else:
+                        # If the save file was tampered with or the database used to save contained more cards than the
+                        # currently used one, the save may contain unknown Scryfall IDs. So skip all unknown data.
+                        unknown_ids += 1
+                        logger.info("Unable to find suitable replacement card. Skipping it.")
+                        continue
                 try:
                     self.image_loader.get_image_synchronous(card)
                 except urllib.error.URLError as e:
@@ -227,7 +234,21 @@ class DocumentLoader(QObject):
                 except socket.timeout as e:
                     self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
                 self.add_card.emit(card)
-            return unknown_ids
+            return unknown_ids, migrated_ids
+
+        def _find_replacement_card(self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
+            logger.info(f"Unknown card scryfall ID found in document:  {scryfall_id=}, {is_front=}")
+            card = None
+            identification_data = CardIdentificationData(scryfall_id=scryfall_id, is_front=is_front)
+            choices = self.card_db.get_replacement_card_for_unknown_printing(
+                identification_data, order_by_print_count=prefer_already_downloaded)
+            if choices:
+                filtered_choices = []
+                if prefer_already_downloaded:
+                    filtered_choices = self.image_db.filter_already_downloaded(choices)
+                card = filtered_choices[0] if filtered_choices else choices[0]
+                logger.info(f"Found suitable replacement card: {card}")
+            return card
 
         @staticmethod
         def _read_data_from_save_path(save_file_path: pathlib.Path):

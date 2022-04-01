@@ -26,8 +26,8 @@ from hamcrest import *
 
 @pytest.mark.parametrize("prefer_already_downloaded", [True, False])
 def test_generic_re_parser_with_card_name_only_list(
-        card_db: CardDatabase, prefer_already_downloaded: bool):
-    fill_card_database_with_json_cards(card_db, ["regular_english_card", "regular_english_card_reprint"])
+        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool):
+    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
     card = card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     image_db = unittest.mock.MagicMock()
     image_db.filter_already_downloaded.return_value = [card]

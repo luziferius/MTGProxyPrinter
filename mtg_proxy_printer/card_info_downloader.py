@@ -257,6 +257,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
+        db: sqlite3.Connection = self.model.db
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -267,6 +268,15 @@ class CardInfoDownloadWorker(DownloaderBase):
                 continue
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
+                db.execute(cached_dedent("""\
+                    INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+                      VALUES (?, ?, ?)
+                      ON CONFLICT (scryfall_id) DO UPDATE
+                        SET oracle_id = excluded.oracle_id,
+                            language = excluded.language
+                        WHERE oracle_id <> excluded.oracle_id
+                           OR language <> excluded.language
+                    ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
                 face_ids = self._parse_single_printing(card, face_ids)
@@ -278,7 +288,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
-        self.model.db.execute(cached_dedent(
+        db.execute(cached_dedent(
             """\
             INSERT INTO LastDatabaseUpdate (reported_card_count)
                 VALUES (?)
@@ -286,8 +296,8 @@ class CardInfoDownloadWorker(DownloaderBase):
             (index,)
         )
         # Populate the sqlite stat tables to give the query optimizer data to work with.
-        self.model.db.execute("ANALYZE\n")
-        self.model.commit()
+        db.execute("ANALYZE\n")
+        db.commit()
         return index
 
     def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
@@ -352,13 +362,20 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
     db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
     db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
-    db.execute(cached_dedent('''\
+    db.execute(cached_dedent("""\
+    DELETE FROM RemovedPrintings
+      WHERE scryfall_id IN (
+        SELECT Printing.scryfall_id
+        FROM Printing
+      )
+    """))
+    db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
         WHERE language_id NOT IN (
-            SELECT FaceName.language_id
-            FROM FaceName
+          SELECT FaceName.language_id
+          FROM FaceName
         )
-    '''))
+    """))
 
 
 @functools.lru_cache(None)

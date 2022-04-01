@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000022;
+PRAGMA user_version = 0000023;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -109,6 +109,13 @@ CREATE TABLE LastImageUseTimestamps (
   last_use_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (scryfall_id, is_front)
   -- No foreign key relation here. This table should be persistent across card data downloads
+);
+
+CREATE TABLE RemovedPrintings (
+  scryfall_id TEXT NOT NULL PRIMARY KEY,
+  -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
+  language TEXT NOT NULL,
+  oracle_id TEXT NOT NULL
 );
 
 CREATE VIEW AllPrintings AS

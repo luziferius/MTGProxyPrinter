@@ -65,6 +65,7 @@ class CardIdentificationData:
     collector_number: OptionalString = None
     scryfall_id: OptionalString = None
     is_front: typing.Optional[bool] = None
+    oracle_id: OptionalString = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -259,9 +260,10 @@ class CardDatabase:
          :param card: card identification data container that contains values to find cards
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
+        where_keywords = itertools.chain(["WHERE"], itertools.repeat("AND"))
         query = cached_dedent('''\
         SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front,
-                oracle_id, highres_image, is_oversized, face_number -- get_cards_from_data()
+                oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
             FROM CardFace
             JOIN Printing USING (printing_id)
             JOIN FaceName USING (face_name_id)
@@ -271,38 +273,70 @@ class CardDatabase:
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = '    WHERE "language" = ?\n'
-        parameters = [card.language]
+        where_clause = []
+        where_parameters = []
+        if card.language:
+            where_clause.append(f'{next(where_keywords)} "language" = ?')
+            where_parameters.append(card.language)
         if card.name:
-            where_clause += '    AND card_name = ?\n'
-            parameters.append(card.name)
+            where_clause.append(f'{next(where_keywords)} card_name = ?')
+            where_parameters.append(card.name)
         if card.set_code:
-            where_clause += '    AND "set" = ?\n'
-            parameters.append(card.set_code)
+            where_clause.append(f'{next(where_keywords)} "set" = ?')
+            where_parameters.append(card.set_code)
         if card.collector_number:
-            where_clause += '    AND collector_number = ?\n'
-            parameters.append(card.collector_number)
+            where_clause.append(f'{next(where_keywords)} collector_number = ?')
+            where_parameters.append(card.collector_number)
         if card.is_front is not None:
-            where_clause += '    AND is_front = ?\n'
-            parameters.append(card.is_front)
+            where_clause.append(f'{next(where_keywords)} is_front = ?')
+            where_parameters.append(card.is_front)
         if card.scryfall_id:
-            where_clause += '    AND scryfall_id = ?\n'
-            parameters.append(card.scryfall_id)
-        query += where_clause
+            where_clause.append(f'{next(where_keywords)} scryfall_id = ?')
+            where_parameters.append(card.scryfall_id)
+        if card.oracle_id:
+            where_clause.append(f'{next(where_keywords)} oracle_id = ?')
+            where_parameters.append(card.oracle_id)
+        where_clause.append("")  # Insert final newline after joining
+        query += "\n    ".join(where_clause)
         if order_by_print_count:
-            query += '    ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
-        cursor = self.db.execute(
-            query,
-            parameters
-        )
+            query += 'ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
+        result = self._get_card_from_data(query, where_parameters)
+        return result
+
+    def get_replacement_card_for_unknown_printing(
+            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        query = cached_dedent('''\
+        SELECT card_name, set_code, set_name, collector_number, png_image_uri,
+               AllPrintings.scryfall_id, is_front, oracle_id, highres_image,
+               is_oversized, face_number, AllPrintings.language -- get_replacement_card_for_unknown_printing()
+            FROM RemovedPrintings
+            JOIN AllPrintings USING (oracle_id)
+            LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
+            WHERE RemovedPrintings.scryfall_id = ?
+            AND is_front = ?
+            ORDER BY 
+                -- Match with original language first, fall back to preferred language, then fall back to English
+               (4*(AllPrintings.language == RemovedPrintings.language) +
+                2*(AllPrintings.language == ?) +
+                  (AllPrintings.language == 'en')) DESC NULLS LAST
+        ''')
+        if order_by_print_count:
+            query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
+        # Break any remaining ties by preferring high resolution images over low resolution images
+        query += '        , AllPrintings.highres_image DESC\n'
+        return self._get_card_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
+
+    def _get_card_from_data(self, query, parameters):
+        cursor = self.db.execute(query, parameters)
         result = [
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
-                card.language, scryfall_id, bool(is_front), oracle_id, image_uri,
+                language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 bool(highres_image), bool(is_oversized), face_number,
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-            is_oversized, face_number in cursor
+                is_oversized, face_number, language in cursor
         ]
         return result
 

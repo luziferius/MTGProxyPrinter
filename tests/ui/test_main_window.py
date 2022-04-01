@@ -37,7 +37,7 @@ from tests.helpers import fill_card_database_with_json_card
 @pytest.mark.parametrize("central_widget_class", [ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
 def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         qtbot: QtBot, card_db: CardDatabase, central_widget_class):
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     with TemporaryDirectory() as temp_dir, unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
             return_value=central_widget_class):
