@@ -16,7 +16,7 @@
   <property name="windowTitle">
    <string>Settings</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="dialog_layout">
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
@@ -26,13 +26,13 @@
       <attribute name="title">
        <string>General</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QVBoxLayout" name="tab_general_layout">
        <item>
         <widget class="QGroupBox" name="look_and_feel_settings_group_box">
          <property name="title">
           <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
          </property>
-         <layout class="QFormLayout" name="formLayout">
+         <layout class="QGridLayout" name="gridLayout_2">
           <item row="0" column="0">
            <widget class="QLabel" name="add_card_widget_style_label">
             <property name="text">
@@ -54,54 +54,6 @@
             <property name="toolTip">
              <string>Horizontal adds a wide search area above the currently edited page.
 Vertical adds a tall search area between the page list and the currently edited page.</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="image_download_group_box">
-         <property name="title">
-          <string>Image download</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_2">
-          <item row="1" column="1">
-           <widget class="QCheckBox" name="avoid_low_res_images_check_box">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If no high-resolution scan of a card is available in your preferred language, use high-resolution English cards instead.&lt;/p&gt;&lt;p&gt;This only has an effect, if the preferred language is not English.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Avoid low resolution images</string>
-            </property>
-            <property name="tristate">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="preferred_language_label">
-            <property name="text">
-             <string>Preferred Language:</string>
-            </property>
-            <property name="buddy">
-             <cstring>preferred_language_combo_box</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="preferred_language_combo_box">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="toolTip">
-             <string>The preferred card image language. Will fall back to English, if the card is unavailable in the preferred language.</string>
             </property>
            </widget>
           </item>
@@ -278,35 +230,40 @@ Uncheck to disable this automatism.</string>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_decklist_import">
+     <widget class="QWidget" name="tab_print_selection">
       <attribute name="title">
-       <string>Decklist imports</string>
+       <string>Print selection</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_7">
-       <item>
+      <layout class="QGridLayout" name="tab_print_selection_layout">
+       <item row="1" column="0" colspan="2">
         <widget class="QGroupBox" name="print_guessing_group_box">
          <property name="toolTip">
-          <string>Some deck list formats may sometimes contain insufficient information to identify unique printings of cards.
-If so, choose an arbitrary printing.</string>
+          <string>Not all deck list formats always contain complete data.
+These options set the default behaviour when encountering ambiguous card</string>
          </property>
          <property name="title">
-          <string>Enable print guessing</string>
+          <string>Enable print guessing when importing deck lists</string>
          </property>
          <property name="checked">
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="0" column="0">
+          <item row="1" column="0">
            <widget class="QCheckBox" name="print_guessing_enable">
             <property name="toolTip">
-             <string/>
+             <string>Not all deck list formats always contain complete data.
+If enabled, choose an arbitrary printing, instead of failing to identify such cards.
+
+
+Enabling this option causes the deck import function
+to enable the print guessing option by default.</string>
             </property>
             <property name="text">
              <string>Enable print guessing by default, where optional</string>
             </property>
            </widget>
           </item>
-          <item row="1" column="0">
+          <item row="2" column="0">
            <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
             <property name="toolTip">
              <string>When guessing a printing, prefer printings with already downloaded images over other possible printings.</string>
@@ -316,7 +273,7 @@ If so, choose an arbitrary printing.</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
+          <item row="3" column="0">
            <widget class="QCheckBox" name="automatic_deck_list_translation_enable">
             <property name="toolTip">
              <string>Always enable automatic deck list translation when importing deck lists.
@@ -330,7 +287,17 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="preferred_language_label">
+         <property name="text">
+          <string>Preferred card language:</string>
+         </property>
+         <property name="buddy">
+          <cstring>preferred_language_combo_box</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
         <spacer name="verticalSpacer_4">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -343,13 +310,26 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </property>
         </spacer>
        </item>
+       <item row="0" column="1">
+        <widget class="QComboBox" name="preferred_language_combo_box">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Language choices will default to the chosen language here.&lt;/p&gt;&lt;p&gt;Entries use the language codes as listed on Scryfall.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="tab_page_sizes">
       <attribute name="title">
        <string>Page size &amp;&amp; Printing</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout_7">
+      <layout class="QGridLayout" name="tab_page_sizes_layout">
        <item row="3" column="0" colspan="2">
         <widget class="PageConfigWidget" name="page_configuration_group_box">
          <property name="title">
@@ -408,7 +388,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
       <attribute name="title">
        <string>Card data download</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QVBoxLayout" name="tab_card_data_download_layout">
        <item>
         <widget class="QLabel" name="card_download_settings_header_label">
          <property name="text">
@@ -606,54 +586,45 @@ oversized commander creature or Planeswalker cards included in some pre-construc
       <attribute name="title">
        <string>Debug settings</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_8">
-       <item>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Debug settings (Changing these require an application restart)</string>
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="6" column="1">
+        <widget class="QComboBox" name="log_level_combo_box">
+         <property name="toolTip">
+          <string>Only write events with the given severity level and higher to the log file.</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_5">
-          <item row="0" column="0" colspan="2">
-           <widget class="QCheckBox" name="enable_cutelog_integration">
-            <property name="toolTip">
-             <string>Cutelog is a live log event viewer that can be used to monitor events in real-time.</string>
-            </property>
-            <property name="whatsThis">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Enable Cutelog integration</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QComboBox" name="log_level_combo_box">
-            <property name="toolTip">
-             <string>Only write events with the given severity level and higher to the log file.</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="log_level_label">
-            <property name="text">
-             <string>Event severity that gets logged to file:</string>
-            </property>
-            <property name="buddy">
-             <cstring>log_level_combo_box</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QCheckBox" name="enable_write_log_file">
-            <property name="text">
-             <string>Enable writing a log file to disk</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
         </widget>
        </item>
-       <item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QCheckBox" name="enable_cutelog_integration">
+         <property name="toolTip">
+          <string>Cutelog is a live log event viewer that can be used to monitor events in real-time.</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>Enable Cutelog integration</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <widget class="Line" name="debug_settings_header_line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="log_level_label">
+         <property name="text">
+          <string>Event severity that gets logged to file:</string>
+         </property>
+         <property name="buddy">
+          <cstring>log_level_combo_box</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0" colspan="2">
         <spacer name="verticalSpacer_5">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -665,6 +636,30 @@ oversized commander creature or Planeswalker cards included in some pre-construc
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="debug_settings_headerlabel">
+         <property name="text">
+          <string>Debug settings (Changing these require an application restart)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QCheckBox" name="enable_write_log_file">
+         <property name="text">
+          <string>Enable writing a log file to disk</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QPushButton" name="open_debug_log_location">
+         <property name="text">
+          <string>Open debug log directory</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -691,10 +686,7 @@ oversized commander creature or Planeswalker cards included in some pre-construc
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>tab_widget</tabstop>
   <tabstop>add_card_widget_style_combo_box</tabstop>
-  <tabstop>preferred_language_combo_box</tabstop>
-  <tabstop>avoid_low_res_images_check_box</tabstop>
   <tabstop>automatically_add_opposing_faces</tabstop>
   <tabstop>document_save_path</tabstop>
   <tabstop>document_save_path_browse_button</tabstop>
@@ -724,9 +716,6 @@ oversized commander creature or Planeswalker cards included in some pre-construc
   <tabstop>include_banned_in_pioneer</tabstop>
   <tabstop>include_banned_in_standard</tabstop>
   <tabstop>include_banned_in_vintage</tabstop>
-  <tabstop>enable_cutelog_integration</tabstop>
-  <tabstop>enable_write_log_file</tabstop>
-  <tabstop>log_level_combo_box</tabstop>
  </tabstops>
  <resources/>
  <connections>

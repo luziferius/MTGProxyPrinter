@@ -17,10 +17,12 @@ import configparser
 import logging
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
     QSpinBox, QFileDialog, QLineEdit, QMessageBox
+from PyQt5.QtGui import QDesktopServices, QIcon
 
+import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
@@ -61,10 +63,23 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.log_level_combo_box: QComboBox
         self.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
 
+        self._setup_button_box()
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_button_box(self):
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
-        logger.info(f"Created {self.__class__.__name__} instance.")
+        buttons_with_icons = [
+            (QDialogButtonBox.Reset, "edit-undo"),
+            (QDialogButtonBox.Save, "document-save"),
+            (QDialogButtonBox.Cancel, "dialog-cancel"),
+            (QDialogButtonBox.RestoreDefaults, "document-revert"),
+        ]
+        for role, icon in buttons_with_icons:
+            button = self.button_box.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))
 
     def show(self):
         logger.info("Show the settings window.")
@@ -98,15 +113,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _load_images_settings(self, settings: configparser.ConfigParser):
         self.preferred_language_combo_box: QComboBox
-        self.avoid_low_res_images_check_box: QCheckBox
         images_section = settings["images"]
         preferred_language = images_section.get("preferred-language")
         if not (known := self.preferred_language_combo_box.model().stringList()) or preferred_language not in known:
             self.preferred_language_combo_box.addItem(preferred_language)
         self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
-        self.avoid_low_res_images_check_box.setChecked(
-            images_section.getboolean("avoid-low-resolution-images")
-        )
         self.automatically_add_opposing_faces.setChecked(
             images_section.getboolean("automatically-add-opposing-faces")
         )
@@ -267,7 +278,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _save_images_settings(self):
         images_section = mtg_proxy_printer.settings.settings["images"]
         images_section["preferred-language"] = self.preferred_language_combo_box.currentText()
-        images_section["avoid-low-resolution-images"] = str(self.avoid_low_res_images_check_box.isChecked())
         images_section["automatically-add-opposing-faces"] = str(self.automatically_add_opposing_faces.isChecked())
 
     def _save_downloads_settings(self):
@@ -323,3 +333,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
             logger.info("User selected a new default PDF document export path.")
             self.pdf_save_path.setText(location)
+
+    @pyqtSlot()
+    def on_open_debug_log_location_clicked(self):
+        logger.debug("About to open the log directory using the default file manager.")
+        log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
+        log_url = QUrl.fromLocalFile(log_dir)
+        QDesktopServices.openUrl(log_url)
