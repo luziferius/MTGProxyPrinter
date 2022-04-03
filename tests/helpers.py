@@ -30,7 +30,10 @@ import mtg_proxy_printer.settings
 
 
 def setup_logging_for_testing():
-    mtg_proxy_printer.logger.configure_root_logger()
+    with patch.dict(
+            mtg_proxy_printer.logger.mtg_proxy_printer.settings.settings["debug"],
+            {"write-log-file": "False"}):
+        mtg_proxy_printer.logger.configure_root_logger()
     mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
     mtg_proxy_printer.logger.root_logger.info(__name__)
 
