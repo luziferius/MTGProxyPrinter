@@ -98,15 +98,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _load_images_settings(self, settings: configparser.ConfigParser):
         self.preferred_language_combo_box: QComboBox
-        self.avoid_low_res_images_check_box: QCheckBox
         images_section = settings["images"]
         preferred_language = images_section.get("preferred-language")
         if not (known := self.preferred_language_combo_box.model().stringList()) or preferred_language not in known:
             self.preferred_language_combo_box.addItem(preferred_language)
         self.preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
-        self.avoid_low_res_images_check_box.setChecked(
-            images_section.getboolean("avoid-low-resolution-images")
-        )
         self.automatically_add_opposing_faces.setChecked(
             images_section.getboolean("automatically-add-opposing-faces")
         )
@@ -267,7 +263,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def _save_images_settings(self):
         images_section = mtg_proxy_printer.settings.settings["images"]
         images_section["preferred-language"] = self.preferred_language_combo_box.currentText()
-        images_section["avoid-low-resolution-images"] = str(self.avoid_low_res_images_check_box.isChecked())
         images_section["automatically-add-opposing-faces"] = str(self.automatically_add_opposing_faces.isChecked())
 
     def _save_downloads_settings(self):

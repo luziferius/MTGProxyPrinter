@@ -56,7 +56,6 @@ VERSION_CHECK_RE = re.compile(
 
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
-    "avoid-low-resolution-images": "False",
     "automatically-add-opposing-faces": "True",
 }
 DEFAULT_SETTINGS["downloads"] = {
@@ -180,7 +179,7 @@ def _validate_download_section(section: configparser.SectionProxy):
 
 def _validate_images_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["images"]
-    for key in ("avoid-low-resolution-images", "automatically-add-opposing-faces"):
+    for key in ("automatically-add-opposing-faces",):
         _validate_boolean(section, defaults, key)
     language = section["preferred-language"]
     if not re.fullmatch(r"[a-z]{2}", language):

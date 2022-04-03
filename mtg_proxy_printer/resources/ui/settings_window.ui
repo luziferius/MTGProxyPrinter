@@ -235,7 +235,7 @@ Uncheck to disable this automatism.</string>
        <string>Print selection</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_8">
-       <item row="2" column="0" colspan="2">
+       <item row="1" column="0" colspan="2">
         <widget class="QGroupBox" name="print_guessing_group_box">
          <property name="toolTip">
           <string>Not all deck list formats always contain complete data.
@@ -297,7 +297,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </property>
         </widget>
        </item>
-       <item row="3" column="0" colspan="2">
+       <item row="2" column="0" colspan="2">
         <spacer name="verticalSpacer_4">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -320,22 +320,6 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </property>
          <property name="toolTip">
           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Language choices will default to the chosen language here.&lt;/p&gt;&lt;p&gt;Entries use the language codes as listed on Scryfall.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0" colspan="2">
-        <widget class="QCheckBox" name="avoid_low_res_images_check_box">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If no high-resolution scan of a card is available in your preferred language, use high-resolution English cards instead.&lt;/p&gt;&lt;p&gt;This only has an effect, if the preferred language is not English.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="text">
-          <string>Avoid low resolution images</string>
-         </property>
-         <property name="tristate">
-          <bool>false</bool>
          </property>
         </widget>
        </item>
