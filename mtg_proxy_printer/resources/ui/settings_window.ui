@@ -586,54 +586,45 @@ oversized commander creature or Planeswalker cards included in some pre-construc
       <attribute name="title">
        <string>Debug settings</string>
       </attribute>
-      <layout class="QVBoxLayout" name="tab_debug_layout">
-       <item>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="title">
-          <string>Debug settings (Changing these require an application restart)</string>
+      <layout class="QGridLayout" name="gridLayout_7">
+       <item row="6" column="1">
+        <widget class="QComboBox" name="log_level_combo_box">
+         <property name="toolTip">
+          <string>Only write events with the given severity level and higher to the log file.</string>
          </property>
-         <layout class="QGridLayout" name="gridLayout_5">
-          <item row="0" column="0" colspan="2">
-           <widget class="QCheckBox" name="enable_cutelog_integration">
-            <property name="toolTip">
-             <string>Cutelog is a live log event viewer that can be used to monitor events in real-time.</string>
-            </property>
-            <property name="whatsThis">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Enable Cutelog integration</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QComboBox" name="log_level_combo_box">
-            <property name="toolTip">
-             <string>Only write events with the given severity level and higher to the log file.</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="log_level_label">
-            <property name="text">
-             <string>Event severity that gets logged to file:</string>
-            </property>
-            <property name="buddy">
-             <cstring>log_level_combo_box</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QCheckBox" name="enable_write_log_file">
-            <property name="text">
-             <string>Enable writing a log file to disk</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
         </widget>
        </item>
-       <item>
+       <item row="4" column="0" colspan="2">
+        <widget class="QCheckBox" name="enable_cutelog_integration">
+         <property name="toolTip">
+          <string>Cutelog is a live log event viewer that can be used to monitor events in real-time.</string>
+         </property>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="text">
+          <string>Enable Cutelog integration</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <widget class="Line" name="debug_settings_header_line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="log_level_label">
+         <property name="text">
+          <string>Event severity that gets logged to file:</string>
+         </property>
+         <property name="buddy">
+          <cstring>log_level_combo_box</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0" colspan="2">
         <spacer name="verticalSpacer_5">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -645,6 +636,30 @@ oversized commander creature or Planeswalker cards included in some pre-construc
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="debug_settings_headerlabel">
+         <property name="text">
+          <string>Debug settings (Changing these require an application restart)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QCheckBox" name="enable_write_log_file">
+         <property name="text">
+          <string>Enable writing a log file to disk</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QPushButton" name="open_debug_log_location">
+         <property name="text">
+          <string>Open debug log directory</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -671,7 +686,6 @@ oversized commander creature or Planeswalker cards included in some pre-construc
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>tab_widget</tabstop>
   <tabstop>add_card_widget_style_combo_box</tabstop>
   <tabstop>automatically_add_opposing_faces</tabstop>
   <tabstop>document_save_path</tabstop>
@@ -702,9 +716,6 @@ oversized commander creature or Planeswalker cards included in some pre-construc
   <tabstop>include_banned_in_pioneer</tabstop>
   <tabstop>include_banned_in_standard</tabstop>
   <tabstop>include_banned_in_vintage</tabstop>
-  <tabstop>enable_cutelog_integration</tabstop>
-  <tabstop>enable_write_log_file</tabstop>
-  <tabstop>log_level_combo_box</tabstop>
  </tabstops>
  <resources/>
  <connections>

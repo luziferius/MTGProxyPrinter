@@ -17,10 +17,12 @@ import configparser
 import logging
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
     QSpinBox, QFileDialog, QLineEdit, QMessageBox
+from PyQt5.QtGui import QDesktopServices
 
+import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
@@ -318,3 +320,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
             logger.info("User selected a new default PDF document export path.")
             self.pdf_save_path.setText(location)
+
+    @pyqtSlot()
+    def on_open_debug_log_location_clicked(self):
+        logger.debug("About to open the log directory using the default file manager.")
+        log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
+        log_url = QUrl(log_dir)
+        QDesktopServices.openUrl(log_url)
