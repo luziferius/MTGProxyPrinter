@@ -29,6 +29,9 @@
 - Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
   because it shows the main window content in four columns.
 - Improved sorting behaviour in the image cache cleanup wizard, when sorting the image table by collector number.
+- Re-grouped and moved some settings in the settings window, resulting in a more logical options grouping
+- It is now possible to open the log directory from the debug settings tab, to ease log file access,
+  when the option to write log files to disk is enabled. 
 
 ## Fixed issues
 
@@ -36,9 +39,10 @@
   to prevent Denial of Service attacks via maliciously crafted save files.
 - It is now possible to retry downloading card data updates, 
   if the download fails due to a flaky internet connection.
-- Fixed broken custom regular expression deck parser option in the deck import wizard. This option did not work at all.
+- Fixed broken custom regular expression deck parser option in the deck import wizard. The option now works as intended.
 - Fixed broken Tappedout deck list parser. The options to include the maybe-board and acquire-board
   did nothing when enabled and now work as intended.
+- Added icons to buttons that were missing them on Windows.
 
 # Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
 

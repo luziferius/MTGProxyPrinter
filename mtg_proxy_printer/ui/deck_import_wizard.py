@@ -20,7 +20,8 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel, Qt
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
+    QPushButton
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -253,6 +254,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
         self.registerField("should_replace_document", self.should_replace_document)
+        self.should_replace_document.toggled[bool].connect(self._update_accept_button_on_replace_document_option_toggled)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
@@ -261,16 +263,33 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         proxy_model.setSortRole(Qt.EditRole)
         return proxy_model
 
+    @pyqtSlot(int)
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
         accept_button = self.wizard().button(QWizard.FinishButton)
         if oversized_cards:
             accept_button.setIcon(QIcon.fromTheme("data-warning"))
             accept_button.setToolTip(
-                f"Beware: The card list currently contains {oversized_cards} potentially oversized cards."
+                f"Beware: The card list currently contains {oversized_cards} potentially oversized cards.\n"
+                f"Printings may overlap"
             )
+        elif self.field("should_replace_document"):
+            accept_button.setIcon(QIcon.fromTheme("document-replace"))
+            accept_button.setToolTip("Replace document content with the identified cards")
         else:
             accept_button.setIcon(QIcon())
-            accept_button.setToolTip("")
+            accept_button.setToolTip("Append identified cards to the document")
+
+    @pyqtSlot(bool)
+    def _update_accept_button_on_replace_document_option_toggled(self, enabled: bool):
+        accept_button: QPushButton = self.wizard().button(QWizard.FinishButton)
+        if accept_button.icon().name() == "data-warning":
+            return
+        if enabled:
+            accept_button.setIcon(QIcon.fromTheme("document-replace"))
+            accept_button.setToolTip("Replace document content with the identified cards")
+        else:
+            accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
+            accept_button.setToolTip("Append identified cards to the document")
 
     def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
@@ -328,7 +347,18 @@ class DeckImportWizard(QWizard):
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self.setBaseSize(800, 600)
         self.setWindowTitle("Import a deck list")
+        self._setup_dialog_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_dialog_button_icons(self):
+        buttons_with_icons = [
+            (QWizard.FinishButton, "dialog-ok"),
+            (QWizard.CancelButton, "dialog-cancel"),
+        ]
+        for role, icon in buttons_with_icons:
+            button = self.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))
 
     def accept(self):
         if not self._ask_about_oversized_cards():
