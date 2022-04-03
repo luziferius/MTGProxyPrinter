@@ -35,6 +35,7 @@
     <file>icons/breeze/actions/16/application-exit.svg</file>
     <file>icons/breeze/actions/16/configure.svg</file>
     <file>icons/breeze/actions/16/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/16/dialog-ok.svg</file>
     <file>icons/breeze/actions/16/document-close.svg</file>
     <file>icons/breeze/actions/16/document-import.svg</file>
     <file>icons/breeze/actions/16/document-new.svg</file>
@@ -61,6 +62,7 @@
     <file>icons/breeze/actions/22/application-exit.svg</file>
     <file>icons/breeze/actions/22/configure.svg</file>
     <file>icons/breeze/actions/22/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/22/dialog-ok.svg</file>
     <file>icons/breeze/actions/22/document-close.svg</file>
     <file>icons/breeze/actions/22/document-import.svg</file>
     <file>icons/breeze/actions/22/document-new.svg</file>
@@ -87,6 +89,7 @@
     <file>icons/breeze/actions/24/application-exit.svg</file>
     <file>icons/breeze/actions/24/configure.svg</file>
     <file>icons/breeze/actions/24/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/24/dialog-ok.svg</file>
     <file>icons/breeze/actions/24/document-close.svg</file>
     <file>icons/breeze/actions/24/document-import.svg</file>
     <file>icons/breeze/actions/24/document-new.svg</file>
@@ -113,6 +116,7 @@
     <file>icons/breeze/actions/32/application-exit.svg</file>
     <file>icons/breeze/actions/32/configure.svg</file>
     <file>icons/breeze/actions/32/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/32/dialog-ok.svg</file>
     <file>icons/breeze/actions/32/document-close.svg</file>
     <file>icons/breeze/actions/32/document-import.svg</file>
     <file>icons/breeze/actions/32/document-new.svg</file>
