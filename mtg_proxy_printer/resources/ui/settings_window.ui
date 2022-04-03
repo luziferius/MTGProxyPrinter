@@ -16,7 +16,7 @@
   <property name="windowTitle">
    <string>Settings</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QVBoxLayout" name="dialog_layout">
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
@@ -26,7 +26,7 @@
       <attribute name="title">
        <string>General</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QVBoxLayout" name="tab_general_layout">
        <item>
         <widget class="QGroupBox" name="look_and_feel_settings_group_box">
          <property name="title">
@@ -234,7 +234,7 @@ Uncheck to disable this automatism.</string>
       <attribute name="title">
        <string>Print selection</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout_8">
+      <layout class="QGridLayout" name="tab_print_selection_layout">
        <item row="1" column="0" colspan="2">
         <widget class="QGroupBox" name="print_guessing_group_box">
          <property name="toolTip">
@@ -329,7 +329,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
       <attribute name="title">
        <string>Page size &amp;&amp; Printing</string>
       </attribute>
-      <layout class="QGridLayout" name="gridLayout_7">
+      <layout class="QGridLayout" name="tab_page_sizes_layout">
        <item row="3" column="0" colspan="2">
         <widget class="PageConfigWidget" name="page_configuration_group_box">
          <property name="title">
@@ -388,7 +388,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
       <attribute name="title">
        <string>Card data download</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QVBoxLayout" name="tab_card_data_download_layout">
        <item>
         <widget class="QLabel" name="card_download_settings_header_label">
          <property name="text">
@@ -586,7 +586,7 @@ oversized commander creature or Planeswalker cards included in some pre-construc
       <attribute name="title">
        <string>Debug settings</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_8">
+      <layout class="QVBoxLayout" name="tab_debug_layout">
        <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
