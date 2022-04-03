@@ -338,5 +338,5 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
     def on_open_debug_log_location_clicked(self):
         logger.debug("About to open the log directory using the default file manager.")
         log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
-        log_url = QUrl(log_dir)
+        log_url = QUrl.fromLocalFile(log_dir)
         QDesktopServices.openUrl(log_url)
