@@ -71,6 +71,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
         buttons_with_icons = [
+            (QDialogButtonBox.Reset, "edit-undo"),
             (QDialogButtonBox.Save, "document-save"),
             (QDialogButtonBox.Cancel, "dialog-cancel"),
             (QDialogButtonBox.RestoreDefaults, "document-revert"),

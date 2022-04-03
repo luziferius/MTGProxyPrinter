@@ -50,6 +50,8 @@
     <file>icons/breeze/actions/16/edit-clear-history.svg</file>
     <file>icons/breeze/actions/16/edit-delete.svg</file>
     <file>icons/breeze/actions/16/edit-download.svg</file>
+    <file>icons/breeze/actions/16/edit-redo.svg</file>
+    <file>icons/breeze/actions/16/edit-undo.svg</file>
     <file>icons/breeze/actions/16/format-align-vertical-top.svg</file>
     <file>icons/breeze/actions/16/go-next.svg</file>
     <file>icons/breeze/actions/16/go-previous.svg</file>
@@ -74,6 +76,8 @@
     <file>icons/breeze/actions/22/edit-clear-history.svg</file>
     <file>icons/breeze/actions/22/edit-delete.svg</file>
     <file>icons/breeze/actions/22/edit-download.svg</file>
+    <file>icons/breeze/actions/22/edit-redo.svg</file>
+    <file>icons/breeze/actions/22/edit-undo.svg</file>
     <file>icons/breeze/actions/22/format-align-vertical-top.svg</file>
     <file>icons/breeze/actions/22/go-next.svg</file>
     <file>icons/breeze/actions/22/go-previous.svg</file>
@@ -98,6 +102,8 @@
     <file>icons/breeze/actions/24/edit-clear-history.svg</file>
     <file>icons/breeze/actions/24/edit-delete.svg</file>
     <file>icons/breeze/actions/24/edit-download.svg</file>
+    <file>icons/breeze/actions/24/edit-redo.svg</file>
+    <file>icons/breeze/actions/24/edit-undo.svg</file>
     <file>icons/breeze/actions/24/format-align-vertical-top.svg</file>
     <file>icons/breeze/actions/24/go-next.svg</file>
     <file>icons/breeze/actions/24/go-previous.svg</file>
@@ -119,6 +125,8 @@
     <file>icons/breeze/actions/32/document-save.svg</file>
     <file>icons/breeze/actions/32/document-save-as.svg</file>
     <file>icons/breeze/actions/32/edit-delete.svg</file>
+    <file>icons/breeze/actions/32/edit-redo.svg</file>
+    <file>icons/breeze/actions/32/edit-undo.svg</file>
     <file>icons/breeze/actions/32/go-next.svg</file>
     <file>icons/breeze/actions/32/go-previous.svg</file>
     
