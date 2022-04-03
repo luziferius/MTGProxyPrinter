@@ -20,7 +20,7 @@ import typing
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
     QSpinBox, QFileDialog, QLineEdit, QMessageBox
-from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
@@ -63,10 +63,22 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.log_level_combo_box: QComboBox
         self.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
 
+        self._setup_button_box()
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_button_box(self):
         self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
-        logger.info(f"Created {self.__class__.__name__} instance.")
+        buttons_with_icons = [
+            (QDialogButtonBox.Save, "document-save"),
+            (QDialogButtonBox.Cancel, "dialog-cancel"),
+            (QDialogButtonBox.RestoreDefaults, "document-revert"),
+        ]
+        for role, icon in buttons_with_icons:
+            button = self.button_box.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))
 
     def show(self):
         logger.info("Show the settings window.")
