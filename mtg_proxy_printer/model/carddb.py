@@ -518,16 +518,15 @@ class CardDatabase:
             return None
 
     @profile
-    def is_removed_printing(self, scryfall_id: str) -> bool:
+    def is_removed_printing(self, scryfall_id: str) -> OptionalString:
+        logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
-        SELECT EXISTS(
-            SELECT scryfall_id
+        SELECT oracle_id
             FROM RemovedPrintings
             WHERE scryfall_id = ?
-        )
         """)
-        return bool(self._read_optional_scalar_from_db(query, parameters))
+        return self._read_optional_scalar_from_db(query, parameters)
 
     @profile
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
