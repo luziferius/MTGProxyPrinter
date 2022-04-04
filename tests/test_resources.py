@@ -1,0 +1,66 @@
+# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import xml.etree.ElementTree
+import os
+import typing
+from pathlib import Path
+
+
+from hamcrest import *
+import pytest
+
+def list_dir(directory: Path) -> typing.Iterable[Path]:
+    walker = os.walk(directory)
+    for subdir, _, files in walker:
+        for file_name in files:
+            yield Path(os.path.relpath(subdir, directory), file_name)
+
+
+@pytest.fixture()
+def resource_path() -> Path:
+    import mtg_proxy_printer.resources
+    directory = Path(mtg_proxy_printer.resources.__path__._path[0])
+    qrc_file = directory / "resources.qrc"
+    return qrc_file
+
+
+
+
+def test_all_resources_listed_in_resources_qrc_exist_as_files(resource_path: Path):
+    resource_document = xml.etree.ElementTree.ElementTree(file=resource_path)
+    file_nodes = resource_document.findall("qresource/file")
+    base_dir = resource_path.parent
+    for node in file_nodes:
+        assert_that((base_dir/node.text).exists(), reason="Listed entry does not exist")
+        assert_that((base_dir/node.text).is_file(), reason="Listed entry not a regular file")
+
+
+def test_no_duplicates_in_resources_qrc(resource_path: Path):
+    resource_document = xml.etree.ElementTree.ElementTree(file=resource_path)
+    listed_paths = list(node.text for node in resource_document.findall("qresource/file"))
+    deduplicated = set(listed_paths)
+    assert_that(listed_paths, has_length(len(deduplicated)), "resources.qrc contains unexpected duplicates")
+
+
+def test_all_resource_files_are_listed_in_resources_qrc(resource_path: Path):
+    base_dir = resource_path.parent
+    resource_document = xml.etree.ElementTree.ElementTree(file=resource_path)
+    listed_paths = set(Path(node.text) for node in resource_document.findall("qresource/file"))
+    existing_files = list_dir(base_dir)
+    for file in existing_files:
+        if file.name == "resources.qrc":
+            continue
+        assert_that(file, is_in(listed_paths), "File not listed in resources.qrc")
