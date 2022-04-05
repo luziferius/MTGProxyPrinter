@@ -291,20 +291,27 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.card_db = card_db
         self.image_db = image_db
         self.unknown_image_view: QTableView
-        self.card_image_view: QTableView
         self.card_image_model = KnownCardImageModel(parent=self)
-        self.card_image_sort_model = NaturallySortedSortFilterProxyModel(self)
-        self.card_image_sort_model.setSourceModel(self.card_image_model)
+        self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
+        self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
-        self.card_image_view.setModel(self.card_image_sort_model)
-        # Use the EditRole for sorting, as this returns the raw data.
-        # Makes it possible to sort the file sizes correctly.
-        self.card_image_sort_model.setSortRole(Qt.EditRole)
-        self.card_image_view.setSortingEnabled(True)
-        self.card_image_view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
         self.unknown_image_view.setModel(self.unknown_image_model)
         self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_card_image_sort_model(self, card_image_model: KnownCardImageModel):
+        sort_model = NaturallySortedSortFilterProxyModel(self)
+        sort_model.setSourceModel(card_image_model)
+        # Use the EditRole for sorting, as this returns the raw data.
+        # Makes it possible to sort the file sizes correctly.
+        sort_model.setSortRole(Qt.EditRole)
+        return sort_model
+
+    def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
+        self.card_image_view: QTableView
+        self.card_image_view.setModel(model)
+        self.card_image_view.setSortingEnabled(True)
+        self.card_image_view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
