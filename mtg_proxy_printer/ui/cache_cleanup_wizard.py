@@ -17,6 +17,7 @@ import dataclasses
 import datetime
 import enum
 import functools
+import math
 import pathlib
 import typing
 
@@ -308,11 +309,20 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
-        self.card_image_view: QTableView
-        self.card_image_view.setModel(model)
-        self.card_image_view.setSortingEnabled(True)
-        self.card_image_view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
-        self.card_image_view.setColumnHidden(KnownCardColumns.ScryfallId, True)
+        view: QTableView = self.card_image_view
+        view: QTableView
+        view.setModel(model)
+        view.setSortingEnabled(True)
+        view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
+        view.setColumnHidden(KnownCardColumns.ScryfallId, True)
+        for column, scaling_factor in (
+                (KnownCardColumns.Name, 2),
+                (KnownCardColumns.Set, 2.5),
+                (KnownCardColumns.CollectorNumber, 0.95),
+                (KnownCardColumns.IsFront, 0.9),
+                (KnownCardColumns.Size, 0.7)):
+            new_size = math.floor(view.columnWidth(column)*scaling_factor)
+            view.setColumnWidth(column, new_size)
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
