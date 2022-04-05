@@ -422,7 +422,20 @@ class CacheCleanupWizard(QWizard):
         self.setWindowTitle("Cleanup the local image cache")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         self._setup_button_icons()
+        self._set_default_size()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _set_default_size(self):
+        new_width, new_height = 1024, 768
+        if (parent := self.parent()) is not None:
+            parent_pos = parent.mapToGlobal(parent.pos())
+            self.setGeometry(
+                parent_pos.x() + parent.width()//2 - new_width//2,
+                parent_pos.y() + parent.height()//2 - new_height//2,
+                new_width, new_height
+            )
+        else:
+            self.resize(new_width, new_height)
 
     def _setup_button_icons(self):
         buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
