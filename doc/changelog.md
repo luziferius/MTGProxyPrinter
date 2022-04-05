@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unneccessary columns in the card listing table. Also adjusted the column widths to make better use of the available space.
+
 # Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
 
 ## Implemented features
