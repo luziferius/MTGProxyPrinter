@@ -312,6 +312,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.card_image_view.setModel(model)
         self.card_image_view.setSortingEnabled(True)
         self.card_image_view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
+        self.card_image_view.setColumnHidden(KnownCardColumns.ScryfallId, True)
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
