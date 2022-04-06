@@ -315,7 +315,7 @@ class CardDatabase:
         query += "\n    ".join(where_clause)
         if order_by_print_count:
             query += 'ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
-        result = self._get_card_from_data(query, where_parameters)
+        result = self._get_cards_from_data(query, where_parameters)
         return result
 
     @profile
@@ -341,10 +341,10 @@ class CardDatabase:
             query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
         # Break any remaining ties by preferring high resolution images over low resolution images
         query += '        , AllPrintings.highres_image DESC\n'
-        return self._get_card_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
+        return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     @profile
-    def _get_card_from_data(self, query, parameters):
+    def _get_cards_from_data(self, query, parameters):
         cursor = self.db.execute(query, parameters)
         result = [
             Card(
