@@ -66,3 +66,5 @@ def image_db():
         yield image_db
         if image_db.download_thread.isRunning():
             image_db.quit_background_thread()
+            assert_that(image_db.download_thread.isRunning(), is_(False))
+    assert_that(temp_path.exists(), is_(False))
