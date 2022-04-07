@@ -6,6 +6,12 @@
 
 - Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unneccessary columns in the card listing table. Also adjusted the column widths to make better use of the available space.
 
+## Fixed issues
+
+- Improved the hit rate of the Scryfall deck list importer, when the deck list contains cards affected by enabled
+  download filters. The importer will now use suitable replacement printings, where possible, instead of failing to
+  import affected cards.
+
 # Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
 
 ## Implemented features
