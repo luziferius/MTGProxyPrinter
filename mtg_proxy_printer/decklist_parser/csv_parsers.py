@@ -24,6 +24,9 @@ from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificatio
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 from .common import ParsedDeck, ParserBase
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 LineParserResult = typing.Counter[Card]
 CsvLine = typing.Tuple[str, typing.Dict[str, str]]
@@ -90,10 +93,15 @@ class ScryfallCSVParser(BaseCSVParser):
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
         count = int(line["count"])
-        if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, True)) is not None:
+        language = line["lang"]
+
+        if card := self._handle_removed_printing(scryfall_id, language, guess_printing):
             self._add_card_to_deck(cards, card, count)
-        else:
-            language = line["lang"]
+        elif card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
+            logger.debug("Identify card using the scryfall id")
+            self._add_card_to_deck(cards, card, count)
+        elif guess_printing:
+            logger.debug(f"Card not identified. Try guessing a printing")
             english_name = line["name"]
             card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
             card_data = CardIdentificationData(
@@ -102,6 +110,18 @@ class ScryfallCSVParser(BaseCSVParser):
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
         return cards
+
+    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> typing.Optional[Card]:
+        if self.card_db.is_removed_printing(scryfall_id):
+            logger.debug(f"Handling removed printing with {scryfall_id=}")
+            choices = self.card_db.get_replacement_card_for_unknown_printing(
+                CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),
+                order_by_print_count=guess_printing)
+            if choices:
+                result = choices[0]
+                logger.debug(f"Found {len(choices)} matching printings, using the best match: {result}")
+                return result
+        return None
 
 
 class TappedOutCSVParser(BaseCSVParser):

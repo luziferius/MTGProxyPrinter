@@ -540,7 +540,7 @@ def test_get_cards_from_data_works_on_oracle_id_alone(
     fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
     oracle_id = "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"
     scryfall_ids = ["7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", "e2ef9b74-481b-424b-8e33-f0b910f66370"]
-    card_data = CardIdentificationData(language, oracle_id=oracle_id)
+    card_data = CardIdentificationData(oracle_id=oracle_id)
     cards = card_db.get_cards_from_data(card_data)
 
     assert_that(
@@ -581,6 +581,7 @@ def test_get_replacement_card(
             ("non-english-id", "invalid", "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"),
         ])
     card_db.get_replacement_card_for_unknown_printing(CardIdentificationData(scryfall_id="english-id", language="en"))
+
 
 @pytest.mark.parametrize("card_count_data", [
     [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
