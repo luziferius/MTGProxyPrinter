@@ -104,11 +104,16 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
     """
     Checks, if the model is empty. This is used by tests that check if cards are properly skipped based on
     download settings.
+    If a test case data object is passed in, it is assumed that the printing it represents was excluded during the
+    import. So also check that RemovedPrintings table contains the correct data.
     """
-    for relation in ("PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"):
-        assert_relation_is_empty(card_db, relation)
-    if test_case:
+    relations_to_check = ["PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"]
+    if test_case is None:
+        relations_to_check.append("RemovedPrintings")
+    else:
         assert_that(
             card_db.db.execute("SELECT scryfall_id, language, oracle_id FROM RemovedPrintings"),
             contains_inanyorder((test_case.scryfall_id, test_case.language, test_case.oracle_id))
         )
+    for relation in relations_to_check:
+        assert_relation_is_empty(card_db, relation)
