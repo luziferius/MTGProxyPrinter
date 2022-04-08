@@ -89,7 +89,6 @@ class ScryfallCSVParser(BaseCSVParser):
     DIALECT_NAME = "scryfall_com"
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
-        # Only interested in the scryfall_id and language
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
         count = int(line["count"])
@@ -145,8 +144,11 @@ class TappedOutCSVParser(BaseCSVParser):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
         super(TappedOutCSVParser, self).__init__(card_db, image_db, parent)
-        self.include_acquire_board = include_acquire_board
-        self.include_maybe_board = include_maybe_board
+        self.allowed_boards = {"main", "side"}
+        if include_maybe_board:
+            self.allowed_boards.add("maybe")
+        if include_acquire_board:
+            self.allowed_boards.add("acquire")
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         cards = collections.Counter()
@@ -185,10 +187,7 @@ class TappedOutCSVParser(BaseCSVParser):
 
     def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
         board = line["Board"]
-        return any((
-            board == "maybe" and not self.include_maybe_board,
-            board == "acquire" and not self.include_acquire_board
-        ))
+        return board not in self.allowed_boards
 
 
 for parser_class in [
