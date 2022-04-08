@@ -98,7 +98,6 @@ class ScryfallCSVParser(BaseCSVParser):
         if card := self._handle_removed_printing(scryfall_id, language, guess_printing):
             self._add_card_to_deck(cards, card, count)
         elif card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
-            logger.debug("Identify card using the scryfall id")
             self._add_card_to_deck(cards, card, count)
         elif guess_printing:
             logger.debug(f"Card not identified. Try guessing a printing")
@@ -113,13 +112,13 @@ class ScryfallCSVParser(BaseCSVParser):
 
     def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> typing.Optional[Card]:
         if self.card_db.is_removed_printing(scryfall_id):
-            logger.debug(f"Handling removed printing with {scryfall_id=}")
             choices = self.card_db.get_replacement_card_for_unknown_printing(
                 CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),
                 order_by_print_count=guess_printing)
             if choices:
                 result = choices[0]
-                logger.debug(f"Found {len(choices)} matching printings, using the best match: {result}")
+                logger.debug(f"Found {len(choices)} matching printings for removed printing with {scryfall_id=}, "
+                             f"using the best match: {result}")
                 return result
         return None
 
