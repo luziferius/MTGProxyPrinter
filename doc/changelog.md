@@ -11,6 +11,8 @@
 - Improved the hit rate of the Scryfall deck list importer, when the deck list contains cards affected by enabled
   download filters. The importer will now use suitable replacement printings, where possible, instead of failing to
   import affected cards.
+- Fixed bug in the deck import wizard that caused the wizard to perform a deck list translation,
+  even if that option was disabled.
 
 # Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
 
