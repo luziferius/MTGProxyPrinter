@@ -201,18 +201,16 @@ class CardInfoDownloadWorker(DownloaderBase):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            file_size = url_or_path.stat().st_size
-            raw_file = url_or_path.open("rb")
-            with self._wrap_in_metered_file(raw_file, file_size) as file:
+            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
+            with url_or_path.open("rb") as file:
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
                 yield from self._read_json_card_data_from_open_file(file, json_path)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path, json_path)
         else:
-            file_size = os.stat(url_or_path).st_size
-            raw_file = open(url_or_path, "rb")
-            with self._wrap_in_metered_file(raw_file, file_size) as file:
+            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
+            with open(url_or_path, "rb") as file:
                 yield from self._read_json_card_data_from_open_file(file, json_path)
 
     @staticmethod
