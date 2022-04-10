@@ -316,11 +316,9 @@ def _clear_lru_caches():
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
     To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
     """
-    _insert_language.cache_clear()
-    _insert_set_data.cache_clear()
-    _insert_card.cache_clear()
-    _insert_face_name.cache_clear()
-    _insert_printing.cache_clear()
+    for cache in (_insert_language, _insert_set_data, _insert_card, _insert_face_name):
+        logger.debug(str(cache.cache_info()))
+        cache.cache_clear()
 
 
 def store_download_settings(db):
@@ -457,7 +455,6 @@ def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: i
     return _insert_printing(model, data)
 
 
-@functools.lru_cache(None)
 def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
     model.db.execute(cached_dedent(
         '''\
