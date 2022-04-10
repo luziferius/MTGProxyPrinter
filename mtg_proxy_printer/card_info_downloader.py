@@ -32,7 +32,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.settings
-import mtg_proxy_printer.metered_file
+import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger

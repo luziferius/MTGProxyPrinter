@@ -23,6 +23,8 @@ from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.http_file
+import mtg_proxy_printer.downloader_base
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -38,15 +40,27 @@ from tests.helpers import fill_card_database_with_json_card
 def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         qtbot: QtBot, card_db: CardDatabase, central_widget_class):
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    with TemporaryDirectory() as temp_dir, unittest.mock.patch(
-            "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
-            return_value=central_widget_class):
+    with TemporaryDirectory() as temp_dir, \
+            unittest.mock.patch(
+                "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
+                return_value=central_widget_class), \
+            unittest.mock.patch.object(  # Mock all HTTP-specific I/O calls
+                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
+                "_read_content_length") as cl_mock, \
+            unittest.mock.patch.object(
+                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
+                "getcode", return_value=200), \
+            unittest.mock.patch.object(
+                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
+                "content_encoding", return_value="identity"):
         temp_path = pathlib.Path(temp_dir)
         image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)
         document = Document(card_db, image_db)
         try:
             mock_image_path = _create_mock_image(image_db, temp_path)
+            cl_mock.return_value = mock_image_path.stat().st_size
+            card_db.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
             save_file_path = _create_save_file(temp_path)
             main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
             QApplication.instance().shutdown = unittest.mock.MagicMock()
@@ -54,14 +68,9 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
             with qtbot.wait_exposed(main_window, timeout=100):
                 main_window.show()
             assert_that(main_window.progress_bar.isVisible(), is_(False))
-            document.loader.worker.image_loader._open_url = unittest.mock.MagicMock()
-            document.loader.worker.image_loader._open_url.return_value = (
-                mock_image_path.open("rb"), "identity", mock_image_path.stat().st_size
-            )
             with qtbot.wait_signal(document.loader.worker_thread.finished, timeout=1000):
                 document.loader.load_document(save_file_path)
             assert_that(main_window.progress_bar.isVisible(), is_(False))
-            document.loader.worker.image_loader._open_url.assert_called_once()
         finally:
             if document.loader.worker_thread.isRunning():
                 document.loader.worker_thread.quit()

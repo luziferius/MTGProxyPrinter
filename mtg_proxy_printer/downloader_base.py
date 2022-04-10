@@ -14,13 +14,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import gzip
-import http.client
-import typing
-import urllib.request
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-import mtg_proxy_printer.metered_file
+import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -44,29 +41,21 @@ class DownloaderBase(QObject):
         """
         Reads a given URL and returns a file-like object that can and should be used as a context manager.
         """
-        response, encoding, size_bytes = self._open_url(url)
-        metered_reader = self._wrap_in_metered_file(response, size_bytes)
+        monitor = self._open_url(url)
+        encoding = monitor.content_encoding()
         if encoding == "gzip":
-            data = gzip.open(metered_reader, "rb")
+            data = gzip.open(monitor, "rb")
         elif encoding in ("identity", None):  # Implicit "identity" if the Content-Encoding header is missing.
-            data = metered_reader
+            data = monitor
         else:
             raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
-        return data, metered_reader
+        return data, monitor
 
-    @staticmethod
-    def _open_url(url: str) -> typing.Tuple[typing.BinaryIO, str, int]:
+    def _open_url(self, url: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
         headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        request = urllib.request.Request(url, headers=headers)
-        response = urllib.request.urlopen(request)  # type: http.client.HTTPResponse
+        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
-        encoding = response.info().get("Content-Encoding")
-        size_bytes = int(response.info().get("Content-Length", "0"))
-        return response, encoding, size_bytes
-
-    def _wrap_in_metered_file(self, raw_file, file_size):
-        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
-        monitor.total_bytes_processed.connect(self.download_progress)
-        monitor.io_begin.connect(self.download_begins)
-        return monitor
+        response.total_bytes_processed.connect(self.download_progress)
+        response.io_begin.connect(self.download_begins)
+        return response
