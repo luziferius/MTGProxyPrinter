@@ -52,7 +52,10 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
                 "getcode", return_value=200), \
             unittest.mock.patch.object(
                 mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
-                "content_encoding", return_value="identity"):
+                "content_encoding", return_value="identity"), \
+            unittest.mock.patch.object(
+                mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
+                "seekable", return_value=True):
         temp_path = pathlib.Path(temp_dir)
         image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)

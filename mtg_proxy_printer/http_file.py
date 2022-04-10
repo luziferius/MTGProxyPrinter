@@ -12,9 +12,11 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import errno
 import functools
 import http.client
+import socket
+import time
 from typing import List, Optional, Dict
 import urllib.error
 import urllib.request
@@ -56,15 +58,17 @@ class MeteredSeekableHTTPFile(QObject):
     io_finished = pyqtSignal()  # Emitted in __exit__, when the file is closed
     total_bytes_processed = pyqtSignal(int)  # Emitted after each read chunk, carries the total number of bytes read
 
-    def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None):
+    def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *, retry_limit: int = 10):
         super(MeteredSeekableHTTPFile, self).__init__(parent)
+        self.retry_limit = retry_limit
         self.url = url
         self.headers = {} if headers is None else headers
-        self.file = None
-        self.file = self._urlopen()
+        self.file = None  # _urlopen() internally accesses file, so this assignment has to stay here
+        self.file, _ = self._urlopen()
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
         self.read_bytes = 0
+        logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _read_content_length(self, file) -> int:
         if self.file:
@@ -107,13 +111,32 @@ class MeteredSeekableHTTPFile(QObject):
         if self._pos != old_pos:
             # Ignore the seek() call, if seeking distance is zero.
             # This is an optimization that prevents unnecessarily starting new server connections.
-            self._urlopen(self._pos)
+            self.file, _ = self._urlopen(self._pos)
         return self._pos
 
-    def read(self, count: int = None, /) -> bytes:
-        buffer = self.file.read(count)
-        self._store_and_report_read_progress(len(buffer))
-        return buffer
+    def read(self, count: int = None, /, *, retry: int = 0) -> bytes:
+        # TODO: maybe combine read bytes of multiple partial read attempts?
+        try:
+            buffer = self.file.read(count)
+        except (ConnectionAbortedError, socket.timeout) as e:
+            if retry == self.retry_limit:
+                raise e
+        else:
+            buffer_length = len(buffer)
+            read_less_than_expected = buffer_length < count
+            position_after_read_within_file = self._pos + buffer_length < self.content_length
+            read_not_unsuccessful = not(
+                count and self.seekable() and read_less_than_expected and position_after_read_within_file
+            )
+            if read_not_unsuccessful or retry == self.retry_limit:
+                self._store_and_report_read_progress(buffer_length)
+                return buffer
+        logger.warning(
+            f"read() failed to provide the requested {count} bytes. "
+            f"Re-establishing the connection and try again. Attempt {retry+2}/{self.retry_limit}"
+        )
+        self.file, retry = self._urlopen(self._pos, retry=retry)
+        return self.read(count, retry=retry+1)
 
     def read1(self, count: int = None, /) -> bytes:
         buffer = self.file.read1(count)
@@ -123,10 +146,28 @@ class MeteredSeekableHTTPFile(QObject):
     def tell(self) -> int:
         return self._pos
 
-    def readinto(self, buffer, /) -> int:
-        block_length = self.file.readinto(buffer)
-        self._store_and_report_read_progress(block_length)
-        return block_length
+    def readinto(self, buffer, /, *, retry: int = 0) -> int:
+        count = len(buffer)
+        try:
+            buffer_length = self.file.readinto(buffer)
+        except (ConnectionAbortedError, socket.timeout) as e:
+            if retry == self.retry_limit:
+                raise e
+        else:
+            read_less_than_expected = buffer_length < count
+            position_after_read_before_eof = self._pos + buffer_length < self.content_length
+            read_not_unsuccessful = not(
+                self.seekable() and read_less_than_expected and position_after_read_before_eof
+            )
+            if read_not_unsuccessful or retry == self.retry_limit:
+                self._store_and_report_read_progress(buffer_length)
+                return buffer_length
+        logger.warning(
+            f"readinto() failed to provide the requested {count} bytes. "
+            f"Re-establishing the connection and try again. Attempt {retry+2}/{self.retry_limit}"
+        )
+        self.file, retry = self._urlopen(self._pos, retry=retry)
+        return self.readinto(buffer, retry=retry+1)
 
     def readinto1(self, buffer, /) -> int:
         block_length = self.file.readinto1(buffer)
@@ -149,7 +190,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.read_bytes += block_length
         self.total_bytes_processed.emit(self.read_bytes)
 
-    def _urlopen(self, first_byte: int = 0, /) -> http.client.HTTPResponse:
+    def _urlopen(self, first_byte: int = 0, /, *, retry: int = None) -> (http.client.HTTPResponse, int):
         """
         Opens the stored URL, returning the Response object, which can be used as a context manager.
 
@@ -162,4 +203,14 @@ class MeteredSeekableHTTPFile(QObject):
         if first_byte > 0:
             headers["range"] = f"bytes={first_byte}-{self.content_length-1}"
         request = urllib.request.Request(self.url, headers=headers)
-        return urllib.request.urlopen(request)
+        try:
+            response: http.client.HTTPResponse = urllib.request.urlopen(request)
+        except urllib.error.URLError as e:
+            if retry is None or retry == self.retry_limit or e.errno != -2:
+                raise e
+            # URLError is most likely caused by being offline,
+            # so wait a bit to not immediately burn all remaining retries
+            time.sleep(5)
+            return self._urlopen(first_byte, retry=retry+1)
+        else:
+            return response, retry
