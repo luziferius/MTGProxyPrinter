@@ -15,8 +15,7 @@
 
 import functools
 import http.client
-from io import BufferedIOBase
-from typing import List, Optional, BinaryIO, Union, Dict
+from typing import List, Optional, Dict
 import urllib.error
 import urllib.request
 
@@ -30,7 +29,6 @@ del get_logger
 __all__ = [
     "MeteredSeekableHTTPFile",
 ]
-WrappedIoType = Union[BufferedIOBase, BinaryIO]
 
 
 @delegateto.delegate(
@@ -155,7 +153,7 @@ class MeteredSeekableHTTPFile(QObject):
         """
         Opens the stored URL, returning the Response object, which can be used as a context manager.
 
-        :param first_byte: Optional. If given, start downloading at this byte position by using a HTTP range header.
+        :param first_byte: Optional. If given, start downloading at this byte position by using the HTTP range header.
         """
         # Passing None or zero as first_byte causes a full-range read by not setting the range header
         if self.file is not None and not self.file.isclosed():
