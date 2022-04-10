@@ -4,7 +4,11 @@
 
 ## Changed features
 
-- Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unneccessary columns in the card listing table. Also adjusted the column widths to make better use of the available space.
+- Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unnecessary 
+  columns in the card listing table. Also adjusted the column widths to make better use of the available space.
+- The card data download and card image download now resume interrupted downloads caused by a flaky internet connection,
+  making the download process more reliable. If MTGProxyPrinter encounters a network error,
+  it will re-try the network operation up to 10 times.
 
 ## Fixed issues
 
