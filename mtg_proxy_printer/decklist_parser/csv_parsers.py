@@ -24,6 +24,9 @@ from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificatio
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 
 from .common import ParsedDeck, ParserBase
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 LineParserResult = typing.Counter[Card]
 CsvLine = typing.Tuple[str, typing.Dict[str, str]]
@@ -86,14 +89,17 @@ class ScryfallCSVParser(BaseCSVParser):
     DIALECT_NAME = "scryfall_com"
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
-        # Only interested in the scryfall_id and language
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
         count = int(line["count"])
-        if (card := self.card_db.get_card_with_scryfall_id(scryfall_id, True)) is not None:
+        language = line["lang"]
+
+        if card := self._handle_removed_printing(scryfall_id, language, guess_printing):
             self._add_card_to_deck(cards, card, count)
-        else:
-            language = line["lang"]
+        elif card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
+            self._add_card_to_deck(cards, card, count)
+        elif guess_printing:
+            logger.debug(f"Card not identified. Try guessing a printing")
             english_name = line["name"]
             card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
             card_data = CardIdentificationData(
@@ -102,6 +108,18 @@ class ScryfallCSVParser(BaseCSVParser):
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
         return cards
+
+    def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> typing.Optional[Card]:
+        if self.card_db.is_removed_printing(scryfall_id):
+            choices = self.card_db.get_replacement_card_for_unknown_printing(
+                CardIdentificationData(language, scryfall_id=scryfall_id, is_front=True),
+                order_by_print_count=guess_printing)
+            if choices:
+                result = choices[0]
+                logger.debug(f"Found {len(choices)} matching printings for removed printing with {scryfall_id=}, "
+                             f"using the best match: {result}")
+                return result
+        return None
 
 
 class TappedOutCSVParser(BaseCSVParser):
@@ -126,8 +144,11 @@ class TappedOutCSVParser(BaseCSVParser):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
         super(TappedOutCSVParser, self).__init__(card_db, image_db, parent)
-        self.include_acquire_board = include_acquire_board
-        self.include_maybe_board = include_maybe_board
+        self.allowed_boards = {"main", "side"}
+        if include_maybe_board:
+            self.allowed_boards.add("maybe")
+        if include_acquire_board:
+            self.allowed_boards.add("acquire")
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         cards = collections.Counter()
@@ -166,10 +187,7 @@ class TappedOutCSVParser(BaseCSVParser):
 
     def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
         board = line["Board"]
-        return any((
-            board == "maybe" and not self.include_maybe_board,
-            board == "acquire" and not self.include_acquire_board
-        ))
+        return board not in self.allowed_boards
 
 
 for parser_class in [

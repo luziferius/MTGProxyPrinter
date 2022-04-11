@@ -6,6 +6,7 @@
 
 - Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unnecessary 
   columns in the card listing table. Also adjusted the column widths to make better use of the available space.
+- Adjustments to default column widths of the table in the deck import wizard to better fit card and set names.
 - The card data download and card image download now resume interrupted downloads caused by a flaky internet connection,
   making the download process more reliable. If MTGProxyPrinter encounters a network error,
   it will re-try the network operation up to 10 times.
@@ -13,6 +14,11 @@
 ## Fixed issues
 
 - Reduced RAM usage by around 150 MiB while downloading the card data from Scryfall.
+- Improved the hit rate of the Scryfall deck list importer, when the deck list contains cards affected by enabled
+  download filters. The importer will now use suitable replacement printings, where possible, instead of failing to
+  import affected cards.
+- Fixed bug in the deck import wizard that caused the wizard to perform a deck list translation,
+  even if that option was disabled.
 
 # Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
 

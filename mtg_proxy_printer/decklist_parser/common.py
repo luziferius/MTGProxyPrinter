@@ -61,7 +61,11 @@ class ParserBase(QObject):
         logger.debug(f"Parsed {sum(parsed_deck.values())} cards. Not identified: {len(unmatched_lines)} lines")
         # Now reset to the state as passed in
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
+        if language_override:
+            parsed_deck = self._translate_parsed_deck(parsed_deck, language_override)
+        return parsed_deck, unmatched_lines
 
+    def _translate_parsed_deck(self, parsed_deck: typing.Counter[Card], language_override: str):
         translated_deck: typing.Counter[Card] = collections.Counter()
         for card, count in parsed_deck.items():
             if self.print_guessing_prefer_already_downloaded and \
@@ -77,7 +81,7 @@ class ParserBase(QObject):
                 logger.debug(f"Translated card '{card.name}' from language {card.language} "
                              f"to '{translated_card.name}' in {language_override}")
             translated_deck[translated_card] = count
-        return translated_deck, unmatched_lines
+        return translated_deck
 
     @abstractmethod
     def parse_deck_without_translation(self, deck: str,
