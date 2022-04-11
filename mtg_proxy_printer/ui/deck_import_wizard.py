@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import math
 import pathlib
 import re
 import typing
@@ -297,6 +298,13 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         delegate = ComboBoxItemDelegate(self.parsed_cards_table)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
+        for column, scaling_factor in (
+                (PageColumns.CardName, 2),
+                (PageColumns.Set, 2.75),
+                (PageColumns.CollectorNumber, 0.95),
+                (PageColumns.Language, 0.9)):
+            new_size = math.floor(self.parsed_cards_table.columnWidth(column) * scaling_factor)
+            self.parsed_cards_table.setColumnWidth(column, new_size)
         return delegate
 
     def initializePage(self) -> None:
@@ -345,10 +353,22 @@ class DeckImportWizard(QWizard):
         self.addPage(self.load_list_page)
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
-        self.setBaseSize(800, 600)
+        self._set_default_size()
         self.setWindowTitle("Import a deck list")
         self._setup_dialog_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _set_default_size(self):
+        new_width, new_height = 800, 600
+        if (parent := self.parent()) is not None:
+            parent_pos = parent.mapToGlobal(parent.pos())
+            self.setGeometry(
+                parent_pos.x() + parent.width()//2 - new_width//2,
+                parent_pos.y() + parent.height()//2 - new_height//2,
+                new_width, new_height
+            )
+        else:
+            self.resize(new_width, new_height)
 
     def _setup_dialog_button_icons(self):
         buttons_with_icons = [
