@@ -13,7 +13,7 @@
 
 ## Fixed issues
 
-- Reduced RAM usage by around 150 MiB while downloading the card data from Scryfall.
+- Reduced RAM usage by around 190 MiB while downloading the card data from Scryfall.
 - Improved the hit rate of the Scryfall deck list importer, when the deck list contains cards affected by enabled
   download filters. The importer will now use suitable replacement printings, where possible, instead of failing to
   import affected cards.

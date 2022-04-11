@@ -314,7 +314,7 @@ def _clear_lru_caches():
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
     To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
     """
-    for cache in (_insert_language, _insert_set_data, _insert_card, _insert_face_name):
+    for cache in (_insert_language, _insert_set_data, _insert_card):
         logger.debug(str(cache.cache_info()))
         cache.cache_clear()
 
@@ -425,7 +425,6 @@ def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri:
     return set_id
 
 
-@functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
     """
     Insert the given, printed face name into the database, if it not already stored. Returns the integer
