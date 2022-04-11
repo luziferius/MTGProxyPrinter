@@ -20,9 +20,12 @@ Natural sorting for lists or other iterables of strings.
 import re
 import typing
 
+from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex
+
 __all__ = [
     "natural_sorted",
     "str_less_than",
+    "NaturallySortedSortFilterProxyModel",
 ]
 
 _NUMBER_GROUP_REG_EXP = re.compile(r"([0-9]+)")
@@ -59,3 +62,20 @@ def str_less_than(first: str, other: str, /):
         return False
     s1, s2 = natural_sorted((first, other))
     return s1 == first
+
+
+class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
+
+    def lessThan(self, left: QModelIndex, right: QModelIndex) -> bool:
+        left_data = left.data(self.sortRole())
+        right_data = right.data(self.sortRole())
+        if isinstance(left_data, str) and isinstance(right_data, str):
+            return str_less_than(left_data, right_data)
+        return super().lessThan(left, right)
+
+    def row_sort_order(self) -> typing.List[int]:
+        """Returns the row numbers of the source model in the current sort order."""
+        return [
+            self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
+        ]
+

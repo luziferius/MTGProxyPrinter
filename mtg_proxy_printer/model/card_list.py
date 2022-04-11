@@ -209,5 +209,10 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def as_deck(self):
-        return Counter(self.cards)
+    def as_deck(self, row_order: typing.List[int] = None):
+        """Returns the card list as a deck. If a custom row order is given, create the counter in that order."""
+        if row_order is None:
+            return Counter(self.cards)
+        return Counter(
+            self.cards[row] for row in row_order
+        )

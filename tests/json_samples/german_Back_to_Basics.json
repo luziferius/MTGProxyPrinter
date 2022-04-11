@@ -1,0 +1,114 @@
+{
+  "object": "card",
+  "id": "97b84e7d-258f-46dc-baef-4b1eb6f28d4d",
+  "oracle_id": "05c2dec2-d2f7-4036-b91f-4fccba10a8bb",
+  "multiverse_ids": [],
+  "name": "Back to Basics",
+  "printed_name": "Grundlagenforschung",
+  "lang": "de",
+  "released_at": "1998-10-12",
+  "uri": "https://api.scryfall.com/cards/97b84e7d-258f-46dc-baef-4b1eb6f28d4d",
+  "scryfall_uri": "https://scryfall.com/card/usg/62/de/grundlagenforschung?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "placeholder",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.png?1562927127",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127"
+  },
+  "mana_cost": "{2}{U}",
+  "cmc": 3,
+  "type_line": "Enchantment",
+  "printed_type_line": "Verzauberung",
+  "oracle_text": "Nonbasic lands don't untap during their controllers' untap steps.",
+  "printed_text": "Nicht-Standardländer enttappen nicht während der Enttap-Phase ihres Beherrschers.",
+  "colors": [
+    "U"
+  ],
+  "color_identity": [
+    "U"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "banned",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "c330df40-51db-4caf-bde6-48df6c181001",
+  "set": "usg",
+  "set_name": "Urza's Saga",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/c330df40-51db-4caf-bde6-48df6c181001",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Ausg&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/usg?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/97b84e7d-258f-46dc-baef-4b1eb6f28d4d/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A05c2dec2-d2f7-4036-b91f-4fccba10a8bb&unique=prints",
+  "collector_number": "62",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Andrew Robinson",
+  "artist_ids": [
+    "cb577db7-7f47-4f78-8682-6eaef8a77bd1"
+  ],
+  "illustration_id": "43634e76-2e01-4cdf-adec-4fe3481a1811",
+  "border_color": "black",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 1796,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Back+to+Basics&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Back+to+Basics&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Back+to+Basics",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Back+to+Basics"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Back+to+Basics&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Back+to+Basics&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Back+to+Basics&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

@@ -40,6 +40,7 @@
     <file>icons/breeze/actions/16/application-exit.svg</file>
     <file>icons/breeze/actions/16/configure.svg</file>
     <file>icons/breeze/actions/16/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/16/dialog-ok.svg</file>
     <file>icons/breeze/actions/16/document-close.svg</file>
     <file>icons/breeze/actions/16/document-import.svg</file>
     <file>icons/breeze/actions/16/document-new.svg</file>
@@ -49,11 +50,14 @@
     <file>icons/breeze/actions/16/document-print.svg</file>
     <file>icons/breeze/actions/16/document-properties.svg</file>
     <file>icons/breeze/actions/16/document-replace.svg</file>
+    <file>icons/breeze/actions/16/document-revert.svg</file>
     <file>icons/breeze/actions/16/document-save.svg</file>
     <file>icons/breeze/actions/16/document-save-as.svg</file>
     <file>icons/breeze/actions/16/edit-clear-history.svg</file>
     <file>icons/breeze/actions/16/edit-delete.svg</file>
     <file>icons/breeze/actions/16/edit-download.svg</file>
+    <file>icons/breeze/actions/16/edit-redo.svg</file>
+    <file>icons/breeze/actions/16/edit-undo.svg</file>
     <file>icons/breeze/actions/16/format-align-vertical-top.svg</file>
     <file>icons/breeze/actions/16/go-next.svg</file>
     <file>icons/breeze/actions/16/go-previous.svg</file>
@@ -63,6 +67,7 @@
     <file>icons/breeze/actions/22/application-exit.svg</file>
     <file>icons/breeze/actions/22/configure.svg</file>
     <file>icons/breeze/actions/22/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/22/dialog-ok.svg</file>
     <file>icons/breeze/actions/22/document-close.svg</file>
     <file>icons/breeze/actions/22/document-import.svg</file>
     <file>icons/breeze/actions/22/document-new.svg</file>
@@ -72,11 +77,14 @@
     <file>icons/breeze/actions/22/document-print.svg</file>
     <file>icons/breeze/actions/22/document-properties.svg</file>
     <file>icons/breeze/actions/22/document-replace.svg</file>
+    <file>icons/breeze/actions/22/document-revert.svg</file>
     <file>icons/breeze/actions/22/document-save.svg</file>
     <file>icons/breeze/actions/22/document-save-as.svg</file>
     <file>icons/breeze/actions/22/edit-clear-history.svg</file>
     <file>icons/breeze/actions/22/edit-delete.svg</file>
     <file>icons/breeze/actions/22/edit-download.svg</file>
+    <file>icons/breeze/actions/22/edit-redo.svg</file>
+    <file>icons/breeze/actions/22/edit-undo.svg</file>
     <file>icons/breeze/actions/22/format-align-vertical-top.svg</file>
     <file>icons/breeze/actions/22/go-next.svg</file>
     <file>icons/breeze/actions/22/go-previous.svg</file>
@@ -86,6 +94,7 @@
     <file>icons/breeze/actions/24/application-exit.svg</file>
     <file>icons/breeze/actions/24/configure.svg</file>
     <file>icons/breeze/actions/24/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/24/dialog-ok.svg</file>
     <file>icons/breeze/actions/24/document-close.svg</file>
     <file>icons/breeze/actions/24/document-import.svg</file>
     <file>icons/breeze/actions/24/document-new.svg</file>
@@ -95,11 +104,14 @@
     <file>icons/breeze/actions/24/document-print.svg</file>
     <file>icons/breeze/actions/24/document-properties.svg</file>
     <file>icons/breeze/actions/24/document-replace.svg</file>
+    <file>icons/breeze/actions/24/document-revert.svg</file>
     <file>icons/breeze/actions/24/document-save.svg</file>
     <file>icons/breeze/actions/24/document-save-as.svg</file>
     <file>icons/breeze/actions/24/edit-clear-history.svg</file>
     <file>icons/breeze/actions/24/edit-delete.svg</file>
     <file>icons/breeze/actions/24/edit-download.svg</file>
+    <file>icons/breeze/actions/24/edit-redo.svg</file>
+    <file>icons/breeze/actions/24/edit-undo.svg</file>
     <file>icons/breeze/actions/24/format-align-vertical-top.svg</file>
     <file>icons/breeze/actions/24/go-next.svg</file>
     <file>icons/breeze/actions/24/go-previous.svg</file>
@@ -109,6 +121,7 @@
     <file>icons/breeze/actions/32/application-exit.svg</file>
     <file>icons/breeze/actions/32/configure.svg</file>
     <file>icons/breeze/actions/32/dialog-cancel.svg</file>
+    <file>icons/breeze/actions/32/dialog-ok.svg</file>
     <file>icons/breeze/actions/32/document-close.svg</file>
     <file>icons/breeze/actions/32/document-import.svg</file>
     <file>icons/breeze/actions/32/document-new.svg</file>
@@ -117,9 +130,12 @@
     <file>icons/breeze/actions/32/document-print.svg</file>
     <file>icons/breeze/actions/32/document-properties.svg</file>
     <file>icons/breeze/actions/32/document-replace.svg</file>
+    <file>icons/breeze/actions/32/document-revert.svg</file>
     <file>icons/breeze/actions/32/document-save.svg</file>
     <file>icons/breeze/actions/32/document-save-as.svg</file>
     <file>icons/breeze/actions/32/edit-delete.svg</file>
+    <file>icons/breeze/actions/32/edit-redo.svg</file>
+    <file>icons/breeze/actions/32/edit-undo.svg</file>
     <file>icons/breeze/actions/32/go-next.svg</file>
     <file>icons/breeze/actions/32/go-previous.svg</file>
     

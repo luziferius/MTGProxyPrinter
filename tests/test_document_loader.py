@@ -34,8 +34,8 @@ from tests.helpers import fill_card_database_with_json_card
 
 
 @pytest.fixture()
-def document_with_filled_card_db(card_db: CardDatabase) -> mtg_proxy_printer.model.document.Document:
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+def document_with_filled_card_db(qtbot, card_db: CardDatabase) -> mtg_proxy_printer.model.document.Document:
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     assert_that(card_db.is_scryfall_id_known("0000579f-7b35-4ed3-b44c-db2a538066fe", True), is_(True))
     image_db = ImageDatabase(pathlib.Path("/tmp"))
     key = ImageKey("0000579f-7b35-4ed3-b44c-db2a538066fe", True, True)

@@ -2,6 +2,26 @@
 
 # Next version (in development)
 
+## Changed features
+
+- Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unnecessary 
+  columns in the card listing table. Also adjusted the column widths to make better use of the available space.
+- Adjustments to default column widths of the table in the deck import wizard to better fit card and set names.
+- The card data download and card image download now resume interrupted downloads caused by a flaky internet connection,
+  making the download process more reliable. If MTGProxyPrinter encounters a network error,
+  it will re-try the network operation up to 10 times.
+
+## Fixed issues
+
+- Reduced RAM usage by around 190 MiB while downloading the card data from Scryfall.
+- Improved the hit rate of the Scryfall deck list importer, when the deck list contains cards affected by enabled
+  download filters. The importer will now use suitable replacement printings, where possible, instead of failing to
+  import affected cards.
+- Fixed bug in the deck import wizard that caused the wizard to perform a deck list translation,
+  even if that option was disabled.
+
+# Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
+
 ## Implemented features
 
 - Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
@@ -15,6 +35,11 @@
 - Added a new user interface layout that uses tabs to only show one part of the main window at a time.
   This is mainly useful for small and high-DPI monitors in portrait mode, i.e. when using 
   a monitor with an aspect ratio of 9:16.
+- The card table in the deck import wizard is now sortable by clicking on any of the header cells. When sorted, the
+  cards will be added to the document in the same order.
+- When loading a document that contains printings matching a download filter, the affected printings are now
+  replaced with other, available printings, if possible. When migrating from older versions of MTGProxyPrinter,
+  the internal card database has to be refreshed for this to work.
 
 ## Changed features
 
@@ -23,6 +48,10 @@
   Uses image usage information already available since version 0.9.0
 - Renamed the “vertical” user interface variant in the settings. It is now referred to as “Columnar”,
   because it shows the main window content in four columns.
+- Improved sorting behaviour in the image cache cleanup wizard, when sorting the image table by collector number.
+- Re-grouped and moved some settings in the settings window, resulting in a more logical options grouping
+- It is now possible to open the log directory from the debug settings tab, to ease log file access,
+  when the option to write log files to disk is enabled. 
 
 ## Fixed issues
 
@@ -30,6 +59,10 @@
   to prevent Denial of Service attacks via maliciously crafted save files.
 - It is now possible to retry downloading card data updates, 
   if the download fails due to a flaky internet connection.
+- Fixed broken custom regular expression deck parser option in the deck import wizard. The option now works as intended.
+- Fixed broken Tappedout deck list parser. The options to include the maybe-board and acquire-board
+  did nothing when enabled and now work as intended.
+- Added icons to buttons that were missing them on Windows.
 
 # Version 0.14.2 (2022-01-22) <a name="v0_14_2"></a>
 
