@@ -43,8 +43,8 @@ class Environment(typing.NamedTuple):
 
 
 @pytest.fixture()
-def environment(card_db: CardDatabase):
-    fill_card_database_with_json_card(card_db, "english_double_faced_card")
+def environment(qtbot, card_db: CardDatabase):
+    fill_card_database_with_json_card(qtbot, card_db, "english_double_faced_card")
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = pathlib.Path(temp_dir)
         image_db = ImageDatabase(temp_path)

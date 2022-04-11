@@ -50,6 +50,7 @@ def parse_args() -> Namespace:
 to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker: [
         "_populate_database",
+        "_parse_single_printing",
     ],
     mtg_proxy_printer.card_info_downloader: [
         "_insert_set",

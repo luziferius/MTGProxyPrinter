@@ -17,6 +17,7 @@ import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QListView, QPushButton
+from PyQt5.QtGui import QIcon
 
 import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
@@ -58,6 +59,14 @@ class AddCardWidget(QWidget):
         reset_button.clicked.connect(ok_button.setEnabled)
         self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
+        buttons_with_icons = [
+            (QDialogButtonBox.Reset, "edit-undo"),
+            (QDialogButtonBox.Ok, "dialog-ok"),
+        ]
+        for role, icon in buttons_with_icons:
+            button = self.button_box.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))
 
     def _setup_language_combo_box(self) -> QStringListModel:
         self.language_combo_box: QComboBox

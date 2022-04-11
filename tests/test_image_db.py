@@ -14,29 +14,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import io
-from pathlib import Path
-from tempfile import TemporaryDirectory
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
-import pytest
 from pytestqt.qtbot import QtBot
 
-import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
-
-
-@pytest.fixture()
-def image_db():
-    with TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        image_db = ImageDatabase(temp_path)
-        yield image_db
-        if image_db.download_thread.isRunning():
-            image_db.quit_background_thread()
 
 
 def test_quit_background_thread(image_db: ImageDatabase):
@@ -70,14 +56,14 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
         mock_downloader.assert_called()
     qtbot.wait(50)  # assert below seems to be flaky, so wait a few milliseconds for the file system to settle
     for key in keys:
-        assert_that((image_db.db_path/key.format_relative_path()).is_file(), is_(True))
+        assert_that((image_db.db_path / key.format_relative_path()).is_file(), is_(True))
 
     # Test
     image_db.delete_disk_cache_entries([keys[0]])
-    assert_that((image_db.db_path/keys[0].format_relative_path()).is_file(), is_(False))
-    assert_that((image_db.db_path/keys[1].format_relative_path()).is_file(), is_(True))
-    assert_that((image_db.db_path/keys[0].format_relative_path()).parent.is_dir(), is_(True))
+    assert_that((image_db.db_path / keys[0].format_relative_path()).is_file(), is_(False))
+    assert_that((image_db.db_path / keys[1].format_relative_path()).is_file(), is_(True))
+    assert_that((image_db.db_path / keys[0].format_relative_path()).parent.is_dir(), is_(True))
     image_db.delete_disk_cache_entries([keys[1]])
-    assert_that((image_db.db_path/keys[1].format_relative_path()).is_file(), is_(False))
-    assert_that((image_db.db_path/keys[0].format_relative_path()).parent.is_dir(), is_(False))
+    assert_that((image_db.db_path / keys[1].format_relative_path()).is_file(), is_(False))
+    assert_that((image_db.db_path / keys[0].format_relative_path()).parent.is_dir(), is_(False))
 
