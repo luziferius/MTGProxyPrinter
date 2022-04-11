@@ -32,7 +32,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.settings
-import mtg_proxy_printer.metered_file
+import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -201,18 +201,16 @@ class CardInfoDownloadWorker(DownloaderBase):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            file_size = url_or_path.stat().st_size
-            raw_file = url_or_path.open("rb")
-            with self._wrap_in_metered_file(raw_file, file_size) as file:
+            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
+            with url_or_path.open("rb") as file:
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
                 yield from self._read_json_card_data_from_open_file(file, json_path)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path, json_path)
         else:
-            file_size = os.stat(url_or_path).st_size
-            raw_file = open(url_or_path, "rb")
-            with self._wrap_in_metered_file(raw_file, file_size) as file:
+            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
+            with open(url_or_path, "rb") as file:
                 yield from self._read_json_card_data_from_open_file(file, json_path)
 
     @staticmethod
@@ -257,6 +255,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
+        db: sqlite3.Connection = self.model.db
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -267,6 +266,15 @@ class CardInfoDownloadWorker(DownloaderBase):
                 continue
             if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
                 skipped_cards += 1
+                db.execute(cached_dedent("""\
+                    INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+                      VALUES (?, ?, ?)
+                      ON CONFLICT (scryfall_id) DO UPDATE
+                        SET oracle_id = excluded.oracle_id,
+                            language = excluded.language
+                        WHERE oracle_id <> excluded.oracle_id
+                           OR language <> excluded.language
+                    ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
                 face_ids = self._parse_single_printing(card, face_ids)
@@ -278,7 +286,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
         # Store the timestamp of this import.
-        self.model.db.execute(cached_dedent(
+        db.execute(cached_dedent(
             """\
             INSERT INTO LastDatabaseUpdate (reported_card_count)
                 VALUES (?)
@@ -286,8 +294,8 @@ class CardInfoDownloadWorker(DownloaderBase):
             (index,)
         )
         # Populate the sqlite stat tables to give the query optimizer data to work with.
-        self.model.db.execute("ANALYZE\n")
-        self.model.commit()
+        db.execute("ANALYZE\n")
+        db.commit()
         return index
 
     def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
@@ -306,11 +314,9 @@ def _clear_lru_caches():
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
     To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
     """
-    _insert_language.cache_clear()
-    _insert_set_data.cache_clear()
-    _insert_card.cache_clear()
-    _insert_face_name.cache_clear()
-    _insert_printing.cache_clear()
+    for cache in (_insert_language, _insert_set_data, _insert_card):
+        logger.debug(str(cache.cache_info()))
+        cache.cache_clear()
 
 
 def store_download_settings(db):
@@ -352,13 +358,20 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
     db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
     db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
-    db.execute(cached_dedent('''\
+    db.execute(cached_dedent("""\
+    DELETE FROM RemovedPrintings
+      WHERE scryfall_id IN (
+        SELECT Printing.scryfall_id
+        FROM Printing
+      )
+    """))
+    db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
         WHERE language_id NOT IN (
-            SELECT FaceName.language_id
-            FROM FaceName
+          SELECT FaceName.language_id
+          FROM FaceName
         )
-    '''))
+    """))
 
 
 @functools.lru_cache(None)
@@ -412,7 +425,6 @@ def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri:
     return set_id
 
 
-@functools.lru_cache(None)
 def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
     """
     Insert the given, printed face name into the database, if it not already stored. Returns the integer
@@ -440,7 +452,6 @@ def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: i
     return _insert_printing(model, data)
 
 
-@functools.lru_cache(None)
 def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
     model.db.execute(cached_dedent(
         '''\

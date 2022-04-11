@@ -18,13 +18,17 @@ This module is automatically discovered by pytest and all pytest
 fixtures defined here are available in all test modules.
 """
 import sqlite3
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock
 
 import pytest
+from hamcrest import assert_that, is_
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.imagedb import ImageDatabase
 from tests.helpers import fill_card_database_with_json_card
 
 
@@ -46,9 +50,21 @@ def empty_save_database(request) -> sqlite3.Connection:
 
 
 @pytest.fixture
-def document(card_db: CardDatabase) -> Document:
-    fill_card_database_with_json_card(card_db, "regular_english_card")
+def document(qtbot, card_db: CardDatabase) -> Document:
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     document = Document(card_db, MagicMock())
     yield document
     document.loader.worker_thread.quit()
     document.loader.worker_thread.wait(100)
+
+
+@pytest.fixture()
+def image_db():
+    with TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+        image_db = ImageDatabase(temp_path)
+        yield image_db
+        if image_db.download_thread.isRunning():
+            image_db.quit_background_thread()
+            assert_that(image_db.download_thread.isRunning(), is_(False))
+    assert_that(temp_path.exists(), is_(False))

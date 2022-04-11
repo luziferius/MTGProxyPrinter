@@ -2,24 +2,7 @@
 <ui version="4.0">
  <class>central_widget</class>
  <widget class="QWidget" name="central_widget">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>518</width>
-    <height>421</height>
-   </rect>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
    <property name="bottomMargin">
     <number>0</number>
    </property>
@@ -27,7 +10,7 @@
     <widget class="PageRenderer" name="page_renderer">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>8</horstretch>
+       <horstretch>9</horstretch>
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>
@@ -43,7 +26,7 @@
     <widget class="QTableView" name="page_card_table_view">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>8</horstretch>
+       <horstretch>9</horstretch>
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>
@@ -100,7 +83,7 @@
     <widget class="VerticalAddCardWidget" name="add_card_widget" native="true">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-       <horstretch>6</horstretch>
+       <horstretch>7</horstretch>
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>

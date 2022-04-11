@@ -360,14 +360,22 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             QMessageBox.Ok, QMessageBox.Ok
         )
 
-    def on_document_loading_found_unknown_scryfall_ids(self, count: int):
-        QMessageBox.warning(
-            self, "Unrecognized cards in loaded document found",
-            f"Skipped {count} unrecognized cards in the loaded document. Saving the document will remove these entries "
-            f"from the document.\n\nThe locally stored card "
-            f"data may be outdated or the document was created using a less restrictive download filter.",
-            QMessageBox.Ok, QMessageBox.Ok
-        )
+    def on_document_loading_found_unknown_scryfall_ids(self, unknown: int, replaced: int):
+        if replaced:
+            QMessageBox.warning(
+                self, "Unavailable printings replaced",
+                f"The document contained {replaced} unavailable printings of cards that were automatically replaced "
+                f"with other printings. The replaced printings are unavailable, "
+                f"because they match a configured download filter."
+            )
+        if unknown:
+            QMessageBox.warning(
+                self, "Unrecognized cards in loaded document found",
+                f"Skipped {unknown} unrecognized cards in the loaded document. "
+                f"Saving the document will remove these entries permanently.\n\nThe locally stored card "
+                f"data may be outdated or the document was created using a less restrictive download filter.",
+                QMessageBox.Ok, QMessageBox.Ok
+            )
 
     def show_application_update_available_message_box(self, newer_version: str):
         QMessageBox.information(

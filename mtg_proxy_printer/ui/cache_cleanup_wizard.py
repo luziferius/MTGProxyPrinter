@@ -17,14 +17,15 @@ import dataclasses
 import datetime
 import enum
 import functools
+import math
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel,\
-    QSortFilterProxyModel
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
+from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
@@ -291,20 +292,37 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         self.card_db = card_db
         self.image_db = image_db
         self.unknown_image_view: QTableView
-        self.card_image_view: QTableView
         self.card_image_model = KnownCardImageModel(parent=self)
-        self.card_image_sort_model = QSortFilterProxyModel(self)
-        self.card_image_sort_model.setSourceModel(self.card_image_model)
+        self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
+        self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
-        self.card_image_view.setModel(self.card_image_sort_model)
-        # Use the EditRole for sorting, as this returns the raw data.
-        # Makes it possible to sort the file sizes correctly.
-        self.card_image_sort_model.setSortRole(Qt.EditRole)
-        self.card_image_view.setSortingEnabled(True)
-        self.card_image_view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
         self.unknown_image_view.setModel(self.unknown_image_model)
         self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_card_image_sort_model(self, card_image_model: KnownCardImageModel):
+        sort_model = NaturallySortedSortFilterProxyModel(self)
+        sort_model.setSourceModel(card_image_model)
+        # Use the EditRole for sorting, as this returns the raw data.
+        # Makes it possible to sort the file sizes correctly.
+        sort_model.setSortRole(Qt.EditRole)
+        return sort_model
+
+    def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
+        view: QTableView = self.card_image_view
+        view: QTableView
+        view.setModel(model)
+        view.setSortingEnabled(True)
+        view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
+        view.setColumnHidden(KnownCardColumns.ScryfallId, True)
+        for column, scaling_factor in (
+                (KnownCardColumns.Name, 2),
+                (KnownCardColumns.Set, 2.5),
+                (KnownCardColumns.CollectorNumber, 0.95),
+                (KnownCardColumns.IsFront, 0.9),
+                (KnownCardColumns.Size, 0.7)):
+            new_size = math.floor(view.columnWidth(column)*scaling_factor)
+            view.setColumnWidth(column, new_size)
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
@@ -404,7 +422,20 @@ class CacheCleanupWizard(QWizard):
         self.setWindowTitle("Cleanup the local image cache")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         self._setup_button_icons()
+        self._set_default_size()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _set_default_size(self):
+        new_width, new_height = 1024, 768
+        if (parent := self.parent()) is not None:
+            parent_pos = parent.mapToGlobal(parent.pos())
+            self.setGeometry(
+                parent_pos.x() + parent.width()//2 - new_width//2,
+                parent_pos.y() + parent.height()//2 - new_height//2,
+                new_width, new_height
+            )
+        else:
+            self.resize(new_width, new_height)
 
     def _setup_button_icons(self):
         buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
