@@ -34,6 +34,9 @@ logger = get_logger(__name__)
 del get_logger
 __all__ = [
     "SettingsWindow",
+    "AbstractPrintingFilterWidget",
+    "GeneralPrintingFilterWidget",
+    "FormatPrintingFilterWidget",
 ]
 bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
     True: Qt.Checked,
