@@ -13,13 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import abc
 import configparser
 import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QSpinBox, QFileDialog, QLineEdit, QMessageBox
+    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
@@ -40,6 +41,59 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
     None: Qt.PartiallyChecked
 }
 check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
+
+
+class AbstractPrintingFilterWidget(QGroupBox):
+
+    def __init__(self, parent: QWidget = None):
+        super(AbstractPrintingFilterWidget, self).__init__(parent)
+        self.setupUi(self)
+
+    def load_settings(self, settings: configparser.SectionProxy):
+        for widget, key in self._get_widgets_with_keys():
+            widget.setChecked(settings.getboolean(key))
+
+    def save_settings(self, settings: configparser.SectionProxy):
+        for widget, key in self._get_widgets_with_keys():
+            settings[key] = str(widget.isChecked())
+
+    @abc.abstractmethod
+    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+        pass
+
+
+class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget,
+                                  *inherits_from_ui_file_with_name("settings_window/general_printing_filter")):
+    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.include_cards_depicting_racism, "download-cards-depicting-racism"),
+            (self.include_cards_without_images, "download-cards-without-images"),
+            (self.include_oversized_cards, "download-oversized-cards"),
+            (self.include_white_bordered_cards, "download-white-bordered"),
+            (self.include_gold_bordered_cards, "download-gold-bordered"),
+            (self.include_funny_cards, "download-funny-cards"),
+            (self.include_token, "download-token"),
+            (self.include_digital_cards, "download-digital-cards"),
+        ]
+        return widgets_with_settings
+
+
+class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
+                                 *inherits_from_ui_file_with_name("settings_window/format_printing_filter")):
+    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.include_banned_in_brawl, "download-banned-in-brawl"),
+            (self.include_banned_in_commander, "download-banned-in-commander"),
+            (self.include_banned_in_historic, "download-banned-in-historic"),
+            (self.include_banned_in_legacy, "download-banned-in-legacy"),
+            (self.include_banned_in_modern, "download-banned-in-modern"),
+            (self.include_banned_in_pauper, "download-banned-in-pauper"),
+            (self.include_banned_in_penny, "download-banned-in-penny"),
+            (self.include_banned_in_pioneer, "download-banned-in-pioneer"),
+            (self.include_banned_in_standard, "download-banned-in-standard"),
+            (self.include_banned_in_vintage, "download-banned-in-vintage"),
+        ]
+        return widgets_with_settings
 
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
@@ -128,9 +182,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
         download_section = settings["downloads"]
-        widgets_with_settings = self._get_download_settings_widgets()
-        for widget, setting in widgets_with_settings:
-            widget.setChecked(download_section.getboolean(setting))
+        self.card_filter_general_settings: AbstractPrintingFilterWidget
+        self.card_filter_format_settings: AbstractPrintingFilterWidget
+        self.card_filter_general_settings.load_settings(download_section)
+        self.card_filter_format_settings.load_settings(download_section)
 
     def _load_save_path_settings(self, settings: configparser.ConfigParser):
         section = settings["default-save-paths"]
@@ -168,29 +223,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             (self.page_margin_right, "margin-right-mm"),
             (self.page_image_spacing_horizontal, "image-spacing-horizontal-mm"),
             (self.page_image_spacing_vertical, "image-spacing-vertical-mm"),
-        ]
-        return widgets_with_settings
-
-    def _get_download_settings_widgets(self):
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.include_cards_depicting_racism, "download-cards-depicting-racism"),
-            (self.include_cards_without_images, "download-cards-without-images"),
-            (self.include_oversized_cards, "download-oversized-cards"),
-            (self.include_white_bordered_cards, "download-white-bordered"),
-            (self.include_gold_bordered_cards, "download-gold-bordered"),
-            (self.include_funny_cards, "download-funny-cards"),
-            (self.include_banned_in_brawl, "download-banned-in-brawl"),
-            (self.include_banned_in_commander, "download-banned-in-commander"),
-            (self.include_banned_in_historic, "download-banned-in-historic"),
-            (self.include_banned_in_legacy, "download-banned-in-legacy"),
-            (self.include_banned_in_modern, "download-banned-in-modern"),
-            (self.include_banned_in_pauper, "download-banned-in-pauper"),
-            (self.include_banned_in_penny, "download-banned-in-penny"),
-            (self.include_banned_in_pioneer, "download-banned-in-pioneer"),
-            (self.include_banned_in_standard, "download-banned-in-standard"),
-            (self.include_banned_in_vintage, "download-banned-in-vintage"),
-            (self.include_token, "download-token"),
-            (self.include_digital_cards, "download-digital-cards"),
         ]
         return widgets_with_settings
 
@@ -281,10 +313,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         images_section["automatically-add-opposing-faces"] = str(self.automatically_add_opposing_faces.isChecked())
 
     def _save_downloads_settings(self):
+        self.card_filter_general_settings: AbstractPrintingFilterWidget
+        self.card_filter_format_settings: AbstractPrintingFilterWidget
         downloads_section = mtg_proxy_printer.settings.settings["downloads"]
-        widgets_and_settings = self._get_download_settings_widgets()
-        for widget, setting in widgets_and_settings:
-            downloads_section[setting] = str(widget.isChecked())
+        self.card_filter_general_settings.save_settings(downloads_section)
+        self.card_filter_format_settings.save_settings(downloads_section)
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
