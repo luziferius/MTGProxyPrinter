@@ -9,7 +9,10 @@
 
     <file>ui/add_card_widget/horizontal.ui</file>
     <file>ui/add_card_widget/vertical.ui</file>
-    <file>ui/settings_window.ui</file>
+
+    <file>ui/settings_window/format_printing_filter.ui</file>
+    <file>ui/settings_window/general_printing_filter.ui</file>
+    <file>ui/settings_window/settings_window.ui</file>
 
     <file>ui/deck_import_wizard/load_list_page.ui</file>
     <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>

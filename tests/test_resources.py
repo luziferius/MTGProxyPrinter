@@ -37,15 +37,14 @@ def resource_path() -> Path:
     return qrc_file
 
 
-
-
 def test_all_resources_listed_in_resources_qrc_exist_as_files(resource_path: Path):
     resource_document = xml.etree.ElementTree.ElementTree(file=resource_path)
     file_nodes = resource_document.findall("qresource/file")
     base_dir = resource_path.parent
     for node in file_nodes:
-        assert_that((base_dir/node.text).exists(), reason="Listed entry does not exist")
-        assert_that((base_dir/node.text).is_file(), reason="Listed entry not a regular file")
+        path = base_dir/node.text
+        assert_that(path.exists(), is_(True), f"Listed entry does not exist: {path}")
+        assert_that(path.is_file(), is_(True), f"Listed entry not a regular file {path}")
 
 
 def test_no_duplicates_in_resources_qrc(resource_path: Path):
