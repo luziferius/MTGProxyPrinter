@@ -96,7 +96,7 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
         return widgets_with_settings
 
 
-class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
+class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
     """Implements the Settings window."""
     saved = pyqtSignal()
 
