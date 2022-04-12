@@ -235,7 +235,6 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
 
 
-
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
     """Creates an empty document save file at the given path and using the given schema version."""
     save_file_path = temp_path/"test.mtgproxies"

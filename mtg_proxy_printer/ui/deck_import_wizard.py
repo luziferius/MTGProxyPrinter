@@ -255,7 +255,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
         self.registerField("should_replace_document", self.should_replace_document)
-        self.should_replace_document.toggled[bool].connect(self._update_accept_button_on_replace_document_option_toggled)
+        self.should_replace_document.toggled[bool].connect(
+            self._update_accept_button_on_replace_document_option_toggled)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:

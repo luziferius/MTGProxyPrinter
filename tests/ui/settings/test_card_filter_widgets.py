@@ -22,7 +22,8 @@ import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.settings_window import GeneralPrintingFilterWidget, FormatPrintingFilterWidget, AbstractPrintingFilterWidget
+from mtg_proxy_printer.ui.settings_window import GeneralPrintingFilterWidget, FormatPrintingFilterWidget,\
+    AbstractPrintingFilterWidget
 
 T = typing.TypeVar("T")
 

@@ -21,8 +21,7 @@ from hamcrest import *
 import pytest
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, \
-    fill_card_database_with_json_cards
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json
 
 
 class DatabasePrintingData(typing.NamedTuple):

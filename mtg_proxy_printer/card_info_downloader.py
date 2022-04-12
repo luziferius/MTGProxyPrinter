@@ -17,7 +17,6 @@ import datetime
 import functools
 import gzip
 import json
-import os
 from pathlib import Path
 import re
 import sqlite3

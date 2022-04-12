@@ -22,6 +22,7 @@ from pathlib import Path
 from hamcrest import *
 import pytest
 
+
 def list_dir(directory: Path) -> typing.Iterable[Path]:
     walker = os.walk(directory)
     for subdir, _, files in walker:
