@@ -30,7 +30,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, format_size
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -73,6 +73,8 @@ class IsRegularExpressionValidator(QValidator):
 
 
 class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
+
+    LARGE_FILE_THRESHOLD_BYTES = 200*2**10
 
     def __init__(self, language_model: QStringListModel, *args, **kwargs):
         super(LoadListPage, self).__init__(*args, **kwargs)
@@ -126,10 +128,33 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
             selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file")
-            if selected_file and (file_path := pathlib.Path(selected_file)).is_file():
-                logger.debug("Selected file is valid, loading it from disk, replacing the current deck list")
-                self.deck_list.clear()
-                self.deck_list.setPlainText(file_path.read_text())
+            self._load_from_file(selected_file)
+
+    def _load_from_file(self, selected_file: typing.Optional[str]):
+        if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
+                self._ask_about_large_file(file_path):
+            try:
+                logger.debug("Selected path is valid file, trying to load the content")
+                content = file_path.read_text()
+            except UnicodeDecodeError:
+                logger.warning(f"Unable to parse file {file_path}. Not a text file?")
+                QMessageBox.critical(
+                    self, "Unable to read file content",
+                    f"Unable to read the content of file {file_path} as plain text.\nFailed to load the content.")
+            else:
+                logger.debug("Successfully read the file as plain text, replacing the current deck list")
+                self.deck_list.setPlainText(content)
+
+    def _ask_about_large_file(self, file_path: pathlib.Path) -> bool:
+        size = file_path.stat().st_size
+        too_large = size > LoadListPage.LARGE_FILE_THRESHOLD_BYTES
+        should_load = not too_large or QMessageBox.question(
+            self, "Load large file?",
+            f"The selected file {file_path} is unexpectedly large ({format_size(size)}). Load anyways?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        ) == QMessageBox.Yes
+        logger.debug(f"File size: {size}, {too_large=}, {should_load=}")
+        return should_load
 
 
 class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/select_deck_parser_page")):

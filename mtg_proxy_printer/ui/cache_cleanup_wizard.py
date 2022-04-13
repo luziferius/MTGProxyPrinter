@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, format_size
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -37,14 +37,6 @@ __all__ = [
     "CacheCleanupWizard",
 ]
 INVALID = QModelIndex()
-
-
-def format_size(size: float) -> str:
-    for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
-        if -1024 < size < 1024:
-            return f"{size:3.2f} {unit}"
-        size /= 1024
-    return f"{size:.2f} YiB"
 
 
 @functools.lru_cache(maxsize=256)

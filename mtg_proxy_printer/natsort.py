@@ -78,4 +78,3 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         return [
             self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
         ]
-
