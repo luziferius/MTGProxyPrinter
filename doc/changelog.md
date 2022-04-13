@@ -19,6 +19,9 @@
   import affected cards.
 - Fixed bug in the deck import wizard that caused the wizard to perform a deck list translation,
   even if that option was disabled.
+- The deck import wizard now shows an error message when a binary file is selected for loading from disk,
+  instead of silently failing or crashing.
+- The deck import wizard now asks for confirmation, if an unexpectedly large file is selected.
 
 # Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
 
