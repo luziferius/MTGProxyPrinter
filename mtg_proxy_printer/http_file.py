@@ -206,7 +206,7 @@ class MeteredSeekableHTTPFile(QObject):
         try:
             response: http.client.HTTPResponse = urllib.request.urlopen(request)
         except urllib.error.URLError as e:
-            if retry is None or retry == self.retry_limit or e.errno != -2:
+            if retry is None or retry == self.retry_limit:
                 raise e
             # URLError is most likely caused by being offline,
             # so wait a bit to not immediately burn all remaining retries
