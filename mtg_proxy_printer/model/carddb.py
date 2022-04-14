@@ -166,23 +166,6 @@ class CardDatabase:
     def begin_transaction(self):
         self.db.execute("BEGIN TRANSACTION")
 
-    def check_if_download_settings_changed(self) -> bool:
-        section = mtg_proxy_printer.settings.settings["downloads"]
-
-        currently_disabled_settings = set(itertools.filterfalse(section.getboolean, section.keys()))
-        database_disabled_settings = set(item for item, in self.db.execute(
-            cached_dedent('''\
-            SELECT setting -- check_if_download_settings_changed()
-                FROM UsedDownloadSettings
-                WHERE "value" = ?
-            '''),
-            (False,)
-        ))
-        result = currently_disabled_settings != database_disabled_settings
-        logger.debug(
-            f"Checked, if the current download filter settings differ from the previously used. Result: {result}")
-        return result
-
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
@@ -198,7 +181,7 @@ class CardDatabase:
         result, = self.db.execute(query).fetchone()
         last_timestamp = datetime.datetime.fromisoformat(result).date()
         allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.date.today()
-        return allow_update or self.check_if_download_settings_changed()
+        return allow_update
 
     @profile
     def get_all_languages(self) -> StringList:

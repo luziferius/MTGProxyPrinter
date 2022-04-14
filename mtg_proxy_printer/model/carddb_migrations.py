@@ -94,10 +94,6 @@ def _migrate_11_to_12(db: sqlite3.Connection):
       "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
     );
     """))
-    # Import now to avoid a cyclic import. This function is only required during this specific migration task
-    from mtg_proxy_printer.card_info_downloader import store_download_settings
-    # Guess the used settings based on the current ones. This is good enough for this migration task
-    store_download_settings(db)
 
 
 def _migrate_12_to_13(db: sqlite3.Connection):
@@ -392,6 +388,12 @@ def _migrate_22_to_23(db: sqlite3.Connection):
         """))
 
 
+def _migrate_23_to_24(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent("""\
+    DROP TABLE UsedDownloadSettings;
+    """))
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -409,6 +411,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (20, _migrate_20_to_21),
     (21, _migrate_21_to_22),
     (22, _migrate_22_to_23),
+    (23, _migrate_23_to_24),
 )
 
 

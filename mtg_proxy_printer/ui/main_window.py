@@ -79,7 +79,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         self.should_update_languages.connect(self.central_widget.add_card_widget.update_selected_language)
         self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.central_widget.settings_changed)
-        self.settings_changed.connect(self.offer_re_downloading_card_database)
         self.action_show_toolbar: QAction
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
@@ -174,18 +173,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         progress_bar.hide()
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
-
-    def offer_re_downloading_card_database(self):
-        settings_changed = self.card_database.check_if_download_settings_changed()
-        self.action_download_card_data.setEnabled(self.card_database.allow_updating_card_data())
-        if settings_changed and QMessageBox.question(
-                self, "Card download filter changed",
-                "The card download filter settings changed.\n"
-                "Do you want to re-download the card data now to apply the new settings?\n"
-                "If you decline, you can do this later using the Settings menu.",
-                QMessageBox.Yes | QMessageBox.No
-                ) == QMessageBox.Yes:
-            self.action_download_card_data.trigger()
 
     def resizeEvent(self, event: QResizeEvent):
         super(MainWindow, self).resizeEvent(event)

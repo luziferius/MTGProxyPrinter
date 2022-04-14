@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000023;
+PRAGMA user_version = 0000024;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -91,12 +91,6 @@ CREATE TABLE LastDatabaseUpdate (
   update_id             INTEGER NOT NULL PRIMARY KEY,
   update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
-);
-
-CREATE TABLE UsedDownloadSettings (
-  -- This table contains the download filter settings used during the card data import
-  setting TEXT NOT NULL PRIMARY KEY,
-  "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
 );
 
 CREATE TABLE LastImageUseTimestamps (

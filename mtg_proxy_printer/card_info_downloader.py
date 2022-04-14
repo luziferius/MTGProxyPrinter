@@ -238,7 +238,6 @@ class CardInfoDownloadWorker(DownloaderBase):
     def _populate_database(self, card_data: typing.Generator[JSONType, None, None]) -> int:
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
-        store_download_settings(self.model.db)
         ds = mtg_proxy_printer.settings.settings["downloads"]
         # Parse the boolean download settings only once per import to save multiple seconds during the import
         download_enabled: typing.Dict[str, bool] = {
@@ -316,20 +315,6 @@ def _clear_lru_caches():
     for cache in (_insert_language, _insert_set_data, _insert_card):
         logger.debug(str(cache.cache_info()))
         cache.cache_clear()
-
-
-def store_download_settings(db):
-    """Store the current download settings in the database"""
-    section = mtg_proxy_printer.settings.settings["downloads"]
-    db.executemany(cached_dedent(
-        '''\
-        INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)
-            ON CONFLICT(setting) DO UPDATE
-                SET value = excluded.value
-                WHERE value <> excluded.value
-        '''),
-        ((setting, section.getboolean(setting)) for setting in section.keys())
-    )
 
 
 def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
