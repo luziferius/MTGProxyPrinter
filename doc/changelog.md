@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- The document and PDF save path now defaults to the local Documents directory.
+
 # Version 0.15.1 (2022-04-13) <a name="v0_15_1"></a>
 
 ## Changed features
@@ -346,7 +352,7 @@
   no longer freezes the GUI. The cards are now properly added in the correct order
 - Adding a card that requires an image download and then adding the same card again, while the download is still
   in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
-- Fixed application hangs until a long running operation is completed when trying to quit the application
+- Fixed application hangs until a long-running operation is completed when trying to quit the application
   while a document is being loaded or a deck list import is running
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 
   via pip.

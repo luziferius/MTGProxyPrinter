@@ -19,6 +19,8 @@ import pathlib
 import re
 import typing
 
+from PyQt5.QtCore import QStandardPaths
+
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 
@@ -92,8 +94,8 @@ DEFAULT_SETTINGS["documents"] = {
     "pdf-page-count-limit": "0",
 }
 DEFAULT_SETTINGS["default-save-paths"] = {
-    "document-save-path": "",
-    "pdf-export-path": "",
+    "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
