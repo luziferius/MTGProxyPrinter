@@ -225,6 +225,7 @@ class CardDatabase:
         SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()
             FROM CardFace
             JOIN Printing USING (printing_id)
+            JOIN PrintingIsVisible USING (printing_id)
             JOIN "Set" USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
@@ -264,6 +265,7 @@ class CardDatabase:
                 oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
             FROM CardFace
             JOIN Printing USING (printing_id)
+            JOIN PrintingIsVisible USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             JOIN "Set" USING (set_id)
@@ -358,6 +360,7 @@ class CardDatabase:
         SELECT DISTINCT collector_number -- find_collector_numbers_matching()
             FROM CardFace
             JOIN Printing USING (printing_id)
+            JOIN PrintingIsVisible USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             JOIN "Set" USING (set_id)
@@ -383,6 +386,7 @@ class CardDatabase:
         SELECT DISTINCT "set", set_name  -- find_sets_matching()
             FROM CardFace
             JOIN Printing USING (printing_id)
+            JOIN PrintingIsVisible USING (printing_id)
             JOIN "Set" USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
@@ -402,8 +406,9 @@ class CardDatabase:
         query = cached_dedent('''\
         SELECT EXISTS ( -- is_scryfall_id_known()
             SELECT scryfall_id
-            FROM Printing JOIN
-            CardFace USING(printing_id)
+            FROM Printing 
+            JOIN PrintingIsVisible USING (printing_id)
+            JOIN CardFace USING (printing_id)
             WHERE scryfall_id = ? AND is_front = ?)
         ''')
         result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
@@ -442,7 +447,7 @@ class CardDatabase:
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()
             FROM FaceName
-            JOIN PrintLanguage USING (language_id)
+            JOIN VisiblePrintLanguage USING (language_id)
             WHERE card_name LIKE ?
         ''')
         return self._read_optional_scalar_from_db(query, (name,))
@@ -453,7 +458,7 @@ class CardDatabase:
         query = cached_dedent('''
         SELECT EXISTS( -- is_known_language()
             SELECT *
-            FROM PrintLanguage
+            FROM VisiblePrintLanguage
             WHERE "language" = ?
         )
         ''')
@@ -476,9 +481,10 @@ class CardDatabase:
         query = cached_dedent("""\
         SELECT DISTINCT card_name -- translate_card_name()
             FROM FaceName
-            JOIN PrintLanguage USING(language_id)
+            JOIN PrintLanguage USING (language_id)
             JOIN CardFace USING (face_name_id)
             JOIN Printing USING (printing_id)
+            JOIN PrintingIsVisible USING (printing_id)
             JOIN Card USING (card_id)
             WHERE "language" = ?
             AND (oracle_id, face_number) IN (
