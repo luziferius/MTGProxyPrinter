@@ -185,11 +185,11 @@ class CardDatabase:
 
     @profile
     def get_all_languages(self) -> StringList:
-        """Returns the list of all known languages, sorted ascending."""
+        """Returns the list of all known and visible languages, sorted ascending."""
         logger.debug("Reading all known languages")
         result = [lang for lang, in self.db.execute(cached_dedent('''\
         SELECT language -- get_all_languages()
-            FROM PrintLanguage
+            FROM VisiblePrintLanguage
             ORDER BY language ASC
         '''))]
         return result
@@ -652,3 +652,15 @@ class CardDatabase:
             in self.db.execute(query, parameters)
         ]
         return result
+
+    def store_current_printing_filters(self):
+        section = mtg_proxy_printer.settings.settings["downloads"]
+        self.db.executemany(
+            cached_dedent("""\
+                INSERT INTO DisplayFilters (filter_name, filter_active)
+                  VALUES (?, ?)
+                  ON CONFLICT (filter_name) DO UPDATE
+                    SET filter_active = excluded.filter_active
+                """),
+            ((key, not section.getboolean(key)) for key in section.keys())  # TODO: Invert storage logic, remove not
+        )

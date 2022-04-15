@@ -92,6 +92,29 @@ CREATE TABLE LastDatabaseUpdate (
   update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
+CREATE TABLE DisplayFilters (
+  -- Contains the available display filters and their current values
+  filter_id INTEGER NOT NULL PRIMARY KEY,
+  filter_name TEXT NOT NULL UNIQUE,
+  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
+);
+
+CREATE TABLE PrintingDisplayFilter (
+  -- Stores which filter applies to which printing.
+  printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+  filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+  filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+  PRIMARY KEY (printing_id, filter_id)
+);
+
+CREATE VIEW PrintingIsVisible AS
+  -- Contains the printing_ids of all visible Printings.
+  SELECT printing_id
+  FROM PrintingDisplayFilter
+  JOIN DisplayFilters USING (filter_id)
+  GROUP BY printing_id
+  HAVING sum(filter_applies * filter_active) == 0
+;
 
 CREATE TABLE LastImageUseTimestamps (
   -- Used to store the last image use timestamp and usage count of each image.
@@ -114,14 +137,29 @@ CREATE TABLE RemovedPrintings (
 
 CREATE VIEW AllPrintings AS
   SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
-    highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+         highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
   FROM Card
   JOIN Printing USING (card_id)
   JOIN "Set" USING (set_id)
   JOIN CardFace USING (printing_id)
-  JOIN FaceName USING(face_name_id)
-  JOIN PrintLanguage USING(language_id)
+  JOIN FaceName USING (face_name_id)
+  JOIN PrintLanguage USING (language_id)
+  JOIN PrintingIsVisible USING (printing_id)
+;
 
+CREATE VIEW VisiblePrintLanguage AS
+  WITH VisibleLanguageIds(language_id) AS (
+    SELECT language_id
+      FROM Printing
+      JOIN PrintingIsVisible USING (printing_id)
+      JOIN CardFace USING (printing_id)
+      JOIN FaceName USING (face_name_id)
+    )
+    SELECT * FROM PrintLanguage
+      WHERE language_id in (
+        SELECT VisibleLanguageIds.language_id
+          FROM VisibleLanguageIds
+        )
 ;
 
 COMMIT;

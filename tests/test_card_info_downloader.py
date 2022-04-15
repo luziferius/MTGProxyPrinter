@@ -21,7 +21,7 @@ from hamcrest import *
 import pytest
 
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -132,46 +132,48 @@ def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
         f"Card relation contains unexpected data: {data}")
 
 
-def _assert_print_language_contains(card_db: CardDatabase, test_case: TestCaseData):
+def _assert_print_language_contains(
+        card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "PrintLanguage"):
     """Checks language"""
     assert_that(
-        data := card_db.db.execute('SELECT "language" FROM PrintLanguage').fetchall(),
+        data := card_db.db.execute(f'SELECT "language" FROM {relation_name}').fetchall(),
         contains_inanyorder(*test_case.db_print_language()),
         f"PrintLanguage relation contains unexpected data: {data}")
 
 
-def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
+def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "Set"):
     """Checks "set", set_name, scryfall_set_uri"""
     assert_that(
-        card_db.db.execute('SELECT "set", set_name, set_uri FROM "Set"').fetchall(),
+        card_db.db.execute(f'SELECT "set", set_name, set_uri FROM "{relation_name}"').fetchall(),
         contains_inanyorder(*test_case.db_set()),
         f"Set relation contains unexpected data")
 
 
-def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
+def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "FaceName"):
     """Checks card_name"""
     assert_that(
-        data := card_db.db.execute('SELECT card_name FROM FaceName').fetchall(),
+        data := card_db.db.execute(f'SELECT card_name FROM {relation_name}').fetchall(),
         contains_inanyorder(*test_case.db_face_name()),
         f"FaceName relation contains unexpected data: {data}")
 
 
-def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData):
+def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "Printing"):
     """Checks collector_number, scryfall_id, is_oversized, highres_image"""
     assert_that(
         data := [
             (collector_number, scryfall_id, bool(is_oversized), bool(highres_image))
             for collector_number, scryfall_id, is_oversized, highres_image
-            in card_db.db.execute('SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing')
+            in card_db.db.execute(
+                f'SELECT collector_number, scryfall_id, is_oversized, highres_image FROM {relation_name}')
          ],
         contains_inanyorder(*test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
 
 
-def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData):
+def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "CardFace"):
     """Checks png_image_uri, is_front, face_number"""
     assert_that(
-        data := card_db.db.execute("SELECT png_image_uri, is_front, face_number FROM CardFace").fetchall(),
+        data := card_db.db.execute(f"SELECT png_image_uri, is_front, face_number FROM {relation_name}").fetchall(),
         contains_inanyorder(*test_case.db_card_face()),
         f"CardFace relation contains unexpected data: {data}")
 
@@ -190,14 +192,35 @@ def _assert_all_printings_contains(card_db: CardDatabase, test_case: TestCaseDat
         f"AllPrintings relation contains unexpected data: {data}")
 
 
-def assert_successful_import(card_db: CardDatabase, test_case: TestCaseData):
-    _assert_all_printings_contains(card_db, test_case)
+def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
+    """
+    Verifies that the printing is both correctly stored, and visible in all VIEWs that filter out unwanted printings.
+    """
     _assert_printing_contains(card_db, test_case)
     _assert_card_face_contains(card_db, test_case)
     _assert_face_name_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     _assert_print_language_contains(card_db, test_case)
+    _assert_print_language_contains(card_db, test_case, "VisiblePrintLanguage")
+    _assert_all_printings_contains(card_db, test_case)
+
+
+def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
+    """
+    Verifies that the printing is correctly stored, but invisible in all VIEWs that filter out unwanted printings.
+    """
+    _assert_print_language_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case)
+    _assert_card_face_contains(card_db, test_case)
+    _assert_face_name_contains(card_db, test_case)
+    _assert_set_contains(card_db, test_case)
+    _assert_card_contains(card_db, test_case)
+    for filtered_view in (
+            "VisiblePrintLanguage",
+            "AllPrintings",
+            ):
+        assert_relation_is_empty(card_db, filtered_view)
 
 
 def generate_test_cases_for_test_card_import():
@@ -240,7 +263,7 @@ def generate_test_cases_for_test_card_import():
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
 def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def generate_test_cases_for_test_download_filters():
@@ -360,9 +383,9 @@ def test_download_filters(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: str(filter_setting)})
     if filter_setting:
-        assert_successful_import(card_db, test_case)
+        assert_visible_import(card_db, test_case)
     else:
-        assert_model_is_empty(card_db, test_case)
+        assert_hidden_import(card_db, test_case)
 
 
 def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: CardDatabase):
@@ -374,7 +397,6 @@ def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: Car
 
 
 def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: CardDatabase):
-    # FIXME: This test uses a printing that has no images. Also use one that is filtered by a normal printing filter
     fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_model_is_empty(
         card_db, TestCaseData(
@@ -397,11 +419,11 @@ def test_re_import_with_enabled_download_filter_removes_card(qtbot, card_db: Car
     filter_name = "download-oversized-cards"
     # Pass 1: Populate the database and include the card. The card should be in the database afterwards
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "False"})
-    # The card should not be in the database.
-    assert_model_is_empty(card_db, test_case)
+    # The card should not be visible
+    assert_hidden_import(card_db, test_case)
 
 
 def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(qtbot, card_db: CardDatabase):
@@ -412,13 +434,13 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
     )
     filter_name = "download-oversized-cards"
-    # Pass 1: Populate the database and exclude the card. The card should not be in the database afterwards
+    # Pass 1: Populate the database and exclude the card. The card should not be visible
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "False"})
-    assert_model_is_empty(card_db, test_case)
+    assert_hidden_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but include the card now.
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
     # The card should be in the database. The RemovedPrintings table should be empty
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
     assert_that(
         card_db.db.execute("SELECT scryfall_id, oracle_id FROM RemovedPrintings").fetchall(),
         is_(empty()),
@@ -439,7 +461,7 @@ def test_updates_language(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"lang": test_case.language}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 @pytest.mark.parametrize("test_case", [
@@ -464,7 +486,7 @@ def test_updates_card_oracle_id(qtbot, card_db: CardDatabase, test_case: TestCas
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"oracle_id": test_case.oracle_id}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def test_updates_set_code(qtbot, card_db: CardDatabase):
@@ -480,7 +502,7 @@ def test_updates_set_code(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"set": test_case.set.set_code}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def test_updates_set_name(qtbot, card_db: CardDatabase):
@@ -496,7 +518,7 @@ def test_updates_set_name(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"set_name": test_case.set.set_name}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def test_updates_set_uri(qtbot, card_db: CardDatabase):
@@ -512,7 +534,7 @@ def test_updates_set_uri(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"scryfall_set_uri": test_case.set.set_uri}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def test_updates_printing_collector_number(qtbot, card_db: CardDatabase):
@@ -528,7 +550,7 @@ def test_updates_printing_collector_number(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"collector_number": test_case.collector_number}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def test_updates_printing_is_oversized(qtbot, card_db: CardDatabase):
@@ -544,7 +566,7 @@ def test_updates_printing_is_oversized(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"oversized": test_case.is_oversized}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)
 
 
 def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
@@ -560,4 +582,4 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"highres_image": test_case.highres_image}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_successful_import(card_db, test_case)
+    assert_visible_import(card_db, test_case)

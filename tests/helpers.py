@@ -53,6 +53,8 @@ def setup_settings_for_testing():
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
+        card_db.store_current_printing_filters()
+        card_db.db.commit()
         dw.populate_database(data)
 
 
@@ -74,7 +76,7 @@ def fill_card_database_with_json_cards(
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
     ]
-    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], settings_to_use):
+    with patch.dict(section, settings_to_use):
         populate_database(qtbot, card_db, data)
     return card_db
 

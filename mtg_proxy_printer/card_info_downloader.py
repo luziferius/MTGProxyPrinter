@@ -38,7 +38,6 @@ del get_logger
 
 __all__ = [
     "CardInfoDownloader",
-    "store_download_settings",
     "CardInfoDownloadWorker",
 ]
 
@@ -262,7 +261,7 @@ class CardInfoDownloadWorker(DownloaderBase):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
+            if _should_skip_card(card):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
                     INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
@@ -302,6 +301,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         card_id = _insert_card(self.model, oracle_id)
         set_id = _insert_set(self.model, card)
         printing_id = insert_printing(self.model, card, card_id, set_id)
+        _insert_card_filters(self.model, printing_id, _get_card_filter_data(card))
         face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
         return face_ids
 
@@ -485,33 +485,53 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, pr
     return face_ids
 
 
-def _should_skip_card(
-        card: JSONType, download_enabled: typing.Dict[str, bool],
-        skip_cards_banned_in_formats: typing.FrozenSet[str]) -> bool:
-    """Determine, if the given card should be included based on the application settings"""
+def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
     legalities: typing.Dict[str, str] = card["legalities"]
-    banned_in_formats = frozenset(magic_format for magic_format, legality in legalities.items() if legality == "banned")
-
-    return any((
+    return {
         # Racism filter
-        card.get("content_warning", False) and not download_enabled["download-cards-depicting-racism"],
+        "download-cards-depicting-racism": card.get("content_warning", False),
         # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        card["image_status"] == "placeholder" and not download_enabled["download-cards-without-images"],
-        # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
-        card["image_status"] == "missing",
-        card["oversized"] and not download_enabled["download-oversized-cards"],
+        "download-cards-without-images": card["image_status"] == "placeholder",
+        "download-oversized-cards": card["oversized"],
         # Border filter
-        card["border_color"] == "white" and not download_enabled["download-white-bordered"],
-        card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],
+        "download-white-bordered": card["border_color"] == "white",
+        "download-gold-bordered": card["border_color"] == "gold",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
-        card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
+        "download-funny-cards": card["set_type"] == "funny",
         # Token cards
-        card["layout"] == "token" and not download_enabled["download-token"],
-        card["digital"] is True and not download_enabled["download-digital-cards"],
-        # Specific format legality.
-        not banned_in_formats.isdisjoint(skip_cards_banned_in_formats),
-    ))
+        "download-token": card["layout"] == "token",
+        "download-digital-cards": card["digital"],
+        # Specific format legality. Use .get() with a default instead of [] to not fail
+        # if Scryfall removes one of the listed formats in the future.
+        "download-banned-in-brawl": legalities.get("brawl", "") == "banned",
+        "download-banned-in-commander": legalities.get("commander", "") == "banned",
+        "download-banned-in-historic": legalities.get("historic", "") == "banned",
+        "download-banned-in-legacy": legalities.get("legacy", "") == "banned",
+        "download-banned-in-modern": legalities.get("modern", "") == "banned",
+        "download-banned-in-pauper": legalities.get("pauper", "") == "banned",
+        "download-banned-in-penny": legalities.get("penny", "") == "banned",
+        "download-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
+        "download-banned-in-standard": legalities.get("standard", "") == "banned",
+        "download-banned-in-vintage": legalities.get("vintage", "") == "banned",
+    }
+
+
+def _insert_card_filters(model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool]):
+    model.db.executemany(
+        cached_dedent("""\
+            INSERT OR REPLACE INTO PrintingDisplayFilter (printing_id, filter_id, filter_applies)
+              SELECT ?, filter_id, ?
+              FROM DisplayFilters
+              WHERE filter_name = ?
+        """),
+        ((printing_id, filter_applies, filter_name) for filter_name, filter_applies in filter_data.items())
+    )
+
+
+def _should_skip_card(card: JSONType) -> bool:
+    # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
+    return card["image_status"] == "missing"
 
 
 def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None]:

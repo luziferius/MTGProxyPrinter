@@ -379,18 +379,67 @@ def _migrate_21_to_22(db: sqlite3.Connection):
 
 def _migrate_22_to_23(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
-        CREATE TABLE RemovedPrintings (
-          scryfall_id TEXT NOT NULL PRIMARY KEY,
-          -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
-          language TEXT NOT NULL,
-          oracle_id TEXT NOT NULL
-        );
-        """))
+    CREATE TABLE RemovedPrintings (
+      scryfall_id TEXT NOT NULL PRIMARY KEY,
+      -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
+      language TEXT NOT NULL,
+      oracle_id TEXT NOT NULL
+    );
+    """))
 
 
 def _migrate_23_to_24(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
+    CREATE TABLE DisplayFilters (
+      filter_id INTEGER NOT NULL PRIMARY KEY,
+      filter_name TEXT NOT NULL UNIQUE,
+      filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
+    );
+    INSERT INTO DisplayFilters (filter_name, filter_active)
+      SELECT setting, FALSE
+      FROM UsedDownloadSettings;
     DROP TABLE UsedDownloadSettings;
+    CREATE TABLE PrintingDisplayFilter (
+      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+      filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+      PRIMARY KEY (printing_id, filter_id)
+    );
+    CREATE VIEW PrintingIsVisible AS
+      -- Contains the printing_ids of all visible Printings
+      SELECT printing_id
+      FROM PrintingDisplayFilter
+      JOIN DisplayFilters USING (filter_id)
+      WHERE filter_active IS TRUE
+      GROUP BY printing_id
+      HAVING sum(filter_applies) == 0
+    ;
+    DROP VIEW AllPrintings;
+    CREATE VIEW AllPrintings AS
+      SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+             highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+      FROM Card
+      JOIN Printing USING (card_id)
+      JOIN "Set" USING (set_id)
+      JOIN CardFace USING (printing_id)
+      JOIN FaceName USING (face_name_id)
+      JOIN PrintLanguage USING (language_id)
+      JOIN PrintingIsVisible USING (printing_id)
+    ;
+    CREATE VIEW VisiblePrintLanguage AS
+      WITH VisibleLanguageIds(language_id) AS (
+        SELECT language_id
+          FROM Printing
+          JOIN PrintingIsVisible USING (printing_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+        )
+        SELECT * FROM PrintLanguage
+          WHERE language_id in (
+            SELECT VisibleLanguageIds.language_id
+              FROM VisibleLanguageIds
+            )
+    ;
     """))
 
 
