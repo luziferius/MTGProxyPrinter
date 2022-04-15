@@ -148,15 +148,15 @@ CREATE VIEW AllPrintings AS
 ;
 
 CREATE VIEW VisiblePrintLanguage AS
-  WITH VisibleLanguageIds(language_id) AS (
+  WITH VisibleLanguageIds (language_id) AS (
     SELECT language_id
-      FROM Printing
-      JOIN PrintingIsVisible USING (printing_id)
+      FROM PrintingIsVisible
       JOIN CardFace USING (printing_id)
       JOIN FaceName USING (face_name_id)
     )
-    SELECT * FROM PrintLanguage
-      WHERE language_id in (
+    SELECT *
+      FROM PrintLanguage
+      WHERE language_id IN (
         SELECT VisibleLanguageIds.language_id
           FROM VisibleLanguageIds
         )
@@ -168,7 +168,8 @@ CREATE VIEW VisibleFaceName AS
       FROM PrintingIsVisible
       JOIN CardFace USING (printing_id)
     )
-    SELECT * FROM FaceName
+    SELECT *
+      FROM FaceName
       WHERE face_name_id IN (
         SELECT VisibleFaceNameIds.face_name_id
           FROM VisibleFaceNameIds

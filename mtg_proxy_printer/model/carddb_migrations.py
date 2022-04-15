@@ -429,12 +429,12 @@ def _migrate_23_to_24(db: sqlite3.Connection):
     CREATE VIEW VisiblePrintLanguage AS
       WITH VisibleLanguageIds(language_id) AS (
         SELECT language_id
-          FROM Printing
-          JOIN PrintingIsVisible USING (printing_id)
+          FROM PrintingIsVisible
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
         )
-        SELECT * FROM PrintLanguage
+        SELECT *
+          FROM PrintLanguage
           WHERE language_id in (
             SELECT VisibleLanguageIds.language_id
               FROM VisibleLanguageIds
@@ -446,7 +446,8 @@ def _migrate_23_to_24(db: sqlite3.Connection):
           FROM PrintingIsVisible
           JOIN CardFace USING (printing_id)
         )
-        SELECT * FROM FaceName
+        SELECT *
+          FROM FaceName
           WHERE face_name_id IN (
             SELECT VisibleFaceNameIds.face_name_id
               FROM VisibleFaceNameIds
