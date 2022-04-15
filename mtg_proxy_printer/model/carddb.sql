@@ -162,4 +162,18 @@ CREATE VIEW VisiblePrintLanguage AS
         )
 ;
 
+CREATE VIEW VisibleFaceName AS
+  WITH VisibleFaceNameIds (face_name_id) AS (
+    SELECT face_name_id
+      FROM PrintingIsVisible
+      JOIN CardFace USING (printing_id)
+    )
+    SELECT * FROM FaceName
+      WHERE face_name_id IN (
+        SELECT VisibleFaceNameIds.face_name_id
+          FROM VisibleFaceNameIds
+      )
+;
+
+
 COMMIT;

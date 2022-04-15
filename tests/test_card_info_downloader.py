@@ -199,6 +199,7 @@ def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
     _assert_printing_contains(card_db, test_case)
     _assert_card_face_contains(card_db, test_case)
     _assert_face_name_contains(card_db, test_case)
+    _assert_face_name_contains(card_db, test_case, "VisibleFaceName")
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     _assert_print_language_contains(card_db, test_case)
@@ -218,6 +219,7 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
     _assert_card_contains(card_db, test_case)
     for filtered_view in (
             "VisiblePrintLanguage",
+            "VisibleFaceName",
             "AllPrintings",
             ):
         assert_relation_is_empty(card_db, filtered_view)

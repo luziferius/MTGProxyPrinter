@@ -200,7 +200,7 @@ class CardDatabase:
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query = cached_dedent('''\
         SELECT card_name -- get_card_names()
-            FROM FaceName
+            FROM VisibleFaceName
             JOIN PrintLanguage USING (language_id)
         ''')
         where_clause = '    WHERE "language" = ?\n'
