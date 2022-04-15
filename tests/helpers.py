@@ -65,23 +65,13 @@ def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
-        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+        filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     data = [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
     ]
-    # Either both None or both set non-empty
-    assert (option is None and value is None) or (bool(option) and bool(value))
-    if option is None:
+    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], filter_settings or {}):
         populate_database(qtbot, card_db, data)
-    else:
-        assert_that(
-            mtg_proxy_printer.settings.settings["downloads"],
-            has_key(option),
-            f"Test setup failed: Download settings do not contain expected setting: {option}"
-        )
-        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-            populate_database(qtbot, card_db, data)
     return card_db
 
 
@@ -89,8 +79,8 @@ def fill_card_database_with_json_card(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
-        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], option, value)
+        filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 
 
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):

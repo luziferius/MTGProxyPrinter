@@ -358,7 +358,7 @@ def generate_test_cases_for_test_download_filters():
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_download_filters())
 def test_download_filters(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, str(filter_setting))
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: str(filter_setting)})
     if filter_setting:
         assert_successful_import(card_db, test_case)
     else:
@@ -374,6 +374,7 @@ def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: Car
 
 
 def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: CardDatabase):
+    # FIXME: This test uses a printing that has no images. Also use one that is filtered by a normal printing filter
     fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_model_is_empty(
         card_db, TestCaseData(
@@ -395,10 +396,10 @@ def test_re_import_with_enabled_download_filter_removes_card(qtbot, card_db: Car
     )
     filter_name = "download-oversized-cards"
     # Pass 1: Populate the database and include the card. The card should be in the database afterwards
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "True")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
     assert_successful_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "False")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "False"})
     # The card should not be in the database.
     assert_model_is_empty(card_db, test_case)
 
@@ -412,10 +413,10 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
     )
     filter_name = "download-oversized-cards"
     # Pass 1: Populate the database and exclude the card. The card should not be in the database afterwards
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "False")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "False"})
     assert_model_is_empty(card_db, test_case)
     # Pass 2: Re-Populate the database, but include the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, filter_name, "True")
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
     # The card should be in the database. The RemovedPrintings table should be empty
     assert_successful_import(card_db, test_case)
     assert_that(

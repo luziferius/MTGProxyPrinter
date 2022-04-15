@@ -660,7 +660,7 @@ def test_get_total_cards_in_last_update(card_db: CardDatabase):
 
 
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", "download-oversized-cards", "False")
+    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", {"download-oversized-cards": "False"})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(equal_to("7e6b9b59-cd68-4e3c-827b-38833c92d6eb"))
@@ -668,7 +668,7 @@ def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: 
 
 
 def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", "download-oversized-cards", "True")
+    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", {"download-oversized-cards": "True"})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(None)
