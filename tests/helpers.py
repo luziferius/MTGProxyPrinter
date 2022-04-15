@@ -66,11 +66,15 @@ def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    settings_to_use = {filter_name: "True" for filter_name in section.keys()}
+    if filter_settings:
+        settings_to_use.update(filter_settings)
     data = [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
     ]
-    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], filter_settings or {}):
+    with patch.dict(mtg_proxy_printer.settings.settings["downloads"], settings_to_use):
         populate_database(qtbot, card_db, data)
     return card_db
 
