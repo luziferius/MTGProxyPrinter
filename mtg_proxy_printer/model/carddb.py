@@ -143,6 +143,7 @@ class CardDatabase:
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
+        self.store_current_printing_filters()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -661,6 +662,7 @@ class CardDatabase:
 
     def store_current_printing_filters(self):
         section = mtg_proxy_printer.settings.settings["downloads"]
+        self.db.execute("BEGIN TRANSACTION;\n")
         self.db.executemany(
             cached_dedent("""\
                 INSERT INTO DisplayFilters (filter_name, filter_active)
@@ -670,3 +672,4 @@ class CardDatabase:
                 """),
             ((key, not section.getboolean(key)) for key in section.keys())  # TODO: Invert storage logic, remove not
         )
+        self.db.commit()
