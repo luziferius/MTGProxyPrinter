@@ -324,6 +324,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.card_filter_format_settings.save_settings(downloads_section)
         self.card_db.store_current_printing_filters()
 
+
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
         documents_section["pdf-page-count-limit"] = str(self.pdf_page_count_limit.value())

@@ -18,6 +18,7 @@ This module is automatically discovered by pytest and all pytest
 fixtures defined here are available in all test modules.
 """
 import sqlite3
+import unittest.mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import MagicMock
@@ -26,6 +27,7 @@ import pytest
 from hamcrest import assert_that, is_
 
 import mtg_proxy_printer.sqlite_helpers
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -34,7 +36,10 @@ from tests.helpers import fill_card_database_with_json_card
 
 @pytest.fixture(params=[False, True])
 def card_db(request) -> CardDatabase:
-    card_db = CardDatabase(":memory:")
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    settings_to_use = {filter_name: "True" for filter_name in section.keys()}
+    with unittest.mock.patch.dict(section, settings_to_use):
+        card_db = CardDatabase(":memory:")
     if request.param:
         card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return card_db

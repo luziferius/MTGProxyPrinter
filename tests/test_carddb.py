@@ -23,6 +23,7 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.model.document import Document
@@ -674,3 +675,67 @@ def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(None)
     )
+
+
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["downloads"].keys())
+def test_filters_in_db_differ_from_settings_with_changed_settings_returns_true(
+        card_db: CardDatabase, settings_key: str):
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    settings_to_use = {filter_name: "True" for filter_name in section.keys()}
+    settings_to_use[settings_key] = str(not section.getboolean(settings_key))
+    with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(
+            card_db._filters_in_db_differ_from_settings(section),
+            is_(True)
+        )
+
+
+def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_false(card_db: CardDatabase):
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    settings_to_use = {filter_name: "True" for filter_name in section.keys()}
+    with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(
+            card_db._filters_in_db_differ_from_settings(section),
+            is_(False)
+        )
+
+
+def test__remove_old_printing_filters_with_unaltered_settings_does_nothing(card_db: CardDatabase):
+    query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    old_settings = card_db.db.execute(query).fetchall()
+    assert_that(
+        card_db._remove_old_printing_filters(section),
+        is_(False)
+    )
+    new_settings = card_db.db.execute(query).fetchall()
+    assert_that(
+        new_settings,
+        contains_exactly(*old_settings)
+    )
+
+
+def test__remove_old_printing_filters_with_removed_settings_removes_database_rows(card_db: CardDatabase):
+    query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    with unittest.mock.patch.dict(section, {}, clear=True):
+        assert_that(
+            card_db._remove_old_printing_filters(section),
+            is_(True)
+        )
+    new_settings = card_db.db.execute(query).fetchall()
+    assert_that(
+        new_settings,
+        is_(empty())
+    )
+
+
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["downloads"].keys())
+def test_store_current_printing_filters_updates_value_in_database(card_db: CardDatabase, settings_key: str):
+    section = mtg_proxy_printer.settings.settings["downloads"]
+    settings_to_use = {filter_name: "True" for filter_name in section.keys()}
+    settings_to_use[settings_key] = str(not section.getboolean(settings_key))
+    with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(card_db._filters_in_db_differ_from_settings(section), is_(True))
+        card_db.store_current_printing_filters(True)
+        assert_that(card_db._filters_in_db_differ_from_settings(section), is_(False))

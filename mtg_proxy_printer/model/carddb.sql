@@ -45,11 +45,14 @@ CREATE TABLE Printing (
   -- so store this to be able to warn the user
   is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
   -- Indicates if the card has high resolution images.
-  highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE))
+  highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
+  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE
 );
 
 CREATE INDEX Printing_Index_Find_Printing_From_Card_Data
   ON Printing(card_id, set_id, collector_number);
+CREATE INDEX Printing_is_hidden
+  ON Printing(printing_id, is_hidden);
 
 CREATE TABLE FaceName (
   -- The name of a card face in a given language. Cards are not renamed,
@@ -107,13 +110,11 @@ CREATE TABLE PrintingDisplayFilter (
   PRIMARY KEY (printing_id, filter_id)
 );
 
-CREATE VIEW PrintingIsVisible AS
-  -- Contains the printing_ids of all visible Printings.
-  SELECT printing_id
+CREATE VIEW HiddenPrintings AS
+  SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
   FROM PrintingDisplayFilter
   JOIN DisplayFilters USING (filter_id)
   GROUP BY printing_id
-  HAVING sum(filter_applies * filter_active) == 0
 ;
 
 CREATE TABLE LastImageUseTimestamps (
@@ -144,37 +145,7 @@ CREATE VIEW AllPrintings AS
   JOIN CardFace USING (printing_id)
   JOIN FaceName USING (face_name_id)
   JOIN PrintLanguage USING (language_id)
-  JOIN PrintingIsVisible USING (printing_id)
+  WHERE Printing.is_hidden IS FALSE
 ;
-
-CREATE VIEW VisiblePrintLanguage AS
-  WITH VisibleLanguageIds (language_id) AS (
-    SELECT language_id
-      FROM PrintingIsVisible
-      JOIN CardFace USING (printing_id)
-      JOIN FaceName USING (face_name_id)
-    )
-    SELECT *
-      FROM PrintLanguage
-      WHERE language_id IN (
-        SELECT VisibleLanguageIds.language_id
-          FROM VisibleLanguageIds
-        )
-;
-
-CREATE VIEW VisibleFaceName AS
-  WITH VisibleFaceNameIds (face_name_id) AS (
-    SELECT face_name_id
-      FROM PrintingIsVisible
-      JOIN CardFace USING (printing_id)
-    )
-    SELECT *
-      FROM FaceName
-      WHERE face_name_id IN (
-        SELECT VisibleFaceNameIds.face_name_id
-          FROM VisibleFaceNameIds
-      )
-;
-
 
 COMMIT;

@@ -390,6 +390,7 @@ def _migrate_22_to_23(db: sqlite3.Connection):
 
 def _migrate_23_to_24(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
+    ALTER TABLE Printing ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
     CREATE TABLE DisplayFilters (
       filter_id INTEGER NOT NULL PRIMARY KEY,
       filter_name TEXT NOT NULL UNIQUE,
@@ -405,14 +406,11 @@ def _migrate_23_to_24(db: sqlite3.Connection):
       filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
       PRIMARY KEY (printing_id, filter_id)
     );
-    CREATE VIEW PrintingIsVisible AS
-      -- Contains the printing_ids of all visible Printings
-      SELECT printing_id
+    CREATE VIEW HiddenPrintings AS
+      SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
       FROM PrintingDisplayFilter
       JOIN DisplayFilters USING (filter_id)
-      WHERE filter_active IS TRUE
       GROUP BY printing_id
-      HAVING sum(filter_applies) == 0
     ;
     DROP VIEW AllPrintings;
     CREATE VIEW AllPrintings AS
@@ -424,35 +422,10 @@ def _migrate_23_to_24(db: sqlite3.Connection):
       JOIN CardFace USING (printing_id)
       JOIN FaceName USING (face_name_id)
       JOIN PrintLanguage USING (language_id)
-      JOIN PrintingIsVisible USING (printing_id)
+      WHERE Printing.is_hidden IS FALSE
     ;
-    CREATE VIEW VisiblePrintLanguage AS
-      WITH VisibleLanguageIds(language_id) AS (
-        SELECT language_id
-          FROM PrintingIsVisible
-          JOIN CardFace USING (printing_id)
-          JOIN FaceName USING (face_name_id)
-        )
-        SELECT *
-          FROM PrintLanguage
-          WHERE language_id in (
-            SELECT VisibleLanguageIds.language_id
-              FROM VisibleLanguageIds
-            )
-    ;
-    CREATE VIEW VisibleFaceName AS
-      WITH VisibleFaceNameIds (face_name_id) AS (
-        SELECT face_name_id
-          FROM PrintingIsVisible
-          JOIN CardFace USING (printing_id)
-        )
-        SELECT *
-          FROM FaceName
-          WHERE face_name_id IN (
-            SELECT VisibleFaceNameIds.face_name_id
-              FROM VisibleFaceNameIds
-          )
-    ;
+    CREATE INDEX Printing_is_hidden
+      ON Printing(printing_id, is_hidden);
     """))
 
 

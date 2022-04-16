@@ -281,7 +281,8 @@ class CardInfoDownloadWorker(DownloaderBase):
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
         _clean_unused_data(self.model.db, face_ids)
-        logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
+        logger.info(f"Skipped {skipped_cards} cards during the import")
+        self.model.store_current_printing_filters(False, force_update_hidden_column=True)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\

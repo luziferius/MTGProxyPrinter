@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import configparser
 import dataclasses
 import datetime
 import itertools
@@ -190,7 +191,7 @@ class CardDatabase:
         logger.debug("Reading all known languages")
         result = [lang for lang, in self.db.execute(cached_dedent('''\
         SELECT language -- get_all_languages()
-            FROM VisiblePrintLanguage
+            FROM PrintLanguage
             ORDER BY language ASC
         '''))]
         return result
@@ -200,17 +201,23 @@ class CardDatabase:
         """Returns a list with all card names in the given language."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query = cached_dedent('''\
-        SELECT card_name -- get_card_names()
-            FROM VisibleFaceName
+        SELECT card_name
+            FROM FaceName
+            JOIN CardFace USING (face_name_id)
+            JOIN Printing USING (printing_id)
             JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS FALSE
+              AND language = ?
+              {name_filter}
+            GROUP BY card_name
+            ORDER BY card_name ASC
         ''')
-        where_clause = '    WHERE "language" = ?\n'
-        order_clause = '    ORDER BY card_name ASC\n'
         parameters = [language]
         if card_name_filter:
-            where_clause += '      AND card_name LIKE ?\n'
+            query = query.format(name_filter='AND card_name LIKE ?')
             parameters.append(f"{card_name_filter}%")
-        query += where_clause + order_clause
+        else:
+            query = query.format(name_filter='')
         result = [
             language for language, in
             self.db.execute(
@@ -226,13 +233,13 @@ class CardDatabase:
         SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()
             FROM CardFace
             JOIN Printing USING (printing_id)
-            JOIN PrintingIsVisible USING (printing_id)
             JOIN "Set" USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS FALSE
         ''')
 
-        where_clause = '    WHERE "language" = ?\n'
+        where_clause = '    AND "language" = ?\n'
         parameters = [card.language]
         if card.name:
             where_clause += '    AND card_name = ?\n'
@@ -260,13 +267,11 @@ class CardDatabase:
          :param card: card identification data container that contains values to find cards
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
-        where_keywords = itertools.chain(["WHERE"], itertools.repeat("AND"))
         query = cached_dedent('''\
         SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front,
                 oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
             FROM CardFace
             JOIN Printing USING (printing_id)
-            JOIN PrintingIsVisible USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             JOIN "Set" USING (set_id)
@@ -274,28 +279,28 @@ class CardDatabase:
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = []
+        where_clause = ['WHERE Printing.is_hidden IS FALSE']
         where_parameters = []
         if card.language:
-            where_clause.append(f'{next(where_keywords)} "language" = ?')
+            where_clause.append(f'AND "language" = ?')
             where_parameters.append(card.language)
         if card.name:
-            where_clause.append(f'{next(where_keywords)} card_name = ?')
+            where_clause.append(f'AND card_name = ?')
             where_parameters.append(card.name)
         if card.set_code:
-            where_clause.append(f'{next(where_keywords)} "set" = ?')
+            where_clause.append(f'AND "set" = ?')
             where_parameters.append(card.set_code)
         if card.collector_number:
-            where_clause.append(f'{next(where_keywords)} collector_number = ?')
+            where_clause.append(f'AND collector_number = ?')
             where_parameters.append(card.collector_number)
         if card.is_front is not None:
-            where_clause.append(f'{next(where_keywords)} is_front = ?')
+            where_clause.append(f'AND is_front = ?')
             where_parameters.append(card.is_front)
         if card.scryfall_id:
-            where_clause.append(f'{next(where_keywords)} scryfall_id = ?')
+            where_clause.append(f'AND scryfall_id = ?')
             where_parameters.append(card.scryfall_id)
         if card.oracle_id:
-            where_clause.append(f'{next(where_keywords)} oracle_id = ?')
+            where_clause.append(f'AND oracle_id = ?')
             where_parameters.append(card.oracle_id)
         where_clause.append("")  # Insert final newline after joining
         query += "\n    ".join(where_clause)
@@ -361,11 +366,11 @@ class CardDatabase:
         SELECT DISTINCT collector_number -- find_collector_numbers_matching()
             FROM CardFace
             JOIN Printing USING (printing_id)
-            JOIN PrintingIsVisible USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             JOIN "Set" USING (set_id)
-            WHERE "language" = ?
+            WHERE Printing.is_hidden IS FALSE
+              AND "language" = ?
               AND "set" = ?
               AND card_name = ?
         ''')
@@ -387,11 +392,11 @@ class CardDatabase:
         SELECT DISTINCT "set", set_name  -- find_sets_matching()
             FROM CardFace
             JOIN Printing USING (printing_id)
-            JOIN PrintingIsVisible USING (printing_id)
             JOIN "Set" USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
-            WHERE "language" = ?
+            WHERE Printing.is_hidden IS FALSE
+              AND "language" = ?
               AND card_name = ?
         ''')
         parameters = [language, card_name]
@@ -408,9 +413,10 @@ class CardDatabase:
         SELECT EXISTS ( -- is_scryfall_id_known()
             SELECT scryfall_id
             FROM Printing 
-            JOIN PrintingIsVisible USING (printing_id)
             JOIN CardFace USING (printing_id)
-            WHERE scryfall_id = ? AND is_front = ?)
+            WHERE Printing.is_hidden IS FALSE
+              AND scryfall_id = ?
+              AND is_front = ?)
         ''')
         result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
         return bool(result)
@@ -448,7 +454,7 @@ class CardDatabase:
         query = cached_dedent('''\
         SELECT "language" -- guess_language_from_name()
             FROM FaceName
-            JOIN VisiblePrintLanguage USING (language_id)
+            JOIN PrintLanguage USING (language_id)
             WHERE card_name LIKE ?
         ''')
         return self._read_optional_scalar_from_db(query, (name,))
@@ -459,7 +465,7 @@ class CardDatabase:
         query = cached_dedent('''
         SELECT EXISTS( -- is_known_language()
             SELECT *
-            FROM VisiblePrintLanguage
+            FROM PrintLanguage
             WHERE "language" = ?
         )
         ''')
@@ -485,9 +491,9 @@ class CardDatabase:
             JOIN PrintLanguage USING (language_id)
             JOIN CardFace USING (face_name_id)
             JOIN Printing USING (printing_id)
-            JOIN PrintingIsVisible USING (printing_id)
             JOIN Card USING (card_id)
-            WHERE "language" = ?
+            WHERE Printing.is_hidden IS FALSE
+            AND "language" = ?
             AND (oracle_id, face_number) IN (
                 SELECT oracle_id, face_number
                 FROM FaceName
@@ -660,16 +666,62 @@ class CardDatabase:
         ]
         return result
 
-    def store_current_printing_filters(self):
+    @profile
+    def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False):
         section = mtg_proxy_printer.settings.settings["downloads"]
-        self.db.execute("BEGIN TRANSACTION;\n")
-        self.db.executemany(
-            cached_dedent("""\
-                INSERT INTO DisplayFilters (filter_name, filter_active)
-                  VALUES (?, ?)
-                  ON CONFLICT (filter_name) DO UPDATE
-                    SET filter_active = excluded.filter_active
-                """),
-            ((key, not section.getboolean(key)) for key in section.keys())  # TODO: Invert storage logic, remove not
-        )
-        self.db.commit()
+        if use_transaction:
+            self.db.execute("BEGIN TRANSACTION;\n")
+        old_filter_removed = self._remove_old_printing_filters(section)
+        filters_need_update = self._filters_in_db_differ_from_settings(section)
+        if filters_need_update:
+            logger.info("Printing filters changed in the settings, update the database.")
+            self.db.executemany(
+                cached_dedent("""\
+                    INSERT INTO DisplayFilters (filter_name, filter_active)
+                      VALUES (?, ?)
+                      ON CONFLICT (filter_name) DO UPDATE
+                        SET filter_active = excluded.filter_active
+                        WHERE filter_active <> excluded.filter_active
+                    """),
+                ((key, not section.getboolean(key)) for key in section.keys())  # TODO: Invert storage logic, remove not
+            )
+        if filters_need_update or old_filter_removed or force_update_hidden_column:
+            self._update_printing_is_hidden_column()
+        if use_transaction:
+            self.db.commit()
+
+    def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
+        filters_in_db: typing.Dict[str, bool] = {
+            key: bool(value) for key, value
+            in self.db.execute("SELECT filter_name, filter_active FROM DisplayFilters").fetchall()
+        }
+        # TODO: Invert storage logic, remove not below
+        filters_in_settings: typing.Dict[str, bool] = {key: not section.getboolean(key) for key in section.keys()}
+        return filters_in_settings != filters_in_db
+
+    @profile
+    def _remove_old_printing_filters(self, section) -> bool:
+        stored_filters = {
+            filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
+        }
+        known_filters = set(section.keys())
+        old_filters = stored_filters - known_filters
+        if old_filters:
+            logger.info(f"Removing old printing filters from the database: {old_filters}")
+            self.db.executemany(
+                "DELETE FROM DisplayFilters WHERE filter_name = ?",
+                ((filter_name,) for filter_name in old_filters)
+            )
+        return bool(old_filters)
+
+    @profile
+    def _update_printing_is_hidden_column(self):
+        logger.debug("Update the Printing.is_hidden column")
+        self.db.execute(cached_dedent("""\
+        UPDATE Printing
+            SET is_hidden = HiddenPrintings.should_be_hidden
+            FROM HiddenPrintings
+            WHERE Printing.printing_id = HiddenPrintings.printing_id
+              --AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+        ;
+        """))

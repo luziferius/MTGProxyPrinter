@@ -133,10 +133,10 @@ def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
 
 
 def _assert_print_language_contains(
-        card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "PrintLanguage"):
+        card_db: CardDatabase, test_case: TestCaseData):
     """Checks language"""
     assert_that(
-        data := card_db.db.execute(f'SELECT "language" FROM {relation_name}').fetchall(),
+        data := card_db.db.execute(f'SELECT "language" FROM PrintLanguage').fetchall(),
         contains_inanyorder(*test_case.db_print_language()),
         f"PrintLanguage relation contains unexpected data: {data}")
 
@@ -149,25 +149,32 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData, relatio
         f"Set relation contains unexpected data")
 
 
-def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "FaceName"):
+def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks card_name"""
     assert_that(
-        data := card_db.db.execute(f'SELECT card_name FROM {relation_name}').fetchall(),
+        data := card_db.db.execute(f'SELECT card_name FROM FaceName').fetchall(),
         contains_inanyorder(*test_case.db_face_name()),
         f"FaceName relation contains unexpected data: {data}")
 
 
-def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "Printing"):
+def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *, is_hidden: bool = True):
     """Checks collector_number, scryfall_id, is_oversized, highres_image"""
     assert_that(
         data := [
             (collector_number, scryfall_id, bool(is_oversized), bool(highres_image))
             for collector_number, scryfall_id, is_oversized, highres_image
             in card_db.db.execute(
-                f'SELECT collector_number, scryfall_id, is_oversized, highres_image FROM {relation_name}')
+                f'SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing')
          ],
         contains_inanyorder(*test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
+    for item in data:
+        assert_that(
+            bool(card_db.db.execute(
+                "SELECT is_hidden FROM Printing WHERE scryfall_id = ?\n",
+                (item[1],)).fetchone()[0]),
+            is_(is_hidden)
+        )
 
 
 def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData, relation_name: str = "CardFace"):
@@ -196,14 +203,12 @@ def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
     """
     Verifies that the printing is both correctly stored, and visible in all VIEWs that filter out unwanted printings.
     """
-    _assert_printing_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case, is_hidden=False)
     _assert_card_face_contains(card_db, test_case)
     _assert_face_name_contains(card_db, test_case)
-    _assert_face_name_contains(card_db, test_case, "VisibleFaceName")
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     _assert_print_language_contains(card_db, test_case)
-    _assert_print_language_contains(card_db, test_case, "VisiblePrintLanguage")
     _assert_all_printings_contains(card_db, test_case)
 
 
@@ -212,14 +217,12 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
     Verifies that the printing is correctly stored, but invisible in all VIEWs that filter out unwanted printings.
     """
     _assert_print_language_contains(card_db, test_case)
-    _assert_printing_contains(card_db, test_case)
+    _assert_printing_contains(card_db, test_case, is_hidden=True)
     _assert_card_face_contains(card_db, test_case)
     _assert_face_name_contains(card_db, test_case)
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     for filtered_view in (
-            "VisiblePrintLanguage",
-            "VisibleFaceName",
             "AllPrintings",
             ):
         assert_relation_is_empty(card_db, filtered_view)
