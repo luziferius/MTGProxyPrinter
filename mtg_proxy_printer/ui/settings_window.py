@@ -108,6 +108,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.setupUi(self)
         self.language_model = language_model
         self.document = document
+        self.card_db = document.card_db
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
         self.page_configuration_group_box: PageConfigWidget
@@ -321,6 +322,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         downloads_section = mtg_proxy_printer.settings.settings["downloads"]
         self.card_filter_general_settings.save_settings(downloads_section)
         self.card_filter_format_settings.save_settings(downloads_section)
+        self.card_db.store_current_printing_filters()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
