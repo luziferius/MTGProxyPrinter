@@ -238,17 +238,11 @@ class CardInfoDownloadWorker(DownloaderBase):
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
         ds = mtg_proxy_printer.settings.settings["downloads"]
-        # Parse the boolean download settings only once per import to save multiple seconds during the import
-        download_enabled: typing.Dict[str, bool] = {
-            key: ds.getboolean(key)
-            for key in ds.keys()
-        }
-        # The settings keys are formatted like “banned-in-FORMAT”, where FORMAT is a format name as listed on Scryfall,
-        # like “standard” or “modern”. So the last element of the split("-") output gets the plain format name.
-        skip_cards_banned_in_formats = frozenset(
-            key.split("-")[-1]
-            for key, enabled in download_enabled.items()
-            if not enabled)
+        # Look up the printing filter ids only once per import
+        printing_filter_ids: typing.Dict[str, int] = {
+            filter_name: filter_id
+            for filter_name, filter_id
+            in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()}
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
@@ -274,7 +268,7 @@ class CardInfoDownloadWorker(DownloaderBase):
                     ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
-                face_ids = self._parse_single_printing(card, face_ids)
+                face_ids = self._parse_single_printing(card, face_ids, printing_filter_ids)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -296,13 +290,13 @@ class CardInfoDownloadWorker(DownloaderBase):
         db.commit()
         return index
 
-    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
+    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples, printing_filter_ids):
         language_id = _insert_language(self.model, card["lang"])
         oracle_id = _get_oracle_id(card)
         card_id = _insert_card(self.model, oracle_id)
         set_id = _insert_set(self.model, card)
         printing_id = insert_printing(self.model, card, card_id, set_id)
-        _insert_card_filters(self.model, printing_id, _get_card_filter_data(card))
+        _insert_card_filters(self.model, printing_id, _get_card_filter_data(card), printing_filter_ids)
         face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
         return face_ids
 
@@ -518,15 +512,16 @@ def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
     }
 
 
-def _insert_card_filters(model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool]):
+def _insert_card_filters(
+        model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool],
+        printing_filter_ids: typing.Dict[str, int]):
     model.db.executemany(
         cached_dedent("""\
             INSERT OR REPLACE INTO PrintingDisplayFilter (printing_id, filter_id, filter_applies)
-              SELECT ?, filter_id, ?
-              FROM DisplayFilters
-              WHERE filter_name = ?
+              VALUES (?, ?, ?)
         """),
-        ((printing_id, filter_applies, filter_name) for filter_name, filter_applies in filter_data.items())
+        ((printing_id, printing_filter_ids[filter_name], filter_applies)
+         for filter_name, filter_applies in filter_data.items())
     )
 
 
