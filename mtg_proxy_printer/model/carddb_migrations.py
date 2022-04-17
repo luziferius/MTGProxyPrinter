@@ -391,6 +391,7 @@ def _migrate_22_to_23(db: sqlite3.Connection):
 def _migrate_23_to_24(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
     ALTER TABLE Printing ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
+    ALTER TABLE FaceName ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
     CREATE TABLE DisplayFilters (
       filter_id INTEGER NOT NULL PRIMARY KEY,
       filter_name TEXT NOT NULL UNIQUE,
@@ -426,6 +427,9 @@ def _migrate_23_to_24(db: sqlite3.Connection):
     ;
     CREATE INDEX Printing_is_hidden
       ON Printing(printing_id, is_hidden);
+    DROP INDEX FaceNameLanguageToCardNameIndex;
+    CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, is_hidden, card_name COLLATE NOCASE);
+    ANALYZE;
     """))
 
 

@@ -203,10 +203,8 @@ class CardDatabase:
         query = cached_dedent('''\
         SELECT card_name
             FROM FaceName
-            JOIN CardFace USING (face_name_id)
-            JOIN Printing USING (printing_id)
             JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS FALSE
+            WHERE FaceName.is_hidden IS FALSE
               AND language = ?
               {name_filter}
             GROUP BY card_name
@@ -722,6 +720,24 @@ class CardDatabase:
             SET is_hidden = HiddenPrintings.should_be_hidden
             FROM HiddenPrintings
             WHERE Printing.printing_id = HiddenPrintings.printing_id
-              --AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+              AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+        ;
+        """))
+        logger.debug("Update the FaceName.is_hidden column")
+        self.db.execute(cached_dedent("""\
+        WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (
+          -- A FaceName should be hidden, iff all uses by printings are hidden,
+          -- i.e. the total use count is equal to the hidden use count
+          SELECT face_name_id, COUNT() = sum(Printing.is_hidden) AS should_be_hidden
+          FROM Printing
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          GROUP BY card_name, language_id
+        )
+        UPDATE FaceName
+          SET is_hidden = FaceNameShouldBeHidden.should_be_hidden
+          FROM FaceNameShouldBeHidden
+          WHERE FaceName.face_name_id = FaceNameShouldBeHidden.face_name_id
+          AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
         """))

@@ -60,10 +60,11 @@ CREATE TABLE FaceName (
   face_name_id INTEGER PRIMARY KEY NOT NULL,
   card_name    TEXT NOT NULL,
   language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE,
   UNIQUE (card_name, language_id)
 );
 -- Speeds up LIKE matches against card names, used by the Card name search
-CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
+CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, is_hidden, card_name COLLATE NOCASE);
 
 
 CREATE TABLE CardFace (
