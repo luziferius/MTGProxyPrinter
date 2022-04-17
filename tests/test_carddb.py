@@ -744,7 +744,9 @@ def test_store_current_printing_filters_updates_value_in_database(card_db: CardD
 @pytest.mark.parametrize("order_printings", [True, False])
 @pytest.mark.parametrize("cards_to_import, filter_name, card_data, expected_replacement", [
     (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", CardIdentificationData("en", scryfall_id="b120e3c2-21b1-43e3-b685-9cf62bd7aa07", is_front=True), "d9131fc3-018a-4975-8795-47be3956160d"),
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", CardIdentificationData(scryfall_id="b120e3c2-21b1-43e3-b685-9cf62bd7aa07", is_front=True), "d9131fc3-018a-4975-8795-47be3956160d"),
     (["german_Back_to_Basics", "english_Back_to_Basics"], "download-cards-without-images", CardIdentificationData("de", scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), "0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "download-cards-without-images", CardIdentificationData(scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), "0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
 ])
 def test_get_replacement_card_for_unknown_printing(
         qtbot, card_db: CardDatabase, cards_to_import, filter_name: str, card_data: CardIdentificationData,

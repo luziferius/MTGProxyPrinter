@@ -761,6 +761,5 @@ class CardDatabase:
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             WHERE Printing.is_hidden IS TRUE
-              AND FaceName.is_hidden IS TRUE;
         """))
         logger.debug("Finished maintenance tasks.")
