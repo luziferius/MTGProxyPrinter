@@ -750,6 +750,7 @@ class CardDatabase:
           WHERE scryfall_id IN (
             SELECT Printing.scryfall_id
             FROM Printing
+            WHERE Printing.is_hidden IS FALSE
           )
         """))
         self.db.execute(cached_dedent("""\
@@ -761,5 +762,9 @@ class CardDatabase:
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             WHERE Printing.is_hidden IS TRUE
+              AND scryfall_id NOT IN (
+                SELECT rp.scryfall_id
+                FROM RemovedPrintings AS rp
+              )
         """))
         logger.debug("Finished maintenance tasks.")
