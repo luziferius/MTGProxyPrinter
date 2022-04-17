@@ -338,13 +338,6 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
     db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
     db.execute(cached_dedent("""\
-    DELETE FROM RemovedPrintings
-      WHERE scryfall_id IN (
-        SELECT Printing.scryfall_id
-        FROM Printing
-      )
-    """))
-    db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
         WHERE language_id NOT IN (
           SELECT FaceName.language_id

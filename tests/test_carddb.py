@@ -664,7 +664,7 @@ def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: 
     fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_that(
         card_db.is_removed_printing("b120e3c2-21b1-43e3-b685-9cf62bd7aa07"),
-        is_(equal_to("9110339d-72ba-4132-801f-cd2fd738b71d"))
+        is_(True)
     )
 
 
@@ -673,7 +673,7 @@ def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db
     fill_card_database_with_json_card(qtbot, card_db, "oversized_card", {"download-oversized-cards": str(filter_value)})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
-        is_(None)
+        is_(not filter_value)
     )
 
 

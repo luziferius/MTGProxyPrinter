@@ -312,30 +312,17 @@ class CardDatabase:
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
-        WITH ReplacementPrintings AS (
-          SELECT DISTINCT scryfall_id, language, oracle_id
-            FROM Printing
-            JOIN Card USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS TRUE
-              AND FaceName.is_hidden IS TRUE
-          UNION ALL
-          SELECT scryfall_id, language, oracle_id
-            FROM RemovedPrintings
-        )
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
                AllPrintings.scryfall_id, is_front, oracle_id, highres_image,
                is_oversized, face_number, AllPrintings.language -- get_replacement_card_for_unknown_printing()
-            FROM ReplacementPrintings
+            FROM RemovedPrintings
             JOIN AllPrintings USING (oracle_id)
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
-            WHERE ReplacementPrintings.scryfall_id = ?
+            WHERE RemovedPrintings.scryfall_id = ?
             AND is_front = ?
             ORDER BY 
                 -- Match with original language first, fall back to preferred language, then fall back to English
-               (4*(AllPrintings.language == ReplacementPrintings.language) +
+               (4*(AllPrintings.language == RemovedPrintings.language) +
                 2*(AllPrintings.language == ?) +
                   (AllPrintings.language == 'en')) DESC NULLS LAST
         ''')
@@ -532,21 +519,8 @@ class CardDatabase:
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
-        WITH ReplacementPrintings AS (
-          SELECT DISTINCT scryfall_id, language, oracle_id
-            FROM Printing
-            JOIN Card USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            WHERE Printing.is_hidden IS TRUE
-              AND FaceName.is_hidden IS TRUE
-          UNION ALL
-          SELECT scryfall_id, language, oracle_id
-            FROM RemovedPrintings
-        )
         SELECT oracle_id
-            FROM ReplacementPrintings
+            FROM RemovedPrintings
             WHERE scryfall_id = ?
         """)
         return bool(self._read_optional_scalar_from_db(query, parameters))
@@ -713,7 +687,7 @@ class CardDatabase:
                 ((key, not section.getboolean(key)) for key in section.keys())  # TODO: Invert storage logic, remove not
             )
         if filters_need_update or old_filter_removed or force_update_hidden_column:
-            self._update_printing_is_hidden_column()
+            self._update_cached_data()
         if use_transaction:
             self.db.commit()
 
@@ -742,7 +716,7 @@ class CardDatabase:
         return bool(old_filters)
 
     @profile
-    def _update_printing_is_hidden_column(self):
+    def _update_cached_data(self):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing
@@ -770,3 +744,23 @@ class CardDatabase:
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
         """))
+        logger.debug("Update the RemovedPrintings table")
+        self.db.execute(cached_dedent("""\
+        DELETE FROM RemovedPrintings
+          WHERE scryfall_id IN (
+            SELECT Printing.scryfall_id
+            FROM Printing
+          )
+        """))
+        self.db.execute(cached_dedent("""\
+        INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+          SELECT DISTINCT scryfall_id, language, oracle_id
+            FROM Printing
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS TRUE
+              AND FaceName.is_hidden IS TRUE;
+        """))
+        logger.debug("Finished maintenance tasks.")
