@@ -424,6 +424,7 @@ def _migrate_23_to_24(db: sqlite3.Connection):
       JOIN FaceName USING (face_name_id)
       JOIN PrintLanguage USING (language_id)
       WHERE Printing.is_hidden IS FALSE
+        AND FaceName.is_hidden IS FALSE
     ;
     CREATE INDEX Printing_is_hidden
       ON Printing(printing_id, is_hidden);

@@ -368,6 +368,7 @@ class CardDatabase:
             JOIN PrintLanguage USING (language_id)
             JOIN "Set" USING (set_id)
             WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
               AND "language" = ?
               AND "set" = ?
               AND card_name = ?
@@ -394,6 +395,7 @@ class CardDatabase:
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
               AND "language" = ?
               AND card_name = ?
         ''')
@@ -491,8 +493,9 @@ class CardDatabase:
             JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
             WHERE Printing.is_hidden IS FALSE
-            AND "language" = ?
-            AND (oracle_id, face_number) IN (
+              AND FaceName.is_hidden IS FALSE
+              AND "language" = ?
+              AND (oracle_id, face_number) IN (
                 SELECT oracle_id, face_number
                 FROM FaceName
                 JOIN PrintLanguage USING(language_id)

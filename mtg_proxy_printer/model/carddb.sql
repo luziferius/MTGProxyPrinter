@@ -147,6 +147,7 @@ CREATE VIEW AllPrintings AS
   JOIN FaceName USING (face_name_id)
   JOIN PrintLanguage USING (language_id)
   WHERE Printing.is_hidden IS FALSE
+    AND FaceName.is_hidden IS FALSE
 ;
 
 COMMIT;
