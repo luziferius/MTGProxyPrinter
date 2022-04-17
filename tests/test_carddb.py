@@ -739,3 +739,39 @@ def test_store_current_printing_filters_updates_value_in_database(card_db: CardD
         assert_that(card_db._filters_in_db_differ_from_settings(section), is_(True))
         card_db.store_current_printing_filters(True)
         assert_that(card_db._filters_in_db_differ_from_settings(section), is_(False))
+
+
+@pytest.mark.parametrize("order_printings", [True, False])
+@pytest.mark.parametrize("cards_to_import, filter_name, card_data, expected_replacement", [
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", CardIdentificationData("en", scryfall_id="b120e3c2-21b1-43e3-b685-9cf62bd7aa07", is_front=True), "d9131fc3-018a-4975-8795-47be3956160d"),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "download-cards-without-images", CardIdentificationData("de", scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), "0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
+])
+def test_get_replacement_card_for_unknown_printing(
+        qtbot, card_db: CardDatabase, cards_to_import, filter_name: str, card_data: CardIdentificationData,
+        expected_replacement: str, order_printings: bool):
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "False"})
+
+    assert_that(
+        card_db.get_replacement_card_for_unknown_printing(card_data, order_by_print_count=order_printings),
+        all_of(
+            not_(empty()),
+            contains_exactly(
+                has_property("scryfall_id", equal_to(expected_replacement)),
+            )
+        )
+    )
+
+
+@pytest.mark.parametrize("cards_to_import, filter_name, printing, expected", [
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", True),
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", "d9131fc3-018a-4975-8795-47be3956160d", False),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "download-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", True),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "download-cards-without-images", "0600d6c2-0f72-4e79-a55d-1f06dffa48c2", False),
+])
+def test_is_removed_printing(
+        qtbot, card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "False"})
+    assert_that(
+        card_db.is_removed_printing(printing),
+        is_(expected)
+    )

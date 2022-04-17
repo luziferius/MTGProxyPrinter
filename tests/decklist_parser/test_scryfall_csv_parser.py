@@ -46,7 +46,6 @@ def generate_test_cases_for_test_identifies_card():
 @pytest.mark.parametrize("cards_to_import, deck_list, expected_card", generate_test_cases_for_test_identifies_card())
 def test_excluded_printing_is_replaced_with_an_available_printing(
         qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
-    pytest.skip("Currently broken, needs fixing")
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"download-cards-without-images": "False"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = ScryfallCSVParser(card_db, image_db)

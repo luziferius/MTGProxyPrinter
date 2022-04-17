@@ -312,17 +312,30 @@ class CardDatabase:
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
+        WITH ReplacementPrintings AS (
+          SELECT DISTINCT scryfall_id, language, oracle_id
+            FROM Printing
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS TRUE
+              AND FaceName.is_hidden IS TRUE
+          UNION ALL
+          SELECT scryfall_id, language, oracle_id
+            FROM RemovedPrintings
+        )
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
                AllPrintings.scryfall_id, is_front, oracle_id, highres_image,
                is_oversized, face_number, AllPrintings.language -- get_replacement_card_for_unknown_printing()
-            FROM RemovedPrintings
+            FROM ReplacementPrintings
             JOIN AllPrintings USING (oracle_id)
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
-            WHERE RemovedPrintings.scryfall_id = ?
+            WHERE ReplacementPrintings.scryfall_id = ?
             AND is_front = ?
             ORDER BY 
                 -- Match with original language first, fall back to preferred language, then fall back to English
-               (4*(AllPrintings.language == RemovedPrintings.language) +
+               (4*(AllPrintings.language == ReplacementPrintings.language) +
                 2*(AllPrintings.language == ?) +
                   (AllPrintings.language == 'en')) DESC NULLS LAST
         ''')
@@ -515,15 +528,28 @@ class CardDatabase:
             return None
 
     @profile
-    def is_removed_printing(self, scryfall_id: str) -> OptionalString:
+    def is_removed_printing(self, scryfall_id: str) -> bool:
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
-        SELECT oracle_id
+        WITH ReplacementPrintings AS (
+          SELECT DISTINCT scryfall_id, language, oracle_id
+            FROM Printing
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS TRUE
+              AND FaceName.is_hidden IS TRUE
+          UNION ALL
+          SELECT scryfall_id, language, oracle_id
             FROM RemovedPrintings
+        )
+        SELECT oracle_id
+            FROM ReplacementPrintings
             WHERE scryfall_id = ?
         """)
-        return self._read_optional_scalar_from_db(query, parameters)
+        return bool(self._read_optional_scalar_from_db(query, parameters))
 
     @profile
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
