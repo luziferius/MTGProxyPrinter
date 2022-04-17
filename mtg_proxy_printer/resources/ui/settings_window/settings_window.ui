@@ -386,13 +386,16 @@ This avoids adding foreign language cards, if the deck list happens to contain s
      </widget>
      <widget class="QWidget" name="tab_card_data_download">
       <attribute name="title">
-       <string>Card data download</string>
+       <string>Hide printings</string>
       </attribute>
       <layout class="QVBoxLayout" name="tab_card_data_download_layout">
        <item>
         <widget class="QLabel" name="card_filter_settings_header_label">
          <property name="text">
-          <string>Changing these options requires re-downloading the card data from Scryfall.</string>
+          <string>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists. If all printings of a card are hidden, it won’t be available at all.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
