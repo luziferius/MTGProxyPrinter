@@ -14,74 +14,74 @@
    <string>Form</string>
   </property>
   <property name="title">
-   <string>Show cards banned in specific Formats</string>
+   <string>Hide cards banned in specific Formats</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_3">
+  <layout class="QGridLayout" name="format_filter_layout">
    <item row="0" column="0">
-    <widget class="QCheckBox" name="include_banned_in_brawl">
+    <widget class="QCheckBox" name="hide_banned_in_brawl">
      <property name="text">
       <string>Brawl</string>
      </property>
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QCheckBox" name="include_banned_in_pauper">
+    <widget class="QCheckBox" name="hide_banned_in_pauper">
      <property name="text">
       <string>Pauper</string>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QCheckBox" name="include_banned_in_commander">
+    <widget class="QCheckBox" name="hide_banned_in_commander">
      <property name="text">
       <string>Commander</string>
      </property>
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QCheckBox" name="include_banned_in_penny">
+    <widget class="QCheckBox" name="hide_banned_in_penny">
      <property name="text">
       <string>Penny</string>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
-    <widget class="QCheckBox" name="include_banned_in_historic">
+    <widget class="QCheckBox" name="hide_banned_in_historic">
      <property name="text">
       <string>Historic</string>
      </property>
     </widget>
    </item>
    <item row="2" column="1">
-    <widget class="QCheckBox" name="include_banned_in_pioneer">
+    <widget class="QCheckBox" name="hide_banned_in_pioneer">
      <property name="text">
       <string>Pioneer</string>
      </property>
     </widget>
    </item>
    <item row="3" column="0">
-    <widget class="QCheckBox" name="include_banned_in_legacy">
+    <widget class="QCheckBox" name="hide_banned_in_legacy">
      <property name="text">
       <string>Legacy</string>
      </property>
     </widget>
    </item>
    <item row="3" column="1">
-    <widget class="QCheckBox" name="include_banned_in_standard">
+    <widget class="QCheckBox" name="hide_banned_in_standard">
      <property name="text">
       <string>Standard</string>
      </property>
     </widget>
    </item>
    <item row="4" column="0">
-    <widget class="QCheckBox" name="include_banned_in_modern">
+    <widget class="QCheckBox" name="hide_banned_in_modern">
      <property name="text">
       <string>Modern</string>
      </property>
     </widget>
    </item>
    <item row="4" column="1">
-    <widget class="QCheckBox" name="include_banned_in_vintage">
+    <widget class="QCheckBox" name="hide_banned_in_vintage">
      <property name="text">
       <string>Vintage</string>
      </property>

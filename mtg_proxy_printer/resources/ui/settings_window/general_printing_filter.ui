@@ -18,29 +18,29 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
-    <widget class="QCheckBox" name="include_cards_depicting_racism">
+    <widget class="QCheckBox" name="hide_cards_depicting_racism">
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Show cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Include cards depicting racism</string>
+      <string>Hide cards depicting racism</string>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QCheckBox" name="include_cards_without_images">
+    <widget class="QCheckBox" name="hide_cards_without_images">
      <property name="toolTip">
-      <string>Include non-English cards with low-resolution,
+      <string>Hide non-English cards with low-resolution,
 English placeholder images with an overlay text stating
 “This card is not available in the selected language.”</string>
      </property>
      <property name="text">
-      <string>Include cards with placeholder images</string>
+      <string>Hide cards with placeholder images</string>
      </property>
     </widget>
    </item>
    <item row="5" column="0">
-    <widget class="QCheckBox" name="include_funny_cards">
+    <widget class="QCheckBox" name="hide_funny_cards">
      <property name="toolTip">
       <string>“Funny” cards, not legal in any constructed format.
 This includes full-art Contraptions from Unstable,
@@ -49,54 +49,53 @@ some black-bordered promotional cards with non-standard back faces,
 and all silver-bordered cards.</string>
      </property>
      <property name="text">
-      <string>Include “funny” cards</string>
+      <string>Hide “funny” cards</string>
      </property>
     </widget>
    </item>
    <item row="6" column="0">
-    <widget class="QCheckBox" name="include_token">
+    <widget class="QCheckBox" name="hide_token">
      <property name="text">
-      <string>Include Token cards</string>
+      <string>Hide Token cards</string>
      </property>
     </widget>
    </item>
    <item row="4" column="0">
-    <widget class="QCheckBox" name="include_gold_bordered_cards">
+    <widget class="QCheckBox" name="hide_gold_bordered_cards">
      <property name="toolTip">
-      <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
-These are not tournament legal.</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders. Many also have printed signatures of the involved players in the text box.&lt;/p&gt;&lt;p&gt;These are not tournament legal.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
-      <string>Include gold-bordered cards</string>
+      <string>Hide gold-bordered cards</string>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
-    <widget class="QCheckBox" name="include_oversized_cards">
+    <widget class="QCheckBox" name="hide_oversized_cards">
      <property name="toolTip">
       <string>These cards are larger than regular Magic cards and can’t be included in decks.
 Includes Archenemy schemes, Planechase planes and
 oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
      </property>
      <property name="text">
-      <string>Include oversized cards</string>
+      <string>Hide oversized cards</string>
      </property>
     </widget>
    </item>
    <item row="3" column="0">
-    <widget class="QCheckBox" name="include_white_bordered_cards">
+    <widget class="QCheckBox" name="hide_white_bordered_cards">
      <property name="text">
-      <string>Include white-bordered cards</string>
+      <string>Hide white-bordered cards</string>
      </property>
     </widget>
    </item>
    <item row="0" column="1">
-    <widget class="QCheckBox" name="include_digital_cards">
+    <widget class="QCheckBox" name="hide_digital_cards">
      <property name="toolTip">
-      <string>Include cards and printings that are only available on digital platforms</string>
+      <string>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</string>
      </property>
      <property name="text">
-      <string>Include digital cards</string>
+      <string>Hide digital cards</string>
      </property>
     </widget>
    </item>

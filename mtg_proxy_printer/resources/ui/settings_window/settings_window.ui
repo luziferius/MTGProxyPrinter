@@ -392,7 +392,7 @@ This avoids adding foreign language cards, if the deck list happens to contain s
        <item>
         <widget class="QLabel" name="card_filter_settings_header_label">
          <property name="text">
-          <string>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists. If all printings of a card are hidden, it won’t be available at all.</string>
+          <string>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</string>
          </property>
          <property name="wordWrap">
           <bool>true</bool>

@@ -237,7 +237,6 @@ class CardInfoDownloadWorker(DownloaderBase):
     def _populate_database(self, card_data: typing.Generator[JSONType, None, None]) -> int:
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
-        ds = mtg_proxy_printer.settings.settings["downloads"]
         # Look up the printing filter ids only once per import
         printing_filter_ids: typing.Dict[str, int] = {
             filter_name: filter_id
@@ -477,31 +476,31 @@ def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
     legalities: typing.Dict[str, str] = card["legalities"]
     return {
         # Racism filter
-        "download-cards-depicting-racism": card.get("content_warning", False),
+        "hide-cards-depicting-racism": card.get("content_warning", False),
         # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        "download-cards-without-images": card["image_status"] == "placeholder",
-        "download-oversized-cards": card["oversized"],
+        "hide-cards-without-images": card["image_status"] == "placeholder",
+        "hide-oversized-cards": card["oversized"],
         # Border filter
-        "download-white-bordered": card["border_color"] == "white",
-        "download-gold-bordered": card["border_color"] == "gold",
+        "hide-white-bordered": card["border_color"] == "white",
+        "hide-gold-bordered": card["border_color"] == "gold",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
-        "download-funny-cards": card["set_type"] == "funny",
+        "hide-funny-cards": card["set_type"] == "funny",
         # Token cards
-        "download-token": card["layout"] == "token",
-        "download-digital-cards": card["digital"],
+        "hide-token": card["layout"] == "token",
+        "hide-digital-cards": card["digital"],
         # Specific format legality. Use .get() with a default instead of [] to not fail
         # if Scryfall removes one of the listed formats in the future.
-        "download-banned-in-brawl": legalities.get("brawl", "") == "banned",
-        "download-banned-in-commander": legalities.get("commander", "") == "banned",
-        "download-banned-in-historic": legalities.get("historic", "") == "banned",
-        "download-banned-in-legacy": legalities.get("legacy", "") == "banned",
-        "download-banned-in-modern": legalities.get("modern", "") == "banned",
-        "download-banned-in-pauper": legalities.get("pauper", "") == "banned",
-        "download-banned-in-penny": legalities.get("penny", "") == "banned",
-        "download-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
-        "download-banned-in-standard": legalities.get("standard", "") == "banned",
-        "download-banned-in-vintage": legalities.get("vintage", "") == "banned",
+        "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
+        "hide-banned-in-commander": legalities.get("commander", "") == "banned",
+        "hide-banned-in-historic": legalities.get("historic", "") == "banned",
+        "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
+        "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+        "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
+        "hide-banned-in-penny": legalities.get("penny", "") == "banned",
+        "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
+        "hide-banned-in-standard": legalities.get("standard", "") == "banned",
+        "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
     }
 
 

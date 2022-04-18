@@ -45,9 +45,10 @@ def setup_settings_for_testing():
         "mtg_proxy_printer.settings.write_settings_to_file() called within test code!"
     )
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
-    for setting in mtg_proxy_printer.settings.settings["downloads"].keys():
-        # Turn off all download filters, so that the defaults don’t affect the test cases
-        mtg_proxy_printer.settings.settings["downloads"][setting] = str(True)
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    for setting in section.keys():
+        # Turn off all card filters, so that the defaults don’t affect the test cases
+        section[setting] = str(False)
 
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
@@ -68,8 +69,8 @@ def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    section = mtg_proxy_printer.settings.settings["downloads"]
-    settings_to_use = {filter_name: "True" for filter_name in section.keys()}
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
         settings_to_use.update(filter_settings)
     data = [

@@ -669,7 +669,7 @@ class CardDatabase:
 
     @profile
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False):
-        section = mtg_proxy_printer.settings.settings["downloads"]
+        section = mtg_proxy_printer.settings.settings["card-filter"]
         if use_transaction:
             self.db.execute("BEGIN TRANSACTION;\n")
         old_filter_removed = self._remove_old_printing_filters(section)
@@ -684,7 +684,7 @@ class CardDatabase:
                         SET filter_active = excluded.filter_active
                         WHERE filter_active <> excluded.filter_active
                     """),
-                ((key, not section.getboolean(key)) for key in section.keys())  # TODO: Invert storage logic, remove not
+                ((key, section.getboolean(key)) for key in section.keys())
             )
         if filters_need_update or old_filter_removed or force_update_hidden_column:
             self._update_cached_data()
@@ -696,8 +696,7 @@ class CardDatabase:
             key: bool(value) for key, value
             in self.db.execute("SELECT filter_name, filter_active FROM DisplayFilters").fetchall()
         }
-        # TODO: Invert storage logic, remove not below
-        filters_in_settings: typing.Dict[str, bool] = {key: not section.getboolean(key) for key in section.keys()}
+        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
         return filters_in_settings != filters_in_db
 
     @profile
