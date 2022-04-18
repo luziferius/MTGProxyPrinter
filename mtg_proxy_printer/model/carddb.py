@@ -735,6 +735,9 @@ class CardDatabase:
           FROM Printing
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
+          -- Also group by language_id, because there may be actual name conflicts across languages.
+          -- But practically, some non-English cards are listed using their English name, because the information is
+          -- unavailable. So these corner cases are caught by including the language_id.
           GROUP BY card_name, language_id
         )
         UPDATE FaceName
