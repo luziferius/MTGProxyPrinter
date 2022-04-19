@@ -45,14 +45,17 @@ def setup_settings_for_testing():
         "mtg_proxy_printer.settings.write_settings_to_file() called within test code!"
     )
     mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
-    for setting in mtg_proxy_printer.settings.settings["downloads"].keys():
-        # Turn off all download filters, so that the defaults don’t affect the test cases
-        mtg_proxy_printer.settings.settings["downloads"][setting] = str(True)
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    for setting in section.keys():
+        # Turn off all card filters, so that the defaults don’t affect the test cases
+        section[setting] = str(False)
 
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
+        card_db.store_current_printing_filters()
+        card_db.db.commit()
         dw.populate_database(data)
 
 
@@ -65,23 +68,17 @@ def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
-        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+        filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
+    if filter_settings:
+        settings_to_use.update(filter_settings)
     data = [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
     ]
-    # Either both None or both set non-empty
-    assert (option is None and value is None) or (bool(option) and bool(value))
-    if option is None:
+    with patch.dict(section, settings_to_use):
         populate_database(qtbot, card_db, data)
-    else:
-        assert_that(
-            mtg_proxy_printer.settings.settings["downloads"],
-            has_key(option),
-            f"Test setup failed: Download settings do not contain expected setting: {option}"
-        )
-        with patch.dict(mtg_proxy_printer.settings.settings["downloads"], {option: value}):
-            populate_database(qtbot, card_db, data)
     return card_db
 
 
@@ -89,8 +86,8 @@ def fill_card_database_with_json_card(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
-        option: str = None, value: str = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], option, value)
+        filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
+    return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 
 
 def assert_relation_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, name: str):

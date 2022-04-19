@@ -46,7 +46,7 @@ def generate_test_cases_for_test_identifies_card():
 @pytest.mark.parametrize("cards_to_import, deck_list, expected_card", generate_test_cases_for_test_identifies_card())
 def test_excluded_printing_is_replaced_with_an_available_printing(
         qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, "download-cards-without-images", "False")
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-cards-without-images": "True"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = ScryfallCSVParser(card_db, image_db)
     assert_that(
@@ -81,7 +81,7 @@ def generate_test_cases_for_test_card_identification_works_in_simple_cases():
     generate_test_cases_for_test_card_identification_works_in_simple_cases())
 def test_card_identification_works_in_simple_cases(
         qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str, expected_card: CardIdentificationData):
-    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, "download-digital-cards", "True")
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-digital-cards": "False"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = ScryfallCSVParser(card_db, image_db)
     with unittest.mock.patch.object(CardDatabase, "find_all_translated_printings") as find_all_translated_printings, \

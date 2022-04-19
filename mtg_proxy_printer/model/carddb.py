@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
+import configparser
 import dataclasses
 import datetime
 import itertools
@@ -143,6 +144,7 @@ class CardDatabase:
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
+        self.store_current_printing_filters()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -166,23 +168,6 @@ class CardDatabase:
     def begin_transaction(self):
         self.db.execute("BEGIN TRANSACTION")
 
-    def check_if_download_settings_changed(self) -> bool:
-        section = mtg_proxy_printer.settings.settings["downloads"]
-
-        currently_disabled_settings = set(itertools.filterfalse(section.getboolean, section.keys()))
-        database_disabled_settings = set(item for item, in self.db.execute(
-            cached_dedent('''\
-            SELECT setting -- check_if_download_settings_changed()
-                FROM UsedDownloadSettings
-                WHERE "value" = ?
-            '''),
-            (False,)
-        ))
-        result = currently_disabled_settings != database_disabled_settings
-        logger.debug(
-            f"Checked, if the current download filter settings differ from the previously used. Result: {result}")
-        return result
-
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
@@ -198,11 +183,11 @@ class CardDatabase:
         result, = self.db.execute(query).fetchone()
         last_timestamp = datetime.datetime.fromisoformat(result).date()
         allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.date.today()
-        return allow_update or self.check_if_download_settings_changed()
+        return allow_update
 
     @profile
     def get_all_languages(self) -> StringList:
-        """Returns the list of all known languages, sorted ascending."""
+        """Returns the list of all known and visible languages, sorted ascending."""
         logger.debug("Reading all known languages")
         result = [lang for lang, in self.db.execute(cached_dedent('''\
         SELECT language -- get_all_languages()
@@ -216,17 +201,21 @@ class CardDatabase:
         """Returns a list with all card names in the given language."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query = cached_dedent('''\
-        SELECT card_name -- get_card_names()
+        SELECT card_name
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
+            WHERE FaceName.is_hidden IS FALSE
+              AND language = ?
+              {name_filter}
+            GROUP BY card_name
+            ORDER BY card_name ASC
         ''')
-        where_clause = '    WHERE "language" = ?\n'
-        order_clause = '    ORDER BY card_name ASC\n'
         parameters = [language]
         if card_name_filter:
-            where_clause += '      AND card_name LIKE ?\n'
+            query = query.format(name_filter='AND card_name LIKE ?')
             parameters.append(f"{card_name_filter}%")
-        query += where_clause + order_clause
+        else:
+            query = query.format(name_filter='')
         result = [
             language for language, in
             self.db.execute(
@@ -245,9 +234,10 @@ class CardDatabase:
             JOIN "Set" USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS FALSE
         ''')
 
-        where_clause = '    WHERE "language" = ?\n'
+        where_clause = '    AND "language" = ?\n'
         parameters = [card.language]
         if card.name:
             where_clause += '    AND card_name = ?\n'
@@ -275,7 +265,6 @@ class CardDatabase:
          :param card: card identification data container that contains values to find cards
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
-        where_keywords = itertools.chain(["WHERE"], itertools.repeat("AND"))
         query = cached_dedent('''\
         SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front,
                 oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
@@ -288,28 +277,28 @@ class CardDatabase:
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = []
+        where_clause = ['WHERE Printing.is_hidden IS FALSE']
         where_parameters = []
         if card.language:
-            where_clause.append(f'{next(where_keywords)} "language" = ?')
+            where_clause.append(f'AND "language" = ?')
             where_parameters.append(card.language)
         if card.name:
-            where_clause.append(f'{next(where_keywords)} card_name = ?')
+            where_clause.append(f'AND card_name = ?')
             where_parameters.append(card.name)
         if card.set_code:
-            where_clause.append(f'{next(where_keywords)} "set" = ?')
+            where_clause.append(f'AND "set" = ?')
             where_parameters.append(card.set_code)
         if card.collector_number:
-            where_clause.append(f'{next(where_keywords)} collector_number = ?')
+            where_clause.append(f'AND collector_number = ?')
             where_parameters.append(card.collector_number)
         if card.is_front is not None:
-            where_clause.append(f'{next(where_keywords)} is_front = ?')
+            where_clause.append(f'AND is_front = ?')
             where_parameters.append(card.is_front)
         if card.scryfall_id:
-            where_clause.append(f'{next(where_keywords)} scryfall_id = ?')
+            where_clause.append(f'AND scryfall_id = ?')
             where_parameters.append(card.scryfall_id)
         if card.oracle_id:
-            where_clause.append(f'{next(where_keywords)} oracle_id = ?')
+            where_clause.append(f'AND oracle_id = ?')
             where_parameters.append(card.oracle_id)
         where_clause.append("")  # Insert final newline after joining
         query += "\n    ".join(where_clause)
@@ -378,7 +367,9 @@ class CardDatabase:
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             JOIN "Set" USING (set_id)
-            WHERE "language" = ?
+            WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
+              AND "language" = ?
               AND "set" = ?
               AND card_name = ?
         ''')
@@ -403,7 +394,9 @@ class CardDatabase:
             JOIN "Set" USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
-            WHERE "language" = ?
+            WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
+              AND "language" = ?
               AND card_name = ?
         ''')
         parameters = [language, card_name]
@@ -419,9 +412,11 @@ class CardDatabase:
         query = cached_dedent('''\
         SELECT EXISTS ( -- is_scryfall_id_known()
             SELECT scryfall_id
-            FROM Printing JOIN
-            CardFace USING(printing_id)
-            WHERE scryfall_id = ? AND is_front = ?)
+            FROM Printing 
+            JOIN CardFace USING (printing_id)
+            WHERE Printing.is_hidden IS FALSE
+              AND scryfall_id = ?
+              AND is_front = ?)
         ''')
         result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
         return bool(result)
@@ -493,12 +488,14 @@ class CardDatabase:
         query = cached_dedent("""\
         SELECT DISTINCT card_name -- translate_card_name()
             FROM FaceName
-            JOIN PrintLanguage USING(language_id)
+            JOIN PrintLanguage USING (language_id)
             JOIN CardFace USING (face_name_id)
             JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
-            WHERE "language" = ?
-            AND (oracle_id, face_number) IN (
+            WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
+              AND "language" = ?
+              AND (oracle_id, face_number) IN (
                 SELECT oracle_id, face_number
                 FROM FaceName
                 JOIN PrintLanguage USING(language_id)
@@ -518,7 +515,7 @@ class CardDatabase:
             return None
 
     @profile
-    def is_removed_printing(self, scryfall_id: str) -> OptionalString:
+    def is_removed_printing(self, scryfall_id: str) -> bool:
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
@@ -526,7 +523,7 @@ class CardDatabase:
             FROM RemovedPrintings
             WHERE scryfall_id = ?
         """)
-        return self._read_optional_scalar_from_db(query, parameters)
+        return bool(self._read_optional_scalar_from_db(query, parameters))
 
     @profile
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
@@ -669,3 +666,107 @@ class CardDatabase:
             in self.db.execute(query, parameters)
         ]
         return result
+
+    @profile
+    def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False):
+        section = mtg_proxy_printer.settings.settings["card-filter"]
+        if use_transaction:
+            self.db.execute("BEGIN TRANSACTION;\n")
+        old_filter_removed = self._remove_old_printing_filters(section)
+        filters_need_update = self._filters_in_db_differ_from_settings(section)
+        if filters_need_update:
+            logger.info("Printing filters changed in the settings, update the database.")
+            self.db.executemany(
+                cached_dedent("""\
+                    INSERT INTO DisplayFilters (filter_name, filter_active)
+                      VALUES (?, ?)
+                      ON CONFLICT (filter_name) DO UPDATE
+                        SET filter_active = excluded.filter_active
+                        WHERE filter_active <> excluded.filter_active
+                    """),
+                ((key, section.getboolean(key)) for key in section.keys())
+            )
+        if filters_need_update or old_filter_removed or force_update_hidden_column:
+            self._update_cached_data()
+        if use_transaction:
+            self.db.commit()
+
+    def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
+        filters_in_db: typing.Dict[str, bool] = {
+            key: bool(value) for key, value
+            in self.db.execute("SELECT filter_name, filter_active FROM DisplayFilters").fetchall()
+        }
+        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
+        return filters_in_settings != filters_in_db
+
+    @profile
+    def _remove_old_printing_filters(self, section) -> bool:
+        stored_filters = {
+            filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
+        }
+        known_filters = set(section.keys())
+        old_filters = stored_filters - known_filters
+        if old_filters:
+            logger.info(f"Removing old printing filters from the database: {old_filters}")
+            self.db.executemany(
+                "DELETE FROM DisplayFilters WHERE filter_name = ?",
+                ((filter_name,) for filter_name in old_filters)
+            )
+        return bool(old_filters)
+
+    @profile
+    def _update_cached_data(self):
+        logger.debug("Update the Printing.is_hidden column")
+        self.db.execute(cached_dedent("""\
+        UPDATE Printing
+            SET is_hidden = HiddenPrintings.should_be_hidden
+            FROM HiddenPrintings
+            WHERE Printing.printing_id = HiddenPrintings.printing_id
+              AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+        ;
+        """))
+        logger.debug("Update the FaceName.is_hidden column")
+        self.db.execute(cached_dedent("""\
+        WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (
+          -- A FaceName should be hidden, iff all uses by printings are hidden,
+          -- i.e. the total use count is equal to the hidden use count
+          SELECT face_name_id, COUNT() = sum(Printing.is_hidden) AS should_be_hidden
+          FROM Printing
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          -- Also group by language_id, because there may be actual name conflicts across languages.
+          -- But practically, some non-English cards are listed using their English name, because the information is
+          -- unavailable. So these corner cases are caught by including the language_id.
+          GROUP BY card_name, language_id
+        )
+        UPDATE FaceName
+          SET is_hidden = FaceNameShouldBeHidden.should_be_hidden
+          FROM FaceNameShouldBeHidden
+          WHERE FaceName.face_name_id = FaceNameShouldBeHidden.face_name_id
+          AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
+        ;
+        """))
+        logger.debug("Update the RemovedPrintings table")
+        self.db.execute(cached_dedent("""\
+        DELETE FROM RemovedPrintings
+          WHERE scryfall_id IN (
+            SELECT Printing.scryfall_id
+            FROM Printing
+            WHERE Printing.is_hidden IS FALSE
+          )
+        """))
+        self.db.execute(cached_dedent("""\
+        INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+          SELECT DISTINCT scryfall_id, language, oracle_id
+            FROM Printing
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS TRUE
+              AND scryfall_id NOT IN (
+                SELECT rp.scryfall_id
+                FROM RemovedPrintings AS rp
+              )
+        """))
+        logger.debug("Finished maintenance tasks.")

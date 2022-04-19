@@ -69,14 +69,14 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget,
                                   *inherits_from_ui_file_with_name("settings_window/general_printing_filter")):
     def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.include_cards_depicting_racism, "download-cards-depicting-racism"),
-            (self.include_cards_without_images, "download-cards-without-images"),
-            (self.include_oversized_cards, "download-oversized-cards"),
-            (self.include_white_bordered_cards, "download-white-bordered"),
-            (self.include_gold_bordered_cards, "download-gold-bordered"),
-            (self.include_funny_cards, "download-funny-cards"),
-            (self.include_token, "download-token"),
-            (self.include_digital_cards, "download-digital-cards"),
+            (self.hide_cards_depicting_racism, "hide-cards-depicting-racism"),
+            (self.hide_cards_without_images, "hide-cards-without-images"),
+            (self.hide_oversized_cards, "hide-oversized-cards"),
+            (self.hide_white_bordered_cards, "hide-white-bordered"),
+            (self.hide_gold_bordered_cards, "hide-gold-bordered"),
+            (self.hide_funny_cards, "hide-funny-cards"),
+            (self.hide_token, "hide-token"),
+            (self.hide_digital_cards, "hide-digital-cards"),
         ]
         return widgets_with_settings
 
@@ -85,16 +85,16 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
                                  *inherits_from_ui_file_with_name("settings_window/format_printing_filter")):
     def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.include_banned_in_brawl, "download-banned-in-brawl"),
-            (self.include_banned_in_commander, "download-banned-in-commander"),
-            (self.include_banned_in_historic, "download-banned-in-historic"),
-            (self.include_banned_in_legacy, "download-banned-in-legacy"),
-            (self.include_banned_in_modern, "download-banned-in-modern"),
-            (self.include_banned_in_pauper, "download-banned-in-pauper"),
-            (self.include_banned_in_penny, "download-banned-in-penny"),
-            (self.include_banned_in_pioneer, "download-banned-in-pioneer"),
-            (self.include_banned_in_standard, "download-banned-in-standard"),
-            (self.include_banned_in_vintage, "download-banned-in-vintage"),
+            (self.hide_banned_in_brawl, "hide-banned-in-brawl"),
+            (self.hide_banned_in_commander, "hide-banned-in-commander"),
+            (self.hide_banned_in_historic, "hide-banned-in-historic"),
+            (self.hide_banned_in_legacy, "hide-banned-in-legacy"),
+            (self.hide_banned_in_modern, "hide-banned-in-modern"),
+            (self.hide_banned_in_pauper, "hide-banned-in-pauper"),
+            (self.hide_banned_in_penny, "hide-banned-in-penny"),
+            (self.hide_banned_in_pioneer, "hide-banned-in-pioneer"),
+            (self.hide_banned_in_standard, "hide-banned-in-standard"),
+            (self.hide_banned_in_vintage, "hide-banned-in-vintage"),
         ]
         return widgets_with_settings
 
@@ -108,6 +108,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.setupUi(self)
         self.language_model = language_model
         self.document = document
+        self.card_db = document.card_db
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
         self.page_configuration_group_box: PageConfigWidget
@@ -184,11 +185,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.pdf_page_count_limit.setValue(document_section.getint("pdf-page-count-limit"))
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
-        download_section = settings["downloads"]
+        section = settings["card-filter"]
         self.card_filter_general_settings: AbstractPrintingFilterWidget
         self.card_filter_format_settings: AbstractPrintingFilterWidget
-        self.card_filter_general_settings.load_settings(download_section)
-        self.card_filter_format_settings.load_settings(download_section)
+        self.card_filter_general_settings.load_settings(section)
+        self.card_filter_format_settings.load_settings(section)
 
     def _load_save_path_settings(self, settings: configparser.ConfigParser):
         section = settings["default-save-paths"]
@@ -318,9 +319,10 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
     def _save_downloads_settings(self):
         self.card_filter_general_settings: AbstractPrintingFilterWidget
         self.card_filter_format_settings: AbstractPrintingFilterWidget
-        downloads_section = mtg_proxy_printer.settings.settings["downloads"]
-        self.card_filter_general_settings.save_settings(downloads_section)
-        self.card_filter_format_settings.save_settings(downloads_section)
+        section = mtg_proxy_printer.settings.settings["card-filter"]
+        self.card_filter_general_settings.save_settings(section)
+        self.card_filter_format_settings.save_settings(section)
+        self.card_db.store_current_printing_filters()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]

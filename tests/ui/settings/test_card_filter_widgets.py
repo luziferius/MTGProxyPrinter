@@ -30,21 +30,21 @@ T = typing.TypeVar("T")
 
 @pytest.fixture(params=[False, True])
 def download_section(request) -> SectionProxy:
-    section = mtg_proxy_printer.settings.settings["downloads"]
+    section = mtg_proxy_printer.settings.settings["card-filter"]
     mock_values = {key: str(request.param) for key in section.keys()}
     with patch.dict(section, mock_values):
         yield section
         
 
 general_printing_widget_mapping = {
-    "download-cards-depicting-racism": "include_cards_depicting_racism",
-    "download-cards-without-images": "include_cards_without_images",
-    "download-digital-cards": "include_digital_cards",
-    "download-funny-cards": "include_funny_cards",
-    "download-gold-bordered": "include_gold_bordered_cards",
-    "download-oversized-cards": "include_oversized_cards",
-    "download-token": "include_token",
-    "download-white-bordered": "include_white_bordered_cards"
+    "hide-cards-depicting-racism": "hide_cards_depicting_racism",
+    "hide-cards-without-images": "hide_cards_without_images",
+    "hide-digital-cards": "hide_digital_cards",
+    "hide-funny-cards": "hide_funny_cards",
+    "hide-gold-bordered": "hide_gold_bordered_cards",
+    "hide-oversized-cards": "hide_oversized_cards",
+    "hide-token": "hide_token",
+    "hide-white-bordered": "hide_white_bordered_cards"
 }
 
 
@@ -72,16 +72,16 @@ def _create_widget_with_loaded_settings(qtbot, widget_class: typing.Type[T], dow
 
 
 format_printing_widget_mapping = {
-    "download-banned-in-brawl": "include_banned_in_brawl",
-    "download-banned-in-commander": "include_banned_in_commander",
-    "download-banned-in-historic": "include_banned_in_historic",
-    "download-banned-in-legacy": "include_banned_in_legacy",
-    "download-banned-in-modern": "include_banned_in_modern",
-    "download-banned-in-pauper": "include_banned_in_pauper",
-    "download-banned-in-penny": "include_banned_in_penny",
-    "download-banned-in-pioneer": "include_banned_in_pioneer",
-    "download-banned-in-standard": "include_banned_in_standard",
-    "download-banned-in-vintage": "include_banned_in_vintage",
+    "hide-banned-in-brawl": "hide_banned_in_brawl",
+    "hide-banned-in-commander": "hide_banned_in_commander",
+    "hide-banned-in-historic": "hide_banned_in_historic",
+    "hide-banned-in-legacy": "hide_banned_in_legacy",
+    "hide-banned-in-modern": "hide_banned_in_modern",
+    "hide-banned-in-pauper": "hide_banned_in_pauper",
+    "hide-banned-in-penny": "hide_banned_in_penny",
+    "hide-banned-in-pioneer": "hide_banned_in_pioneer",
+    "hide-banned-in-standard": "hide_banned_in_standard",
+    "hide-banned-in-vintage": "hide_banned_in_vintage",
 }
 
 

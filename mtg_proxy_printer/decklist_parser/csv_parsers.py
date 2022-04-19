@@ -94,9 +94,9 @@ class ScryfallCSVParser(BaseCSVParser):
         count = int(line["count"])
         language = line["lang"]
 
-        if card := self._handle_removed_printing(scryfall_id, language, guess_printing):
+        if card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
             self._add_card_to_deck(cards, card, count)
-        elif card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
+        elif card := self._handle_removed_printing(scryfall_id, language, guess_printing):
             self._add_card_to_deck(cards, card, count)
         elif guess_printing:
             logger.debug(f"Card not identified. Try guessing a printing")

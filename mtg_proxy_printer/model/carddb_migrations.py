@@ -94,10 +94,6 @@ def _migrate_11_to_12(db: sqlite3.Connection):
       "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
     );
     """))
-    # Import now to avoid a cyclic import. This function is only required during this specific migration task
-    from mtg_proxy_printer.card_info_downloader import store_download_settings
-    # Guess the used settings based on the current ones. This is good enough for this migration task
-    store_download_settings(db)
 
 
 def _migrate_12_to_13(db: sqlite3.Connection):
@@ -383,13 +379,56 @@ def _migrate_21_to_22(db: sqlite3.Connection):
 
 def _migrate_22_to_23(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
-        CREATE TABLE RemovedPrintings (
-          scryfall_id TEXT NOT NULL PRIMARY KEY,
-          -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
-          language TEXT NOT NULL,
-          oracle_id TEXT NOT NULL
-        );
-        """))
+    CREATE TABLE RemovedPrintings (
+      scryfall_id TEXT NOT NULL PRIMARY KEY,
+      -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
+      language TEXT NOT NULL,
+      oracle_id TEXT NOT NULL
+    );
+    """))
+
+
+def _migrate_23_to_24(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent("""\
+    ALTER TABLE Printing ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
+    ALTER TABLE FaceName ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
+    CREATE TABLE DisplayFilters (
+      filter_id INTEGER NOT NULL PRIMARY KEY,
+      filter_name TEXT NOT NULL UNIQUE,
+      filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
+    );
+    DROP TABLE UsedDownloadSettings;
+    CREATE TABLE PrintingDisplayFilter (
+      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+      filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+      PRIMARY KEY (printing_id, filter_id)
+    );
+    CREATE VIEW HiddenPrintings AS
+      SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
+      FROM PrintingDisplayFilter
+      JOIN DisplayFilters USING (filter_id)
+      GROUP BY printing_id
+    ;
+    DROP VIEW AllPrintings;
+    CREATE VIEW AllPrintings AS
+      SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+             highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+      FROM Card
+      JOIN Printing USING (card_id)
+      JOIN "Set" USING (set_id)
+      JOIN CardFace USING (printing_id)
+      JOIN FaceName USING (face_name_id)
+      JOIN PrintLanguage USING (language_id)
+      WHERE Printing.is_hidden IS FALSE
+        AND FaceName.is_hidden IS FALSE
+    ;
+    CREATE INDEX Printing_is_hidden
+      ON Printing(printing_id, is_hidden);
+    DROP INDEX FaceNameLanguageToCardNameIndex;
+    CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, is_hidden, card_name COLLATE NOCASE);
+    ANALYZE;
+    """))
 
 
 MIGRATION_SCRIPTS: MigrationScriptListing = (
@@ -409,6 +448,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (20, _migrate_20_to_21),
     (21, _migrate_21_to_22),
     (22, _migrate_22_to_23),
+    (23, _migrate_23_to_24),
 )
 
 
