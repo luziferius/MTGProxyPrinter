@@ -397,9 +397,6 @@ def _migrate_23_to_24(db: sqlite3.Connection):
       filter_name TEXT NOT NULL UNIQUE,
       filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
     );
-    INSERT INTO DisplayFilters (filter_name, filter_active)
-      SELECT setting, FALSE
-      FROM UsedDownloadSettings;
     DROP TABLE UsedDownloadSettings;
     CREATE TABLE PrintingDisplayFilter (
       printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
