@@ -311,21 +311,6 @@ def _clear_lru_caches():
         cache.cache_clear()
 
 
-def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
-    """
-    If the card’s set release is older than the given date and is in the past, return the release date.
-
-    Newer cards have their previewed date set. Return that, if it is newer than the given date,
-    even if it is in the future.
-
-    This will be used to determine if newer card data is available online.
-    """
-    release_date = datetime.date.fromisoformat(card.get("released_at", "1970-01-01"))
-    if known_newest_card_date < release_date < datetime.date.today():
-        return release_date
-    return known_newest_card_date
-
-
 def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     """Purges all excess data, like printings that are no longer in the import data."""
     db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
