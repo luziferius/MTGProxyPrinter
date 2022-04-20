@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>487</width>
-    <height>290</height>
+    <height>301</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,11 +19,18 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="6" column="1">
     <widget class="QPushButton" name="view_token">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -41,21 +48,35 @@ oversized commander creature or Planeswalker cards included in some pre-construc
    </item>
    <item row="0" column="1">
     <widget class="QPushButton" name="view_cards_depicting_racism">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
    <item row="4" column="1">
     <widget class="QPushButton" name="view_gold_bordered_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -109,21 +130,35 @@ and all silver-bordered cards.</string>
    </item>
    <item row="2" column="1">
     <widget class="QPushButton" name="view_oversized_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
    <item row="5" column="1">
     <widget class="QPushButton" name="view_funny_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -141,11 +176,18 @@ English placeholder images with an overlay text stating
    </item>
    <item row="3" column="1">
     <widget class="QPushButton" name="view_white_bordered_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -161,11 +203,18 @@ English placeholder images with an overlay text stating
    </item>
    <item row="0" column="3">
     <widget class="QPushButton" name="view_digital_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
@@ -174,8 +223,15 @@ English placeholder images with an overlay text stating
      <property name="enabled">
       <bool>false</bool>
      </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="icon">
-      <iconset theme="globe"/>
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
      </property>
     </widget>
    </item>
