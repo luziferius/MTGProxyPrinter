@@ -15,12 +15,13 @@
 
 import abc
 import configparser
+import functools
 import logging
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget
+    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
@@ -60,6 +61,12 @@ class AbstractPrintingFilterWidget(QGroupBox):
         for widget, key in self._get_widgets_with_keys():
             settings[key] = str(widget.isChecked())
 
+    @staticmethod
+    def view_query_on_scryfall(query: str):
+        query_url = QUrl("https://scryfall.com/search", QUrl.StrictMode)
+        query_url.setQuery(f"q={query}", QUrl.StrictMode)
+        QDesktopServices.openUrl(query_url)
+
     @abc.abstractmethod
     def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
         pass
@@ -67,6 +74,17 @@ class AbstractPrintingFilterWidget(QGroupBox):
 
 class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget,
                                   *inherits_from_ui_file_with_name("settings_window/general_printing_filter")):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.view_cards_depicting_racism.clicked.connect(
+            lambda: self.view_query_on_scryfall("function:banned-due-to-racist-imagery"))
+        self.view_oversized_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:oversized"))
+        self.view_white_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:white"))
+        self.view_gold_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:gold"))
+        self.view_funny_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:funny"))
+        self.view_token.clicked.connect(lambda: self.view_query_on_scryfall("is:token"))
+        self.view_digital_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:digital"))
+
     def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.hide_cards_depicting_racism, "hide-cards-depicting-racism"),
@@ -83,6 +101,16 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget,
 
 class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
                                  *inherits_from_ui_file_with_name("settings_window/format_printing_filter")):
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        for _, key in self._get_widgets_with_keys():
+            format_name = key.split("-")[-1]
+            button: QPushButton = getattr(self, f"view_banned_in_{format_name}")
+            button.clicked.connect(
+                functools.partial(self.view_query_on_scryfall, f"banned:{format_name}")
+            )
+
     def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.hide_banned_in_brawl, "hide-banned-in-brawl"),

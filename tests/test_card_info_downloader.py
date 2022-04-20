@@ -387,9 +387,6 @@ def generate_test_cases_for_test_download_filters():
 def test_download_filters(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: str(filter_setting)})
-    import sqlite3
-    with sqlite3.connect("dump.db") as dump:
-        card_db.db.backup(dump)
     if filter_setting:
         assert_hidden_import(card_db, test_case)
     else:

@@ -9,6 +9,8 @@
   - When migrating from older versions, the card data has to be re-downloaded to take advantage of the new capabilities.
   - Inverted the display: Instead of specifying which cards or printings are included,
     the settings now state which printings are hidden. (Settings saved with previous versions are migrated.)
+- In the settings window, the card filters check boxes now have buttons next to them that open a web browser showing
+  the Scryfall query highlighting the cards affected by the corresponding filter.
 - The document and PDF save path now defaults to the local Documents directory.
 
 # Version 0.15.1 (2022-04-13) <a name="v0_15_1"></a>
