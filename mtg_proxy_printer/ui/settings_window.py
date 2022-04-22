@@ -17,9 +17,10 @@ import abc
 import configparser
 import functools
 import logging
+import pathlib
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl, QStandardPaths
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
     QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton
 from PyQt5.QtGui import QDesktopServices, QIcon
@@ -130,6 +131,7 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
     """Implements the Settings window."""
     saved = pyqtSignal()
+    requested_card_download = pyqtSignal(pathlib.Path)
 
     def __init__(self, language_model: QStringListModel, document: Document,  *args, **kwargs):
         super(SettingsWindow, self).__init__(*args, **kwargs)
@@ -137,6 +139,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.language_model = language_model
         self.document = document
         self.card_db = document.card_db
+        self.debug_download_card_data_as_file: QPushButton
+        self.requested_card_download.connect(lambda _: self.debug_download_card_data_as_file.setEnabled(False))
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
         self.page_configuration_group_box: PageConfigWidget
@@ -406,3 +410,18 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
         log_url = QUrl.fromLocalFile(log_dir)
         QDesktopServices.openUrl(log_url)
+
+    @pyqtSlot()
+    def on_debug_download_card_data_as_file_clicked(self):
+        location = QFileDialog.getExistingDirectory(
+            self, "Select download location",
+            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
+        if not location:
+            return
+        if not (path := pathlib.Path(location)).is_dir():
+            QMessageBox.critical(
+                self, "Selected location is not a directory",
+                f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
+                QMessageBox.Ok, QMessageBox.Ok)
+            return
+        self.requested_card_download.emit(path)

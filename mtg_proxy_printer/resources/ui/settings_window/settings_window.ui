@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>650</width>
+    <width>612</width>
     <height>650</height>
    </rect>
   </property>
@@ -148,8 +148,7 @@ Uncheck to disable this automatism.</string>
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="document-open">
-              <normaloff>.</normaloff>.</iconset>
+             <iconset theme="document-open"/>
             </property>
            </widget>
           </item>
@@ -162,8 +161,7 @@ Uncheck to disable this automatism.</string>
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="document-open">
-              <normaloff>.</normaloff>.</iconset>
+             <iconset theme="document-open"/>
             </property>
            </widget>
           </item>
@@ -425,6 +423,53 @@ This avoids adding foreign language cards, if the deck list happens to contain s
        <string>Debug settings</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
+       <item row="3" column="0" colspan="2">
+        <widget class="Line" name="debug_settings_header_line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="debug_settings_headerlabel">
+         <property name="text">
+          <string>Debug settings (Changing these require an application restart)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0" colspan="2">
+        <spacer name="verticalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="log_level_label">
+         <property name="text">
+          <string>Event severity that gets logged to file:</string>
+         </property>
+         <property name="buddy">
+          <cstring>log_level_combo_box</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QPushButton" name="open_debug_log_location">
+         <property name="text">
+          <string>Open debug log directory</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
+       </item>
        <item row="6" column="1">
         <widget class="QComboBox" name="log_level_combo_box">
          <property name="toolTip">
@@ -445,43 +490,6 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </property>
         </widget>
        </item>
-       <item row="3" column="0" colspan="2">
-        <widget class="Line" name="debug_settings_header_line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="log_level_label">
-         <property name="text">
-          <string>Event severity that gets logged to file:</string>
-         </property>
-         <property name="buddy">
-          <cstring>log_level_combo_box</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="0" colspan="2">
-        <spacer name="verticalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <widget class="QLabel" name="debug_settings_headerlabel">
-         <property name="text">
-          <string>Debug settings (Changing these require an application restart)</string>
-         </property>
-        </widget>
-       </item>
        <item row="5" column="0">
         <widget class="QCheckBox" name="enable_write_log_file">
          <property name="text">
@@ -489,14 +497,13 @@ This avoids adding foreign language cards, if the deck list happens to contain s
          </property>
         </widget>
        </item>
-       <item row="7" column="1">
-        <widget class="QPushButton" name="open_debug_log_location">
+       <item row="8" column="1">
+        <widget class="QPushButton" name="debug_download_card_data_as_file">
          <property name="text">
-          <string>Open debug log directory</string>
+          <string>Download card data as file</string>
          </property>
          <property name="icon">
-          <iconset theme="document-open">
-           <normaloff>.</normaloff>.</iconset>
+          <iconset theme="edit-download"/>
          </property>
         </widget>
        </item>

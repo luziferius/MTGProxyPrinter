@@ -634,19 +634,19 @@ def test_allow_updating_card_data_on_freshly_populated_database_returns_false(ca
     assert_that(card_db.allow_updating_card_data(), is_(False))
 
 
-@pytest.mark.parametrize("delta_days", [0, 1, 2])
+@pytest.mark.parametrize("delta_days", [-2, -1, 0, 1, 2])
 def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_db: CardDatabase, delta_days: int):
     cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
     card_data = [load_json("regular_english_card")]
     cidw.populate_database(card_data)
     today = datetime.date.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
-    with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.datetime.date") as mock_date:
+    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.date") as mock_date:
         mock_date.today.return_value = now
         assert_that(datetime.date.today(), is_not(today))
         assert_that(
             card_db.allow_updating_card_data(),
-            is_(True)
+            is_(delta_days >= 0)
         )
 
 

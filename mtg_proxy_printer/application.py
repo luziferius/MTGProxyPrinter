@@ -63,6 +63,7 @@ class Application(QApplication):
         self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             self.language_model, self.document, self.main_window)
         self.settings_window.saved.connect(self.main_window.settings_changed)
+        self.settings_window.requested_card_download.connect(self.card_info_downloader.request_download_to_file)
         self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.main_window.show()

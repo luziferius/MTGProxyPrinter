@@ -13,16 +13,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
 import functools
 import gzip
 import json
+import shutil
 from pathlib import Path
 import re
 import sqlite3
 import socket
 import typing
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import ijson
@@ -30,7 +31,6 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
-import mtg_proxy_printer.settings
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -90,6 +90,7 @@ class CardInfoDownloader(QObject):
 
     request_import_from_file = pyqtSignal(Path)
     request_import_from_url = pyqtSignal()
+    request_download_to_file = pyqtSignal(Path)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -102,6 +103,7 @@ class CardInfoDownloader(QObject):
         self.download_worker.moveToThread(self.worker_thread)
         self.request_import_from_file.connect(self.download_worker.download_card_data)
         self.request_import_from_url.connect(self.download_worker.download_card_data)
+        self.request_download_to_file.connect(self.download_worker.store_raw_card_data_in_file)
         self.download_worker.download_begins.connect(self.download_begins)
         self.download_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
         self.download_worker.download_progress.connect(self.download_progress)
@@ -187,6 +189,26 @@ class CardInfoDownloadWorker(DownloaderBase):
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
             yield from self._read_json_card_data_from_open_file(source, json_path)
+
+    def store_raw_card_data_in_file(self, download_path: Path):
+        """
+        Allows the user to store the raw JSON card data at the given path.
+        Accessible by a button in the Debug tab in the Settings window.
+        """
+        logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
+        logger.debug("Request bulk data URL from the Scryfall API.")
+        url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+        file_name = urllib.parse.urlparse(url).path.split("/")[-1]
+        logger.debug(f"Obtained url: '{url}'")
+        monitor = self._open_url(url)
+        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
+        if monitor.content_encoding() == "gzip":
+            file_name += ".gz"
+        download_file_path = download_path/file_name
+        logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
+        with download_file_path.open("wb") as download_file, monitor:
+            shutil.copyfileobj(monitor, download_file)
+        logger.info("Download completed")
 
     def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item"):
         """
