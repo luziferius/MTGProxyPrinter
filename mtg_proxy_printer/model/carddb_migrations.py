@@ -57,10 +57,10 @@ def _migrate_9_to_10(db: sqlite3.Connection):
         "PrintLanguage",
     ]
     for table in tables_to_clear:
-        db.execute(f"DELETE FROM {table}")
-    db.executescript(textwrap.dedent("""\
-    ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1;
-    DROP VIEW AllPrintings;
+        db.execute(f"DELETE FROM {table};\n")
+    db.execute("ALTER TABLE CardFace ADD COLUMN is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1;\n")
+    db.execute("DROP VIEW AllPrintings;\n")
+    db.execute(textwrap.dedent("""\
     CREATE VIEW AllPrintings AS
       SELECT card_name, "set", "language", collector_number, scryfall_id, highres_image, is_front, png_image_uri
       FROM CardFace
@@ -72,8 +72,8 @@ def _migrate_9_to_10(db: sqlite3.Connection):
 
 
 def _migrate_10_to_11(db: sqlite3.Connection):
-    db.executescript(textwrap.dedent("""\
-    DROP VIEW AllPrintings;
+    db.execute("DROP VIEW AllPrintings;\n")
+    db.execute(textwrap.dedent("""\
     CREATE VIEW AllPrintings AS
       SELECT card_name, "set", set_name, "language", collector_number, scryfall_id, highres_image,
           is_front, png_image_uri, oracle_id
@@ -83,7 +83,7 @@ def _migrate_10_to_11(db: sqlite3.Connection):
       JOIN Card USING (card_id)
       JOIN PrintLanguage USING(language_id)
     ;"""))
-    db.execute('CREATE INDEX CardFace_card_id_index ON CardFace (card_id)')
+    db.execute("CREATE INDEX CardFace_card_id_index ON CardFace (card_id);\n")
 
 
 def _migrate_11_to_12(db: sqlite3.Connection):
@@ -113,7 +113,7 @@ def _migrate_12_to_13(db: sqlite3.Connection):
 
 
 def _migrate_13_to_14(db: sqlite3.Connection):
-    db.execute(r"CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)")
+    db.execute("CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front);\n")
 
 
 def _migrate_14_to_15(db: sqlite3.Connection):
@@ -122,20 +122,20 @@ def _migrate_14_to_15(db: sqlite3.Connection):
         newest_card_timestamp TIMESTAMP WITH TIME ZONE NULL;
         """))
     # Re-use the update timestamp. This is good enough for this purpose.
-    db.execute("UPDATE LastDatabaseUpdate SET newest_card_timestamp = substr(update_timestamp, 0, 11)")
+    db.execute("UPDATE LastDatabaseUpdate SET newest_card_timestamp = substr(update_timestamp, 0, 11);\n")
 
 
 def _migrate_15_to_16(db: sqlite3.Connection):
     # These two indices were useless indices containing a UNIQUE column plus the integer primary key.
     # The UNIQUE constraint is already implemented by a UNIQUE INDEX, the PK is implicitly always part of the index.
-    db.execute(r"DROP INDEX LanguageIndex")
-    db.execute(r"DROP INDEX SetAbbreviationIndex")
+    db.execute("DROP INDEX LanguageIndex;\n")
+    db.execute("DROP INDEX SetAbbreviationIndex;\n")
 
 
 def _migrate_16_to_17(db: sqlite3.Connection):
-    db.execute(r"DROP INDEX CardFace_card_id_index")
+    db.execute("DROP INDEX CardFace_card_id_index;\n")
     # Index was recommended by SQLite’s expert mode, so extend index CardFace_card_id_index with column is_front
-    db.execute(r"CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)")
+    db.execute("CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front);\n")
 
 
 def _migrate_17_to_18(db: sqlite3.Connection):
@@ -339,7 +339,7 @@ def _migrate_21_to_22(db: sqlite3.Connection):
     # Import locally to break a cyclic dependency
     import mtg_proxy_printer.card_info_downloader
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(CardDatabaseMock(db))
-    updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;")
+    updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
     data = []
     for id_, timestamp in updates:
         url_parameters = urllib.parse.urlencode({
@@ -359,7 +359,7 @@ def _migrate_21_to_22(db: sqlite3.Connection):
         time.sleep(0.1)  # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
 
     logger.info(f"Acquired data for upgrade to schema version 22: {data}")
-    db.executescript(textwrap.dedent("""\
+    db.execute(textwrap.dedent("""\
     CREATE TABLE LastDatabaseUpdateNew (
       -- Contains the history of all performed card data updates
       update_id             INTEGER NOT NULL PRIMARY KEY,
@@ -368,17 +368,15 @@ def _migrate_21_to_22(db: sqlite3.Connection):
     );
     """))
     db.executemany(
-        "INSERT INTO LastDatabaseUpdateNew (update_id, update_timestamp, reported_card_count) VALUES (?, ?, ?)\n",
+        "INSERT INTO LastDatabaseUpdateNew (update_id, update_timestamp, reported_card_count) VALUES (?, ?, ?);\n",
         data
     )
-    db.executescript(textwrap.dedent("""
-    DROP TABLE LastDatabaseUpdate;
-    ALTER TABLE LastDatabaseUpdateNew RENAME TO LastDatabaseUpdate;
-    """))
+    db.execute("DROP TABLE LastDatabaseUpdate;\n")
+    db.execute(" ALTER TABLE LastDatabaseUpdateNew RENAME TO LastDatabaseUpdate;\n")
 
 
 def _migrate_22_to_23(db: sqlite3.Connection):
-    db.executescript(textwrap.dedent("""\
+    db.execute(textwrap.dedent("""\
     CREATE TABLE RemovedPrintings (
       scryfall_id TEXT NOT NULL PRIMARY KEY,
       -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
@@ -390,6 +388,7 @@ def _migrate_22_to_23(db: sqlite3.Connection):
 
 def _migrate_23_to_24(db: sqlite3.Connection):
     db.executescript(textwrap.dedent("""\
+    BEGIN TRANSACTION;
     ALTER TABLE Printing ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
     ALTER TABLE FaceName ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
     CREATE TABLE DisplayFilters (
