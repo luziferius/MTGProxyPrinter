@@ -431,6 +431,34 @@ def _migrate_23_to_24(db: sqlite3.Connection):
     """))
 
 
+def _migrate_24_to_25(db: sqlite3.Connection):
+    db.executescript(textwrap.dedent("""\
+    BEGIN TRANSACTION;
+    DROP VIEW HiddenPrintings;
+    CREATE TABLE PrintingDisplayFilter2 (
+      -- Stores which filter applies to which printing.
+      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+      filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+      PRIMARY KEY (printing_id, filter_id)
+    ) WITHOUT ROWID;
+    INSERT INTO PrintingDisplayFilter2 (printing_id, filter_id, filter_applies)
+      SELECT printing_id, filter_id, filter_applies
+      FROM PrintingDisplayFilter;
+    DROP TABLE PrintingDisplayFilter;
+    ALTER TABLE PrintingDisplayFilter2 RENAME TO PrintingDisplayFilter;
+    CREATE VIEW HiddenPrintings AS
+      SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
+      FROM PrintingDisplayFilter
+      JOIN DisplayFilters USING (filter_id)
+      GROUP BY printing_id
+    ;
+    COMMIT;
+    VACUUM;
+    BEGIN TRANSACTION;
+    """))
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -449,6 +477,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (21, _migrate_21_to_22),
     (22, _migrate_22_to_23),
     (23, _migrate_23_to_24),
+    (24, _migrate_24_to_25),
 )
 
 
