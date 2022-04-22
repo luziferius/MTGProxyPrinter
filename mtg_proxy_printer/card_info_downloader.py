@@ -578,7 +578,8 @@ def _get_oracle_id(card: JSONType) -> str:
     try:
         return card["oracle_id"]
     except KeyError:
-        return card["card_faces"][0]["oracle_id"]
+        first_face: JSONType = card["card_faces"][0]
+        return first_face["oracle_id"]
 
 
 def _is_front_face(image_uri: str) -> bool:
