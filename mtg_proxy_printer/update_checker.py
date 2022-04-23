@@ -70,6 +70,10 @@ class BackgroundWorker(QObject):
             logger.info("Checking for card data updates disabled. Not checking for updates.")
             self.job_completed.emit()
             return
+        if not self.card_db.has_data():
+            logger.info("Card database has no data. Not checking for updates.")
+            self.job_completed.emit()
+            return
         logger.info("Checking for card data updates.")
         try:
             total_cards_available, total_cards_in_last_update = self._is_newer_card_data_available()
