@@ -209,6 +209,8 @@ class PageRenderer(QGraphicsView):
         self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
+        self.scaling_factor: int = 0
+        self.set_scaling_factor(0)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
@@ -235,7 +237,19 @@ class PageRenderer(QGraphicsView):
 
     @pyqtSlot()
     def on_resize_event_triggered(self):
-        self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        if not self.scaling_factor:
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+
+    @pyqtSlot(int)
+    def set_scaling_factor(self, scaling_factor: int, /):
+        """Sets the scaling in percent in range 0 to 1000. Zero enables scale-to-fit mode."""
+        if 1000 < scaling_factor < 0:
+            raise ValueError(f"Scaling factor outside allowed range [0;1000]: {scaling_factor}")
+        self.scaling_factor = scaling_factor
+        if scaling_factor:
+            self.scale(scaling_factor/100, scaling_factor/100)
+        else:
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
 
     @pyqtSlot()
     def on_settings_changed(self):
@@ -249,4 +263,3 @@ class PageRenderer(QGraphicsView):
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so resize the scene to fill the available space.
             self.on_resize_event_triggered()
-
