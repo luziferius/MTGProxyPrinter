@@ -12,11 +12,12 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
-from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtGui import QColor, QPixmap, QWheelEvent
 import pint
 
 from mtg_proxy_printer.settings import settings
@@ -209,7 +210,7 @@ class PageRenderer(QGraphicsView):
         self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
-        self.scaling_factor: int = 0
+        self.automatic_scaling = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
@@ -234,22 +235,33 @@ class PageRenderer(QGraphicsView):
         )
         return page_size
 
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        if event.modifiers() & Qt.ControlModifier:
+            factor = 1.1 if event.angleDelta().y() > 0 else 0.9
+            self.automatic_scaling = self.scene_fully_visible(factor)
+            if self.automatic_scaling:
+                self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+                event.accept()
+                return
+            old_anchor = self.transformationAnchor()
+            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.scale(factor, factor)
+            self.setTransformationAnchor(old_anchor)
+            event.accept()
+            return
+        super().wheelEvent(event)
+
+    def scene_fully_visible(self, additional_scaling_factor: float = 1.0, /) -> bool:
+        scale = self.transform().m11() * additional_scaling_factor
+        scene_rect = self.sceneRect()
+        content_rect = self.contentsRect()
+        return round(scene_rect.width()*scale) <= content_rect.width() \
+            and round(scene_rect.height()*scale) <= content_rect.height()
+
     @pyqtSlot()
     def on_resize_event_triggered(self):
-        if not self.scaling_factor:
-            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
-
-    @pyqtSlot(int)
-    def set_scaling_factor(self, scaling_factor: int, /):
-        """Sets the scaling in percent in range 0 to 1000. Zero enables scale-to-fit mode."""
-        if 1000 < scaling_factor < 0:
-            raise ValueError(f"Scaling factor outside allowed range [0;1000]: {scaling_factor}")
-        self.scaling_factor = scaling_factor
-        if scaling_factor:
-            self.setDragMode(QGraphicsView.ScrollHandDrag)
-            self.scale(scaling_factor/100, scaling_factor/100)
-        else:
-            self.setDragMode(QGraphicsView.NoDrag)
+        if self.automatic_scaling or self.scene_fully_visible():
+            self.automatic_scaling = True
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
 
     @pyqtSlot()
