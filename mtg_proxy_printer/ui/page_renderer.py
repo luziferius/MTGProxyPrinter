@@ -210,7 +210,6 @@ class PageRenderer(QGraphicsView):
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
         self.scaling_factor: int = 0
-        self.set_scaling_factor(0)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
@@ -247,8 +246,10 @@ class PageRenderer(QGraphicsView):
             raise ValueError(f"Scaling factor outside allowed range [0;1000]: {scaling_factor}")
         self.scaling_factor = scaling_factor
         if scaling_factor:
+            self.setDragMode(QGraphicsView.ScrollHandDrag)
             self.scale(scaling_factor/100, scaling_factor/100)
         else:
+            self.setDragMode(QGraphicsView.NoDrag)
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
 
     @pyqtSlot()
