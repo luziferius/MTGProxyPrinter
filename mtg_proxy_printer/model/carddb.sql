@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000024;
+PRAGMA user_version = 0000025;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -74,7 +74,7 @@ CREATE TABLE CardFace (
   printing_id INTEGER NOT NULL REFERENCES Printing(printing_id) ON UPDATE CASCADE ON DELETE CASCADE,
   face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
   is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-  png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+  png_image_uri TEXT NOT NULL, -- URI pointing to the high resolution PNG image
   -- Enumerates the face on a card. Used to match the exact same face across translated, multi-faced cards
   face_number INTEGER NOT NULL CHECK (face_number >= 0),
   UNIQUE(face_name_id, printing_id, is_front)
@@ -109,7 +109,7 @@ CREATE TABLE PrintingDisplayFilter (
   filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
   filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
   PRIMARY KEY (printing_id, filter_id)
-);
+) WITHOUT ROWID;
 
 CREATE VIEW HiddenPrintings AS
   SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden

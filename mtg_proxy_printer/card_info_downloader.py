@@ -15,7 +15,6 @@
 
 import functools
 import gzip
-import json
 import shutil
 from pathlib import Path
 import re
@@ -159,18 +158,18 @@ class CardInfoDownloadWorker(DownloaderBase):
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            bulk_items = json.load(data)
-            for item in bulk_items["data"]:
+            for item in ijson.items(data, "data.item", use_float=True):
                 if item["type"] == requested_item:
                     result = item["download_uri"]
                     logger.debug(f"Bulk data located at: {result}")
                     return result
-            raise RuntimeError(
-                "URL to the Scryfall bulk data export not found. "
-                "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
-                "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+        raise RuntimeError(
+            "URL to the Scryfall bulk data export not found. "
+            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
+            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
 
-    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item"):
+    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") \
+            -> typing.Generator[JSONType, None, None]:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data json object in the Scryfall API.
@@ -188,7 +187,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         source, monitor = self.read_from_url(url)
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
-            yield from self._read_json_card_data_from_open_file(source, json_path)
+            yield from ijson.items(source, json_path)
 
     def store_raw_card_data_in_file(self, download_path: Path):
         """
@@ -210,7 +209,8 @@ class CardInfoDownloadWorker(DownloaderBase):
             shutil.copyfileobj(monitor, download_file)
         logger.info("Download completed")
 
-    def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item"):
+    def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item") \
+            -> typing.Generator[JSONType, None, None]:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function can take a file path to a locally stored json document. Mainly for testing purposes.
@@ -225,18 +225,13 @@ class CardInfoDownloadWorker(DownloaderBase):
             with url_or_path.open("rb") as file:
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
-                yield from self._read_json_card_data_from_open_file(file, json_path)
+                yield from ijson.items(file, json_path)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path, json_path)
         else:
             # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
             with open(url_or_path, "rb") as file:
-                yield from self._read_json_card_data_from_open_file(file, json_path)
-
-    @staticmethod
-    def _read_json_card_data_from_open_file(file, json_path: str) -> typing.Generator[JSONType, None, None]:
-        # Using "item" as the object path returns elements from a top-level JSON array
-        yield from ijson.items(file, json_path)
+                yield from ijson.items(file, json_path)
 
     def populate_database(self, card_data: typing.Generator[JSONType, None, None]):
         """
@@ -289,7 +284,7 @@ class CardInfoDownloadWorker(DownloaderBase):
                     ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
-                face_ids = self._parse_single_printing(card, face_ids, printing_filter_ids)
+                face_ids += self._parse_single_printing(card, printing_filter_ids)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -311,22 +306,23 @@ class CardInfoDownloadWorker(DownloaderBase):
         db.commit()
         return index
 
-    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples, printing_filter_ids):
+    def _parse_single_printing(self, card: JSONType, printing_filter_ids):
         language_id = _insert_language(self.model, card["lang"])
         oracle_id = _get_oracle_id(card)
         card_id = _insert_card(self.model, oracle_id)
         set_id = _insert_set(self.model, card)
         printing_id = insert_printing(self.model, card, card_id, set_id)
         _insert_card_filters(self.model, printing_id, _get_card_filter_data(card), printing_filter_ids)
-        face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
-        return face_ids
+        new_face_ids = _insert_card_faces(self.model, card, language_id, printing_id)
+        return new_face_ids
+
 
 
 def _clear_lru_caches():
     """
     Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
-    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
+    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
     """
     for cache in (_insert_language, _insert_set_data, _insert_card):
         logger.debug(str(cache.cache_info()))
@@ -338,11 +334,11 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
     excess_face_ids = db_face_ids.difference(new_face_ids)
     logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
-    db.executemany('DELETE FROM CardFace WHERE card_face_id = ?\n', excess_face_ids)
-    db.execute('DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n')
-    db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
+    db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
+    db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
+    db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
     db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
-    db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
+    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
     db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
         WHERE language_id NOT IN (
@@ -373,10 +369,10 @@ def _insert_language(model: CardDatabase, language: str) -> int:
 @functools.lru_cache(None)
 def _insert_card(model: CardDatabase, oracle_id: str) -> int:
     parameters = oracle_id,
-    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone():
+    if result := model.db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
         card_id, = result
     else:
-        card_id = model.db.execute('INSERT INTO Card (oracle_id) VALUES (?)\n', parameters).lastrowid
+        card_id = model.db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
     return card_id
 
 
@@ -390,13 +386,13 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
 @functools.lru_cache(None)
 def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
     model.db.execute(cached_dedent(
-        '''\
+        """\
         INSERT INTO "Set" ("set", set_name, set_uri)
             VALUES (?, ?, ?)
             ON CONFLICT ("set") DO
             UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri
             WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri
-        '''),
+        """),
         (set_abbr, set_name, set_uri)
     )
     set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
@@ -410,11 +406,11 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
     """
     parameters = (printed_name, language_id)
     if result := model.db.execute(
-            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n', parameters).fetchone():
+            "SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n", parameters).fetchone():
         face_name_id, = result
     else:
         face_name_id = model.db.execute(
-            'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n', parameters).lastrowid
+            "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
     return face_name_id
 
 
@@ -432,7 +428,7 @@ def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: i
 
 def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
     model.db.execute(cached_dedent(
-        '''\
+        """\
         INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (scryfall_id) DO UPDATE
@@ -446,14 +442,14 @@ def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
                OR collector_number <> excluded.collector_number
                OR is_oversized <> excluded.is_oversized
                OR highres_image <> excluded.highres_image
-        '''), data,
+        """), data,
     )
     printing_id, = model.db.execute(cached_dedent(
-        '''\
+        """\
         SELECT printing_id
             FROM Printing
             WHERE scryfall_id = ?
-        '''), (data.scryfall_id,)
+        """), (data.scryfall_id,)
     ).fetchone()
     return printing_id
 
@@ -464,14 +460,14 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, pr
     for face in _get_card_faces(card):
         face_name_id = _insert_face_name(model, face.printed_face_name, language_id)
         face_id: typing.Tuple[int] = model.db.execute(cached_dedent(
-            '''\
+            """\
             INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
                 SET png_image_uri = excluded.png_image_uri,
                     face_number = excluded.face_number
                 RETURNING card_face_id
-            '''),
+            """),
             (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
         ).fetchone()
         if face_id is not None:
@@ -580,7 +576,8 @@ def _get_oracle_id(card: JSONType) -> str:
     try:
         return card["oracle_id"]
     except KeyError:
-        return card["card_faces"][0]["oracle_id"]
+        first_face: JSONType = card["card_faces"][0]
+        return first_face["oracle_id"]
 
 
 def _is_front_face(image_uri: str) -> bool:
