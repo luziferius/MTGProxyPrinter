@@ -239,14 +239,14 @@ class PageRenderer(QGraphicsView):
         if event.modifiers() & Qt.ControlModifier:
             factor = 1.1 if event.angleDelta().y() > 0 else 0.9
             self.automatic_scaling = self.scene_fully_visible(factor)
+            self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
             if self.automatic_scaling:
                 self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
-                event.accept()
-                return
-            old_anchor = self.transformationAnchor()
-            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-            self.scale(factor, factor)
-            self.setTransformationAnchor(old_anchor)
+            else:
+                old_anchor = self.transformationAnchor()
+                self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+                self.scale(factor, factor)
+                self.setTransformationAnchor(old_anchor)
             event.accept()
             return
         super().wheelEvent(event)
@@ -262,6 +262,7 @@ class PageRenderer(QGraphicsView):
     def on_resize_event_triggered(self):
         if self.automatic_scaling or self.scene_fully_visible():
             self.automatic_scaling = True
+            self.setDragMode(QGraphicsView.NoDrag)
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
 
     @pyqtSlot()
