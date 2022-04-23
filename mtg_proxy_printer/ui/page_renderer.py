@@ -205,6 +205,8 @@ class PageRenderer(QGraphicsView):
     """
     This class displays an internally held PageScene instance on screen.
     """
+    MAX_UI_ZOOM = 16.0
+
     def __init__(self, parent: QWidget = None, *, render_background: bool = True):
         super(PageRenderer, self).__init__(parent=parent)
         self.render_background = render_background
@@ -237,15 +239,18 @@ class PageRenderer(QGraphicsView):
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         if event.modifiers() & Qt.ControlModifier:
-            factor = 1.1 if event.angleDelta().y() > 0 else 0.9
-            self.automatic_scaling = self.scene_fully_visible(factor)
+            scaling_factor = 1.1 if event.angleDelta().y() > 0 else 0.9
+            if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
+                event.accept()
+                return
+            self.automatic_scaling = self.scene_fully_visible(scaling_factor)
             self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
             if self.automatic_scaling:
                 self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
             else:
                 old_anchor = self.transformationAnchor()
                 self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-                self.scale(factor, factor)
+                self.scale(scaling_factor, scaling_factor)
                 self.setTransformationAnchor(old_anchor)
             event.accept()
             return
