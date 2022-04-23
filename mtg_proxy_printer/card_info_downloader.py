@@ -284,7 +284,7 @@ class CardInfoDownloadWorker(DownloaderBase):
                     ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
-                face_ids = self._parse_single_printing(card, face_ids, printing_filter_ids)
+                face_ids += self._parse_single_printing(card, printing_filter_ids)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -306,15 +306,16 @@ class CardInfoDownloadWorker(DownloaderBase):
         db.commit()
         return index
 
-    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples, printing_filter_ids):
+    def _parse_single_printing(self, card: JSONType, printing_filter_ids):
         language_id = _insert_language(self.model, card["lang"])
         oracle_id = _get_oracle_id(card)
         card_id = _insert_card(self.model, oracle_id)
         set_id = _insert_set(self.model, card)
         printing_id = insert_printing(self.model, card, card_id, set_id)
         _insert_card_filters(self.model, printing_id, _get_card_filter_data(card), printing_filter_ids)
-        face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
-        return face_ids
+        new_face_ids = _insert_card_faces(self.model, card, language_id, printing_id)
+        return new_face_ids
+
 
 
 def _clear_lru_caches():
