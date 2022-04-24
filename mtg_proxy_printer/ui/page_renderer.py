@@ -16,13 +16,12 @@
 import enum
 import typing
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
+from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
 from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence
 
 import pint
 
-from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
@@ -53,7 +52,9 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
-    def __init__(self, document: Document, draw_background: bool, scene_rect: QRectF, parent: QObject = None):
+    scene_size_changed = pyqtSignal()
+
+    def __init__(self, document: Document, draw_background: bool, parent: QObject = None):
         """
         :param document: The document instance
         :param draw_background: Boolean. If enabled, draw a white background. By default, the scene is transparent,
@@ -61,7 +62,7 @@ class PageScene(QGraphicsScene):
         :param scene_rect: Size of the canvas, i.e. page size in pixels
         :param parent: Optional Qt parent object
         """
-        super(PageScene, self).__init__(scene_rect, parent)
+        super(PageScene, self).__init__(self.get_document_page_size(document), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)
@@ -80,6 +81,33 @@ class PageScene(QGraphicsScene):
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
         self.redraw()
+
+    @pyqtSlot()
+    def on_settings_changed(self):
+        new_page_size = self.get_document_page_size(self.document)
+        old_size = self.sceneRect()
+        size_changed = old_size != new_page_size
+        if size_changed:
+            logger.debug("Page size changed. Adjusting PageScene dimensions")
+            self.scene().setSceneRect(new_page_size)
+        self.redraw()
+        if size_changed:
+            # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
+            # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
+            self.scene_size_changed.emit()
+
+    @staticmethod
+    def get_document_page_size(document: Document) -> QRectF:
+        height: pint.Quantity = document.page_layout.page_height * unit_registry.millimeter
+        width: pint.Quantity = document.page_layout.page_width * unit_registry.millimeter
+        page_size = QRectF(
+            QPointF(0, 0),
+            QSizeF(
+                (DPI*width).to_reduced_units().to_tuple()[0],
+                (DPI*height).to_reduced_units().to_tuple()[0]
+            )
+        )
+        return page_size
 
     def _draw_cards(self):
         if not self.selected_page.isValid():
@@ -245,24 +273,8 @@ class PageRenderer(QGraphicsView):
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(PageScene(document, self.render_background, self.get_document_page_size(), self))
-
-    def get_document_page_size(self) -> QRectF:
-        if self.document is None:
-            document_settings = settings["documents"]
-            height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
-            width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
-        else:
-            height: pint.Quantity = self.document.page_layout.page_height * unit_registry.millimeter
-            width: pint.Quantity = self.document.page_layout.page_width * unit_registry.millimeter
-        page_size = QRectF(
-            QPointF(0, 0),
-            QSizeF(
-                (DPI*width).to_reduced_units().to_tuple()[0],
-                (DPI*height).to_reduced_units().to_tuple()[0]
-            )
-        )
-        return page_size
+        self.setScene(PageScene(document, self.render_background, self))
+        self.scene().scene_size_changed.connect(self.on_resize_event_triggered)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
         scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9
@@ -300,16 +312,3 @@ class PageRenderer(QGraphicsView):
             self.automatic_scaling = True
             self.setDragMode(QGraphicsView.NoDrag)
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
-
-    @pyqtSlot()
-    def on_settings_changed(self):
-        new_page_size = self.get_document_page_size()
-        old_size = self.scene().sceneRect()
-        if old_size != new_page_size:
-            logger.debug("Page size changed. Adjusting PageScene dimensions")
-            self.scene().setSceneRect(new_page_size)
-        self.scene().redraw()
-        if old_size != new_page_size:
-            # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
-            # in the available space or is now too small, so resize the scene to fill the available space.
-            self.on_resize_event_triggered()
