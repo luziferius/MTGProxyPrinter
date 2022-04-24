@@ -38,6 +38,7 @@ __all__ = [
 ]
 
 
+@enum.unique
 class ZoomDirection(enum.Enum):
     IN = enum.auto()
     OUT = enum.auto()
