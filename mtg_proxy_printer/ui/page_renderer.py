@@ -224,6 +224,7 @@ class PageRenderer(QGraphicsView):
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
         self.automatic_scaling = True
+        self.setCursor(Qt.SizeAllCursor)
         self.zoom_in_action = QAction(self)
         self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
         self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
