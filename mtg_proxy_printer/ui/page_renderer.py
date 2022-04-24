@@ -16,9 +16,9 @@
 import enum
 import typing
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
-from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence
+from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush
 
 import pint
 
@@ -32,6 +32,7 @@ unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
 
 __all__ = [
+    "RenderMode",
     "PageScene",
     "PageRenderer",
 ]
@@ -47,6 +48,12 @@ class ZoomDirection(enum.Enum):
         return cls.IN if value else cls.OUT
 
 
+@enum.unique
+class RenderMode(enum.Enum):
+    ON_SCREEN = enum.auto()
+    ON_PAPER = enum.auto()
+
+
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
     IMAGE_WIDTH = 63
@@ -54,12 +61,12 @@ class PageScene(QGraphicsScene):
 
     scene_size_changed = pyqtSignal()
 
-    def __init__(self, document: Document, draw_background: bool, parent: QObject = None):
+    def __init__(self, document: Document, render_mode: RenderMode, parent: QObject = None):
         """
         :param document: The document instance
-        :param draw_background: Boolean. If enabled, draw a white background. By default, the scene is transparent,
-          so a white background is required for on-screen rendering. When printing on PDF or paper, this can be skipped
-        :param scene_rect: Size of the canvas, i.e. page size in pixels
+        :param render_mode: Specifies the render mode.
+          On paper, no background is drawn and cut markers use black.
+          On Screen, a background is drawn using the theme’s background color and a high-contrast color for cut markers.
         :param parent: Optional Qt parent object
         """
         super(PageScene, self).__init__(self.get_document_page_size(document), parent)
@@ -72,8 +79,8 @@ class PageScene(QGraphicsScene):
         self.document.dataChanged.connect(self.on_data_changed)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
-        self.draw_background = draw_background
-        logger.info(f"Created {self.__class__.__name__} instance. Drawing background: {self.draw_background}")
+        self.render_mode = render_mode
+        logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @pyqtSlot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -167,10 +174,11 @@ class PageScene(QGraphicsScene):
             logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
-        if self.draw_background:
-            white = QColor("white")
+        if self.render_mode == RenderMode.ON_SCREEN:
+            color = self.palette().color(QPalette.Active, QPalette.Base)
             logger.debug(f"Drawing background rectangle")
-            self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
+            self.background = self.addRect(0, 0, self.width(), self.height(), color, color)
+        self.setBackgroundBrush(QBrush(QColor("white"), Qt.SolidPattern))
         if self.document.page_layout.draw_cut_markers:
             self._draw_cut_markers()
         self._draw_cards()
@@ -195,7 +203,8 @@ class PageScene(QGraphicsScene):
 
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
-        line_color = QColor("black")
+        line_color = QColor("black") if self.render_mode == RenderMode.ON_PAPER \
+            else self.palette().color(QPalette.Active, QPalette.WindowText)
         logger.info(f"Drawing cut markers")
         self._draw_vertical_markers(line_color)
         self._draw_horizontal_markers(line_color)
@@ -269,10 +278,19 @@ class PageRenderer(QGraphicsView):
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def changeEvent(self, event: QEvent) -> None:
+        logger.debug(f"changeEvent() called. {event.type()=}")
+        if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:
+            self.scene().setPalette(self.palette())
+            self.scene().redraw()
+            event.accept()
+        else:
+            super().changeEvent(event)
+
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(PageScene(document, True, self))
+        self.setScene(PageScene(document, RenderMode.ON_SCREEN, self))
         self.scene().scene_size_changed.connect(self.on_resize_event_triggered)
 
     def _perform_zoom_step(self, direction: ZoomDirection):

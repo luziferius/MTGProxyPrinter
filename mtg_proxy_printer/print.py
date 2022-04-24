@@ -23,7 +23,7 @@ from PyQt5.QtPrintSupport import QPrinter
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.page_renderer import PageScene
+from mtg_proxy_printer.ui.page_renderer import PageScene, RenderMode
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
@@ -93,7 +93,7 @@ class PDFPrinter(QPdfWriter):
         self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
-        self.scene = PageScene(document, False, self)
+        self.scene = PageScene(document, RenderMode.ON_PAPER, self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def print_document(self):
@@ -124,7 +124,7 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.scene = PageScene(document, False, self)
+        self.scene = PageScene(document, RenderMode.ON_PAPER, self)
 
     @pyqtSlot(QPrinter)
     def print_document(self, printer: QPrinter):
