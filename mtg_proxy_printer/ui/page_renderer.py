@@ -13,11 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import enum
 import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
-from PyQt5.QtGui import QColor, QPixmap, QWheelEvent
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
+from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence
+
 import pint
 
 from mtg_proxy_printer.settings import settings
@@ -34,6 +36,14 @@ __all__ = [
     "PageScene",
     "PageRenderer",
 ]
+
+class ZoomDirection(enum.Enum):
+    IN = enum.auto()
+    OUT = enum.auto()
+
+    @classmethod
+    def from_bool(cls, value: bool, /):
+        return cls.IN if value else cls.OUT
 
 
 class PageScene(QGraphicsScene):
@@ -213,6 +223,13 @@ class PageRenderer(QGraphicsView):
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
         self.automatic_scaling = True
+        self.zoom_in_action = QAction(self)
+        self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
+        self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
+        self.zoom_out_action = QAction(self)
+        self.zoom_out_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomOut))
+        self.zoom_out_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.OUT))
+        self.addActions((self.zoom_in_action, self.zoom_out_action))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
@@ -237,21 +254,23 @@ class PageRenderer(QGraphicsView):
         )
         return page_size
 
+    def _perform_zoom_step(self, direction: ZoomDirection):
+        scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9
+        if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
+            return
+        self.automatic_scaling = self.scene_fully_visible(scaling_factor)
+        self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
+        if self.automatic_scaling:
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        else:
+            old_anchor = self.transformationAnchor()
+            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.scale(scaling_factor, scaling_factor)
+            self.setTransformationAnchor(old_anchor)
+
     def wheelEvent(self, event: QWheelEvent) -> None:
         if event.modifiers() & Qt.ControlModifier:
-            scaling_factor = 1.1 if event.angleDelta().y() > 0 else 0.9
-            if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
-                event.accept()
-                return
-            self.automatic_scaling = self.scene_fully_visible(scaling_factor)
-            self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
-            if self.automatic_scaling:
-                self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
-            else:
-                old_anchor = self.transformationAnchor()
-                self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
-                self.scale(scaling_factor, scaling_factor)
-                self.setTransformationAnchor(old_anchor)
+            self._perform_zoom_step(event.angleDelta().y() > 0)
             event.accept()
             return
         super().wheelEvent(event)
