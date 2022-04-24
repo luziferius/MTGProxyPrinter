@@ -9,6 +9,9 @@
 
 ## Changed features
 
+- Improved dark mode and global color theme compatibility: The page preview now follows the systems global color theme.
+  On dark mode, the page background is dark, with light cut marker lines (if enabled).
+  (This does of course *not* affect the print preview, exported PDFs and printed pages.)
 - Card download filters are now filters used to hide printings.
   - Updating the settings no longer requires re-downloading the data from Scryfall.
   - When migrating from older versions, the card data has to be re-downloaded to take advantage of the new capabilities.
