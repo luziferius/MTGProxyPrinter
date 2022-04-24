@@ -231,6 +231,13 @@ class PageRenderer(QGraphicsView):
         self.zoom_out_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomOut))
         self.zoom_out_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.OUT))
         self.addActions((self.zoom_in_action, self.zoom_out_action))
+        self.setToolTip(
+            # TODO Find a better way to handle translation of the Ctrl key in the first line
+            f"Use {QKeySequence('Ctrl+A').toString(QKeySequence.NativeText).split('+')[0]}+Mouse wheel to zoom.\n"
+            f"Usable keyboard shortcuts are:\n"
+            f"Zoom in: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_in_action.shortcuts())}\n"
+            f"Zoom out: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_out_action.shortcuts())}"
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
@@ -264,6 +271,7 @@ class PageRenderer(QGraphicsView):
         if self.automatic_scaling:
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
         else:
+            self.setToolTip("")
             old_anchor = self.transformationAnchor()
             self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
             self.scale(scaling_factor, scaling_factor)
