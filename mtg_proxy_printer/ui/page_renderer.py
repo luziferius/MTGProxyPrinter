@@ -247,9 +247,8 @@ class PageRenderer(QGraphicsView):
     """
     MAX_UI_ZOOM = 16.0
 
-    def __init__(self, parent: QWidget = None, *, render_background: bool = True):
+    def __init__(self, parent: QWidget = None):
         super(PageRenderer, self).__init__(parent=parent)
-        self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
         self.automatic_scaling = True
@@ -273,7 +272,7 @@ class PageRenderer(QGraphicsView):
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(PageScene(document, self.render_background, self))
+        self.setScene(PageScene(document, True, self))
         self.scene().scene_size_changed.connect(self.on_resize_event_triggered)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
