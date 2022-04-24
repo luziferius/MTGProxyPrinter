@@ -85,6 +85,7 @@ passenv =
 setenv = 
    PYTHONDEVMODE = 1
 
+
 [testenv:py3-test_create_bundle-{windows, linux}]
 
 deps =
@@ -104,7 +105,6 @@ commands =
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
 
 
-
 [testenv:py3-package-{windows,linux}]
 
 deps =
@@ -116,7 +116,5 @@ commands =
     python setup_cx_freeze.py build_exe
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
     windows: python setup_cx_freeze.py bdist_msi --skip-build
-
-
 
 """
