@@ -2,6 +2,11 @@
 
 # Next version (in development)
 
+## New features
+
+- The page preview can now be zoomed in for a better card view. Zooming can be triggered using `[Ctrl]+Mouse wheel`,
+  or the platform dependant default zoom keyboard shortcut (`[Ctrl]+[+]` and `[Ctrl]+[-]` on most systems).
+
 ## Changed features
 
 - Card download filters are now filters used to hide printings.

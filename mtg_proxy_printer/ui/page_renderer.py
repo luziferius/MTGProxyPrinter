@@ -12,11 +12,14 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import enum
 import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
-from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
+from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence
+
 import pint
 
 from mtg_proxy_printer.settings import settings
@@ -33,6 +36,15 @@ __all__ = [
     "PageScene",
     "PageRenderer",
 ]
+
+
+class ZoomDirection(enum.Enum):
+    IN = enum.auto()
+    OUT = enum.auto()
+
+    @classmethod
+    def from_bool(cls, value: bool, /):
+        return cls.IN if value else cls.OUT
 
 
 class PageScene(QGraphicsScene):
@@ -204,11 +216,29 @@ class PageRenderer(QGraphicsView):
     """
     This class displays an internally held PageScene instance on screen.
     """
+    MAX_UI_ZOOM = 16.0
+
     def __init__(self, parent: QWidget = None, *, render_background: bool = True):
         super(PageRenderer, self).__init__(parent=parent)
         self.render_background = render_background
         self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
+        self.automatic_scaling = True
+        self.setCursor(Qt.SizeAllCursor)
+        self.zoom_in_action = QAction(self)
+        self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
+        self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
+        self.zoom_out_action = QAction(self)
+        self.zoom_out_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomOut))
+        self.zoom_out_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.OUT))
+        self.addActions((self.zoom_in_action, self.zoom_out_action))
+        self.setToolTip(
+            # TODO Find a better way to handle translation of the Ctrl key in the first line
+            f"Use {QKeySequence('Ctrl+A').toString(QKeySequence.NativeText).split('+')[0]}+Mouse wheel to zoom.\n"
+            f"Usable keyboard shortcuts are:\n"
+            f"Zoom in: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_in_action.shortcuts())}\n"
+            f"Zoom out: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_out_action.shortcuts())}"
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def set_document(self, document: Document):
@@ -233,9 +263,42 @@ class PageRenderer(QGraphicsView):
         )
         return page_size
 
+    def _perform_zoom_step(self, direction: ZoomDirection):
+        scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9
+        if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
+            return
+        self.automatic_scaling = self.scene_fully_visible(scaling_factor)
+        self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
+        if self.automatic_scaling:
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        else:
+            self.setToolTip("")
+            old_anchor = self.transformationAnchor()
+            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.scale(scaling_factor, scaling_factor)
+            self.setTransformationAnchor(old_anchor)
+
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        if event.modifiers() & Qt.ControlModifier:
+            direction = ZoomDirection.from_bool(event.angleDelta().y() > 0)
+            self._perform_zoom_step(direction)
+            event.accept()
+            return
+        super().wheelEvent(event)
+
+    def scene_fully_visible(self, additional_scaling_factor: float = 1.0, /) -> bool:
+        scale = self.transform().m11() * additional_scaling_factor
+        scene_rect = self.sceneRect()
+        content_rect = self.contentsRect()
+        return round(scene_rect.width()*scale) <= content_rect.width() \
+            and round(scene_rect.height()*scale) <= content_rect.height()
+
     @pyqtSlot()
     def on_resize_event_triggered(self):
-        self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        if self.automatic_scaling or self.scene_fully_visible():
+            self.automatic_scaling = True
+            self.setDragMode(QGraphicsView.NoDrag)
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
 
     @pyqtSlot()
     def on_settings_changed(self):
@@ -249,4 +312,3 @@ class PageRenderer(QGraphicsView):
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so resize the scene to fill the available space.
             self.on_resize_event_triggered()
-
