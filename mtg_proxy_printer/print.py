@@ -23,7 +23,7 @@ from PyQt5.QtPrintSupport import QPrinter
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.page_renderer import PageRenderer
+from mtg_proxy_printer.ui.page_renderer import PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
@@ -93,8 +93,7 @@ class PDFPrinter(QPdfWriter):
         self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
-        self.renderer = PageRenderer(parent, render_background=False)
-        self.renderer.set_document(document)
+        self.scene = PageScene(document, False, self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def print_document(self):
@@ -111,10 +110,9 @@ class PDFPrinter(QPdfWriter):
 
         for index in range(first_index, last_index):
             logger.debug(f"Rendering page {index+1}/{self.document.rowCount()}")
-            scene = self.renderer.scene()
-            scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            scene.redraw()
-            scene.render(self.painter)
+            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
+            self.scene.redraw()
+            self.scene.render(self.painter)
             if index + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
         self.painter.end()
@@ -126,8 +124,7 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.renderer = PageRenderer(render_background=False)
-        self.renderer.set_document(document)
+        self.scene = PageScene(document, False, self)
 
     @pyqtSlot(QPrinter)
     def print_document(self, printer: QPrinter):
@@ -137,10 +134,9 @@ class Renderer(QObject):
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")
-            scene = self.renderer.scene()
-            scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            scene.redraw()
-            scene.render(painter)
+            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
+            self.scene.redraw()
+            self.scene.render(painter)
             if index+1 < page_count:
                 printer.newPage()
         painter.end()
