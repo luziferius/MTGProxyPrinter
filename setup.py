@@ -44,7 +44,6 @@ setup_parameters = dict(
     cmdclass={
         'build_py': BuildWithQtResources,
     },
-    test_suite="pytest",
 )
 
 if __name__ == "__main__":
