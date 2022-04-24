@@ -96,7 +96,7 @@ class PageScene(QGraphicsScene):
         size_changed = old_size != new_page_size
         if size_changed:
             logger.debug("Page size changed. Adjusting PageScene dimensions")
-            self.scene().setSceneRect(new_page_size)
+            self.setSceneRect(new_page_size)
         self.redraw()
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
