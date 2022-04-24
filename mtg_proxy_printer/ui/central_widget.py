@@ -104,9 +104,9 @@ class CentralWidget(QWidget):
     def _setup_page_renderer(self, document: Document):
         self.page_renderer: PageRenderer
         self.page_renderer.set_document(document)
-        self.settings_changed.connect(self.page_renderer.on_settings_changed)
+        self.settings_changed.connect(self.page_renderer.scene().on_settings_changed)
         self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
-        document.page_layout_changed.connect(self.page_renderer.on_settings_changed)
+        document.page_layout_changed.connect(self.page_renderer.scene().on_settings_changed)
 
     @pyqtSlot()
     def on_delete_selected_images_button_clicked(self):
