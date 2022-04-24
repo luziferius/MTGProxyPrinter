@@ -37,6 +37,7 @@ __all__ = [
     "PageRenderer",
 ]
 
+
 class ZoomDirection(enum.Enum):
     IN = enum.auto()
     OUT = enum.auto()
@@ -270,7 +271,8 @@ class PageRenderer(QGraphicsView):
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         if event.modifiers() & Qt.ControlModifier:
-            self._perform_zoom_step(event.angleDelta().y() > 0)
+            direction = ZoomDirection.from_bool(event.angleDelta().y() > 0)
+            self._perform_zoom_step(direction)
             event.accept()
             return
         super().wheelEvent(event)
