@@ -258,7 +258,6 @@ class PageRenderer(QGraphicsView):
 
     def __init__(self, parent: QWidget = None):
         super(PageRenderer, self).__init__(parent=parent)
-        self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
         self.automatic_scaling = True
         self.setCursor(Qt.SizeAllCursor)
@@ -276,16 +275,21 @@ class PageRenderer(QGraphicsView):
             f"Zoom in: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_in_action.shortcuts())}\n"
             f"Zoom out: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_out_action.shortcuts())}"
         )
+        self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def changeEvent(self, event: QEvent) -> None:
         logger.debug(f"changeEvent() called. {event.type()=}")
         if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:
+            self._update_background_brush()
             self.scene().setPalette(self.palette())
             self.scene().redraw()
             event.accept()
         else:
             super().changeEvent(event)
+
+    def _update_background_brush(self):
+        self.setBackgroundBrush(self.palette().color(QPalette.Active, QPalette.AlternateBase))
 
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
