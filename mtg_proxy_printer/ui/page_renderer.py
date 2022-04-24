@@ -289,7 +289,7 @@ class PageRenderer(QGraphicsView):
             super().changeEvent(event)
 
     def _update_background_brush(self):
-        self.setBackgroundBrush(self.palette().color(QPalette.Active, QPalette.AlternateBase))
+        self.setBackgroundBrush(self.palette().color(QPalette.Active, QPalette.Window))
 
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
