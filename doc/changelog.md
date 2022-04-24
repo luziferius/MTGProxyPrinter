@@ -21,6 +21,10 @@
   the Scryfall query highlighting the cards affected by the corresponding filter.
 - The document and PDF save path now defaults to the local Documents directory.
 
+## Fixed issues
+
+- Added potentially missing icons to buttons in the document settings dialog.
+
 # Version 0.15.1 (2022-04-13) <a name="v0_15_1"></a>
 
 ## Changed features
