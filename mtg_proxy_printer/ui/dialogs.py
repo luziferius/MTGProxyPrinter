@@ -245,7 +245,7 @@ class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialo
         buttons_with_icons = [
             (QDialogButtonBox.Reset, "edit-undo"),
             (QDialogButtonBox.Save, "document-save"),
-            (QDialogButtonBox.Abort, "dialog-cancel"),
+            (QDialogButtonBox.Cancel, "dialog-cancel"),
             (QDialogButtonBox.RestoreDefaults, "document-revert"),
         ]
         for role, icon in buttons_with_icons:
