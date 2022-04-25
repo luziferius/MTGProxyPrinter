@@ -39,6 +39,7 @@ del get_logger
 
 __all__ = [
     "migrate_card_database",
+    "migrate_card_database_location",
 ]
 
 MigrationScript = typing.Callable[[sqlite3.Connection], None]
@@ -478,6 +479,18 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (23, _migrate_23_to_24),
     (24, _migrate_24_to_25),
 )
+
+
+def migrate_card_database_location():
+    from mtg_proxy_printer.model.carddb import DEFAULT_DATABASE_LOCATION, OLD_DATABASE_LOCATION
+    if DEFAULT_DATABASE_LOCATION.exists() and OLD_DATABASE_LOCATION.exists():
+        logger.warning(f"A card database at both the new location '{DEFAULT_DATABASE_LOCATION}' and the old location "
+                       f"'{OLD_DATABASE_LOCATION}' was found. Doing nothing")
+        return
+    if not DEFAULT_DATABASE_LOCATION.exists() and OLD_DATABASE_LOCATION.exists():
+        logger.info(f"Migrating card database location from '{OLD_DATABASE_LOCATION}' to '{DEFAULT_DATABASE_LOCATION}'")
+        DEFAULT_DATABASE_LOCATION.parent.mkdir(exist_ok=True, parents=True)
+        OLD_DATABASE_LOCATION.rename(DEFAULT_DATABASE_LOCATION)
 
 
 def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationScriptListing = MIGRATION_SCRIPTS):

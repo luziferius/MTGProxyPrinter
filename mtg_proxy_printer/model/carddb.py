@@ -40,9 +40,13 @@ del get_logger
 
 StringList = typing.List[str]
 OptionalString = typing.Optional[str]
-DEFAULT_DATABASE_LOCATION = pathlib.Path(
+OLD_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.app_dirs.data_directories.user_cache_dir,
     "CardDataCache.sqlite3"
+)
+DEFAULT_DATABASE_LOCATION = pathlib.Path(
+    mtg_proxy_printer.app_dirs.data_directories.user_data_dir,
+    "CardDatabase.sqlite3"
 )
 
 try:

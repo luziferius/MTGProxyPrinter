@@ -23,6 +23,7 @@ from PyQt5.QtGui import QIcon
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer import settings
@@ -51,6 +52,7 @@ class Application(QApplication):
         self._setup_icons()
         self.args: Namespace = args
         logger.debug("Opening Database")
+        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
         self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
         self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
