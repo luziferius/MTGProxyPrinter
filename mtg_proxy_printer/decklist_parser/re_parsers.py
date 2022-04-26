@@ -179,6 +179,11 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
     A parser for XMage deck files (file extension ".dck").
     """
+
+    SUPPORTED_FILE_TYPES = {
+        "XMage Deck file": ["dck"]
+    }
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(XMageParser, self).__init__(
             card_db, image_db,

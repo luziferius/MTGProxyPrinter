@@ -127,7 +127,9 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
                         QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
-            selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file")
+            parser: common.ParserBase = self.field("selected_parser")
+            file_extension_filter = parser.get_file_extension_filter()
+            selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file", filter=file_extension_filter)
             self._load_from_file(selected_file)
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
