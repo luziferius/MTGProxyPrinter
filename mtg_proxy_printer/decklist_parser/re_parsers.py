@@ -164,6 +164,12 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     These do not contain much information, only the English card name and count,
     so sets and individual printings have to be guessed.
     """
+
+    SUPPORTED_FILE_TYPES = {
+        # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
+        "Magic Online (MTGO) Deck file": ["dek", "txt"]
+    }
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(MTGOnlineParser, self).__init__(
             card_db, image_db,
