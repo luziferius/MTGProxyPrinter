@@ -45,7 +45,6 @@ __all__ = [
 class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
     should_update_languages = pyqtSignal()
-    window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
     loading_state_changed = pyqtSignal(bool)
 
@@ -111,7 +110,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
-        self.window_size_changed.connect(self.central_widget.window_size_changed)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -173,14 +171,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         progress_bar.hide()
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
-
-    def resizeEvent(self, event: QResizeEvent):
-        super(MainWindow, self).resizeEvent(event)
-        self.window_size_changed.emit()
-
-    def showEvent(self, event: QShowEvent):
-        super(MainWindow, self).showEvent(event)
-        self.window_size_changed.emit()
 
     def closeEvent(self, event: QCloseEvent):
         """

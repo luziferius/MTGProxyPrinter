@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject, pyqtSignal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
-from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush
+from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
 
 import pint
 
@@ -295,7 +295,7 @@ class PageRenderer(QGraphicsView):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
         self.setScene(PageScene(document, RenderMode.ON_SCREEN, self))
-        self.scene().scene_size_changed.connect(self.on_resize_event_triggered)
+        self.scene().scene_size_changed.connect(self.resizeEvent)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
         scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9
@@ -320,16 +320,15 @@ class PageRenderer(QGraphicsView):
             return
         super().wheelEvent(event)
 
+    def resizeEvent(self, event: QResizeEvent = None) -> None:
+        if self.automatic_scaling or self.scene_fully_visible():
+            self.automatic_scaling = True
+            self.setDragMode(QGraphicsView.NoDrag)
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+
     def scene_fully_visible(self, additional_scaling_factor: float = 1.0, /) -> bool:
         scale = self.transform().m11() * additional_scaling_factor
         scene_rect = self.sceneRect()
         content_rect = self.contentsRect()
         return round(scene_rect.width()*scale) <= content_rect.width() \
             and round(scene_rect.height()*scale) <= content_rect.height()
-
-    @pyqtSlot()
-    def on_resize_event_triggered(self):
-        if self.automatic_scaling or self.scene_fully_visible():
-            self.automatic_scaling = True
-            self.setDragMode(QGraphicsView.NoDrag)
-            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)

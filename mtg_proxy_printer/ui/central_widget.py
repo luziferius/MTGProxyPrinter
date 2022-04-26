@@ -43,7 +43,6 @@ __all__ = [
 
 class CentralWidget(QWidget):
 
-    window_size_changed = pyqtSignal()
     settings_changed = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
@@ -105,7 +104,6 @@ class CentralWidget(QWidget):
         self.page_renderer: PageRenderer
         self.page_renderer.set_document(document)
         self.settings_changed.connect(self.page_renderer.scene().on_settings_changed)
-        self.window_size_changed.connect(self.page_renderer.on_resize_event_triggered)
         document.page_layout_changed.connect(self.page_renderer.scene().on_settings_changed)
 
     @pyqtSlot()
@@ -168,10 +166,7 @@ class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_nam
     This layout uses tabs to only show one columnar widget at a time, optimized for very narrow screens, like
     16:9 screens in portrait mode (i.e. 9:16).
     """
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        # The page renderer has to be scaled to fill when it’s tab is activated to ensure it fills the available space.
-        self.tab_widget.currentChanged.connect(lambda _: self.window_size_changed.emit())
+    pass
 
 
 CentralWidgetTypes = typing.Union[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget]
