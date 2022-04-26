@@ -26,6 +26,12 @@
 ## Fixed issues
 
 - Added potentially missing icons to buttons in the document settings dialog.
+- Fixed the incomplete Magic Arena deck list parser.
+  - Added support for the simple and more common card list format that does not specify the exact printing.
+    (I.e. the parser now accept valid entries like `5 Island` instead of only accepting `5 Island (SNC) 265`)
+  - Also recognizes the segment headers that may be present in the deck list, 
+    that are “Deck”, “Commander”, “Companion” and “Sideboard”,
+    and will no longer complain that these are unidentified cards. 
 
 # Version 0.15.1 (2022-04-13) <a name="v0_15_1"></a>
 

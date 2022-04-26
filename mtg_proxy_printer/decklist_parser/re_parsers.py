@@ -163,7 +163,12 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(MTGArenaParser, self).__init__(
             card_db, image_db,
-            re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?"), parent
+            # Matcher for the “name” group must be lazy (.+?) to prevent it from swallowing
+            # the optional set code and collector number up, if present in the line.
+            # Although the format is specified as only allowing two variants, "<copies> <Card name>" and
+            # "<copies> <Card name> (<set>) <collector number>", there are broken implementations that also emit
+            # “<copies> <Card name> (<set>)”. This RE is designed to also parse this invalid variant.
+            re.compile(r"(?P<copies>\d+) (?P<name>.+?)( \((?P<set_code>\w+)\)( (?P<collector_number>.+))?)?$"), parent
         )
 
 
