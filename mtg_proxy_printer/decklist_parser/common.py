@@ -35,6 +35,8 @@ ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 class ParserBase(QObject):
 
+    SUPPORTED_FILE_TYPES: typing.Dict[str, typing.List[str]] = {}
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(ParserBase, self).__init__(parent)
         self.card_db = card_db
@@ -46,6 +48,15 @@ class ParserBase(QObject):
             mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
                 "prefer-already-downloaded"
             )
+
+    def get_file_extension_filter(self) -> str:
+        everything = "All files (*)"
+        if not self.SUPPORTED_FILE_TYPES:
+            return everything
+        return ";;".join(
+            f'{name} (.*{" .*".join(extensions)})'
+            for name, extensions in self.SUPPORTED_FILE_TYPES.items()
+        ) + f";;{everything}"
 
     def parse_deck(self, deck: str,
                    print_guessing: bool,

@@ -41,6 +41,10 @@ class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
 
+    SUPPORTED_FILE_TYPES = {
+        "CSV-Document": ["csv"]
+    }
+
     def parse_deck_without_translation(self, deck_list: str,
                                        print_guessing: bool) -> ParsedDeck:
         deck = collections.Counter()

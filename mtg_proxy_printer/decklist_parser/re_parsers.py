@@ -46,6 +46,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
         "copies", "language", "set_code", "collector_number", "scryfall_id", "name"
     ))
 
+    LINES_TO_SKIP = frozenset()
+
     def __init__(
             self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
             parent: QObject = None):
@@ -130,14 +132,13 @@ class GenericRegularExpressionDeckParser(ParserBase):
             name = name.split("//")[0].rstrip()
         return name
 
-    @staticmethod
-    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
         """
         Split the input deck list into individual lines, omitting empty lines.
         Subclasses can overwrite this method to provide custom filtering for unrelated meta-data.
         """
         for line in deck_list.splitlines():
-            if line:
+            if line and line not in self.LINES_TO_SKIP:
                 yield line
 
 
@@ -145,17 +146,25 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
+    SUPPORTED_FILE_TYPES = {
+        # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
+        # XMage also lists the .mtga suffix, so add that too.
+        "Magic Arena deck file": ["txt", "mtga"]
+    }
+    
+    # The deck segment headers seem inconsistent across different sites
+    LINES_TO_SKIP = frozenset((
+        # Moxfield uses only the capital SIDEBOARD: with colon, nothing else
+        "SIDEBOARD:",
+        # MTGGoldfish, mtgazone.com and others indicate that these headers are valid
+        "Deck", "Commander", "Sideboard", "Companion",
+    ))
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(MTGArenaParser, self).__init__(
             card_db, image_db,
             re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?"), parent
         )
-
-    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
-        # Skip emtpy lines and the Sideboard marker
-        for line in super(MTGArenaParser, self).line_splitter(deck_list):
-            if line != "SIDEBOARD:":
-                yield line
 
 
 class MTGOnlineParser(GenericRegularExpressionDeckParser):
@@ -164,6 +173,12 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     These do not contain much information, only the English card name and count,
     so sets and individual printings have to be guessed.
     """
+
+    SUPPORTED_FILE_TYPES = {
+        # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
+        "Magic Online (MTGO) deck file": ["dek", "txt"],
+    }
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(MTGOnlineParser, self).__init__(
             card_db, image_db,
@@ -179,6 +194,11 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
     A parser for XMage deck files (file extension ".dck").
     """
+
+    SUPPORTED_FILE_TYPES = {
+        "XMage Deck file": ["dck"],
+    }
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(XMageParser, self).__init__(
             card_db, image_db,
@@ -186,7 +206,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
-        # Skip emtpy lines, the deck name, if set, and the deck/sideboard layout
-        for line in super(XMageParser, self).line_splitter(deck_list):
+        # Skip the deck name, if set, and the deck/sideboard layout
+        for line in super().line_splitter(deck_list):
             if not line.startswith("NAME") and not line.startswith("LAYOUT"):
                 yield line
