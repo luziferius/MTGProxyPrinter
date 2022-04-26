@@ -325,6 +325,8 @@ class PageRenderer(QGraphicsView):
             self.automatic_scaling = True
             self.setDragMode(QGraphicsView.NoDrag)
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        if event is not None:
+            super().resizeEvent(event)
 
     def scene_fully_visible(self, additional_scaling_factor: float = 1.0, /) -> bool:
         scale = self.transform().m11() * additional_scaling_factor
