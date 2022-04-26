@@ -146,6 +146,12 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
+    SUPPORTED_FILE_TYPES = {
+        # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
+        # XMage also lists the .mtga suffix, so add that too.
+        "Magic Arena deck file": ["txt", "mtga"]
+    }
+    
     # The deck segment headers seem inconsistent across different sites
     LINES_TO_SKIP = frozenset((
         # Moxfield uses only the capital SIDEBOARD: with colon, nothing else
