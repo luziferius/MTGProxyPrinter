@@ -81,7 +81,7 @@ class CardInfoDownloader(QObject):
     is run asynchronously in another thread.
     """
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
+    download_begins = pyqtSignal(int, str)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = pyqtSignal(bool)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
@@ -184,7 +184,7 @@ class CardInfoDownloadWorker(DownloaderBase):
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")
-        source, monitor = self.read_from_url(url)
+        source, monitor = self.read_from_url(url, "Updating card data from Scryfall:")
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
             yield from ijson.items(source, json_path)
