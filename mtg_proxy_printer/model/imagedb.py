@@ -90,7 +90,7 @@ class ImageDatabase(QObject):
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
 
-    card_download_starting = pyqtSignal(int)
+    card_download_starting = pyqtSignal(int, str)
     card_download_finished = pyqtSignal()
     card_download_progress = pyqtSignal(int)
     # Emitted when image retrieval for a to-be-added card completes
@@ -336,7 +336,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
         download_uri = card.image_uri
         download_path = self.image_database.db_path / target_path.name
-        source, metered_source = self.read_from_url(download_uri)
+        source, metered_source = self.read_from_url(download_uri, f"Downloading image for card '{card.name}'")
         metered_source.total_bytes_processed.connect(self.download_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,

@@ -54,13 +54,15 @@ class MeteredSeekableHTTPFile(QObject):
     In this case, linear reading with progress reports can still be performed.
     """
 
-    io_begin = pyqtSignal(int)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
+    io_begin = pyqtSignal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
     io_finished = pyqtSignal()  # Emitted in __exit__, when the file is closed
     total_bytes_processed = pyqtSignal(int)  # Emitted after each read chunk, carries the total number of bytes read
 
-    def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *, retry_limit: int = 10):
+    def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *,
+                 ui_hint: str = "", retry_limit: int = 10):
         super(MeteredSeekableHTTPFile, self).__init__(parent)
         self.retry_limit = retry_limit
+        self.ui_hint = ui_hint
         self.url = url
         self.headers = {} if headers is None else headers
         self.file = None  # _urlopen() internally accesses file, so this assignment has to stay here
@@ -82,7 +84,7 @@ class MeteredSeekableHTTPFile(QObject):
         return None
 
     def __enter__(self):
-        self.io_begin.emit(self.content_length)
+        self.io_begin.emit(self.content_length, self.ui_hint)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
