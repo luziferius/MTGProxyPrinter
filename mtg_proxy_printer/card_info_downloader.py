@@ -199,7 +199,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         url = self.get_scryfall_bulk_card_data_url(self.requested_item)
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
-        monitor = self._open_url(url)
+        monitor = self._open_url(url, "Downloadng card data:")
         monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
