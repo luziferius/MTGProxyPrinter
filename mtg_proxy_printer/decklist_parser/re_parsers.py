@@ -51,7 +51,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
     def __init__(
             self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
             parent: QObject = None):
-        super(GenericRegularExpressionDeckParser, self).__init__(card_db, image_db, parent)
+        super().__init__(card_db, image_db, parent)
         self.parser = regular_expression \
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
@@ -161,7 +161,7 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     ))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(MTGArenaParser, self).__init__(
+        super().__init__(
             card_db, image_db,
             # Matcher for the “name” group must be lazy (.+?) to prevent it from swallowing
             # the optional set code and collector number up, if present in the line.
@@ -185,7 +185,7 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(MTGOnlineParser, self).__init__(
+        super().__init__(
             card_db, image_db,
             re.compile(r"(?P<copies>\d+) (?P<name>.+)"), parent
         )
@@ -205,7 +205,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(XMageParser, self).__init__(
+        super().__init__(
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
         )
