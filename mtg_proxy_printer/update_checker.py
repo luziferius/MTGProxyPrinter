@@ -183,6 +183,7 @@ class UpdateChecker(QObject):
 
     def _create_background_worker(self, card_db: CardDatabase, thread_to_use: QThread) -> BackgroundWorker:
         worker = BackgroundWorker(card_db)
+        worker.moveToThread(thread_to_use)
         thread_to_use.started.connect(worker.on_thread_started)
         worker.card_data_update_found.connect(self.card_data_update_found)
         worker.application_update_found.connect(self.application_update_found)
@@ -190,7 +191,6 @@ class UpdateChecker(QObject):
         worker.network_error_occurred.connect(self.network_error_occurred)
         self._card_update_check_requested.connect(worker.perform_card_data_update_check)
         self._application_update_check_requested.connect(worker.perform_application_update_check)
-        worker.moveToThread(thread_to_use)
         return worker
 
     def _on_job_completed(self):

@@ -319,7 +319,6 @@ class CardInfoDownloadWorker(DownloaderBase):
         return new_face_ids
 
 
-
 def _clear_lru_caches():
     """
     Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
