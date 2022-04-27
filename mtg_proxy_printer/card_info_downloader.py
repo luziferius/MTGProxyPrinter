@@ -292,7 +292,9 @@ class CardInfoDownloadWorker(DownloaderBase):
                 logger.debug(f"Imported {index} cards.")
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
-        self.model.store_current_printing_filters(False, force_update_hidden_column=True)
+        self.download_begins.emit(5, "Processing card filters")
+        self.model.store_current_printing_filters(
+            False, force_update_hidden_column=True, progress_signal=self.download_progress.emit)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\
