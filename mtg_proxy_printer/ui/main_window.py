@@ -19,7 +19,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
 from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
 
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -60,6 +60,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         self.card_data_download_in_progress = False
         self.setupUi(self)
         self.about_dialog = self._create_about_dialog()
+        self.progress_label = self._create_progress_label()
         self.progress_bar = self._create_progress_bar()
         self.card_database = card_db
         self.image_db = image_db
@@ -135,7 +136,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
-        downloader.download_finished.connect(self.progress_bar.hide)
+        downloader.download_finished.connect(self.hide_progress_bar)
         downloader.working_state_changed.connect(self.loading_state_changed)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
         downloader.other_error_occurred.connect(self.on_error_occurred)
@@ -161,10 +162,15 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
         image_db.card_download_starting.connect(self.show_progress_bar)
-        image_db.card_download_finished.connect(self.progress_bar.hide)
+        image_db.card_download_finished.connect(self.hide_progress_bar)
         image_db.card_download_progress.connect(self.progress_bar.setValue)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
+
+    def _create_progress_label(self):
+        progress_label = QLabel(self)
+        self.statusBar().addPermanentWidget(progress_label)
+        return progress_label
 
     def _create_progress_bar(self):
         progress_bar = QProgressBar(self)
@@ -294,10 +300,18 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self.action_download_card_data.trigger()
 
     @pyqtSlot(int)
-    def show_progress_bar(self, expected_total_item_count: int):
+    @pyqtSlot(int, str)
+    def show_progress_bar(self, expected_total_item_count: int, message: str = ""):
+        self.progress_label.setText(message)
         self.progress_bar.reset()
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
+
+    @pyqtSlot()
+    def hide_progress_bar(self):
+        self.progress_label.clear()
+        self.progress_bar.reset()
+        self.progress_bar.hide()
 
     @pyqtSlot()
     def on_action_save_document_triggered(self):

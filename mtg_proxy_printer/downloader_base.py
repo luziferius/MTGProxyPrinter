@@ -34,14 +34,14 @@ class DownloaderBase(QObject):
     other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
+    download_begins = pyqtSignal(int, str)  # Emitted when the download starts. Data represents the expected total data
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
 
-    def read_from_url(self, url: str):
+    def read_from_url(self, url: str, ui_hint: str = ""):
         """
         Reads a given URL and returns a file-like object that can and should be used as a context manager.
         """
-        monitor = self._open_url(url)
+        monitor = self._open_url(url, ui_hint)
         encoding = monitor.content_encoding()
         if encoding == "gzip":
             data = gzip.open(monitor, "rb")
@@ -51,9 +51,9 @@ class DownloaderBase(QObject):
             raise RuntimeError(f"Server returned unsupported encoding: {encoding}")
         return data, monitor
 
-    def _open_url(self, url: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
+    def _open_url(self, url: str, ui_hint: str) -> mtg_proxy_printer.http_file.MeteredSeekableHTTPFile:
         headers = {"Accept-Encoding": ", ".join(supported_encodings)}
-        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self)
+        response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
         response.total_bytes_processed.connect(self.download_progress)

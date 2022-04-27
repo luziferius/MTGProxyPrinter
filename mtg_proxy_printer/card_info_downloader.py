@@ -81,7 +81,7 @@ class CardInfoDownloader(QObject):
     is run asynchronously in another thread.
     """
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
+    download_begins = pyqtSignal(int, str)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = pyqtSignal(bool)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
@@ -184,7 +184,7 @@ class CardInfoDownloadWorker(DownloaderBase):
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")
-        source, monitor = self.read_from_url(url)
+        source, monitor = self.read_from_url(url, "Updating card data from Scryfall:")
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
             yield from ijson.items(source, json_path)
@@ -199,7 +199,7 @@ class CardInfoDownloadWorker(DownloaderBase):
         url = self.get_scryfall_bulk_card_data_url(self.requested_item)
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
-        monitor = self._open_url(url)
+        monitor = self._open_url(url, "Downloadng card data:")
         monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
@@ -292,7 +292,9 @@ class CardInfoDownloadWorker(DownloaderBase):
                 logger.debug(f"Imported {index} cards.")
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
-        self.model.store_current_printing_filters(False, force_update_hidden_column=True)
+        self.download_begins.emit(5, "Processing card filters")
+        self.model.store_current_printing_filters(
+            False, force_update_hidden_column=True, progress_signal=self.download_progress.emit)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\

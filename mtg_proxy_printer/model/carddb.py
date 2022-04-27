@@ -672,7 +672,10 @@ class CardDatabase:
         return result
 
     @profile
-    def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False):
+    def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
+                                       progress_signal = None):
+        if progress_signal is None:
+            progress_signal = (lambda _: None)
         section = mtg_proxy_printer.settings.settings["card-filter"]
         if use_transaction:
             self.db.execute("BEGIN TRANSACTION;\n")
@@ -690,8 +693,9 @@ class CardDatabase:
                     """),
                 ((key, section.getboolean(key)) for key in section.keys())
             )
+            progress_signal(1)
         if filters_need_update or old_filter_removed or force_update_hidden_column:
-            self._update_cached_data()
+            self._update_cached_data(progress_signal)
         if use_transaction:
             self.db.commit()
 
@@ -719,7 +723,7 @@ class CardDatabase:
         return bool(old_filters)
 
     @profile
-    def _update_cached_data(self):
+    def _update_cached_data(self, progress_signal):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing
@@ -729,6 +733,7 @@ class CardDatabase:
               AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
         ;
         """))
+        progress_signal(2)
         logger.debug("Update the FaceName.is_hidden column")
         self.db.execute(cached_dedent("""\
         WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (
@@ -750,6 +755,7 @@ class CardDatabase:
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
         """))
+        progress_signal(3)
         logger.debug("Update the RemovedPrintings table")
         self.db.execute(cached_dedent("""\
         DELETE FROM RemovedPrintings
@@ -759,6 +765,8 @@ class CardDatabase:
             WHERE Printing.is_hidden IS FALSE
           )
         """))
+
+        progress_signal(4)
         self.db.execute(cached_dedent("""\
         INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
           SELECT DISTINCT scryfall_id, language, oracle_id
@@ -773,4 +781,5 @@ class CardDatabase:
                 FROM RemovedPrintings AS rp
               )
         """))
+        progress_signal(5)
         logger.debug("Finished maintenance tasks.")
