@@ -99,12 +99,10 @@ class KnownCardRow:
             data = self.size
         elif column == KnownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.scryfall_id
-        elif column == KnownCardColumns.FilesystemPath and role == Qt.DisplayRole:
+        elif column == KnownCardColumns.FilesystemPath and role in {Qt.DisplayRole, Qt.ToolTipRole}:
             data = str(self.path)
         elif column == KnownCardColumns.FilesystemPath and role == Qt.EditRole:
             data = self.path
-        elif column == KnownCardColumns.FilesystemPath and role == Qt.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path)
         else:
             data = None
         return data
@@ -194,6 +192,8 @@ class UnknownCardRow:
     def data(self, column: int, role: int):
         if column == UnknownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.scryfall_id
+        elif column == UnknownCardColumns.ScryfallId and role == Qt.ToolTipRole:
+            data = get_image_for_tooltip_display(self.path)
         elif column == UnknownCardColumns.IsFront and role == Qt.DisplayRole:
             data = "Front" if self.is_front else "Back"
         elif column == UnknownCardColumns.IsFront and role == Qt.EditRole:
@@ -206,12 +206,10 @@ class UnknownCardRow:
             data = format_size(self.size)
         elif column == UnknownCardColumns.Size and role == Qt.EditRole:
             data = self.size
-        elif column == UnknownCardColumns.FilesystemPath and role == Qt.DisplayRole:
+        elif column == UnknownCardColumns.FilesystemPath and role in {Qt.DisplayRole, Qt.ToolTipRole}:
             data = str(self.path)
         elif column == UnknownCardColumns.FilesystemPath and role == Qt.EditRole:
             data = self.path
-        elif column == UnknownCardColumns.FilesystemPath and role == Qt.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path)
         else:
             data = None
         return data
