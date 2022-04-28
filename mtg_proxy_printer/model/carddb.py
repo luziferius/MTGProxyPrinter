@@ -726,7 +726,7 @@ class CardDatabase:
     def _update_cached_data(self, progress_signal):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
-        UPDATE Printing
+        UPDATE Printing    -- _update_cached_data()
             SET is_hidden = HiddenPrintings.should_be_hidden
             FROM HiddenPrintings
             WHERE Printing.printing_id = HiddenPrintings.printing_id
@@ -736,16 +736,16 @@ class CardDatabase:
         progress_signal(2)
         logger.debug("Update the FaceName.is_hidden column")
         self.db.execute(cached_dedent("""\
-        WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (
+        WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (    -- _update_cached_data()
           -- A FaceName should be hidden, iff all uses by printings are hidden,
           -- i.e. the total use count is equal to the hidden use count
           SELECT face_name_id, COUNT() = sum(Printing.is_hidden) AS should_be_hidden
           FROM Printing
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
-          -- Also group by language_id, because there may be actual name conflicts across languages.
-          -- But practically, some non-English cards are listed using their English name, because the information is
-          -- unavailable. So these corner cases are caught by including the language_id.
+          -- Also group by language_id, because there are actual name conflicts across languages.
+          -- Additionally, some non-English cards are listed using their English name, because the information is
+          -- unavailable. So these cases are caught by including the language_id.
           GROUP BY card_name, language_id
         )
         UPDATE FaceName
@@ -758,17 +758,20 @@ class CardDatabase:
         progress_signal(3)
         logger.debug("Update the RemovedPrintings table")
         self.db.execute(cached_dedent("""\
-        DELETE FROM RemovedPrintings
+        DELETE FROM RemovedPrintings    -- _update_cached_data()
           WHERE scryfall_id IN (
             SELECT Printing.scryfall_id
             FROM Printing
             WHERE Printing.is_hidden IS FALSE
-          )
+          );
         """))
 
         progress_signal(4)
+        # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
+        # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
+        # than the current method that only inserts missing rows.
         self.db.execute(cached_dedent("""\
-        INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
+        INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)    -- _update_cached_data()
           SELECT DISTINCT scryfall_id, language, oracle_id
             FROM Printing
             JOIN Card USING (card_id)
@@ -779,7 +782,7 @@ class CardDatabase:
               AND scryfall_id NOT IN (
                 SELECT rp.scryfall_id
                 FROM RemovedPrintings AS rp
-              )
+              );
         """))
         progress_signal(5)
         logger.debug("Finished maintenance tasks.")
