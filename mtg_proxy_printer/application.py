@@ -62,16 +62,9 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
-            self.language_model, self.document, self.main_window)
-        self.settings_window.saved.connect(self.main_window.settings_changed)
-        self.settings_window.requested_card_download.connect(self.card_info_downloader.request_download_to_file)
-        self.settings_window.long_running_process_begins.connect(self.main_window.show_progress_bar)
-        self.settings_window.process_updated.connect(self.main_window.progress_bar.setValue)
-        self.settings_window.process_finished.connect(self.main_window.hide_progress_bar)
-        self.settings_window.error_occurred.connect(self.main_window.on_error_occurred)
-        self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self.settings_window = self._create_settings_window(
+            self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
         if args.test_exit_on_launch:
             logger.info("Enqueue application exit to run when event loop starts.")
@@ -88,6 +81,22 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    @staticmethod
+    def _create_settings_window(
+            language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
+            main_window: mtg_proxy_printer.ui.main_window.MainWindow,
+            card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader):
+        settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
+            language_model, document, main_window)
+        settings_window.saved.connect(main_window.settings_changed)
+        settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
+        settings_window.long_running_process_begins.connect(main_window.show_progress_bar)
+        settings_window.process_updated.connect(main_window.progress_bar.setValue)
+        settings_window.process_finished.connect(main_window.hide_progress_bar)
+        settings_window.error_occurred.connect(main_window.on_error_occurred)
+        main_window.action_show_settings.triggered.connect(settings_window.show)
+        return settings_window
 
     def _create_document_instance(
             self,
