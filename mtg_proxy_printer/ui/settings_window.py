@@ -18,11 +18,12 @@ import configparser
 import functools
 import logging
 import pathlib
+import sqlite3
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl, QStandardPaths
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton
+    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
@@ -131,10 +132,14 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
     """Implements the Settings window."""
     saved = pyqtSignal()
+    error_occurred = pyqtSignal(str)
     requested_card_download = pyqtSignal(pathlib.Path)
+    long_running_process_begins = pyqtSignal(int, str)
+    process_updated = pyqtSignal(int)
+    process_finished = pyqtSignal()
 
-    def __init__(self, language_model: QStringListModel, document: Document,  *args, **kwargs):
-        super(SettingsWindow, self).__init__(*args, **kwargs)
+    def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
+        super().__init__(parent)
         self.setupUi(self)
         self.language_model = language_model
         self.document = document
@@ -155,6 +160,12 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
 
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def filter_update_progress_monitor(self, step: int):
+        self.process_updated.emit(step)
+        # Required here, because it is running synchronously in the main thread
+        # Because the main window UI is largely disabled, this should pose no real harm
+        QApplication.instance().processEvents()
 
     def _setup_button_box(self):
         self.button_box: QDialogButtonBox
@@ -354,7 +365,14 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         section = mtg_proxy_printer.settings.settings["card-filter"]
         self.card_filter_general_settings.save_settings(section)
         self.card_filter_format_settings.save_settings(section)
-        self.card_db.store_current_printing_filters()
+        try:
+            self.long_running_process_begins.emit(5, "Processing updated card filters:")
+            self.card_db.store_current_printing_filters(progress_signal=self.filter_update_progress_monitor)
+        except sqlite3.Error as e:
+            self.error_occurred.emit(e.sqlite_errorname)
+            raise e
+        finally:
+            self.process_finished.emit()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
