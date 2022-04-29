@@ -160,6 +160,7 @@ def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expec
             "german_basic_Forest",
             "spanish_basic_Forest",
             "german_Duress",
+            "korean_Forest_with_placeholder_name"
         ],
     )
     assert_that(

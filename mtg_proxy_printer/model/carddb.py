@@ -460,6 +460,9 @@ class CardDatabase:
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             WHERE card_name LIKE ?
+            -- Assume English by default to not match other languages in case their entry misses the proper
+            -- localisation and uses the English name as a fallback.
+            ORDER BY "language" = 'en' DESC;
         ''')
         return self._read_optional_scalar_from_db(query, (name,))
 
