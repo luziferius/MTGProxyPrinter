@@ -673,7 +673,7 @@ class CardDatabase:
 
     @profile
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
-                                       progress_signal = None):
+                                       progress_signal: typing.Callable[[int], None] = None):
         if progress_signal is None:
             progress_signal = (lambda _: None)
         section = mtg_proxy_printer.settings.settings["card-filter"]
@@ -723,7 +723,7 @@ class CardDatabase:
         return bool(old_filters)
 
     @profile
-    def _update_cached_data(self, progress_signal):
+    def _update_cached_data(self, progress_signal: typing.Callable[[int], None]):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
