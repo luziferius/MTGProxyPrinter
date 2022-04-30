@@ -105,7 +105,8 @@ class ScryfallCSVParser(BaseCSVParser):
         elif guess_printing:
             logger.debug(f"Card not identified. Try guessing a printing")
             english_name = line["name"]
-            card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+            card_name = english_name if language == "en" else self.card_db.translate_card_name(
+                CardIdentificationData("en", english_name, scryfall_id=scryfall_id))
             card_data = CardIdentificationData(
                 language, card_name, line["set_code"], line["collector_number"]
             )
@@ -157,13 +158,14 @@ class TappedOutCSVParser(BaseCSVParser):
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         cards = collections.Counter()
         language = self._read_language(line)
+        set_code = self._read_set_code(line)
         english_name = line["Name"]
-        card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+        card_name = self.card_db.translate_card_name(
+            CardIdentificationData("en", english_name, set_code), language) if language != "en" else english_name
         if english_name and not card_name:
             # Unable to translate card. Missing localized card data? Defaulting to English
             card_name = english_name
             language = "en"
-        set_code = line["Printing"].lower()  # TappedOut uses upper case set codes, so convert to lower case
         count = int(line["Qty"])  # Quantity (Qty) contains the number of copies
         # The current CSV format (2021-02) does not include the collector number, so no way to identify special
         # printings inside larger sets
@@ -175,6 +177,14 @@ class TappedOutCSVParser(BaseCSVParser):
         elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
             self._add_card_to_deck(cards, result[0], count)
         return cards
+
+    @staticmethod
+    def _read_set_code(line: typing.Dict[str, str]) -> typing.Optional[str]:
+        set_code = line.get("Printing")
+        if set_code:
+            # TappedOut uses upper case set codes, so convert to lower case
+            set_code = set_code.lower()
+        return set_code
 
     def _read_language(self, line: typing.Dict[str, str]):
         try:

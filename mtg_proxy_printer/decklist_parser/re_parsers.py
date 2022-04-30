@@ -73,6 +73,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 if self.card_db.is_valid_and_unique_card(matched_card):
                     self._add_matched_card(cards, matched_card, copies)
                 elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
+                    # Some sources have invalid collector numbers. So try again without that.
                     self._add_matched_card(cards, matched_card, copies)
                 elif print_guessing and (guessed_card := self.guess_printing(matched_card)) is not None:
                     self._add_card_to_deck(cards, guessed_card, copies)

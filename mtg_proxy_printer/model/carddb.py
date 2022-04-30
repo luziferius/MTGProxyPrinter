@@ -479,41 +479,50 @@ class CardDatabase:
         return bool(self._read_optional_scalar_from_db(query, (language,)))
 
     @profile
-    def translate_card_name(self, name: str, target_language: str, source_language: str = None) -> OptionalString:
+    def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
         """
-        Translates a card from a source language into the target_language.
-        If the source language is not given, try to guess it, or use English, if that also fails.
+        Translates a card into the target_language. If the source language in the card data is not given,
+        try to guess it, or use English, if that also fails.
 
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        # Implementation note: This approach using a subquery performs better than a
-        # self-join of AllPrintings USING(oracle_id) for cards with many reprints, like basic lands.
-        # On a populated database (of February 2021), using this query to translate a Forest to "de" takes 20ms,
-        # while the self-join of AllPrintings takes full 6 seconds.
-        if not source_language:
-            source_language = self.guess_language_from_name(name) or "en"
+        source_language = card_data.language or self.guess_language_from_name(card_data.name) or "en"
+        # Implementation note: First two parameters may be None/NULL and can be used as a disambiguation in case
+        # that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
+        # the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
+        # So given “Zwang” in German without further context, it may mean one of two cards.
+        # So if no context is given, this query performs a majority vote, because that is the most likely expected
+        # result. But if context is given, either by the scryfall id or the set code, the exact, set-specific
+        # translation is returned.
         query = cached_dedent("""\
-        SELECT DISTINCT card_name -- translate_card_name()
+        WITH source_oracle_id (oracle_id, face_number, likeliness) AS ( -- translate_card_name()
+            SELECT oracle_id, face_number, (
+                SELECT count() FROM Card)
+                  * (ifnull(scryfall_id = ?, 0)
+                     OR ifnull("set" = ?, 0))
+                  + count(oracle_id) AS likeliness
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             JOIN CardFace USING (face_name_id)
             JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND FaceName.is_hidden IS FALSE
-              AND "language" = ?
-              AND (oracle_id, face_number) IN (
-                SELECT oracle_id, face_number
-                FROM FaceName
-                JOIN PrintLanguage USING(language_id)
-                JOIN CardFace USING (face_name_id)
-                JOIN Printing USING (printing_id)
-                JOIN Card USING (card_id)
-                WHERE card_name = ? AND "language" = ?
-                LIMIT 1
+            JOIN "Set" USING (set_id)
+            WHERE card_name = ? AND "language" = ?
+            GROUP BY oracle_id, face_number
             )
+        SELECT card_name, count(card_name), likeliness
+          FROM source_oracle_id
+          JOIN AllPrintings USING (oracle_id, face_number)
+          WHERE language = ?
+          GROUP BY card_name
+          ORDER BY likeliness DESC
+          LIMIT 1
+        ;
         """)
-        return self._read_optional_scalar_from_db(query, (target_language, name, source_language))
+        return self._read_optional_scalar_from_db(
+            query,
+            (card_data.scryfall_id, card_data.set_code, card_data.name, source_language, target_language)
+        )
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():

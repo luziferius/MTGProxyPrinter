@@ -216,6 +216,9 @@ def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected
     ("Bosque", "en", "wrong source", None),
     ("Wald", "de", "wrong source", None),
     ("Bosque", "es", "wrong source", None),
+
+    ("Zwang", "en", None, "Duress"),
+    ("Zwang", "en", "de", "Duress"),
 ])
 def test_translate_card_name(
         qtbot, card_db: CardDatabase, source_name: str, target_language: str,
@@ -233,10 +236,11 @@ def test_translate_card_name(
             "german_basic_Forest",
             "spanish_basic_Forest",
             "german_Duress",
+            "german_Duress_2",
         ],
     )
     assert_that(
-        card_db.translate_card_name(source_name, target_language, source_language),
+        card_db.translate_card_name(CardIdentificationData(source_language, source_name), target_language),
         is_(equal_to(expected))
     )
 
@@ -398,11 +402,11 @@ def test_translate_double_faced_card(qtbot, card_db: CardDatabase, front: bool):
     english_card = card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", front)
     non_english_card = card_db.get_card_with_scryfall_id("000847d3-ebde-4580-a00e-61d501e99485", front)
     assert_that(
-        card_db.translate_card_name(non_english_card.name, english_card.language),
+        card_db.translate_card_name(CardIdentificationData(name=non_english_card.name), english_card.language),
         is_(equal_to(english_card.name))
     )
     assert_that(
-        card_db.translate_card_name(english_card.name, non_english_card.language),
+        card_db.translate_card_name(CardIdentificationData(name=english_card.name), non_english_card.language),
         is_(equal_to(non_english_card.name))
     )
 
