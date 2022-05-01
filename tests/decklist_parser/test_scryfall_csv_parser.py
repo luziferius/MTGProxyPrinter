@@ -96,3 +96,27 @@ def test_card_identification_works_in_simple_cases(
                 is_(empty())
             )
         )
+
+@pytest.mark.parametrize(
+    "cards_to_import, deck_list", [
+    (
+        ["english_basic_Forest"],
+        append_to_header(
+        "columna,invalid_count,Forest,"",Basic Land — Forest,Arena Beginner Set,anb,112,en,common,Jonas De Ro,false,0.06,0.01,"
+        "0.01,https://scryfall.com/card/anb/112/forest,7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"),
+    ),
+    ]
+)
+def test_line_with_invalid_count_is_added_to_invalid_lines(
+        qtbot, card_db, image_db, cards_to_import: StringList,  deck_list: str,):
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import)
+    parser = ScryfallCSVParser(card_db, image_db)
+    assert_that(
+        parser.parse_deck(deck_list, False, False, None),
+        contains_exactly(
+            is_(empty()),
+            contains_exactly(
+                deck_list.splitlines()[-1]
+            )
+        )
+    )

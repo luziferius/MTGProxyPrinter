@@ -52,7 +52,11 @@ class BaseCSVParser(ParserBase):
         for source, line in self._read_lines_from_csv(deck_list):
             if self.should_skip_entry(line):
                 continue
-            cards = self.parse_cards_from_line(line, print_guessing)
+            try:
+                cards = self.parse_cards_from_line(line, print_guessing)
+            except ValueError:
+                unmatched_lines.append(source)
+                continue
             if cards:
                 deck.update(cards)
             else:
