@@ -171,6 +171,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_gui_section(read_settings["gui"])
     _validate_debug_section(read_settings["debug"])
     _validate_print_guessing_section(read_settings["print-guessing"])
+    _validate_default_save_paths_section(read_settings["default-save-paths"])
 
 
 def _validate_card_filter_section(section: configparser.SectionProxy):
@@ -253,6 +254,20 @@ def _validate_print_guessing_section(section: configparser.SectionProxy):
     defaults = DEFAULT_SETTINGS["print-guessing"]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
+
+
+def _validate_default_save_paths_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["default-save-paths"]
+    for key in section.keys():
+        _validate_path_to_directory(section, defaults, key)
+
+
+def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
+        if not pathlib.Path(section[key]).resolve().is_dir():
+            raise ValueError
+    except Exception:
+        _restore_default(section, defaults, key)
 
 
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
