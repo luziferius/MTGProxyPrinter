@@ -5,7 +5,7 @@ pint
 appdirs >= 1.4.3
 ijson >= 3.1.0
 delegateto == 1.5
-PyHamcrest >= 1.8.1
+#PyHamcrest >= 1.8.1
 
 # Development, testing and build dependencies
 cx_Freeze >= 6.6
@@ -14,7 +14,7 @@ pytest
 pytest-cov
 pytest-timeout
 pytest-qt >= 2.0
-PyHamcrest >= 1.8.1
+PyHamcrest >= 2
 PyQt5-stubs
 sip
 build
