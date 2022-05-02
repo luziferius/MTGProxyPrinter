@@ -277,6 +277,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
             (self.document_save_path, "document-save-path"),
             (self.pdf_save_path, "pdf-export-path"),
+            (self.deck_list_search_path, "deck-list-search-path"),
         ]
         return widgets_with_settings
 
@@ -421,6 +422,13 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
             logger.info("User selected a new default PDF document export path.")
             self.pdf_save_path.setText(location)
+
+    @pyqtSlot()
+    def on_deck_list_search_path_browse_button_clicked(self):
+        logger.debug("User about to select a new default deck list search path.")
+        if location := QFileDialog.getExistingDirectory(self, "Select default deck list search path"):
+            logger.info("User selected a new default deck list search path.")
+            self.deck_list_search_path.setText(location)
 
     @pyqtSlot()
     def on_open_debug_log_location_clicked(self):

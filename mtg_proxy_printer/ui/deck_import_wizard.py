@@ -120,6 +120,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
         self.deck_list: QPlainTextEdit
+        default_path: str = mtg_proxy_printer.settings.settings["default-save-paths"]["deck-list-search-path"]
         if not self.deck_list.toPlainText() \
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
@@ -129,7 +130,8 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
             # Ignore the used file type filter (second return value)
             parser: common.ParserBase = self.field("selected_parser")
             file_extension_filter = parser.get_file_extension_filter()
-            selected_file, _ = QFileDialog.getOpenFileName(self, "Select deck file", filter=file_extension_filter)
+            selected_file, _ = QFileDialog.getOpenFileName(
+                self, "Select deck file", default_path, file_extension_filter)
             self._load_from_file(selected_file)
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
