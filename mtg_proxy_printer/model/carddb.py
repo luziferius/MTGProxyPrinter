@@ -510,7 +510,7 @@ class CardDatabase:
             WHERE card_name = ? AND "language" = ?
             GROUP BY oracle_id, face_number
             )
-        SELECT card_name, count(card_name), likeliness
+        SELECT card_name
           FROM source_oracle_id
           JOIN AllPrintings USING (oracle_id, face_number)
           WHERE language = ?
