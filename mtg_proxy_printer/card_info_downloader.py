@@ -535,7 +535,7 @@ def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
 
 def _get_set_wackiness_score(card: JSONType, cache: typing.Dict[str, SetWackinessScore]) -> SetWackinessScore:
     set_code = card["set"]
-    if score := cache.get(set_code) is not None:
+    if (score := cache.get(set_code)) is not None:
         return score
     if card["oversized"]:
         result = SetWackinessScore.OVERSIZED
