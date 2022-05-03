@@ -468,10 +468,12 @@ def _migrate_25_to_26(db: sqlite3.Connection):
       set_code TEXT NOT NULL UNIQUE,
       set_name TEXT NOT NULL,
       set_uri  TEXT NOT NULL,
-      release_date TEXT NOT NULL
+      release_date TEXT NOT NULL,
+      wackiness_score INTEGER NOT NULL CHECK (wackiness_score >= 0)
     );
-    INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date)
-      SELECT set_id, "set", set_name, set_uri, '1970-01-01'
+    INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date, wackiness_score)
+      -- Default to neutral values for new columns. Subsequent card data updates will update the values accordingly.
+      SELECT set_id, "set", set_name, set_uri, '1970-01-01', 0
       FROM "Set";
     DROP VIEW AllPrintings;
     DROP TABLE "Set";

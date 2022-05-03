@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import enum
 import functools
 import gzip
 import shutil
@@ -38,6 +39,7 @@ del get_logger
 __all__ = [
     "CardInfoDownloader",
     "CardInfoDownloadWorker",
+    "SetWackinessScore",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
@@ -69,6 +71,17 @@ class PrintingData(typing.NamedTuple):
     scryfall_id: str
     is_oversized: bool
     highres_image: bool
+
+
+@enum.unique
+class SetWackinessScore(int, enum.Enum):
+    REGULAR = 0
+    WHITE_BORDERED = 1
+    FUNNY = 2
+    GOLD_BORDERED = 3
+    DIGITAL = 5
+    ART_SERIES = 8
+    OVERSIZED = 10
 
 
 class CardInfoDownloader(QObject):
@@ -259,6 +272,7 @@ class CardInfoDownloadWorker(DownloaderBase):
             filter_name: filter_id
             for filter_name, filter_id
             in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()}
+        set_wackiness_score_cache: typing.Dict[str, SetWackinessScore] = {}
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
@@ -284,7 +298,7 @@ class CardInfoDownloadWorker(DownloaderBase):
                     ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
-                face_ids += self._parse_single_printing(card, printing_filter_ids)
+                face_ids += self._parse_single_printing(card, printing_filter_ids, set_wackiness_score_cache)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -308,11 +322,11 @@ class CardInfoDownloadWorker(DownloaderBase):
         db.commit()
         return index
 
-    def _parse_single_printing(self, card: JSONType, printing_filter_ids):
+    def _parse_single_printing(self, card: JSONType, printing_filter_ids, wackiness_score_cache):
         language_id = _insert_language(self.model, card["lang"])
         oracle_id = _get_oracle_id(card)
         card_id = _insert_card(self.model, oracle_id)
-        set_id = _insert_set(self.model, card)
+        set_id = _insert_set(self.model, card, wackiness_score_cache)
         printing_id = insert_printing(self.model, card, card_id, set_id)
         _insert_card_filters(self.model, printing_id, _get_card_filter_data(card), printing_filter_ids)
         new_face_ids = _insert_card_faces(self.model, card, language_id, printing_id)
@@ -377,25 +391,35 @@ def _insert_card(model: CardDatabase, oracle_id: str) -> int:
     return card_id
 
 
-def _insert_set(model: CardDatabase, card: JSONType) -> int:
+def _insert_set(model: CardDatabase, card: JSONType, wackiness_score_cache) -> int:
     # Can’t use lru_cache here, because each card object is unique. So extract a hashable parameter set
     # and delegate to a cacheable function.
     set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
     release_date = card["released_at"]
-    return _insert_set_data(model, set_abbr, set_name, set_uri, release_date)
+    wackiness_score = _get_set_wackiness_score(card, wackiness_score_cache)
+    return _insert_set_data(model, set_abbr, set_name, set_uri, release_date, wackiness_score)
 
 
 @functools.lru_cache(None)
-def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str, release_date: str) -> int:
+def _insert_set_data(
+        model: CardDatabase, set_abbr: str, set_name: str, set_uri: str,
+        release_date: str, wackiness_score: SetWackinessScore) -> int:
     model.db.execute(cached_dedent(
         """\
-        INSERT INTO MTGSet (set_code, set_name, set_uri, release_date)
-            VALUES (?, ?, ?, ?)
+        INSERT INTO MTGSet (set_code, set_name, set_uri, release_date, wackiness_score)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (set_code) DO
-            UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri, release_date = excluded.release_date
-            WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri OR release_date <> excluded.release_date
+            UPDATE SET
+              set_name = excluded.set_name,
+              set_uri = excluded.set_uri,
+              release_date = excluded.release_date,
+              wackiness_score  = excluded.wackiness_score
+            WHERE set_name <> excluded.set_name
+              OR set_uri <> excluded.set_uri
+              OR release_date <> excluded.release_date
+              OR wackiness_score <> excluded.wackiness_score
         """),
-        (set_abbr, set_name, set_uri, release_date)
+        (set_abbr, set_name, set_uri, release_date, wackiness_score)
     )
     set_id, = model.db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
     return set_id
@@ -507,6 +531,28 @@ def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
         "hide-banned-in-standard": legalities.get("standard", "") == "banned",
         "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
     }
+
+
+def _get_set_wackiness_score(card: JSONType, cache: typing.Dict[str, SetWackinessScore]) -> SetWackinessScore:
+    set_code = card["set"]
+    if score := cache.get(set_code) is not None:
+        return score
+    if card["oversized"]:
+        result = SetWackinessScore.OVERSIZED
+    elif card["layout"] == "art_series":
+        result = SetWackinessScore.ART_SERIES
+    elif card["digital"]:
+        result = SetWackinessScore.DIGITAL
+    elif card["border_color"] == "white":
+        result = SetWackinessScore.WHITE_BORDERED
+    elif card["set_type"] == "funny":
+        result = SetWackinessScore.FUNNY
+    elif card["border_color"] == "gold":
+        result = SetWackinessScore.GOLD_BORDERED
+    else:
+        result = SetWackinessScore.REGULAR
+    cache[set_code] = result
+    return result
 
 
 def _insert_card_filters(

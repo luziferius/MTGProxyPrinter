@@ -20,6 +20,7 @@ import unittest.mock
 from hamcrest import *
 import pytest
 
+from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty
 
@@ -589,3 +590,23 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
     with unittest.mock.patch.dict(json_data, {"highres_image": test_case.highres_image}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_visible_import(card_db, test_case)
+
+
+@pytest.mark.parametrize("json_name, expected_score", [
+    ("regular_english_card", 0),
+    ("german_basic_Forest", 0),
+    ("white_bordered_card", 1),
+    ("funny_card", 2),
+    ("gold_bordered_card", 3),
+    ("digital_only_card", 5),
+    ("english_double_faced_art_series_card", 8),
+    ("oversized_card", 10),
+])
+def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expected_score: int):
+    fill_card_database_with_json_card(qtbot, card_db, json_name)
+    assert_that(
+        card_db.db.execute('SELECT wackiness_score FROM MTGSet').fetchall(),
+        contains_exactly(
+            (expected_score,)
+        )
+    )

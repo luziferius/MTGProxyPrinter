@@ -61,6 +61,7 @@ to_be_profiled_functions = {
         "_insert_card",
         "_insert_printing",
         "_insert_face_name",
+        "_get_set_wackiness_score",
     ],
 }
 

@@ -87,7 +87,8 @@ CREATE TABLE MTGSet (
   set_code TEXT NOT NULL UNIQUE,
   set_name TEXT NOT NULL,
   set_uri  TEXT NOT NULL,
-  release_date TEXT NOT NULL
+  release_date TEXT NOT NULL,
+  wackiness_score INTEGER NOT NULL CHECK (wackiness_score >= 0)
 );
 
 CREATE TABLE LastDatabaseUpdate (
