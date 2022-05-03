@@ -381,20 +381,21 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
     # Can’t use lru_cache here, because each card object is unique. So extract a hashable parameter set
     # and delegate to a cacheable function.
     set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
-    return _insert_set_data(model, set_abbr, set_name, set_uri)
+    release_date = card["released_at"]
+    return _insert_set_data(model, set_abbr, set_name, set_uri, release_date)
 
 
 @functools.lru_cache(None)
-def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
+def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str, release_date: str) -> int:
     model.db.execute(cached_dedent(
         """\
-        INSERT INTO "Set" ("set", set_name, set_uri)
-            VALUES (?, ?, ?)
+        INSERT INTO "Set" ("set", set_name, set_uri, release_date)
+            VALUES (?, ?, ?, ?)
             ON CONFLICT ("set") DO
-            UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri
-            WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri
+            UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri, release_date = excluded.release_date
+            WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri OR release_date <> excluded.release_date
         """),
-        (set_abbr, set_name, set_uri)
+        (set_abbr, set_name, set_uri, release_date)
     )
     set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
     return set_id

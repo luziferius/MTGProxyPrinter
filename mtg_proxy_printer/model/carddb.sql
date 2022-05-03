@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000025;
+PRAGMA user_version = 0000026;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -86,7 +86,8 @@ CREATE TABLE "Set" (
   set_id   INTEGER PRIMARY KEY NOT NULL,
   "set"    TEXT NOT NULL UNIQUE,
   set_name TEXT NOT NULL,
-  set_uri  TEXT NOT NULL
+  set_uri  TEXT NOT NULL,
+  release_date TEXT NOT NULL
 );
 
 
