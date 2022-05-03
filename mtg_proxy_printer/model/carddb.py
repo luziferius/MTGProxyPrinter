@@ -235,7 +235,7 @@ class CardDatabase:
         SELECT COUNT(*) = 1 AS is_unique -- is_valid_and_unique_card()
             FROM CardFace
             JOIN Printing USING (printing_id)
-            JOIN "Set" USING (set_id)
+            JOIN MTGSet USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             WHERE Printing.is_hidden IS FALSE
@@ -247,7 +247,7 @@ class CardDatabase:
             where_clause += '    AND card_name = ?\n'
             parameters.append(card.name)
         if card.set_code:
-            where_clause += '    AND "set" = ?\n'
+            where_clause += '    AND set_code = ?\n'
             parameters.append(card.set_code)
         if card.collector_number:
             where_clause += '    AND collector_number = ?\n'
@@ -270,13 +270,13 @@ class CardDatabase:
          :param order_by_print_count: Enable sorting the result list by the recorded print count. Defaults to False
         """
         query = cached_dedent('''\
-        SELECT card_name, "set", set_name, collector_number, png_image_uri, scryfall_id, is_front,
+        SELECT card_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
                 oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
             FROM CardFace
             JOIN Printing USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
-            JOIN "Set" USING (set_id)
+            JOIN MTGSet USING (set_id)
             JOIN Card USING (card_id)
         ''')
         if order_by_print_count:
@@ -290,7 +290,7 @@ class CardDatabase:
             where_clause.append(f'AND card_name = ?')
             where_parameters.append(card.name)
         if card.set_code:
-            where_clause.append(f'AND "set" = ?')
+            where_clause.append(f'AND set_code = ?')
             where_parameters.append(card.set_code)
         if card.collector_number:
             where_clause.append(f'AND collector_number = ?')
@@ -370,11 +370,11 @@ class CardDatabase:
             JOIN Printing USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
-            JOIN "Set" USING (set_id)
+            JOIN MTGSet USING (set_id)
             WHERE Printing.is_hidden IS FALSE
               AND FaceName.is_hidden IS FALSE
               AND "language" = ?
-              AND "set" = ?
+              AND set_code = ?
               AND card_name = ?
         ''')
         return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
@@ -392,10 +392,10 @@ class CardDatabase:
         :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
-        SELECT DISTINCT "set", set_name  -- find_sets_matching()
+        SELECT DISTINCT set_code, set_name  -- find_sets_matching()
             FROM CardFace
             JOIN Printing USING (printing_id)
-            JOIN "Set" USING (set_id)
+            JOIN MTGSet USING (set_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
             WHERE Printing.is_hidden IS FALSE
@@ -405,7 +405,7 @@ class CardDatabase:
         ''')
         parameters = [language, card_name]
         if set_name_filter:
-            query += '      AND ("set" LIKE ? OR set_name LIKE ?)\n'
+            query += '      AND (set_code LIKE ? OR set_name LIKE ?)\n'
             parameters += [f"{set_name_filter}%"] * 2
 
         query += '    ORDER BY set_name ASC\n'
@@ -499,14 +499,14 @@ class CardDatabase:
             SELECT oracle_id, face_number, (
                 SELECT count() FROM Card)
                   * (ifnull(scryfall_id = ?, 0)
-                     OR ifnull("set" = ?, 0))
+                     OR ifnull(set_code = ?, 0))
                   + count(oracle_id) AS likeliness
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             JOIN CardFace USING (face_name_id)
             JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
-            JOIN "Set" USING (set_id)
+            JOIN MTGSet USING (set_id)
             WHERE card_name = ? AND "language" = ?
             GROUP BY oracle_id, face_number
             )

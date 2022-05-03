@@ -465,23 +465,23 @@ def _migrate_25_to_26(db: sqlite3.Connection):
     BEGIN TRANSACTION;
     CREATE TABLE "Set2" (
       set_id   INTEGER PRIMARY KEY NOT NULL,
-      "set"    TEXT NOT NULL UNIQUE,
+      set_code TEXT NOT NULL UNIQUE,
       set_name TEXT NOT NULL,
       set_uri  TEXT NOT NULL,
       release_date TEXT NOT NULL
     );
-    INSERT INTO "Set2" (set_id, "set", set_name, set_uri, release_date)
+    INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date)
       SELECT set_id, "set", set_name, set_uri, '1970-01-01'
       FROM "Set";
     DROP VIEW AllPrintings;
     DROP TABLE "Set";
-    ALTER TABLE "Set2" RENAME TO "Set";
+    ALTER TABLE "Set2" RENAME TO MTGSet;
     CREATE VIEW  AllPrintings AS
-      SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+      SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
              highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
       FROM Card
       JOIN Printing USING (card_id)
-      JOIN "Set" USING (set_id)
+      JOIN MTGSet   USING (set_id)
       JOIN CardFace USING (printing_id)
       JOIN FaceName USING (face_name_id)
       JOIN PrintLanguage USING (language_id)

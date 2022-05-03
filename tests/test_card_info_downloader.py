@@ -145,7 +145,7 @@ def _assert_print_language_contains(
 def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks "set", set_name, scryfall_set_uri, release_date"""
     assert_that(
-        card_db.db.execute(f'SELECT "set", set_name, set_uri, release_date FROM "Set"').fetchall(),
+        card_db.db.execute("SELECT set_code, set_name, set_uri, release_date FROM MTGSet").fetchall(),
         contains_inanyorder(*test_case.db_set()),
         f"Set relation contains unexpected data")
 
@@ -153,7 +153,7 @@ def _assert_set_contains(card_db: CardDatabase, test_case: TestCaseData):
 def _assert_face_name_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks card_name"""
     assert_that(
-        data := card_db.db.execute(f'SELECT card_name FROM FaceName').fetchall(),
+        data := card_db.db.execute("SELECT card_name FROM FaceName").fetchall(),
         contains_inanyorder(*test_case.db_face_name()),
         f"FaceName relation contains unexpected data: {data}")
 
@@ -165,7 +165,7 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *,
             (collector_number, scryfall_id, bool(is_oversized), bool(highres_image))
             for collector_number, scryfall_id, is_oversized, highres_image
             in card_db.db.execute(
-                f'SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing')
+                "SELECT collector_number, scryfall_id, is_oversized, highres_image FROM Printing")
          ],
         contains_inanyorder(*test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")

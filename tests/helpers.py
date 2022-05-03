@@ -104,7 +104,7 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
     If a test case data object is passed in, it is assumed that the printing it represents was excluded during the
     import. So also check that RemovedPrintings table contains the correct data.
     """
-    relations_to_check = ["PrintLanguage", "Card", "FaceName", "CardFace", "Set", "AllPrintings"]
+    relations_to_check = ["PrintLanguage", "Card", "FaceName", "CardFace", "MTGSet", "AllPrintings"]
     if test_case is None:
         relations_to_check.append("RemovedPrintings")
     else:

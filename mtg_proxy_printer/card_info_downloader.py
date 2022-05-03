@@ -338,7 +338,7 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
     db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
     db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
-    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
+    db.execute('DELETE FROM MTGSet WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
     db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
     db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
@@ -389,15 +389,15 @@ def _insert_set(model: CardDatabase, card: JSONType) -> int:
 def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str, release_date: str) -> int:
     model.db.execute(cached_dedent(
         """\
-        INSERT INTO "Set" ("set", set_name, set_uri, release_date)
+        INSERT INTO MTGSet (set_code, set_name, set_uri, release_date)
             VALUES (?, ?, ?, ?)
-            ON CONFLICT ("set") DO
+            ON CONFLICT (set_code) DO
             UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri, release_date = excluded.release_date
             WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri OR release_date <> excluded.release_date
         """),
         (set_abbr, set_name, set_uri, release_date)
     )
-    set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
+    set_id, = model.db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
     return set_id
 
 
