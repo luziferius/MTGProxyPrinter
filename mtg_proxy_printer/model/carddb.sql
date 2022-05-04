@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000025;
+PRAGMA user_version = 0000026;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -38,7 +38,7 @@ CREATE TABLE Printing (
   -- A specific printing of a card
   printing_id INTEGER PRIMARY KEY NOT NULL,
   card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  set_id INTEGER NOT NULL REFERENCES "Set"(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  set_id INTEGER NOT NULL REFERENCES MTGSet(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
   collector_number TEXT NOT NULL,
   scryfall_id TEXT NOT NULL UNIQUE,
   -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
@@ -82,13 +82,14 @@ CREATE TABLE CardFace (
 CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id);
 
 
-CREATE TABLE "Set" (
+CREATE TABLE MTGSet (
   set_id   INTEGER PRIMARY KEY NOT NULL,
-  "set"    TEXT NOT NULL UNIQUE,
+  set_code TEXT NOT NULL UNIQUE,
   set_name TEXT NOT NULL,
-  set_uri  TEXT NOT NULL
+  set_uri  TEXT NOT NULL,
+  release_date TEXT NOT NULL,
+  wackiness_score INTEGER NOT NULL CHECK (wackiness_score >= 0)
 );
-
 
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
@@ -96,6 +97,7 @@ CREATE TABLE LastDatabaseUpdate (
   update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
   reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
+
 CREATE TABLE DisplayFilters (
   -- Contains the available display filters and their current values
   filter_id INTEGER NOT NULL PRIMARY KEY,
@@ -138,11 +140,11 @@ CREATE TABLE RemovedPrintings (
 );
 
 CREATE VIEW AllPrintings AS
-  SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
-         highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+  SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
+         highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
   FROM Card
   JOIN Printing USING (card_id)
-  JOIN "Set" USING (set_id)
+  JOIN MTGSet   USING (set_id)
   JOIN CardFace USING (printing_id)
   JOIN FaceName USING (face_name_id)
   JOIN PrintLanguage USING (language_id)
