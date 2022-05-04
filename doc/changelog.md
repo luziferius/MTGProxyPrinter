@@ -2,6 +2,9 @@
 
 # Next version (in development)
 
+After upgrading to this version, re-downloading the card data from Scryfall is required to use the new or enhanced
+capabilities.
+
 ## New features
 
 - The page preview can now be zoomed in for a better card view. Zooming can be triggered using `[Ctrl]+Mouse wheel`,
@@ -15,11 +18,13 @@
   (This does of course *not* affect the print preview, exported PDFs and printed pages.)
 - Card download filters are now filters used to hide printings.
   - Updating the settings no longer requires re-downloading the data from Scryfall.
-  - When migrating from older versions, the card data has to be re-downloaded to take advantage of the new capabilities.
   - Inverted the display: Instead of specifying which cards or printings are included,
     the settings now state which printings are hidden. (Settings saved with previous versions are migrated.)
 - The deck list import wizard now shows only matching files when browsing the file system for a deck list to load.
   The filtering can be disabled by switching to the “All files” filter.
+- When the deck list import wizard has the freedom of printing choice, it will now prefer the newest, regular,
+  tournament-legal printings over others like oversized cards or art series cards,
+  even if those are not hidden in the settings.
 - In the settings window, the card filters check boxes now have buttons next to them that open a web browser showing
   the Scryfall query highlighting the cards affected by the corresponding filter.
 - The document and PDF save path now defaults to the local Documents directory.
