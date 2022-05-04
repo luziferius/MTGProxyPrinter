@@ -279,7 +279,6 @@ class PageRenderer(QGraphicsView):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def changeEvent(self, event: QEvent) -> None:
-        logger.debug(f"changeEvent() called. {event.type()=}")
         if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:
             self._update_background_brush()
             self.scene().setPalette(self.palette())
