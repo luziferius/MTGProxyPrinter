@@ -76,9 +76,10 @@ class PrintingData(typing.NamedTuple):
 @enum.unique
 class SetWackinessScore(int, enum.Enum):
     REGULAR = 0
-    WHITE_BORDERED = 1
-    FUNNY = 2
-    GOLD_BORDERED = 3
+    PROMOTIONAL = 1
+    WHITE_BORDERED = 2
+    FUNNY = 3
+    GOLD_BORDERED = 4
     DIGITAL = 5
     ART_SERIES = 8
     OVERSIZED = 10
@@ -549,6 +550,8 @@ def _get_set_wackiness_score(card: JSONType, cache: typing.Dict[str, SetWackines
         result = SetWackinessScore.FUNNY
     elif card["border_color"] == "gold":
         result = SetWackinessScore.GOLD_BORDERED
+    elif card["set_type"] == "promo":
+        result = SetWackinessScore.PROMOTIONAL
     else:
         result = SetWackinessScore.REGULAR
     cache[set_code] = result

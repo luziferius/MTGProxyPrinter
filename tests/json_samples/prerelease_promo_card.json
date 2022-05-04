@@ -1,0 +1,135 @@
+{
+  "object": "card",
+  "id": "dee0d6d4-321e-456d-9040-42f7845ff6a1",
+  "oracle_id": "046add85-952f-46ac-974a-463d2a7d3fd4",
+  "multiverse_ids": [],
+  "tcgplayer_id": 247195,
+  "cardmarket_id": 574599,
+  "name": "The Book of Exalted Deeds",
+  "lang": "en",
+  "released_at": "2021-07-23",
+  "uri": "https://api.scryfall.com/cards/dee0d6d4-321e-456d-9040-42f7845ff6a1",
+  "scryfall_uri": "https://scryfall.com/card/pafr/4a/the-book-of-exalted-deeds?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.png?1630012475",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475"
+  },
+  "mana_cost": "{W}{W}{W}",
+  "cmc": 3,
+  "type_line": "Legendary Artifact",
+  "oracle_text": "At the beginning of your end step, if you gained 3 or more life this turn, create a 3/3 white Angel creature token with flying.\n{W}{W}{W}, {T}, Exile The Book of Exalted Deeds: Put an enlightened counter on target Angel. It gains \"You can't lose the game and your opponents can't win the game.\" Activate only as a sorcery.",
+  "colors": [
+    "W"
+  ],
+  "color_identity": [
+    "W"
+  ],
+  "keywords": [],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "a1899bb1-dd8e-4437-8ea3-4ad637eabf2b",
+      "component": "combo_piece",
+      "name": "The Book of Exalted Deeds",
+      "type_line": "Legendary Artifact",
+      "uri": "https://api.scryfall.com/cards/a1899bb1-dd8e-4437-8ea3-4ad637eabf2b"
+    },
+    {
+      "object": "related_card",
+      "id": "323dd323-2ca2-4c85-9ef6-34341cd40d96",
+      "component": "token",
+      "name": "Angel",
+      "type_line": "Token Creature — Angel",
+      "uri": "https://api.scryfall.com/cards/323dd323-2ca2-4c85-9ef6-34341cd40d96"
+    }
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "explorer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "historicbrawl": "legal",
+    "alchemy": "legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": false,
+  "finishes": [
+    "foil"
+  ],
+  "oversized": false,
+  "promo": true,
+  "reprint": true,
+  "variation": false,
+  "set_id": "983f027f-76f9-462d-8eb5-458dcbf029b4",
+  "set": "pafr",
+  "set_name": "Adventures in the Forgotten Realms Promos",
+  "set_type": "promo",
+  "set_uri": "https://api.scryfall.com/sets/983f027f-76f9-462d-8eb5-458dcbf029b4",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Apafr&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/pafr?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/dee0d6d4-321e-456d-9040-42f7845ff6a1/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A046add85-952f-46ac-974a-463d2a7d3fd4&unique=prints",
+  "collector_number": "4a",
+  "digital": false,
+  "rarity": "mythic",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Daniel Ljunggren",
+  "artist_ids": [
+    "0fbd4798-76eb-46d5-a5d4-1e3a25870e34"
+  ],
+  "illustration_id": "98b7c898-a07b-4622-a9c2-4bdb0e977f42",
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "legendary"
+  ],
+  "security_stamp": "oval",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "edhrec_rank": 3552,
+  "prices": {
+    "usd": null,
+    "usd_foil": "88.14",
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": "39.99",
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=The+Book+of+Exalted+Deeds&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=The+Book+of+Exalted+Deeds&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=The+Book+of+Exalted+Deeds",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=The+Book+of+Exalted+Deeds"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/247195?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=The+Book+of+Exalted+Deeds&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=The+Book+of+Exalted+Deeds&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

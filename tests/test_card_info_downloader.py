@@ -595,6 +595,7 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
 @pytest.mark.parametrize("json_name, expected_score", [
     ("regular_english_card", SetWackinessScore.REGULAR),
     ("german_basic_Forest", SetWackinessScore.REGULAR),
+    ("prerelease_promo_card", SetWackinessScore.PROMOTIONAL),
     ("white_bordered_card", SetWackinessScore.WHITE_BORDERED),
     ("funny_card", SetWackinessScore.FUNNY),
     ("gold_bordered_card", SetWackinessScore.GOLD_BORDERED),
