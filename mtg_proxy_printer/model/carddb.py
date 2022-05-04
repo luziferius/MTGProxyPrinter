@@ -306,8 +306,12 @@ class CardDatabase:
             where_parameters.append(card.oracle_id)
         where_clause.append("")  # Insert final newline after joining
         query += "\n    ".join(where_clause)
+        order_by_terms = []
         if order_by_print_count:
-            query += 'ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
+            order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
+        order_by_terms.append("MTGSet.wackiness_score ASC")
+        order_by_terms.append("MTGSet.release_date DESC")
+        query += "ORDER BY " + "\n    ,".join(order_by_terms)
         result = self._get_cards_from_data(query, where_parameters)
         return result
 
@@ -328,7 +332,9 @@ class CardDatabase:
                 -- Match with original language first, fall back to preferred language, then fall back to English
                (4*(AllPrintings.language == RemovedPrintings.language) +
                 2*(AllPrintings.language == ?) +
-                  (AllPrintings.language == 'en')) DESC NULLS LAST
+                  (AllPrintings.language == 'en')) DESC NULLS LAST,
+                wackiness_score ASC,
+                release_date DESC
         ''')
         if order_by_print_count:
             query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
