@@ -476,11 +476,14 @@ def _migrate_25_to_26(db: sqlite3.Connection):
       SELECT set_id, "set", set_name, set_uri, '1970-01-01', 0
       FROM "Set";
     DROP VIEW AllPrintings;
-    DROP TABLE "Set";
+    -- Rename the old table first, to update the FOREIGN KEY relation in the Printing table. Then drop and replace
+    -- it with the new table definition. Without this, the Printing table will still hold a reference to the old name.
+    ALTER TABLE "Set" RENAME TO MTGSet;
+    DROP TABLE MTGSet;
     ALTER TABLE "Set2" RENAME TO MTGSet;
     CREATE VIEW  AllPrintings AS
       SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
-             highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+             highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
       FROM Card
       JOIN Printing USING (card_id)
       JOIN MTGSet   USING (set_id)

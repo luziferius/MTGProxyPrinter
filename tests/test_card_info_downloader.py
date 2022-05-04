@@ -593,16 +593,16 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
 
 
 @pytest.mark.parametrize("json_name, expected_score", [
-    ("regular_english_card", 0),
-    ("german_basic_Forest", 0),
-    ("white_bordered_card", 1),
-    ("funny_card", 2),
-    ("gold_bordered_card", 3),
-    ("digital_only_card", 5),
-    ("english_double_faced_art_series_card", 8),
-    ("oversized_card", 10),
+    ("regular_english_card", SetWackinessScore.REGULAR),
+    ("german_basic_Forest", SetWackinessScore.REGULAR),
+    ("white_bordered_card", SetWackinessScore.WHITE_BORDERED),
+    ("funny_card", SetWackinessScore.FUNNY),
+    ("gold_bordered_card", SetWackinessScore.GOLD_BORDERED),
+    ("digital_only_card", SetWackinessScore.DIGITAL),
+    ("english_double_faced_art_series_card", SetWackinessScore.ART_SERIES),
+    ("oversized_card", SetWackinessScore.OVERSIZED),
 ])
-def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expected_score: int):
+def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expected_score: SetWackinessScore):
     fill_card_database_with_json_card(qtbot, card_db, json_name)
     assert_that(
         card_db.db.execute('SELECT wackiness_score FROM MTGSet').fetchall(),
