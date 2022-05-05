@@ -270,6 +270,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
 
     def validatePage(self) -> bool:
         self.parser_creator()
+        self.selected_parser.incompatible_file_format.connect(self.wizard().on_incompatible_deck_file_selected)
         logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
         return super().validatePage()
 
@@ -434,3 +435,11 @@ class DeckImportWizard(QWizard):
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.No:
             return False
         return True
+
+    def on_incompatible_deck_file_selected(self):
+        QMessageBox.warning(
+            self, "Incompatible file selected",
+            "Unable to parse the given deck list, no results were obtained.\n"
+            "Maybe you selected the wrong deck list type?",
+            QMessageBox.Ok, QMessageBox.Ok
+        )

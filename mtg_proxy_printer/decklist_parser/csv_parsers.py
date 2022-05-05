@@ -44,12 +44,19 @@ class BaseCSVParser(ParserBase):
     SUPPORTED_FILE_TYPES = {
         "CSV-Document": ["csv"]
     }
+    USED_COLUMNS: typing.Set[str] = {
+
+    }
 
     def parse_deck_without_translation(self, deck_list: str,
                                        print_guessing: bool) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
-        for source, line in self._read_lines_from_csv(deck_list):
+        reader, parsed_lines = self._read_lines_from_csv(deck_list)
+        if self.USED_COLUMNS-set(reader.fieldnames):
+            self.incompatible_file_format.emit()
+            return deck, deck_list.splitlines()
+        for source, line in parsed_lines:
             if self.should_skip_entry(line):
                 continue
             try:
@@ -63,11 +70,11 @@ class BaseCSVParser(ParserBase):
                 unmatched_lines.append(source)
         return deck, unmatched_lines
 
-    def _read_lines_from_csv(
-            self, deck_list: str) -> typing.Generator[CsvLine, None, None]:
+    def _read_lines_from_csv(self, deck_list: str):
         lines = deck_list.splitlines()
         # Skip the header line when zipping the original lines and the parsed result.
-        yield from zip(lines[1:], csv.DictReader(lines, dialect=self.DIALECT_NAME))
+        reader = csv.DictReader(lines, dialect=self.DIALECT_NAME)
+        return reader,  zip(lines[1:], reader)
 
     @abc.abstractmethod
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
@@ -95,6 +102,9 @@ class ScryfallCSVParser(BaseCSVParser):
         quoting = csv.QUOTE_MINIMAL
 
     DIALECT_NAME = "scryfall_com"
+    USED_COLUMNS = {
+        "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
+    }
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
         cards = collections.Counter()
@@ -149,6 +159,11 @@ class TappedOutCSVParser(BaseCSVParser):
         quoting = csv.QUOTE_MINIMAL
 
     DIALECT_NAME = "tappedout_com"
+    USED_COLUMNS = {
+        # Does not include the Language column,
+        # because there is the fallback to the old "Languange" column.
+        "Qty", "Name", "Board", "Printing",
+    }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
