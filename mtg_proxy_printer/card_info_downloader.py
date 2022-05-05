@@ -417,7 +417,9 @@ def _insert_set_data(
               wackiness_score  = excluded.wackiness_score
             WHERE set_name <> excluded.set_name
               OR set_uri <> excluded.set_uri
-              OR release_date <> excluded.release_date
+              -- Wizards started to add “The List” cards to older sets, i.e. reusing the original set code for newer
+              -- reprints of cards in that set. This greater than searches for the oldest release date for a given set
+              OR release_date > excluded.release_date
               OR wackiness_score <> excluded.wackiness_score
         """),
         (set_abbr, set_name, set_uri, release_date, wackiness_score)
