@@ -109,7 +109,7 @@ DEFAULT_SETTINGS["debug"] = {
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
-    "enable-guessing": "False",
+    "enable-guessing": "True",
     "prefer-already-downloaded": "True",
     "always-translate-deck-lists": "False",
 }
