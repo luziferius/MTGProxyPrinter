@@ -9,13 +9,15 @@ capabilities.
 
 - The page preview can now be zoomed in for a better card view. Zooming can be triggered using `[Ctrl]+Mouse wheel`,
   or the platform dependant default zoom keyboard shortcut (`[Ctrl]+[+]` and `[Ctrl]+[-]` on most systems)
+- Improved dark mode and global color theme compatibility: The page preview now follows the systems global color theme.
+  On dark mode, the page background is dark and the optional cut marker lines are light (if enabled).
+  (This does of course *not* affect the print preview, exported PDFs and printed pages.)
 - Added short descriptions when the progress bar is shown at the bottom of the main window.
-
+- In the settings window, the card filters check boxes now have buttons next to them that open a web browser showing
+  the Scryfall query highlighting the cards affected by the corresponding filter.
+- 
 ## Changed features
 
-- Improved dark mode and global color theme compatibility: The page preview now follows the systems global color theme.
-  On dark mode, the page background is dark, with light cut marker lines (if enabled).
-  (This does of course *not* affect the print preview, exported PDFs and printed pages.)
 - Card download filters are now filters used to hide printings.
   - Updating the settings no longer requires re-downloading the data from Scryfall.
   - Inverted the display: Instead of specifying which cards or printings are included,
@@ -24,10 +26,13 @@ capabilities.
   The filtering can be disabled by switching to the “All files” filter.
 - When the deck list import wizard has the freedom of printing choice, it will now prefer the newest, regular,
   tournament-legal printings over others like oversized cards or art series cards,
-  even if those are not hidden in the settings.
-- In the settings window, the card filters check boxes now have buttons next to them that open a web browser showing
-  the Scryfall query highlighting the cards affected by the corresponding filter.
+  even if those are not hidden in the settings. You can still access them, but these printings won’t be automatically
+  chosen.
 - The document and PDF save path now defaults to the local Documents directory.
+- Improved card name translation consistency, if the to-be translated name is ambiguous. There are a few cards with name
+  clashes in translations, i.e. different cards being translated to the same name across different sets. In this case,
+  context information is used to obtain a correct translation, if available. Otherwise, a majority vote is performed
+  to guess the most likely meaning of a given card name.
 
 ## Fixed issues
 
@@ -37,7 +42,9 @@ capabilities.
     (I.e. the parser now accept valid entries like `5 Island` instead of only accepting `5 Island (SNC) 265`)
   - Also recognizes the segment headers that may be present in the deck list, 
     that are “Deck”, “Commander”, “Companion” and “Sideboard”,
-    and will no longer complain that these are unidentified cards. 
+    and will no longer complain that these are unidentified cards.
+- Mitigate crashes when using the wrong CSV deck list parser with a given CSV file. An error message is now shown in
+  this case.
 
 # Version 0.15.1 (2022-04-13) <a name="v0_15_1"></a>
 
