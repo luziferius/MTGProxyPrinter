@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.16.0 (2022-05-06)  <a name="v0_16_0"></a>
 
 After upgrading to this version, re-downloading the card data from Scryfall is required to use the new or enhanced
 capabilities.
