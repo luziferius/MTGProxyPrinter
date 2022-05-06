@@ -16,6 +16,7 @@
 import enum
 import functools
 import gzip
+import os
 import shutil
 from pathlib import Path
 import re
@@ -31,7 +32,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
-import mtg_proxy_printer.http_file
+import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -235,17 +236,25 @@ class CardInfoDownloadWorker(DownloaderBase):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
-            with url_or_path.open("rb") as file:
+            file_size = url_or_path.stat().st_size
+            raw_file = url_or_path.open("rb")
+            with self._wrap_in_metered_file(raw_file, file_size) as file:
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
                 yield from ijson.items(file, json_path)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path, json_path)
         else:
-            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
-            with open(url_or_path, "rb") as file:
+            file_size = os.stat(url_or_path).st_size
+            raw_file = open(url_or_path, "rb")
+            with self._wrap_in_metered_file(raw_file, file_size) as file:
                 yield from ijson.items(file, json_path)
+
+    def _wrap_in_metered_file(self, raw_file, file_size):
+        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
+        monitor.total_bytes_processed.connect(self.download_progress)
+        monitor.io_begin.connect(lambda size: self.download_begins.emit(size, "Importing card data from disk:"))
+        return monitor
 
     def populate_database(self, card_data: typing.Generator[JSONType, None, None]):
         """
