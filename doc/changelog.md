@@ -15,7 +15,7 @@ capabilities.
 - Added short descriptions when the progress bar is shown at the bottom of the main window.
 - In the settings window, the card filters check boxes now have buttons next to them that open a web browser showing
   the Scryfall query highlighting the cards affected by the corresponding filter.
-- 
+
 ## Changed features
 
 - Card download filters are now filters used to hide printings.
