@@ -30,6 +30,7 @@ from mtg_proxy_printer import settings
 from mtg_proxy_printer.natsort import str_less_than
 from mtg_proxy_printer.update_checker import UpdateChecker
 import mtg_proxy_printer.card_info_downloader
+import mtg_proxy_printer.ui.color_palettte
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
@@ -48,6 +49,7 @@ class Application(QApplication):
         if argv is None:
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
+        self.setPalette(mtg_proxy_printer.ui.color_palettte.get_dark_palette())
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
