@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import sys
 import typing
 
@@ -48,6 +49,11 @@ class Application(QApplication):
         if argv is None:
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
+        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and self.platformName() == "windows":
+            # The explicit set platform and parameters overwrite the environment, so set these options iff neither
+            # present as parameters nor environment variables.
+            argv.append("-platform")
+            argv.append("windows:darkmode=2")
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
