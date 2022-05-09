@@ -13,7 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import atexit
+import functools
+import pathlib
+import shutil
 import sys
+from tempfile import mkdtemp
 import typing
 
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
@@ -52,8 +57,7 @@ class Application(QApplication):
         self._setup_icons()
         self.args: Namespace = args
         logger.debug("Opening Database")
-        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
-        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_db = self._open_card_database(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
         self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
@@ -81,6 +85,15 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    @staticmethod
+    def _open_card_database(args):
+        if args.test_exit_on_launch:
+            database_temp_directory = pathlib.Path(mkdtemp())
+            atexit.register(functools.partial(shutil.rmtree, database_temp_directory))
+            return mtg_proxy_printer.model.carddb.CardDatabase(database_temp_directory / "CardDatabase.sqlite3")
+        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
+        return mtg_proxy_printer.model.carddb.CardDatabase()
 
     @staticmethod
     def _create_settings_window(
