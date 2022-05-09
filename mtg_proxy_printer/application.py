@@ -56,10 +56,8 @@ class Application(QApplication):
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
-        logger.debug("Opening Database")
-        self.card_db = self._open_card_database(args)
+        self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
-        self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
         self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
@@ -86,14 +84,20 @@ class Application(QApplication):
         self.exec_()
         logger.debug("Left event loop.")
 
-    @staticmethod
-    def _open_card_database(args):
+    def _open_databases(self, args: Namespace):
         if args.test_exit_on_launch:
-            database_temp_directory = pathlib.Path(mkdtemp())
-            atexit.register(functools.partial(shutil.rmtree, database_temp_directory))
-            return mtg_proxy_printer.model.carddb.CardDatabase(database_temp_directory / "CardDatabase.sqlite3")
+            temp_directory = pathlib.Path(mkdtemp())
+            logger.info(f"Opening databases in temporary directory {temp_directory}")
+            atexit.register(functools.partial(shutil.rmtree, temp_directory))
+            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" /"CardDatabase.sqlite3")
+            image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(
+                temp_directory/"image_db", parent=self)
+            return card_db, image_db
+        logger.debug("Opening Databases")
         mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
-        return mtg_proxy_printer.model.carddb.CardDatabase()
+        card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        return card_db, image_db
 
     @staticmethod
     def _create_settings_window(
