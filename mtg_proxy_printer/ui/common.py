@@ -17,6 +17,7 @@ import pathlib
 
 from PyQt5.QtCore import QFile, QUrl, QObject
 from PyQt5.QtWidgets import QLabel
+# noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
 from mtg_proxy_printer.logger import get_logger
