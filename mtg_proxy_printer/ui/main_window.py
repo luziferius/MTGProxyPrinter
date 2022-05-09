@@ -18,7 +18,7 @@ import typing
 
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
-from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
+from PyQt5.QtGui import QCloseEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
 
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
