@@ -16,7 +16,8 @@
 import enum
 import typing
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject, pyqtSignal, QEvent
+from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
+    pyqtSignal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
 from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
 
