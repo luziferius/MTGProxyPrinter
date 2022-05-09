@@ -28,7 +28,7 @@ __all__ = [
     "NaturallySortedSortFilterProxyModel",
 ]
 
-_NUMBER_GROUP_REG_EXP = re.compile(r"([0-9]+)")
+_NUMBER_GROUP_REG_EXP = re.compile(r"(\d+)")
 
 
 def try_convert_int(s: str):

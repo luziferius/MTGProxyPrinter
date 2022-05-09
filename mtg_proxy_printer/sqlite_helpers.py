@@ -29,7 +29,7 @@ __all__ = [
     "create_in_memory_database",
 ]
 
-SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>[0-9]+)\s*;", re.ASCII)
+SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>\d+)\s*;", re.ASCII)
 
 
 def create_in_memory_database(
