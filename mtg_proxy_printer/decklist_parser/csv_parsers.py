@@ -48,8 +48,7 @@ class BaseCSVParser(ParserBase):
 
     }
 
-    def parse_deck_without_translation(self, deck_list: str,
-                                       print_guessing: bool) -> ParsedDeck:
+    def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
         reader, parsed_lines = self._read_lines_from_csv(deck_list)
@@ -60,7 +59,7 @@ class BaseCSVParser(ParserBase):
             if self.should_skip_entry(line):
                 continue
             try:
-                cards = self.parse_cards_from_line(line, print_guessing)
+                cards = self.parse_cards_from_line(line, print_guessing, language_override)
             except ValueError:
                 unmatched_lines.append(source)
                 continue
@@ -77,7 +76,8 @@ class BaseCSVParser(ParserBase):
         return reader,  zip(lines[1:], reader)
 
     @abc.abstractmethod
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+            -> LineParserResult:
         pass
 
     def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
@@ -106,23 +106,29 @@ class ScryfallCSVParser(BaseCSVParser):
         "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
     }
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+            -> LineParserResult:
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
         count = int(line["count"])
         language = line["lang"]
+        target_language = language_override or language
 
         if card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
+            if language_override:
+                card = self.card_db.translate_card(card, target_language)
             self._add_card_to_deck(cards, card, count)
         elif card := self._handle_removed_printing(scryfall_id, language, guess_printing):
+            if language_override:
+                card = self.card_db.translate_card(card, target_language)
             self._add_card_to_deck(cards, card, count)
         elif guess_printing:
             logger.debug(f"Card not identified. Try guessing a printing")
             english_name = line["name"]
-            card_name = english_name if language == "en" else self.card_db.translate_card_name(
-                CardIdentificationData("en", english_name, scryfall_id=scryfall_id))
+            card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
+                CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
             card_data = CardIdentificationData(
-                language, card_name, line["set_code"], line["collector_number"]
+                target_language, card_name, line["set_code"], line["collector_number"]
             )
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
@@ -174,27 +180,33 @@ class TappedOutCSVParser(BaseCSVParser):
         if include_acquire_board:
             self.allowed_boards.add("acquire")
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+            -> LineParserResult:
         cards = collections.Counter()
-        language = self._read_language(line)
+        target_language = language_override or self._read_language(line)
         set_code = self._read_set_code(line)
         english_name = line["Name"]
         card_name = self.card_db.translate_card_name(
-            CardIdentificationData("en", english_name, set_code), language) if language != "en" else english_name
+            CardIdentificationData("en", english_name, set_code), target_language)\
+            if target_language != "en" else english_name
         if english_name and not card_name:
             # Unable to translate card. Missing localized card data? Defaulting to English
             card_name = english_name
-            language = "en"
+            target_language = "en"
         count = int(line["Qty"])  # Quantity (Qty) contains the number of copies
         # The current CSV format (2021-02) does not include the collector number, so no way to identify special
         # printings inside larger sets
-        card_data = CardIdentificationData(
-            language, card_name, set_code
-        )
-        if guess_printing and (card := self.guess_printing(card_data)) is not None:
-            self._add_card_to_deck(cards, card, count)
-        elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
-            self._add_card_to_deck(cards, result[0], count)
+        for card_data in [
+                CardIdentificationData(target_language, card_name, set_code),
+                # Try again without the set code, because there may be no card in the original set,
+                # so use an arbitrary set in that case.
+                CardIdentificationData(target_language, card_name)]:
+            if guess_printing and (card := self.guess_printing(card_data)) is not None:
+                self._add_card_to_deck(cards, card, count)
+                break
+            elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
+                self._add_card_to_deck(cards, result[0], count)
+                break
         return cards
 
     @staticmethod

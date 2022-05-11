@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021, 2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import collections
 from abc import abstractmethod
 import typing
@@ -69,12 +70,8 @@ class ParserBase(QObject):
         # translation step, so performs unnecessary work that gets thrown away anyways.
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
-        parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        parsed_deck, unmatched_lines = self.parse_deck_internal(deck, print_guessing, language_override)
         logger.debug(f"Parsed {sum(parsed_deck.values())} cards. Not identified: {len(unmatched_lines)} lines")
-        # Now reset to the state as passed in
-        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
-        if language_override:
-            parsed_deck = self._translate_parsed_deck(parsed_deck, language_override)
         return parsed_deck, unmatched_lines
 
     def _translate_parsed_deck(self, parsed_deck: typing.Counter[Card], language_override: str):
@@ -96,13 +93,14 @@ class ParserBase(QObject):
         return translated_deck
 
     @abstractmethod
-    def parse_deck_without_translation(self, deck: str,
-                                       print_guessing: bool) -> ParsedDeck:
+    def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         """
-        Parse the given deck.
+        Parse the given deck. Internal method that must be implemented by concrete parser implementations.
 
-        :param deck: A Path instance to a deck file or a multiline Python string that contains the deck list.
-        :param print_guessing: Guess a printing, if a line doesn’t identify a unique printing
+        :param deck_list: A multiline Python string that contains the deck list.
+        :param print_guessing: Enable guessing a printing, if a line doesn’t identify a unique printing
+        :param language_override: Optional two-letter language code. If given, translate all cards into the given
+          language.
         :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
         """
         pass

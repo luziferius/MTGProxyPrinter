@@ -57,9 +57,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             else re.compile(regular_expression)
         logger.info(f"Created {self.__class__.__name__} instance using RE '{regular_expression}'")
 
-    def parse_deck_without_translation(self, deck_list: str,
-                                       print_guessing: bool) -> ParsedDeck:
-
+    def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
@@ -70,6 +68,10 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 copies = int(match_dict.get("copies", 1))
                 # If the matcher doesn’t include language information, all cards are implicitly English printings
                 matched_card = self._match_card(match_dict)
+                if language_override and (translated := self.card_db.translate_card_name(
+                        matched_card, language_override)):
+                    matched_card.name = translated
+                    matched_card.language = language_override
                 if self.card_db.is_valid_and_unique_card(matched_card):
                     self._add_matched_card(cards, matched_card, copies)
                 elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
