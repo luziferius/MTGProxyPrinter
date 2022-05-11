@@ -145,6 +145,8 @@ def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: Opt
     ("Wald", "de"),
     ("Bosque", "es"),
     ("Unknown", None),
+    ("Mentor Corrosivo", "pt"),
+    ("Mentor corrosivo", "es"),
 ])
 def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expected: OptString):
     fill_card_database_with_json_cards(
@@ -160,7 +162,9 @@ def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expec
             "german_basic_Forest",
             "spanish_basic_Forest",
             "german_Duress",
-            "korean_Forest_with_placeholder_name"
+            "korean_Forest_with_placeholder_name",
+            "portuguese_Corrosive_Mentor",
+            "spanish_Corrosive_Mentor",
         ],
     )
     assert_that(

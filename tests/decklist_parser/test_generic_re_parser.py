@@ -80,3 +80,35 @@ def test_translating_from_hidden_name_works(
             has_length(1)
         )
     )
+
+
+@pytest.mark.parametrize("deck", ["Mentor Corrosivo", "Mentor corrosivo"])  # Portuguese (1st) and Spanish name (2nd)
+@pytest.mark.parametrize("prefer_already_downloaded", [True, False])
+def test_translating_from_name_with_ambiguous_language_works(
+        qtbot, card_db: CardDatabase, prefer_already_downloaded: bool, deck: str):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["english_Corrosive_Mentor", "spanish_Corrosive_Mentor", "portuguese_Corrosive_Mentor"]
+    )
+    card = card_db.get_card_with_scryfall_id("140457ff-ee7d-48ec-8b91-ef5c2cc1ed74", True)
+    image_db = unittest.mock.MagicMock()
+    image_db.filter_already_downloaded.return_value = [card]
+    parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
+    result_deck, unidentified = parser.parse_deck(deck, True, prefer_already_downloaded, "en")
+    assert_that(
+        unidentified,
+        is_(empty())
+    )
+    assert_that(
+        result_deck,
+        all_of(
+            has_key(
+                has_properties(
+                language="en",
+                name="Corrosive Mentor",
+                scryfall_id="140457ff-ee7d-48ec-8b91-ef5c2cc1ed74",
+                is_front=True
+            )),
+            has_value(1),
+            has_length(1)
+        )
+    )

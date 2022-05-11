@@ -465,7 +465,7 @@ class CardDatabase:
         SELECT "language" -- guess_language_from_name()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
-            WHERE card_name LIKE ?
+            WHERE card_name = ?
             -- Assume English by default to not match other languages in case their entry misses the proper
             -- localisation and uses the English name as a fallback.
             ORDER BY "language" = 'en' DESC;
