@@ -74,24 +74,6 @@ class ParserBase(QObject):
         logger.debug(f"Parsed {sum(parsed_deck.values())} cards. Not identified: {len(unmatched_lines)} lines")
         return parsed_deck, unmatched_lines
 
-    def _translate_parsed_deck(self, parsed_deck: typing.Counter[Card], language_override: str):
-        translated_deck: typing.Counter[Card] = collections.Counter()
-        for card, count in parsed_deck.items():
-            if self.print_guessing_prefer_already_downloaded and \
-                    (all_printings := self.card_db.find_all_translated_printings(
-                        card, language_override, order_by_print_count=True)):
-                # Choose any printing, based on what is already downloaded. …
-                translated_card = self._determine_best_match(all_printings)
-                # … But if no already downloaded image is found, prefer accurate translations to random selections.
-                if translated_card is all_printings[0]:
-                    translated_card = self.card_db.translate_card(card, language_override)
-            else:
-                translated_card = self.card_db.translate_card(card, language_override)
-                logger.debug(f"Translated card '{card.name}' from language {card.language} "
-                             f"to '{translated_card.name}' in {language_override}")
-            translated_deck[translated_card] = count
-        return translated_deck
-
     @abstractmethod
     def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         """
