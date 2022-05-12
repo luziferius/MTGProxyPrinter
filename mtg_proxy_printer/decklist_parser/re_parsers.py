@@ -78,18 +78,18 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
                 # If the matcher doesn’t include language information, all cards are implicitly English printings
-                matched_card = self._match_card(match_dict)
+                parsed_data = self._parse_line(match_dict)
                 if language_override and (translated := self.card_db.translate_card_name(
-                        matched_card, language_override)):
-                    matched_card.name = translated
-                    matched_card.language = language_override
-                
-                if self.card_db.is_valid_and_unique_card(matched_card):
-                    self._add_matched_card(cards, matched_card, copies)
-                elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
+                        parsed_data, language_override)):
+                    parsed_data.name = translated
+                    parsed_data.language = language_override
+
+                if self.card_db.is_valid_and_unique_card(parsed_data):
+                    self._add_matched_card(cards, parsed_data, copies)
+                elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(parsed_data)):
                     # Some sources have invalid collector numbers. So try again without that.
-                    self._add_matched_card(cards, matched_card, copies)
-                elif print_guessing and (guessed_card := self.guess_printing(matched_card)) is not None:
+                    self._add_matched_card(cards, parsed_data, copies)
+                elif print_guessing and (guessed_card := self.guess_printing(parsed_data)) is not None:
                     self._add_card_to_deck(cards, guessed_card, copies)
                 else:
                     unmatched_lines.append(line)
@@ -107,7 +107,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         card.collector_number = None
         return card
 
-    def _match_card(self, match_dict: MatchType) -> CardIdentificationData:
+    def _parse_line(self, match_dict: MatchType) -> CardIdentificationData:
         matched_name = self._match_name(match_dict)
         language = self._match_language(match_dict, matched_name)
         matched_card = CardIdentificationData(
