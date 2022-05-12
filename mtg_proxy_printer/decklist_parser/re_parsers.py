@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import copy
 from collections import Counter
 import re
 import typing
@@ -83,16 +83,20 @@ class GenericRegularExpressionDeckParser(ParserBase):
                         translated := self.card_db.translate_card_name(parsed_data, language_override)):
                     parsed_data.name = translated
                     parsed_data.language = language_override
-
-                if self.card_db.is_valid_and_unique_card(parsed_data):
-                    self._add_matched_card(cards, parsed_data, copies)
-                elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(parsed_data)):
-                    # Some sources have invalid collector numbers. So try again without that.
-                    self._add_matched_card(cards, parsed_data, copies)
-                elif print_guessing and (guessed_card := self.guess_printing(parsed_data)) is not None:
+                    parsed_data.scryfall_id = None  # The old value is definitely invalid in this case, so set to Null
+                if matched_cards := self.card_db.get_cards_from_data(parsed_data):
+                    self._add_card_to_deck(cards, matched_cards[0], copies)
+                    continue
+                # Some sources have invalid collector numbers. So try again without that.
+                parsed_data_without_collector_number = copy.copy(parsed_data)
+                parsed_data_without_collector_number.collector_number = None
+                if matched_cards := self.card_db.get_cards_from_data(parsed_data_without_collector_number):
+                    self._add_card_to_deck(cards, matched_cards[0], copies)
+                    continue
+                if print_guessing and (guessed_card := self.guess_printing(parsed_data)) is not None:
                     self._add_card_to_deck(cards, guessed_card, copies)
-                else:
-                    unmatched_lines.append(line)
+                    continue
+                unmatched_lines.append(line)
             elif line:
                 # Non-empty, non-matching lines
                 unmatched_lines.append(line)
