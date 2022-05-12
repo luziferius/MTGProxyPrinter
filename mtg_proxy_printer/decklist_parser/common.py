@@ -31,6 +31,16 @@ __all__ = [
     "ParserBase",
 ]
 
+try:
+    # Profiling decorator, injected into globals by line-profiler. Because the injection does funky stuff, this
+    # is the easiest way to test if the profile() function is defined.
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    profile
+except NameError:
+    # If not defined, use this identity decorator as a replacement
+    def profile(func):
+        return func
+
 ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 
@@ -95,6 +105,7 @@ class ParserBase(QObject):
         """
         return False
 
+    @profile
     def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:

@@ -35,6 +35,16 @@ __all__ = [
     "XMageParser",
 ]
 
+try:
+    # Profiling decorator, injected into globals by line-profiler. Because the injection does funky stuff, this
+    # is the easiest way to test if the profile() function is defined.
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    profile
+except NameError:
+    # If not defined, use this identity decorator as a replacement
+    def profile(func):
+        return func
+
 
 class GenericRegularExpressionDeckParser(ParserBase):
     """
@@ -57,6 +67,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             else re.compile(regular_expression)
         logger.info(f"Created {self.__class__.__name__} instance using RE '{regular_expression}'")
 
+    @profile
     def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
@@ -72,6 +83,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
                         matched_card, language_override)):
                     matched_card.name = translated
                     matched_card.language = language_override
+                
                 if self.card_db.is_valid_and_unique_card(matched_card):
                     self._add_matched_card(cards, matched_card, copies)
                 elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
