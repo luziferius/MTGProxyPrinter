@@ -79,8 +79,8 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 copies = int(match_dict.get("copies", 1))
                 # If the matcher doesn’t include language information, all cards are implicitly English printings
                 parsed_data = self._parse_line(match_dict)
-                if language_override and (translated := self.card_db.translate_card_name(
-                        parsed_data, language_override)):
+                if language_override and language_override != parsed_data.language and (
+                        translated := self.card_db.translate_card_name(parsed_data, language_override)):
                     parsed_data.name = translated
                     parsed_data.language = language_override
 
