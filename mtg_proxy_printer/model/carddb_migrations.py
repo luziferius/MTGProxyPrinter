@@ -506,7 +506,30 @@ def _migrate_26_to_27(db: sqlite3.Connection):
     for statement in [
         "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
         "CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id)",
-        "ANALYZE"
+        "ANALYZE",
+        "DROP VIEW AllPrintings",
+        textwrap.dedent("""\
+        CREATE VIEW VisiblePrintings AS
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
+                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE"""),
+        textwrap.dedent("""\
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)"""),
     ]:
         db.execute(f"{statement};\n")
 
