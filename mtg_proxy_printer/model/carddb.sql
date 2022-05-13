@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000026;
+PRAGMA user_version = 0000027;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -138,6 +138,10 @@ CREATE TABLE RemovedPrintings (
   language TEXT NOT NULL,
   oracle_id TEXT NOT NULL
 );
+
+CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC);
+CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id);
+
 
 CREATE VIEW AllPrintings AS
   SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,

@@ -502,6 +502,15 @@ def _migrate_25_to_26(db: sqlite3.Connection):
     """))
 
 
+def _migrate_26_to_27(db: sqlite3.Connection):
+    for statement in [
+        "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
+        "CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id)",
+        "ANALYZE"
+    ]:
+        db.execute(f"{statement};\n")
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -522,6 +531,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (23, _migrate_23_to_24),
     (24, _migrate_24_to_25),
     (25, _migrate_25_to_26),
+    (26, _migrate_26_to_27),
 )
 
 
