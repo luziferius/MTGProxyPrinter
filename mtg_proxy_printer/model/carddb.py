@@ -211,7 +211,6 @@ class CardDatabase:
             WHERE FaceName.is_hidden IS FALSE
               AND language = ?
               {name_filter}
-            GROUP BY card_name
             ORDER BY card_name ASC
         ''')
         parameters = [language]
