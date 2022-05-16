@@ -19,6 +19,8 @@ import pathlib
 import re
 import typing
 
+from PyQt5.QtCore import QStandardPaths
+
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 
@@ -50,34 +52,33 @@ CARD_HEIGHT = 88
 VERSION_CHECK_RE = re.compile(
     # sourced from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
-    r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
-    r"(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*))*))?"
+    r"(?:\+(?P<buildmetadata>[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$"
 )
 
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
     "automatically-add-opposing-faces": "True",
 }
-DEFAULT_SETTINGS["downloads"] = {
-    "download-cards-depicting-racism": "False",
-    "download-cards-without-images": "False",
-    "download-oversized-cards": "True",
-    "download-banned-in-brawl": "True",
-    "download-banned-in-commander": "True",
-    "download-banned-in-historic": "True",
-    "download-banned-in-legacy": "True",
-    "download-banned-in-modern": "True",
-    "download-banned-in-pauper": "True",
-    "download-banned-in-penny": "True",
-    "download-banned-in-pioneer": "True",
-    "download-banned-in-standard": "True",
-    "download-banned-in-vintage": "True",
-    "download-white-bordered": "True",
-    "download-gold-bordered": "True",
-    "download-funny-cards": "True",
-    "download-non-traditional-cards": "True",
-    "download-token": "True",
-    "download-digital-cards": "True",
+DEFAULT_SETTINGS["card-filter"] = {
+    "hide-cards-depicting-racism": "True",
+    "hide-cards-without-images": "True",
+    "hide-oversized-cards": "False",
+    "hide-banned-in-brawl": "False",
+    "hide-banned-in-commander": "False",
+    "hide-banned-in-historic": "False",
+    "hide-banned-in-legacy": "False",
+    "hide-banned-in-modern": "False",
+    "hide-banned-in-pauper": "False",
+    "hide-banned-in-penny": "False",
+    "hide-banned-in-pioneer": "False",
+    "hide-banned-in-standard": "False",
+    "hide-banned-in-vintage": "False",
+    "hide-white-bordered": "False",
+    "hide-gold-bordered": "False",
+    "hide-funny-cards": "False",
+    "hide-token": "False",
+    "hide-digital-cards": "True",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",
@@ -92,8 +93,9 @@ DEFAULT_SETTINGS["documents"] = {
     "pdf-page-count-limit": "0",
 }
 DEFAULT_SETTINGS["default-save-paths"] = {
-    "document-save-path": "",
-    "pdf-export-path": "",
+    "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+    "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
@@ -107,7 +109,7 @@ DEFAULT_SETTINGS["debug"] = {
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["print-guessing"] = {
-    "enable-guessing": "False",
+    "enable-guessing": "True",
     "prefer-already-downloaded": "True",
     "always-translate-deck-lists": "False",
 }
@@ -162,17 +164,18 @@ def validate_settings(read_settings: configparser.ConfigParser):
     I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
     non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
     """
-    _validate_download_section(read_settings["downloads"])
+    _validate_card_filter_section(read_settings["card-filter"])
     _validate_images_section(read_settings["images"])
     _validate_documents_section(read_settings["documents"])
     _validate_application_section(read_settings["application"])
     _validate_gui_section(read_settings["gui"])
     _validate_debug_section(read_settings["debug"])
     _validate_print_guessing_section(read_settings["print-guessing"])
+    _validate_default_save_paths_section(read_settings["default-save-paths"])
 
 
-def _validate_download_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["downloads"]
+def _validate_card_filter_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["card-filter"]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
@@ -253,6 +256,20 @@ def _validate_print_guessing_section(section: configparser.SectionProxy):
         _validate_boolean(section, defaults, key)
 
 
+def _validate_default_save_paths_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["default-save-paths"]
+    for key in section.keys():
+        _validate_path_to_directory(section, defaults, key)
+
+
+def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
+        if not pathlib.Path(section[key]).resolve().is_dir():
+            raise ValueError
+    except Exception:
+        _restore_default(section, defaults, key)
+
+
 def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
         if section.getboolean(key) is None:
@@ -290,6 +307,7 @@ def _restore_default(section: configparser.SectionProxy, defaults: configparser.
 
 def migrate_settings(settings: configparser.ConfigParser):
     _migrate_layout_setting(settings)
+    _migrate_download_settings(settings)
 
 
 def _migrate_layout_setting(settings: configparser.ConfigParser):
@@ -302,7 +320,24 @@ def _migrate_layout_setting(settings: configparser.ConfigParser):
         if layout == "vertical":
             layout = "columnar"
         gui_section["central-widget-layout"] = layout
-
+        
+        
+def _migrate_download_settings(settings: configparser.ConfigParser):
+    target_section_name = "card-filter"
+    if settings.has_section(target_section_name) or not settings.has_section("downloads"):
+        return
+    download_section = settings["downloads"]
+    settings.add_section(target_section_name)
+    filter_section = settings[target_section_name]
+    for source_setting in settings["downloads"].keys():
+        target_setting = source_setting.replace("download-", "hide-")
+        try:
+            new_value = not download_section.getboolean(source_setting)
+        except ValueError:
+            pass
+        else:
+            filter_section[target_setting] = str(new_value)
+        
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.

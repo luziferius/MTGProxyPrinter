@@ -36,7 +36,9 @@ from mtg_proxy_printer.ui.central_widget import ColumnarCentralWidget, GroupedCe
 from tests.helpers import fill_card_database_with_json_card
 
 
-@pytest.mark.parametrize("central_widget_class", [ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
+@pytest.mark.parametrize("central_widget_class", [
+    ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget
+])
 def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         qtbot: QtBot, card_db: CardDatabase, central_widget_class):
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")

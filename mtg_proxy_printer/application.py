@@ -13,7 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import atexit
+import functools
+import pathlib
+import shutil
 import sys
+from tempfile import mkdtemp
 import typing
 
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
@@ -23,6 +28,7 @@ from PyQt5.QtGui import QIcon
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.model.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer import settings
@@ -50,21 +56,17 @@ class Application(QApplication):
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
-        logger.debug("Opening Database")
-        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
-        self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
         self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        self.settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
-            self.language_model, self.document, self.main_window)
-        self.settings_window.saved.connect(self.main_window.settings_changed)
-        self.main_window.action_show_settings.triggered.connect(self.settings_window.show)
         self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self.settings_window = self._create_settings_window(
+            self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
         if args.test_exit_on_launch:
             logger.info("Enqueue application exit to run when event loop starts.")
@@ -81,6 +83,37 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _open_databases(self, args: Namespace):
+        if args.test_exit_on_launch:
+            temp_directory = pathlib.Path(mkdtemp())
+            logger.info(f"Opening databases in temporary directory {temp_directory}")
+            atexit.register(functools.partial(shutil.rmtree, temp_directory))
+            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" /"CardDatabase.sqlite3")
+            image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(
+                temp_directory/"image_db", parent=self)
+            return card_db, image_db
+        logger.debug("Opening Databases")
+        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
+        card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        return card_db, image_db
+
+    @staticmethod
+    def _create_settings_window(
+            language_model: QStringListModel, document: mtg_proxy_printer.model.document.Document,
+            main_window: mtg_proxy_printer.ui.main_window.MainWindow,
+            card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader):
+        settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
+            language_model, document, main_window)
+        settings_window.saved.connect(main_window.settings_changed)
+        settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
+        settings_window.long_running_process_begins.connect(main_window.show_progress_bar)
+        settings_window.process_updated.connect(main_window.progress_bar.setValue)
+        settings_window.process_finished.connect(main_window.hide_progress_bar)
+        settings_window.error_occurred.connect(main_window.on_error_occurred)
+        main_window.action_show_settings.triggered.connect(settings_window.show)
+        return settings_window
 
     def _create_document_instance(
             self,

@@ -23,6 +23,7 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.model.document import Document
@@ -144,6 +145,8 @@ def test_get_card_names(qtbot, card_db: CardDatabase, language: str, prefix: Opt
     ("Wald", "de"),
     ("Bosque", "es"),
     ("Unknown", None),
+    ("Mentor Corrosivo", "pt"),
+    ("Mentor corrosivo", "es"),
 ])
 def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expected: OptString):
     fill_card_database_with_json_cards(
@@ -159,6 +162,9 @@ def test_guess_language_from_name(qtbot, card_db: CardDatabase, name: str, expec
             "german_basic_Forest",
             "spanish_basic_Forest",
             "german_Duress",
+            "korean_Forest_with_placeholder_name",
+            "portuguese_Corrosive_Mentor",
+            "spanish_Corrosive_Mentor",
         ],
     )
     assert_that(
@@ -214,6 +220,9 @@ def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected
     ("Bosque", "en", "wrong source", None),
     ("Wald", "de", "wrong source", None),
     ("Bosque", "es", "wrong source", None),
+
+    ("Zwang", "en", None, "Duress"),
+    ("Zwang", "en", "de", "Duress"),
 ])
 def test_translate_card_name(
         qtbot, card_db: CardDatabase, source_name: str, target_language: str,
@@ -231,10 +240,11 @@ def test_translate_card_name(
             "german_basic_Forest",
             "spanish_basic_Forest",
             "german_Duress",
+            "german_Duress_2",
         ],
     )
     assert_that(
-        card_db.translate_card_name(source_name, target_language, source_language),
+        card_db.translate_card_name(CardIdentificationData(source_language, source_name), target_language),
         is_(equal_to(expected))
     )
 
@@ -396,11 +406,11 @@ def test_translate_double_faced_card(qtbot, card_db: CardDatabase, front: bool):
     english_card = card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", front)
     non_english_card = card_db.get_card_with_scryfall_id("000847d3-ebde-4580-a00e-61d501e99485", front)
     assert_that(
-        card_db.translate_card_name(non_english_card.name, english_card.language),
+        card_db.translate_card_name(CardIdentificationData(name=non_english_card.name), english_card.language),
         is_(equal_to(english_card.name))
     )
     assert_that(
-        card_db.translate_card_name(english_card.name, non_english_card.language),
+        card_db.translate_card_name(CardIdentificationData(name=english_card.name), non_english_card.language),
         is_(equal_to(non_english_card.name))
     )
 
@@ -633,19 +643,19 @@ def test_allow_updating_card_data_on_freshly_populated_database_returns_false(ca
     assert_that(card_db.allow_updating_card_data(), is_(False))
 
 
-@pytest.mark.parametrize("delta_days", [0, 1, 2])
+@pytest.mark.parametrize("delta_days", [-2, -1, 0, 1, 2])
 def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_db: CardDatabase, delta_days: int):
     cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
     card_data = [load_json("regular_english_card")]
     cidw.populate_database(card_data)
     today = datetime.date.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
-    with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.datetime.date") as mock_date:
+    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.date") as mock_date:
         mock_date.today.return_value = now
         assert_that(datetime.date.today(), is_not(today))
         assert_that(
             card_db.allow_updating_card_data(),
-            is_(True)
+            is_(delta_days >= 0)
         )
 
 
@@ -660,16 +670,119 @@ def test_get_total_cards_in_last_update(card_db: CardDatabase):
 
 
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", "download-oversized-cards", "False")
+    fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_that(
-        card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
-        is_(equal_to("7e6b9b59-cd68-4e3c-827b-38833c92d6eb"))
+        card_db.is_removed_printing("b120e3c2-21b1-43e3-b685-9cf62bd7aa07"),
+        is_(True)
     )
 
 
-def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", "download-oversized-cards", "True")
+@pytest.mark.parametrize("filter_value", [True, False])
+def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db: CardDatabase, filter_value: bool):
+    fill_card_database_with_json_card(qtbot, card_db, "oversized_card", {"hide-oversized-cards": str(filter_value)})
     assert_that(
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
-        is_(None)
+        is_(filter_value)
+    )
+
+
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
+def test_filters_in_db_differ_from_settings_with_changed_settings_returns_true(
+        card_db: CardDatabase, settings_key: str):
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
+    settings_to_use[settings_key] = str(not section.getboolean(settings_key))
+    with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(
+            card_db._filters_in_db_differ_from_settings(section),
+            is_(True)
+        )
+
+
+def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_false(card_db: CardDatabase):
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
+    with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(
+            card_db._filters_in_db_differ_from_settings(section),
+            is_(False)
+        )
+
+
+def test__remove_old_printing_filters_with_unaltered_settings_does_nothing(card_db: CardDatabase):
+    query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    old_settings = card_db.db.execute(query).fetchall()
+    assert_that(
+        card_db._remove_old_printing_filters(section),
+        is_(False)
+    )
+    new_settings = card_db.db.execute(query).fetchall()
+    assert_that(
+        new_settings,
+        contains_exactly(*old_settings)
+    )
+
+
+def test__remove_old_printing_filters_with_removed_settings_removes_database_rows(card_db: CardDatabase):
+    query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    with unittest.mock.patch.dict(section, {}, clear=True):
+        assert_that(
+            card_db._remove_old_printing_filters(section),
+            is_(True)
+        )
+    new_settings = card_db.db.execute(query).fetchall()
+    assert_that(
+        new_settings,
+        is_(empty())
+    )
+
+
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
+def test_store_current_printing_filters_updates_value_in_database(card_db: CardDatabase, settings_key: str):
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
+    settings_to_use[settings_key] = str(not section.getboolean(settings_key))
+    with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(card_db._filters_in_db_differ_from_settings(section), is_(True))
+        card_db.store_current_printing_filters(True)
+        assert_that(card_db._filters_in_db_differ_from_settings(section), is_(False))
+
+
+@pytest.mark.parametrize("order_printings", [True, False])
+@pytest.mark.parametrize("cards_to_import, filter_name, card_data, expected_replacement", [
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", CardIdentificationData("en", scryfall_id="b120e3c2-21b1-43e3-b685-9cf62bd7aa07", is_front=True), "d9131fc3-018a-4975-8795-47be3956160d"),
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", CardIdentificationData(scryfall_id="b120e3c2-21b1-43e3-b685-9cf62bd7aa07", is_front=True), "d9131fc3-018a-4975-8795-47be3956160d"),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "hide-cards-without-images", CardIdentificationData("de", scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), "0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "hide-cards-without-images", CardIdentificationData(scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), "0600d6c2-0f72-4e79-a55d-1f06dffa48c2"),
+])
+def test_get_replacement_card_for_unknown_printing(
+        qtbot, card_db: CardDatabase, cards_to_import, filter_name: str, card_data: CardIdentificationData,
+        expected_replacement: str, order_printings: bool):
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "True"})
+
+    assert_that(
+        card_db.get_replacement_card_for_unknown_printing(card_data, order_by_print_count=order_printings),
+        all_of(
+            not_(empty()),
+            contains_exactly(
+                has_property("scryfall_id", equal_to(expected_replacement)),
+            )
+        )
+    )
+
+
+@pytest.mark.parametrize("cards_to_import, filter_name, printing, expected", [
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", True),
+    (["missing_image_double_faced_card", "english_double_faced_card_2"], "any", "d9131fc3-018a-4975-8795-47be3956160d", False),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "hide-cards-without-images", "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", True),
+    (["german_Back_to_Basics", "english_Back_to_Basics"], "hide-cards-without-images", "0600d6c2-0f72-4e79-a55d-1f06dffa48c2", False),
+])
+def test_is_removed_printing(
+        qtbot, card_db: CardDatabase, cards_to_import, filter_name: str, printing: str, expected: bool):
+    fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {filter_name: "True"})
+    assert_that(
+        card_db.is_removed_printing(printing),
+        is_(expected)
     )

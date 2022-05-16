@@ -17,6 +17,7 @@ import pathlib
 
 from PyQt5.QtCore import QFile, QUrl, QObject
 from PyQt5.QtWidgets import QLabel
+# noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
 from mtg_proxy_printer.logger import get_logger
@@ -30,6 +31,7 @@ __all__ = [
     "BlockedSignals",
     "set_url_label",
     "inherits_from_ui_file_with_name",
+    "format_size",
 ]
 
 try:
@@ -106,3 +108,11 @@ class SomeWidget(*inherits_from_ui_file_with_name("SomeWidgetUiFileName")):
 
 """
 inherits_from_ui_file_with_name = load_ui_from_file
+
+
+def format_size(size: float) -> str:
+    for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
+        if -1024 < size < 1024:
+            return f"{size:3.2f} {unit}"
+        size /= 1024
+    return f"{size:.2f} YiB"

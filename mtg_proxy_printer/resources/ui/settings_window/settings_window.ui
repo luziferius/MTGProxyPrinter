@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>650</width>
+    <width>612</width>
     <height>650</height>
    </rect>
   </property>
@@ -83,8 +83,11 @@ Uncheck to disable this automatism.</string>
        </item>
        <item>
         <widget class="QGroupBox" name="default_paths_group_box">
+         <property name="toolTip">
+          <string>These paths are selected by default when browsing the file system for files</string>
+         </property>
          <property name="title">
-          <string>Default document save paths</string>
+          <string>Default save and load paths</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="1" column="1">
@@ -100,6 +103,13 @@ Uncheck to disable this automatism.</string>
             </property>
             <property name="clearButtonEnabled">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="deck_list_search_path_label">
+            <property name="text">
+             <string>Deck list search path</string>
             </property>
            </widget>
           </item>
@@ -119,10 +129,36 @@ Uncheck to disable this automatism.</string>
             </property>
            </widget>
           </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="pdf_save_path_browse_button">
+            <property name="toolTip">
+             <string>Browse…</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="document-open"/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="deck_list_search_path_browse_button">
+            <property name="toolTip">
+             <string>Browse…</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="document-open"/>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="document_save_path_label">
             <property name="text">
-             <string>Save path</string>
+             <string>Document save path</string>
             </property>
             <property name="buddy">
              <cstring>document_save_path</cstring>
@@ -139,6 +175,22 @@ Uncheck to disable this automatism.</string>
             </property>
            </widget>
           </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="deck_list_search_path">
+            <property name="whatsThis">
+             <string>If set, use this as the default location for saving exported PDF documents.</string>
+            </property>
+            <property name="inputMethodHints">
+             <set>Qt::ImhNoAutoUppercase</set>
+            </property>
+            <property name="placeholderText">
+             <string>Path to a directory</string>
+            </property>
+            <property name="clearButtonEnabled">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="2">
            <widget class="QPushButton" name="document_save_path_browse_button">
             <property name="toolTip">
@@ -148,22 +200,7 @@ Uncheck to disable this automatism.</string>
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="document-open">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="pdf_save_path_browse_button">
-            <property name="toolTip">
-             <string>Browse…</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset theme="document-open">
-              <normaloff>.</normaloff>.</iconset>
+             <iconset theme="document-open"/>
             </property>
            </widget>
           </item>
@@ -386,186 +423,24 @@ This avoids adding foreign language cards, if the deck list happens to contain s
      </widget>
      <widget class="QWidget" name="tab_card_data_download">
       <attribute name="title">
-       <string>Card data download</string>
+       <string>Hide printings</string>
       </attribute>
       <layout class="QVBoxLayout" name="tab_card_data_download_layout">
        <item>
-        <widget class="QLabel" name="card_download_settings_header_label">
+        <widget class="QLabel" name="card_filter_settings_header_label">
          <property name="text">
-          <string>Changing these options requires re-downloading the card data from Scryfall.</string>
+          <string>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QGroupBox" name="card_download_general_settings">
-         <property name="title">
-          <string>General download filters</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout">
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="include_cards_depicting_racism">
-            <property name="toolTip">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enable downloading cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Changing this option only takes effect when re-building the program’s card database by completely omitting the cards or including them during the download process.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-            </property>
-            <property name="text">
-             <string>Include cards depicting racism</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="include_cards_without_images">
-            <property name="toolTip">
-             <string>Include non-English cards with low-resolution,
-English placeholder images with an overlay text stating
-“This card is not available in the selected language.”</string>
-            </property>
-            <property name="text">
-             <string>Include cards with placeholder images</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QCheckBox" name="include_funny_cards">
-            <property name="toolTip">
-             <string>“Funny” cards, not legal in any constructed format.
-This includes full-art Contraptions from Unstable,
-cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
-some black-bordered promotional cards with non-standard back faces,
-and all silver-bordered cards.</string>
-            </property>
-            <property name="text">
-             <string>Include “funny” cards</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0">
-           <widget class="QCheckBox" name="include_token">
-            <property name="text">
-             <string>Include Token cards</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QCheckBox" name="include_gold_bordered_cards">
-            <property name="toolTip">
-             <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
-These are not tournament legal.</string>
-            </property>
-            <property name="text">
-             <string>Include gold-bordered cards</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="include_oversized_cards">
-            <property name="toolTip">
-             <string>These cards are larger than regular Magic cards and can’t be included in decks.
-Includes Archenemy schemes, Planechase planes and
-oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
-            </property>
-            <property name="text">
-             <string>Include oversized cards</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QCheckBox" name="include_white_bordered_cards">
-            <property name="text">
-             <string>Include white-bordered cards</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QCheckBox" name="include_digital_cards">
-            <property name="toolTip">
-             <string>Include cards and printings that are only available on digital platforms</string>
-            </property>
-            <property name="text">
-             <string>Include digital cards</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+        <widget class="GeneralPrintingFilterWidget" name="card_filter_general_settings"/>
        </item>
        <item>
-        <widget class="QGroupBox" name="card_download_format_settings">
-         <property name="title">
-          <string>Include cards banned in specific Formats</string>
-         </property>
-         <layout class="QGridLayout" name="gridLayout_3">
-          <item row="0" column="0">
-           <widget class="QCheckBox" name="include_banned_in_brawl">
-            <property name="text">
-             <string>Brawl</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QCheckBox" name="include_banned_in_pauper">
-            <property name="text">
-             <string>Pauper</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="include_banned_in_commander">
-            <property name="text">
-             <string>Commander</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QCheckBox" name="include_banned_in_penny">
-            <property name="text">
-             <string>Penny</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="include_banned_in_historic">
-            <property name="text">
-             <string>Historic</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QCheckBox" name="include_banned_in_pioneer">
-            <property name="text">
-             <string>Pioneer</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0">
-           <widget class="QCheckBox" name="include_banned_in_legacy">
-            <property name="text">
-             <string>Legacy</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QCheckBox" name="include_banned_in_standard">
-            <property name="text">
-             <string>Standard</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QCheckBox" name="include_banned_in_modern">
-            <property name="text">
-             <string>Modern</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QCheckBox" name="include_banned_in_vintage">
-            <property name="text">
-             <string>Vintage</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+        <widget class="FormatPrintingFilterWidget" name="card_filter_format_settings"/>
        </item>
        <item>
         <spacer name="verticalSpacer_2">
@@ -587,6 +462,53 @@ oversized commander creature or Planeswalker cards included in some pre-construc
        <string>Debug settings</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
+       <item row="3" column="0" colspan="2">
+        <widget class="Line" name="debug_settings_header_line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="debug_settings_headerlabel">
+         <property name="text">
+          <string>Debug settings (Changing these require an application restart)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="0" colspan="2">
+        <spacer name="verticalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="log_level_label">
+         <property name="text">
+          <string>Event severity that gets logged to file:</string>
+         </property>
+         <property name="buddy">
+          <cstring>log_level_combo_box</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QPushButton" name="open_debug_log_location">
+         <property name="text">
+          <string>Open debug log directory</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
+       </item>
        <item row="6" column="1">
         <widget class="QComboBox" name="log_level_combo_box">
          <property name="toolTip">
@@ -607,43 +529,6 @@ oversized commander creature or Planeswalker cards included in some pre-construc
          </property>
         </widget>
        </item>
-       <item row="3" column="0" colspan="2">
-        <widget class="Line" name="debug_settings_header_line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="log_level_label">
-         <property name="text">
-          <string>Event severity that gets logged to file:</string>
-         </property>
-         <property name="buddy">
-          <cstring>log_level_combo_box</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="0" colspan="2">
-        <spacer name="verticalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <widget class="QLabel" name="debug_settings_headerlabel">
-         <property name="text">
-          <string>Debug settings (Changing these require an application restart)</string>
-         </property>
-        </widget>
-       </item>
        <item row="5" column="0">
         <widget class="QCheckBox" name="enable_write_log_file">
          <property name="text">
@@ -651,13 +536,13 @@ oversized commander creature or Planeswalker cards included in some pre-construc
          </property>
         </widget>
        </item>
-       <item row="7" column="1">
-        <widget class="QPushButton" name="open_debug_log_location">
+       <item row="8" column="1">
+        <widget class="QPushButton" name="debug_download_card_data_as_file">
          <property name="text">
-          <string>Open debug log directory</string>
+          <string>Download card data as file</string>
          </property>
          <property name="icon">
-          <iconset theme="document-open"/>
+          <iconset theme="edit-download"/>
          </property>
         </widget>
        </item>
@@ -684,6 +569,18 @@ oversized commander creature or Planeswalker cards included in some pre-construc
    <header>mtg_proxy_printer.ui.page_config_widget</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>GeneralPrintingFilterWidget</class>
+   <extends>QGroupBox</extends>
+   <header>mtg_proxy_printer.ui.settings_window</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FormatPrintingFilterWidget</class>
+   <extends>QGroupBox</extends>
+   <header>mtg_proxy_printer.ui.settings_window</header>
+   <container>1</container>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>add_card_widget_style_combo_box</tabstop>
@@ -698,24 +595,6 @@ oversized commander creature or Planeswalker cards included in some pre-construc
   <tabstop>print_guessing_prefer_already_downloaded</tabstop>
   <tabstop>automatic_deck_list_translation_enable</tabstop>
   <tabstop>pdf_page_count_limit</tabstop>
-  <tabstop>include_cards_depicting_racism</tabstop>
-  <tabstop>include_cards_without_images</tabstop>
-  <tabstop>include_oversized_cards</tabstop>
-  <tabstop>include_white_bordered_cards</tabstop>
-  <tabstop>include_gold_bordered_cards</tabstop>
-  <tabstop>include_funny_cards</tabstop>
-  <tabstop>include_token</tabstop>
-  <tabstop>include_digital_cards</tabstop>
-  <tabstop>include_banned_in_brawl</tabstop>
-  <tabstop>include_banned_in_commander</tabstop>
-  <tabstop>include_banned_in_historic</tabstop>
-  <tabstop>include_banned_in_legacy</tabstop>
-  <tabstop>include_banned_in_modern</tabstop>
-  <tabstop>include_banned_in_pauper</tabstop>
-  <tabstop>include_banned_in_penny</tabstop>
-  <tabstop>include_banned_in_pioneer</tabstop>
-  <tabstop>include_banned_in_standard</tabstop>
-  <tabstop>include_banned_in_vintage</tabstop>
  </tabstops>
  <resources/>
  <connections>

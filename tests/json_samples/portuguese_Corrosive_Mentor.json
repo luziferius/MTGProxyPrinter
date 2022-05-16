@@ -1,0 +1,125 @@
+{
+  "object": "card",
+  "id": "40bdf95b-e43f-4eba-94b6-823728852dd8",
+  "oracle_id": "380a1fbf-68bc-4456-9a67-f01c0174944c",
+  "multiverse_ids": [
+    172130
+  ],
+  "name": "Corrosive Mentor",
+  "printed_name": "Mentor Corrosivo",
+  "lang": "pt",
+  "released_at": "2008-05-02",
+  "uri": "https://api.scryfall.com/cards/40bdf95b-e43f-4eba-94b6-823728852dd8",
+  "scryfall_uri": "https://scryfall.com/card/shm/61/pt/mentor-corrosivo?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "lowres",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/4/0/40bdf95b-e43f-4eba-94b6-823728852dd8.jpg?1562829203",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/4/0/40bdf95b-e43f-4eba-94b6-823728852dd8.jpg?1562829203",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/4/0/40bdf95b-e43f-4eba-94b6-823728852dd8.jpg?1562829203",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/4/0/40bdf95b-e43f-4eba-94b6-823728852dd8.png?1562829203",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/4/0/40bdf95b-e43f-4eba-94b6-823728852dd8.jpg?1562829203",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/4/0/40bdf95b-e43f-4eba-94b6-823728852dd8.jpg?1562829203"
+  },
+  "mana_cost": "{2}{B}",
+  "cmc": 3.0,
+  "type_line": "Creature — Elemental Rogue",
+  "printed_type_line": "Criatura — Elemental Ladino",
+  "oracle_text": "Black creatures you control have wither. (They deal damage to creatures in the form of -1/-1 counters.)",
+  "printed_text": "As criaturas pretas que você controla têm murchar. (Elas causam dano a criaturas na forma de marcadores -1/-1.)",
+  "power": "1",
+  "toughness": "3",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "restricted",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "c18c0ba1-2081-4808-9b2e-549bc3a666f3",
+  "set": "shm",
+  "set_name": "Shadowmoor",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/c18c0ba1-2081-4808-9b2e-549bc3a666f3",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Ashm&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/shm?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/40bdf95b-e43f-4eba-94b6-823728852dd8/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A380a1fbf-68bc-4456-9a67-f01c0174944c&unique=prints",
+  "collector_number": "61",
+  "digital": false,
+  "rarity": "uncommon",
+  "flavor_text": "Os sórdidos cinzeríneos alimentam suas tênues chamas sorvendo a luz dos outros.",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Daarken",
+  "artist_ids": [
+    "e607a0d4-fc12-4c01-9e3f-501f5269b9cb"
+  ],
+  "illustration_id": "fbe65f03-2108-46fe-a6dc-a74ce509ccca",
+  "border_color": "black",
+  "frame": "2003",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 7528,
+  "penny_rank": 6947,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=172130&printed=true",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Corrosive+Mentor&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Corrosive+Mentor&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Corrosive+Mentor",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Corrosive+Mentor"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Corrosive+Mentor&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Corrosive+Mentor&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Corrosive+Mentor&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

@@ -76,7 +76,7 @@ def test_action_download_card_data(qtbot: QtBot, main_window: MainWindow, handle
         a mock that calls this as the side_effect.
         """
         with qtbot.waitSignal(main_window.loading_state_changed, timeout=1000, check_params_cb=lambda value: value):
-            main_window.card_data_downloader.download_worker.download_begins.emit(1000)
+            main_window.card_data_downloader.download_worker.download_begins.emit(1000, "Test run")
         assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
         raise handled_error
 
