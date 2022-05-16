@@ -631,7 +631,7 @@ class Document(QAbstractItemModel):
         blank = self.image_db.blank_image
         return filter(
             lambda card: card.image_file is blank,
-            set(itertools.chain.from_iterable(self.pages))
+            set(container.card for container in itertools.chain.from_iterable(self.pages))
         )
 
     @staticmethod
