@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, format_size
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -37,14 +37,6 @@ __all__ = [
     "CacheCleanupWizard",
 ]
 INVALID = QModelIndex()
-
-
-def format_size(size: float) -> str:
-    for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
-        if -1024 < size < 1024:
-            return f"{size:3.2f} {unit}"
-        size /= 1024
-    return f"{size:.2f} YiB"
 
 
 @functools.lru_cache(maxsize=256)
@@ -107,12 +99,10 @@ class KnownCardRow:
             data = self.size
         elif column == KnownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.scryfall_id
-        elif column == KnownCardColumns.FilesystemPath and role == Qt.DisplayRole:
+        elif column == KnownCardColumns.FilesystemPath and role in {Qt.DisplayRole, Qt.ToolTipRole}:
             data = str(self.path)
         elif column == KnownCardColumns.FilesystemPath and role == Qt.EditRole:
             data = self.path
-        elif column == KnownCardColumns.FilesystemPath and role == Qt.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path)
         else:
             data = None
         return data
@@ -202,6 +192,8 @@ class UnknownCardRow:
     def data(self, column: int, role: int):
         if column == UnknownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.scryfall_id
+        elif column == UnknownCardColumns.ScryfallId and role == Qt.ToolTipRole:
+            data = get_image_for_tooltip_display(self.path)
         elif column == UnknownCardColumns.IsFront and role == Qt.DisplayRole:
             data = "Front" if self.is_front else "Back"
         elif column == UnknownCardColumns.IsFront and role == Qt.EditRole:
@@ -214,12 +206,10 @@ class UnknownCardRow:
             data = format_size(self.size)
         elif column == UnknownCardColumns.Size and role == Qt.EditRole:
             data = self.size
-        elif column == UnknownCardColumns.FilesystemPath and role == Qt.DisplayRole:
+        elif column == UnknownCardColumns.FilesystemPath and role in {Qt.DisplayRole, Qt.ToolTipRole}:
             data = str(self.path)
         elif column == UnknownCardColumns.FilesystemPath and role == Qt.EditRole:
             data = self.path
-        elif column == UnknownCardColumns.FilesystemPath and role == Qt.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path)
         else:
             data = None
         return data

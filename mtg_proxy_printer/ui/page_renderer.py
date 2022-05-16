@@ -12,14 +12,17 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import enum
 import typing
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
-from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
+    pyqtSignal, QEvent
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
+from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
+
 import pint
 
-from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
@@ -30,9 +33,26 @@ unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
 
 __all__ = [
+    "RenderMode",
     "PageScene",
     "PageRenderer",
 ]
+
+
+@enum.unique
+class ZoomDirection(enum.Enum):
+    IN = enum.auto()
+    OUT = enum.auto()
+
+    @classmethod
+    def from_bool(cls, value: bool, /):
+        return cls.IN if value else cls.OUT
+
+
+@enum.unique
+class RenderMode(enum.Enum):
+    ON_SCREEN = enum.auto()
+    ON_PAPER = enum.auto()
 
 
 class PageScene(QGraphicsScene):
@@ -40,15 +60,17 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
-    def __init__(self, document: Document, draw_background: bool, scene_rect: QRectF, parent: QObject = None):
+    scene_size_changed = pyqtSignal()
+
+    def __init__(self, document: Document, render_mode: RenderMode, parent: QObject = None):
         """
         :param document: The document instance
-        :param draw_background: Boolean. If enabled, draw a white background. By default, the scene is transparent,
-          so a white background is required for on-screen rendering. When printing on PDF or paper, this can be skipped
-        :param scene_rect: Size of the canvas, i.e. page size in pixels
+        :param render_mode: Specifies the render mode.
+          On paper, no background is drawn and cut markers use black.
+          On Screen, a background is drawn using the theme’s background color and a high-contrast color for cut markers.
         :param parent: Optional Qt parent object
         """
-        super(PageScene, self).__init__(scene_rect, parent)
+        super(PageScene, self).__init__(self.get_document_page_size(document), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)
@@ -58,8 +80,8 @@ class PageScene(QGraphicsScene):
         self.document.dataChanged.connect(self.on_data_changed)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
-        self.draw_background = draw_background
-        logger.info(f"Created {self.__class__.__name__} instance. Drawing background: {self.draw_background}")
+        self.render_mode = render_mode
+        logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @pyqtSlot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -67,6 +89,33 @@ class PageScene(QGraphicsScene):
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
         self.redraw()
+
+    @pyqtSlot()
+    def on_settings_changed(self):
+        new_page_size = self.get_document_page_size(self.document)
+        old_size = self.sceneRect()
+        size_changed = old_size != new_page_size
+        if size_changed:
+            logger.debug("Page size changed. Adjusting PageScene dimensions")
+            self.setSceneRect(new_page_size)
+        self.redraw()
+        if size_changed:
+            # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
+            # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
+            self.scene_size_changed.emit()
+
+    @staticmethod
+    def get_document_page_size(document: Document) -> QRectF:
+        height: pint.Quantity = document.page_layout.page_height * unit_registry.millimeter
+        width: pint.Quantity = document.page_layout.page_width * unit_registry.millimeter
+        page_size = QRectF(
+            QPointF(0, 0),
+            QSizeF(
+                (DPI*width).to_reduced_units().to_tuple()[0],
+                (DPI*height).to_reduced_units().to_tuple()[0]
+            )
+        )
+        return page_size
 
     def _draw_cards(self):
         if not self.selected_page.isValid():
@@ -126,10 +175,11 @@ class PageScene(QGraphicsScene):
             logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
-        if self.draw_background:
-            white = QColor("white")
+        if self.render_mode == RenderMode.ON_SCREEN:
+            color = self.palette().color(QPalette.Active, QPalette.Base)
             logger.debug(f"Drawing background rectangle")
-            self.background = self.addRect(0, 0, self.width(), self.height(), white, white)
+            self.background = self.addRect(0, 0, self.width(), self.height(), color, color)
+        self.setBackgroundBrush(QBrush(QColor("white"), Qt.SolidPattern))
         if self.document.page_layout.draw_cut_markers:
             self._draw_cut_markers()
         self._draw_cards()
@@ -154,7 +204,8 @@ class PageScene(QGraphicsScene):
 
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
-        line_color = QColor("black")
+        line_color = QColor("black") if self.render_mode == RenderMode.ON_PAPER \
+            else self.palette().color(QPalette.Active, QPalette.WindowText)
         logger.info(f"Drawing cut markers")
         self._draw_vertical_markers(line_color)
         self._draw_horizontal_markers(line_color)
@@ -204,49 +255,82 @@ class PageRenderer(QGraphicsView):
     """
     This class displays an internally held PageScene instance on screen.
     """
-    def __init__(self, parent: QWidget = None, *, render_background: bool = True):
+    MAX_UI_ZOOM = 16.0
+
+    def __init__(self, parent: QWidget = None):
         super(PageRenderer, self).__init__(parent=parent)
-        self.render_background = render_background
-        self.setBackgroundBrush(QColor(200, 200, 200))
         self.document: Document = None
+        self.automatic_scaling = True
+        self.setCursor(Qt.SizeAllCursor)
+        self.zoom_in_action = QAction(self)
+        self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
+        self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
+        self.zoom_out_action = QAction(self)
+        self.zoom_out_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomOut))
+        self.zoom_out_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.OUT))
+        self.addActions((self.zoom_in_action, self.zoom_out_action))
+        self.setToolTip(
+            # TODO Find a better way to handle translation of the Ctrl key in the first line
+            f"Use {QKeySequence('Ctrl+A').toString(QKeySequence.NativeText).split('+')[0]}+Mouse wheel to zoom.\n"
+            f"Usable keyboard shortcuts are:\n"
+            f"Zoom in: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_in_action.shortcuts())}\n"
+            f"Zoom out: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_out_action.shortcuts())}"
+        )
+        self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def changeEvent(self, event: QEvent) -> None:
+        if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:
+            self._update_background_brush()
+            self.scene().setPalette(self.palette())
+            self.scene().redraw()
+            event.accept()
+        else:
+            super().changeEvent(event)
+
+    def _update_background_brush(self):
+        self.setBackgroundBrush(self.palette().color(QPalette.Active, QPalette.Window))
 
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(PageScene(document, self.render_background, self.get_document_page_size(), self))
+        self.setScene(PageScene(document, RenderMode.ON_SCREEN, self))
+        self.scene().scene_size_changed.connect(self.resizeEvent)
 
-    def get_document_page_size(self) -> QRectF:
-        if self.document is None:
-            document_settings = settings["documents"]
-            height: pint.Quantity = document_settings.getint("paper-height-mm") * unit_registry.millimeter
-            width: pint.Quantity = document_settings.getint("paper-width-mm") * unit_registry.millimeter
+    def _perform_zoom_step(self, direction: ZoomDirection):
+        scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9
+        if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
+            return
+        self.automatic_scaling = self.scene_fully_visible(scaling_factor)
+        self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
+        if self.automatic_scaling:
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
         else:
-            height: pint.Quantity = self.document.page_layout.page_height * unit_registry.millimeter
-            width: pint.Quantity = self.document.page_layout.page_width * unit_registry.millimeter
-        page_size = QRectF(
-            QPointF(0, 0),
-            QSizeF(
-                (DPI*width).to_reduced_units().to_tuple()[0],
-                (DPI*height).to_reduced_units().to_tuple()[0]
-            )
-        )
-        return page_size
+            self.setToolTip("")
+            old_anchor = self.transformationAnchor()
+            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.scale(scaling_factor, scaling_factor)
+            self.setTransformationAnchor(old_anchor)
 
-    @pyqtSlot()
-    def on_resize_event_triggered(self):
-        self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        if event.modifiers() & Qt.ControlModifier:
+            direction = ZoomDirection.from_bool(event.angleDelta().y() > 0)
+            self._perform_zoom_step(direction)
+            event.accept()
+            return
+        super().wheelEvent(event)
 
-    @pyqtSlot()
-    def on_settings_changed(self):
-        new_page_size = self.get_document_page_size()
-        old_size = self.scene().sceneRect()
-        if old_size != new_page_size:
-            logger.debug("Page size changed. Adjusting PageScene dimensions")
-            self.scene().setSceneRect(new_page_size)
-        self.scene().redraw()
-        if old_size != new_page_size:
-            # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
-            # in the available space or is now too small, so resize the scene to fill the available space.
-            self.on_resize_event_triggered()
+    def resizeEvent(self, event: QResizeEvent = None) -> None:
+        if self.automatic_scaling or self.scene_fully_visible():
+            self.automatic_scaling = True
+            self.setDragMode(QGraphicsView.NoDrag)
+            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+        if event is not None:
+            super().resizeEvent(event)
 
+    def scene_fully_visible(self, additional_scaling_factor: float = 1.0, /) -> bool:
+        scale = self.transform().m11() * additional_scaling_factor
+        scene_rect = self.sceneRect()
+        content_rect = self.contentsRect()
+        return round(scene_rect.width()*scale) <= content_rect.width() \
+            and round(scene_rect.height()*scale) <= content_rect.height()

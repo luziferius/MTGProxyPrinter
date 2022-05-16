@@ -1,0 +1,121 @@
+{
+  "object": "card",
+  "id": "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf",
+  "oracle_id": "33d405ea-7a9a-4970-b70f-9c05d90dd6f0",
+  "multiverse_ids": [
+    535184
+  ],
+  "name": "Duress",
+  "printed_name": "Zwang",
+  "lang": "de",
+  "released_at": "2021-09-24",
+  "uri": "https://api.scryfall.com/cards/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf",
+  "scryfall_uri": "https://scryfall.com/card/mid/98/de/zwang?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "lowres",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/9/2/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf.jpg?1646189229",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/9/2/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf.jpg?1646189229",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/9/2/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf.jpg?1646189229",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/9/2/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf.png?1646189229",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/2/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf.jpg?1646189229",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/9/2/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf.jpg?1646189229"
+  },
+  "mana_cost": "{B}",
+  "cmc": 1,
+  "type_line": "Sorcery",
+  "printed_type_line": "Hexerei",
+  "oracle_text": "Target opponent reveals their hand. You choose a noncreature, nonland card from it. That player discards that card.",
+  "printed_text": "Ein Gegner deiner Wahl zeigt die Karten auf seiner Hand offen vor. Du bestimmst davon eine Karte, die weder eine Kreatur noch ein Land ist. Der Spieler wirft die bestimmte Karte ab.",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "explorer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "legal",
+    "historicbrawl": "legal",
+    "alchemy": "legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "arena",
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "44b8eb8f-fa23-401a-98b5-1fbb9871128e",
+  "set": "mid",
+  "set_name": "Innistrad: Midnight Hunt",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/44b8eb8f-fa23-401a-98b5-1fbb9871128e",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Amid&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/mid?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/920e8a8f-3cb4-4f33-8a71-f2524cf63aaf/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A33d405ea-7a9a-4970-b70f-9c05d90dd6f0&unique=prints",
+  "collector_number": "98",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "Die Voldaren-Foltergruben sind so weitläufig, dass auf Gefangene oft jahrelang vergessen wird.",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Paul Scott Canavan",
+  "artist_ids": [
+    "c19bfb77-5099-4f7c-8585-6eaf367712c9"
+  ],
+  "illustration_id": "f5f52db3-c8ea-41e8-8ace-9c04ca461483",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 2403,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=535184&printed=true",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Duress",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Duress"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Duress&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Duress&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Duress&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

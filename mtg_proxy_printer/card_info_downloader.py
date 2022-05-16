@@ -13,17 +13,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
+import enum
 import functools
 import gzip
-import json
 import os
+import shutil
 from pathlib import Path
 import re
 import sqlite3
 import socket
 import typing
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import ijson
@@ -31,16 +32,15 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
-import mtg_proxy_printer.settings
-import mtg_proxy_printer.http_file
+import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
     "CardInfoDownloader",
-    "store_download_settings",
     "CardInfoDownloadWorker",
+    "SetWackinessScore",
 ]
 
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
@@ -74,6 +74,18 @@ class PrintingData(typing.NamedTuple):
     highres_image: bool
 
 
+@enum.unique
+class SetWackinessScore(int, enum.Enum):
+    REGULAR = 0
+    PROMOTIONAL = 1
+    WHITE_BORDERED = 2
+    FUNNY = 3
+    GOLD_BORDERED = 4
+    DIGITAL = 5
+    ART_SERIES = 8
+    OVERSIZED = 10
+
+
 class CardInfoDownloader(QObject):
     """
     Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
@@ -84,7 +96,7 @@ class CardInfoDownloader(QObject):
     is run asynchronously in another thread.
     """
     download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
-    download_begins = pyqtSignal(int)  # Emitted when the download starts. Data represents the expected total data
+    download_begins = pyqtSignal(int, str)  # Emitted when the download starts. Data represents the expected total data
     download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = pyqtSignal(bool)
     network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
@@ -92,6 +104,7 @@ class CardInfoDownloader(QObject):
 
     request_import_from_file = pyqtSignal(Path)
     request_import_from_url = pyqtSignal()
+    request_download_to_file = pyqtSignal(Path)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -104,6 +117,7 @@ class CardInfoDownloader(QObject):
         self.download_worker.moveToThread(self.worker_thread)
         self.request_import_from_file.connect(self.download_worker.download_card_data)
         self.request_import_from_url.connect(self.download_worker.download_card_data)
+        self.request_download_to_file.connect(self.download_worker.store_raw_card_data_in_file)
         self.download_worker.download_begins.connect(self.download_begins)
         self.download_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
         self.download_worker.download_progress.connect(self.download_progress)
@@ -159,18 +173,18 @@ class CardInfoDownloadWorker(DownloaderBase):
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            bulk_items = json.load(data)
-            for item in bulk_items["data"]:
+            for item in ijson.items(data, "data.item", use_float=True):
                 if item["type"] == requested_item:
                     result = item["download_uri"]
                     logger.debug(f"Bulk data located at: {result}")
                     return result
-            raise RuntimeError(
-                "URL to the Scryfall bulk data export not found. "
-                "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
-                "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+        raise RuntimeError(
+            "URL to the Scryfall bulk data export not found. "
+            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
+            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
 
-    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item"):
+    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") \
+            -> typing.Generator[JSONType, None, None]:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function takes a URL pointing to the card data json object in the Scryfall API.
@@ -185,12 +199,33 @@ class CardInfoDownloadWorker(DownloaderBase):
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")
-        source, monitor = self.read_from_url(url)
+        source, monitor = self.read_from_url(url, "Updating card data from Scryfall:")
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
-            yield from self._read_json_card_data_from_open_file(source, json_path)
+            yield from ijson.items(source, json_path)
 
-    def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item"):
+    def store_raw_card_data_in_file(self, download_path: Path):
+        """
+        Allows the user to store the raw JSON card data at the given path.
+        Accessible by a button in the Debug tab in the Settings window.
+        """
+        logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
+        logger.debug("Request bulk data URL from the Scryfall API.")
+        url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+        file_name = urllib.parse.urlparse(url).path.split("/")[-1]
+        logger.debug(f"Obtained url: '{url}'")
+        monitor = self._open_url(url, "Downloading card data:")
+        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
+        if monitor.content_encoding() == "gzip":
+            file_name += ".gz"
+        download_file_path = download_path/file_name
+        logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
+        with download_file_path.open("wb") as download_file, monitor:
+            shutil.copyfileobj(monitor, download_file)
+        logger.info("Download completed")
+
+    def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item") \
+            -> typing.Generator[JSONType, None, None]:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
         This function can take a file path to a locally stored json document. Mainly for testing purposes.
@@ -201,22 +236,25 @@ class CardInfoDownloadWorker(DownloaderBase):
         document in memory.
         """
         if isinstance(url_or_path, Path):
-            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
-            with url_or_path.open("rb") as file:
+            file_size = url_or_path.stat().st_size
+            raw_file = url_or_path.open("rb")
+            with self._wrap_in_metered_file(raw_file, file_size) as file:
                 if url_or_path.suffix.casefold() == ".gz":
                     file = gzip.open(file, "rb")
-                yield from self._read_json_card_data_from_open_file(file, json_path)
+                yield from ijson.items(file, json_path)
         elif looks_like_url_re.match(url_or_path):
             yield from self.read_json_card_data_from_url(url_or_path, json_path)
         else:
-            # TODO:  Monitoring no longer supported, since MeteredFile was replaced with MeteredSeekableHTTPFile
-            with open(url_or_path, "rb") as file:
-                yield from self._read_json_card_data_from_open_file(file, json_path)
+            file_size = os.stat(url_or_path).st_size
+            raw_file = open(url_or_path, "rb")
+            with self._wrap_in_metered_file(raw_file, file_size) as file:
+                yield from ijson.items(file, json_path)
 
-    @staticmethod
-    def _read_json_card_data_from_open_file(file, json_path: str) -> typing.Generator[JSONType, None, None]:
-        # Using "item" as the object path returns elements from a top-level JSON array
-        yield from ijson.items(file, json_path)
+    def _wrap_in_metered_file(self, raw_file, file_size):
+        monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
+        monitor.total_bytes_processed.connect(self.download_progress)
+        monitor.io_begin.connect(lambda size: self.download_begins.emit(size, "Importing card data from disk:"))
+        return monitor
 
     def populate_database(self, card_data: typing.Generator[JSONType, None, None]):
         """
@@ -239,19 +277,12 @@ class CardInfoDownloadWorker(DownloaderBase):
     def _populate_database(self, card_data: typing.Generator[JSONType, None, None]) -> int:
         logger.info("About to populate the database with card data")
         self.model.begin_transaction()
-        store_download_settings(self.model.db)
-        ds = mtg_proxy_printer.settings.settings["downloads"]
-        # Parse the boolean download settings only once per import to save multiple seconds during the import
-        download_enabled: typing.Dict[str, bool] = {
-            key: ds.getboolean(key)
-            for key in ds.keys()
-        }
-        # The settings keys are formatted like “banned-in-FORMAT”, where FORMAT is a format name as listed on Scryfall,
-        # like “standard” or “modern”. So the last element of the split("-") output gets the plain format name.
-        skip_cards_banned_in_formats = frozenset(
-            key.split("-")[-1]
-            for key, enabled in download_enabled.items()
-            if not enabled)
+        # Look up the printing filter ids only once per import
+        printing_filter_ids: typing.Dict[str, int] = {
+            filter_name: filter_id
+            for filter_name, filter_id
+            in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()}
+        set_wackiness_score_cache: typing.Dict[str, SetWackinessScore] = {}
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
@@ -264,7 +295,7 @@ class CardInfoDownloadWorker(DownloaderBase):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if _should_skip_card(card, download_enabled, skip_cards_banned_in_formats):
+            if _should_skip_card(card):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
                     INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
@@ -277,14 +308,17 @@ class CardInfoDownloadWorker(DownloaderBase):
                     ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
-                face_ids = self._parse_single_printing(card, face_ids)
+                face_ids += self._parse_single_printing(card, printing_filter_ids, set_wackiness_score_cache)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
         _clean_unused_data(self.model.db, face_ids)
-        logger.info(f"Skipped {skipped_cards} cards during the import, that matched any enabled download filter")
+        logger.info(f"Skipped {skipped_cards} cards during the import")
+        self.download_begins.emit(5, "Processing card filters")
+        self.model.store_current_printing_filters(
+            False, force_update_hidden_column=True, progress_signal=self.download_progress.emit)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\
@@ -298,54 +332,26 @@ class CardInfoDownloadWorker(DownloaderBase):
         db.commit()
         return index
 
-    def _parse_single_printing(self, card: JSONType, face_ids: IntTuples):
+    def _parse_single_printing(self, card: JSONType, printing_filter_ids, wackiness_score_cache):
         language_id = _insert_language(self.model, card["lang"])
         oracle_id = _get_oracle_id(card)
         card_id = _insert_card(self.model, oracle_id)
-        set_id = _insert_set(self.model, card)
+        set_id = _insert_set(self.model, card, wackiness_score_cache)
         printing_id = insert_printing(self.model, card, card_id, set_id)
-        face_ids += _insert_card_faces(self.model, card, language_id, printing_id)
-        return face_ids
+        _insert_card_filters(self.model, printing_id, _get_card_filter_data(card), printing_filter_ids)
+        new_face_ids = _insert_card_faces(self.model, card, language_id, printing_id)
+        return new_face_ids
 
 
 def _clear_lru_caches():
     """
     Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
     the import. This will lead to assignment of wrong data via invalid foreign key relations.
-    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used any more.
+    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
     """
     for cache in (_insert_language, _insert_set_data, _insert_card):
         logger.debug(str(cache.cache_info()))
         cache.cache_clear()
-
-
-def store_download_settings(db):
-    """Store the current download settings in the database"""
-    section = mtg_proxy_printer.settings.settings["downloads"]
-    db.executemany(cached_dedent(
-        '''\
-        INSERT INTO UsedDownloadSettings (setting, "value") VALUES (?, ?)
-            ON CONFLICT(setting) DO UPDATE
-                SET value = excluded.value
-                WHERE value <> excluded.value
-        '''),
-        ((setting, section.getboolean(setting)) for setting in section.keys())
-    )
-
-
-def _read_card_date(card: JSONType, known_newest_card_date: datetime.date) -> datetime.date:
-    """
-    If the card’s set release is older than the given date and is in the past, return the release date.
-
-    Newer cards have their previewed date set. Return that, if it is newer than the given date,
-    even if it is in the future.
-
-    This will be used to determine if newer card data is available online.
-    """
-    release_date = datetime.date.fromisoformat(card.get("released_at", "1970-01-01"))
-    if known_newest_card_date < release_date < datetime.date.today():
-        return release_date
-    return known_newest_card_date
 
 
 def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
@@ -353,18 +359,11 @@ def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
     db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
     excess_face_ids = db_face_ids.difference(new_face_ids)
     logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
-    db.executemany('DELETE FROM CardFace WHERE card_face_id = ?\n', excess_face_ids)
-    db.execute('DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n')
-    db.execute('DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n')
-    db.execute('DELETE FROM "Set" WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
-    db.execute('DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n')
-    db.execute(cached_dedent("""\
-    DELETE FROM RemovedPrintings
-      WHERE scryfall_id IN (
-        SELECT Printing.scryfall_id
-        FROM Printing
-      )
-    """))
+    db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
+    db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
+    db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
+    db.execute('DELETE FROM MTGSet WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
+    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
     db.execute(cached_dedent("""\
     DELETE FROM PrintLanguage
         WHERE language_id NOT IN (
@@ -395,33 +394,46 @@ def _insert_language(model: CardDatabase, language: str) -> int:
 @functools.lru_cache(None)
 def _insert_card(model: CardDatabase, oracle_id: str) -> int:
     parameters = oracle_id,
-    if result := model.db.execute('SELECT card_id FROM Card WHERE oracle_id = ?\n', parameters).fetchone():
+    if result := model.db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
         card_id, = result
     else:
-        card_id = model.db.execute('INSERT INTO Card (oracle_id) VALUES (?)\n', parameters).lastrowid
+        card_id = model.db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
     return card_id
 
 
-def _insert_set(model: CardDatabase, card: JSONType) -> int:
+def _insert_set(model: CardDatabase, card: JSONType, wackiness_score_cache) -> int:
     # Can’t use lru_cache here, because each card object is unique. So extract a hashable parameter set
     # and delegate to a cacheable function.
     set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
-    return _insert_set_data(model, set_abbr, set_name, set_uri)
+    release_date = card["released_at"]
+    wackiness_score = _get_set_wackiness_score(card, wackiness_score_cache)
+    return _insert_set_data(model, set_abbr, set_name, set_uri, release_date, wackiness_score)
 
 
 @functools.lru_cache(None)
-def _insert_set_data(model: CardDatabase, set_abbr: str, set_name: str, set_uri: str) -> int:
+def _insert_set_data(
+        model: CardDatabase, set_abbr: str, set_name: str, set_uri: str,
+        release_date: str, wackiness_score: SetWackinessScore) -> int:
     model.db.execute(cached_dedent(
-        '''\
-        INSERT INTO "Set" ("set", set_name, set_uri)
-            VALUES (?, ?, ?)
-            ON CONFLICT ("set") DO
-            UPDATE SET set_name = excluded.set_name, set_uri = excluded.set_uri
-            WHERE set_name <> excluded.set_name OR set_uri <> excluded.set_uri
-        '''),
-        (set_abbr, set_name, set_uri)
+        """\
+        INSERT INTO MTGSet (set_code, set_name, set_uri, release_date, wackiness_score)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT (set_code) DO
+            UPDATE SET
+              set_name = excluded.set_name,
+              set_uri = excluded.set_uri,
+              release_date = excluded.release_date,
+              wackiness_score  = excluded.wackiness_score
+            WHERE set_name <> excluded.set_name
+              OR set_uri <> excluded.set_uri
+              -- Wizards started to add “The List” cards to older sets, i.e. reusing the original set code for newer
+              -- reprints of cards in that set. This greater than searches for the oldest release date for a given set
+              OR release_date > excluded.release_date
+              OR wackiness_score <> excluded.wackiness_score
+        """),
+        (set_abbr, set_name, set_uri, release_date, wackiness_score)
     )
-    set_id, = model.db.execute('SELECT set_id FROM "Set" WHERE "set" = ?\n', (set_abbr,)).fetchone()
+    set_id, = model.db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
     return set_id
 
 
@@ -432,11 +444,11 @@ def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) 
     """
     parameters = (printed_name, language_id)
     if result := model.db.execute(
-            'SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n', parameters).fetchone():
+            "SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n", parameters).fetchone():
         face_name_id, = result
     else:
         face_name_id = model.db.execute(
-            'INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n', parameters).lastrowid
+            "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
     return face_name_id
 
 
@@ -454,7 +466,7 @@ def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: i
 
 def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
     model.db.execute(cached_dedent(
-        '''\
+        """\
         INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
             VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (scryfall_id) DO UPDATE
@@ -468,14 +480,14 @@ def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
                OR collector_number <> excluded.collector_number
                OR is_oversized <> excluded.is_oversized
                OR highres_image <> excluded.highres_image
-        '''), data,
+        """), data,
     )
     printing_id, = model.db.execute(cached_dedent(
-        '''\
+        """\
         SELECT printing_id
             FROM Printing
             WHERE scryfall_id = ?
-        '''), (data.scryfall_id,)
+        """), (data.scryfall_id,)
     ).fetchone()
     return printing_id
 
@@ -486,14 +498,14 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, pr
     for face in _get_card_faces(card):
         face_name_id = _insert_face_name(model, face.printed_face_name, language_id)
         face_id: typing.Tuple[int] = model.db.execute(cached_dedent(
-            '''\
+            """\
             INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
                 VALUES (?, ?, ?, ?, ?)
                 ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
                 SET png_image_uri = excluded.png_image_uri,
                     face_number = excluded.face_number
                 RETURNING card_face_id
-            '''),
+            """),
             (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
         ).fetchone()
         if face_id is not None:
@@ -501,33 +513,78 @@ def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, pr
     return face_ids
 
 
-def _should_skip_card(
-        card: JSONType, download_enabled: typing.Dict[str, bool],
-        skip_cards_banned_in_formats: typing.FrozenSet[str]) -> bool:
-    """Determine, if the given card should be included based on the application settings"""
+def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
     legalities: typing.Dict[str, str] = card["legalities"]
-    banned_in_formats = frozenset(magic_format for magic_format, legality in legalities.items() if legality == "banned")
-
-    return any((
+    return {
         # Racism filter
-        card.get("content_warning", False) and not download_enabled["download-cards-depicting-racism"],
+        "hide-cards-depicting-racism": card.get("content_warning", False),
         # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        card["image_status"] == "placeholder" and not download_enabled["download-cards-without-images"],
-        # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
-        card["image_status"] == "missing",
-        card["oversized"] and not download_enabled["download-oversized-cards"],
+        "hide-cards-without-images": card["image_status"] == "placeholder",
+        "hide-oversized-cards": card["oversized"],
         # Border filter
-        card["border_color"] == "white" and not download_enabled["download-white-bordered"],
-        card["border_color"] == "gold" and not download_enabled["download-gold-bordered"],
+        "hide-white-bordered": card["border_color"] == "white",
+        "hide-gold-bordered": card["border_color"] == "gold",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
-        card["set_type"] == "funny" and not download_enabled["download-funny-cards"],
+        "hide-funny-cards": card["set_type"] == "funny",
         # Token cards
-        card["layout"] == "token" and not download_enabled["download-token"],
-        card["digital"] is True and not download_enabled["download-digital-cards"],
-        # Specific format legality.
-        not banned_in_formats.isdisjoint(skip_cards_banned_in_formats),
-    ))
+        "hide-token": card["layout"] == "token",
+        "hide-digital-cards": card["digital"],
+        # Specific format legality. Use .get() with a default instead of [] to not fail
+        # if Scryfall removes one of the listed formats in the future.
+        "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
+        "hide-banned-in-commander": legalities.get("commander", "") == "banned",
+        "hide-banned-in-historic": legalities.get("historic", "") == "banned",
+        "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
+        "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+        "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
+        "hide-banned-in-penny": legalities.get("penny", "") == "banned",
+        "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
+        "hide-banned-in-standard": legalities.get("standard", "") == "banned",
+        "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
+    }
+
+
+def _get_set_wackiness_score(card: JSONType, cache: typing.Dict[str, SetWackinessScore]) -> SetWackinessScore:
+    set_code = card["set"]
+    if (score := cache.get(set_code)) is not None:
+        return score
+    if card["oversized"]:
+        result = SetWackinessScore.OVERSIZED
+    elif card["layout"] == "art_series":
+        result = SetWackinessScore.ART_SERIES
+    elif card["digital"]:
+        result = SetWackinessScore.DIGITAL
+    elif card["border_color"] == "white":
+        result = SetWackinessScore.WHITE_BORDERED
+    elif card["set_type"] == "funny":
+        result = SetWackinessScore.FUNNY
+    elif card["border_color"] == "gold":
+        result = SetWackinessScore.GOLD_BORDERED
+    elif card["set_type"] == "promo":
+        result = SetWackinessScore.PROMOTIONAL
+    else:
+        result = SetWackinessScore.REGULAR
+    cache[set_code] = result
+    return result
+
+
+def _insert_card_filters(
+        model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool],
+        printing_filter_ids: typing.Dict[str, int]):
+    model.db.executemany(
+        cached_dedent("""\
+            INSERT OR REPLACE INTO PrintingDisplayFilter (printing_id, filter_id, filter_applies)
+              VALUES (?, ?, ?)
+        """),
+        ((printing_id, printing_filter_ids[filter_name], filter_applies)
+         for filter_name, filter_applies in filter_data.items())
+    )
+
+
+def _should_skip_card(card: JSONType) -> bool:
+    # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
+    return card["image_status"] == "missing"
 
 
 def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None]:
@@ -581,7 +638,8 @@ def _get_oracle_id(card: JSONType) -> str:
     try:
         return card["oracle_id"]
     except KeyError:
-        return card["card_faces"][0]["oracle_id"]
+        first_face: JSONType = card["card_faces"][0]
+        return first_face["oracle_id"]
 
 
 def _is_front_face(image_uri: str) -> bool:

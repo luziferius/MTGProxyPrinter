@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021, 2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,11 +12,12 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import collections
 from abc import abstractmethod
 import typing
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, pyqtSignal
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -30,10 +31,23 @@ __all__ = [
     "ParserBase",
 ]
 
+try:
+    # Profiling decorator, injected into globals by line-profiler. Because the injection does funky stuff, this
+    # is the easiest way to test if the profile() function is defined.
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    profile
+except NameError:
+    # If not defined, use this identity decorator as a replacement
+    def profile(func):
+        return func
+
 ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 
 class ParserBase(QObject):
+
+    SUPPORTED_FILE_TYPES: typing.Dict[str, typing.List[str]] = {}
+    incompatible_file_format = pyqtSignal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(ParserBase, self).__init__(parent)
@@ -47,6 +61,15 @@ class ParserBase(QObject):
                 "prefer-already-downloaded"
             )
 
+    def get_file_extension_filter(self) -> str:
+        everything = "All files (*)"
+        if not self.SUPPORTED_FILE_TYPES:
+            return everything
+        return ";;".join(
+            f'{name} (.*{" .*".join(extensions)})'
+            for name, extensions in self.SUPPORTED_FILE_TYPES.items()
+        ) + f";;{everything}"
+
     def parse_deck(self, deck: str,
                    print_guessing: bool,
                    print_guessing_prefer_already_downloaded: bool,
@@ -57,40 +80,19 @@ class ParserBase(QObject):
         # translation step, so performs unnecessary work that gets thrown away anyways.
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
-        parsed_deck, unmatched_lines = self.parse_deck_without_translation(deck, print_guessing)
+        parsed_deck, unmatched_lines = self.parse_deck_internal(deck, print_guessing, language_override)
         logger.debug(f"Parsed {sum(parsed_deck.values())} cards. Not identified: {len(unmatched_lines)} lines")
-        # Now reset to the state as passed in
-        self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded
-        if language_override:
-            parsed_deck = self._translate_parsed_deck(parsed_deck, language_override)
         return parsed_deck, unmatched_lines
 
-    def _translate_parsed_deck(self, parsed_deck: typing.Counter[Card], language_override: str):
-        translated_deck: typing.Counter[Card] = collections.Counter()
-        for card, count in parsed_deck.items():
-            if self.print_guessing_prefer_already_downloaded and \
-                    (all_printings := self.card_db.find_all_translated_printings(
-                        card, language_override, order_by_print_count=True)):
-                # Choose any printing, based on what is already downloaded. …
-                translated_card = self._determine_best_match(all_printings)
-                # … But if no already downloaded image is found, prefer accurate translations to random selections.
-                if translated_card is all_printings[0]:
-                    translated_card = self.card_db.translate_card(card, language_override)
-            else:
-                translated_card = self.card_db.translate_card(card, language_override)
-                logger.debug(f"Translated card '{card.name}' from language {card.language} "
-                             f"to '{translated_card.name}' in {language_override}")
-            translated_deck[translated_card] = count
-        return translated_deck
-
     @abstractmethod
-    def parse_deck_without_translation(self, deck: str,
-                                       print_guessing: bool) -> ParsedDeck:
+    def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         """
-        Parse the given deck.
+        Parse the given deck. Internal method that must be implemented by concrete parser implementations.
 
-        :param deck: A Path instance to a deck file or a multiline Python string that contains the deck list.
-        :param print_guessing: Guess a printing, if a line doesn’t identify a unique printing
+        :param deck_list: A multiline Python string that contains the deck list.
+        :param print_guessing: Enable guessing a printing, if a line doesn’t identify a unique printing
+        :param language_override: Optional two-letter language code. If given, translate all cards into the given
+          language.
         :returns: A Counter that contains the parsed cards and a list of strings with unmatched lines
         """
         pass
@@ -103,6 +105,7 @@ class ParserBase(QObject):
         """
         return False
 
+    @profile
     def guess_printing(self, card_data: CardIdentificationData) -> typing.Optional[Card]:
         logger.info(f"Guessing card printing for {card_data}")
         if card_data.name:

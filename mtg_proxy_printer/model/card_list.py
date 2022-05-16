@@ -112,7 +112,7 @@ class CardListModel(QAbstractTableModel):
 
     def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
         if result := self.card_db.get_cards_from_data(card_data):
-            logger.debug(f"Requesting replacement for card '{card_data.name}' in set {card_data.set_code}")
+            logger.debug(f"Requesting replacement for {card_data}")
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
@@ -127,7 +127,7 @@ class CardListModel(QAbstractTableModel):
             elif new_card.is_oversized and not old_card.is_oversized:
                 self._add_card_handle_oversized_flag(new_card)
             return True
-        logger.debug("No replacement card found.")
+        logger.debug(f"No replacement card found for {card_data}.")
         return False
 
     def add_cards(self, cards: typing.Counter[Card]):

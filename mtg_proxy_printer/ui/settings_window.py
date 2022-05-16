@@ -13,13 +13,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import abc
 import configparser
+import functools
 import logging
+import pathlib
+import sqlite3
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl
+from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl, QStandardPaths
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QSpinBox, QFileDialog, QLineEdit, QMessageBox
+    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
@@ -33,6 +37,9 @@ logger = get_logger(__name__)
 del get_logger
 __all__ = [
     "SettingsWindow",
+    "AbstractPrintingFilterWidget",
+    "GeneralPrintingFilterWidget",
+    "FormatPrintingFilterWidget",
 ]
 bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
     True: Qt.Checked,
@@ -42,15 +49,103 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
 check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 
 
-class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
+class AbstractPrintingFilterWidget(QGroupBox):
+
+    def __init__(self, parent: QWidget = None):
+        super(AbstractPrintingFilterWidget, self).__init__(parent)
+        self.setupUi(self)
+
+    def load_settings(self, settings: configparser.SectionProxy):
+        for widget, key in self._get_widgets_with_keys():
+            widget.setChecked(settings.getboolean(key))
+
+    def save_settings(self, settings: configparser.SectionProxy):
+        for widget, key in self._get_widgets_with_keys():
+            settings[key] = str(widget.isChecked())
+
+    @staticmethod
+    def view_query_on_scryfall(query: str):
+        query_url = QUrl("https://scryfall.com/search", QUrl.StrictMode)
+        query_url.setQuery(f"q={query}", QUrl.StrictMode)
+        QDesktopServices.openUrl(query_url)
+
+    @abc.abstractmethod
+    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+        pass
+
+
+class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget,
+                                  *inherits_from_ui_file_with_name("settings_window/general_printing_filter")):
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        self.view_cards_depicting_racism.clicked.connect(
+            lambda: self.view_query_on_scryfall("function:banned-due-to-racist-imagery"))
+        self.view_oversized_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:oversized"))
+        self.view_white_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:white"))
+        self.view_gold_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:gold"))
+        self.view_funny_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:funny"))
+        self.view_token.clicked.connect(lambda: self.view_query_on_scryfall("is:token"))
+        self.view_digital_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:digital"))
+
+    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.hide_cards_depicting_racism, "hide-cards-depicting-racism"),
+            (self.hide_cards_without_images, "hide-cards-without-images"),
+            (self.hide_oversized_cards, "hide-oversized-cards"),
+            (self.hide_white_bordered_cards, "hide-white-bordered"),
+            (self.hide_gold_bordered_cards, "hide-gold-bordered"),
+            (self.hide_funny_cards, "hide-funny-cards"),
+            (self.hide_token, "hide-token"),
+            (self.hide_digital_cards, "hide-digital-cards"),
+        ]
+        return widgets_with_settings
+
+
+class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
+                                 *inherits_from_ui_file_with_name("settings_window/format_printing_filter")):
+
+    def __init__(self, parent: QWidget = None):
+        super().__init__(parent)
+        for _, key in self._get_widgets_with_keys():
+            format_name = key.split("-")[-1]
+            button: QPushButton = getattr(self, f"view_banned_in_{format_name}")
+            button.clicked.connect(
+                functools.partial(self.view_query_on_scryfall, f"banned:{format_name}")
+            )
+
+    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.hide_banned_in_brawl, "hide-banned-in-brawl"),
+            (self.hide_banned_in_commander, "hide-banned-in-commander"),
+            (self.hide_banned_in_historic, "hide-banned-in-historic"),
+            (self.hide_banned_in_legacy, "hide-banned-in-legacy"),
+            (self.hide_banned_in_modern, "hide-banned-in-modern"),
+            (self.hide_banned_in_pauper, "hide-banned-in-pauper"),
+            (self.hide_banned_in_penny, "hide-banned-in-penny"),
+            (self.hide_banned_in_pioneer, "hide-banned-in-pioneer"),
+            (self.hide_banned_in_standard, "hide-banned-in-standard"),
+            (self.hide_banned_in_vintage, "hide-banned-in-vintage"),
+        ]
+        return widgets_with_settings
+
+
+class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
     """Implements the Settings window."""
     saved = pyqtSignal()
+    error_occurred = pyqtSignal(str)
+    requested_card_download = pyqtSignal(pathlib.Path)
+    long_running_process_begins = pyqtSignal(int, str)
+    process_updated = pyqtSignal(int)
+    process_finished = pyqtSignal()
 
-    def __init__(self, language_model: QStringListModel, document: Document,  *args, **kwargs):
-        super(SettingsWindow, self).__init__(*args, **kwargs)
+    def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
+        super().__init__(parent)
         self.setupUi(self)
         self.language_model = language_model
         self.document = document
+        self.card_db = document.card_db
+        self.debug_download_card_data_as_file: QPushButton
+        self.requested_card_download.connect(lambda _: self.debug_download_card_data_as_file.setEnabled(False))
         self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
         self.page_configuration_group_box: PageConfigWidget
@@ -65,6 +160,12 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
 
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def filter_update_progress_monitor(self, step: int):
+        self.process_updated.emit(step)
+        # Required here, because it is running synchronously in the main thread
+        # Because the main window UI is largely disabled, this should pose no real harm
+        QApplication.instance().processEvents()
 
     def _setup_button_box(self):
         self.button_box: QDialogButtonBox
@@ -127,10 +228,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         self.pdf_page_count_limit.setValue(document_section.getint("pdf-page-count-limit"))
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
-        download_section = settings["downloads"]
-        widgets_with_settings = self._get_download_settings_widgets()
-        for widget, setting in widgets_with_settings:
-            widget.setChecked(download_section.getboolean(setting))
+        section = settings["card-filter"]
+        self.card_filter_general_settings: AbstractPrintingFilterWidget
+        self.card_filter_format_settings: AbstractPrintingFilterWidget
+        self.card_filter_general_settings.load_settings(section)
+        self.card_filter_format_settings.load_settings(section)
 
     def _load_save_path_settings(self, settings: configparser.ConfigParser):
         section = settings["default-save-paths"]
@@ -171,33 +273,11 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         ]
         return widgets_with_settings
 
-    def _get_download_settings_widgets(self):
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.include_cards_depicting_racism, "download-cards-depicting-racism"),
-            (self.include_cards_without_images, "download-cards-without-images"),
-            (self.include_oversized_cards, "download-oversized-cards"),
-            (self.include_white_bordered_cards, "download-white-bordered"),
-            (self.include_gold_bordered_cards, "download-gold-bordered"),
-            (self.include_funny_cards, "download-funny-cards"),
-            (self.include_banned_in_brawl, "download-banned-in-brawl"),
-            (self.include_banned_in_commander, "download-banned-in-commander"),
-            (self.include_banned_in_historic, "download-banned-in-historic"),
-            (self.include_banned_in_legacy, "download-banned-in-legacy"),
-            (self.include_banned_in_modern, "download-banned-in-modern"),
-            (self.include_banned_in_pauper, "download-banned-in-pauper"),
-            (self.include_banned_in_penny, "download-banned-in-penny"),
-            (self.include_banned_in_pioneer, "download-banned-in-pioneer"),
-            (self.include_banned_in_standard, "download-banned-in-standard"),
-            (self.include_banned_in_vintage, "download-banned-in-vintage"),
-            (self.include_token, "download-token"),
-            (self.include_digital_cards, "download-digital-cards"),
-        ]
-        return widgets_with_settings
-
     def _get_save_path_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
             (self.document_save_path, "document-save-path"),
             (self.pdf_save_path, "pdf-export-path"),
+            (self.deck_list_search_path, "deck-list-search-path"),
         ]
         return widgets_with_settings
 
@@ -281,10 +361,19 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
         images_section["automatically-add-opposing-faces"] = str(self.automatically_add_opposing_faces.isChecked())
 
     def _save_downloads_settings(self):
-        downloads_section = mtg_proxy_printer.settings.settings["downloads"]
-        widgets_and_settings = self._get_download_settings_widgets()
-        for widget, setting in widgets_and_settings:
-            downloads_section[setting] = str(widget.isChecked())
+        self.card_filter_general_settings: AbstractPrintingFilterWidget
+        self.card_filter_format_settings: AbstractPrintingFilterWidget
+        section = mtg_proxy_printer.settings.settings["card-filter"]
+        self.card_filter_general_settings.save_settings(section)
+        self.card_filter_format_settings.save_settings(section)
+        try:
+            self.long_running_process_begins.emit(5, "Processing updated card filters:")
+            self.card_db.store_current_printing_filters(progress_signal=self.filter_update_progress_monitor)
+        except sqlite3.Error as e:
+            self.error_occurred.emit(e.sqlite_errorname)
+            raise e
+        finally:
+            self.process_finished.emit()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
@@ -335,8 +424,30 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window")):
             self.pdf_save_path.setText(location)
 
     @pyqtSlot()
+    def on_deck_list_search_path_browse_button_clicked(self):
+        logger.debug("User about to select a new default deck list search path.")
+        if location := QFileDialog.getExistingDirectory(self, "Select default deck list search path"):
+            logger.info("User selected a new default deck list search path.")
+            self.deck_list_search_path.setText(location)
+
+    @pyqtSlot()
     def on_open_debug_log_location_clicked(self):
         logger.debug("About to open the log directory using the default file manager.")
         log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
         log_url = QUrl.fromLocalFile(log_dir)
         QDesktopServices.openUrl(log_url)
+
+    @pyqtSlot()
+    def on_debug_download_card_data_as_file_clicked(self):
+        location = QFileDialog.getExistingDirectory(
+            self, "Select download location",
+            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
+        if not location:
+            return
+        if not (path := pathlib.Path(location)).is_dir():
+            QMessageBox.critical(
+                self, "Selected location is not a directory",
+                f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
+                QMessageBox.Ok, QMessageBox.Ok)
+            return
+        self.requested_card_download.emit(path)

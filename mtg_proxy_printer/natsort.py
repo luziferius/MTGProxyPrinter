@@ -1,4 +1,4 @@
-# Copyright (C) 2017-2019, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2017-2019, 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ __all__ = [
     "NaturallySortedSortFilterProxyModel",
 ]
 
-_NUMBER_GROUP_REG_EXP = re.compile(r"([0-9]+)")
+_NUMBER_GROUP_REG_EXP = re.compile(r"(\d+)")
 
 
 def try_convert_int(s: str):
@@ -78,4 +78,3 @@ class NaturallySortedSortFilterProxyModel(QSortFilterProxyModel):
         return [
             self.mapToSource(self.index(row, 0)).row() for row in range(self.rowCount())
         ]
-
