@@ -629,6 +629,7 @@ class Document(QAbstractItemModel):
 def _migrate_database(db):
     if db.execute("PRAGMA user_version").fetchone()[0] == 2:
         db.executescript(textwrap.dedent("""\
+        BEGIN TRANSACTION;
         ALTER TABLE Card RENAME TO Card_old;
         CREATE TABLE Card (
           page INTEGER NOT NULL CHECK (page > 0),
@@ -641,6 +642,7 @@ def _migrate_database(db):
             SELECT page, slot, scryfall_id, 1 AS is_front
             FROM Card_old;
         DROP TABLE Card_old;
+        COMMIT;
         VACUUM;
         """))
         db.execute(f"PRAGMA user_version = 3")

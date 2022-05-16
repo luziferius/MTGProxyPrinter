@@ -9,7 +9,10 @@
 
     <file>ui/add_card_widget/horizontal.ui</file>
     <file>ui/add_card_widget/vertical.ui</file>
-    <file>ui/settings_window.ui</file>
+
+    <file>ui/settings_window/format_printing_filter.ui</file>
+    <file>ui/settings_window/general_printing_filter.ui</file>
+    <file>ui/settings_window/settings_window.ui</file>
 
     <file>ui/deck_import_wizard/load_list_page.ui</file>
     <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>
@@ -54,6 +57,7 @@
     <file>icons/breeze/actions/16/edit-redo.svg</file>
     <file>icons/breeze/actions/16/edit-undo.svg</file>
     <file>icons/breeze/actions/16/format-align-vertical-top.svg</file>
+    <file>icons/breeze/actions/16/globe.svg</file>
     <file>icons/breeze/actions/16/go-next.svg</file>
     <file>icons/breeze/actions/16/go-previous.svg</file>
     <file>icons/breeze/actions/16/help-contents.svg</file>
@@ -81,6 +85,7 @@
     <file>icons/breeze/actions/22/edit-redo.svg</file>
     <file>icons/breeze/actions/22/edit-undo.svg</file>
     <file>icons/breeze/actions/22/format-align-vertical-top.svg</file>
+    <file>icons/breeze/actions/22/globe.svg</file>
     <file>icons/breeze/actions/22/go-next.svg</file>
     <file>icons/breeze/actions/22/go-previous.svg</file>
     <file>icons/breeze/actions/22/help-contents.svg</file>
@@ -108,6 +113,7 @@
     <file>icons/breeze/actions/24/edit-redo.svg</file>
     <file>icons/breeze/actions/24/edit-undo.svg</file>
     <file>icons/breeze/actions/24/format-align-vertical-top.svg</file>
+    <file>icons/breeze/actions/24/globe.svg</file>
     <file>icons/breeze/actions/24/go-next.svg</file>
     <file>icons/breeze/actions/24/go-previous.svg</file>
     <file>icons/breeze/actions/24/help-contents.svg</file>

@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000023;
+PRAGMA user_version = 0000027;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -38,18 +38,21 @@ CREATE TABLE Printing (
   -- A specific printing of a card
   printing_id INTEGER PRIMARY KEY NOT NULL,
   card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-  set_id INTEGER NOT NULL REFERENCES "Set"(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  set_id INTEGER NOT NULL REFERENCES MTGSet(set_id) ON UPDATE CASCADE ON DELETE CASCADE,
   collector_number TEXT NOT NULL,
   scryfall_id TEXT NOT NULL UNIQUE,
   -- Over-sized card indicator. Over-sized cards (value TRUE) are mostly useless for play,
   -- so store this to be able to warn the user
   is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
   -- Indicates if the card has high resolution images.
-  highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE))
+  highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
+  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE
 );
 
 CREATE INDEX Printing_Index_Find_Printing_From_Card_Data
   ON Printing(card_id, set_id, collector_number);
+CREATE INDEX Printing_is_hidden
+  ON Printing(printing_id, is_hidden);
 
 CREATE TABLE FaceName (
   -- The name of a card face in a given language. Cards are not renamed,
@@ -57,10 +60,11 @@ CREATE TABLE FaceName (
   face_name_id INTEGER PRIMARY KEY NOT NULL,
   card_name    TEXT NOT NULL,
   language_id  INTEGER NOT NULL REFERENCES PrintLanguage(language_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE,
   UNIQUE (card_name, language_id)
 );
 -- Speeds up LIKE matches against card names, used by the Card name search
-CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, card_name COLLATE NOCASE);
+CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, is_hidden, card_name COLLATE NOCASE);
 
 
 CREATE TABLE CardFace (
@@ -70,7 +74,7 @@ CREATE TABLE CardFace (
   printing_id INTEGER NOT NULL REFERENCES Printing(printing_id) ON UPDATE CASCADE ON DELETE CASCADE,
   face_name_id INTEGER NOT NULL REFERENCES FaceName(face_name_id) ON UPDATE CASCADE ON DELETE CASCADE,
   is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-  png_image_uri TEXT NOT NULL,  -- URI pointing to the high resolution PNG image
+  png_image_uri TEXT NOT NULL, -- URI pointing to the high resolution PNG image
   -- Enumerates the face on a card. Used to match the exact same face across translated, multi-faced cards
   face_number INTEGER NOT NULL CHECK (face_number >= 0),
   UNIQUE(face_name_id, printing_id, is_front)
@@ -78,13 +82,14 @@ CREATE TABLE CardFace (
 CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id);
 
 
-CREATE TABLE "Set" (
+CREATE TABLE MTGSet (
   set_id   INTEGER PRIMARY KEY NOT NULL,
-  "set"    TEXT NOT NULL UNIQUE,
+  set_code TEXT NOT NULL UNIQUE,
   set_name TEXT NOT NULL,
-  set_uri  TEXT NOT NULL
+  set_uri  TEXT NOT NULL,
+  release_date TEXT NOT NULL,
+  wackiness_score INTEGER NOT NULL CHECK (wackiness_score >= 0)
 );
-
 
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
@@ -93,11 +98,27 @@ CREATE TABLE LastDatabaseUpdate (
   reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
 
-CREATE TABLE UsedDownloadSettings (
-  -- This table contains the download filter settings used during the card data import
-  setting TEXT NOT NULL PRIMARY KEY,
-  "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
+CREATE TABLE DisplayFilters (
+  -- Contains the available display filters and their current values
+  filter_id INTEGER NOT NULL PRIMARY KEY,
+  filter_name TEXT NOT NULL UNIQUE,
+  filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
 );
+
+CREATE TABLE PrintingDisplayFilter (
+  -- Stores which filter applies to which printing.
+  printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+  filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+  filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+  PRIMARY KEY (printing_id, filter_id)
+) WITHOUT ROWID;
+
+CREATE VIEW HiddenPrintings AS
+  SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
+  FROM PrintingDisplayFilter
+  JOIN DisplayFilters USING (filter_id)
+  GROUP BY printing_id
+;
 
 CREATE TABLE LastImageUseTimestamps (
   -- Used to store the last image use timestamp and usage count of each image.
@@ -118,16 +139,32 @@ CREATE TABLE RemovedPrintings (
   oracle_id TEXT NOT NULL
 );
 
-CREATE VIEW AllPrintings AS
-  SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
-    highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC);
+CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id);
+
+
+CREATE VIEW VisiblePrintings AS
+  SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
+         highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
   FROM Card
   JOIN Printing USING (card_id)
-  JOIN "Set" USING (set_id)
+  JOIN MTGSet   USING (set_id)
   JOIN CardFace USING (printing_id)
-  JOIN FaceName USING(face_name_id)
-  JOIN PrintLanguage USING(language_id)
+  JOIN FaceName USING (face_name_id)
+  JOIN PrintLanguage USING (language_id)
+  WHERE Printing.is_hidden IS FALSE
+    AND FaceName.is_hidden IS FALSE
+;
 
+CREATE VIEW AllPrintings AS
+  SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+        is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+  FROM Card
+  JOIN Printing USING (card_id)
+  JOIN MTGSet   USING (set_id)
+  JOIN CardFace USING (printing_id)
+  JOIN FaceName USING (face_name_id)
+  JOIN PrintLanguage USING (language_id)
 ;
 
 COMMIT;

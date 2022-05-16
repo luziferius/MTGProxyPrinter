@@ -55,11 +55,13 @@ to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
         "_insert_card_faces",
-        "_should_skip_card",
+        "_get_card_filter_data",
+        "_insert_card_filters",
         "_clean_unused_data",
         "_insert_card",
         "_insert_printing",
         "_insert_face_name",
+        "_get_set_wackiness_score",
     ],
 }
 

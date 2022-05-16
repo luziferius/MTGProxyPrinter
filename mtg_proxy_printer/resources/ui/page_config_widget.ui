@@ -30,7 +30,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space above and below of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space above and below images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="suffix">
       <string> mm</string>

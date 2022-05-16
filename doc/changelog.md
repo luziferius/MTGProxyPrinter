@@ -2,6 +2,58 @@
 
 # Next version (in development)
 
+## Fixed issues
+
+- Improved deck list translation when the source deck list is not in English.
+
+# Version 0.16.0 (2022-05-06)  <a name="v0_16_0"></a>
+
+After upgrading to this version, re-downloading the card data from Scryfall is required to use the new or enhanced
+capabilities.
+
+## New features
+
+- The page preview can now be zoomed in for a better card view. Zooming can be triggered using `[Ctrl]+Mouse wheel`,
+  or the platform dependant default zoom keyboard shortcut (`[Ctrl]+[+]` and `[Ctrl]+[-]` on most systems)
+- Improved dark mode and global color theme compatibility: The page preview now follows the systems global color theme.
+  On dark mode, the page background is dark and the optional cut marker lines are light (if enabled).
+  (This does of course *not* affect the print preview, exported PDFs and printed pages.)
+- Added short descriptions when the progress bar is shown at the bottom of the main window.
+- In the settings window, the card filters check boxes now have buttons next to them that open a web browser showing
+  the Scryfall query highlighting the cards affected by the corresponding filter.
+
+## Changed features
+
+- Card download filters are now filters used to hide printings.
+  - Updating the settings no longer requires re-downloading the data from Scryfall.
+  - Inverted the display: Instead of specifying which cards or printings are included,
+    the settings now state which printings are hidden. (Settings saved with previous versions are migrated.)
+- The deck list import wizard now shows only matching files when browsing the file system for a deck list to load.
+  The filtering can be disabled by switching to the “All files” filter.
+- When the deck list import wizard has the freedom of printing choice, it will now prefer the newest, regular,
+  tournament-legal printings over others like oversized cards or art series cards,
+  even if those are not hidden in the settings. You can still access them, but these printings won’t be automatically
+  chosen.
+- The document and PDF save path now defaults to the local Documents directory.
+- Improved card name translation consistency, if the to-be translated name is ambiguous. There are a few cards with name
+  clashes in translations, i.e. different cards being translated to the same name across different sets. In this case,
+  context information is used to obtain a correct translation, if available. Otherwise, a majority vote is performed
+  to guess the most likely meaning of a given card name.
+
+## Fixed issues
+
+- Added potentially missing icons to buttons in the document settings dialog.
+- Fixed the incomplete Magic Arena deck list parser.
+  - Added support for the simple and more common card list format that does not specify the exact printing.
+    (I.e. the parser now accept valid entries like `5 Island` instead of only accepting `5 Island (SNC) 265`)
+  - Also recognizes the segment headers that may be present in the deck list, 
+    that are “Deck”, “Commander”, “Companion” and “Sideboard”,
+    and will no longer complain that these are unidentified cards.
+- Mitigate crashes when using the wrong CSV deck list parser with a given CSV file. An error message is now shown in
+  this case.
+
+# Version 0.15.1 (2022-04-13) <a name="v0_15_1"></a>
+
 ## Changed features
 
 - Improved the user interface of the Image Cache cleanup wizard: Increased default window size. Removed unnecessary 
@@ -19,6 +71,9 @@
   import affected cards.
 - Fixed bug in the deck import wizard that caused the wizard to perform a deck list translation,
   even if that option was disabled.
+- The deck import wizard now shows an error message when a binary file is selected for loading from disk,
+  instead of silently failing or crashing.
+- The deck import wizard now asks for confirmation, if an unexpectedly large file is selected.
 
 # Version 0.15.0 (2022-04-03) <a name="v0_15_0"></a>
 
@@ -343,7 +398,7 @@
   no longer freezes the GUI. The cards are now properly added in the correct order
 - Adding a card that requires an image download and then adding the same card again, while the download is still
   in progress no longer downloads the image twice and no longer inserts a broken, blank card into the current page
-- Fixed application hangs until a long running operation is completed when trying to quit the application
+- Fixed application hangs until a long-running operation is completed when trying to quit the application
   while a document is being loaded or a deck list import is running
 - Fixed the PyInstaller Hooks. It is now possible to build a PyInstaller bundle, even if the application is installed 
   via pip.

@@ -41,28 +41,43 @@ class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
 
-    def parse_deck_without_translation(self, deck_list: str,
-                                       print_guessing: bool) -> ParsedDeck:
+    SUPPORTED_FILE_TYPES = {
+        "CSV-Document": ["csv"]
+    }
+    USED_COLUMNS: typing.Set[str] = {
+
+    }
+
+    def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         deck = collections.Counter()
         unmatched_lines = []
-        for source, line in self._read_lines_from_csv(deck_list):
+        reader, parsed_lines = self._read_lines_from_csv(deck_list)
+        if self.USED_COLUMNS-set(reader.fieldnames):
+            self.incompatible_file_format.emit()
+            return deck, deck_list.splitlines()
+        for source, line in parsed_lines:
             if self.should_skip_entry(line):
                 continue
-            cards = self.parse_cards_from_line(line, print_guessing)
+            try:
+                cards = self.parse_cards_from_line(line, print_guessing, language_override)
+            except ValueError:
+                unmatched_lines.append(source)
+                continue
             if cards:
                 deck.update(cards)
             else:
                 unmatched_lines.append(source)
         return deck, unmatched_lines
 
-    def _read_lines_from_csv(
-            self, deck_list: str) -> typing.Generator[CsvLine, None, None]:
+    def _read_lines_from_csv(self, deck_list: str):
         lines = deck_list.splitlines()
         # Skip the header line when zipping the original lines and the parsed result.
-        yield from zip(lines[1:], csv.DictReader(lines, dialect=self.DIALECT_NAME))
+        reader = csv.DictReader(lines, dialect=self.DIALECT_NAME)
+        return reader,  zip(lines[1:], reader)
 
     @abc.abstractmethod
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+            -> LineParserResult:
         pass
 
     def should_skip_entry(self, line: typing.Dict[str, str]) -> bool:
@@ -87,23 +102,33 @@ class ScryfallCSVParser(BaseCSVParser):
         quoting = csv.QUOTE_MINIMAL
 
     DIALECT_NAME = "scryfall_com"
+    USED_COLUMNS = {
+        "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
+    }
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+            -> LineParserResult:
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
         count = int(line["count"])
         language = line["lang"]
+        target_language = language_override or language
 
-        if card := self._handle_removed_printing(scryfall_id, language, guess_printing):
+        if card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
+            if language_override:
+                card = self.card_db.translate_card(card, target_language)
             self._add_card_to_deck(cards, card, count)
-        elif card := self.card_db.get_card_with_scryfall_id(scryfall_id, True):
+        elif card := self._handle_removed_printing(scryfall_id, language, guess_printing):
+            if language_override:
+                card = self.card_db.translate_card(card, target_language)
             self._add_card_to_deck(cards, card, count)
         elif guess_printing:
             logger.debug(f"Card not identified. Try guessing a printing")
             english_name = line["name"]
-            card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+            card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
+                CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
             card_data = CardIdentificationData(
-                language, card_name, line["set_code"], line["collector_number"]
+                target_language, card_name, line["set_code"], line["collector_number"]
             )
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
@@ -140,6 +165,11 @@ class TappedOutCSVParser(BaseCSVParser):
         quoting = csv.QUOTE_MINIMAL
 
     DIALECT_NAME = "tappedout_com"
+    USED_COLUMNS = {
+        # Does not include the Language column,
+        # because there is the fallback to the old "Languange" column.
+        "Qty", "Name", "Board", "Printing",
+    }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
@@ -150,27 +180,42 @@ class TappedOutCSVParser(BaseCSVParser):
         if include_acquire_board:
             self.allowed_boards.add("acquire")
 
-    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool) -> LineParserResult:
+    def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
+            -> LineParserResult:
         cards = collections.Counter()
-        language = self._read_language(line)
+        target_language = language_override or self._read_language(line)
+        set_code = self._read_set_code(line)
         english_name = line["Name"]
-        card_name = self.card_db.translate_card_name(english_name, language) if language != "en" else english_name
+        card_name = self.card_db.translate_card_name(
+            CardIdentificationData("en", english_name, set_code), target_language)\
+            if target_language != "en" else english_name
         if english_name and not card_name:
             # Unable to translate card. Missing localized card data? Defaulting to English
             card_name = english_name
-            language = "en"
-        set_code = line["Printing"].lower()  # TappedOut uses upper case set codes, so convert to lower case
+            target_language = "en"
         count = int(line["Qty"])  # Quantity (Qty) contains the number of copies
         # The current CSV format (2021-02) does not include the collector number, so no way to identify special
         # printings inside larger sets
-        card_data = CardIdentificationData(
-            language, card_name, set_code
-        )
-        if guess_printing and (card := self.guess_printing(card_data)) is not None:
-            self._add_card_to_deck(cards, card, count)
-        elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
-            self._add_card_to_deck(cards, result[0], count)
+        for card_data in [
+                CardIdentificationData(target_language, card_name, set_code),
+                # Try again without the set code, because there may be no card in the original set,
+                # so use an arbitrary set in that case.
+                CardIdentificationData(target_language, card_name)]:
+            if guess_printing and (card := self.guess_printing(card_data)) is not None:
+                self._add_card_to_deck(cards, card, count)
+                break
+            elif not guess_printing and len(result := self.card_db.get_cards_from_data(card_data)) == 1:
+                self._add_card_to_deck(cards, result[0], count)
+                break
         return cards
+
+    @staticmethod
+    def _read_set_code(line: typing.Dict[str, str]) -> typing.Optional[str]:
+        set_code = line.get("Printing")
+        if set_code:
+            # TappedOut uses upper case set codes, so convert to lower case
+            set_code = set_code.lower()
+        return set_code
 
     def _read_language(self, line: typing.Dict[str, str]):
         try:

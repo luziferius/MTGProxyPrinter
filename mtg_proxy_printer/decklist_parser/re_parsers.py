@@ -12,7 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import copy
 from collections import Counter
 import re
 import typing
@@ -35,6 +35,16 @@ __all__ = [
     "XMageParser",
 ]
 
+try:
+    # Profiling decorator, injected into globals by line-profiler. Because the injection does funky stuff, this
+    # is the easiest way to test if the profile() function is defined.
+    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
+    profile
+except NameError:
+    # If not defined, use this identity decorator as a replacement
+    def profile(func):
+        return func
+
 
 class GenericRegularExpressionDeckParser(ParserBase):
     """
@@ -46,18 +56,19 @@ class GenericRegularExpressionDeckParser(ParserBase):
         "copies", "language", "set_code", "collector_number", "scryfall_id", "name"
     ))
 
+    LINES_TO_SKIP = frozenset()
+
     def __init__(
             self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
             parent: QObject = None):
-        super(GenericRegularExpressionDeckParser, self).__init__(card_db, image_db, parent)
+        super().__init__(card_db, image_db, parent)
         self.parser = regular_expression \
             if isinstance(regular_expression, re.Pattern) \
             else re.compile(regular_expression)
         logger.info(f"Created {self.__class__.__name__} instance using RE '{regular_expression}'")
 
-    def parse_deck_without_translation(self, deck_list: str,
-                                       print_guessing: bool) -> ParsedDeck:
-
+    @profile
+    def parse_deck_internal(self, deck_list: str, print_guessing: bool, language_override: str = None) -> ParsedDeck:
         cards: typing.Counter[Card] = Counter()
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
@@ -67,15 +78,25 @@ class GenericRegularExpressionDeckParser(ParserBase):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
                 # If the matcher doesn’t include language information, all cards are implicitly English printings
-                matched_card = self._match_card(match_dict)
-                if self.card_db.is_valid_and_unique_card(matched_card):
-                    self._add_matched_card(cards, matched_card, copies)
-                elif self.card_db.is_valid_and_unique_card(self._remove_collector_number(matched_card)):
-                    self._add_matched_card(cards, matched_card, copies)
-                elif print_guessing and (guessed_card := self.guess_printing(matched_card)) is not None:
+                parsed_data = self._parse_line(match_dict)
+                if language_override and language_override != parsed_data.language and (
+                        translated := self.card_db.translate_card_name(parsed_data, language_override)):
+                    parsed_data.name = translated
+                    parsed_data.language = language_override
+                    parsed_data.scryfall_id = None  # The old value is definitely invalid in this case, so set to Null
+                if matched_cards := self.card_db.get_cards_from_data(parsed_data):
+                    self._add_card_to_deck(cards, matched_cards[0], copies)
+                    continue
+                # Some sources have invalid collector numbers. So try again without that.
+                parsed_data_without_collector_number = copy.copy(parsed_data)
+                parsed_data_without_collector_number.collector_number = None
+                if matched_cards := self.card_db.get_cards_from_data(parsed_data_without_collector_number):
+                    self._add_card_to_deck(cards, matched_cards[0], copies)
+                    continue
+                if print_guessing and (guessed_card := self.guess_printing(parsed_data)) is not None:
                     self._add_card_to_deck(cards, guessed_card, copies)
-                else:
-                    unmatched_lines.append(line)
+                    continue
+                unmatched_lines.append(line)
             elif line:
                 # Non-empty, non-matching lines
                 unmatched_lines.append(line)
@@ -90,7 +111,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         card.collector_number = None
         return card
 
-    def _match_card(self, match_dict: MatchType) -> CardIdentificationData:
+    def _parse_line(self, match_dict: MatchType) -> CardIdentificationData:
         matched_name = self._match_name(match_dict)
         language = self._match_language(match_dict, matched_name)
         matched_card = CardIdentificationData(
@@ -130,14 +151,13 @@ class GenericRegularExpressionDeckParser(ParserBase):
             name = name.split("//")[0].rstrip()
         return name
 
-    @staticmethod
-    def line_splitter(deck_list: str) -> typing.Generator[str, None, None]:
+    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
         """
         Split the input deck list into individual lines, omitting empty lines.
         Subclasses can overwrite this method to provide custom filtering for unrelated meta-data.
         """
         for line in deck_list.splitlines():
-            if line:
+            if line and line not in self.LINES_TO_SKIP:
                 yield line
 
 
@@ -145,17 +165,30 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(MTGArenaParser, self).__init__(
-            card_db, image_db,
-            re.compile(r"(?P<copies>\d+) (?P<name>.+) \((?P<set_code>\w+)\)( (?P<collector_number>.+))?"), parent
-        )
+    SUPPORTED_FILE_TYPES = {
+        # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
+        # XMage also lists the .mtga suffix, so add that too.
+        "Magic Arena deck file": ["txt", "mtga"]
+    }
+    
+    # The deck segment headers seem inconsistent across different sites
+    LINES_TO_SKIP = frozenset((
+        # Moxfield uses only the capital SIDEBOARD: with colon, nothing else
+        "SIDEBOARD:",
+        # MTGGoldfish, mtgazone.com and others indicate that these headers are valid
+        "Deck", "Commander", "Sideboard", "Companion",
+    ))
 
-    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
-        # Skip emtpy lines and the Sideboard marker
-        for line in super(MTGArenaParser, self).line_splitter(deck_list):
-            if line != "SIDEBOARD:":
-                yield line
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super().__init__(
+            card_db, image_db,
+            # Matcher for the “name” group must be lazy (.+?) to prevent it from swallowing
+            # the optional set code and collector number up, if present in the line.
+            # Although the format is specified as only allowing two variants, "<copies> <Card name>" and
+            # "<copies> <Card name> (<set>) <collector number>", there are broken implementations that also emit
+            # “<copies> <Card name> (<set>)”. This RE is designed to also parse this invalid variant.
+            re.compile(r"(?P<copies>\d+) (?P<name>.+?)( \((?P<set_code>\w+)\)( (?P<collector_number>.+))?)?$"), parent
+        )
 
 
 class MTGOnlineParser(GenericRegularExpressionDeckParser):
@@ -164,8 +197,14 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     These do not contain much information, only the English card name and count,
     so sets and individual printings have to be guessed.
     """
+
+    SUPPORTED_FILE_TYPES = {
+        # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
+        "Magic Online (MTGO) deck file": ["dek", "txt"],
+    }
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(MTGOnlineParser, self).__init__(
+        super().__init__(
             card_db, image_db,
             re.compile(r"(?P<copies>\d+) (?P<name>.+)"), parent
         )
@@ -179,14 +218,19 @@ class XMageParser(GenericRegularExpressionDeckParser):
     """
     A parser for XMage deck files (file extension ".dck").
     """
+
+    SUPPORTED_FILE_TYPES = {
+        "XMage Deck file": ["dck"],
+    }
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(XMageParser, self).__init__(
+        super().__init__(
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
         )
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
-        # Skip emtpy lines, the deck name, if set, and the deck/sideboard layout
-        for line in super(XMageParser, self).line_splitter(deck_list):
+        # Skip the deck name, if set, and the deck/sideboard layout
+        for line in super().line_splitter(deck_list):
             if not line.startswith("NAME") and not line.startswith("LAYOUT"):
                 yield line
