@@ -20,6 +20,7 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
 
@@ -328,9 +329,12 @@ def test_get_missing_image_cards(qtbot: QtBot, document: Document):
     document.add_card(expected, 2)
     document.add_card(unexpected, 2)
     assert_that(
-        document.get_missing_image_cards(),
-        contains_exactly(expected)
+        result := list(document.get_missing_image_cards()),
+        has_length(2)
     )
+    for item in result:
+        card = item.parent().data(Qt.EditRole)[item.row()].card
+        assert_that(card, is_(expected))
 
 
 @pytest.mark.parametrize("result", [True, False])

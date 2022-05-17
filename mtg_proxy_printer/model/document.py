@@ -629,10 +629,11 @@ class Document(QAbstractItemModel):
     def get_missing_image_cards(self):
         """Returns an iterable with all cards that have missing images"""
         blank = self.image_db.blank_image
-        return filter(
-            lambda card: card.image_file is blank,
-            set(container.card for container in itertools.chain.from_iterable(self.pages))
-        )
+        for page_row, page in enumerate(self.pages):
+            page_index = self.index(page_row, 0)
+            for card_row, card_container in enumerate(page):
+                if card_container.card.image_file is blank:
+                    yield QPersistentModelIndex(self.index(card_row, 0, page_index))
 
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
