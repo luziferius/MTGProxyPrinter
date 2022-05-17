@@ -293,9 +293,12 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         card.image_file = self.image_database.blank_image
         logger.warning(
             f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
+        # Only return the error message for storage, if the queue currently processes a batch job.
+        # Otherwise, it’ll be re-raised if a batch job starts right after a singular request failed.
         if not self.batch_processing_state:
             self.network_error_occurred.emit(reason_str)
-        return reason_str
+            return reason_str
+        return ""
 
     def get_image_synchronous(self, card: Card):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
