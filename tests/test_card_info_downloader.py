@@ -48,8 +48,8 @@ class DatabaseSetData(typing.NamedTuple):
     release_date: str
 
 
-class DatabaseAllPrintingsData(typing.NamedTuple):
-    """Row retrieved via AllPrintings view"""
+class DatabaseVisiblePrintingsData(typing.NamedTuple):
+    """Row retrieved via VisiblePrintings view"""
     name: str
     set_code: str
     language: str
@@ -112,9 +112,9 @@ class TestCaseData:
             for face_number, face in enumerate(self.face_data)
         ]
 
-    def db_all_printings(self) -> typing.List[DatabaseAllPrintingsData]:
+    def db_all_printings(self) -> typing.List[DatabaseVisiblePrintingsData]:
         return [
-            DatabaseAllPrintingsData(
+            DatabaseVisiblePrintingsData(
                 face.name, self.set.set_code, self.language, self.collector_number, self.scryfall_id,
                 self.highres_image, face.image_uri, face.is_front, self.is_oversized)
             for face in self.face_data
@@ -196,9 +196,9 @@ def _assert_all_printings_contains(card_db: CardDatabase, test_case: TestCaseDat
     assert_that(
         data := card_db.db.execute(
             'SELECT card_name, set_code, "language", collector_number, scryfall_id, highres_image, '
-            'png_image_uri, is_front, is_oversized FROM AllPrintings').fetchall(),
+            'png_image_uri, is_front, is_oversized FROM VisiblePrintings').fetchall(),
         contains_inanyorder(*test_case.db_all_printings()),
-        f"AllPrintings relation contains unexpected data: {data}")
+        f"VisiblePrintings relation contains unexpected data: {data}")
 
 
 def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
@@ -225,7 +225,7 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     for filtered_view in (
-            "AllPrintings",
+            "VisiblePrintings",
             ):
         assert_relation_is_empty(card_db, filtered_view)
 

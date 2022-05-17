@@ -1,5 +1,14 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Improved deck list translation when the source deck list is not in English.
+- Improved operation while offline or with flaky internet connection: MTGProxyPrinter will now attempt to re-download
+  missing images when trying to print or export the current document to PDF. 
+  Additionally, a warning is issued, if obtaining the missing images fails.
+
 # Version 0.16.0 (2022-05-06)  <a name="v0_16_0"></a>
 
 After upgrading to this version, re-downloading the card data from Scryfall is required to use the new or enhanced

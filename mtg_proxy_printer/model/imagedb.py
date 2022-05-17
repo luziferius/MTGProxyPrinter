@@ -175,6 +175,12 @@ class ImageDatabase(QObject):
             self.queue.put((card, count))
         self.queue.put((None, False))
 
+    def get_card_list_asynchronous(self, cards: typing.List[typing.Tuple[Card, QPersistentModelIndex]]):
+        self.queue.put((None, True))
+        for item in cards:
+            self.queue.put(item)
+        self.queue.put((None, False))
+
     def read_disk_cache_content(self) -> typing.List[CacheContent]:
         """
         Returns all entries currently in the hard disk image cache.
@@ -269,6 +275,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             if not self.should_run:
                 break
             if card is None:
+                if value:
+                    last_error_msg = ""
                 if not value and last_error_msg:
                     self.network_error_occurred.emit(last_error_msg)
                     last_error_msg = ""
@@ -293,9 +301,12 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         card.image_file = self.image_database.blank_image
         logger.warning(
             f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
+        # Only return the error message for storage, if the queue currently processes a batch job.
+        # Otherwise, it’ll be re-raised if a batch job starts right after a singular request failed.
         if not self.batch_processing_state:
             self.network_error_occurred.emit(reason_str)
-        return reason_str
+            return reason_str
+        return ""
 
     def get_image_synchronous(self, card: Card):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)

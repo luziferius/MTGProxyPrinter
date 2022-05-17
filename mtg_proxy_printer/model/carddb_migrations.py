@@ -473,7 +473,8 @@ def _migrate_25_to_26(db: sqlite3.Connection):
     );
     INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date, wackiness_score)
       -- Default to neutral values for new columns. Subsequent card data updates will update the values accordingly.
-      SELECT set_id, "set", set_name, set_uri, '1970-01-01', 0
+      -- Use a date far in the future, because the importer can only date sets back.
+      SELECT set_id, "set", set_name, set_uri, '9999-01-01', 0
       FROM "Set";
     DROP VIEW AllPrintings;
     -- Rename the old table first, to update the FOREIGN KEY relation in the Printing table. Then drop and replace
@@ -502,6 +503,39 @@ def _migrate_25_to_26(db: sqlite3.Connection):
     """))
 
 
+def _migrate_26_to_27(db: sqlite3.Connection):
+    for statement in [
+        "UPDATE MTGSet SET release_date = '9999-01-01' WHERE release_date = '1970-01-01'",
+        "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
+        "CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id)",
+        "ANALYZE",
+        "DROP VIEW AllPrintings",
+        textwrap.dedent("""\
+        CREATE VIEW VisiblePrintings AS
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
+                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE"""),
+        textwrap.dedent("""\
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)"""),
+    ]:
+        db.execute(f"{statement};\n")
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -522,6 +556,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (23, _migrate_23_to_24),
     (24, _migrate_24_to_25),
     (25, _migrate_25_to_26),
+    (26, _migrate_26_to_27),
 )
 
 

@@ -211,7 +211,6 @@ class CardDatabase:
             WHERE FaceName.is_hidden IS FALSE
               AND language = ?
               {name_filter}
-            GROUP BY card_name
             ORDER BY card_name ASC
         ''')
         parameters = [language]
@@ -321,25 +320,25 @@ class CardDatabase:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
-               AllPrintings.scryfall_id, is_front, oracle_id, highres_image,
-               is_oversized, face_number, AllPrintings.language -- get_replacement_card_for_unknown_printing()
+               VisiblePrintings.scryfall_id, is_front, oracle_id, highres_image,
+               is_oversized, face_number, VisiblePrintings.language -- get_replacement_card_for_unknown_printing()
             FROM RemovedPrintings
-            JOIN AllPrintings USING (oracle_id)
+            JOIN VisiblePrintings USING (oracle_id)
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
             WHERE RemovedPrintings.scryfall_id = ?
             AND is_front = ?
             ORDER BY 
                 -- Match with original language first, fall back to preferred language, then fall back to English
-               (4*(AllPrintings.language == RemovedPrintings.language) +
-                2*(AllPrintings.language == ?) +
-                  (AllPrintings.language == 'en')) DESC NULLS LAST,
+               (4*(VisiblePrintings.language == RemovedPrintings.language) +
+                2*(VisiblePrintings.language == ?) +
+                  (VisiblePrintings.language == 'en')) DESC NULLS LAST,
                 wackiness_score ASC,
                 release_date DESC
         ''')
         if order_by_print_count:
             query += '        , LastImageUseTimestamps.usage_count DESC NULLS LAST\n'
         # Break any remaining ties by preferring high resolution images over low resolution images
-        query += '        , AllPrintings.highres_image DESC\n'
+        query += '        , VisiblePrintings.highres_image DESC\n'
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     @profile
@@ -436,7 +435,7 @@ class CardDatabase:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
             highres_image, is_oversized, face_number -- get_card_with_scryfall_id()
-            FROM AllPrintings
+            FROM VisiblePrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
         result = self.db.execute(query, (scryfall_id, is_front)).fetchone()
@@ -465,7 +464,7 @@ class CardDatabase:
         SELECT "language" -- guess_language_from_name()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
-            WHERE card_name LIKE ?
+            WHERE card_name = ?
             -- Assume English by default to not match other languages in case their entry misses the proper
             -- localisation and uses the English name as a fallback.
             ORDER BY "language" = 'en' DESC;
@@ -518,7 +517,7 @@ class CardDatabase:
             )
         SELECT card_name
           FROM source_oracle_id
-          JOIN AllPrintings USING (oracle_id, face_number)
+          JOIN VisiblePrintings USING (oracle_id, face_number)
           WHERE language = ?
           GROUP BY card_name
           ORDER BY likeliness DESC
@@ -640,7 +639,7 @@ class CardDatabase:
                scryfall_id, png_image_uri, highres_image,
                is_oversized, face_number,
                MAX((set_code = ?) + (collector_number = ?)) AS similarity
-            FROM AllPrintings
+            FROM VisiblePrintings
             WHERE oracle_id = ? AND language = ? AND is_front = ?
         """)
         parameters = [card.set.code, card.collector_number, card.oracle_id, language_override, card.is_front]
@@ -664,7 +663,7 @@ class CardDatabase:
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
                highres_image, is_oversized, face_number -- find_all_translated_printings()
-            FROM AllPrintings
+            FROM VisiblePrintings
             {join_clause}
             WHERE oracle_id = ? AND language = ? AND is_front = ?
             {order_by_clause}

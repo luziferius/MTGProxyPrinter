@@ -13,9 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import atexit
+import functools
 import os
+import pathlib
 import platform
+import shutil
 import sys
+from tempfile import mkdtemp
 import typing
 
 from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
@@ -59,11 +64,8 @@ class Application(QApplication):
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
-        logger.debug("Opening Database")
-        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
-        self.card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
-        self.image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         self.document = self._create_document_instance(args, self.card_db, self.image_db)
         self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
@@ -89,6 +91,21 @@ class Application(QApplication):
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
         logger.debug("Left event loop.")
+
+    def _open_databases(self, args: Namespace):
+        if args.test_exit_on_launch:
+            temp_directory = pathlib.Path(mkdtemp())
+            logger.info(f"Opening databases in temporary directory {temp_directory}")
+            atexit.register(functools.partial(shutil.rmtree, temp_directory))
+            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" / "CardDatabase.sqlite3")
+            image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(
+                temp_directory/"image_db", parent=self)
+            return card_db, image_db
+        logger.debug("Opening Databases")
+        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
+        card_db = mtg_proxy_printer.model.carddb.CardDatabase()
+        image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
+        return card_db, image_db
 
     @staticmethod
     def _create_settings_window(

@@ -18,9 +18,10 @@ import typing
 
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
-from PyQt5.QtGui import QCloseEvent, QResizeEvent, QShowEvent, QKeySequence
+from PyQt5.QtGui import QCloseEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
 
+from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -59,6 +60,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.card_data_download_in_progress = False
         self.setupUi(self)
+        self.missing_images_manager = MissingImagesManager(document, self)
+        self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
         self.about_dialog = self._create_about_dialog()
         self.progress_label = self._create_progress_label()
         self.progress_bar = self._create_progress_bar()
@@ -233,7 +236,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
             return
         print_dialog = PrintDialog(self.document, self)
-        print_dialog.exec_()
+        self.missing_images_manager.obtain_missing_images(print_dialog.exec_)
 
     @pyqtSlot()
     def on_action_print_preview_triggered(self):
@@ -241,7 +244,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
             return
         print_preview_dialog = PrintPreviewDialog(self.document, self)
-        print_preview_dialog.exec_()
+        self.missing_images_manager.obtain_missing_images(print_preview_dialog.exec_)
 
     @pyqtSlot()
     def on_action_print_pdf_triggered(self):
@@ -249,13 +252,13 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
             return
         dialog = SavePDFDialog(self, self.document)
-        dialog.exec_()
+        self.missing_images_manager.obtain_missing_images(dialog.exec_)
 
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
             self, "Network error",
             f"Operation failed, because a network error occurred.\n"
-            f"Check your internet connection. Reported error message:\n{message}",
+            f"Check your internet connection. Reported error message:\n\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
         if self.card_data_download_in_progress:
@@ -329,6 +332,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
         dialog = DocumentSettingsDialog(self.document, self)
         dialog.exec_()
+
+    @pyqtSlot()
+    def on_action_download_missing_card_images_triggered(self):
+        logger.info("User wants to download missing card images")
+        self.missing_images_manager.obtain_missing_images()
 
     @pyqtSlot()
     def on_action_save_as_triggered(self):

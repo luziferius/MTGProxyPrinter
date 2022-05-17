@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000026;
+PRAGMA user_version = 0000027;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -139,7 +139,11 @@ CREATE TABLE RemovedPrintings (
   oracle_id TEXT NOT NULL
 );
 
-CREATE VIEW AllPrintings AS
+CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC);
+CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id);
+
+
+CREATE VIEW VisiblePrintings AS
   SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
          highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
   FROM Card
@@ -150,6 +154,17 @@ CREATE VIEW AllPrintings AS
   JOIN PrintLanguage USING (language_id)
   WHERE Printing.is_hidden IS FALSE
     AND FaceName.is_hidden IS FALSE
+;
+
+CREATE VIEW AllPrintings AS
+  SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+        is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+  FROM Card
+  JOIN Printing USING (card_id)
+  JOIN MTGSet   USING (set_id)
+  JOIN CardFace USING (printing_id)
+  JOIN FaceName USING (face_name_id)
+  JOIN PrintLanguage USING (language_id)
 ;
 
 COMMIT;

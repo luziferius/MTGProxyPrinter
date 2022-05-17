@@ -43,7 +43,7 @@ from hamcrest import *
     ("4 Erase (Not the Urza's Legacy One) (UNH) 10", 4, CardIdentificationData(name="Erase (Not the Urza's Legacy One)", set_code="UNH", collector_number="10")),
     ("3 Erase (Not the Urza's Legacy One) (unh) 10", 3, CardIdentificationData(name="Erase (Not the Urza's Legacy One)", set_code="unh", collector_number="10")),
 ])
-def test_generic_re_parser_with_card_name_only_list(
+def test_mtg_arena_parser_all_format_variants_work(
         card_db: CardDatabase, deck: str, count: int, card_data: CardIdentificationData):
     image_db = unittest.mock.MagicMock()
     image_db.filter_already_downloaded.return_value = []
