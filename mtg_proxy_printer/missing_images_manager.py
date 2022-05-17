@@ -54,13 +54,12 @@ class MissingImagesManager(QObject):
 
     @pyqtSlot(bool)
     def on_batch_processing_runs(self, state: bool):
-        if self.callback is not None and state is False:
-            if missing_count := self.document.missing_image_count():
-                logger.warning(f"Failed to download all missing images. Still missing: {missing_count}.")
-                plural = 's' if missing_count > 1 else ''
-                self.obtaining_missing_images_failed.emit(
-                    f"Unable to obtain missing image{plural} for {missing_count} card{plural}.\n"
-                    f"These will be missing in exported or printed documents.")
-            self.callback()
-
-
+        if not state:
+            missing_count = self.document.missing_image_count()
+            logger.warning(f"Failed to download all missing images. Still missing: {missing_count}.")
+            plural = 's' if missing_count > 1 else ''
+            self.obtaining_missing_images_failed.emit(
+                f"Unable to obtain missing image{plural} for {missing_count} card{plural}.\n"
+                f"These will be missing in exported or printed documents.")
+            if self.callback is not None:
+                self.callback()
