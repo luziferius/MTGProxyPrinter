@@ -473,7 +473,8 @@ def _migrate_25_to_26(db: sqlite3.Connection):
     );
     INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date, wackiness_score)
       -- Default to neutral values for new columns. Subsequent card data updates will update the values accordingly.
-      SELECT set_id, "set", set_name, set_uri, '1970-01-01', 0
+      -- Use a date far in the future, because the importer can only date sets back.
+      SELECT set_id, "set", set_name, set_uri, '9999-01-01', 0
       FROM "Set";
     DROP VIEW AllPrintings;
     -- Rename the old table first, to update the FOREIGN KEY relation in the Printing table. Then drop and replace
@@ -504,6 +505,7 @@ def _migrate_25_to_26(db: sqlite3.Connection):
 
 def _migrate_26_to_27(db: sqlite3.Connection):
     for statement in [
+        "UPDATE MTGSet SET release_date = '9999-01-01' WHERE release_date = '1970-01-01'",
         "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
         "CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id)",
         "ANALYZE",
