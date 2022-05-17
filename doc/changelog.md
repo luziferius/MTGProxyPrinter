@@ -8,6 +8,8 @@
 - Improved operation while offline or with flaky internet connection: MTGProxyPrinter will now attempt to re-download
   missing images when trying to print or export the current document to PDF. 
   Additionally, a warning is issued, if obtaining the missing images fails.
+- Enable basic dark mode rendering on Windows. Proper system theme support is only available on Linux, because the
+  used GUI toolkit doesn’t fully support the dark mode setting on Windows yet. 
 
 # Version 0.16.0 (2022-05-06)  <a name="v0_16_0"></a>
 
