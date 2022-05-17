@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import platform
 import sys
 import typing
 
@@ -49,7 +50,8 @@ class Application(QApplication):
         if argv is None:
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
-        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and self.platformName() == "windows":
+        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and platform.system() == "Windows":
+            logger.info("Running on Windows without explicit platform override. Enabling dark mode rendering.")
             # The explicit set platform and parameters overwrite the environment, so set these options iff neither
             # present as parameters nor environment variables.
             argv.append("-platform")
