@@ -269,6 +269,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             if not self.should_run:
                 break
             if card is None:
+                if value:
+                    last_error_msg = ""
                 if not value and last_error_msg:
                     self.network_error_occurred.emit(last_error_msg)
                     last_error_msg = ""
