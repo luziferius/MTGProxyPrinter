@@ -15,7 +15,9 @@
 
 import atexit
 import functools
+import os
 import pathlib
+import platform
 import shutil
 import sys
 from tempfile import mkdtemp
@@ -53,6 +55,12 @@ class Application(QApplication):
         if argv is None:
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
+        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and platform.system() == "Windows":
+            logger.info("Running on Windows without explicit platform override. Enabling dark mode rendering.")
+            # The explicit set platform and parameters overwrite the environment, so set these options iff neither
+            # present as parameters nor environment variables.
+            argv.append("-platform")
+            argv.append("windows:darkmode=2")
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
