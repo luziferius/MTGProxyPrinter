@@ -18,6 +18,13 @@ import typing
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
 
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
+
+__all__ = [
+    "MissingImagesManager",
+]
 
 
 class MissingImagesManager(QObject):
@@ -35,18 +42,21 @@ class MissingImagesManager(QObject):
         self.document.image_db.batch_processing_state_changed.connect(self.on_batch_processing_runs)
         self.document.image_db.network_error_occurred.connect(lambda: setattr(self, "network_error_occurred", True))
         self.callback = None
+        logger.info(f"Created {self.__class__.__name__} instance")
 
-    def obtain_missing_images(self, callback: typing.Callable[[], typing.Any]):
+    def obtain_missing_images(self, callback: typing.Callable[[], typing.Any] = None):
         self.callback = callback
         images_to_fetch = {
             index.parent().data(Qt.EditRole)[index.row()].card: index
             for index in self.document.get_missing_image_cards()}
+        logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
         self.document.image_db.get_deck_asynchronous(images_to_fetch)
 
     @pyqtSlot(bool)
     def on_batch_processing_runs(self, state: bool):
         if self.callback is not None and state is False:
             if missing_count := self.document.missing_image_count():
+                logger.warning(f"Failed to download all missing images. Still missing: {missing_count}.")
                 plural = 's' if missing_count > 1 else ''
                 self.obtaining_missing_images_failed.emit(
                     f"Unable to obtain missing image{plural} for {missing_count} card{plural}.\n"
