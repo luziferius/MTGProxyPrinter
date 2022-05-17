@@ -447,7 +447,7 @@ class Document(QAbstractItemModel):
 
         Scans the document for pages that are not completely filled and for each such page,
         moves cards from the last page with items to it.
-        This fills all (but the last) pages up to the capacity limit to help reducing possible waste during printing.
+        This fills all (but the last) pages up to the capacity limit to help reduce possible waste during printing.
         """
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
@@ -648,24 +648,24 @@ class Document(QAbstractItemModel):
 
 def _migrate_database(db):
     if db.execute("PRAGMA user_version").fetchone()[0] == 2:
-        db.executescript(textwrap.dedent("""\
-        BEGIN TRANSACTION;
-        ALTER TABLE Card RENAME TO Card_old;
-        CREATE TABLE Card (
-          page INTEGER NOT NULL CHECK (page > 0),
-          slot INTEGER NOT NULL CHECK (slot > 0),
-          is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
-          scryfall_id TEXT NOT NULL,
-          PRIMARY KEY(page, slot)
-        ) WITHOUT ROWID;
-        INSERT INTO Card (page, slot, scryfall_id, is_front)
-            SELECT page, slot, scryfall_id, 1 AS is_front
-            FROM Card_old;
-        DROP TABLE Card_old;
-        COMMIT;
-        VACUUM;
-        """))
-        db.execute(f"PRAGMA user_version = 3")
+        for statement in [
+            "ALTER TABLE Card RENAME TO Card_old",
+            textwrap.dedent("""\
+            CREATE TABLE Card (
+              page INTEGER NOT NULL CHECK (page > 0),
+              slot INTEGER NOT NULL CHECK (slot > 0),
+              is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+              scryfall_id TEXT NOT NULL,
+              PRIMARY KEY(page, slot)
+            ) WITHOUT ROWID"""),
+            textwrap.dedent("""\
+            INSERT INTO Card (page, slot, scryfall_id, is_front)
+                SELECT page, slot, scryfall_id, 1 AS is_front
+                FROM Card_old"""),
+            "DROP TABLE Card_old",
+            "PRAGMA user_version = 3",
+        ]:
+            db.execute(f"{statement};\n")
     if db.execute("PRAGMA user_version").fetchone()[0] == 3:
         db.execute(textwrap.dedent("""\
         CREATE TABLE DocumentSettings (

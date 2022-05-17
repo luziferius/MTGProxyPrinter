@@ -89,7 +89,7 @@ class Application(QApplication):
             temp_directory = pathlib.Path(mkdtemp())
             logger.info(f"Opening databases in temporary directory {temp_directory}")
             atexit.register(functools.partial(shutil.rmtree, temp_directory))
-            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" /"CardDatabase.sqlite3")
+            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" / "CardDatabase.sqlite3")
             image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(
                 temp_directory/"image_db", parent=self)
             return card_db, image_db
