@@ -615,6 +615,26 @@ class Document(QAbstractItemModel):
         )
         self.card_db.commit()
 
+    def has_missing_images(self) -> bool:
+        try:
+            next(self.get_missing_image_cards())
+        except StopIteration:
+            return False
+        else:
+            return True
+
+    def missing_image_count(self) -> int:
+        return sum(1 for _ in self.get_missing_image_cards())
+
+    def get_missing_image_cards(self):
+        """Returns an iterable with all cards that have missing images"""
+        blank = self.image_db.blank_image
+        for page_row, page in enumerate(self.pages):
+            page_index = self.index(page_row, 0)
+            for card_row, card_container in enumerate(page):
+                if card_container.card.image_file is blank:
+                    yield QPersistentModelIndex(self.index(card_row, 0, page_index))
+
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
