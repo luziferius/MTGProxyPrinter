@@ -63,3 +63,4 @@ class MissingImagesManager(QObject):
                 f"These will be missing in exported or printed documents.")
             if self.callback is not None:
                 self.callback()
+                self.callback = None
