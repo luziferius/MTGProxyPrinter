@@ -334,6 +334,11 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         dialog.exec_()
 
     @pyqtSlot()
+    def on_action_download_missing_card_images_triggered(self):
+        logger.info("User wants to download missing card images")
+        self.missing_images_manager.obtain_missing_images()
+
+    @pyqtSlot()
     def on_action_save_as_triggered(self):
         dialog = SaveDocumentAsDialog(self.document, self)
         dialog.exec_()
