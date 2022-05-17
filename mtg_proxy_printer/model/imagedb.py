@@ -175,6 +175,12 @@ class ImageDatabase(QObject):
             self.queue.put((card, count))
         self.queue.put((None, False))
 
+    def get_card_list_asynchronous(self, cards: typing.List[typing.Tuple[Card, QPersistentModelIndex]]):
+        self.queue.put((None, True))
+        for item in cards:
+            self.queue.put(item)
+        self.queue.put((None, False))
+
     def read_disk_cache_content(self) -> typing.List[CacheContent]:
         """
         Returns all entries currently in the hard disk image cache.

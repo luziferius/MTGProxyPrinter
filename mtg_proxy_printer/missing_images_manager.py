@@ -46,11 +46,12 @@ class MissingImagesManager(QObject):
 
     def obtain_missing_images(self, callback: typing.Callable[[], typing.Any] = None):
         self.callback = callback
-        images_to_fetch = {
-            index.parent().data(Qt.EditRole)[index.row()].card: index
-            for index in self.document.get_missing_image_cards()}
+        images_to_fetch = [
+            (index.parent().data(Qt.EditRole)[index.row()].card, index)
+            for index in self.document.get_missing_image_cards()
+        ]
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
-        self.document.image_db.get_deck_asynchronous(images_to_fetch)
+        self.document.image_db.get_card_list_asynchronous(images_to_fetch)
 
     @pyqtSlot(bool)
     def on_batch_processing_runs(self, state: bool):
