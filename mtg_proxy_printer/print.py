@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QMarginsF, QSizeF, Slot, QPersistentModelIndex
-from PySide6.QtGui import QPainter, QPdfWriter, QPageLayout
+from PySide6.QtGui import QPainter, QPdfWriter, QPageLayout, QPageSize
 from PySide6.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
@@ -59,18 +59,17 @@ def create_qprinter(document: Document) -> QPrinter:
         printer.setPageOrientation(QPageLayout.Landscape)
         # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
         # resulting in correct values.
-        page_size = QSizeF(page_height, page_width)
+        page_size = QPageSize(QSizeF(page_height, page_width), QPageSize.Millimeter)
     else:
-        page_size = QSizeF(page_width, page_height)
-    printer.setPageSizeMM(page_size)
+        page_size = QPageSize(QSizeF(page_width, page_height), QPageSize.Millimeter)
+    printer.setPageSize(page_size)
     printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
     # Disable duplex printing by default
-    printer.setDoubleSidedPrinting(False)
     printer.setDuplex(QPrinter.DuplexNone)
     printer.setOutputFormat(QPrinter.NativeFormat)
     # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
     printer.setFullPage(True)
-    printer.setPageMargins(0, 0, 0, 0, QPrinter.Millimeter)
+    printer.setPageMargins(QMarginsF(0, 0, 0, 0))
     return printer
 
 
@@ -90,7 +89,10 @@ class PDFPrinter(QPdfWriter):
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
         self.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
-        self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
+        self.setPageSize(QPageSize(
+            QSizeF(document.page_layout.page_width, document.page_layout.page_height),
+            QPageSize.Millimeter
+        ))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
