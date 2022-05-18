@@ -59,6 +59,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.card_data_download_in_progress = False
+        self.is_running = True
         self.setupUi(self)
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
@@ -192,15 +193,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         handling, you should reimplement the event handler and ignore() the event.
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
-        event.ignore()
-        self._quit()
+        if self.is_running:
+            event.ignore()
+            self.on_action_quit_triggered()
 
     @Slot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
-        self._quit()
-
-    def _quit(self):
+        self.is_running = False
         self.card_data_downloader.cancel_running_operations()
         self.card_data_downloader.stop_worker_thread()
         self.document.loader.cancel_running_operations()
