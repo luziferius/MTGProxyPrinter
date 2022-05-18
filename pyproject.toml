@@ -2,7 +2,6 @@
 requires = [
     "setuptools>=51, !=60.7.*, != 60.8.0",
     "wheel",
-    "PyQt5",
     "PySide6-Essentials >= 6.3.0",
     "build",
     "tox >= 3.8",
@@ -30,7 +29,6 @@ platform =
 deps =
     appdirs >= 1.4.3
     build
-    PyQt5
     PySide6-Essentials >= 6.3.0
     ijson >= 3.1.0
     pint
