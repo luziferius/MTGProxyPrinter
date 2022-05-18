@@ -316,7 +316,7 @@ based on the page size and spacings configured</string>
    <sender>page_height</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -348,7 +348,7 @@ based on the page size and spacings configured</string>
    <sender>page_width</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -380,7 +380,7 @@ based on the page size and spacings configured</string>
    <sender>margin_top</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -412,7 +412,7 @@ based on the page size and spacings configured</string>
    <sender>margin_bottom</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -444,7 +444,7 @@ based on the page size and spacings configured</string>
    <sender>margin_left</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -476,7 +476,7 @@ based on the page size and spacings configured</string>
    <sender>margin_right</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -508,7 +508,7 @@ based on the page size and spacings configured</string>
    <sender>image_spacing_horizontal</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -540,7 +540,7 @@ based on the page size and spacings configured</string>
    <sender>image_spacing_vertical</sender>
    <signal>valueChanged(int)</signal>
    <receiver>page_configuration_group_box</receiver>
-   <slot>on_page_layout_setting_changed()</slot>
+   <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>200</x>
@@ -555,6 +555,6 @@ based on the page size and spacings configured</string>
  </connections>
  <slots>
   <slot>validate_paper_size_settings()</slot>
-  <slot>on_page_layout_setting_changed()</slot>
+  <slot>page_layout_setting_changed()</slot>
  </slots>
 </ui>
