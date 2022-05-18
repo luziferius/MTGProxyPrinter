@@ -1,0 +1,115 @@
+{
+  "object": "card",
+  "id": "2520cb2b-47f2-4fb3-a9e7-17ad135562c8",
+  "oracle_id": "b7c0bb85-fb87-4c73-bc1b-7b4dc763c7e8",
+  "multiverse_ids": [],
+  "name": "Ironroot Treefolk",
+  "printed_name": "Baumvolk der Eisenwurzler",
+  "lang": "de",
+  "released_at": "1997-03-24",
+  "uri": "https://api.scryfall.com/cards/2520cb2b-47f2-4fb3-a9e7-17ad135562c8",
+  "scryfall_uri": "https://scryfall.com/card/5ed/305/de/baumvolk-der-eisenwurzler?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "placeholder",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/2/5/2520cb2b-47f2-4fb3-a9e7-17ad135562c8.jpg?1539780396",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/2/5/2520cb2b-47f2-4fb3-a9e7-17ad135562c8.jpg?1539780396",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/2/5/2520cb2b-47f2-4fb3-a9e7-17ad135562c8.jpg?1539780396",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/2/5/2520cb2b-47f2-4fb3-a9e7-17ad135562c8.png?1539780396",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/2/5/2520cb2b-47f2-4fb3-a9e7-17ad135562c8.jpg?1539780396",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/2/5/2520cb2b-47f2-4fb3-a9e7-17ad135562c8.jpg?1539780396"
+  },
+  "mana_cost": "{4}{G}",
+  "cmc": 5,
+  "type_line": "Creature — Treefolk",
+  "printed_type_line": "Beschwörung von Baumhirten",
+  "oracle_text": "",
+  "power": "3",
+  "toughness": "5",
+  "colors": [
+    "G"
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "5afd2f4b-8309-4f45-a2b2-3785018474cb",
+  "set": "5ed",
+  "set_name": "Fifth Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/5afd2f4b-8309-4f45-a2b2-3785018474cb",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A5ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/5ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/2520cb2b-47f2-4fb3-a9e7-17ad135562c8/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ab7c0bb85-fb87-4c73-bc1b-7b4dc763c7e8&unique=prints",
+  "collector_number": "305",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Jerry Tiritilli",
+  "artist_ids": [
+    "54366fc1-c5b1-4faa-a7a5-de2abc119de1"
+  ],
+  "illustration_id": "d61f651d-ea28-41b4-834c-f054baf468ec",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 19741,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Ironroot+Treefolk&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Ironroot+Treefolk&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Ironroot+Treefolk",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Ironroot+Treefolk"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Ironroot+Treefolk&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Ironroot+Treefolk&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Ironroot+Treefolk&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}
