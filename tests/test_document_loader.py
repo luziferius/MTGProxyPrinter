@@ -118,7 +118,10 @@ def test_valid_data_loads_correctly(
     page_index = document_with_filled_card_db.index(0, 0)
     assert_that(page_index.isValid())
     assert_that(document_with_filled_card_db.rowCount(page_index), is_(1))
-    assert_that(page_index.child(0, mtg_proxy_printer.model.document.PageColumns.CardName).data(), is_("Fury Sliver"))
+    assert_that(
+        document_with_filled_card_db.index(0, mtg_proxy_printer.model.document.PageColumns.CardName, page_index).data(),
+        is_("Fury Sliver")
+    )
     assert_that(document_with_filled_card_db.save_file_path, is_(equal_to(save_path)))
     assert_that(document_with_filled_card_db.page_layout, is_(equal_to(page_layout)))
     assert_that(

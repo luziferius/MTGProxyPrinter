@@ -20,8 +20,8 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
 from hamcrest import *
 
 try:
@@ -130,7 +130,7 @@ def test_add_card_and_row_count(document: Document, pages_to_fill: int):
         )
         for card_index in range(document.total_cards_per_page):
             assert_that(
-                document.index(page_row, 0).child(card_index, 0).internalPointer(),
+                document.index(card_index, 0, document.index(page_row, 0)).internalPointer(),
                 all_of(
                     instance_of(CardContainer),
                     has_property("parent", is_(page)),
@@ -169,7 +169,10 @@ def test_compacting_document(document: Document):
     cards_to_remove = 6
     for page_index in range(1, 4):
         document.remove_cards(
-            list(map(document.index(page_index, 0).child, range(cards_to_remove), itertools.repeat(0)))
+            list(map(
+                document.index,
+                range(cards_to_remove), itertools.repeat(0), itertools.repeat(document.index(page_index, 0))
+            ))
         )
         assert_that(document.pages[page_index], has_length(document.total_cards_per_page - cards_to_remove))
     for page_index in (0, 4):

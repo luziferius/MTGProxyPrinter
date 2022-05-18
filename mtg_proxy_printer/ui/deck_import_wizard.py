@@ -80,14 +80,11 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
         self.translate_deck_list_target_language.setModel(language_model)
-        self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
+        self.registerField("deck_list*", self.deck_list, )
         self.registerField("print-guessing-enable", self.print_guessing_enable)
         self.registerField("print-guessing-prefer-already-downloaded", self.print_guessing_prefer_already_downloaded)
         self.registerField("translate-deck-list-enable", self.translate_deck_list_enable)
-        self.registerField(
-            "translate-deck-list-target-language", self.translate_deck_list_target_language,
-            "currentText", self.translate_deck_list_target_language.currentTextChanged
-        )
+        self.registerField("translate-deck-list-target-language", self.translate_deck_list_target_language)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
@@ -376,6 +373,7 @@ class DeckImportWizard(QWizard):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, *args, **kwargs):
         super(DeckImportWizard, self).__init__(*args, **kwargs)
+        self.setDefaultProperty("QPlainTextEdit", "plainText", "textChanged")
         self.card_db = card_db
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)

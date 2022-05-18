@@ -19,8 +19,8 @@ import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from PyQt5.QtCore import Qt, QPoint, QRect, QItemSelectionModel
-from PyQt5.QtWidgets import QDialogButtonBox
+from PySide6.QtCore import Qt, QPoint, QRect, QItemSelectionModel
+from PySide6.QtWidgets import QDialogButtonBox
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.ui.add_card import HorizontalAddCardWidget, VerticalAddCardWidget

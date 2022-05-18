@@ -17,8 +17,8 @@ import pathlib
 from tempfile import TemporaryDirectory
 import unittest.mock
 
-from PyQt5.QtCore import QStringListModel
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtCore import QStringListModel
+from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest

@@ -19,9 +19,9 @@ from unittest.mock import MagicMock
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from PyQt5.QtCore import QStringListModel, Qt, QPoint, QObject
-from PyQt5.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
-from PyQt5.QtTest import QTest
+from PySide6.QtCore import QStringListModel, Qt, QPoint, QObject
+from PySide6.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
+from PySide6.QtTest import QTest
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard

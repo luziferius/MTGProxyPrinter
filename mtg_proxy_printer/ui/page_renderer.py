@@ -128,7 +128,7 @@ class PageScene(QGraphicsScene):
             self.draw_card(row)
 
     def draw_card(self, row: int):
-        index = self.selected_page.child(row, PageColumns.Image)
+        index = self.selected_page.model().index(row, PageColumns.Image, self.selected_page)
         position = self._compute_position_for_image(index)
         image: QPixmap = index.data(Qt.DisplayRole)
         if image is not None:

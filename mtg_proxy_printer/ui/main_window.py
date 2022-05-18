@@ -193,15 +193,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
-        # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.trigger()
+        self._quit()
 
     @Slot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
-        # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
-        # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
-        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+        self._quit()
+
+    def _quit(self):
         self.card_data_downloader.cancel_running_operations()
         self.card_data_downloader.stop_worker_thread()
         self.document.loader.cancel_running_operations()

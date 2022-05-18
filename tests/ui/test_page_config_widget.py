@@ -15,7 +15,7 @@
 
 import unittest.mock
 
-from PyQt5.QtWidgets import QSpinBox, QCheckBox
+from PySide6.QtWidgets import QSpinBox, QCheckBox
 
 from hamcrest import *
 import pytest

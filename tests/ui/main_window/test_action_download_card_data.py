@@ -20,8 +20,9 @@ import unittest.mock
 import urllib.error
 
 import pytest
-from PyQt5.QtCore import QStringListModel
-from PyQt5.QtWidgets import QApplication, QAction
+from PySide6.QtCore import QStringListModel
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 

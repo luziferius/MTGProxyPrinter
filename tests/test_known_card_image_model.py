@@ -21,7 +21,7 @@ import pathlib
 import tempfile
 import typing
 
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 import pytest
 from hamcrest import *
 
