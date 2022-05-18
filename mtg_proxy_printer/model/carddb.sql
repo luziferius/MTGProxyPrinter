@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000027;
+PRAGMA user_version = 0000028;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -144,8 +144,8 @@ CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, pri
 
 
 CREATE VIEW VisiblePrintings AS
-  SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
-         highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
+  SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+         is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, release_date
   FROM Card
   JOIN Printing USING (card_id)
   JOIN MTGSet   USING (set_id)
@@ -158,7 +158,8 @@ CREATE VIEW VisiblePrintings AS
 
 CREATE VIEW AllPrintings AS
   SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
-        is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+         is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden,
+         release_date
   FROM Card
   JOIN Printing USING (card_id)
   JOIN MTGSet   USING (set_id)
