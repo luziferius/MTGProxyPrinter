@@ -202,8 +202,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         logger.info(f"User wants to quit.")
         self.is_running = False
         self.card_data_downloader.cancel_running_operations()
-        self.card_data_downloader.stop_worker_thread()
+        self.card_data_downloader.quit_background_thread()
         self.document.loader.cancel_running_operations()
+        self.document.loader.quit_background_thread()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")

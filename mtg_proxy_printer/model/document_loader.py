@@ -437,3 +437,10 @@ class DocumentLoader(QObject):
         if not self.worker_thread.isRunning():
             return
         self.worker.cancel_running_operations()
+
+    def quit_background_thread(self):
+        if self.worker_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            self.worker_thread.quit()
+            self.worker_thread.wait(100)
+            self.worker_thread.isRunning()

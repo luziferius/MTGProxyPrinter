@@ -218,7 +218,7 @@ class UpdateChecker(QObject):
 
     def stop_background_worker(self):
         if self.background_thread.isRunning():
-            logger.debug("Stopping Update checker background worker.")
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
             self.background_thread.quit()
             self.background_thread.wait(100)
             logger.debug(f"Result: {self.background_thread.isRunning()=}")

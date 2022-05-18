@@ -137,11 +137,14 @@ class ImageDatabase(QObject):
         return pixmap
 
     def quit_background_thread(self):
+        logger.info(f"Quitting {self.__class__.__name__} background worker thread")
         self.download_worker.should_run = False
         self.queue.put((None, None))  # Unblock the background thread if it is waiting in the queue
         self.download_thread.quit()
         self.download_thread.wait(100)
-        logger.info(f"{self.__class__.__name__} background downloader thread stopped.")
+        logger.info(
+            f"{self.__class__.__name__} background downloader thread stopped. "
+            f"Result: {self.download_thread.isRunning()=}")
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """

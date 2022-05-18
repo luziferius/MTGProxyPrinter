@@ -133,10 +133,12 @@ class CardInfoDownloader(QObject):
             logger.info("Cancelling currently running card download")
             self.download_worker.should_run = False
 
-    def stop_worker_thread(self):
-        self.worker_thread.quit()
-        self.worker_thread.wait(100)
-        logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
+    def quit_background_thread(self):
+        if self.worker_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            self.worker_thread.quit()
+            self.worker_thread.wait(100)
+            logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
 
 
 class CardInfoDownloadWorker(DownloaderBase):
