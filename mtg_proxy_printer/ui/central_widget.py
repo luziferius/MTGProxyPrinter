@@ -15,8 +15,8 @@
 import math
 import typing
 
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPersistentModelIndex, QItemSelectionModel
-from PyQt5.QtWidgets import QTableView, QWidget, QListView
+from PySide6.QtCore import Signal, Slot, QPersistentModelIndex, QItemSelectionModel
+from PySide6.QtWidgets import QTableView, QWidget, QListView
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -43,7 +43,7 @@ __all__ = [
 
 class CentralWidget(QWidget):
 
-    settings_changed = pyqtSignal()
+    settings_changed = Signal()
 
     def __init__(self, *args, **kwargs):
         super(CentralWidget, self).__init__(*args, **kwargs)
@@ -106,14 +106,14 @@ class CentralWidget(QWidget):
         self.settings_changed.connect(self.page_renderer.scene().on_settings_changed)
         document.page_layout_changed.connect(self.page_renderer.scene().on_settings_changed)
 
-    @pyqtSlot()
+    @Slot()
     def on_delete_selected_images_button_clicked(self):
         self.page_card_table_view: QTableView
         multi_selection = self.page_card_table_view.selectionModel().selectedRows()
         logger.debug(f"User removes {len(multi_selection)} items from the current page.")
         self.page_card_table_view.model().remove_card_multi_selection(multi_selection)
 
-    @pyqtSlot()
+    @Slot()
     def select_first_page(self, loading_in_progress: bool = False):
         if not loading_in_progress:
             logger.info("Loading finished. Selecting first page.")
@@ -121,7 +121,7 @@ class CentralWidget(QWidget):
             self.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
             self.document.on_ui_selects_new_page(new_selection)
 
-    @pyqtSlot()
+    @Slot()
     def on_action_discard_page_triggered(self):
         self.document_view: QListView
         if self.document.rowCount() == 1:

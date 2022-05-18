@@ -23,9 +23,9 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import Slot, Qt, QTimer, QStringListModel
+from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
@@ -197,7 +197,7 @@ class Application(QApplication):
 
         self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
-    @pyqtSlot()
+    @Slot()
     def shutdown(self):
         logger.info("About to exit.")
         self.closeAllWindows()

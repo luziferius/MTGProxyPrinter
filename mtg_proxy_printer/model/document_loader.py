@@ -23,7 +23,7 @@ import typing
 import urllib.error
 
 import pint
-from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
+from PySide6.QtCore import QObject, Signal, QThread, Slot
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
 
@@ -121,11 +121,11 @@ class DocumentLoader(QObject):
 
     MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
-    loading_state_changed = pyqtSignal(bool)
-    unknown_scryfall_ids_found = pyqtSignal(int, int)
-    loading_file_failed = pyqtSignal(pathlib.Path, str)
+    loading_state_changed = Signal(bool)
+    unknown_scryfall_ids_found = Signal(int, int)
+    loading_file_failed = Signal(pathlib.Path, str)
     # Emitted when downloading required images during the loading process failed due to network issues.
-    network_error_occurred = pyqtSignal(str)
+    network_error_occurred = Signal(str)
 
     class Worker(QObject):
         """
@@ -142,16 +142,16 @@ class DocumentLoader(QObject):
         """
 
         # These signals are used to enqueue a stream of commands across thread boundaries.
-        new_page = pyqtSignal()
-        add_card = pyqtSignal(Card)
-        finished = pyqtSignal()
-        loading_file_failed = pyqtSignal(pathlib.Path, str)
-        document_clear_requested = pyqtSignal()
-        unknown_scryfall_ids_found = pyqtSignal(int, int)
-        loading_file_successful = pyqtSignal(pathlib.Path)
-        network_error_occurred = pyqtSignal(str)
-        request_blank_pixmap = pyqtSignal(Card)
-        document_settings_loaded = pyqtSignal(PageLayoutSettings)
+        new_page = Signal()
+        add_card = Signal(Card)
+        finished = Signal()
+        loading_file_failed = Signal(pathlib.Path, str)
+        document_clear_requested = Signal()
+        unknown_scryfall_ids_found = Signal(int, int)
+        loading_file_successful = Signal(pathlib.Path)
+        network_error_occurred = Signal(str)
+        request_blank_pixmap = Signal(Card)
+        document_settings_loaded = Signal(PageLayoutSettings)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -408,7 +408,7 @@ class DocumentLoader(QObject):
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
 
-    @pyqtSlot(PageLayoutSettings)
+    @Slot(PageLayoutSettings)
     def on_document_settings_loaded(self, settings: PageLayoutSettings):
         self.document.page_layout = settings
         self.document.on_page_layout_updated()
@@ -416,7 +416,7 @@ class DocumentLoader(QObject):
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()
 
-    @pyqtSlot(Card)
+    @Slot(Card)
     def _on_add_card(self, card: Card):
         self.document.add_card_to_page(len(self.document.pages) - 1, card)
 

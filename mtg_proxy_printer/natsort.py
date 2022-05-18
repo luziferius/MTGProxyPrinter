@@ -20,7 +20,7 @@ Natural sorting for lists or other iterables of strings.
 import re
 import typing
 
-from PyQt5.QtCore import QSortFilterProxyModel, QModelIndex
+from PySide6.QtCore import QSortFilterProxyModel, QModelIndex
 
 __all__ = [
     "natural_sorted",

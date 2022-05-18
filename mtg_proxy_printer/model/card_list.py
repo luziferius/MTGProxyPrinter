@@ -18,8 +18,8 @@ import enum
 import itertools
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Slot, Signal
+from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
 from mtg_proxy_printer.logger import get_logger
@@ -55,7 +55,7 @@ class CardListModel(QAbstractTableModel):
     }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
-    oversized_card_count_changed = pyqtSignal(int)
+    oversized_card_count_changed = Signal(int)
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(CardListModel, self).__init__(*args, **kwargs)
@@ -148,7 +148,7 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count -= 1
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    @pyqtSlot(list)
+    @Slot(list)
     def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
         """
         Remove all cards in the given multi-selection.

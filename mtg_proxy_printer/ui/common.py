@@ -15,10 +15,10 @@
 
 import pathlib
 
-from PyQt5.QtCore import QFile, QUrl, QObject
-from PyQt5.QtWidgets import QLabel
-# noinspection PyUnresolvedReferences
-from PyQt5 import uic
+from PySide6.QtCore import QFile, QUrl, QObject
+from PySide6.QtWidgets import QLabel
+
+from PySide6.QtUiTools import loadUiType
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -79,7 +79,7 @@ def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
 
 def load_ui_from_file(name: str):
     """
-    Returns a tuple from uic.loadUiType(), loading the ui file with the given name.
+    Returns a tuple from PySide6.QtUiTools.loadUiType(), loading the ui file with the given name.
     :param name:
     :return:
     """
@@ -90,8 +90,7 @@ def load_ui_from_file(name: str):
         logger.error(error_message)
         raise FileNotFoundError(error_message)
     try:
-        ui_file.open(QFile.ReadOnly)
-        base_type = uic.loadUiType(ui_file, from_imports=True)
+        base_type = loadUiType(file_path)
     finally:
         ui_file.close()
     return base_type

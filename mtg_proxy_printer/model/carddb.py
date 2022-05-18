@@ -23,8 +23,8 @@ import pathlib
 import textwrap
 import typing
 
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
 import delegateto
 
 import mtg_proxy_printer.app_dirs

@@ -16,10 +16,10 @@
 import enum
 import typing
 
-from PyQt5.QtCore import pyqtSlot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
-    pyqtSignal, QEvent
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
-from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
+from PySide6.QtCore import Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
+    Signal, QEvent
+from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
+from PySide6.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QAction
 
 import pint
 
@@ -60,7 +60,7 @@ class PageScene(QGraphicsScene):
     IMAGE_WIDTH = 63
     IMAGE_HEIGHT = 88
 
-    scene_size_changed = pyqtSignal()
+    scene_size_changed = Signal()
 
     def __init__(self, document: Document, render_mode: RenderMode, parent: QObject = None):
         """
@@ -83,14 +83,14 @@ class PageScene(QGraphicsScene):
         self.render_mode = render_mode
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
-    @pyqtSlot(QPersistentModelIndex)
+    @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
         self.redraw()
 
-    @pyqtSlot()
+    @Slot()
     def on_settings_changed(self):
         new_page_size = self.get_document_page_size(self.document)
         old_size = self.sceneRect()
@@ -168,7 +168,7 @@ class PageScene(QGraphicsScene):
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row+end-start-1)
 
-    @pyqtSlot()
+    @Slot()
     def redraw(self):
         """Wipes the scene and re-draws everything"""
         if not self.selected_page.isValid():

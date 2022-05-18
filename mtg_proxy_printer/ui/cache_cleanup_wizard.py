@@ -21,9 +21,9 @@ import math
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QWidget, QWizard, QTableView, QLabel
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet

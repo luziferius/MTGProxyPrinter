@@ -16,9 +16,9 @@
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
-from PyQt5.QtPrintSupport import QPrinter
+from PySide6.QtCore import QObject, QMarginsF, QSizeF, Slot, QPersistentModelIndex
+from PySide6.QtGui import QPainter, QPdfWriter, QPageLayout
+from PySide6.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
@@ -126,7 +126,7 @@ class Renderer(QObject):
         self.document = document
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
 
-    @pyqtSlot(QPrinter)
+    @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
         logger.info("Begin printing document.")
         painter = QPainter(printer)

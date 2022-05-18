@@ -18,7 +18,7 @@ import collections
 import csv
 import typing
 
-from PyQt5.QtCore import QObject
+from PySide6.QtCore import QObject
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase

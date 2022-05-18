@@ -17,7 +17,7 @@
 from typing import Iterable, List, Optional, BinaryIO, Union
 from io import BufferedIOBase
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 from delegateto import delegate
 
 from mtg_proxy_printer.logger import get_logger
@@ -41,9 +41,9 @@ class MeteredFile(QObject):
     Takes a file-like object and monitors read and write progress.
     """
 
-    io_begin = pyqtSignal(int)
-    total_bytes_processed = pyqtSignal(int)
-    io_end = pyqtSignal()
+    io_begin = Signal(int)
+    total_bytes_processed = Signal(int)
+    io_end = Signal()
 
     def __init__(self, file: WrappedIoType, expected_size_bytes: int = 0, parent: QObject = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")

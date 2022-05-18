@@ -17,9 +17,9 @@ import pathlib
 import typing
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
-from PyQt5.QtGui import QCloseEvent, QKeySequence
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
+from PySide6.QtCore import Slot, Signal, QStringListModel
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction
+from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QToolBar, QLabel
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
@@ -45,9 +45,9 @@ __all__ = [
 
 class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
-    should_update_languages = pyqtSignal()
-    settings_changed = pyqtSignal()
-    loading_state_changed = pyqtSignal(bool)
+    should_update_languages = Signal()
+    settings_changed = Signal()
+    loading_state_changed = Signal(bool)
 
     def __init__(self,
                  card_db: CardDatabase,
@@ -196,7 +196,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         # Be safe and emit this signal, because it might be connected to multiple slots.
         self.action_quit.trigger()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
         # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
@@ -216,13 +216,13 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     def on_action_download_card_data_triggered(self):
         self.card_data_download_in_progress = True
 
-    @pyqtSlot()
+    @Slot()
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
         wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
         wizard.show()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
@@ -230,7 +230,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
         wizard.show()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
@@ -238,7 +238,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         print_dialog = PrintDialog(self.document, self)
         self.missing_images_manager.obtain_missing_images(print_dialog.exec_)
 
-    @pyqtSlot()
+    @Slot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
@@ -246,7 +246,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         print_preview_dialog = PrintPreviewDialog(self.document, self)
         self.missing_images_manager.obtain_missing_images(print_preview_dialog.exec_)
 
-    @pyqtSlot()
+    @Slot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
         if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
@@ -302,21 +302,21 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if should_download:
             self.action_download_card_data.trigger()
 
-    @pyqtSlot(int)
-    @pyqtSlot(int, str)
+    @Slot(int)
+    @Slot(int, str)
     def show_progress_bar(self, expected_total_item_count: int, message: str = ""):
         self.progress_label.setText(message)
         self.progress_bar.reset()
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
-    @pyqtSlot()
+    @Slot()
     def hide_progress_bar(self):
         self.progress_label.clear()
         self.progress_bar.reset()
         self.progress_bar.hide()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_save_document_triggered(self):
         logger.debug("User clicked on Save")
         if self.document.save_file_path is None:
@@ -327,23 +327,23 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self.document.save_to_disk()
             logger.debug("Saved.")
 
-    @pyqtSlot()
+    @Slot()
     def on_action_edit_document_settings_triggered(self):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
         dialog = DocumentSettingsDialog(self.document, self)
         dialog.exec_()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_download_missing_card_images_triggered(self):
         logger.info("User wants to download missing card images")
         self.missing_images_manager.obtain_missing_images()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_save_as_triggered(self):
         dialog = SaveDocumentAsDialog(self.document, self)
         dialog.exec_()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:

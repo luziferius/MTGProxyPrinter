@@ -19,7 +19,7 @@ import pathlib
 import re
 import typing
 
-from PyQt5.QtCore import QStandardPaths
+from PySide6.QtCore import QStandardPaths
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data

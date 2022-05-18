@@ -17,7 +17,7 @@ from collections import Counter
 import re
 import typing
 
-from PyQt5.QtCore import QObject
+from PySide6.QtCore import QObject
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData

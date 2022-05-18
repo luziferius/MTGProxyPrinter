@@ -26,8 +26,8 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, QThread, QSize, QPersistentModelIndex
-from PyQt5.QtGui import QPixmap, QColor
+from PySide6.QtCore import QObject, Signal, Slot, QThread, QSize, QPersistentModelIndex
+from PySide6.QtGui import QPixmap, QColor
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
@@ -90,19 +90,19 @@ class ImageDatabase(QObject):
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
 
-    card_download_starting = pyqtSignal(int, str)
-    card_download_finished = pyqtSignal()
-    card_download_progress = pyqtSignal(int)
+    card_download_starting = Signal(int, str)
+    card_download_finished = Signal()
+    card_download_progress = Signal(int)
     # Emitted when image retrieval for a to-be-added card completes
-    add_card = pyqtSignal(Card, int)
+    add_card = Signal(Card, int)
     # Emitted when an image retrieval for a to-be-replaced card completes
-    replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
+    replacement_obtained = Signal(Card, QPersistentModelIndex)
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
     """
-    batch_processing_state_changed = pyqtSignal(bool)
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
+    batch_processing_state_changed = Signal(bool)
+    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         super(ImageDatabase, self).__init__(parent)
@@ -153,8 +153,8 @@ class ImageDatabase(QObject):
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
 
-    @pyqtSlot(Card)
-    @pyqtSlot(Card, int)
+    @Slot(Card)
+    @Slot(Card, int)
     def get_new_card_image_asynchronous(self, card: Card, count: int = 1):
         """
         Asynchronously fetches the image for the given card and stores it in the card instance.
@@ -237,13 +237,13 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
-    add_card = pyqtSignal(Card, int)
-    replacement_obtained = pyqtSignal(Card, QPersistentModelIndex)
+    add_card = Signal(Card, int)
+    replacement_obtained = Signal(Card, QPersistentModelIndex)
     """
     Messages if the instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
     """
-    batch_processing_state_changed = pyqtSignal(bool)
+    batch_processing_state_changed = Signal(bool)
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)

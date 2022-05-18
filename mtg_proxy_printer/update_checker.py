@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
+from PySide6.QtCore import QObject, QThread, Signal, QTimer
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
@@ -48,10 +48,10 @@ KNOWN_APPLICATION_MIRRORS: StringList = [
 
 class BackgroundWorker(QObject):
 
-    job_completed = pyqtSignal()  # Emitted whenever a background task finishes, both successful or unsuccessful
-    card_data_update_found = pyqtSignal(int)
-    application_update_found = pyqtSignal(str)
-    network_error_occurred = pyqtSignal(str)
+    job_completed = Signal()  # Emitted whenever a background task finishes, both successful or unsuccessful
+    card_data_update_found = Signal(int)
+    application_update_found = Signal(str)
+    network_error_occurred = Signal(str)
 
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
@@ -160,12 +160,12 @@ class BackgroundWorker(QObject):
 
 class UpdateChecker(QObject):
 
-    card_data_update_found = pyqtSignal(int)
-    application_update_found = pyqtSignal(str)
-    network_error_occurred = pyqtSignal(str)
+    card_data_update_found = Signal(int)
+    application_update_found = Signal(str)
+    network_error_occurred = Signal(str)
 
-    _card_update_check_requested = pyqtSignal()
-    _application_update_check_requested = pyqtSignal()
+    _card_update_check_requested = Signal()
+    _application_update_check_requested = Signal()
 
     def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")

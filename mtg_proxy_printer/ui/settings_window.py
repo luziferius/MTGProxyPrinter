@@ -21,10 +21,10 @@ import pathlib
 import sqlite3
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl, QStandardPaths
-from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
+from PySide6.QtCore import QStringListModel, Signal, Slot, Qt, QUrl, QStandardPaths
+from PySide6.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
     QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
-from PyQt5.QtGui import QDesktopServices, QIcon
+from PySide6.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
@@ -131,12 +131,12 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
     """Implements the Settings window."""
-    saved = pyqtSignal()
-    error_occurred = pyqtSignal(str)
-    requested_card_download = pyqtSignal(pathlib.Path)
-    long_running_process_begins = pyqtSignal(int, str)
-    process_updated = pyqtSignal(int)
-    process_finished = pyqtSignal()
+    saved = Signal()
+    error_occurred = Signal(str)
+    requested_card_download = Signal(pathlib.Path)
+    long_running_process_begins = Signal(int, str)
+    process_updated = Signal(int)
+    process_finished = Signal()
 
     def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
         super().__init__(parent)
@@ -409,35 +409,35 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         else:
             return languages.index("en")
 
-    @pyqtSlot()
+    @Slot()
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
             logger.info("User selected a new default document save path.")
             self.document_save_path.setText(location)
 
-    @pyqtSlot()
+    @Slot()
     def on_pdf_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default PDF document export path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
             logger.info("User selected a new default PDF document export path.")
             self.pdf_save_path.setText(location)
 
-    @pyqtSlot()
+    @Slot()
     def on_deck_list_search_path_browse_button_clicked(self):
         logger.debug("User about to select a new default deck list search path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default deck list search path"):
             logger.info("User selected a new default deck list search path.")
             self.deck_list_search_path.setText(location)
 
-    @pyqtSlot()
+    @Slot()
     def on_open_debug_log_location_clicked(self):
         logger.debug("About to open the log directory using the default file manager.")
         log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
         log_url = QUrl.fromLocalFile(log_dir)
         QDesktopServices.openUrl(log_url)
 
-    @pyqtSlot()
+    @Slot()
     def on_debug_download_card_data_as_file_clicked(self):
         location = QFileDialog.getExistingDirectory(
             self, "Select download location",

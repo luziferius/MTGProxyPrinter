@@ -13,11 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 from abc import abstractmethod
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -47,7 +46,7 @@ ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 class ParserBase(QObject):
 
     SUPPORTED_FILE_TYPES: typing.Dict[str, typing.List[str]] = {}
-    incompatible_file_format = pyqtSignal()
+    incompatible_file_format = Signal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(ParserBase, self).__init__(parent)
