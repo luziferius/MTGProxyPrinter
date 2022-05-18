@@ -33,6 +33,7 @@ from PySide6.QtCore import Signal, QObject, QThread
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -136,9 +137,7 @@ class CardInfoDownloader(QObject):
     def quit_background_thread(self):
         if self.worker_thread.isRunning():
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            self.worker_thread.quit()
-            self.worker_thread.wait(100)
-            logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
+            stop_thread(logger, self.worker_thread)
 
 
 class CardInfoDownloadWorker(DownloaderBase):

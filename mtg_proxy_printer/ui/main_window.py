@@ -390,7 +390,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                     f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
-            self.action_download_card_data.trigger()
+            logger.info("User agreed to update the card data from Scryfall. Performing update")
+            self.on_action_download_card_data_triggered()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.action_download_card_data.setEnabled(True)

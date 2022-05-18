@@ -37,6 +37,7 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
 
@@ -441,6 +442,4 @@ class DocumentLoader(QObject):
     def quit_background_thread(self):
         if self.worker_thread.isRunning():
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            self.worker_thread.quit()
-            self.worker_thread.wait(100)
-            self.worker_thread.isRunning()
+            stop_thread(logger, self.worker_thread)
