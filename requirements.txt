@@ -1,5 +1,5 @@
 # Main dependencies
-
+PySide6-Essentials >= 6.3.0
 PyQt5
 pint
 appdirs >= 1.4.3
