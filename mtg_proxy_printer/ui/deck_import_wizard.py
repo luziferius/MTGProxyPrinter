@@ -19,7 +19,7 @@ import pathlib
 import re
 import typing
 
-from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt
+from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL
 from PySide6.QtGui import QValidator, QIcon
 from PySide6.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
     QPushButton
@@ -373,7 +373,7 @@ class DeckImportWizard(QWizard):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, *args, **kwargs):
         super(DeckImportWizard, self).__init__(*args, **kwargs)
-        self.setDefaultProperty("QPlainTextEdit", "plainText", "textChanged")
+        self.setDefaultProperty("QPlainTextEdit", "plainText", SIGNAL("textChanged()"))
         self.card_db = card_db
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)
