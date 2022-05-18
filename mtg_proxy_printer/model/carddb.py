@@ -500,18 +500,24 @@ class CardDatabase:
         # result. But if context is given, either by the scryfall id or the set code, the exact, set-specific
         # translation is returned.
         query = cached_dedent("""\
-        WITH source_oracle_id (oracle_id, face_number, likeliness) AS ( -- translate_card_name()
+        WITH  -- translate_card_name()
+          source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
+          source_oracle_id (oracle_id, face_number, source_likeliness, source_set_code) AS (
             SELECT oracle_id, face_number, (
                 SELECT count() FROM Card)
-                  * (ifnull(scryfall_id = ?, 0)
-                     OR ifnull(set_code = ?, 0))
-                  + count(oracle_id) AS likeliness
+                  * (ifnull(scryfall_id = source_scryfall_id, 0)
+                     OR ifnull(set_code = source_set_code, 0))
+                  + count(oracle_id) AS source_likeliness,
+                set_code AS source_set_code
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             JOIN CardFace USING (face_name_id)
             JOIN Printing USING (printing_id)
             JOIN Card USING (card_id)
             JOIN MTGSet USING (set_id)
+            JOIN source_context ON (
+               coalesce(set_code = source_set_code, TRUE) AND
+               coalesce(scryfall_id = source_scryfall_id, TRUE))
             WHERE card_name = ? AND "language" = ?
             GROUP BY oracle_id, face_number
             )
@@ -520,7 +526,8 @@ class CardDatabase:
           JOIN VisiblePrintings USING (oracle_id, face_number)
           WHERE language = ?
           GROUP BY card_name
-          ORDER BY likeliness DESC
+          -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
+          ORDER BY source_likeliness DESC, set_code = source_set_code DESC, release_date DESC
           LIMIT 1
         ;
         """)
