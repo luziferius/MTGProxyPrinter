@@ -25,6 +25,7 @@ def stop_thread(logger: Logger, thread: QThread):
     thread.quit()
     if not thread.wait(1000):
         logger.error("Background thread still running after quit()!")
+        thread.setTerminationEnabled(True)
         thread.terminate()
         if not thread.wait(10000):
             logger.critical("Background thread still running after terminate()!")
