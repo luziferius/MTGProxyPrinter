@@ -166,7 +166,6 @@ class DocumentLoader(QObject):
             self.image_loader.download_begins.connect(image_db.card_download_starting)
             self.image_loader.download_finished.connect(image_db.card_download_finished)
             self.image_loader.download_progress.connect(image_db.card_download_progress)
-            self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
             self.network_errors_during_load: typing.Counter[str] = collections.Counter()
             self.finished.connect(self.propagate_errors_during_load)
             self.document = document
