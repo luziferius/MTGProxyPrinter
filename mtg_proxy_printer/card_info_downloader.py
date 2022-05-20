@@ -115,6 +115,8 @@ class CardInfoDownloader(QObject):
         self.model = model
         self.download_worker = CardInfoDownloadWorker(model, requested_item)
         self.worker_thread = QThread()
+        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.download_worker.moveToThread(self.worker_thread)
         self.request_import_from_file.connect(self.download_worker.download_card_data)
         self.request_import_from_url.connect(self.download_worker.download_card_data)

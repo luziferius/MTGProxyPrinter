@@ -129,7 +129,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        image_db.add_card.connect(document.add_card)
+        image_db.card_image_obtained.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
                 # Wait until after __init__ finished and the main loop starts

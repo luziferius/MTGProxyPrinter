@@ -13,9 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import pathlib
 import socket
-from tempfile import TemporaryDirectory
 import unittest.mock
 import urllib.error
 
@@ -38,19 +36,15 @@ from tests.helpers import fill_card_database_with_json_card
 
 
 @pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
+def main_window(qtbot, card_db: CardDatabase, image_db: ImageDatabase, request) -> MainWindow:
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    card_db = CardDatabase(":memory:")
-    with TemporaryDirectory() as temp_dir, unittest.mock.patch(
+    with unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
             return_value=request.param):
-        temp_path = pathlib.Path(temp_dir)
-        image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)
         document = Document(card_db, image_db)
         main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
         QApplication.instance().shutdown = unittest.mock.MagicMock()
-        #main_window.action_quit.triggered.disconnect(main_window.on_action_quit_triggered)
         yield main_window
         stop_thread(lambda _: None, document.loader.worker_thread)
         stop_thread(lambda _: None, image_db.download_thread)
