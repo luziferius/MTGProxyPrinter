@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QApplication
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -49,17 +50,11 @@ def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
         document = Document(card_db, image_db)
         main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
         QApplication.instance().shutdown = unittest.mock.MagicMock()
-        main_window.action_quit.triggered.disconnect(main_window.on_action_quit_triggered)
+        #main_window.action_quit.triggered.disconnect(main_window.on_action_quit_triggered)
         yield main_window
-        if document.loader.worker_thread.isRunning():
-            document.loader.worker_thread.quit()
-            document.loader.worker_thread.wait(100)
-        if image_db.download_thread.isRunning():
-            image_db.download_thread.quit()
-            image_db.download_thread.wait(100)
-        if cid.worker_thread.isRunning():
-            cid.worker_thread.quit()
-            cid.worker_thread.wait(100)
+        stop_thread(lambda _: None, document.loader.worker_thread)
+        stop_thread(lambda _: None, image_db.download_thread)
+        stop_thread(lambda _: None, cid.worker_thread)
 
 
 @pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
