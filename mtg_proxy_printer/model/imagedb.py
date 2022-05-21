@@ -151,6 +151,13 @@ class ImageDatabase(QObject):
     def quit_background_thread(self):
         logger.info(f"Quitting {self.__class__.__name__} background worker thread")
         self.download_worker.should_run = False
+        try:
+            if self.download_worker.currently_opened_file is not None:
+                self.download_worker.currently_opened_file.close()
+        except AttributeError:
+            # File was closed and set to None by the worker thread while this thread was within the if-condition.
+            # Ignore the potential race condition.
+            pass
         stop_thread(self.download_thread, logger)
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:

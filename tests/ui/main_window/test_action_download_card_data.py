@@ -67,16 +67,16 @@ def test_action_download_card_data(qtbot: QtBot, main_window: MainWindow, handle
         """
         with qtbot.waitSignal(main_window.loading_state_changed, timeout=1000, check_params_cb=lambda value: value):
             main_window.card_data_downloader.download_worker.download_begins.emit(1000, "Test run")
-        assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
+        assert_that(main_window.progress_bar.isVisible(), is_(True))
+        assert_that(action.isEnabled(), is_(False))
         raise handled_error
 
     with unittest.mock.patch.object(
-            main_window.card_data_downloader.download_worker, "get_scryfall_bulk_card_data_url") as downloader_mock, \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as message_box_mock:
-        downloader_mock.side_effect = validate_prior_to_error
-        with qtbot.waitSignal(main_window.loading_state_changed, timeout=1000,
-                              check_params_cb=lambda value: not value):
-            action.trigger()
-        message_box_mock.assert_called_once()
-        downloader_mock.assert_called_once()
+            main_window.card_data_downloader.download_worker, "get_scryfall_bulk_card_data_url",
+            side_effect=validate_prior_to_error) as downloader_mock, \
+            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as message_box_mock, \
+            qtbot.waitSignal(main_window.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value):
+        action.trigger()
+    message_box_mock.assert_called_once()
+    downloader_mock.assert_called_once()
     assert_that(action.isEnabled(), is_(True), "Action not properly re-enabled after error condition")

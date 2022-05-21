@@ -143,7 +143,9 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         downloader.download_finished.connect(self.hide_progress_bar)
         downloader.working_state_changed.connect(self.loading_state_changed)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
+        downloader.network_error_occurred.connect(lambda _: self.action_download_card_data.setEnabled(True))
         downloader.other_error_occurred.connect(self.on_error_occurred)
+        downloader.other_error_occurred.connect(lambda _: self.action_download_card_data.setEnabled(True))
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
         return [
