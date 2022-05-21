@@ -443,4 +443,4 @@ class DocumentLoader(QObject):
     def quit_background_thread(self):
         if self.worker_thread.isRunning():
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            stop_thread(logger, self.worker_thread)
+            stop_thread(self.worker_thread, logger)

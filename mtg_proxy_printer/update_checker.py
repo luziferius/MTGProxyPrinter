@@ -222,4 +222,4 @@ class UpdateChecker(QObject):
     def stop_background_worker(self):
         if self.background_thread.isRunning():
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            stop_thread(logger, self.background_thread)
+            stop_thread(self.background_thread, logger)

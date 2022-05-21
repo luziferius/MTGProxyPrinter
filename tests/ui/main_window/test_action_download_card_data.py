@@ -46,9 +46,9 @@ def main_window(qtbot, card_db: CardDatabase, image_db: ImageDatabase, request) 
         main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
         QApplication.instance().shutdown = unittest.mock.MagicMock()
         yield main_window
-        stop_thread(lambda _: None, document.loader.worker_thread)
-        stop_thread(lambda _: None, image_db.download_thread)
-        stop_thread(lambda _: None, cid.worker_thread)
+        stop_thread(document.loader.worker_thread)
+        stop_thread(image_db.download_thread)
+        stop_thread(cid.worker_thread)
 
 
 @pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])

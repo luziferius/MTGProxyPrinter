@@ -65,7 +65,7 @@ def image_db():
             try:
                 assert_that(image_db.download_thread.isRunning(), is_(False))
             finally:
-                stop_thread(lambda _: None, image_db.download_thread)
+                stop_thread(image_db.download_thread, lambda _: None)
     assert_that(temp_path.exists(), is_(False))
 
 
