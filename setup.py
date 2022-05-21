@@ -30,7 +30,7 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
     @staticmethod
     def compile_resources(target_file: Path):
         resources_source = BuildWithQtResources.get_resources_qrc_file_path()
-        command = ("pyrcc5", "-compress", "9", str(resources_source))  # noqa  # "pyrcc5" is a program name, not a typo
+        command = ("pyside6-rcc", "--compress", "9", "--generator", "python", str(resources_source))
         compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
         with target_file.open("wt") as compiled_qt_resources_file:
             compiled_qt_resources_file.write(compiled)
