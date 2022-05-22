@@ -122,7 +122,7 @@ class CentralWidget(QWidget):
             self.document.on_ui_selects_new_page(new_selection)
 
     @pyqtSlot()
-    def on_action_discard_page_triggered(self):
+    def action_discard_page_triggered(self):
         self.document_view: QListView
         if self.document.rowCount() == 1:
             logger.info(f"User selects to delete the only page, so clearing it.")

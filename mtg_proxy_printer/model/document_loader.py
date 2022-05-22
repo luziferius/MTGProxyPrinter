@@ -37,6 +37,7 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
 
@@ -165,7 +166,6 @@ class DocumentLoader(QObject):
             self.image_loader.download_begins.connect(image_db.card_download_starting)
             self.image_loader.download_finished.connect(image_db.card_download_finished)
             self.image_loader.download_progress.connect(image_db.card_download_progress)
-            self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
             self.network_errors_during_load: typing.Counter[str] = collections.Counter()
             self.finished.connect(self.propagate_errors_during_load)
             self.document = document
@@ -393,6 +393,8 @@ class DocumentLoader(QObject):
         super(DocumentLoader, self).__init__(None)
         self.document = document
         self.worker_thread = QThread()
+        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.worker = self.Worker(card_db, image_db, document)
         self.worker.moveToThread(self.worker_thread)
         self.worker.document_clear_requested.connect(self.document.clear)
@@ -437,3 +439,8 @@ class DocumentLoader(QObject):
         if not self.worker_thread.isRunning():
             return
         self.worker.cancel_running_operations()
+
+    def quit_background_thread(self):
+        if self.worker_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            stop_thread(self.worker_thread, logger)

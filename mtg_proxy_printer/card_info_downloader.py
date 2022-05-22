@@ -33,6 +33,7 @@ from PyQt5.QtCore import pyqtSignal, QObject, QThread
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -114,6 +115,8 @@ class CardInfoDownloader(QObject):
         self.model = model
         self.download_worker = CardInfoDownloadWorker(model, requested_item)
         self.worker_thread = QThread()
+        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.download_worker.moveToThread(self.worker_thread)
         self.request_import_from_file.connect(self.download_worker.download_card_data)
         self.request_import_from_url.connect(self.download_worker.download_card_data)
@@ -133,10 +136,10 @@ class CardInfoDownloader(QObject):
             logger.info("Cancelling currently running card download")
             self.download_worker.should_run = False
 
-    def stop_worker_thread(self):
-        self.worker_thread.quit()
-        self.worker_thread.wait(100)
-        logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
+    def quit_background_thread(self):
+        if self.worker_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            stop_thread(self.worker_thread, logger)
 
 
 class CardInfoDownloadWorker(DownloaderBase):

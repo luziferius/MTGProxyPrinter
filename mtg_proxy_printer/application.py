@@ -78,7 +78,7 @@ class Application(QApplication):
         self.main_window.show()
         if args.test_exit_on_launch:
             logger.info("Enqueue application exit to run when event loop starts.")
-            QTimer.singleShot(0, self.shutdown)
+            QTimer.singleShot(0, self.main_window.on_action_quit_triggered)
         self.update_checker = self._create_update_checker(args)
         self._show_changelog_after_update(args)
         if args.card_data and args.card_data.is_file():
@@ -129,7 +129,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        image_db.add_card.connect(document.add_card)
+        image_db.card_image_obtained.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
                 # Wait until after __init__ finished and the main loop starts
@@ -200,6 +200,7 @@ class Application(QApplication):
     @pyqtSlot()
     def shutdown(self):
         logger.info("About to exit.")
+        self.update_checker.stop_background_worker()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")
         self.quit()

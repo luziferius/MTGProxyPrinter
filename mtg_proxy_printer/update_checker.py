@@ -29,6 +29,7 @@ from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -172,6 +173,8 @@ class UpdateChecker(QObject):
         super(UpdateChecker, self).__init__(parent)
         self.perform_card_data_update_check = not (args.card_data and args.card_data.is_file())
         self.background_thread = QThread()
+        self.background_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.background_thread.finished.connect(lambda: logger.debug(f"{self.background_thread.objectName()} stopped."))
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
         self.background_thread.start()
@@ -215,3 +218,8 @@ class UpdateChecker(QObject):
         if not self.running_background_jobs:
             self.background_thread.start()
         self.running_background_jobs += 1
+
+    def stop_background_worker(self):
+        if self.background_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            stop_thread(self.background_thread, logger)

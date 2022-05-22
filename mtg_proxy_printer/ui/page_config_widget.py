@@ -64,7 +64,7 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         return page_layout
 
     @pyqtSlot()
-    def on_page_layout_setting_changed(self):
+    def page_layout_setting_changed(self):
         """
         Recomputes and updates the page capacity value, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
@@ -110,7 +110,7 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
                 else:
                     widget.setChecked(value)
         self.validate_paper_size_settings()
-        self.on_page_layout_setting_changed()
+        self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")
 
     def save_document_settings_to_config(self):

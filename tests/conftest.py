@@ -21,11 +21,11 @@ import sqlite3
 import unittest.mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import MagicMock
 
 import pytest
 from hamcrest import assert_that, is_
 
+from mtg_proxy_printer.stop_thread import stop_thread
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -62,7 +62,10 @@ def image_db():
         yield image_db
         if image_db.download_thread.isRunning():
             image_db.quit_background_thread()
-            assert_that(image_db.download_thread.isRunning(), is_(False))
+            try:
+                assert_that(image_db.download_thread.isRunning(), is_(False))
+            finally:
+                stop_thread(image_db.download_thread)
     assert_that(temp_path.exists(), is_(False))
 
 
@@ -71,5 +74,4 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     document = Document(card_db, image_db)
     yield document
-    document.loader.worker_thread.quit()
-    document.loader.worker_thread.wait(100)
+    stop_thread(document.loader.worker_thread)

@@ -18,11 +18,14 @@ from tempfile import TemporaryDirectory
 import unittest.mock
 
 import pytest
-from PyQt5.QtCore import QStringListModel
+from PyQt5.QtCore import QStringListModel, QItemSelectionModel
 from PyQt5.QtWidgets import QApplication
+
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 
+
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -47,30 +50,26 @@ def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
         main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
         QApplication.instance().shutdown = unittest.mock.MagicMock()
         yield main_window
-        if document.loader.worker_thread.isRunning():
-            document.loader.worker_thread.quit()
-            document.loader.worker_thread.wait(100)
-        image_db.quit_background_thread()
-        if cid.worker_thread.isRunning():
-            cid.worker_thread.quit()
-            cid.worker_thread.wait(100)
+        stop_thread(document.loader.worker_thread)
+        stop_thread(image_db.download_thread)
+        stop_thread(cid.worker_thread)
 
 
-def test_main_window_hides_progress_bar_after_downloading_image_during_load(qtbot: QtBot, main_window: MainWindow):
+def test_main_window_action_discard_page(qtbot: QtBot, main_window: MainWindow):
     document = main_window.document
     qtbot.add_widget(main_window)
     with qtbot.wait_exposed(main_window, timeout=100):
         main_window.show()
-    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0), has_length(1))
-    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
+    selection_model: QItemSelectionModel = main_window.central_widget.document_view.selectionModel()
+    assert_that(selection_model.selectedRows(0), has_length(1))
+    assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(1)))
     with qtbot.wait_signal(main_window.action_new_page.triggered, timeout=100):
         main_window.action_new_page.trigger()
-    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0), has_length(1))
-    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
+    assert_that(selection_model.selectedRows(0), has_length(1))
+    assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(2)))
-    with qtbot.wait_signal(main_window.action_discard_page.triggered, timeout=100):
+    with qtbot.wait_signal(main_window.action_discard_page.triggered, timeout=100), \
+            qtbot.wait_signal(selection_model.selectionChanged, timeout=100):
         main_window.action_discard_page.trigger()
-    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0), has_length(1))
-    assert_that(main_window.central_widget.document_view.selectionModel().selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(1)))

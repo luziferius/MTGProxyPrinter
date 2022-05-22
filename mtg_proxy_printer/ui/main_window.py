@@ -58,7 +58,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        self.card_data_download_in_progress = False
+        self.is_running = True
         self.setupUi(self)
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
@@ -113,7 +113,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         self.central_widget = central_widget_class(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
-        self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
+        self.action_discard_page.triggered.connect(self.central_widget.action_discard_page_triggered)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -134,7 +134,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         downloader.download_begins.connect(
             lambda: self.action_download_card_data.setDisabled(True)
         )
-        downloader.download_finished.connect(lambda: setattr(self, "card_data_download_in_progress", False))
         self.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
@@ -193,28 +192,28 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
-        # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.trigger()
+        if self.is_running:
+            event.ignore()
+            self._quit()
 
     @pyqtSlot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
-        # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
-        # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
-        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+        self._quit()
+
+    def _quit(self):
+        self.is_running = False
         self.card_data_downloader.cancel_running_operations()
-        self.card_data_downloader.stop_worker_thread()
+        self.card_data_downloader.quit_background_thread()
         self.document.loader.cancel_running_operations()
+        self.document.loader.quit_background_thread()
+        self.image_db.quit_background_thread()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-
         QApplication.instance().shutdown()
-
-    def on_action_download_card_data_triggered(self):
-        self.card_data_download_in_progress = True
 
     @pyqtSlot()
     def on_action_cleanup_local_image_cache_triggered(self):
@@ -261,9 +260,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             f"Check your internet connection. Reported error message:\n\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
-        if self.card_data_download_in_progress:
-            self.action_download_card_data.setEnabled(True)
-            self.card_data_download_in_progress = False
 
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
@@ -390,6 +386,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                     f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
+            logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
