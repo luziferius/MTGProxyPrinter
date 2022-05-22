@@ -215,3 +215,10 @@ class UpdateChecker(QObject):
         if not self.running_background_jobs:
             self.background_thread.start()
         self.running_background_jobs += 1
+
+    def stop_background_worker(self):
+        if self.background_thread.isRunning():
+            logger.debug("Stopping Update checker background worker.")
+            self.background_thread.quit()
+            self.background_thread.wait(100)
+            logger.debug(f"Result: {self.background_thread.isRunning()=}")
