@@ -173,6 +173,8 @@ class UpdateChecker(QObject):
         super(UpdateChecker, self).__init__(parent)
         self.perform_card_data_update_check = not (args.card_data and args.card_data.is_file())
         self.background_thread = QThread()
+        self.background_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.background_thread.finished.connect(lambda: logger.debug(f"{self.background_thread.objectName()} stopped."))
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
         self.background_thread.start()

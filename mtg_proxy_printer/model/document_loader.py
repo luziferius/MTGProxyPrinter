@@ -393,6 +393,8 @@ class DocumentLoader(QObject):
         super(DocumentLoader, self).__init__(None)
         self.document = document
         self.worker_thread = QThread()
+        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.worker = self.Worker(card_db, image_db, document)
         self.worker.moveToThread(self.worker_thread)
         self.worker.document_clear_requested.connect(self.document.clear)
