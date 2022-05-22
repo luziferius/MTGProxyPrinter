@@ -113,7 +113,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         self.central_widget = central_widget_class(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
-        self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
+        self.action_discard_page.triggered.connect(self.central_widget.action_discard_page_triggered)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
