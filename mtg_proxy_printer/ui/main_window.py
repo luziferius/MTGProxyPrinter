@@ -206,8 +206,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     def _quit(self):
         self.is_running = False
         self.card_data_downloader.cancel_running_operations()
-        self.card_data_downloader.stop_worker_thread()
+        self.card_data_downloader.quit_background_thread()
         self.document.loader.cancel_running_operations()
+        self.document.loader.quit_background_thread()
+        self.image_db.quit_background_thread()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
@@ -392,7 +394,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                     f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
-            self.action_download_card_data.trigger()
+            logger.info("User agreed to update the card data from Scryfall. Performing update")
+            self.on_action_download_card_data_triggered()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.action_download_card_data.setEnabled(True)

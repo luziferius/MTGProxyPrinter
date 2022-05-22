@@ -32,6 +32,7 @@ from PyQt5.QtGui import QPixmap, QColor
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -137,11 +138,10 @@ class ImageDatabase(QObject):
         return pixmap
 
     def quit_background_thread(self):
+        logger.info(f"Quitting {self.__class__.__name__} background worker thread")
         self.download_worker.should_run = False
         self.queue.put((None, None))  # Unblock the background thread if it is waiting in the queue
-        self.download_thread.quit()
-        self.download_thread.wait(100)
-        logger.info(f"{self.__class__.__name__} background downloader thread stopped.")
+        stop_thread(logger, self.download_thread)
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
