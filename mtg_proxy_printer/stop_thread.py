@@ -18,7 +18,13 @@ from logging import Logger
 from PyQt5.QtCore import QThread
 
 
-def stop_thread(logger: Logger, thread: QThread):
+from mtg_proxy_printer.logger import get_logger
+
+default_logger = get_logger(__name__)
+del get_logger
+
+
+def stop_thread(thread: QThread, logger: Logger = default_logger):
     """Stops a running QThread with logging."""
     if not thread.isRunning():
         return

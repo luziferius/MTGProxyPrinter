@@ -152,7 +152,7 @@ class ImageDatabase(QObject):
     def quit_background_thread(self):
         logger.info(f"Quitting {self.__class__.__name__} background worker thread")
         self.download_worker.should_run = False
-        stop_thread(logger, self.download_thread)
+        stop_thread(self.download_thread, logger)
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
