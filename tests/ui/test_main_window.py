@@ -16,6 +16,8 @@
 import pathlib
 from tempfile import TemporaryDirectory
 import unittest.mock
+import socket
+import urllib.error
 
 from PySide6.QtCore import QStringListModel
 from PySide6.QtWidgets import QMessageBox
@@ -55,6 +57,8 @@ def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
         document = Document(card_db, image_db)
         main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
+        with qtbot.wait_exposed(main_window, timeout=100):
+            main_window.show()
         yield main_window
         stop_thread(document.loader.worker_thread)
         stop_thread(image_db.download_thread)
@@ -81,8 +85,6 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         cl_mock.return_value = mock_image_path.stat().st_size
         card_db.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
         save_file_path = _create_save_file(temp_path)
-        with qtbot.wait_exposed(main_window, timeout=100):
-            main_window.show()
         assert_that(main_window.progress_bar.isVisible(), is_(False))
         with qtbot.wait_signal(main_window.document.loader.worker_thread.finished, timeout=1000):
             main_window.document.loader.load_document(save_file_path)
@@ -131,6 +133,45 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
 
 
+@pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
+def test_action_download_card_data_enabled_if_error_occurs_after_accepting_card_data_update_offer(
+        qtbot: QtBot, main_window: MainWindow, handled_error):
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
+    main_window.action_download_card_data.setEnabled(True)
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+        unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
+            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
+        main_window.show_card_data_update_available_message_box(10000)
+    message_box.assert_called_once()
+    warning_box.assert_called_once()
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    assert_that(
+        main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
+    )
+
+
+@pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
+def test_action_download_card_data_enabled_if_error_occurs_after_triggering_it(
+        qtbot: QtBot, main_window: MainWindow, handled_error):
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
+    main_window.action_download_card_data.setEnabled(True)
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
+            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
+        main_window.action_download_card_data.trigger()
+    warning_box.assert_called_once()
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    assert_that(
+        main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
+    )
+
+
 def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
@@ -153,3 +194,24 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
     main_window.card_data_downloader.download_worker.read_json_card_data.assert_called_once()
     assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
+
+
+@pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
+def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_user_about_empty_database(
+        qtbot: QtBot, main_window: MainWindow, handled_error):
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
+    main_window.action_download_card_data.setEnabled(True)
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+        unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
+            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
+        main_window.ask_user_about_empty_database()
+    message_box.assert_called_once()
+    warning_box.assert_called_once()
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    assert_that(
+        main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
+    )
