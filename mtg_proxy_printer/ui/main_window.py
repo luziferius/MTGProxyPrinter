@@ -59,6 +59,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.card_data_download_in_progress = False
+        self.is_running = True
         self.setupUi(self)
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
@@ -193,15 +194,17 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
-        # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.trigger()
+        if self.is_running:
+            event.ignore()
+            self._quit()
 
     @pyqtSlot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
-        # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
-        # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
-        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+        self._quit()
+
+    def _quit(self):
+        self.is_running = False
         self.card_data_downloader.cancel_running_operations()
         self.card_data_downloader.stop_worker_thread()
         self.document.loader.cancel_running_operations()
@@ -210,7 +213,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-
         QApplication.instance().shutdown()
 
     def on_action_download_card_data_triggered(self):
