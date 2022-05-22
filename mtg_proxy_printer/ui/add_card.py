@@ -57,9 +57,8 @@ class AddCardWidget(QWidget):
         ok_button: QPushButton = box.button(QDialogButtonBox.Ok)
         reset_button: QPushButton = box.button(QDialogButtonBox.Reset)
         ok_button.setEnabled(False)
-        reset_button.clicked.connect(ok_button.setEnabled)
-        box.button(QDialogButtonBox.Ok).clicked.connect(self.ok_button_triggered)
-        box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
+        ok_button.clicked.connect(self.ok_button_triggered)
+        reset_button.clicked.connect(self.reset)
         buttons_with_icons = [
             (QDialogButtonBox.Reset, "edit-undo"),
             (QDialogButtonBox.Ok, "dialog-ok"),
