@@ -58,7 +58,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        self.card_data_download_in_progress = False
         self.is_running = True
         self.setupUi(self)
         self.missing_images_manager = MissingImagesManager(document, self)
@@ -135,7 +134,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         downloader.download_begins.connect(
             lambda: self.action_download_card_data.setDisabled(True)
         )
-        downloader.download_finished.connect(lambda: setattr(self, "card_data_download_in_progress", False))
         self.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
@@ -213,11 +211,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-
         QApplication.instance().shutdown()
-
-    def on_action_download_card_data_triggered(self):
-        self.card_data_download_in_progress = True
 
     @Slot()
     def on_action_cleanup_local_image_cache_triggered(self):
@@ -264,9 +258,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             f"Check your internet connection. Reported error message:\n\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
-        if self.card_data_download_in_progress:
-            self.action_download_card_data.setEnabled(True)
-            self.card_data_download_in_progress = False
 
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
@@ -394,7 +385,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.on_action_download_card_data_triggered()
+            self.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.action_download_card_data.setEnabled(True)

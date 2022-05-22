@@ -18,7 +18,7 @@ from tempfile import TemporaryDirectory
 import unittest.mock
 
 from PySide6.QtCore import QStringListModel
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -40,16 +40,21 @@ from tests.helpers import fill_card_database_with_json_card
 @pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
 def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    card_db = CardDatabase(":memory:")
     with TemporaryDirectory() as temp_dir, unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
-            return_value=request.param):
+            return_value=request.param), \
+            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
+            unittest.mock.patch.object(
+                mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker, "get_scryfall_bulk_card_data_url"), \
+            unittest.mock.patch.object(
+                mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker, "read_json_card_data",
+                return_value=tuple()):
         temp_path = pathlib.Path(temp_dir)
         image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)
         document = Document(card_db, image_db)
         main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
-        QApplication.instance().shutdown = unittest.mock.MagicMock()
+        qtbot.add_widget(main_window)
         yield main_window
         stop_thread(document.loader.worker_thread)
         stop_thread(image_db.download_thread)
@@ -76,8 +81,6 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         cl_mock.return_value = mock_image_path.stat().st_size
         card_db.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
         save_file_path = _create_save_file(temp_path)
-        QApplication.instance().shutdown = unittest.mock.MagicMock()
-        qtbot.add_widget(main_window)
         with qtbot.wait_exposed(main_window, timeout=100):
             main_window.show()
         assert_that(main_window.progress_bar.isVisible(), is_(False))
@@ -102,3 +105,27 @@ def _create_save_file(temp_path: pathlib.Path):
             (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe")
         )
     return save_file_path
+
+
+def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
+    main_window.action_download_card_data.setEnabled(False)
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.No) as message_box, \
+            qtbot.assertNotEmitted(main_window.loading_state_changed):
+        main_window.show_card_data_update_available_message_box(10000)
+    message_box.assert_called_once()
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_not_called()
+    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    assert_that(main_window.action_download_card_data.isEnabled(), is_(True))
+
+
+def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
+    main_window.action_download_card_data.setEnabled(True)
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
+        main_window.show_card_data_update_available_message_box(10000)
+    message_box.assert_called_once()
+    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.download_worker.read_json_card_data.assert_called_once()
+    assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
