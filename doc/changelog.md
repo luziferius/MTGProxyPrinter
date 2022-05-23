@@ -2,6 +2,10 @@
 
 # Next version (in development)
 
+## Changed features
+
+- The application update checker now offers visiting the project website, if an update is available.
+
 ## Fixed issues
 
 - Improved deck list translation when the source deck list is not in English.

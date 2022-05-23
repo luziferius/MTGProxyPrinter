@@ -216,3 +216,23 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_u
     assert_that(
         main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
     )
+
+
+def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):
+    with unittest.mock.patch.object(
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+        unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
+        main_window.show_application_update_available_message_box("1.0.0-test")
+        message_box.assert_called_once()
+        open_url_service.assert_called_once()
+
+
+def test_declining_application_update_offer_does_nothing(main_window: MainWindow):
+    with unittest.mock.patch.object(
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.No) as message_box, \
+        unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
+        main_window.show_application_update_available_message_box("1.0.0-test")
+        message_box.assert_called_once()
+        open_url_service.assert_not_called()
