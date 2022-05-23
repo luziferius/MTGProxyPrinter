@@ -230,7 +230,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
-        if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
+        if self._ask_user_about_compacting_document("printing") == QMessageBox.StandardButton.Cancel:
             return
         print_dialog = PrintDialog(self.document, self)
         self.missing_images_manager.obtain_missing_images(print_dialog.exec_)
@@ -238,7 +238,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     @Slot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
-        if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
+        if self._ask_user_about_compacting_document("printing") == QMessageBox.StandardButton.Cancel:
             return
         print_preview_dialog = PrintPreviewDialog(self.document, self)
         self.missing_images_manager.obtain_missing_images(print_preview_dialog.exec_)
@@ -246,7 +246,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     @Slot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
-        if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
+        if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.StandardButton.Cancel:
             return
         dialog = SavePDFDialog(self, self.document)
         self.missing_images_manager.obtain_missing_images(dialog.exec_)
@@ -256,7 +256,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self, "Network error",
             f"Operation failed, because a network error occurred.\n"
             f"Check your internet connection. Reported error message:\n\n{message}",
-            QMessageBox.Ok, QMessageBox.Ok)
+            QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
         self.loading_state_changed.emit(False)
 
     def on_error_occurred(self, message: str):
@@ -264,21 +264,21 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self, "Error",
             f"Operation failed, because an internal error occurred.\n"
             f"Reported error message:\n{message}",
-            QMessageBox.Ok, QMessageBox.Ok)
+            QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
         self.loading_state_changed.emit(False)
 
-    def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
+    def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.StandardButton:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
             result = QMessageBox.question(
                 self, "Saving pages possible",
                 f"It is possible to save {savable_pages} pages when printing this document.\n"
                 f"Do you want to compact the document now to minimize the page count prior to {action}?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
             )
-            if result == QMessageBox.Yes:
+            if result == QMessageBox.StandardButton.Yes:
                 self.document.compact_pages()
             return result
-        return QMessageBox.No  # No pages can be saved, assume "No" for this case
+        return QMessageBox.StandardButton.No  # No pages can be saved, assume "No" for this case
 
     def ask_user_about_empty_database(self):
         """
@@ -292,7 +292,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             "If you decline now, you can exclude some card types or individual cards based on ban lists "
             "in the settings and then manually start the download later.\n"
             "Or accept and use the current settings.",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes) == QMessageBox.StandardButton.Yes
         if should_download:
             self.action_download_card_data.trigger()
 
@@ -350,7 +351,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
             f"\"{self.action_import_deck_list.text()}\" function instead.\n"
             f"Reported failure reason: {reason}",
-            QMessageBox.Ok, QMessageBox.Ok
+            QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok
         )
 
     def on_document_loading_found_unknown_scryfall_ids(self, unknown: int, replaced: int):
@@ -359,7 +360,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 self, "Unavailable printings replaced",
                 f"The document contained {replaced} unavailable printings of cards that were automatically replaced "
                 f"with other printings. The replaced printings are unavailable, "
-                f"because they match a configured download filter."
+                f"because they match a configured download filter.",
+                QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok
             )
         if unknown:
             QMessageBox.warning(
@@ -367,7 +369,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 f"Skipped {unknown} unrecognized cards in the loaded document. "
                 f"Saving the document will remove these entries permanently.\n\nThe locally stored card "
                 f"data may be outdated or the document was created using a less restrictive download filter.",
-                QMessageBox.Ok, QMessageBox.Ok
+                QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok
             )
 
     def show_application_update_available_message_box(self, newer_version: str):
@@ -377,16 +379,16 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
                 f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
                 f"to download the new version?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-                ) == QMessageBox.Yes:
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+                ) == QMessageBox.StandardButton.Yes:
             QDesktopServices.openUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
                     self, "New card data available",
                     f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-                ) == QMessageBox.Yes:
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
+                ) == QMessageBox.StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.action_download_card_data.trigger()
         else:
@@ -417,10 +419,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if (result := QMessageBox.question(
                 self, title,
                 f"{question}\nYou can change this later in the settings.",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-                )) in {QMessageBox.Yes, QMessageBox.No}:
-            logger.info(f"{logger_message} User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel
+                )) in {QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No}:
+            logger.info(f"{logger_message} User choice: {'Yes' if result == QMessageBox.StandardButton.Yes else 'No'}")
             mtg_proxy_printer.settings.settings["application"][settings_key] = str(
-                result == QMessageBox.Yes)
+                result == QMessageBox.StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")

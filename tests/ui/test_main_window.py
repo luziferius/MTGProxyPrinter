@@ -112,7 +112,7 @@ def _create_save_file(temp_path: pathlib.Path):
 def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     main_window.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.No) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
@@ -124,7 +124,7 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
 def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
@@ -139,9 +139,9 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_card_
     main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
         unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.StandardButton.Yes) as warning_box, \
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         main_window.show_card_data_update_available_message_box(10000)
@@ -160,7 +160,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_triggering_it(
     main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.StandardButton.Yes) as warning_box, \
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         main_window.action_download_card_data.trigger()
@@ -175,7 +175,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_triggering_it(
 def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.No) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
@@ -187,7 +187,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
 def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtbot: QtBot, main_window: MainWindow):
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
@@ -202,9 +202,9 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_u
     main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
         unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.StandardButton.Yes) as warning_box, \
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         main_window.ask_user_about_empty_database()
@@ -219,7 +219,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_u
 
 def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
         unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
         main_window.show_application_update_available_message_box("1.0.0-test")
@@ -229,7 +229,7 @@ def test_accepting_application_update_offer_opens_website_in_default_browser(mai
 
 def test_declining_application_update_offer_does_nothing(main_window: MainWindow):
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.No) as message_box, \
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
         unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
         main_window.show_application_update_available_message_box("1.0.0-test")

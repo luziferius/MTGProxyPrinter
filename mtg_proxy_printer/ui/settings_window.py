@@ -312,7 +312,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
                     f"The overflowing cards from these pages will be moved automatically to free spaces on "
                     f"other pages, or new pages at the document end.\nNo cards will be lost, but the "
                     f"moved away cards will be shuffled around.\n\nContinue to save and apply the new settings?",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.No:
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes) == QMessageBox.StandardButton.No:
                 logger.info("User canceled saving page layout saving due to overflowing images notification.")
                 return
         self.save()
@@ -448,6 +449,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
             QMessageBox.critical(
                 self, "Selected location is not a directory",
                 f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
-                QMessageBox.Ok, QMessageBox.Ok)
+                QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         self.requested_card_download.emit(path)

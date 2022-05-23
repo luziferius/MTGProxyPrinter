@@ -122,7 +122,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
                         "Selecting a file will overwrite the existing deck list. Continue?",
-                        QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
             parser: common.ParserBase = self.field("selected_parser")
@@ -152,8 +152,8 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         should_load = not too_large or QMessageBox.question(
             self, "Load large file?",
             f"The selected file {file_path} is unexpectedly large ({format_size(size)}). Load anyways?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        ) == QMessageBox.Yes
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+        ) == QMessageBox.StandardButton.Yes
         logger.debug(f"File size: {size}, {too_large=}, {should_load=}")
         return should_load
 
@@ -430,7 +430,7 @@ class DeckImportWizard(QWizard):
                 self, "Oversized cards present",
                 f"There are {oversized_count} possibly oversized cards in the deck list that "
                 f"may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.No:
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) == QMessageBox.StandardButton.No:
             return False
         return True
 
@@ -439,5 +439,5 @@ class DeckImportWizard(QWizard):
             self, "Incompatible file selected",
             "Unable to parse the given deck list, no results were obtained.\n"
             "Maybe you selected the wrong deck list type?",
-            QMessageBox.Ok, QMessageBox.Ok
+            QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok
         )
