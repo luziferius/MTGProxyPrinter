@@ -18,7 +18,7 @@ import typing
 
 
 from PySide6.QtCore import Slot, Signal, QStringListModel
-from PySide6.QtGui import QCloseEvent, QKeySequence, QAction
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QToolBar, QLabel
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
@@ -371,12 +371,15 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             )
 
     def show_application_update_available_message_box(self, newer_version: str):
-        QMessageBox.information(
-            self, "Update available",
-            f"An application update is available: Version {newer_version}\n\n"
-            f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.",
-            QMessageBox.Ok, QMessageBox.Ok
-        )
+        if QMessageBox.question(
+                self, "Application update available. Visit website?",
+                f"An application update is available: Version {newer_version}\n"
+                f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
+                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
+                f"to download the new version?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                ) == QMessageBox.Yes:
+            QDesktopServices.openUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
