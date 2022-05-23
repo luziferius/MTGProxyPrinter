@@ -325,7 +325,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     def on_action_edit_document_settings_triggered(self):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
         dialog = DocumentSettingsDialog(self.document, self)
-        dialog.exec_()
+        dialog.exec()
 
     @Slot()
     def on_action_download_missing_card_images_triggered(self):
@@ -335,12 +335,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     @Slot()
     def on_action_save_as_triggered(self):
         dialog = SaveDocumentAsDialog(self.document, self)
-        dialog.exec_()
+        dialog.exec()
 
     @Slot()
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document)
-        if dialog.exec_() == LoadDocumentDialog.Accepted:
+        if dialog.exec() == LoadDocumentDialog.Accepted:
             self.central_widget.select_first_page()
 
     def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):

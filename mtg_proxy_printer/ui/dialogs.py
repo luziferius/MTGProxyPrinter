@@ -63,9 +63,9 @@ class SavePDFDialog(QFileDialog):
         self.setFileMode(QFileDialog.AnyFile)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def exec_(self) -> int:
+    def exec(self) -> int:
         logger.debug(f"About to run the {self.__class__.__name__} event loop.")
-        result = super(SavePDFDialog, self).exec_()
+        result = super(SavePDFDialog, self).exec()
         if result == QFileDialog.Accepted:
             logger.debug("User chose a file name, about to generate the PDF document")
             path = self.selectedFiles()[0]
@@ -89,9 +89,9 @@ class SaveDocumentAsDialog(QFileDialog):
         self.setFileMode(QFileDialog.AnyFile)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def exec_(self) -> int:
+    def exec(self) -> int:
         logger.debug(f"About to run the {self.__class__.__name__} event loop.")
-        result = super(SaveDocumentAsDialog, self).exec_()
+        result = super(SaveDocumentAsDialog, self).exec()
         if result == QFileDialog.Accepted:
             logger.debug("User chose a file name, about to save the document to disk")
             path = pathlib.Path(self.selectedFiles()[0])
@@ -117,9 +117,9 @@ class LoadDocumentDialog(QFileDialog):
         self.setFileMode(QFileDialog.ExistingFile)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def exec_(self) -> int:
+    def exec(self) -> int:
         logger.debug(f"About to run the {self.__class__.__name__} event loop.")
-        result = super(LoadDocumentDialog, self).exec_()
+        result = super(LoadDocumentDialog, self).exec()
         if result == QFileDialog.Accepted:
             logger.debug("User chose a file name, about to load the document from disk")
             path = pathlib.Path(self.selectedFiles()[0])

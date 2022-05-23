@@ -89,7 +89,7 @@ class Application(QApplication):
             self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
         logger.debug("Initialisation done. Starting event loop.")
-        self.exec_()
+        self.exec()
         logger.debug("Left event loop.")
 
     def _open_databases(self, args: Namespace):
