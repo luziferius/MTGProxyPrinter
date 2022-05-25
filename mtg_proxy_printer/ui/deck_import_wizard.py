@@ -202,6 +202,16 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             f"See the 'What’s this?' (?-Button) help for details."
         )
         self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
+        self.insert_copies_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<copies>\w+)"))
+        self.insert_name_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<name>.+)"))
+        self.insert_set_code_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<set_code>\w+)"))
+        self.insert_collector_number_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<collector_number>.+)"))
+        self.insert_scryfall_id_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<scryfall_id>[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12})"))
         self.complete = False
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self)
@@ -224,6 +234,10 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def append_group_to_custom_re_input(self, value: str):
+        self.custom_re_input: QLineEdit
+        self.custom_re_input.setText(self.custom_re_input.text()+value)
 
     def _create_mtg_arena_parser(self):
         self.selected_parser = re_parsers.MTGArenaParser(self.card_db, self.image_db, self)
