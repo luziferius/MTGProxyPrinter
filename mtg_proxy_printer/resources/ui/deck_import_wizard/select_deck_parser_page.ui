@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>390</width>
-    <height>260</height>
+    <width>543</width>
+    <height>359</height>
    </rect>
   </property>
   <property name="title">
@@ -17,36 +17,117 @@
    <string>Select which kind of deck list you want to import.</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="5" column="2">
-    <widget class="QCheckBox" name="tappedout_include_acquire_board">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="toolTip">
-      <string>This is a Tappedout-specific section of the deck.
-It may contain the decklist author’s buylist or anything else.</string>
-     </property>
-     <property name="text">
-      <string>Include “Acquire-Board”</string>
-     </property>
-    </widget>
-   </item>
    <item row="5" column="1">
-    <widget class="QCheckBox" name="tappedout_include_maybe_board">
-     <property name="enabled">
-      <bool>false</bool>
+    <spacer name="tapped_out_board_spacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
      </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="10" column="2" colspan="3">
+    <layout class="QGridLayout" name="sample_buttons_layout">
+     <item row="0" column="1">
+      <widget class="QPushButton" name="insert_set_code_matcher_sample_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Appends a sample matcher for a set code to the input field above.</string>
+       </property>
+       <property name="text">
+        <string>Set code matcher</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QPushButton" name="insert_collector_number_matcher_sample_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Appends a sample matcher for a collector number to the input field above</string>
+       </property>
+       <property name="text">
+        <string>Collector number matcher</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QPushButton" name="insert_copies_matcher_sample_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Appends a matcher for the number of card copies to the input field above.
+If a card count field is not present in the deck list, 1 card copy per line is assumed</string>
+       </property>
+       <property name="text">
+        <string>Copies matcher</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QPushButton" name="insert_name_matcher_sample_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Appends a matcher for a card name to the input field above.</string>
+       </property>
+       <property name="text">
+        <string>Card name matcher</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="insert_scryfall_id_matcher_sample_button">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="toolTip">
+        <string>Appends a matcher for the Scryfall ID to the input field above.
+This may be used by deck lists that closely integrate with the Scryfall website.
+Most deck lists won’t use this.</string>
+       </property>
+       <property name="text">
+        <string>Scryfall ID matcher</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_mtg_online">
      <property name="toolTip">
-      <string>This is a Tappedout-specific section of the deck.
-It may contain cards that the decklist creator considers for inclusion, based on the meta
-or any other preference, like card price.</string>
+      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
      </property>
      <property name="text">
-      <string>Include “Maybe-Board”</string>
+      <string>Magic Online</string>
      </property>
     </widget>
    </item>
-   <item row="8" column="1" colspan="2">
+   <item row="0" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_mtg_arena">
+     <property name="toolTip">
+      <string>Magic Arena and exports from compatible websites, like moxfield.com
+Note that this option is not limited to cards in Standard/Historic,
+as the format works for any card.</string>
+     </property>
+     <property name="text">
+      <string>MTG Arena</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="2" colspan="3">
     <widget class="QLineEdit" name="custom_re_input">
      <property name="enabled">
       <bool>false</bool>
@@ -72,30 +153,27 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="placeholderText">
-      <string>(?P&lt;copies&gt;\d+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
+      <string>(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
      </property>
      <property name="clearButtonEnabled">
       <bool>true</bool>
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <spacer name="horizontalSpacer">
+   <item row="13" column="1" colspan="4">
+    <spacer name="verticalSpacer">
      <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Maximum</enum>
+      <enum>Qt::Vertical</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>20</height>
+       <height>40</height>
       </size>
      </property>
     </spacer>
    </item>
-   <item row="4" column="0" colspan="3">
+   <item row="4" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_tappedout_csv">
      <property name="toolTip">
       <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
@@ -105,11 +183,11 @@ p, li { white-space: pre-wrap; }
      </property>
     </widget>
    </item>
-   <item row="3" column="0" colspan="3">
+   <item row="3" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_scryfall_csv">
      <property name="toolTip">
       <string>CSV exports from Scryfall’s own deck builder.
-Gives accurate results, unless the imported deck list contains ignored items
+Gives very accurate results, unless the imported deck list contains ignored items
 matching a configured download filter.</string>
      </property>
      <property name="text">
@@ -117,57 +195,25 @@ matching a configured download filter.</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0" colspan="3">
-    <widget class="QRadioButton" name="select_parser_xmage">
-     <property name="toolTip">
-      <string>Decklist files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give the best results.</string>
-     </property>
-     <property name="text">
-      <string>XMage</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="0" colspan="3">
-    <widget class="QRadioButton" name="select_parser_mtg_online">
-     <property name="toolTip">
-      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
-     </property>
-     <property name="text">
-      <string>Magic Online</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="3">
-    <widget class="QRadioButton" name="select_parser_mtg_arena">
-     <property name="toolTip">
-      <string>Magic Arena and exports from compatible websites, like moxfield.com
-Note that this option is not limited to cards in Standard/Historic,
-as the format works for any card.</string>
-     </property>
-     <property name="text">
-      <string>MTG Arena</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="0" colspan="3">
+   <item row="7" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_custom_re">
      <property name="toolTip">
-      <string>Specify a custom regular expression to parse each deck list line in the input field below</string>
+      <string>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
+You can use the buttons below to insert basic building blocks.
+You have to separate them with the “control structures”, like spaces, as used in your deck list.</string>
      </property>
      <property name="text">
       <string>Custom regular expression based parser:</string>
      </property>
     </widget>
    </item>
-   <item row="8" column="0">
-    <spacer name="horizontalSpacer_2">
+   <item row="10" column="1">
+    <spacer name="sample_buttons_spacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
      <property name="sizeType">
-      <enum>QSizePolicy::Maximum</enum>
+      <enum>QSizePolicy::Fixed</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
@@ -177,15 +223,72 @@ as the format works for any card.</string>
      </property>
     </spacer>
    </item>
-   <item row="9" column="0" colspan="3">
-    <spacer name="verticalSpacer">
+   <item row="8" column="1">
+    <spacer name="custom_re_input_spacer">
      <property name="orientation">
-      <enum>Qt::Vertical</enum>
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="2" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_xmage">
+     <property name="toolTip">
+      <string>Decklist files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</string>
+     </property>
+     <property name="text">
+      <string>XMage</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="2">
+    <widget class="QCheckBox" name="tappedout_include_maybe_board">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>This is a Tappedout-specific section of the deck.
+It may contain cards that the decklist creator considers for inclusion, based on the meta
+or any other preference, like card price.</string>
+     </property>
+     <property name="text">
+      <string>Include “Maybe-Board”</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="3">
+    <widget class="QCheckBox" name="tappedout_include_acquire_board">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>This is a Tappedout-specific section of the deck.
+It may contain the decklist author’s buylist or anything else.</string>
+     </property>
+     <property name="text">
+      <string>Include “Acquire-Board”</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="4">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
       </size>
      </property>
     </spacer>
@@ -201,12 +304,12 @@ as the format works for any card.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>114</x>
-     <y>195</y>
+     <x>120</x>
+     <y>188</y>
     </hint>
     <hint type="destinationlabel">
-     <x>144</x>
-     <y>233</y>
+     <x>176</x>
+     <y>225</y>
     </hint>
    </hints>
   </connection>
@@ -265,8 +368,8 @@ as the format works for any card.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>32</x>
-     <y>195</y>
+     <x>38</x>
+     <y>188</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -297,8 +400,8 @@ as the format works for any card.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>183</x>
-     <y>233</y>
+     <x>215</x>
+     <y>225</y>
     </hint>
     <hint type="destinationlabel">
      <x>145</x>
@@ -329,8 +432,8 @@ as the format works for any card.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>86</x>
-     <y>136</y>
+     <x>92</x>
+     <y>134</y>
     </hint>
     <hint type="destinationlabel">
      <x>88</x>
@@ -345,12 +448,92 @@ as the format works for any card.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>271</x>
-     <y>136</y>
+     <x>277</x>
+     <y>134</y>
     </hint>
     <hint type="destinationlabel">
-     <x>276</x>
+     <x>369</x>
      <y>157</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>insert_name_matcher_sample_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>256</x>
+     <y>187</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>173</x>
+     <y>240</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>insert_collector_number_matcher_sample_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>390</x>
+     <y>173</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>616</x>
+     <y>237</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>insert_scryfall_id_matcher_sample_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>336</x>
+     <y>180</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>325</x>
+     <y>285</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>insert_set_code_matcher_sample_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>390</x>
+     <y>181</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>325</x>
+     <y>257</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_custom_re</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>insert_copies_matcher_sample_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>390</x>
+     <y>181</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>173</x>
+     <y>283</y>
     </hint>
    </hints>
   </connection>
