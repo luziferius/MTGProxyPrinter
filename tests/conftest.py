@@ -65,7 +65,7 @@ def image_db():
             try:
                 assert_that(image_db.download_thread.isRunning(), is_(False))
             finally:
-                stop_thread(image_db.download_thread, lambda _: None)
+                stop_thread(image_db.download_thread)
     assert_that(temp_path.exists(), is_(False))
 
 
@@ -74,5 +74,4 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     document = Document(card_db, image_db)
     yield document
-    document.loader.worker_thread.quit()
-    document.loader.worker_thread.wait(100)
+    stop_thread(document.loader.worker_thread)
