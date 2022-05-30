@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot, Qt
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, Qt
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
@@ -34,7 +34,7 @@ class MissingImagesManager(QObject):
     If such cards are in a document, the images should be obtained before handing the document over to the PDF renderer
     or printer.
     """
-    obtaining_missing_images_failed = pyqtSignal(str)
+    obtaining_missing_images_failed = Signal(str)
 
     def __init__(self, document: Document, parent: QObject = None):
         super().__init__(parent)
@@ -53,7 +53,7 @@ class MissingImagesManager(QObject):
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
         self.document.image_db.get_card_list_asynchronous(images_to_fetch)
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def on_batch_processing_runs(self, state: bool):
         if not state:
             missing_count = self.document.missing_image_count()

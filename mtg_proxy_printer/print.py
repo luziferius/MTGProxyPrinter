@@ -16,7 +16,7 @@
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot, QPersistentModelIndex
+from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
 from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
 from PyQt5.QtPrintSupport import QPrinter
 
@@ -126,7 +126,7 @@ class Renderer(QObject):
         self.document = document
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
 
-    @pyqtSlot(QPrinter)
+    @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
         logger.info("Begin printing document.")
         painter = QPainter(printer)

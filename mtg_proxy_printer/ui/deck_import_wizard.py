@@ -19,7 +19,7 @@ import pathlib
 import re
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
     QPushButton
@@ -116,7 +116,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         self.print_guessing_prefer_already_downloaded.setChecked(False)
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
-    @pyqtSlot()
+    @Slot()
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
         self.deck_list: QPlainTextEdit
@@ -172,9 +172,9 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
     # When adding new radio buttons, also add the appropriate connection. Otherwise, the “Next” button will stay
     # disabled when the user selects it.
 
-    selected_parser_changed = pyqtSignal(common.ParserBase)
+    selected_parser_changed = Signal(common.ParserBase)
 
-    @pyqtProperty(common.ParserBase, notify=selected_parser_changed)
+    @Property(common.ParserBase, notify=selected_parser_changed)
     def selected_parser(self):
         pass
 
@@ -265,7 +265,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             self.card_db, self.image_db, self.field("custom_re"), self
         )
 
-    @pyqtSlot()
+    @Slot()
     def isComplete(self) -> bool:
         acceptable = any((
             self.select_parser_mtg_arena.isChecked(),
@@ -309,7 +309,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         proxy_model.setSortRole(Qt.EditRole)
         return proxy_model
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
         accept_button = self.wizard().button(QWizard.FinishButton)
         if oversized_cards:
@@ -325,7 +325,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon())
             accept_button.setToolTip("Append identified cards to the document")
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def _update_accept_button_on_replace_document_option_toggled(self, enabled: bool):
         accept_button: QPushButton = self.wizard().button(QWizard.FinishButton)
         if accept_button.icon().name() == "data-warning":
@@ -378,14 +378,14 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         super(SummaryPage, self).cleanupPage()
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
-    @pyqtSlot()
+    @Slot()
     def isComplete(self) -> bool:
         return self.card_list.rowCount() > 0
 
 
 class DeckImportWizard(QWizard):
-    deck_added = pyqtSignal(collections.Counter)
-    clear_document = pyqtSignal()
+    deck_added = Signal(collections.Counter)
+    clear_document = Signal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, *args, **kwargs):

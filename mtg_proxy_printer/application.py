@@ -23,7 +23,7 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -197,7 +197,7 @@ class Application(QApplication):
 
         self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
-    @pyqtSlot()
+    @Slot()
     def shutdown(self):
         logger.info("About to exit.")
         self.update_checker.stop_background_worker()

@@ -21,7 +21,7 @@ from typing import List, Optional, Dict
 import urllib.error
 import urllib.request
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal as Signal
 import delegateto
 
 from mtg_proxy_printer.logger import get_logger
@@ -54,9 +54,9 @@ class MeteredSeekableHTTPFile(QObject):
     In this case, linear reading with progress reports can still be performed.
     """
 
-    io_begin = pyqtSignal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
-    io_finished = pyqtSignal()  # Emitted in __exit__, when the file is closed
-    total_bytes_processed = pyqtSignal(int)  # Emitted after each read chunk, carries the total number of bytes read
+    io_begin = Signal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
+    io_finished = Signal()  # Emitted in __exit__, when the file is closed
+    total_bytes_processed = Signal(int)  # Emitted after each read chunk, carries the total number of bytes read
 
     def __init__(self, url: str, headers: Dict[str, str] = None, parent: QObject = None, *,
                  ui_hint: str = "", retry_limit: int = 10):
