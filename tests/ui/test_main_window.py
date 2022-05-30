@@ -45,7 +45,7 @@ def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
     with TemporaryDirectory() as temp_dir, unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
             return_value=request.param), \
-            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
+            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "_quit"), \
             unittest.mock.patch.object(
                 mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker, "get_scryfall_bulk_card_data_url"), \
             unittest.mock.patch.object(
@@ -107,7 +107,6 @@ def _create_save_file(temp_path: pathlib.Path):
             (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe")
         )
     return save_file_path
-
 
 def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, main_window: MainWindow):
     main_window.action_download_card_data.setEnabled(False)

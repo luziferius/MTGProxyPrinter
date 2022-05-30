@@ -1,6 +1,10 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
+
+## Changed features
+
+- The application update checker now offers visiting the project website, if an update is available.
 
 ## Changed features
 

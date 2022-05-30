@@ -21,6 +21,7 @@ import pytest
 
 from PySide6.QtCore import QStringListModel, QItemSelectionModel
 from PySide6.QtWidgets import QApplication
+
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 

@@ -16,7 +16,6 @@
 import pathlib
 import typing
 
-
 from PySide6.QtCore import Slot, Signal, QStringListModel
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QToolBar, QLabel
@@ -193,13 +192,18 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         handling, you should reimplement the event handler and ignore() the event.
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
+        event.ignore()
         if self.is_running:
             event.ignore()
-            self.on_action_quit_triggered()
+            self._quit()
 
     @Slot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
+        self.is_running = False
+        self._quit()
+
+    def _quit(self):
         self.is_running = False
         self.card_data_downloader.cancel_running_operations()
         self.card_data_downloader.quit_background_thread()
@@ -389,6 +393,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                     f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 ) == QMessageBox.StandardButton.Yes:
+            logger.info("User agreed to update the card data from Scryfall. Performing update")
             logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.action_download_card_data.trigger()
         else:

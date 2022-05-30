@@ -78,7 +78,7 @@ one cell of the printed grid, your system is set up correctly for high quality, 
 ## License
 
 
-Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

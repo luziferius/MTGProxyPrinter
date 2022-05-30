@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,10 +89,10 @@ class ImageDatabase(QObject):
     This class manages the on-disk PNG image cache. It can asynchronously fetch images from disk or from the Scryfall
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
-
     card_download_starting = Signal(int, str)
     card_download_finished = Signal()
     card_download_progress = Signal(int)
+
     # Emitted when image retrieval for a to-be-added card completes
     card_image_obtained = Signal(Card, int)
     # Emitted when an image retrieval for a to-be-replaced card completes
@@ -254,13 +254,11 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
-
     request_image = Signal(Card, int)
     card_image_obtained = Signal(Card, int)
 
     request_replacement = Signal(Card, QPersistentModelIndex)
     replacement_obtained = Signal(Card, QPersistentModelIndex)
-
     """
     Messages if the instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.

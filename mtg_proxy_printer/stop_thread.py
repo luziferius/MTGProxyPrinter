@@ -17,7 +17,6 @@ from logging import Logger
 
 from PySide6.QtCore import QThread
 
-
 from mtg_proxy_printer.logger import get_logger
 
 default_logger = get_logger(__name__)

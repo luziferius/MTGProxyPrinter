@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_dat
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.document import Document, CardContainer
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
+from mtg_proxy_printer.model.imagedb import ImageKey
 
 
 @pytest.fixture
@@ -225,6 +226,9 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         "Setup failed. Duplicate values in page layout settings"
     )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    # Prevent network access when re-loading the document
+    document_custom_layout.image_db.loaded_images[
+        ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
     document_custom_layout.add_card(card, document_custom_layout.total_cards_per_page)
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
