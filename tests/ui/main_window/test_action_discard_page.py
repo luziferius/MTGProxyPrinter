@@ -23,9 +23,6 @@ from ..test_main_window import main_window  # noqa
 
 def test_main_window_action_discard_page(qtbot: QtBot, main_window: MainWindow):
     document = main_window.document
-    qtbot.add_widget(main_window)
-    with qtbot.wait_exposed(main_window, timeout=100):
-        main_window.show()
     selection_model = main_window.central_widget.document_view.selectionModel()
     assert_that(selection_model.selectedRows(0), has_length(1))
     assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(0)))
