@@ -17,7 +17,8 @@ from pytestqt.qtbot import QtBot
 from hamcrest import *
 
 from mtg_proxy_printer.ui.main_window import MainWindow
-from ..test_main_window import main_window
+# This import is used dynamically by pytest to resolve the main_window fixture and cannot be removed.
+from ..test_main_window import main_window  # noqa
 
 
 def test_main_window_action_discard_page(qtbot: QtBot, main_window: MainWindow):
