@@ -40,9 +40,11 @@ __all__ = [
 ]
 
 
-class IsRegularExpressionValidator(QValidator):
+class IsDecklistParserRegularExpressionValidator(QValidator):
     """
     Validator used to check if the custom RE used for the "Custom RE parser" option is a valid RE.
+    Also checks, if the supplied groups are specific enough to actually identify cards.
+    It does NOT check, if the RE actually matches useful data.
     """
 
     has_named_groups_re = re.compile(
@@ -63,13 +65,14 @@ class IsRegularExpressionValidator(QValidator):
 
     def _validate_content(self, input_string: str):
         """
-        Validates the user supplied RE. Currently, this method only checks, if the user content contains a valid
-        named group matching any supported group name.
+        Validates the user supplied RE. The RE is acceptable if it contains group matchers for a superset of
+        any identifying group.
         """
-        if self.has_named_groups_re.search(input_string):
-            return QValidator.Acceptable
-        else:
-            return QValidator.Intermediate
+        found_groups = self.has_named_groups_re.findall(input_string)
+        for identifying_groups in re_parsers.GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS:
+            if identifying_groups.issubset(found_groups):
+                return QValidator.Acceptable
+        return QValidator.Intermediate
 
 
 class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
@@ -204,7 +207,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             f"{', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))}\n\n"
             f"See the 'What’s this?' (?-Button) help for details."
         )
-        self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
+        self.custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
         self.insert_copies_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<copies>\w+)"))
         self.insert_name_matcher_sample_button.clicked.connect(
@@ -286,7 +289,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.parser_creator()
         self.selected_parser.incompatible_file_format.connect(self.wizard().on_incompatible_deck_file_selected)
         logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
-        return super().validatePage()
+        return self.isComplete()
 
 
 class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
