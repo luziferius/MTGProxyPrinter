@@ -209,7 +209,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         )
         self.custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
         self.insert_copies_matcher_sample_button.clicked.connect(
-            lambda: self.append_group_to_custom_re_input(r"(?P<copies>\w+)"))
+            lambda: self.append_group_to_custom_re_input(r"(?P<copies>\d+)"))
         self.insert_name_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<name>.+)"))
         self.insert_set_code_matcher_sample_button.clicked.connect(
