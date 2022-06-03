@@ -1,5 +1,15 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Improved the advanced deck list parser that allows defining a custom regular expression to parse the deck list:
+  - Added buttons that insert preset regular expression building blocks. This reduces typing effort required to build
+    a working RE.
+  - The wizard only accepts the input regular expression, if it deems it being able to extract sufficient information
+    for card identification.
+
 # Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
 
 ## Changed features
