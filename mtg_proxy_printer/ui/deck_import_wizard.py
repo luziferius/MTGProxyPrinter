@@ -216,6 +216,8 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             lambda: self.append_group_to_custom_re_input(r"(?P<set_code>\w+)"))
         self.insert_collector_number_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<collector_number>.+)"))
+        self.insert_language_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<language>[a-zA-Z]{2})"))
         self.insert_scryfall_id_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<scryfall_id>[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12})"))
         self.complete = False
