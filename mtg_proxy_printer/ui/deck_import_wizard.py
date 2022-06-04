@@ -332,7 +332,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
 
     @Slot(bool)
     def _update_accept_button_on_replace_document_option_toggled(self, enabled: bool):
-        accept_button: QPushButton = self.wizard().button(QWizard.FinishButton)
+        accept_button = self.wizard().button(QWizard.FinishButton)
         if accept_button.icon().name() == "data-warning":
             return
         if enabled:
@@ -359,6 +359,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
+        self._initialize_custom_buttons()
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
@@ -378,14 +379,51 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
         logger.debug(f"Initialized {self.__class__.__name__}")
 
+    def _initialize_custom_buttons(self):
+        wizard: QWizard = self.wizard()
+        wizard.customButtonClicked.connect(self.custom_button_clicked)
+        wizard.setOption(QWizard.HaveCustomButton1, False)  # TODO: Enable, when logic is implemented
+        remove_basic_lands_button = wizard.button(QWizard.CustomButton1)
+        remove_basic_lands_button.setEnabled(True)
+        remove_basic_lands_button.setText("Remove basic lands")
+        remove_basic_lands_button.setToolTip("Remove all basic lands in the deck list above")
+        remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
+        wizard.setOption(QWizard.HaveCustomButton2, True)
+        remove_selected_cards_button = wizard.button(QWizard.CustomButton2)
+        remove_selected_cards_button.setEnabled(True)
+        remove_selected_cards_button.setText("Remove selected")
+        remove_selected_cards_button.setToolTip("Remove all selected cards in the deck list above")
+        remove_selected_cards_button.setIcon(QIcon.fromTheme("edit-delete"))
+
     def cleanupPage(self):
         self.card_list.clear()
         super(SummaryPage, self).cleanupPage()
+        wizard: QWizard = self.wizard()
+        wizard.customButtonClicked.disconnect(self.custom_button_clicked)
+        wizard.setOption(QWizard.HaveCustomButton1, False)
+        wizard.setOption(QWizard.HaveCustomButton2, False)
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
     @Slot()
     def isComplete(self) -> bool:
         return self.card_list.rowCount() > 0
+
+    @Slot(int)
+    def custom_button_clicked(self, button_id: int):
+        wizard: QWizard = self.wizard()
+        if button_id == QWizard.CustomButton1:
+            wizard.button(button_id).setEnabled(False)
+            logger.info("User removes all basic lands")
+        elif button_id == QWizard.CustomButton2:
+            self._remove_selected_cards()
+            wizard.button(button_id).setEnabled(self.card_list.rowCount() > 0)
+
+    def _remove_selected_cards(self):
+        logger.info("User removes the selected cards")
+        self.parsed_cards_table: QTableView
+        selection_mapped_to_source = self.card_list_sort_model.mapSelectionToSource(
+            self.parsed_cards_table.selectionModel().selection())
+        self.card_list.remove_multi_selection(selection_mapped_to_source)
 
 
 class DeckImportWizard(QWizard):

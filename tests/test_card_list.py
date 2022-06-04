@@ -12,10 +12,12 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import typing
 
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
+from PyQt5.QtCore import QItemSelectionModel
 
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import CardListModel
@@ -48,7 +50,7 @@ def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: Ca
     assert_that(model.oversized_card_count, is_(equal_to(10)))
 
     with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == 8)):
-        model.remove_cards([model.index(0, 0), model.index(1, 0)])
+        model.remove_cards(0, 1)
     assert_that(model.oversized_card_count, is_(equal_to(8)))
 
 
@@ -99,3 +101,37 @@ def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: Q
     assert_that(model.cards[0].is_oversized, is_(True))
     assert_that(model.cards[1].is_oversized, is_(True))
     assert_that(model.oversized_card_count, is_(2))
+
+
+@pytest.mark.parametrize("ranges, merged", [
+    ([], []),
+    ([(2, 3)], [(2, 3)]),
+    ([(0, 0), (0, 0)], [(0, 0)]),
+    ([(0, 0), (0, 1)], [(0, 1)]),
+    ([(0, 1), (2, 3)], [(0, 3)]),
+    ([(0, 1), (3, 4)], [(0, 1), (3, 4)]),
+])
+def test__merge_ranges(ranges: typing.List[typing.Tuple[int, int]], merged: typing.List[typing.Tuple[int, int]]):
+    assert_that(
+        CardListModel._merge_ranges(ranges),
+        contains_exactly(*merged),
+        "Wrong merge result"
+    )
+
+
+def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    model.add_cards({oversized: 1})
+    model.add_cards({regular: 1})
+    model.add_cards({oversized: 1})
+    selection_model = QItemSelectionModel(model)
+    selection_model.select(model.index(0, 0), QItemSelectionModel.Select)
+    selection_model.select(model.index(2, 0), QItemSelectionModel.Select)
+    assert_that(
+        model.remove_multi_selection(selection_model.selection()),
+        is_(equal_to(2))
+    )
+    assert_that(model.cards, contains_exactly(regular))
+    assert_that(model.rowCount(), is_(equal_to(1)))
