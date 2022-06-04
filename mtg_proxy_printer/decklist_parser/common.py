@@ -57,8 +57,8 @@ class ParserBase(QObject):
             "automatically-add-opposing-faces"
         )
         self.print_guessing_prefer_already_downloaded = \
-            mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
-                "prefer-already-downloaded"
+            mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
+                "prefer-already-downloaded-images"
             )
 
     def get_file_extension_filter(self) -> str:

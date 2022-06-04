@@ -248,7 +248,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.log_level_combo_box.setCurrentIndex(self.log_level_combo_box.findText(section["log-level"]))
 
     def _load_print_guessing_settings(self, settings: configparser.ConfigParser):
-        section = settings["print-guessing"]
+        section = settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
 
@@ -290,8 +290,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
 
     def _get_print_guessing_checkbox_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.print_guessing_enable, "enable-guessing"),
-            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+            (self.print_guessing_enable, "enable-print-guessing-by-default"),
+            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (self.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
         ]
         return widgets_with_settings
@@ -393,7 +393,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         debug_section["log-level"] = self.log_level_combo_box.currentText()
 
     def _save_print_guessing_settings(self):
-        section = mtg_proxy_printer.settings.settings["print-guessing"]
+        section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             section[setting] = str(widget.isChecked())
 

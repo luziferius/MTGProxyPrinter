@@ -108,9 +108,9 @@ DEFAULT_SETTINGS["debug"] = {
     "log-level": "INFO"
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
-DEFAULT_SETTINGS["print-guessing"] = {
-    "enable-guessing": "True",
-    "prefer-already-downloaded": "True",
+DEFAULT_SETTINGS["decklist-import"] = {
+    "enable-print-guessing-by-default": "True",
+    "prefer-already-downloaded-images": "True",
     "always-translate-deck-lists": "False",
 }
 DEFAULT_SETTINGS["application"] = {
@@ -170,7 +170,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_application_section(read_settings)
     _validate_gui_section(read_settings)
     _validate_debug_section(read_settings)
-    _validate_print_guessing_section(read_settings)
+    _validate_decklist_import_section(read_settings)
     _validate_default_filesystem_paths_section(read_settings)
 
 
@@ -256,7 +256,7 @@ def _validate_debug_section(settings: configparser.ConfigParser, section_name: s
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
 
 
-def _validate_print_guessing_section(settings: configparser.ConfigParser, section_name: str = "print-guessing"):
+def _validate_decklist_import_section(settings: configparser.ConfigParser, section_name: str = "decklist-import"):
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
@@ -356,7 +356,22 @@ def _migrate_default_save_paths_settings(settings: configparser.ConfigParser):
         return
     settings.add_section(target_section_name)
     settings[target_section_name].update(settings[source_section_name])
-        
+
+
+def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
+    source_section_name = "print-guessing"
+    target_section_name = "decklist-import"
+    if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
+        return
+    settings.add_section(target_section_name)
+    target = settings[target_section_name]
+    source = settings[source_section_name]
+    # Force-overwrite with the new default when migrating. Having this disabled has negative UX impact, so should not
+    # be disabled by default.
+    target["enable-print-guessing-by-default"] = "True"
+    target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
+    target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.

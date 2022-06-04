@@ -100,9 +100,9 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         preferred_language_index = language_model.stringList().index(preferred_language)
         self.translate_deck_list_target_language.setCurrentIndex(preferred_language_index)
-        options = mtg_proxy_printer.settings.settings["print-guessing"]
-        self.print_guessing_enable.setChecked(options.getboolean("enable-guessing"))
-        self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded"))
+        options = mtg_proxy_printer.settings.settings["decklist-import"]
+        self.print_guessing_enable.setChecked(options.getboolean("enable-print-guessing-by-default"))
+        self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded-images"))
         self.translate_deck_list_enable.setChecked(options.getboolean("always-translate-deck-lists"))
         parser: common.ParserBase = self.field("selected_parser")
         if parser.requires_print_guessing:
