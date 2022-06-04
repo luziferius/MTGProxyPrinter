@@ -4,6 +4,7 @@
 
 ## Changed features
 
+- The “New” document button will now ask for confirmation, before replacing the currently edited document with a new one.
 - Improved the advanced deck list parser that allows defining a custom regular expression to parse the deck list:
   - Added buttons that insert preset regular expression building blocks. This reduces typing effort required to build
     a working RE.

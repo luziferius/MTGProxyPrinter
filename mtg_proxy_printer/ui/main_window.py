@@ -126,7 +126,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.action_new_page.triggered.connect(document.add_page)
-        self.action_new_document.triggered.connect(document.clear_all_data)
         self.action_compact_document.triggered.connect(document.compact_pages)
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
@@ -334,6 +333,15 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
     def on_action_download_missing_card_images_triggered(self):
         logger.info("User wants to download missing card images")
         self.missing_images_manager.obtain_missing_images()
+
+    @Slot()
+    def on_action_new_document_triggered(self):
+        logger.info("User clicked on the New Document button, asking for confirmation")
+        if QMessageBox.question(
+                self, "Current document will be lost",
+                "Create a new document? All unsaved changes will be lost.",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
+            self.document.clear_all_data()
 
     @Slot()
     def on_action_save_as_triggered(self):
