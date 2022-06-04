@@ -92,7 +92,7 @@ DEFAULT_SETTINGS["documents"] = {
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
 }
-DEFAULT_SETTINGS["default-save-paths"] = {
+DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
@@ -171,7 +171,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_gui_section(read_settings["gui"])
     _validate_debug_section(read_settings["debug"])
     _validate_print_guessing_section(read_settings["print-guessing"])
-    _validate_default_save_paths_section(read_settings["default-save-paths"])
+    _validate_default_filesystem_paths_section(read_settings["default-filesystem-paths"])
 
 
 def _validate_card_filter_section(section: configparser.SectionProxy):
@@ -256,8 +256,8 @@ def _validate_print_guessing_section(section: configparser.SectionProxy):
         _validate_boolean(section, defaults, key)
 
 
-def _validate_default_save_paths_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["default-save-paths"]
+def _validate_default_filesystem_paths_section(section: configparser.SectionProxy):
+    defaults = DEFAULT_SETTINGS["default-filesystem-paths"]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
 
@@ -308,6 +308,7 @@ def _restore_default(section: configparser.SectionProxy, defaults: configparser.
 def migrate_settings(settings: configparser.ConfigParser):
     _migrate_layout_setting(settings)
     _migrate_download_settings(settings)
+    _migrate_default_save_paths_settings(settings)
 
 
 def _migrate_layout_setting(settings: configparser.ConfigParser):
@@ -337,6 +338,15 @@ def _migrate_download_settings(settings: configparser.ConfigParser):
             pass
         else:
             filter_section[target_setting] = str(new_value)
+
+
+def _migrate_default_save_paths_settings(settings: configparser.ConfigParser):
+    source_section_name = "default-save-paths"
+    target_section_name = "default-filesystem-paths"
+    if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
+        return
+    settings.add_section(target_section_name)
+    settings[target_section_name].update(settings[source_section_name])
         
 
 # Read the settings from file during module import

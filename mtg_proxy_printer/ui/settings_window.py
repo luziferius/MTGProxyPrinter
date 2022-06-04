@@ -235,7 +235,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.card_filter_format_settings.load_settings(section)
 
     def _load_save_path_settings(self, settings: configparser.ConfigParser):
-        section = settings["default-save-paths"]
+        section = settings["default-filesystem-paths"]
         widgets_with_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
@@ -380,7 +380,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         documents_section["pdf-page-count-limit"] = str(self.pdf_page_count_limit.value())
 
     def _save_save_path_settings(self):
-        section = mtg_proxy_printer.settings.settings["default-save-paths"]
+        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()

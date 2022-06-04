@@ -123,7 +123,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
         self.deck_list: QPlainTextEdit
-        default_path: str = mtg_proxy_printer.settings.settings["default-save-paths"]["deck-list-search-path"]
+        default_path: str = mtg_proxy_printer.settings.settings["default-filesystem-paths"]["deck-list-search-path"]
         if not self.deck_list.toPlainText() \
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
