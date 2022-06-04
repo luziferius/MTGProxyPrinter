@@ -259,20 +259,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         ]
         return widgets_with_settings
 
-    def _get_document_settings_widgets(self):
-        widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
-            (self.pdf_page_count_limit, "pdf-page-count-limit"),
-            (self.page_height, "paper-height-mm"),
-            (self.page_width, "paper-width-mm"),
-            (self.page_margin_top, "margin-top-mm"),
-            (self.page_margin_bottom, "margin-bottom-mm"),
-            (self.page_margin_left, "margin-left-mm"),
-            (self.page_margin_right, "margin-right-mm"),
-            (self.page_image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.page_image_spacing_vertical, "image-spacing-vertical-mm"),
-        ]
-        return widgets_with_settings
-
     def _get_save_path_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
             (self.document_save_path, "document-save-path"),
