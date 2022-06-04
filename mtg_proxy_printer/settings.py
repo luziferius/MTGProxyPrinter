@@ -164,24 +164,26 @@ def validate_settings(read_settings: configparser.ConfigParser):
     I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
     non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
     """
-    _validate_card_filter_section(read_settings["card-filter"])
-    _validate_images_section(read_settings["images"])
-    _validate_documents_section(read_settings["documents"])
-    _validate_application_section(read_settings["application"])
-    _validate_gui_section(read_settings["gui"])
-    _validate_debug_section(read_settings["debug"])
-    _validate_print_guessing_section(read_settings["print-guessing"])
-    _validate_default_filesystem_paths_section(read_settings["default-filesystem-paths"])
+    _validate_card_filter_section(read_settings)
+    _validate_images_section(read_settings)
+    _validate_documents_section(read_settings)
+    _validate_application_section(read_settings)
+    _validate_gui_section(read_settings)
+    _validate_debug_section(read_settings)
+    _validate_print_guessing_section(read_settings)
+    _validate_default_filesystem_paths_section(read_settings)
 
 
-def _validate_card_filter_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["card-filter"]
+def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
 
-def _validate_images_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["images"]
+def _validate_images_section(settings: configparser.ConfigParser, section_name: str = "images"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in ("automatically-add-opposing-faces",):
         _validate_boolean(section, defaults, key)
     language = section["preferred-language"]
@@ -190,8 +192,9 @@ def _validate_images_section(section: configparser.SectionProxy):
         _restore_default(section, defaults, "preferred-language")
 
 
-def _validate_documents_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["documents"]
+def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "print-cut-marker")
     # Check syntax
     for key in section.keys():
@@ -229,35 +232,41 @@ def _validate_documents_section(section: configparser.SectionProxy):
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 
 
-def _validate_application_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["application"]
+def _validate_application_section(settings: configparser.ConfigParser, section_name: str = "application"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
         section["last-used-version"] = defaults["last-used-version"]
     for option in ("check-for-application-updates", "check-for-card-data-updates"):
         _validate_three_valued_boolean(section, defaults, option)
 
 
-def _validate_gui_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["gui"]
+def _validate_gui_section(settings: configparser.ConfigParser, section_name: str = "gui"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
-def _validate_debug_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["debug"]
+def _validate_debug_section(settings: configparser.ConfigParser, section_name: str = "debug"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "cutelog-integration")
     _validate_boolean(section, defaults, "write-log-file")
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
 
 
-def _validate_print_guessing_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["print-guessing"]
+def _validate_print_guessing_section(settings: configparser.ConfigParser, section_name: str = "print-guessing"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
 
-def _validate_default_filesystem_paths_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["default-filesystem-paths"]
+def _validate_default_filesystem_paths_section(
+        settings: configparser.ConfigParser, section_name: str = "default-filesystem-paths"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
 
