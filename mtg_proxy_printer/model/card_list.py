@@ -61,6 +61,7 @@ class CardListModel(QAbstractTableModel):
         super(CardListModel, self).__init__(*args, **kwargs)
         self.card_db = card_db
         self.cards: CardList = []
+        self.basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids()
         self.oversized_card_count = 0
         self._oversized_icon = QIcon.fromTheme("data-warning")
 
@@ -229,3 +230,16 @@ class CardListModel(QAbstractTableModel):
         return Counter(
             self.cards[row] for row in row_order
         )
+
+    def has_basic_lands(self) -> bool:
+        return any(filter(lambda card: card.oracle_id in self.basic_land_oracle_ids, self.cards))
+
+    def remove_all_basic_lands(self):
+        to_remove_rows = list(
+            (index, index)
+            for index, card in enumerate(self.cards)
+            if card.oracle_id in self.basic_land_oracle_ids
+        )
+        merged = reversed(self._merge_ranges(to_remove_rows))
+        for top, bottom in merged:
+            self.remove_cards(top, bottom)

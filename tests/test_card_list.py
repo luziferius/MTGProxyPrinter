@@ -26,10 +26,13 @@ from tests.helpers import fill_card_database_with_json_cards
 
 OVERSIZED_ID = "650722b4-d72b-4745-a1a5-00a34836282b"
 REGULAR_ID = "0000579f-7b35-4ed3-b44c-db2a538066fe"
+FOREST_ID = "7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"
 
 
 def _populate_card_db_and_create_model(qtbot, card_db: CardDatabase) -> CardListModel:
-    fill_card_database_with_json_cards(qtbot, card_db, ["oversized_card", "regular_english_card"])
+    fill_card_database_with_json_cards(
+        qtbot, card_db,
+        ["oversized_card", "regular_english_card", "english_basic_Forest"])
     model = CardListModel(card_db)
     return model
 
@@ -135,3 +138,32 @@ def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
     )
     assert_that(model.cards, contains_exactly(regular))
     assert_that(model.rowCount(), is_(equal_to(1)))
+
+
+def test_has_basic_lands_returns_true_with_basic_lands_in_list(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    forest = card_db.get_card_with_scryfall_id(FOREST_ID, True)
+    model.add_cards({forest: 1})
+    assert_that(
+        model.has_basic_lands(),
+        is_(True)
+    )
+
+
+def test_has_basic_lands_returns_false_when_empty(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    assert_that(
+        model.has_basic_lands(),
+        is_(False)
+    )
+
+
+def test_has_basic_lands_returns_false_without_basic_lands_in_list(qtbot: QtBot, card_db: CardDatabase):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
+    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
+    model.add_cards({oversized: 1, regular: 1})
+    assert_that(
+        model.has_basic_lands(),
+        is_(False)
+    )

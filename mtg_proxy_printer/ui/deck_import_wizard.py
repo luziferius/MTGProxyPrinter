@@ -362,7 +362,6 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
         self.selected_cells_count = 0
-        self._initialize_custom_buttons()
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
@@ -380,14 +379,15 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.unparsed_lines_text: QPlainTextEdit
         self.card_list.add_cards(parsed_deck)
         self.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
+        self._initialize_custom_buttons()
         logger.debug(f"Initialized {self.__class__.__name__}")
 
     def _initialize_custom_buttons(self):
         wizard: QWizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
-        wizard.setOption(QWizard.HaveCustomButton1, False)  # TODO: Enable, when logic is implemented
+        wizard.setOption(QWizard.HaveCustomButton1, True)
         remove_basic_lands_button = wizard.button(QWizard.CustomButton1)
-        remove_basic_lands_button.setEnabled(True)
+        remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands())
         remove_basic_lands_button.setText("Remove basic lands")
         remove_basic_lands_button.setToolTip("Remove all basic lands in the deck list above")
         remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
@@ -423,7 +423,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         wizard: QWizard = self.wizard()
         if button_id == QWizard.CustomButton1:
             wizard.button(button_id).setEnabled(False)
-            logger.info("User removes all basic lands")
+            logger.info("User requests to remove all basic lands")
+            self.card_list.remove_all_basic_lands()
         elif button_id == QWizard.CustomButton2:
             self._remove_selected_cards()
 
