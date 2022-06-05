@@ -2,6 +2,11 @@
 
 # Next version (in development)
 
+## New features
+
+- Added card removal feature to the deck import wizard: It is now possible to remove selected cards or all basic lands
+  from the deck list before finishing the import.
+
 ## Changed features
 
 - The “New” document button will now ask for confirmation, before replacing the currently edited document with a new one.

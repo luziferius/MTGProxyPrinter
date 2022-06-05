@@ -227,6 +227,17 @@ class CardDatabase:
         ]
         return result
 
+    def get_basic_land_oracle_ids(self) -> typing.Set[str]:
+        """Returns the oracle ids of all Basic lands (currently except Wastes)."""
+        query = cached_dedent('''\
+            SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
+              FROM AllPrintings
+              WHERE language = 'en'
+              AND card_name IN 
+                ('Plains', 'Island', 'Swamp', 'Mountain', 'Forest')  -- Should this include Wastes here?
+        ''')
+        return {item for item, in self.db.execute(query)}
+
     @profile
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
         """Checks, if the given card data represents a unique card printing"""
