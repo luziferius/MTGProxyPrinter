@@ -19,10 +19,10 @@ import pathlib
 import re
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
+    QItemSelection
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
-    QPushButton
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -303,6 +303,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.card_list_sort_model = self._create_sort_model(self.card_list)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
+        self.selected_cells_count = 0
         self.registerField("should_replace_document", self.should_replace_document)
         self.should_replace_document.toggled[bool].connect(
             self._update_accept_button_on_replace_document_option_toggled)
@@ -345,6 +346,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
     def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
         self.parsed_cards_table.setModel(model)
+        self.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
         delegate = ComboBoxItemDelegate(self.parsed_cards_table)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
@@ -359,6 +361,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
+        self.selected_cells_count = 0
         self._initialize_custom_buttons()
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
@@ -390,7 +393,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
         wizard.setOption(QWizard.HaveCustomButton2, True)
         remove_selected_cards_button = wizard.button(QWizard.CustomButton2)
-        remove_selected_cards_button.setEnabled(True)
+        remove_selected_cards_button.clicked.connect(remove_selected_cards_button.setEnabled)
+        remove_selected_cards_button.setEnabled(False)
         remove_selected_cards_button.setText("Remove selected")
         remove_selected_cards_button.setToolTip("Remove all selected cards in the deck list above")
         remove_selected_cards_button.setIcon(QIcon.fromTheme("edit-delete"))
@@ -400,6 +404,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         super(SummaryPage, self).cleanupPage()
         wizard: QWizard = self.wizard()
         wizard.customButtonClicked.disconnect(self.custom_button_clicked)
+        remove_selected_cards_button = wizard.button(QWizard.CustomButton2)
+        remove_selected_cards_button.clicked.disconnect(remove_selected_cards_button.setEnabled)
         wizard.setOption(QWizard.HaveCustomButton1, False)
         wizard.setOption(QWizard.HaveCustomButton2, False)
         logger.debug(f"Cleaned up {self.__class__.__name__}")
@@ -407,6 +413,13 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
     @Slot()
     def isComplete(self) -> bool:
         return self.card_list.rowCount() > 0
+
+    @Slot(QItemSelection, QItemSelection)
+    def parsed_cards_table_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
+        self.selected_cells_count += selected.count() - deselected.count()
+        logger.debug(f"Selection changed: Currently selected cells: {self.selected_cells_count}")
+        wizard: QWizard = self.wizard()
+        wizard.button(QWizard.CustomButton2).setEnabled(self.selected_cells_count > 0)
 
     @Slot(int)
     def custom_button_clicked(self, button_id: int):
@@ -424,6 +437,9 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         selection_mapped_to_source = self.card_list_sort_model.mapSelectionToSource(
             self.parsed_cards_table.selectionModel().selection())
         self.card_list.remove_multi_selection(selection_mapped_to_source)
+        if not self.card_list.rowCount():
+            # User deleted everything, so nothing left to complete the wizard. This’ll disable the Finish button.
+            self.completeChanged.emit()
 
 
 class DeckImportWizard(QWizard):
