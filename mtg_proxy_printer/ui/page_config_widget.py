@@ -16,7 +16,7 @@
 import configparser
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
 
 import mtg_proxy_printer.settings
@@ -63,8 +63,8 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
         return page_layout
 
-    @pyqtSlot()
-    def on_page_layout_setting_changed(self):
+    @Slot()
+    def page_layout_setting_changed(self):
         """
         Recomputes and updates the page capacity value, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
@@ -73,7 +73,7 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         new_capacity = self.page_layout.compute_page_card_capacity()
         self.page_capacity.setText(str(new_capacity))
 
-    @pyqtSlot()
+    @Slot()
     def validate_paper_size_settings(self):
         """
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
@@ -110,7 +110,7 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
                 else:
                     widget.setChecked(value)
         self.validate_paper_size_settings()
-        self.on_page_layout_setting_changed()
+        self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")
 
     def save_document_settings_to_config(self):

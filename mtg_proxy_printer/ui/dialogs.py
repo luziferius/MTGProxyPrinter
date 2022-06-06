@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 import pathlib
 import sys
 
-from PyQt5.QtCore import QFile, pyqtSlot
+from PyQt5.QtCore import QFile, pyqtSlot as Slot
 from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QDialogButtonBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -47,7 +47,7 @@ __all__ = [
 
 
 def read_path(setting: str) -> str:
-    return mtg_proxy_printer.settings.settings["default-save-paths"][setting]
+    return mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
 
 
 class SavePDFDialog(QFileDialog):
@@ -145,12 +145,12 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.python_version_label.setText(sys.version.replace("\n", " "))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    @pyqtSlot()
+    @Slot()
     def show_about(self):
         self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QWidget, "tab_about"))
         self.show()
 
-    @pyqtSlot()
+    @Slot()
     def show_changelog(self):
         self.tab_widget.setCurrentWidget(self.tab_widget.findChild(QTextBrowser, "changelog_text_browser"))
         self.show()

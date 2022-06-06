@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 from hamcrest import *
 
 try:
@@ -31,9 +33,10 @@ import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.document import Document, CardContainer
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
+from mtg_proxy_printer.model.imagedb import ImageKey
 
 
 @pytest.fixture
@@ -220,6 +223,9 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         "Setup failed. Duplicate values in page layout settings"
     )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    # Prevent network access when re-loading the document
+    document_custom_layout.image_db.loaded_images[
+        ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
     document_custom_layout.add_card(card, document_custom_layout.total_cards_per_page)
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
@@ -313,3 +319,42 @@ def _validate_saved_document_settings(document: Document):
                 document.page_layout.image_spacing_vertical,
                 document.page_layout.draw_cut_markers,
         ))
+
+
+def test_get_missing_image_cards(qtbot: QtBot, document: Document):
+    blank_image = document.image_db.blank_image
+    expected = Card(
+        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        blank_image)
+    unexpected = Card(
+        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        QPixmap(blank_image)
+    )
+    document.add_card(expected, 2)
+    document.add_card(unexpected, 2)
+    assert_that(
+        result := list(document.get_missing_image_cards()),
+        has_length(2)
+    )
+    for item in result:
+        card = item.parent().data(Qt.EditRole)[item.row()].card
+        assert_that(card, is_(expected))
+
+
+@pytest.mark.parametrize("result", [True, False])
+def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
+    blank_image = document.image_db.blank_image
+    expected = Card(
+        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        blank_image)
+    unexpected = Card(
+        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        QPixmap(blank_image)
+    )
+    if result:
+        document.add_card(expected, 2)
+    document.add_card(unexpected, 2)
+    assert_that(
+        document.has_missing_images(),
+        is_(result)
+    )

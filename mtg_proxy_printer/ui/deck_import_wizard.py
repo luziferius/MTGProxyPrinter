@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,10 +19,10 @@ import pathlib
 import re
 import typing
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, pyqtProperty, QStringListModel, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
+    QItemSelection
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
-    QPushButton
+from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -40,9 +40,11 @@ __all__ = [
 ]
 
 
-class IsRegularExpressionValidator(QValidator):
+class IsDecklistParserRegularExpressionValidator(QValidator):
     """
     Validator used to check if the custom RE used for the "Custom RE parser" option is a valid RE.
+    Also checks, if the supplied groups are specific enough to actually identify cards.
+    It does NOT check, if the RE actually matches useful data.
     """
 
     has_named_groups_re = re.compile(
@@ -63,13 +65,14 @@ class IsRegularExpressionValidator(QValidator):
 
     def _validate_content(self, input_string: str):
         """
-        Validates the user supplied RE. Currently, this method only checks, if the user content contains a valid
-        named group matching any supported group name.
+        Validates the user supplied RE. The RE is acceptable if it contains group matchers for a superset of
+        any identifying group.
         """
-        if self.has_named_groups_re.search(input_string):
-            return QValidator.Acceptable
-        else:
-            return QValidator.Intermediate
+        found_groups = self.has_named_groups_re.findall(input_string)
+        for identifying_groups in re_parsers.GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS:
+            if identifying_groups.issubset(found_groups):
+                return QValidator.Acceptable
+        return QValidator.Intermediate
 
 
 class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
@@ -97,9 +100,9 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         preferred_language_index = language_model.stringList().index(preferred_language)
         self.translate_deck_list_target_language.setCurrentIndex(preferred_language_index)
-        options = mtg_proxy_printer.settings.settings["print-guessing"]
-        self.print_guessing_enable.setChecked(options.getboolean("enable-guessing"))
-        self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded"))
+        options = mtg_proxy_printer.settings.settings["decklist-import"]
+        self.print_guessing_enable.setChecked(options.getboolean("enable-print-guessing-by-default"))
+        self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded-images"))
         self.translate_deck_list_enable.setChecked(options.getboolean("always-translate-deck-lists"))
         parser: common.ParserBase = self.field("selected_parser")
         if parser.requires_print_guessing:
@@ -116,11 +119,11 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         self.print_guessing_prefer_already_downloaded.setChecked(False)
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
-    @pyqtSlot()
+    @Slot()
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
         self.deck_list: QPlainTextEdit
-        default_path: str = mtg_proxy_printer.settings.settings["default-save-paths"]["deck-list-search-path"]
+        default_path: str = mtg_proxy_printer.settings.settings["default-filesystem-paths"]["deck-list-search-path"]
         if not self.deck_list.toPlainText() \
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
@@ -172,9 +175,9 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
     # When adding new radio buttons, also add the appropriate connection. Otherwise, the “Next” button will stay
     # disabled when the user selects it.
 
-    selected_parser_changed = pyqtSignal(common.ParserBase)
+    selected_parser_changed = Signal(common.ParserBase)
 
-    @pyqtProperty(common.ParserBase, notify=selected_parser_changed)
+    @Property(common.ParserBase, notify=selected_parser_changed)
     def selected_parser(self):
         pass
 
@@ -204,7 +207,19 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             f"{', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))}\n\n"
             f"See the 'What’s this?' (?-Button) help for details."
         )
-        self.custom_re_input.setValidator(IsRegularExpressionValidator(self))
+        self.custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
+        self.insert_copies_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<copies>\d+)"))
+        self.insert_name_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<name>.+)"))
+        self.insert_set_code_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<set_code>\w+)"))
+        self.insert_collector_number_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<collector_number>.+)"))
+        self.insert_language_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<language>[a-zA-Z]{2})"))
+        self.insert_scryfall_id_matcher_sample_button.clicked.connect(
+            lambda: self.append_group_to_custom_re_input(r"(?P<scryfall_id>[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12})"))
         self.complete = False
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self)
@@ -227,6 +242,10 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def append_group_to_custom_re_input(self, value: str):
+        self.custom_re_input: QLineEdit
+        self.custom_re_input.setText(self.custom_re_input.text()+value)
 
     def _create_mtg_arena_parser(self):
         self.selected_parser = re_parsers.MTGArenaParser(self.card_db, self.image_db, self)
@@ -251,7 +270,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
             self.card_db, self.image_db, self.field("custom_re"), self
         )
 
-    @pyqtSlot()
+    @Slot()
     def isComplete(self) -> bool:
         acceptable = any((
             self.select_parser_mtg_arena.isChecked(),
@@ -272,7 +291,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.parser_creator()
         self.selected_parser.incompatible_file_format.connect(self.wizard().on_incompatible_deck_file_selected)
         logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
-        return super().validatePage()
+        return self.isComplete()
 
 
 class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
@@ -284,6 +303,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.card_list_sort_model = self._create_sort_model(self.card_list)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
         self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
+        self.selected_cells_count = 0
         self.registerField("should_replace_document", self.should_replace_document)
         self.should_replace_document.toggled[bool].connect(
             self._update_accept_button_on_replace_document_option_toggled)
@@ -295,7 +315,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         proxy_model.setSortRole(Qt.EditRole)
         return proxy_model
 
-    @pyqtSlot(int)
+    @Slot(int)
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
         accept_button = self.wizard().button(QWizard.FinishButton)
         if oversized_cards:
@@ -311,9 +331,9 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon())
             accept_button.setToolTip("Append identified cards to the document")
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def _update_accept_button_on_replace_document_option_toggled(self, enabled: bool):
-        accept_button: QPushButton = self.wizard().button(QWizard.FinishButton)
+        accept_button = self.wizard().button(QWizard.FinishButton)
         if accept_button.icon().name() == "data-warning":
             return
         if enabled:
@@ -326,6 +346,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
     def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
         self.parsed_cards_table.setModel(model)
+        self.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
         delegate = ComboBoxItemDelegate(self.parsed_cards_table)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
@@ -340,6 +361,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
 
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
+        self.selected_cells_count = 0
         self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
@@ -357,21 +379,69 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         self.unparsed_lines_text: QPlainTextEdit
         self.card_list.add_cards(parsed_deck)
         self.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
+        self._initialize_custom_buttons()
         logger.debug(f"Initialized {self.__class__.__name__}")
+
+    def _initialize_custom_buttons(self):
+        wizard: QWizard = self.wizard()
+        wizard.customButtonClicked.connect(self.custom_button_clicked)
+        wizard.setOption(QWizard.HaveCustomButton1, True)
+        remove_basic_lands_button = wizard.button(QWizard.CustomButton1)
+        remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands())
+        remove_basic_lands_button.setText("Remove basic lands")
+        remove_basic_lands_button.setToolTip("Remove all basic lands in the deck list above")
+        remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
+        wizard.setOption(QWizard.HaveCustomButton2, True)
+        remove_selected_cards_button = wizard.button(QWizard.CustomButton2)
+        remove_selected_cards_button.setEnabled(False)
+        remove_selected_cards_button.setText("Remove selected")
+        remove_selected_cards_button.setToolTip("Remove all selected cards in the deck list above")
+        remove_selected_cards_button.setIcon(QIcon.fromTheme("edit-delete"))
 
     def cleanupPage(self):
         self.card_list.clear()
         super(SummaryPage, self).cleanupPage()
+        wizard: QWizard = self.wizard()
+        wizard.customButtonClicked.disconnect(self.custom_button_clicked)
+        wizard.setOption(QWizard.HaveCustomButton1, False)
+        wizard.setOption(QWizard.HaveCustomButton2, False)
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
-    @pyqtSlot()
+    @Slot()
     def isComplete(self) -> bool:
         return self.card_list.rowCount() > 0
 
+    @Slot(QItemSelection, QItemSelection)
+    def parsed_cards_table_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
+        self.selected_cells_count += selected.count() - deselected.count()
+        logger.debug(f"Selection changed: Currently selected cells: {self.selected_cells_count}")
+        wizard: QWizard = self.wizard()
+        wizard.button(QWizard.CustomButton2).setEnabled(self.selected_cells_count > 0)
+
+    @Slot(int)
+    def custom_button_clicked(self, button_id: int):
+        wizard: QWizard = self.wizard()
+        if button_id == QWizard.CustomButton1:
+            wizard.button(button_id).setEnabled(False)
+            logger.info("User requests to remove all basic lands")
+            self.card_list.remove_all_basic_lands()
+        elif button_id == QWizard.CustomButton2:
+            self._remove_selected_cards()
+
+    def _remove_selected_cards(self):
+        logger.info("User removes the selected cards")
+        self.parsed_cards_table: QTableView
+        selection_mapped_to_source = self.card_list_sort_model.mapSelectionToSource(
+            self.parsed_cards_table.selectionModel().selection())
+        self.card_list.remove_multi_selection(selection_mapped_to_source)
+        if not self.card_list.rowCount():
+            # User deleted everything, so nothing left to complete the wizard. This’ll disable the Finish button.
+            self.completeChanged.emit()
+
 
 class DeckImportWizard(QWizard):
-    deck_added = pyqtSignal(collections.Counter)
-    clear_document = pyqtSignal()
+    deck_added = Signal(collections.Counter)
+    clear_document = Signal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, *args, **kwargs):

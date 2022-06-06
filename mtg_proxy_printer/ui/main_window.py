@@ -17,10 +17,12 @@ import pathlib
 import typing
 
 
-from PyQt5.QtCore import pyqtSlot, pyqtSignal, QStringListModel
-from PyQt5.QtGui import QCloseEvent, QKeySequence
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel
+from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
 
+
+from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -44,9 +46,9 @@ __all__ = [
 
 class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
-    should_update_languages = pyqtSignal()
-    settings_changed = pyqtSignal()
-    loading_state_changed = pyqtSignal(bool)
+    should_update_languages = Signal()
+    settings_changed = Signal()
+    loading_state_changed = Signal(bool)
 
     def __init__(self,
                  card_db: CardDatabase,
@@ -57,8 +59,10 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                  *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        self.card_data_download_in_progress = False
+        self.is_running = True
         self.setupUi(self)
+        self.missing_images_manager = MissingImagesManager(document, self)
+        self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
         self.about_dialog = self._create_about_dialog()
         self.progress_label = self._create_progress_label()
         self.progress_bar = self._create_progress_bar()
@@ -110,7 +114,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         self.central_widget = central_widget_class(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
-        self.action_discard_page.triggered.connect(self.central_widget.on_action_discard_page_triggered)
+        self.action_discard_page.triggered.connect(self.central_widget.action_discard_page_triggered)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -122,7 +126,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.action_new_page.triggered.connect(document.add_page)
-        self.action_new_document.triggered.connect(document.clear_all_data)
         self.action_compact_document.triggered.connect(document.compact_pages)
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
@@ -131,7 +134,6 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         downloader.download_begins.connect(
             lambda: self.action_download_card_data.setDisabled(True)
         )
-        downloader.download_finished.connect(lambda: setattr(self, "card_data_download_in_progress", False))
         self.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.download_finished.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
@@ -190,36 +192,36 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
         event.ignore()
-        # Be safe and emit this signal, because it might be connected to multiple slots.
-        self.action_quit.trigger()
+        if self.is_running:
+            event.ignore()
+            self._quit()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
-        # Prevent a loop, because shutdown() closes this window, causing closeEvent to fire, in turn causing this to be
-        # called again. So just disconnect the signal. The connection won’t be needed during application shutdown.
-        self.action_quit.triggered.disconnect(self.on_action_quit_triggered)
+        self._quit()
+
+    def _quit(self):
+        self.is_running = False
         self.card_data_downloader.cancel_running_operations()
-        self.card_data_downloader.stop_worker_thread()
+        self.card_data_downloader.quit_background_thread()
         self.document.loader.cancel_running_operations()
+        self.document.loader.quit_background_thread()
+        self.image_db.quit_background_thread()
         self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-
         QApplication.instance().shutdown()
 
-    def on_action_download_card_data_triggered(self):
-        self.card_data_download_in_progress = True
-
-    @pyqtSlot()
+    @Slot()
     def on_action_cleanup_local_image_cache_triggered(self):
         logger.info("User wants to clean up the local image cache")
         wizard = CacheCleanupWizard(self.card_database, self.image_db, self)
         wizard.show()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
@@ -227,40 +229,37 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
         wizard.show()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
             return
         print_dialog = PrintDialog(self.document, self)
-        print_dialog.exec_()
+        self.missing_images_manager.obtain_missing_images(print_dialog.exec_)
 
-    @pyqtSlot()
+    @Slot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
             return
         print_preview_dialog = PrintPreviewDialog(self.document, self)
-        print_preview_dialog.exec_()
+        self.missing_images_manager.obtain_missing_images(print_preview_dialog.exec_)
 
-    @pyqtSlot()
+    @Slot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
         if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
             return
         dialog = SavePDFDialog(self, self.document)
-        dialog.exec_()
+        self.missing_images_manager.obtain_missing_images(dialog.exec_)
 
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
             self, "Network error",
             f"Operation failed, because a network error occurred.\n"
-            f"Check your internet connection. Reported error message:\n{message}",
+            f"Check your internet connection. Reported error message:\n\n{message}",
             QMessageBox.Ok, QMessageBox.Ok)
         self.loading_state_changed.emit(False)
-        if self.card_data_download_in_progress:
-            self.action_download_card_data.setEnabled(True)
-            self.card_data_download_in_progress = False
 
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
@@ -299,21 +298,21 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         if should_download:
             self.action_download_card_data.trigger()
 
-    @pyqtSlot(int)
-    @pyqtSlot(int, str)
+    @Slot(int)
+    @Slot(int, str)
     def show_progress_bar(self, expected_total_item_count: int, message: str = ""):
         self.progress_label.setText(message)
         self.progress_bar.reset()
         self.progress_bar.setMaximum(expected_total_item_count)
         self.progress_bar.show()
 
-    @pyqtSlot()
+    @Slot()
     def hide_progress_bar(self):
         self.progress_label.clear()
         self.progress_bar.reset()
         self.progress_bar.hide()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_save_document_triggered(self):
         logger.debug("User clicked on Save")
         if self.document.save_file_path is None:
@@ -324,18 +323,32 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self.document.save_to_disk()
             logger.debug("Saved.")
 
-    @pyqtSlot()
+    @Slot()
     def on_action_edit_document_settings_triggered(self):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
         dialog = DocumentSettingsDialog(self.document, self)
         dialog.exec_()
 
-    @pyqtSlot()
+    @Slot()
+    def on_action_download_missing_card_images_triggered(self):
+        logger.info("User wants to download missing card images")
+        self.missing_images_manager.obtain_missing_images()
+
+    @Slot()
+    def on_action_new_document_triggered(self):
+        logger.info("User clicked on the New Document button, asking for confirmation")
+        if QMessageBox.question(
+                self, "Current document will be lost",
+                "Create a new document? All unsaved changes will be lost.",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
+            self.document.clear_all_data()
+
+    @Slot()
     def on_action_save_as_triggered(self):
         dialog = SaveDocumentAsDialog(self.document, self)
         dialog.exec_()
 
-    @pyqtSlot()
+    @Slot()
     def on_action_load_document_triggered(self):
         dialog = LoadDocumentDialog(self, self.document)
         if dialog.exec_() == LoadDocumentDialog.Accepted:
@@ -369,12 +382,15 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             )
 
     def show_application_update_available_message_box(self, newer_version: str):
-        QMessageBox.information(
-            self, "Update available",
-            f"An application update is available: Version {newer_version}\n\n"
-            f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.",
-            QMessageBox.Ok, QMessageBox.Ok
-        )
+        if QMessageBox.question(
+                self, "Application update available. Visit website?",
+                f"An application update is available: Version {newer_version}\n"
+                f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
+                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
+                f"to download the new version?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+                ) == QMessageBox.Yes:
+            QDesktopServices.openUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
@@ -382,6 +398,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                     f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
                 ) == QMessageBox.Yes:
+            logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.

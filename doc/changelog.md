@@ -2,9 +2,40 @@
 
 # Next version (in development)
 
+## New features
+
+- Added card removal feature to the deck import wizard: It is now possible to remove selected cards or all basic lands
+  from the deck list before finishing the import.
+
+## Changed features
+
+- The “New” document button will now ask for confirmation, before replacing the currently edited document with a new one.
+- Improved the advanced deck list parser that allows defining a custom regular expression to parse the deck list:
+  - Added buttons that insert preset regular expression building blocks. This reduces typing effort required to build
+    a working RE.
+  - The wizard only accepts the input regular expression, if it deems it being able to extract sufficient information
+    for card identification.
+
+## Fixed issues
+
+- Fixed broken file type filters when loading deck lists. The file selection dialog now properly filters for deck
+  list files instead of showing nothing.
+
+# Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
+
+## Changed features
+
+- The application update checker now offers visiting the project website, if an update is available.
+
 ## Fixed issues
 
 - Improved deck list translation when the source deck list is not in English.
+- Improved card translation when the card in the target language has multiple translations. 
+- Improved operation while offline or with flaky internet connection: MTGProxyPrinter will now attempt to re-download
+  missing images when trying to print or export the current document to PDF. 
+  Additionally, a warning is issued, if obtaining the missing images fails.
+- Enable basic dark mode rendering on Windows. Proper system theme support is only available on Linux, because the
+  used GUI toolkit doesn’t fully support the dark mode setting on Windows yet. 
 
 # Version 0.16.0 (2022-05-06)  <a name="v0_16_0"></a>
 

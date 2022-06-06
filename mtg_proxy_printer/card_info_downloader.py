@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,11 +28,12 @@ import urllib.parse
 import urllib.request
 
 import ijson
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
+from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -95,16 +96,16 @@ class CardInfoDownloader(QObject):
     This is the public interface. The actual implementation resides in the CardInfoDownloadWorker class, which
     is run asynchronously in another thread.
     """
-    download_progress = pyqtSignal(int)  # Emits the total number of processed data after processing each item
-    download_begins = pyqtSignal(int, str)  # Emitted when the download starts. Data represents the expected total data
-    download_finished = pyqtSignal()  # Emitted when the input data is exhausted and processing finished
-    working_state_changed = pyqtSignal(bool)
-    network_error_occurred = pyqtSignal(str)  # Emitted when downloading failed due to network issues.
-    other_error_occurred = pyqtSignal(str)  # Emitted when database population failed due to non-network issues.
+    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
+    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
+    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
+    working_state_changed = Signal(bool)
+    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
+    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
 
-    request_import_from_file = pyqtSignal(Path)
-    request_import_from_url = pyqtSignal()
-    request_download_to_file = pyqtSignal(Path)
+    request_import_from_file = Signal(Path)
+    request_import_from_url = Signal()
+    request_download_to_file = Signal(Path)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
@@ -114,6 +115,8 @@ class CardInfoDownloader(QObject):
         self.model = model
         self.download_worker = CardInfoDownloadWorker(model, requested_item)
         self.worker_thread = QThread()
+        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.download_worker.moveToThread(self.worker_thread)
         self.request_import_from_file.connect(self.download_worker.download_card_data)
         self.request_import_from_url.connect(self.download_worker.download_card_data)
@@ -133,10 +136,10 @@ class CardInfoDownloader(QObject):
             logger.info("Cancelling currently running card download")
             self.download_worker.should_run = False
 
-    def stop_worker_thread(self):
-        self.worker_thread.quit()
-        self.worker_thread.wait(100)
-        logger.info(f"Background worker stopped. Result: {self.worker_thread.isRunning()=}")
+    def quit_background_thread(self):
+        if self.worker_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            stop_thread(self.worker_thread, logger)
 
 
 class CardInfoDownloadWorker(DownloaderBase):

@@ -23,7 +23,7 @@ import typing
 import urllib.error
 
 import pint
-from PyQt5.QtCore import QObject, pyqtSignal, QThread, pyqtSlot
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, pyqtSlot as Slot
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
 
@@ -37,6 +37,7 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
 
@@ -121,11 +122,11 @@ class DocumentLoader(QObject):
 
     MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
-    loading_state_changed = pyqtSignal(bool)
-    unknown_scryfall_ids_found = pyqtSignal(int, int)
-    loading_file_failed = pyqtSignal(pathlib.Path, str)
+    loading_state_changed = Signal(bool)
+    unknown_scryfall_ids_found = Signal(int, int)
+    loading_file_failed = Signal(pathlib.Path, str)
     # Emitted when downloading required images during the loading process failed due to network issues.
-    network_error_occurred = pyqtSignal(str)
+    network_error_occurred = Signal(str)
 
     class Worker(QObject):
         """
@@ -142,16 +143,16 @@ class DocumentLoader(QObject):
         """
 
         # These signals are used to enqueue a stream of commands across thread boundaries.
-        new_page = pyqtSignal()
-        add_card = pyqtSignal(Card)
-        finished = pyqtSignal()
-        loading_file_failed = pyqtSignal(pathlib.Path, str)
-        document_clear_requested = pyqtSignal()
-        unknown_scryfall_ids_found = pyqtSignal(int, int)
-        loading_file_successful = pyqtSignal(pathlib.Path)
-        network_error_occurred = pyqtSignal(str)
-        request_blank_pixmap = pyqtSignal(Card)
-        document_settings_loaded = pyqtSignal(PageLayoutSettings)
+        new_page = Signal()
+        add_card = Signal(Card)
+        finished = Signal()
+        loading_file_failed = Signal(pathlib.Path, str)
+        document_clear_requested = Signal()
+        unknown_scryfall_ids_found = Signal(int, int)
+        loading_file_successful = Signal(pathlib.Path)
+        network_error_occurred = Signal(str)
+        request_blank_pixmap = Signal(Card)
+        document_settings_loaded = Signal(PageLayoutSettings)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -165,7 +166,6 @@ class DocumentLoader(QObject):
             self.image_loader.download_begins.connect(image_db.card_download_starting)
             self.image_loader.download_finished.connect(image_db.card_download_finished)
             self.image_loader.download_progress.connect(image_db.card_download_progress)
-            self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
             self.network_errors_during_load: typing.Counter[str] = collections.Counter()
             self.finished.connect(self.propagate_errors_during_load)
             self.document = document
@@ -204,8 +204,8 @@ class DocumentLoader(QObject):
             self.document_clear_requested.emit()
             self.document_settings_loaded.emit(page_settings)
             logger.info("Start filling pages with cards from loaded data")
-            prefer_already_downloaded = mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
-                "prefer-already-downloaded")
+            prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
+                "prefer-already-downloaded-images")
             current_page = 1
             unknown_ids = 0
             migrated_ids = 0
@@ -393,6 +393,8 @@ class DocumentLoader(QObject):
         super(DocumentLoader, self).__init__(None)
         self.document = document
         self.worker_thread = QThread()
+        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.worker = self.Worker(card_db, image_db, document)
         self.worker.moveToThread(self.worker_thread)
         self.worker.document_clear_requested.connect(self.document.clear)
@@ -408,7 +410,7 @@ class DocumentLoader(QObject):
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
 
-    @pyqtSlot(PageLayoutSettings)
+    @Slot(PageLayoutSettings)
     def on_document_settings_loaded(self, settings: PageLayoutSettings):
         self.document.page_layout = settings
         self.document.on_page_layout_updated()
@@ -416,7 +418,7 @@ class DocumentLoader(QObject):
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()
 
-    @pyqtSlot(Card)
+    @Slot(Card)
     def _on_add_card(self, card: Card):
         self.document.add_card_to_page(len(self.document.pages) - 1, card)
 
@@ -437,3 +439,8 @@ class DocumentLoader(QObject):
         if not self.worker_thread.isRunning():
             return
         self.worker.cancel_running_operations()
+
+    def quit_background_thread(self):
+        if self.worker_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            stop_thread(self.worker_thread, logger)

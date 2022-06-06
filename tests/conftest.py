@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@ import sqlite3
 import unittest.mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import MagicMock
 
 import pytest
 from hamcrest import assert_that, is_
 
+from mtg_proxy_printer.stop_thread import stop_thread
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
@@ -54,15 +54,6 @@ def empty_save_database(request) -> sqlite3.Connection:
     return db
 
 
-@pytest.fixture
-def document(qtbot, card_db: CardDatabase) -> Document:
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    document = Document(card_db, MagicMock())
-    yield document
-    document.loader.worker_thread.quit()
-    document.loader.worker_thread.wait(100)
-
-
 @pytest.fixture()
 def image_db():
     with TemporaryDirectory() as temp_dir:
@@ -71,5 +62,16 @@ def image_db():
         yield image_db
         if image_db.download_thread.isRunning():
             image_db.quit_background_thread()
-            assert_that(image_db.download_thread.isRunning(), is_(False))
+            try:
+                assert_that(image_db.download_thread.isRunning(), is_(False))
+            finally:
+                stop_thread(image_db.download_thread)
     assert_that(temp_path.exists(), is_(False))
+
+
+@pytest.fixture
+def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+    document = Document(card_db, image_db)
+    yield document
+    stop_thread(document.loader.worker_thread)

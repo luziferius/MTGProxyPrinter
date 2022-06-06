@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,6 +54,11 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     SUPPORTED_GROUP_NAMES = frozenset((
         "copies", "language", "set_code", "collector_number", "scryfall_id", "name"
+    ))
+    IDENTIFYING_GROUP_COMBINATIONS = frozenset((
+        frozenset({"set_code", "collector_number"}),
+        frozenset({"scryfall_id"}),
+        frozenset({"name"}),
     ))
 
     LINES_TO_SKIP = frozenset()
