@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+
 import functools
 import http.client
 import socket
@@ -121,7 +122,7 @@ class MeteredSeekableHTTPFile(QObject):
         try:
             buffer = self.file.read(count)
         except (ConnectionAbortedError, socket.timeout) as e:
-            if retry == self.retry_limit:
+            if retry >= self.retry_limit:
                 raise e
         else:
             buffer_length = len(buffer)
@@ -130,7 +131,7 @@ class MeteredSeekableHTTPFile(QObject):
             read_not_unsuccessful = not(
                 count and self.seekable() and read_less_than_expected and position_after_read_within_file
             )
-            if read_not_unsuccessful or retry == self.retry_limit:
+            if read_not_unsuccessful or retry >= self.retry_limit:
                 self._store_and_report_read_progress(buffer_length)
                 return buffer
         logger.warning(
