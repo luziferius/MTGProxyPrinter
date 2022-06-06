@@ -49,12 +49,11 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
             blank_image_file = qpixmap_to_bytes_io(image_db.blank_image)
             image_db.download_worker.read_from_url = mock_downloader = MagicMock()
             mock_downloader.return_value = blank_image_file, MagicMock()
-            image_db.get_new_card_image_asynchronous(
+            image_db.download_worker.get_image_synchronous(
                 Card(  # Only care about the relevant key attributes, as the rest isn’t accessed.
                     "", MTGSet("", ""), "", "", key.scryfall_id, key.is_front,
                     "", "", key.is_high_resolution, False, 1))
         mock_downloader.assert_called()
-    qtbot.wait(50)  # assert below seems to be flaky, so wait a few milliseconds for the file system to settle
     for key in keys:
         assert_that((image_db.db_path / key.format_relative_path()).is_file(), is_(True))
 

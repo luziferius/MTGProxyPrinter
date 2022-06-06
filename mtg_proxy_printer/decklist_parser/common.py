@@ -17,7 +17,7 @@ import collections
 from abc import abstractmethod
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal as Signal
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -47,7 +47,7 @@ ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 class ParserBase(QObject):
 
     SUPPORTED_FILE_TYPES: typing.Dict[str, typing.List[str]] = {}
-    incompatible_file_format = pyqtSignal()
+    incompatible_file_format = Signal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super(ParserBase, self).__init__(parent)
@@ -57,8 +57,8 @@ class ParserBase(QObject):
             "automatically-add-opposing-faces"
         )
         self.print_guessing_prefer_already_downloaded = \
-            mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
-                "prefer-already-downloaded"
+            mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
+                "prefer-already-downloaded-images"
             )
 
     def get_file_extension_filter(self) -> str:
@@ -66,7 +66,7 @@ class ParserBase(QObject):
         if not self.SUPPORTED_FILE_TYPES:
             return everything
         return ";;".join(
-            f'{name} (.*{" .*".join(extensions)})'
+            f'{name} (*.{" *.".join(extensions)})'
             for name, extensions in self.SUPPORTED_FILE_TYPES.items()
         ) + f";;{everything}"
 

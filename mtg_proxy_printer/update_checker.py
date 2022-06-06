@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QTimer
+from PyQt5.QtCore import QObject, QThread, pyqtSignal as Signal, QTimer
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
@@ -29,6 +29,7 @@ from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
+from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -48,10 +49,10 @@ KNOWN_APPLICATION_MIRRORS: StringList = [
 
 class BackgroundWorker(QObject):
 
-    job_completed = pyqtSignal()  # Emitted whenever a background task finishes, both successful or unsuccessful
-    card_data_update_found = pyqtSignal(int)
-    application_update_found = pyqtSignal(str)
-    network_error_occurred = pyqtSignal(str)
+    job_completed = Signal()  # Emitted whenever a background task finishes, both successful or unsuccessful
+    card_data_update_found = Signal(int)
+    application_update_found = Signal(str)
+    network_error_occurred = Signal(str)
 
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
@@ -160,18 +161,20 @@ class BackgroundWorker(QObject):
 
 class UpdateChecker(QObject):
 
-    card_data_update_found = pyqtSignal(int)
-    application_update_found = pyqtSignal(str)
-    network_error_occurred = pyqtSignal(str)
+    card_data_update_found = Signal(int)
+    application_update_found = Signal(str)
+    network_error_occurred = Signal(str)
 
-    _card_update_check_requested = pyqtSignal()
-    _application_update_check_requested = pyqtSignal()
+    _card_update_check_requested = Signal()
+    _application_update_check_requested = Signal()
 
     def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(UpdateChecker, self).__init__(parent)
         self.perform_card_data_update_check = not (args.card_data and args.card_data.is_file())
         self.background_thread = QThread()
+        self.background_thread.setObjectName(f"{self.__class__.__name__} background worker")
+        self.background_thread.finished.connect(lambda: logger.debug(f"{self.background_thread.objectName()} stopped."))
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
         self.background_thread.start()
@@ -215,3 +218,8 @@ class UpdateChecker(QObject):
         if not self.running_background_jobs:
             self.background_thread.start()
         self.running_background_jobs += 1
+
+    def stop_background_worker(self):
+        if self.background_thread.isRunning():
+            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
+            stop_thread(self.background_thread, logger)

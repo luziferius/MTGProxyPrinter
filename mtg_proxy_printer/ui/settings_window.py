@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ import pathlib
 import sqlite3
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal, pyqtSlot, Qt, QUrl, QStandardPaths
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
     QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
 from PyQt5.QtGui import QDesktopServices, QIcon
@@ -131,12 +131,12 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
 
 class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
     """Implements the Settings window."""
-    saved = pyqtSignal()
-    error_occurred = pyqtSignal(str)
-    requested_card_download = pyqtSignal(pathlib.Path)
-    long_running_process_begins = pyqtSignal(int, str)
-    process_updated = pyqtSignal(int)
-    process_finished = pyqtSignal()
+    saved = Signal()
+    error_occurred = Signal(str)
+    requested_card_download = Signal(pathlib.Path)
+    long_running_process_begins = Signal(int, str)
+    process_updated = Signal(int)
+    process_finished = Signal()
 
     def __init__(self, language_model: QStringListModel, document: Document, parent: QWidget = None):
         super().__init__(parent)
@@ -235,7 +235,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.card_filter_format_settings.load_settings(section)
 
     def _load_save_path_settings(self, settings: configparser.ConfigParser):
-        section = settings["default-save-paths"]
+        section = settings["default-filesystem-paths"]
         widgets_with_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
@@ -248,7 +248,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.log_level_combo_box.setCurrentIndex(self.log_level_combo_box.findText(section["log-level"]))
 
     def _load_print_guessing_settings(self, settings: configparser.ConfigParser):
-        section = settings["print-guessing"]
+        section = settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
 
@@ -256,20 +256,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.check_application_updates_enabled, "check-for-application-updates"),
             (self.check_card_data_updates_enabled, "check-for-card-data-updates"),
-        ]
-        return widgets_with_settings
-
-    def _get_document_settings_widgets(self):
-        widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
-            (self.pdf_page_count_limit, "pdf-page-count-limit"),
-            (self.page_height, "paper-height-mm"),
-            (self.page_width, "paper-width-mm"),
-            (self.page_margin_top, "margin-top-mm"),
-            (self.page_margin_bottom, "margin-bottom-mm"),
-            (self.page_margin_left, "margin-left-mm"),
-            (self.page_margin_right, "margin-right-mm"),
-            (self.page_image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.page_image_spacing_vertical, "image-spacing-vertical-mm"),
         ]
         return widgets_with_settings
 
@@ -290,8 +276,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
 
     def _get_print_guessing_checkbox_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.print_guessing_enable, "enable-guessing"),
-            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+            (self.print_guessing_enable, "enable-print-guessing-by-default"),
+            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (self.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
         ]
         return widgets_with_settings
@@ -380,7 +366,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         documents_section["pdf-page-count-limit"] = str(self.pdf_page_count_limit.value())
 
     def _save_save_path_settings(self):
-        section = mtg_proxy_printer.settings.settings["default-save-paths"]
+        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
@@ -393,7 +379,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         debug_section["log-level"] = self.log_level_combo_box.currentText()
 
     def _save_print_guessing_settings(self):
-        section = mtg_proxy_printer.settings.settings["print-guessing"]
+        section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             section[setting] = str(widget.isChecked())
 
@@ -409,35 +395,35 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         else:
             return languages.index("en")
 
-    @pyqtSlot()
+    @Slot()
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
             logger.info("User selected a new default document save path.")
             self.document_save_path.setText(location)
 
-    @pyqtSlot()
+    @Slot()
     def on_pdf_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default PDF document export path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
             logger.info("User selected a new default PDF document export path.")
             self.pdf_save_path.setText(location)
 
-    @pyqtSlot()
+    @Slot()
     def on_deck_list_search_path_browse_button_clicked(self):
         logger.debug("User about to select a new default deck list search path.")
         if location := QFileDialog.getExistingDirectory(self, "Select default deck list search path"):
             logger.info("User selected a new default deck list search path.")
             self.deck_list_search_path.setText(location)
 
-    @pyqtSlot()
+    @Slot()
     def on_open_debug_log_location_clicked(self):
         logger.debug("About to open the log directory using the default file manager.")
         log_dir = mtg_proxy_printer.app_dirs.data_directories.user_log_dir
         log_url = QUrl.fromLocalFile(log_dir)
         QDesktopServices.openUrl(log_url)
 
-    @pyqtSlot()
+    @Slot()
     def on_debug_download_card_data_as_file_clicked(self):
         location = QFileDialog.getExistingDirectory(
             self, "Select download location",

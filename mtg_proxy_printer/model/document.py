@@ -22,7 +22,7 @@ import pathlib
 import textwrap
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot, pyqtSignal, QPersistentModelIndex
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
@@ -62,10 +62,10 @@ class Document(QAbstractItemModel):
     This holds a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
-    loading_state_changed = pyqtSignal(bool)
-    total_cards_per_page_changed = pyqtSignal(int)
-    current_page_changed = pyqtSignal(QPersistentModelIndex)
-    page_layout_changed = pyqtSignal()
+    loading_state_changed = Signal(bool)
+    total_cards_per_page_changed = Signal(int)
+    current_page_changed = Signal(QPersistentModelIndex)
+    page_layout_changed = Signal()
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -110,7 +110,7 @@ class Document(QAbstractItemModel):
                 return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
 
-    @pyqtSlot()
+    @Slot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
         self.page_layout.update_from_settings()
@@ -127,8 +127,8 @@ class Document(QAbstractItemModel):
             self.move_excess_cards_to_free_pages()
         self.page_layout_changed.emit()
 
-    @pyqtSlot()
-    @pyqtSlot(int)
+    @Slot()
+    @Slot(int)
     def add_page(self, position: int = None) -> CardList:
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(INVALID_INDEX, position, position)
@@ -142,7 +142,7 @@ class Document(QAbstractItemModel):
         self.endInsertRows()
         return new_page
 
-    @pyqtSlot(Card, int)
+    @Slot(Card, int)
     def add_card(self, card: Card, copies: int):
         """
         Adds the given card copies times to the currently edited page. If copies is greater than the number of
@@ -190,7 +190,7 @@ class Document(QAbstractItemModel):
         logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
 
-    @pyqtSlot(list)
+    @Slot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
         if not indices:
             return
@@ -210,7 +210,7 @@ class Document(QAbstractItemModel):
             self.currently_edited_page = self.add_page()
             self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
 
-    @pyqtSlot(list)
+    @Slot(list)
     def remove_card_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
         """
         Remove all cards in the given multi-selection.
@@ -240,7 +240,7 @@ class Document(QAbstractItemModel):
             cards = list(map(index.child, range(self.rowCount(index)), itertools.repeat(0)))
             self.remove_cards(cards)
 
-    @pyqtSlot(list)
+    @Slot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
         """
         Remove all cards in the given list of consecutive model indices
@@ -335,7 +335,7 @@ class Document(QAbstractItemModel):
             return True
         return False
 
-    @pyqtSlot(Card, QPersistentModelIndex)
+    @Slot(Card, QPersistentModelIndex)
     def _on_replacement_image_received(self, card: Card, index: QPersistentModelIndex):
         if index.isValid():
             logger.debug(f'Received image for replaced card printing of "{card.name}".')
@@ -440,14 +440,14 @@ class Document(QAbstractItemModel):
             db.commit()
             db.execute("VACUUM")
 
-    @pyqtSlot()
+    @Slot()
     def compact_pages(self):
         """
         Compacts a document by filling as many empty slots as possible on pages that are not at the end of the document.
 
         Scans the document for pages that are not completely filled and for each such page,
         moves cards from the last page with items to it.
-        This fills all (but the last) pages up to the capacity limit to help reducing possible waste during printing.
+        This fills all (but the last) pages up to the capacity limit to help reduce possible waste during printing.
         """
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
@@ -578,7 +578,7 @@ class Document(QAbstractItemModel):
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
 
-    @pyqtSlot()
+    @Slot()
     def clear(self):
         logger.info("Clearing current document")
         self.remove_pages(list(map(
@@ -587,7 +587,7 @@ class Document(QAbstractItemModel):
             itertools.repeat(0)
         )))
 
-    @pyqtSlot()  # Avoid connecting both triggered() and triggered(bool)
+    @Slot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
         self.clear()
         self.page_layout.update_from_settings()
@@ -615,6 +615,26 @@ class Document(QAbstractItemModel):
         )
         self.card_db.commit()
 
+    def has_missing_images(self) -> bool:
+        try:
+            next(self.get_missing_image_cards())
+        except StopIteration:
+            return False
+        else:
+            return True
+
+    def missing_image_count(self) -> int:
+        return sum(1 for _ in self.get_missing_image_cards())
+
+    def get_missing_image_cards(self):
+        """Returns an iterable with all cards that have missing images"""
+        blank = self.image_db.blank_image
+        for page_row, page in enumerate(self.pages):
+            page_index = self.index(page_row, 0)
+            for card_row, card_container in enumerate(page):
+                if card_container.card.image_file is blank:
+                    yield QPersistentModelIndex(self.index(card_row, 0, page_index))
+
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
@@ -628,24 +648,24 @@ class Document(QAbstractItemModel):
 
 def _migrate_database(db):
     if db.execute("PRAGMA user_version").fetchone()[0] == 2:
-        db.executescript(textwrap.dedent("""\
-        BEGIN TRANSACTION;
-        ALTER TABLE Card RENAME TO Card_old;
-        CREATE TABLE Card (
-          page INTEGER NOT NULL CHECK (page > 0),
-          slot INTEGER NOT NULL CHECK (slot > 0),
-          is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
-          scryfall_id TEXT NOT NULL,
-          PRIMARY KEY(page, slot)
-        ) WITHOUT ROWID;
-        INSERT INTO Card (page, slot, scryfall_id, is_front)
-            SELECT page, slot, scryfall_id, 1 AS is_front
-            FROM Card_old;
-        DROP TABLE Card_old;
-        COMMIT;
-        VACUUM;
-        """))
-        db.execute(f"PRAGMA user_version = 3")
+        for statement in [
+            "ALTER TABLE Card RENAME TO Card_old",
+            textwrap.dedent("""\
+            CREATE TABLE Card (
+              page INTEGER NOT NULL CHECK (page > 0),
+              slot INTEGER NOT NULL CHECK (slot > 0),
+              is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+              scryfall_id TEXT NOT NULL,
+              PRIMARY KEY(page, slot)
+            ) WITHOUT ROWID"""),
+            textwrap.dedent("""\
+            INSERT INTO Card (page, slot, scryfall_id, is_front)
+                SELECT page, slot, scryfall_id, 1 AS is_front
+                FROM Card_old"""),
+            "DROP TABLE Card_old",
+            "PRAGMA user_version = 3",
+        ]:
+            db.execute(f"{statement};\n")
     if db.execute("PRAGMA user_version").fetchone()[0] == 3:
         db.execute(textwrap.dedent("""\
         CREATE TABLE DocumentSettings (

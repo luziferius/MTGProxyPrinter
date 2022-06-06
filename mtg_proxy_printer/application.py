@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2020 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2018-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,13 +15,15 @@
 
 import atexit
 import functools
+import os
 import pathlib
+import platform
 import shutil
 import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot, Qt, QTimer, QStringListModel
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -53,6 +55,12 @@ class Application(QApplication):
         if argv is None:
             argv = sys.argv
         logger.info("Starting MTGProxyPrinter")
+        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and platform.system() == "Windows":
+            logger.info("Running on Windows without explicit platform override. Enabling dark mode rendering.")
+            # The explicit set platform and parameters overwrite the environment, so set these options iff neither
+            # present as parameters nor environment variables.
+            argv.append("-platform")
+            argv.append("windows:darkmode=2")
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
@@ -70,7 +78,7 @@ class Application(QApplication):
         self.main_window.show()
         if args.test_exit_on_launch:
             logger.info("Enqueue application exit to run when event loop starts.")
-            QTimer.singleShot(0, self.shutdown)
+            QTimer.singleShot(0, self.main_window.on_action_quit_triggered)
         self.update_checker = self._create_update_checker(args)
         self._show_changelog_after_update(args)
         if args.card_data and args.card_data.is_file():
@@ -89,7 +97,7 @@ class Application(QApplication):
             temp_directory = pathlib.Path(mkdtemp())
             logger.info(f"Opening databases in temporary directory {temp_directory}")
             atexit.register(functools.partial(shutil.rmtree, temp_directory))
-            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" /"CardDatabase.sqlite3")
+            card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" / "CardDatabase.sqlite3")
             image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(
                 temp_directory/"image_db", parent=self)
             return card_db, image_db
@@ -121,7 +129,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        image_db.add_card.connect(document.add_card)
+        image_db.card_image_obtained.connect(document.add_card)
         if args.file is not None:
             if args.file.is_file():
                 # Wait until after __init__ finished and the main loop starts
@@ -189,9 +197,10 @@ class Application(QApplication):
 
         self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
-    @pyqtSlot()
+    @Slot()
     def shutdown(self):
         logger.info("About to exit.")
+        self.update_checker.stop_background_worker()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")
         self.quit()

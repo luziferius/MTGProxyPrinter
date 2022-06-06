@@ -1,0 +1,119 @@
+{
+  "object": "card",
+  "id": "6bdbba38-b4c9-4c14-b869-669b39390e4e",
+  "oracle_id": "b7c0bb85-fb87-4c73-bc1b-7b4dc763c7e8",
+  "multiverse_ids": [
+    3988
+  ],
+  "tcgplayer_id": 2219,
+  "cardmarket_id": 9538,
+  "name": "Ironroot Treefolk",
+  "lang": "en",
+  "released_at": "1997-03-24",
+  "uri": "https://api.scryfall.com/cards/6bdbba38-b4c9-4c14-b869-669b39390e4e",
+  "scryfall_uri": "https://scryfall.com/card/5ed/305/ironroot-treefolk?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/6/b/6bdbba38-b4c9-4c14-b869-669b39390e4e.jpg?1562591365",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/6/b/6bdbba38-b4c9-4c14-b869-669b39390e4e.jpg?1562591365",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/6/b/6bdbba38-b4c9-4c14-b869-669b39390e4e.jpg?1562591365",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/6/b/6bdbba38-b4c9-4c14-b869-669b39390e4e.png?1562591365",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/b/6bdbba38-b4c9-4c14-b869-669b39390e4e.jpg?1562591365",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/6/b/6bdbba38-b4c9-4c14-b869-669b39390e4e.jpg?1562591365"
+  },
+  "mana_cost": "{4}{G}",
+  "cmc": 5,
+  "type_line": "Creature — Treefolk",
+  "oracle_text": "",
+  "power": "3",
+  "toughness": "5",
+  "colors": [
+    "G"
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "5afd2f4b-8309-4f45-a2b2-3785018474cb",
+  "set": "5ed",
+  "set_name": "Fifth Edition",
+  "set_type": "core",
+  "set_uri": "https://api.scryfall.com/sets/5afd2f4b-8309-4f45-a2b2-3785018474cb",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A5ed&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/5ed?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/6bdbba38-b4c9-4c14-b869-669b39390e4e/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ab7c0bb85-fb87-4c73-bc1b-7b4dc763c7e8&unique=prints",
+  "collector_number": "305",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "\"'I'll show you how to handle the treefolk!' the giant bragged, and he strode off into the forest. Two days later he returned, his face masked in sap and a nest behind his ear. None dared ask who won.\"\n—Azeworai, \"The Treeling\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Jerry Tiritilli",
+  "artist_ids": [
+    "54366fc1-c5b1-4faa-a7a5-de2abc119de1"
+  ],
+  "illustration_id": "d61f651d-ea28-41b4-834c-f054baf468ec",
+  "border_color": "white",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 19741,
+  "prices": {
+    "usd": "0.12",
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": "0.02",
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=3988",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Ironroot+Treefolk&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Ironroot+Treefolk&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Ironroot+Treefolk",
+    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Ironroot+Treefolk"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/2219?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Ironroot+Treefolk&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Ironroot+Treefolk&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

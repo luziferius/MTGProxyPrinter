@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSlot, pyqtSignal, Qt, QItemSelectionModel, QItemSelection
+from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox, QLineEdit, QSpinBox, QComboBox, QListView, QPushButton
 from PyQt5.QtGui import QIcon
 
@@ -38,7 +38,7 @@ __all__ = [
 
 class AddCardWidget(QWidget):
 
-    card_added = pyqtSignal(mtg_proxy_printer.model.carddb.Card, int)
+    card_added = Signal(mtg_proxy_printer.model.carddb.Card, int)
 
     def __init__(self, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
@@ -53,24 +53,24 @@ class AddCardWidget(QWidget):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
-        ok_button: QPushButton = self.button_box.button(QDialogButtonBox.Ok)
-        reset_button: QPushButton = self.button_box.button(QDialogButtonBox.Reset)
+        box: QDialogButtonBox = self.button_box
+        ok_button: QPushButton = box.button(QDialogButtonBox.Ok)
+        reset_button: QPushButton = box.button(QDialogButtonBox.Reset)
         ok_button.setEnabled(False)
-        reset_button.clicked.connect(ok_button.setEnabled)
-        self.button_box.button(QDialogButtonBox.Ok).clicked.connect(self.on_ok_button_triggered)
-        self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
+        ok_button.clicked.connect(self.ok_button_triggered)
+        reset_button.clicked.connect(self.reset)
         buttons_with_icons = [
             (QDialogButtonBox.Reset, "edit-undo"),
             (QDialogButtonBox.Ok, "dialog-ok"),
         ]
         for role, icon in buttons_with_icons:
-            button = self.button_box.button(role)
+            button = box.button(role)
             if button.icon().isNull():
                 button.setIcon(QIcon.fromTheme(icon))
 
     def _setup_language_combo_box(self) -> QStringListModel:
         self.language_combo_box: QComboBox
-        self.language_combo_box.currentTextChanged.connect(self.on_language_combo_box_changed)
+        self.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         model = QStringListModel([preferred_language], self.language_combo_box)
         with mtg_proxy_printer.ui.common.BlockedSignals(self.language_combo_box):
@@ -82,8 +82,8 @@ class AddCardWidget(QWidget):
         self.card_name_list: QListView
         model = QStringListModel([], self.card_name_list)
         self.card_name_list.setModel(model)
-        self.card_name_list.selectionModel().selectionChanged.connect(self.on_card_name_list_selection_changed)
-        self.card_name_filter.textChanged.connect(self.on_card_name_filter_updated)
+        self.card_name_list.selectionModel().selectionChanged.connect(self.card_name_list_selection_changed)
+        self.card_name_filter.textChanged.connect(self.card_name_filter_updated)
         return model
 
     def _setup_set_name_box(self) -> mtg_proxy_printer.model.string_list.PrettySetListModel:
@@ -94,8 +94,8 @@ class AddCardWidget(QWidget):
         self.card_name_model.rowsRemoved.connect(lambda: model.set_set_data([]))
 
         self.set_name_list.setModel(model)
-        self.set_name_list.selectionModel().selectionChanged.connect(self.on_set_name_list_selection_changed)
-        self.set_name_filter.textChanged.connect(self.on_set_name_filter_updated)
+        self.set_name_list.selectionModel().selectionChanged.connect(self.set_name_list_selection_changed)
+        self.set_name_filter.textChanged.connect(self.set_name_filter_updated)
         return model
 
     def _setup_collector_number_box(self) -> QStringListModel:
@@ -106,12 +106,12 @@ class AddCardWidget(QWidget):
 
         self.collector_number_list.setModel(model)
         self.collector_number_list.selectionModel().selectionChanged.connect(
-            self.on_collector_number_list_selection_changed
+            self.collector_number_list_selection_changed
         )
         return model
 
-    @pyqtSlot(QItemSelection)
-    def on_card_name_list_selection_changed(self, current: QItemSelection):
+    @Slot(QItemSelection)
+    def card_name_list_selection_changed(self, current: QItemSelection):
         logger.info("Currently selected card changed.")
         self.set_name_list: QListView
         if not current.indexes():
@@ -129,8 +129,8 @@ class AddCardWidget(QWidget):
             self.set_name_list.selectionModel().select(
                 self.set_name_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
 
-    @pyqtSlot(QItemSelection)
-    def on_set_name_list_selection_changed(self, current: QItemSelection):
+    @Slot(QItemSelection)
+    def set_name_list_selection_changed(self, current: QItemSelection):
         self.collector_number_list: QListView
         if not current.indexes():
             self.collector_number_list.selectionModel().clearSelection()
@@ -150,12 +150,12 @@ class AddCardWidget(QWidget):
             self.collector_number_list.selectionModel().select(
                 self.collector_number_model.createIndex(0, 0), QItemSelectionModel.ClearAndSelect)
 
-    @pyqtSlot(QItemSelection)
-    def on_collector_number_list_selection_changed(self, current: QItemSelection):
+    @Slot(QItemSelection)
+    def collector_number_list_selection_changed(self, current: QItemSelection):
         self.button_box.button(QDialogButtonBox.Ok).setEnabled(bool(current.indexes()))
 
-    @pyqtSlot(str)
-    def on_card_name_filter_updated(self, card_name_filter: str):
+    @Slot(str)
+    def card_name_filter_updated(self, card_name_filter: str):
         logger.debug(f'Card name filter changed to: "{card_name_filter}"')
         selected_card_name = self.current_card_name
         card_names = self.card_database.get_card_names(self.current_language, card_name_filter)
@@ -170,16 +170,16 @@ class AddCardWidget(QWidget):
             self.set_name_model.set_set_data([])
             self.set_name_box.setDisabled(True)
 
-    @pyqtSlot(str)
-    def on_set_name_filter_updated(self, set_name_filter: str):
+    @Slot(str)
+    def set_name_filter_updated(self, set_name_filter: str):
         logger.debug(f'Set name/abbreviation filter changed to: "{set_name_filter}"')
         set_names = self.card_database.find_sets_matching(
             self.current_card_name, self.current_language, set_name_filter
         )
         self.set_name_model.set_set_data(set_names)
 
-    @pyqtSlot(str)
-    def on_language_combo_box_changed(self, new_language: str):
+    @Slot(str)
+    def language_combo_box_changed(self, new_language: str):
         logger.info(f'Selected language changed to: "{new_language}"')
         card_names = self.card_database.get_card_names(new_language)
         self.card_name_model.setStringList(card_names)
@@ -200,7 +200,7 @@ class AddCardWidget(QWidget):
         )
         return card
 
-    @pyqtSlot()
+    @Slot()
     def update_selected_language(self):
         self.language_combo_box: QComboBox
         if self.language_model.stringList():
@@ -208,9 +208,9 @@ class AddCardWidget(QWidget):
                 self.language_model.stringList().index(
                     mtg_proxy_printer.settings.settings["images"]["preferred-language"])
             )
-        self.on_language_combo_box_changed(self.language_combo_box.currentText())
+        self.language_combo_box_changed(self.language_combo_box.currentText())
 
-    def on_ok_button_triggered(self):
+    def ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
         card_data = self._read_card_data_from_ui()
         card = self.card_database.get_cards_from_data(card_data)[0]
@@ -231,7 +231,7 @@ class AddCardWidget(QWidget):
     def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):
         logger.debug(f"Adding {copies}× [{card.set.code.upper()}:{card.collector_number}] {card.name}")
 
-    @pyqtSlot()
+    @Slot()
     def reset(self):
         logger.info("User hit the Reset button, resetting…")
         self.card_name_list: QListView
