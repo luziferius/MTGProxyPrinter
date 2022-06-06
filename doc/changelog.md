@@ -16,6 +16,11 @@
   - The wizard only accepts the input regular expression, if it deems it being able to extract sufficient information
     for card identification.
 
+## Fixed issues
+
+- Fixed broken file type filters when loading deck lists. The file selection dialog now properly filters for deck
+  list files instead of showing nothing.
+
 # Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
 
 ## Changed features

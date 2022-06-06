@@ -66,7 +66,7 @@ class ParserBase(QObject):
         if not self.SUPPORTED_FILE_TYPES:
             return everything
         return ";;".join(
-            f'{name} (.*{" .*".join(extensions)})'
+            f'{name} (*.{" *.".join(extensions)})'
             for name, extensions in self.SUPPORTED_FILE_TYPES.items()
         ) + f";;{everything}"
 
