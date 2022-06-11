@@ -6,6 +6,9 @@
 
 - Added card removal feature to the deck import wizard: It is now possible to remove selected cards or all basic lands
   from the deck list before finishing the import.
+- Added Deck shuffling: A new button in the Edit menu allows shuffling the cards in the document. Use this to reduce
+  shuffling effort required after putting the printed deck in sleeves. Beware: The shuffling currently separates front 
+  and back faces of double faced cards. This may be improved in future versions.
 
 ## Changed features
 

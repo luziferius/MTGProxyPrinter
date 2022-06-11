@@ -19,6 +19,7 @@ import enum
 import functools
 import itertools
 import pathlib
+import random
 import textwrap
 import typing
 
@@ -336,7 +337,7 @@ class Document(QAbstractItemModel):
         return False
 
     @Slot(Card, QPersistentModelIndex)
-    def _on_replacement_image_received(self, card: Card, index: QPersistentModelIndex):
+    def _on_replacement_image_received(self, card: Card, index: typing.Union[QModelIndex, QPersistentModelIndex]):
         if index.isValid():
             logger.debug(f'Received image for replaced card printing of "{card.name}".')
             top_left = index.sibling(index.row(), index.column())
@@ -593,6 +594,19 @@ class Document(QAbstractItemModel):
         self.page_layout.update_from_settings()
         self.on_page_layout_updated()
         self.save_file_path = None
+
+    @Slot()
+    def shuffle_document(self):
+        cards = list(container.card for container in itertools.chain.from_iterable(self.pages))
+        random.shuffle(cards)
+        for card, index in zip(cards, self._get_all_card_indices()):
+            self._on_replacement_image_received(card, index)
+
+    def _get_all_card_indices(self):
+        for page_number, page in enumerate(self.pages):
+            page_index = self.index(page_number, 0)
+            for card_number in range(len(page)):
+                yield self.index(card_number, 0, page_index)
 
     def store_image_usage(self):
         """

@@ -127,6 +127,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.action_new_page.triggered.connect(document.add_page)
         self.action_compact_document.triggered.connect(document.compact_pages)
+        self.action_shuffle_document.triggered.connect(document.shuffle_document)
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         # Do not connect the card_info_downloader.working_state_changed
