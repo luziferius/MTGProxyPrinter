@@ -151,6 +151,7 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
             self.action_save_document,
             self.action_edit_document_settings,
             self.action_compact_document,
+            self.action_shuffle_document,
             self.action_load_document,
             self.action_print,
             self.action_print_preview,
