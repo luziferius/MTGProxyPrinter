@@ -13,11 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
 import typing
 from unittest.mock import MagicMock
 
 from hamcrest import *
 from pytestqt.qtbot import QtBot
+import pytest
 
 from PySide6.QtCore import QStringListModel, Qt, QPoint, QObject
 from PySide6.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
@@ -96,22 +98,23 @@ def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
     assert_that(page.selected_parser, is_(instance_of(MTGArenaParser)))
 
 
-def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str):
+def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, is_identifying_re: bool):
     page = wizard.select_deck_parser_page
-    with qtbot.wait_signal(page.completeChanged, timeout=100):
-        cb: QCheckBox = page.select_parser_custom_re
+    cb: QCheckBox = page.select_parser_custom_re
+    le: QLineEdit = page.custom_re_input
+    with qtbot.wait_signal(le.textChanged, timeout=5000):
         cb.click()
-        le: QLineEdit = page.custom_re_input
         le.setText(re)
     assert_that(page.select_parser_custom_re.isChecked())
     assert_that(le.text(), is_(equal_to(re)))
-    assert_that(page.complete, is_(True))
-    assert_that(page.isComplete())
+    assert_that(page.complete, is_(is_identifying_re))
+    assert_that(page.isComplete(), is_(is_identifying_re))
     assert_that(page.parser_creator, is_(page._create_generic_re_parser))
-    assert_that(wizard.validateCurrentPage(), is_(True))
+    assert_that(wizard.validateCurrentPage(), is_(is_identifying_re))
     assert_that(page.selected_parser, is_(instance_of(GenericRegularExpressionDeckParser)))
     assert_that(wizard.field("custom_re"), is_(equal_to(re)))
     assert_that(page.selected_parser.parser.pattern, is_(equal_to(re)))
+    assert_that(wizard.button(QWizard.NextButton).isEnabled(), is_(is_identifying_re))
 
 
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, enable_print_guessing: bool = False):
@@ -291,11 +294,12 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
 
 
 def test_custom_re_parser_works(qtbot: QtBot, card_db: CardDatabase):
+    valid_re = r"(?P<name>.+)"
     deck_list = "Fury Sliver"
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
     cards = card_db.get_cards_from_data(CardIdentificationData("en", "Fury Sliver"))
     wizard.select_deck_parser_page.image_db.filter_already_downloaded.return_value = cards
-    _select_generic_re_parser(qtbot, wizard, r"(?P<name>.+)")
+    _select_generic_re_parser(qtbot, wizard, valid_re, True)
     _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list, enable_print_guessing=True)
     _move_wizard_forward(qtbot, wizard)
@@ -303,3 +307,37 @@ def test_custom_re_parser_works(qtbot: QtBot, card_db: CardDatabase):
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
+
+
+def generate_test_cases_for_test_custom_re_parser_accepts_valid_re():
+    def flattened_powerset_without_empty(iterable: typing.FrozenSet[typing.FrozenSet[str]]):
+        """Based on the powerset recipe in the itertools documentation"""
+        powerset_without_empty = itertools.chain.from_iterable(
+            itertools.combinations(iterable, r)
+            for r in range(1, len(iterable) + 1))
+        return (frozenset.union(*groups) for groups in powerset_without_empty)
+
+    def generate_re(groups: typing.FrozenSet[str]):
+        return " ".join(fr"(?P<{group_name}>.+)" for group_name in groups)
+
+    for groups in flattened_powerset_without_empty(GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS):
+        yield generate_re(groups)
+
+
+@pytest.mark.parametrize("valid_re", generate_test_cases_for_test_custom_re_parser_accepts_valid_re())
+def test_custom_re_parser_accepts_valid_re(qtbot, card_db, valid_re: str):
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
+    _select_generic_re_parser(qtbot, wizard, valid_re, True)
+
+
+@pytest.mark.parametrize("invalid_re", [
+    "No group",
+    r"(?P<count>.+)",
+    r"(?P<collector_number>.+)",
+    r"(?P<set_code>.+)",
+    r"(?P<count>.+) (?P<collector_number>.+)",
+    r"(?P<count>.+) (?P<set_code>.+)",
+])
+def test_custom_re_parser_declines_non_identifying_re(qtbot: QtBot, card_db: CardDatabase, invalid_re: str):
+    wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
+    _select_generic_re_parser(qtbot, wizard, invalid_re, False)

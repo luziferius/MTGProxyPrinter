@@ -92,7 +92,7 @@ DEFAULT_SETTINGS["documents"] = {
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
 }
-DEFAULT_SETTINGS["default-save-paths"] = {
+DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
@@ -108,9 +108,9 @@ DEFAULT_SETTINGS["debug"] = {
     "log-level": "INFO"
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
-DEFAULT_SETTINGS["print-guessing"] = {
-    "enable-guessing": "True",
-    "prefer-already-downloaded": "True",
+DEFAULT_SETTINGS["decklist-import"] = {
+    "enable-print-guessing-by-default": "True",
+    "prefer-already-downloaded-images": "True",
     "always-translate-deck-lists": "False",
 }
 DEFAULT_SETTINGS["application"] = {
@@ -164,24 +164,26 @@ def validate_settings(read_settings: configparser.ConfigParser):
     I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
     non-negative integers do so, etc. If an option contains an invalid value, the default value is restored.
     """
-    _validate_card_filter_section(read_settings["card-filter"])
-    _validate_images_section(read_settings["images"])
-    _validate_documents_section(read_settings["documents"])
-    _validate_application_section(read_settings["application"])
-    _validate_gui_section(read_settings["gui"])
-    _validate_debug_section(read_settings["debug"])
-    _validate_print_guessing_section(read_settings["print-guessing"])
-    _validate_default_save_paths_section(read_settings["default-save-paths"])
+    _validate_card_filter_section(read_settings)
+    _validate_images_section(read_settings)
+    _validate_documents_section(read_settings)
+    _validate_application_section(read_settings)
+    _validate_gui_section(read_settings)
+    _validate_debug_section(read_settings)
+    _validate_decklist_import_section(read_settings)
+    _validate_default_filesystem_paths_section(read_settings)
 
 
-def _validate_card_filter_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["card-filter"]
+def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
 
-def _validate_images_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["images"]
+def _validate_images_section(settings: configparser.ConfigParser, section_name: str = "images"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in ("automatically-add-opposing-faces",):
         _validate_boolean(section, defaults, key)
     language = section["preferred-language"]
@@ -190,8 +192,9 @@ def _validate_images_section(section: configparser.SectionProxy):
         _restore_default(section, defaults, "preferred-language")
 
 
-def _validate_documents_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["documents"]
+def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "print-cut-marker")
     # Check syntax
     for key in section.keys():
@@ -229,35 +232,41 @@ def _validate_documents_section(section: configparser.SectionProxy):
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 
 
-def _validate_application_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["application"]
+def _validate_application_section(settings: configparser.ConfigParser, section_name: str = "application"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
         section["last-used-version"] = defaults["last-used-version"]
     for option in ("check-for-application-updates", "check-for-card-data-updates"):
         _validate_three_valued_boolean(section, defaults, option)
 
 
-def _validate_gui_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["gui"]
+def _validate_gui_section(settings: configparser.ConfigParser, section_name: str = "gui"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
-def _validate_debug_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["debug"]
+def _validate_debug_section(settings: configparser.ConfigParser, section_name: str = "debug"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "cutelog-integration")
     _validate_boolean(section, defaults, "write-log-file")
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
 
 
-def _validate_print_guessing_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["print-guessing"]
+def _validate_decklist_import_section(settings: configparser.ConfigParser, section_name: str = "decklist-import"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
 
-def _validate_default_save_paths_section(section: configparser.SectionProxy):
-    defaults = DEFAULT_SETTINGS["default-save-paths"]
+def _validate_default_filesystem_paths_section(
+        settings: configparser.ConfigParser, section_name: str = "default-filesystem-paths"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
 
@@ -308,6 +317,7 @@ def _restore_default(section: configparser.SectionProxy, defaults: configparser.
 def migrate_settings(settings: configparser.ConfigParser):
     _migrate_layout_setting(settings)
     _migrate_download_settings(settings)
+    _migrate_default_save_paths_settings(settings)
 
 
 def _migrate_layout_setting(settings: configparser.ConfigParser):
@@ -337,7 +347,31 @@ def _migrate_download_settings(settings: configparser.ConfigParser):
             pass
         else:
             filter_section[target_setting] = str(new_value)
-        
+
+
+def _migrate_default_save_paths_settings(settings: configparser.ConfigParser):
+    source_section_name = "default-save-paths"
+    target_section_name = "default-filesystem-paths"
+    if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
+        return
+    settings.add_section(target_section_name)
+    settings[target_section_name].update(settings[source_section_name])
+
+
+def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
+    source_section_name = "print-guessing"
+    target_section_name = "decklist-import"
+    if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
+        return
+    settings.add_section(target_section_name)
+    target = settings[target_section_name]
+    source = settings[source_section_name]
+    # Force-overwrite with the new default when migrating. Having this disabled has negative UX impact, so should not
+    # be disabled by default.
+    target["enable-print-guessing-by-default"] = "True"
+    target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
+    target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.

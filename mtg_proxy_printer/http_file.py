@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+
 import functools
 import http.client
 import socket
@@ -36,7 +37,7 @@ __all__ = [
 @delegateto.delegate(
     "file",
     "getheader", "info", "getcode",  # HTTPResponse methods
-    "readable", "writable", "writelines", "truncate", "isatty", "flush", "fileno", "close")  # IOBase methods
+    "readable", "writable", "writelines", "truncate", "isatty", "flush", "fileno")  # IOBase methods
 class MeteredSeekableHTTPFile(QObject):
     """
     Takes an HTTP(S) URL and provides a monitored, seekable file-like object.
@@ -65,6 +66,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.ui_hint = ui_hint
         self.url = url
         self.headers = {} if headers is None else headers
+        self.closed = False
         self.file = None  # _urlopen() internally accesses file, so this assignment has to stay here
         self.file, _ = self._urlopen()
         self.content_length = self._read_content_length(self.file)
@@ -121,7 +123,9 @@ class MeteredSeekableHTTPFile(QObject):
         try:
             buffer = self.file.read(count)
         except (ConnectionAbortedError, socket.timeout) as e:
-            if retry == self.retry_limit:
+            if self.closed:
+                return b''
+            if retry >= self.retry_limit:
                 raise e
         else:
             buffer_length = len(buffer)
@@ -130,9 +134,12 @@ class MeteredSeekableHTTPFile(QObject):
             read_not_unsuccessful = not(
                 count and self.seekable() and read_less_than_expected and position_after_read_within_file
             )
-            if read_not_unsuccessful or retry == self.retry_limit:
+            if read_not_unsuccessful or retry >= self.retry_limit:
                 self._store_and_report_read_progress(buffer_length)
                 return buffer
+        if self.closed:
+            logger.info("File closed, aborting")
+            return b''
         logger.warning(
             f"read() failed to provide the requested {count} bytes. "
             f"Re-establishing the connection and try again. Attempt {retry+2}/{self.retry_limit}"
@@ -153,6 +160,8 @@ class MeteredSeekableHTTPFile(QObject):
         try:
             buffer_length = self.file.readinto(buffer)
         except (ConnectionAbortedError, socket.timeout) as e:
+            if self.closed:
+                return 0
             if retry == self.retry_limit:
                 raise e
         else:
@@ -164,6 +173,9 @@ class MeteredSeekableHTTPFile(QObject):
             if read_not_unsuccessful or retry == self.retry_limit:
                 self._store_and_report_read_progress(buffer_length)
                 return buffer_length
+        if self.closed:
+            logger.info("File closed, aborting")
+            return 0
         logger.warning(
             f"readinto() failed to provide the requested {count} bytes. "
             f"Re-establishing the connection and try again. Attempt {retry+2}/{self.retry_limit}"
@@ -216,3 +228,7 @@ class MeteredSeekableHTTPFile(QObject):
             return self._urlopen(first_byte, retry=retry+1)
         else:
             return response, retry
+
+    def close(self):
+        self.closed = True
+        self.file.close()

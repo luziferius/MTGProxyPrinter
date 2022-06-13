@@ -18,7 +18,7 @@ import enum
 import itertools
 import typing
 
-from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Slot, Signal
+from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Slot, Signal, QItemSelection
 from PySide6.QtGui import QIcon
 
 from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
@@ -61,6 +61,7 @@ class CardListModel(QAbstractTableModel):
         super(CardListModel, self).__init__(*args, **kwargs)
         self.card_db = card_db
         self.cards: CardList = []
+        self.basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids()
         self.oversized_card_count = 0
         self._oversized_icon = QIcon.fromTheme("data-warning")
 
@@ -149,46 +150,59 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
     @Slot(list)
-    def remove_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
+    def remove_multi_selection(self, indices: QItemSelection) -> int:
         """
         Remove all cards in the given multi-selection.
-
-        :param indices: List with QModelIndex instances that represents a multi-selection.
-          As returned by a QSelectionModel
         :return: Number of cards removed
         """
-        current_range: typing.List[QModelIndex] = []
-        ranges: typing.List[typing.List[QModelIndex]] = []
-        for index in indices:
-            if not current_range or index.row() == current_range[-1].row() + 1:
-                current_range.append(index)
+
+        selected_ranges = sorted(
+            (selected_range.top(), selected_range.bottom()) for selected_range in indices
+        )
+        # This both minimizes the number of model changes needed and de-duplicates the data received from the
+        # selection model. If the user selects a row, the UI returns a range for each cell selected, creating many
+        # duplicates that have to be removed.
+        selected_ranges = self._merge_ranges(selected_ranges)
+        # Start removing from the end to avoid shifting later array indices during the removal.
+        selected_ranges.reverse()
+        logger.info(f"About to remove selections {selected_ranges}")
+        result = sum(
+            itertools.starmap(self.remove_cards, selected_ranges)
+        )
+        logger.info(f"Removed {result} cards")
+        return result
+
+    @staticmethod
+    def _merge_ranges(ranges: typing.List[typing.Tuple[int, int]]) -> typing.List[typing.Tuple[int, int]]:
+        result = []
+        if len(ranges) < 2:
+            return ranges
+        bottom, top = ranges[0]
+        next_bottom, next_top = ranges[0]
+        for next_bottom, next_top in ranges[1:]:
+            # Add one to top to also merge adjacent ranges. E.g. (0, 1) + (2, 3) → (0, 3)
+            if next_bottom <= top + 1:
+                top = next_top
             else:
-                ranges.append(current_range)
-                current_range = [index]
-        if current_range:
-            ranges.append(current_range)
-        if ranges:
-            ranges.reverse()
-            return sum(map(self.remove_cards, ranges))
+                result.append((bottom, top))
+                bottom, top = next_bottom, next_top
+        result.append((bottom, next_top))
+        return result
 
-    def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
+    def remove_cards(self, top: int, bottom: int) -> int:
         """
-        Remove all cards in the given list of consecutive model indices
-        Only accesses the first and last index in the list to query the first and last row to delete.
-        The intermediate rows are implicit.
-
+        Remove all cards in between top and bottom row, including.
         :return: Number of cards removed
         """
-        if not indices:
-            return 0
-        first_index, last_index = indices[0].row(), indices[-1].row()
-        self.beginRemoveRows(QModelIndex(), first_index, last_index)
-        removed_cards = self.cards[first_index:last_index+1]
-        del self.cards[first_index:last_index+1]
+        logger.debug(f"Removing range {top, bottom}")
+        self.beginRemoveRows(QModelIndex(), top, bottom)
+        last_row = bottom + 1
+        removed_cards = self.cards[top:last_row]
+        del self.cards[top:last_row]
         self.endRemoveRows()
         for card in removed_cards:
             self._remove_card_handle_oversized_flag(card)
-        return last_index - first_index
+        return last_row - top
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
@@ -216,3 +230,16 @@ class CardListModel(QAbstractTableModel):
         return Counter(
             self.cards[row] for row in row_order
         )
+
+    def has_basic_lands(self) -> bool:
+        return any(filter(lambda card: card.oracle_id in self.basic_land_oracle_ids, self.cards))
+
+    def remove_all_basic_lands(self):
+        to_remove_rows = list(
+            (index, index)
+            for index, card in enumerate(self.cards)
+            if card.oracle_id in self.basic_land_oracle_ids
+        )
+        merged = reversed(self._merge_ranges(to_remove_rows))
+        for top, bottom in merged:
+            self.remove_cards(top, bottom)

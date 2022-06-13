@@ -1,5 +1,30 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Added card removal feature to the deck import wizard: It is now possible to remove selected cards or all basic lands
+  from the deck list before finishing the import.
+- Added Deck shuffling: A new button in the Edit menu allows shuffling the cards in the document. Use this to reduce
+  shuffling effort required after putting the printed deck in sleeves. Beware: The shuffling currently separates front 
+  and back faces of double faced cards. This may be improved in future versions.
+
+## Changed features
+
+- The “New” document button will now ask for confirmation, before replacing the currently edited document with a new one.
+- Improved the advanced deck list parser that allows defining a custom regular expression to parse the deck list:
+  - Added buttons that insert preset regular expression building blocks. This reduces typing effort required to build
+    a working RE.
+  - The wizard only accepts the input regular expression, if it deems it being able to extract sufficient information
+    for card identification.
+
+## Fixed issues
+
+- Fixed broken file type filters when loading deck lists. The file selection dialog now properly filters for deck
+  list files instead of showing nothing.
+- Fixed potential crash when exiting the application while a card image download runs
+
 # Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
 
 ## Changed features

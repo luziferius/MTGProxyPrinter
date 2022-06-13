@@ -62,6 +62,7 @@
     </property>
     <addaction name="action_edit_document_settings"/>
     <addaction name="action_compact_document"/>
+    <addaction name="action_shuffle_document"/>
     <addaction name="action_download_missing_card_images"/>
     <addaction name="separator"/>
     <addaction name="action_new_page"/>
@@ -304,6 +305,19 @@
    </property>
    <property name="text">
     <string>Download missing card images</string>
+   </property>
+  </action>
+  <action name="action_shuffle_document">
+   <property name="icon">
+    <iconset theme="shuffle"/>
+   </property>
+   <property name="text">
+    <string>Shuffle document</string>
+   </property>
+   <property name="toolTip">
+    <string>Randomly rearrange all card image.
+If you want to quickly print a full deck for playing,
+use this to reduce the initial deck shuffling required</string>
    </property>
   </action>
  </widget>

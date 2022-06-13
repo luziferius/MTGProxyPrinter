@@ -235,7 +235,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.card_filter_format_settings.load_settings(section)
 
     def _load_save_path_settings(self, settings: configparser.ConfigParser):
-        section = settings["default-save-paths"]
+        section = settings["default-filesystem-paths"]
         widgets_with_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_with_settings:
             widget.setText(section[setting])
@@ -248,7 +248,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         self.log_level_combo_box.setCurrentIndex(self.log_level_combo_box.findText(section["log-level"]))
 
     def _load_print_guessing_settings(self, settings: configparser.ConfigParser):
-        section = settings["print-guessing"]
+        section = settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
 
@@ -256,20 +256,6 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.check_application_updates_enabled, "check-for-application-updates"),
             (self.check_card_data_updates_enabled, "check-for-card-data-updates"),
-        ]
-        return widgets_with_settings
-
-    def _get_document_settings_widgets(self):
-        widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
-            (self.pdf_page_count_limit, "pdf-page-count-limit"),
-            (self.page_height, "paper-height-mm"),
-            (self.page_width, "paper-width-mm"),
-            (self.page_margin_top, "margin-top-mm"),
-            (self.page_margin_bottom, "margin-bottom-mm"),
-            (self.page_margin_left, "margin-left-mm"),
-            (self.page_margin_right, "margin-right-mm"),
-            (self.page_image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.page_image_spacing_vertical, "image-spacing-vertical-mm"),
         ]
         return widgets_with_settings
 
@@ -290,8 +276,8 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
 
     def _get_print_guessing_checkbox_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.print_guessing_enable, "enable-guessing"),
-            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded"),
+            (self.print_guessing_enable, "enable-print-guessing-by-default"),
+            (self.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (self.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
         ]
         return widgets_with_settings
@@ -381,7 +367,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         documents_section["pdf-page-count-limit"] = str(self.pdf_page_count_limit.value())
 
     def _save_save_path_settings(self):
-        section = mtg_proxy_printer.settings.settings["default-save-paths"]
+        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
@@ -394,7 +380,7 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
         debug_section["log-level"] = self.log_level_combo_box.currentText()
 
     def _save_print_guessing_settings(self):
-        section = mtg_proxy_printer.settings.settings["print-guessing"]
+        section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
             section[setting] = str(widget.isChecked())
 

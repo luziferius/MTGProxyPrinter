@@ -204,8 +204,8 @@ class DocumentLoader(QObject):
             self.document_clear_requested.emit()
             self.document_settings_loaded.emit(page_settings)
             logger.info("Start filling pages with cards from loaded data")
-            prefer_already_downloaded = mtg_proxy_printer.settings.settings["print-guessing"].getboolean(
-                "prefer-already-downloaded")
+            prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
+                "prefer-already-downloaded-images")
             current_page = 1
             unknown_ids = 0
             migrated_ids = 0

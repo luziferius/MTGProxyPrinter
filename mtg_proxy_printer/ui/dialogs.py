@@ -47,7 +47,7 @@ __all__ = [
 
 
 def read_path(setting: str) -> str:
-    return mtg_proxy_printer.settings.settings["default-save-paths"][setting]
+    return mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
 
 
 class SavePDFDialog(QFileDialog):

@@ -55,6 +55,11 @@ class GenericRegularExpressionDeckParser(ParserBase):
     SUPPORTED_GROUP_NAMES = frozenset((
         "copies", "language", "set_code", "collector_number", "scryfall_id", "name"
     ))
+    IDENTIFYING_GROUP_COMBINATIONS = frozenset((
+        frozenset({"set_code", "collector_number"}),
+        frozenset({"scryfall_id"}),
+        frozenset({"name"}),
+    ))
 
     LINES_TO_SKIP = frozenset()
 

@@ -30,6 +30,7 @@ from PySide6.QtGui import QPixmap, QColor
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
+import mtg_proxy_printer.http_file
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -152,13 +153,14 @@ class ImageDatabase(QObject):
         logger.info(f"Quitting {self.__class__.__name__} background worker thread")
         self.download_worker.should_run = False
         try:
-            if self.download_worker.currently_opened_file is not None:
-                self.download_worker.currently_opened_file.close()
+            self.download_worker.currently_opened_file_monitor.close()
+            self.download_worker.currently_opened_file.close()
         except AttributeError:
-            # File was closed and set to None by the worker thread while this thread was within the if-condition.
-            # Ignore the potential race condition.
+            # Ignore error on possible race condition, if the download worker thread removes the currently opened file,
+            # while this runs.
             pass
         stop_thread(self.download_thread, logger)
+
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
@@ -278,6 +280,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         # Reference to the currently opened file. Used here to be able to force close it in case the user wants to quit
         # or cancel the download process.
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
+        self.currently_opened_file_monitor: typing.Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def scan_disk_image_cache(self):
@@ -369,23 +372,28 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             low_resolution_image_path.unlink()
 
     def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
+        if not self.should_run:
+            return
         download_uri = card.image_uri
         download_path = self.image_database.db_path / target_path.name
-        source, metered_source = self.read_from_url(download_uri, f"Downloading image for card '{card.name}'")
-        metered_source.total_bytes_processed.connect(self.download_progress)
+        self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
+            download_uri, f"Downloading image for card '{card.name}'")
+        self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
         try:
-            with source, download_path.open("wb") as file_in_cache:
-                self.currently_opened_file = source
-                shutil.copyfileobj(source, file_in_cache)
+            with self.currently_opened_file, download_path.open("wb") as file_in_cache:
+                shutil.copyfileobj(self.currently_opened_file, file_in_cache)
+        except Exception as e:
+            logger.exception(e)
+            # raise e
+        finally:
             if self.should_run:
                 logger.debug(f"Moving downloaded image into the image cache at {target_path}")
                 shutil.move(download_path, target_path)
             else:
                 logger.info("Download aborted, not moving potentially incomplete download into the cache.")
-        finally:
             self.currently_opened_file = None
             if download_path.is_file():
                 download_path.unlink()

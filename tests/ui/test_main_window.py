@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
-from tempfile import TemporaryDirectory
 import unittest.mock
 import socket
 import urllib.error
@@ -40,9 +39,9 @@ from tests.helpers import fill_card_database_with_json_card
 
 
 @pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
-def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
+def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    with TemporaryDirectory() as temp_dir, unittest.mock.patch(
+    with unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "_quit"), \
@@ -51,17 +50,12 @@ def main_window(qtbot, card_db: CardDatabase, request) -> MainWindow:
             unittest.mock.patch.object(
                 mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker, "read_json_card_data",
                 return_value=tuple()):
-        temp_path = pathlib.Path(temp_dir)
-        image_db = ImageDatabase(temp_path)
         cid = CardInfoDownloader(card_db)
-        document = Document(card_db, image_db)
-        main_window = MainWindow(card_db, cid, image_db, document, QStringListModel(["en"]))
+        main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
         with qtbot.wait_exposed(main_window, timeout=100):
             main_window.show()
         yield main_window
-        stop_thread(document.loader.worker_thread)
-        stop_thread(image_db.download_thread)
         stop_thread(cid.worker_thread)
 
 
