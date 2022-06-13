@@ -25,7 +25,7 @@
   list files instead of showing nothing.
 - Fixed potential crash when exiting the application while a card image download runs
 
-# Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
+# Version 0.16.1 (2022-05-23)  <a name="v0_16_1"></a>
 
 ## Changed features
 
