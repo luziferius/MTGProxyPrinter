@@ -14,6 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 PROGRAMNAME = "MTGProxyPrinter"
-__version__ = "0.16.1"
+__version__ = "0.17.0"
 COPYRIGHT = "(C) 2019-2022 Thomas Hess"
 DOWNLOAD_WEB_PAGE = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/uv/download.html"
