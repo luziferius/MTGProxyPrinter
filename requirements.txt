@@ -8,7 +8,7 @@ delegateto == 1.5
 #PyHamcrest >= 1.8.1
 
 # Development, testing and build dependencies
-cx_Freeze >= 6.6
+cx_Freeze >= 6.6, < 6.11
 pytest-runner
 pytest
 pytest-cov
