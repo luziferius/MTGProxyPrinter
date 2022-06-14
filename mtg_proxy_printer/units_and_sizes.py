@@ -14,9 +14,25 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Contains some constants, like the card size"""
+import enum
+from typing import NamedTuple
+
 import pint
 
 unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
+
+
+class Size(NamedTuple):
+    WIDTH: pint.Quantity
+    HEIGHT: pint.Quantity
+
+
+@enum.unique
+class CardSizes(enum.Enum):
+    REGULAR = Size(unit_registry("63 millimeter"), unit_registry("88 millimeter"))
+    OVERSIZED = Size(unit_registry("88 millimeter"), unit_registry("126 millimeter"))
+
+
 IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
 IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
