@@ -23,7 +23,7 @@ from mtg_proxy_printer.model.carddb import MTGSet
 __all__ = [
     "PrettySetListModel",
 ]
-INVALID = QModelIndex()
+INVALID_INDEX = QModelIndex()
 
 
 class PrettySetListModel(QAbstractListModel):
@@ -43,19 +43,19 @@ class PrettySetListModel(QAbstractListModel):
             return PrettySetListModel.header.get(section)
         return super(PrettySetListModel, self).headerData(section, orientation, role)
 
-    def columnCount(self, parent: QModelIndex = INVALID) -> int:
+    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header)
 
-    def rowCount(self, parent: QModelIndex = INVALID) -> int:
+    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.set_data)
 
     def set_set_data(self, data: typing.List[MTGSet]) -> None:
         if self.set_data:
-            self.beginRemoveRows(INVALID, 0, self.rowCount())
+            self.beginRemoveRows(INVALID_INDEX, 0, self.rowCount())
             self.set_data.clear()
             self.endRemoveRows()
         if data:
-            self.beginInsertRows(INVALID, 0, len(data))
+            self.beginInsertRows(INVALID_INDEX, 0, len(data))
             self.set_data[:] = data
             self.endInsertRows()
 

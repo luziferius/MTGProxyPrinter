@@ -36,7 +36,7 @@ del get_logger
 __all__ = [
     "CacheCleanupWizard",
 ]
-INVALID = QModelIndex()
+INVALID_INDEX = QModelIndex()
 
 
 @functools.lru_cache(maxsize=256)
@@ -125,10 +125,10 @@ class KnownCardImageModel(QAbstractTableModel):
         super(KnownCardImageModel, self).__init__(parent)
         self._data: typing.List[KnownCardRow] = []
 
-    def rowCount(self, parent: QModelIndex = INVALID) -> int:
+    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self._data)
 
-    def columnCount(self, parent: QModelIndex = INVALID) -> int:
+    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
     def headerData(self, section: KnownCardColumns, orientation: Qt.Orientation, role: int = None) -> str:
@@ -144,7 +144,7 @@ class KnownCardImageModel(QAbstractTableModel):
 
     def add_row(self, card: Card, image: ImageCacheContent):
         position = self.rowCount()
-        self.beginInsertRows(INVALID, position, position)
+        self.beginInsertRows(INVALID_INDEX, position, position)
         size_bytes = image.absolute_path.stat().st_size
         row = KnownCardRow(
             card.name, card.set, card.collector_number,
@@ -229,10 +229,10 @@ class UnknownCardImageModel(QAbstractTableModel):
         super(UnknownCardImageModel, self).__init__(parent)
         self._data: typing.List[UnknownCardRow] = []
 
-    def rowCount(self, parent: QModelIndex = INVALID) -> int:
+    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self._data)
 
-    def columnCount(self, parent: QModelIndex = INVALID) -> int:
+    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
     def headerData(self, section: UnknownCardColumns, orientation: Qt.Orientation, role: int = None) -> str:
@@ -248,7 +248,7 @@ class UnknownCardImageModel(QAbstractTableModel):
 
     def add_row(self, image: ImageCacheContent):
         position = self.rowCount()
-        self.beginInsertRows(INVALID, position, position)
+        self.beginInsertRows(INVALID_INDEX, position, position)
         row = UnknownCardRow.from_cache_content(image)
         self._data.append(row)
         self.endInsertRows()
