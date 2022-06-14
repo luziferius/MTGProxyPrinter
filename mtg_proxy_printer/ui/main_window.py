@@ -273,13 +273,12 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
 
     def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
-            result = QMessageBox.question(
+            if (result := QMessageBox.question(
                 self, "Saving pages possible",
                 f"It is possible to save {savable_pages} pages when printing this document.\n"
                 f"Do you want to compact the document now to minimize the page count prior to {action}?",
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-            )
-            if result == QMessageBox.Yes:
+            )) == QMessageBox.Yes:
                 self.document.compact_pages()
             return result
         return QMessageBox.No  # No pages can be saved, assume "No" for this case
@@ -289,15 +288,14 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
         This is called when the application starts with an empty or no card database. Ask the user if they wish
         to download the card data now. If so, trigger the appropriate action, just as if the user clicked the menu item.
         """
-        should_download = QMessageBox.question(
-            self, "Download required Card data from Scryfall?",
-            "This program requires downloading additional card data from Scryfall to operate the card search.\n"
-            "Download the required data from Scryfall now?\n"
-            "If you decline now, you can exclude some card types or individual cards based on ban lists "
-            "in the settings and then manually start the download later.\n"
-            "Or accept and use the current settings.",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes
-        if should_download:
+        if QMessageBox.question(
+                self, "Download required Card data from Scryfall?",
+                "This program requires downloading additional card data from Scryfall to operate the card search.\n"
+                "Download the required data from Scryfall now?\n"
+                "If you decline now, you can exclude some card types or individual cards based on ban lists "
+                "in the settings and then manually start the download later.\n"
+                "Or accept and use the current settings.",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
             self.action_download_card_data.trigger()
 
     @Slot(int)
