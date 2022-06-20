@@ -26,6 +26,7 @@ import typing
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings
@@ -48,14 +49,25 @@ class DocumentColumns(enum.IntEnum):
 
 @dataclasses.dataclass
 class CardContainer:
-    parent: "CardList"
+    parent: "Page"
     card: Card
 
 
-CardList = typing.List[CardContainer]
-PageList = typing.List[CardList]
+class Page(typing.List[CardContainer]):
+
+    def page_type(self) -> PageType:
+        if not self:
+            return PageType.UNDETERMINED
+        found_types = set(container.card.requested_page_type() for container in self)
+        if found_types == {PageType.REGULAR}:
+            return PageType.REGULAR
+        if found_types == {PageType.OVERSIZED}:
+            return PageType.OVERSIZED
+        return PageType.MIXED
+
 
 INVALID_INDEX = QModelIndex()
+PageList = typing.List[Page]
 
 
 class Document(QAbstractItemModel):
@@ -130,10 +142,10 @@ class Document(QAbstractItemModel):
 
     @Slot()
     @Slot(int)
-    def add_page(self, position: int = None) -> CardList:
+    def add_page(self, position: int = None) -> Page:
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(INVALID_INDEX, position, position)
-        new_page: CardList = []
+        new_page = Page()
         if position == self.rowCount():
             self.pages.append(new_page)
             self.page_index_cache[id(new_page)] = len(self.pages) - 1
@@ -253,7 +265,7 @@ class Document(QAbstractItemModel):
         first_index, last_index = indices[0].row(), indices[-1].row()
         parent = indices[0].parent()
         self.beginRemoveRows(parent, first_index, last_index)
-        page: CardList = parent.internalPointer()
+        page: Page = parent.internalPointer()
         del page[first_index:last_index+1]
         self.endRemoveRows()
         return last_index - first_index
@@ -279,7 +291,7 @@ class Document(QAbstractItemModel):
             return len(DocumentColumns)  # columnCount of an invalid index.
 
     def parent(self, child: QModelIndex) -> QModelIndex:
-        data: typing.Union[CardList, CardContainer] = child.internalPointer()
+        data: typing.Union[Page, CardContainer] = child.internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
             page_id = id(page)
@@ -351,7 +363,7 @@ class Document(QAbstractItemModel):
         if 0 > index.row() >= self.rowCount() or not index.isValid():
             logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
-        item: CardList = self.pages[index.row()]
+        item = self.pages[index.row()]
         if role == Qt.DisplayRole:
             return self._get_page_preview(item)
         elif role == Qt.ToolTipRole:
@@ -382,7 +394,7 @@ class Document(QAbstractItemModel):
                 return card.image_file
 
     @staticmethod
-    def _get_page_preview(page: CardList):
+    def _get_page_preview(page: Page):
         names = collections.Counter(container.card.name for container in page)
         return "\n".join(
             f"{count}× {name}" for name, count in names.items()
@@ -495,7 +507,7 @@ class Document(QAbstractItemModel):
             result = self.rowCount() - 1
         return result
 
-    def _move_cards(self, page_to_fill: CardList, source: CardList, maximum_card_count: int = None) -> int:
+    def _move_cards(self, page_to_fill: Page, source: Page, maximum_card_count: int = None) -> int:
         """
         Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
         If maximum_card_count is None, move as many cards as possible.
@@ -523,7 +535,7 @@ class Document(QAbstractItemModel):
         self.endMoveRows()
         return card_count_to_move
 
-    def find_page_list_index(self, other: CardList):
+    def find_page_list_index(self, other: Page):
         """Finds the 0-indexed location of the given CardList in the pages list"""
         try:
             return self.page_index_cache[id(other)]
@@ -559,7 +571,7 @@ class Document(QAbstractItemModel):
         logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
         return moved_cards
 
-    def _set_currently_edited_page(self, page: CardList):
+    def _set_currently_edited_page(self, page: Page):
         self.currently_edited_page = page
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
@@ -650,7 +662,7 @@ class Document(QAbstractItemModel):
                     yield QPersistentModelIndex(self.index(card_row, 0, page_index))
 
     @staticmethod
-    def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
+    def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
 
     def _recreate_page_index_cache(self):
