@@ -33,6 +33,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -115,6 +116,14 @@ class Card:
     is_oversized: bool = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+
+    def requested_page_type(self) -> PageType:
+        if self.image_file is None:
+            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
+        size = self.image_file.size()
+        if (size.width(), size.height()) == (1040, 1490):
+            return PageType.OVERSIZED
+        return PageType.REGULAR
 
 
 OptionalCard = typing.Optional[Card]
