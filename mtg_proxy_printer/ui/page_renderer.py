@@ -23,7 +23,8 @@ from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QB
 
 import pint
 
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
+from mtg_proxy_printer.model.document import Document, Page
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -57,8 +58,6 @@ class RenderMode(enum.Enum):
 
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
-    IMAGE_WIDTH = 63
-    IMAGE_HEIGHT = 88
 
     scene_size_changed = Signal()
 
@@ -186,6 +185,8 @@ class PageScene(QGraphicsScene):
 
     def _compute_position_for_image(self, index: QModelIndex) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
+        page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
         page_layout = self.document.page_layout
         cards_per_row = self.document.compute_page_column_count()
         column = index.row() % cards_per_row
@@ -193,8 +194,8 @@ class PageScene(QGraphicsScene):
         spacing_vertical = page_layout.image_spacing_vertical
         spacing_horizontal = page_layout.image_spacing_horizontal
 
-        x_pos = page_layout.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
-        y_pos = page_layout.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        x_pos = page_layout.margin_left + column * (card_size.width + spacing_horizontal)
+        y_pos = page_layout.margin_top + row * (card_size.height + spacing_vertical)
         scaling_horizontal = self.width() / page_layout.page_width
         scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
@@ -204,13 +205,18 @@ class PageScene(QGraphicsScene):
 
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
+        page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
+        if page_type == PageType.MIXED:
+            logger.warning("Not drawing cut markers for page with mixed image sizes")
+            return
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
         line_color = QColor("black") if self.render_mode == RenderMode.ON_PAPER \
             else self.palette().color(QPalette.Active, QPalette.WindowText)
         logger.info(f"Drawing cut markers")
-        self._draw_vertical_markers(line_color)
-        self._draw_horizontal_markers(line_color)
+        self._draw_vertical_markers(line_color, card_size)
+        self._draw_horizontal_markers(line_color, card_size)
 
-    def _draw_vertical_markers(self, line_color):
+    def _draw_vertical_markers(self, line_color: QColor, card_size: CardSize):
         page_layout = self.document.page_layout
         scaling_horizontal = self.width() / page_layout.page_width
         column_count = self.document.compute_page_column_count()
@@ -219,15 +225,15 @@ class PageScene(QGraphicsScene):
         for column in range(column_count):
             column_px = scaling_horizontal * (
                     page_layout.margin_left +
-                    column * (PageScene.IMAGE_WIDTH + page_layout.image_spacing_horizontal)
+                    column * (card_size.width + page_layout.image_spacing_horizontal)
             )
             self._draw_vertical_line(column_px, line_color)
             if page_layout.image_spacing_horizontal:
-                offset = 1 + PageScene.IMAGE_WIDTH * scaling_horizontal
+                offset = 1 + card_size.width * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, line_color):
+    def _draw_horizontal_markers(self, line_color: QColor, card_size: CardSize):
         page_layout = self.document.page_layout
         scaling_vertical = self.height() / page_layout.page_height
         row_count = self.document.compute_page_row_count()
@@ -236,11 +242,11 @@ class PageScene(QGraphicsScene):
         for row in range(row_count):
             row_px = scaling_vertical * (
                     page_layout.margin_top +
-                    row * (PageScene.IMAGE_HEIGHT + page_layout.image_spacing_vertical)
+                    row * (card_size.height + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
             if page_layout.image_spacing_vertical:
-                offset = 1 + PageScene.IMAGE_HEIGHT * scaling_vertical
+                offset = 1 + card_size.height * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
 
@@ -278,6 +284,9 @@ class PageRenderer(QGraphicsView):
         )
         self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def scene(self) -> PageScene:
+        return super().scene()
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:

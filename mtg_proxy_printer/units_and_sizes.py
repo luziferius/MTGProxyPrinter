@@ -23,15 +23,19 @@ unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
 
 
-class Size(NamedTuple):
-    WIDTH: pint.Quantity
-    HEIGHT: pint.Quantity
+class CardSize(NamedTuple):
+    width: int
+    height: int
 
 
 @enum.unique
 class CardSizes(enum.Enum):
-    REGULAR = Size(unit_registry("63 millimeter"), unit_registry("88 millimeter"))
-    OVERSIZED = Size(unit_registry("88 millimeter"), unit_registry("126 millimeter"))
+    REGULAR = CardSize(63, 88)
+    OVERSIZED = CardSize(88, 126)
+
+    @classmethod
+    def for_page_type(cls, page_type: "PageType"):
+        return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
 
 
 IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
