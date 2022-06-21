@@ -103,7 +103,7 @@ class Document(QAbstractItemModel):
         self.currently_edited_page = self.pages[0]
         self.page_layout = PageLayoutSettings()
         self.page_layout.update_from_settings()
-        self.total_cards_per_page = self.compute_page_card_capacity()
+        self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
 
     def on_ui_selects_new_page(self, new_page: QModelIndex):
         if new_page.parent().isValid():
@@ -131,9 +131,7 @@ class Document(QAbstractItemModel):
 
     def on_page_layout_updated(self):
         previous_card_count = self.total_cards_per_page
-        self.compute_page_row_count.cache_clear()
-        self.compute_page_column_count.cache_clear()
-        self.total_cards_per_page = self.compute_page_card_capacity()
+        self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
         if self.total_cards_per_page != previous_card_count:
             self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
@@ -399,20 +397,6 @@ class Document(QAbstractItemModel):
         return "\n".join(
             f"{count}× {name}" for name, count in names.items()
         )
-
-    @functools.lru_cache(maxsize=1)
-    def compute_page_column_count(self) -> int:
-        """Returns the total number of card columns that fit on a page."""
-        return self.page_layout.compute_page_column_count()
-
-    @functools.lru_cache(maxsize=1)
-    def compute_page_row_count(self) -> int:
-        """Returns the total number of card rows that fit on a page."""
-        return self.page_layout.compute_page_row_count()
-
-    def compute_page_card_capacity(self) -> int:
-        """Returns the total number of card images that fit on a single page."""
-        return self.compute_page_row_count() * self.compute_page_column_count()
 
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""

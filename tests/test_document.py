@@ -94,8 +94,9 @@ def test_clear_database_not_clearing_last_image_use_timestamps(document: Documen
 
 
 def test_document_is_created_empty(document: Document):
-    assert_that(document.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
-    assert_that(document.total_cards_per_page, is_(equal_to(document.compute_page_card_capacity())))
+    capacity = document.page_layout.compute_page_card_capacity()
+    assert_that(capacity, is_(greater_than_or_equal_to(1)))
+    assert_that(document.total_cards_per_page, is_(equal_to(capacity)))
     assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
     assert_that(document.pages, has_length(1), "Expected creation of a single, empty page.")
     assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
