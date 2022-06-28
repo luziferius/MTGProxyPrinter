@@ -17,6 +17,7 @@ import collections
 import dataclasses
 import enum
 import itertools
+import math
 import pathlib
 import random
 import textwrap
@@ -140,6 +141,10 @@ class Document(QAbstractItemModel):
     @Slot()
     @Slot(int)
     def add_page(self, position: int = None) -> Page:
+        """
+        Inserts an empty page at the given position. Positions are clamped into the range [0, page_count].
+        Appends the new page to the document, if the position is None.
+        """
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(INVALID_INDEX, position, position)
         new_page = Page()
@@ -487,16 +492,14 @@ class Document(QAbstractItemModel):
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
-            return 0
-        maximum_document_capacity = self.total_cards_per_page * self.rowCount()
-        total_cards_in_document = sum(map(len, self.pages))
-        if total_cards_in_document:
-            result = (maximum_document_capacity - total_cards_in_document) // self.total_cards_per_page
-        else:
-            # This is a special case that is not handled correctly by the formula above. If the document
-            # is empty, it can not be compacted to zero pages, but one.
-            result = self.rowCount() - 1
+        cards = collections.Counter()
+        for page in self.pages:
+            cards[page.page_type()] += len(page)
+        required_pages = (
+            math.ceil(cards[PageType.OVERSIZED] / self.page_layout.compute_page_card_capacity(PageType.OVERSIZED))
+            + math.ceil(cards[PageType.REGULAR] / self.page_layout.compute_page_card_capacity(PageType.REGULAR))
+        ) or 1
+        result = self.rowCount() - required_pages
         return result
 
     def _move_cards(self, page_to_fill: Page, source: Page, maximum_card_count: int = None) -> int:

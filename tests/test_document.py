@@ -16,6 +16,7 @@
 import dataclasses
 import itertools
 import pathlib
+import typing
 from tempfile import TemporaryDirectory
 import textwrap
 import time
@@ -400,4 +401,27 @@ def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
     assert_that(
         document.has_missing_images(),
         is_(result)
+    )
+
+
+@pytest.mark.parametrize("pages_content, expected", [
+    ([], 0),
+    ([None, None], 1),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], 0),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"]*2, 1),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], 0),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]*2, 2),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b", None]*2, 4),
+])
+def test_compute_pages_saved_by_compacting(
+        document: Document, pages_content: typing.List[typing.Optional[str]], expected: int):
+    for page_number, scryfall_id in enumerate(pages_content):
+        if scryfall_id:
+            card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+            document.add_card_to_page(page_number, card)
+        document.add_page()
+    document.remove_pages([document.index(document.rowCount()-1, 0)]*2)
+    assert_that(
+        document.compute_pages_saved_by_compacting(),
+        is_(equal_to(expected))
     )
