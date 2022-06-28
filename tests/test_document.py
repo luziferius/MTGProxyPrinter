@@ -34,7 +34,7 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, CardContainer
+from mtg_proxy_printer.model.document import Document, CardContainer, PageType
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageKey
 
@@ -186,6 +186,48 @@ def test_compacting_document(document: Document):
                 same_instance(page),
                 f"Parent relationship incorrect on page {index}"
             )
+
+
+def test_compacting_document_with_regular_and_oversized_pages(document: Document):
+    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    for _ in range(3):
+        document.add_page()
+    assert_that(document.rowCount(), is_(4))
+    document.add_card_to_page(0, regular)
+    document.add_card_to_page(1, oversized)
+    document.add_card_to_page(2, regular)
+    document.add_card_to_page(3, oversized)
+    document.compact_pages()
+    assert_that(document.rowCount(), is_(2))
+    assert_that(
+        [document.pages[0].page_type(), document.pages[1].page_type()],
+        contains_inanyorder(PageType.REGULAR, PageType.OVERSIZED),
+        "Unexpectedly created a mixed-sizes page or left an empty page"
+    )
+
+
+def test_page_types_correctly_returned(document: Document):
+    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    assert_that(regular, is_(not_none()), "Test setup failed")
+    assert_that(oversized, is_(not_none()), "Test setup failed")
+    for _ in range(5):
+        document.add_page()
+    assert_that(document.rowCount(), is_(6))
+    document.add_card_to_page(0, regular)
+    document.add_card_to_page(1, oversized)
+    document.add_card_to_page(2, regular)
+    document.add_card_to_page(3, oversized)
+    document.add_card_to_page(4, regular)
+    document.add_card_to_page(4, oversized)
+    assert_that(document.pages[0].page_type(), is_(PageType.REGULAR))
+    assert_that(document.pages[1].page_type(), is_(PageType.OVERSIZED))
+    assert_that(document.pages[2].page_type(), is_(PageType.REGULAR))
+    assert_that(document.pages[3].page_type(), is_(PageType.OVERSIZED))
+    assert_that(document.pages[4].page_type(), is_(PageType.MIXED))
+    assert_that(document.pages[5].page_type(), is_(PageType.UNDETERMINED))
+
 
 
 @pytest.mark.parametrize("source_version", [2, 3])

@@ -16,7 +16,6 @@
 import collections
 import dataclasses
 import enum
-import functools
 import itertools
 import pathlib
 import random
@@ -449,16 +448,33 @@ class Document(QAbstractItemModel):
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
         logger.info("Compacting document.")
-        maximum_cards_per_page = self.total_cards_per_page
+        self._compact_pages_of_type(PageType.REGULAR)
+        self._compact_pages_of_type(PageType.OVERSIZED)
+        logger.debug("Removing empty pages")
+        for page in reversed(self.pages[1:]):
+            if not page:
+                index = self.index(self.page_index_cache[id(page)], 0)
+                self.remove_pages([index]*2)
+        logger.info("Compacting done.")
+
+    def _compact_pages_of_type(self, page_type: PageType):
+        maximum_cards_per_page = self.page_layout.compute_page_card_capacity(page_type)
+        to_skip_type = PageType.OVERSIZED if page_type is PageType.REGULAR else PageType.REGULAR
         last_index = self.rowCount() - 1
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
+            if current_page.page_type() is to_skip_type:
+                continue
             if cards_to_add := maximum_cards_per_page - len(current_page):
                 logger.debug(f"Found {cards_to_add} empty slots on page {current_index}")
                 while cards_to_add and current_index < last_index:
-                    cards_to_add -= (moved_cards := self._move_cards(current_page, self.pages[last_index]))
+                    page_to_draw_from = self.pages[last_index]
+                    if page_to_draw_from.page_type() is to_skip_type:
+                        last_index -= 1
+                        continue
+                    cards_to_add -= (moved_cards := self._move_cards(current_page, page_to_draw_from))
                     logger.debug(f"Moved {moved_cards} from page {last_index} to page {current_index}. "
                                  f"Free slots in target: {maximum_cards_per_page-len(current_page)}")
-                    if not self.pages[last_index]:
+                    if not page_to_draw_from:
                         logger.debug(f"Last page {last_index} now empty.")
                         last_index -= 1
                     else:
@@ -466,14 +482,6 @@ class Document(QAbstractItemModel):
                 if current_index == last_index:  # No more pages available to take cards from
                     logger.debug("No more pages available to take cards from. Finished.")
                     break
-
-        empty_trailing_pages = list(map(
-            self.index, range(last_index+1, self.rowCount()), itertools.repeat(0)
-        ))
-
-        logger.debug(f"Removing {len(empty_trailing_pages)} empty, trailing pages.")
-        self.remove_pages(empty_trailing_pages)
-        logger.info("Compacting done.")
 
     def compute_pages_saved_by_compacting(self) -> int:
         """

@@ -31,7 +31,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from tests.helpers import fill_card_database_with_json_card
+from tests.helpers import fill_card_database_with_json_cards
 
 
 @pytest.fixture(params=[False, True])
@@ -71,7 +71,7 @@ def image_db():
 
 @pytest.fixture
 def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     document = Document(card_db, image_db)
     yield document
     stop_thread(document.loader.worker_thread)
