@@ -344,16 +344,16 @@ def test_get_missing_image_cards(qtbot: QtBot, document: Document):
 @pytest.mark.parametrize("result", [True, False])
 def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
     blank_image = document.image_db.blank_image
-    expected = Card(
+    blank_image_card = Card(
         "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
         blank_image)
-    unexpected = Card(
+    other_card = Card(
         "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
         QPixmap(blank_image)
     )
     if result:
-        document.add_card(expected, 2)
-    document.add_card(unexpected, 2)
+        document.add_card(blank_image_card, 2)
+    document.add_card(other_card, 2)
     assert_that(
         document.has_missing_images(),
         is_(result)
