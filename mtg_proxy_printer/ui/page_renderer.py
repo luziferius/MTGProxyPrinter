@@ -188,7 +188,7 @@ class PageScene(QGraphicsScene):
         page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
         card_size: CardSize = CardSizes.for_page_type(page_type).value
         page_layout = self.document.page_layout
-        cards_per_row = page_layout.compute_page_column_count()
+        cards_per_row = page_layout.compute_page_column_count(page_type)
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
         spacing_vertical = page_layout.image_spacing_vertical
@@ -219,7 +219,7 @@ class PageScene(QGraphicsScene):
     def _draw_vertical_markers(self, line_color: QColor, card_size: CardSize):
         page_layout = self.document.page_layout
         scaling_horizontal = self.width() / page_layout.page_width
-        column_count = page_layout.compute_page_column_count()
+        column_count = page_layout.compute_page_column_count(page_layout)
         if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
@@ -236,7 +236,7 @@ class PageScene(QGraphicsScene):
     def _draw_horizontal_markers(self, line_color: QColor, card_size: CardSize):
         page_layout = self.document.page_layout
         scaling_vertical = self.height() / page_layout.page_height
-        row_count = page_layout.compute_page_row_count()
+        row_count = page_layout.compute_page_row_count(page_layout)
         if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
