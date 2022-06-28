@@ -28,6 +28,7 @@ from hamcrest import *
 import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.units_and_sizes import PageType
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 from tests.helpers import fill_card_database_with_json_card
@@ -227,3 +228,69 @@ def test_protects_against_infinite_settings_data(
         mock.assert_called_once()
     assert_document_is_empty(document_with_filled_card_db)
     assert_that(document_with_filled_card_db.save_file_path, is_(none()))
+
+
+@pytest.mark.parametrize("page_type, expected", [
+    (PageType.OVERSIZED, 4),
+    (PageType.REGULAR, 9),
+    (PageType.MIXED, 9),
+    (PageType.UNDETERMINED, 9),
+])
+def test_page_layout_compute_page_card_capacity(
+        document_with_filled_card_db: mtg_proxy_printer.model.document.Document, page_type: PageType, expected: int):
+    assert_that(
+        document_with_filled_card_db.page_layout.compute_page_card_capacity(page_type),
+        is_(equal_to(expected))
+    )
+
+
+def test_page_layout_compute_page_card_capacity_default_value(
+        document_with_filled_card_db: mtg_proxy_printer.model.document.Document):
+    assert_that(
+        document_with_filled_card_db.page_layout.compute_page_card_capacity(),
+        is_(equal_to(9))
+    )
+
+
+@pytest.mark.parametrize("page_type, expected", [
+    (PageType.OVERSIZED, 2),
+    (PageType.REGULAR, 3),
+    (PageType.MIXED, 3),
+    (PageType.UNDETERMINED, 3),
+])
+def test_page_layout_ccompute_page_row_count(
+        document_with_filled_card_db: mtg_proxy_printer.model.document.Document, page_type: PageType, expected: int):
+    assert_that(
+        document_with_filled_card_db.page_layout.compute_page_row_count(page_type),
+        is_(equal_to(expected))
+    )
+
+
+def test_page_layout_compute_compute_page_row_count_default_value(
+        document_with_filled_card_db: mtg_proxy_printer.model.document.Document):
+    assert_that(
+        document_with_filled_card_db.page_layout.compute_page_row_count(),
+        is_(equal_to(3))
+    )
+
+
+@pytest.mark.parametrize("page_type, expected", [
+    (PageType.OVERSIZED, 2),
+    (PageType.REGULAR, 3),
+    (PageType.MIXED, 3),
+    (PageType.UNDETERMINED, 3),
+])
+def test_page_layout_compute_page_column_count(
+        document_with_filled_card_db: mtg_proxy_printer.model.document.Document, page_type: PageType, expected: int):
+    assert_that(
+        document_with_filled_card_db.page_layout.compute_page_column_count(page_type),
+        is_(equal_to(expected))
+    )
+
+
+def test_page_layout_compute_page_column_count_default_value(
+        document_with_filled_card_db: mtg_proxy_printer.model.document.Document):
+    assert_that(
+        document_with_filled_card_db.page_layout.compute_page_column_count(),
+        is_(equal_to(3))
+    )

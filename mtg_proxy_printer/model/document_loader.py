@@ -15,6 +15,7 @@
 
 import collections
 import dataclasses
+import math
 import pathlib
 import socket
 import sqlite3
@@ -39,7 +40,7 @@ from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificatio
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
+from mtg_proxy_printer.units_and_sizes import unit_registry, PageType, CardSize, CardSizes
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -80,34 +81,36 @@ class PageLayoutSettings:
         self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
         self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
 
-    def compute_page_column_count(self) -> int:
+    def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
-        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        total_width = self.page_width
+        margins = self.margin_left + self.margin_right
+        spacing = self.image_spacing_horizontal
 
         total_width -= margins
-        if total_width < IMAGE_WIDTH:
+        if total_width < card_size.width:
             return 0
-        total_width -= IMAGE_WIDTH
-        cards = total_width / (IMAGE_WIDTH+spacing) + 1
-        return int(cards.to_tuple()[0])
+        total_width -= card_size.width
+        cards = total_width / (card_size.width+spacing) + 1
+        return math.floor(cards)
 
-    def compute_page_row_count(self) -> int:
+    def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
-        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        total_height = self.page_height
+        margins = self.margin_top + self.margin_bottom
+        spacing = self.image_spacing_vertical
         total_height -= margins
-        if total_height < IMAGE_HEIGHT:
+        if total_height < card_size.height:
             return 0
-        total_height -= IMAGE_HEIGHT
-        cards = total_height / (IMAGE_HEIGHT+spacing) + 1
-        return int(cards.to_tuple()[0])
+        total_height -= card_size.height
+        cards = total_height / (card_size.height+spacing) + 1
+        return math.floor(cards)
 
-    def compute_page_card_capacity(self) -> int:
+    def compute_page_card_capacity(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card images that fit on a single page."""
-        return self.compute_page_row_count() * self.compute_page_column_count()
+        return self.compute_page_row_count(page_type) * self.compute_page_column_count(page_type)
 
 
 class DocumentLoader(QObject):
