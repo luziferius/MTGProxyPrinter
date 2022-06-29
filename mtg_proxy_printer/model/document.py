@@ -65,6 +65,10 @@ class Page(typing.List[CardContainer]):
             return PageType.OVERSIZED
         return PageType.MIXED
 
+    def accepts_card(self, card: Card) -> bool:
+        own_page_type = self.page_type()
+        return card.requested_page_type() == own_page_type or own_page_type is PageType.UNDETERMINED
+
 
 INVALID_INDEX = QModelIndex()
 PageList = typing.List[Page]
@@ -166,13 +170,15 @@ class Document(QAbstractItemModel):
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
         current_page_position = self.find_page_list_index(self.currently_edited_page)
-        if len(self.currently_edited_page) < self.total_cards_per_page:
+        if len(self.currently_edited_page) < self.total_cards_per_page \
+                and self.currently_edited_page.accepts_card(card):
             copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < self.rowCount():
-            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
+            if self.pages[current_page_position].accepts_card(card):
+                copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
+                logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
             current_page_position += 1
         if copies > 0:
             logger.debug("No empty slots found, appending new pages to the document, until all copies are added.")
