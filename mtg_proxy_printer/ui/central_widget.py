@@ -106,6 +106,9 @@ class CentralWidget(QWidget):
         current_row = self.document_view.currentIndex().row()
         if index.parent().isValid() and not(first <= current_row <= last):
             return
+        # Selecting a different page is required if the current page is the last page and is going to be deleted.
+        # So re-selecting the page is required to prevent exceptions. Without this, the document view creates invalid
+        # model indices.
         new_page_to_select = max(0, first-1)
         logger.debug(
             f"Pages about to be removed. Currently selected: {current_row}. New page to select: {new_page_to_select}")
