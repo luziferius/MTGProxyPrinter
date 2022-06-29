@@ -79,6 +79,7 @@ class Document(QAbstractItemModel):
     total_cards_per_page_changed = Signal(int)
     current_page_changed = Signal(QPersistentModelIndex)
     page_layout_changed = Signal()
+    page_type_changed = Signal(QModelIndex)
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -296,8 +297,7 @@ class Document(QAbstractItemModel):
         data: typing.Union[Page, CardContainer] = child.internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
-            page_id = id(page)
-            page_index = self.page_index_cache[page_id]
+            page_index = self.find_page_list_index(page)
             return self.createIndex(page_index, 0, page)
         return INVALID_INDEX  # Pages have no parent
 
@@ -458,7 +458,7 @@ class Document(QAbstractItemModel):
         logger.debug("Removing empty pages")
         for page in reversed(self.pages[1:]):
             if not page:
-                index = self.index(self.page_index_cache[id(page)], 0)
+                index = self.index(self.find_page_list_index(page), 0)
                 self.remove_pages([index]*2)
         logger.info("Compacting done.")
 
