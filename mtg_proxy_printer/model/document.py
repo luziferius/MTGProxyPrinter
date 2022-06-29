@@ -23,7 +23,8 @@ import random
 import textwrap
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QPersistentModelIndex
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
+    QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.units_and_sizes import PageType
@@ -226,10 +227,7 @@ class Document(QAbstractItemModel):
         logger.debug(f"Removing pages {first_index} to {last_index}. {self.rowCount()=}")
         self.beginRemoveRows(INVALID_INDEX, first_index, last_index)
         logger.debug("BeginRemoveRows() called")
-        to_delete = set(index.row() for index in indices)
-        logger.debug(f"Rows to delete: {sorted(to_delete)}")
-        remaining = (page for index, page in enumerate(self.pages) if index not in to_delete)
-        self.pages[:] = remaining
+        del self.pages[first_index:last_index+1]
         self._recreate_page_index_cache()
         self.endRemoveRows()
         if not self.pages:
@@ -469,11 +467,14 @@ class Document(QAbstractItemModel):
         logger.info("Compacting document.")
         self._compact_pages_of_type(PageType.REGULAR)
         self._compact_pages_of_type(PageType.OVERSIZED)
-        logger.debug("Removing empty pages")
-        for page in reversed(self.pages[1:]):
-            if not page:
-                index = self.index(self.find_page_list_index(page), 0)
-                self.remove_pages([index]*2)
+        if not self.pages[-1]:
+            logger.debug("Determining empty pages")
+            first = last = self.rowCount()-1
+            for page in reversed(self.pages[1:-1]):
+                if not page:
+                    first -= 1
+            logger.debug(f"Removing empty pages {first} - {last}")
+            self.remove_pages([self.index(first, 0), self.index(last, 0)])
         logger.info("Compacting done.")
 
     def _compact_pages_of_type(self, page_type: PageType):
