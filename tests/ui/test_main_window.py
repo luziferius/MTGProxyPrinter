@@ -19,8 +19,8 @@ import socket
 import urllib.error
 
 
-from PyQt5.QtCore import QStringListModel
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import QStringListModel, QItemSelectionModel
+from PyQt5.QtWidgets import QMessageBox, QListView
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -230,3 +230,28 @@ def test_declining_application_update_offer_does_nothing(main_window: MainWindow
         main_window.show_application_update_available_message_box("1.0.0-test")
         message_box.assert_called_once()
         open_url_service.assert_not_called()
+
+
+def test_creating_new_document_with_second_page_selected_works_without_raising_exception(
+        qtbot: QtBot, main_window: MainWindow):
+    """
+    Tests for an exception when creating a new document. Conditions required for reproduction:
+    - Cut markers enabled
+    - At least two pages present
+    - Any page but the first is currently selected
+    - User creates a new document
+    """
+    document = main_window.document
+    # Condition 1
+    document.page_layout.draw_cut_markers = True
+    document.page_layout_changed.emit()
+    main_window.action_new_page.trigger()  # Condition 2
+    assert_that(document.pages, has_length(2))
+    with qtbot.waitSignal(document.current_page_changed):
+        main_window.central_widget.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes), \
+            qtbot.waitSignal(document.current_page_changed):
+        # Condition 4. This triggered the exception
+        main_window.action_new_document.trigger()
+    assert_that(document.pages, has_length(1))

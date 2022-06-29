@@ -88,7 +88,10 @@ class PageScene(QGraphicsScene):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
-        self.redraw()
+        if selected_page.isValid():
+            self.redraw()
+        else:
+            self.clear()
 
     @Slot()
     def on_settings_changed(self):

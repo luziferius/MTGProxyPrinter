@@ -498,7 +498,7 @@ def test_remove_cards_only_emits_page_type_changed_signal_if_changed(
         document.remove_cards([document.index(0, 0, page_index)]*2)
     assert_that(document.pages[0].page_type(), is_(expected_page_type))
 
-@pytest.mark.timeout(1)
+
 @pytest.mark.parametrize("scryfall_ids", [
     ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"],
     ["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"],
