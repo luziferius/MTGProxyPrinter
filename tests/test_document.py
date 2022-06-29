@@ -445,6 +445,19 @@ def test_add_cards_to_page_emits_page_type_changed_signal(
     assert_that(document.pages[0].page_type(), is_(expected_page_type))
 
 
+@pytest.mark.parametrize("scryfall_id, expected_page_type", [
+    ("0000579f-7b35-4ed3-b44c-db2a538066fe", PageType.REGULAR),
+    ("650722b4-d72b-4745-a1a5-00a34836282b", PageType.OVERSIZED),
+])
+def test_add_cards_to_page_only_emits_page_type_changed_signal_if_changed(
+      qtbot: QtBot, document: Document, scryfall_id: str, expected_page_type: PageType):
+    card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+    document.add_card_to_page(0, card)
+    with qtbot.assertNotEmitted(document.page_type_changed):
+        document.add_card_to_page(0, card)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+
+
 @pytest.mark.parametrize("scryfall_ids, expected_page_type", [
     (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.UNDETERMINED),
     (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.UNDETERMINED),
@@ -462,3 +475,25 @@ def test_remove_cards_emits_page_type_changed_signal(
         document.remove_cards([document.index(0, 0, page_index)]*2)
     assert_that(document.pages[0].page_type(), is_(expected_page_type))
 
+
+@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
+    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.MIXED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.MIXED),
+])
+def test_remove_cards_only_emits_page_type_changed_signal_if_changed(
+        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
+    """
+    The first card is added two times and then the first card is removed. The parameters state what is left in the page
+    when remove_cards is called. In all of these situations, the page type does not change, thus the signal should not
+    be emitted.
+    """
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    document.add_card_to_page(0, cards[0])
+    for card in cards:
+        document.add_card_to_page(0, card)
+    page_index = document.index(0, 0)
+    with qtbot.assertNotEmitted(document.page_type_changed):
+        document.remove_cards([document.index(0, 0, page_index)]*2)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
