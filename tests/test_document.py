@@ -102,6 +102,9 @@ def test_document_is_created_empty(document: Document):
     assert_that(document.pages, has_length(1), "Expected creation of a single, empty page.")
     assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
     assert_that(document.pages[0], is_(empty()), "Expected empty page, but it is not empty")
+    assert_that(
+        document.pages[0].page_type(), is_(PageType.UNDETERMINED), "Empty page should have an undetermined page type"
+    )
 
 
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
@@ -228,7 +231,6 @@ def test_page_types_correctly_returned(document: Document):
     assert_that(document.pages[3].page_type(), is_(PageType.OVERSIZED))
     assert_that(document.pages[4].page_type(), is_(PageType.MIXED))
     assert_that(document.pages[5].page_type(), is_(PageType.UNDETERMINED))
-
 
 
 @pytest.mark.parametrize("source_version", [2, 3])
@@ -420,8 +422,43 @@ def test_compute_pages_saved_by_compacting(
             card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
             document.add_card_to_page(page_number, card)
         document.add_page()
+    # Each iteration above keeps a trailing empty page. Remove that here.
     document.remove_pages([document.index(document.rowCount()-1, 0)]*2)
     assert_that(
         document.compute_pages_saved_by_compacting(),
         is_(equal_to(expected))
     )
+
+
+@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
+    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.MIXED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.MIXED),
+])
+def test_add_cards_to_page_emits_page_type_changed_signal(
+      qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    for card in cards:
+        with qtbot.waitSignal(document.page_type_changed):
+            document.add_card_to_page(0, card)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+
+
+@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.UNDETERMINED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.UNDETERMINED),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
+])
+def test_remove_cards_emits_page_type_changed_signal(
+        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
+    """Removes the first card on the page. The second one (if present) determines the new page type."""
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    for card in cards:
+        document.add_card_to_page(0, card)
+    page_index = document.index(0, 0)
+    with qtbot.waitSignal(document.page_type_changed):
+        document.remove_cards([document.index(0, 0, page_index)]*2)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+

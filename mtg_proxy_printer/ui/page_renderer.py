@@ -77,6 +77,7 @@ class PageScene(QGraphicsScene):
         self.document.rowsMoved.connect(self.on_rows_moved)
         self.document.current_page_changed.connect(self.on_current_page_changed)
         self.document.dataChanged.connect(self.on_data_changed)
+        self.document.page_type_changed.connect(self.on_page_type_changed)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
         self.render_mode = render_mode
@@ -134,6 +135,11 @@ class PageScene(QGraphicsScene):
             pixmap = self.addPixmap(image)
             pixmap.setTransformationMode(Qt.SmoothTransformation)
             pixmap.setPos(position)
+
+    @Slot(QModelIndex)
+    def on_page_type_changed(self, page: QModelIndex):
+        if page.row() == self.selected_page.row():
+            self.redraw()
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
         if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:

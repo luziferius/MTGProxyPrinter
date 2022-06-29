@@ -200,9 +200,13 @@ class Document(QAbstractItemModel):
             return 0
         self.beginInsertRows(page_index, first_index, last_index)
         page = self.pages[page_number]
+        old_page_type = page.page_type()
         page += (CardContainer(page, card) for _ in range(cards_inserted))
         logger.debug(f"After insert, page contains {len(page)} images.")
         self.endInsertRows()
+        if old_page_type != (new_page_type := page.page_type()):
+            logger.debug(f"Page type of page {page_number} changed from {old_page_type} to {new_page_type}")
+            self.page_type_changed.emit(page_index)
         logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
 
@@ -269,8 +273,12 @@ class Document(QAbstractItemModel):
         parent = indices[0].parent()
         self.beginRemoveRows(parent, first_index, last_index)
         page: Page = parent.internalPointer()
+        old_page_type = page.page_type()
         del page[first_index:last_index+1]
         self.endRemoveRows()
+        if old_page_type != (new_page_type := page.page_type()):
+            logger.debug(f"Page type of page {parent.row()} changed from {old_page_type} to {new_page_type}")
+            self.page_type_changed.emit(parent)
         return last_index - first_index
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
