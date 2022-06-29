@@ -15,7 +15,7 @@
 import math
 import typing
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex
 from PyQt5.QtWidgets import QTableView, QWidget, QListView
 
 import mtg_proxy_printer.settings
@@ -65,6 +65,7 @@ class CentralWidget(QWidget):
         self.document = document
         self.card_db = card_db
         self.image_db = image_db
+        document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
         self.page_card_table_view.setModel(document)
@@ -100,6 +101,16 @@ class CentralWidget(QWidget):
             new_size = math.floor(default_column_width * scaling_factor)
             self.page_card_table_view.setColumnWidth(column, new_size)
 
+    def on_document_rows_about_to_be_removed(self, index: QModelIndex, first: int, last: int):
+        self.document_view: QListView
+        current_row = self.document_view.currentIndex().row()
+        if index.parent().isValid() and not(first <= current_row <= last):
+            return
+        new_page_to_select = max(0, first-1)
+        logger.debug(
+            f"Pages about to be removed. Currently selected: {current_row}. New page to select: {new_page_to_select}")
+        self.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
+
     def _setup_page_renderer(self, document: Document):
         self.page_renderer: PageRenderer
         self.page_renderer.set_document(document)
@@ -129,23 +140,8 @@ class CentralWidget(QWidget):
             self.document.clear_page(self.document.index(0, 0))
             return
         to_be_deleted: int = self.document_view.selectedIndexes()[0].row()
-        logger.info(f"User selects to delete the currently selected page. Will be removing page {to_be_deleted}")
-        logger.debug("Deleting the requested page.")
-        # TODO: Investigate, why unsetting the model is needed.
-        #  The document_view’s selection model somehow asks for data using invalid
-        #  indices, when the last page is selected and gets deleted. The only way around seems to be to
-        #  completely disconnect the model, remove the row, then set it again.
-        self.document_view.setModel(None)
+        logger.info(f"User selects to delete the currently selected page {to_be_deleted}. Deleting it")
         self.document.remove_pages([self.document.index(to_be_deleted, 0)])
-        # Now reset the model (and reconnect the currentChanged signal, which seems to be disconnected implicitly
-        self.document_view.setModel(self.document)
-        self.document_view.selectionModel().currentChanged.connect(self.document.on_ui_selects_new_page)
-
-        new_row_index = min(to_be_deleted, self.document.rowCount() - 1)
-        logger.debug(f"Selecting page {new_row_index}.")
-        new_row_selection = self.document.index(new_row_index, 0)
-        self.document_view.selectionModel().select(new_row_selection, QItemSelectionModel.Select)
-        self.document.on_ui_selects_new_page(new_row_selection)
 
 
 class ColumnarCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/columnar")):
