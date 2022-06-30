@@ -23,7 +23,6 @@ import textwrap
 import typing
 import urllib.error
 
-import pint
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, pyqtSlot as Slot
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
@@ -40,7 +39,7 @@ from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificatio
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import unit_registry, PageType, CardSize, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
