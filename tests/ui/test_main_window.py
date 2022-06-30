@@ -57,6 +57,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
         with qtbot.wait_exposed(main_window, timeout=100):
             main_window.show()
         yield main_window
+        main_window.hide()
         stop_thread(cid.worker_thread)
 
 
