@@ -504,7 +504,7 @@ def test_remove_cards_only_emits_page_type_changed_signal_if_changed(
     ["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"],
  ])
 def test_add_card_does_not_create_pages_with_mixed_card_sizes(
-        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str]):
+        document: Document, scryfall_ids: typing.List[str]):
     cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
     for card in cards:
         document.add_card(card, 1)
@@ -512,3 +512,15 @@ def test_add_card_does_not_create_pages_with_mixed_card_sizes(
     for page in document.pages:
         assert_that(page.page_type(), is_in((PageType.REGULAR, PageType.OVERSIZED)))
         assert_that(page, has_length(1))
+
+
+def test_add_card_does_not_overfill_oversized_pages(document: Document):
+    card = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    document.add_card(card, 7)
+    assert_that(document.rowCount(), is_(2))
+    document.add_card(card, 1)
+    document.add_card(card, 1)
+    assert_that(document.rowCount(), is_(3))
+
+
+
