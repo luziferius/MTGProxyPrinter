@@ -20,7 +20,7 @@ import re
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection
+    QItemSelection, QAbstractTableModel
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
 
@@ -343,7 +343,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
             accept_button.setToolTip("Append identified cards to the document")
 
-    def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
+    def _setup_parsed_cards_table(self, model: QAbstractTableModel) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
         self.parsed_cards_table.setModel(model)
         self.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
@@ -427,6 +427,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             self.card_list.remove_all_basic_lands()
         elif button_id == QWizard.CustomButton2:
             self._remove_selected_cards()
+            self.selected_cells_count = 0
+            self.wizard().button(QWizard.CustomButton2).setEnabled(False)
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")

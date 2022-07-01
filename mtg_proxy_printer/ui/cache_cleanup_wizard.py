@@ -409,7 +409,7 @@ class CacheCleanupWizard(QWizard):
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.addPage(SummaryPage(self))
-        self.setWindowTitle("Cleanup the local image cache")
+        self.setWindowTitle("Cleanup locally stored card images")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         self._setup_button_icons()
         self._set_default_size()

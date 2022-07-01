@@ -1,5 +1,13 @@
 # Changelog
 
+
+# Next version (in development)
+
+## Fixed issues
+
+- Fixed the “Remove selected” cards button in the deck list importer unexpectedly staying active
+  when clicked while multiple cells of the same row in the card table were selected.
+
 # Version 0.17.0 (2022-06-13)  <a name="v0_17_0"></a>
 
 ## New features

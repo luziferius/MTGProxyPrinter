@@ -324,6 +324,8 @@ class PageRenderer(QGraphicsView):
         if self.automatic_scaling:
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
         else:
+            # The initial tooltip text showing the zoom options is rather large, so clear it once the user triggered a
+            # zoom action for the first time. This is done to un-clutter the area around the mouse cursor.
             self.setToolTip("")
             old_anchor = self.transformationAnchor()
             self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)

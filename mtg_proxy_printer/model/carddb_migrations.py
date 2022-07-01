@@ -617,8 +617,7 @@ def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationSc
       migration scripts. Should only be passed explicitly for testing purposes.
     """
     current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-    needs_update = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0
-    if needs_update:
+    if mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0:
         logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
         if migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {migration_scripts}")
@@ -633,6 +632,5 @@ def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationSc
             db.execute(f"PRAGMA user_version = {source_version + 1}")
             db.commit()
 
-    if needs_update:
-        current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-        logger.info(f"Finished database migrations. {current_schema_version=}")
+    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
+    logger.info(f"Finished database migrations. {current_schema_version=}")
