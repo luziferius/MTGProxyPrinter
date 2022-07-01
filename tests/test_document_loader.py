@@ -26,12 +26,9 @@ import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
-from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.units_and_sizes import PageType
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
-from tests.helpers import fill_card_database_with_json_card
 
 
 @pytest.mark.parametrize("version", [-1, 0, 1, 5, 6])
