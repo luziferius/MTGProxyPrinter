@@ -63,7 +63,7 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
         is_not(equal_to(default_layout.compute_page_card_capacity())),
         "Test setup failed."
     )
-    with qtbot.waitSignal(document_custom_layout.total_cards_per_page_changed, timeout=1000):
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=1000):
         document_custom_layout.clear_all_data()
 
     assert_that(document_custom_layout.page_layout, is_(equal_to(default_layout)))

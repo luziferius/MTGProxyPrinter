@@ -93,7 +93,7 @@ def test_valid_data_loads_correctly(
         with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, raising=True,
                               check_params_cb=lambda value: not value), \
                 qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000), \
-                qtbot.waitSignal(document.total_cards_per_page_changed, timeout=1000), \
+                qtbot.waitSignal(document.page_layout_changed, timeout=1000), \
                 qtbot.waitSignal(document.loading_state_changed, timeout=1000,
                                  check_params_cb=lambda value: not value):
             loader.load_document(save_path)

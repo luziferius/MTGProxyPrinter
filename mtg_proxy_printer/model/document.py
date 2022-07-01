@@ -81,7 +81,6 @@ class Document(QAbstractItemModel):
     The pages hold the individual proxy images
     """
     loading_state_changed = Signal(bool)
-    total_cards_per_page_changed = Signal(int)
     current_page_changed = Signal(QPersistentModelIndex)
     page_layout_changed = Signal()
     page_type_changed = Signal(QModelIndex)
@@ -138,8 +137,6 @@ class Document(QAbstractItemModel):
     def on_page_layout_updated(self):
         previous_card_count = self.total_cards_per_page
         self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
-        if self.total_cards_per_page != previous_card_count:
-            self.total_cards_per_page_changed.emit(self.total_cards_per_page)
         if self.total_cards_per_page < previous_card_count:
             self.move_excess_cards_to_free_pages()
         self.page_layout_changed.emit()
