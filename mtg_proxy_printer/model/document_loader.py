@@ -52,6 +52,8 @@ __all__ = [
     "PageLayoutSettings"
 ]
 
+# ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
+SAVE_FILE_MAGIC_NUMBER = 41325044
 DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
 
 
@@ -341,8 +343,11 @@ class DocumentLoader(QObject):
             :raises AssertionError: If the provided file contains an invalid schema
             :returns: Database schema version
             """
-            if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
-                raise AssertionError("Not an MTGProxyPrinter save file!")
+            assert_that(
+                db_unsafe.execute("PRAGMA application_id").fetchone(),
+                contains_exactly(SAVE_FILE_MAGIC_NUMBER),
+                "Application ID mismatch. Not an MTGProxyPrinter save file!"
+            )
             user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
             try:
                 db_known_good = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
