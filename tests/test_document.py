@@ -564,3 +564,57 @@ def test_creating_potential_overflow_calls_method_move_excess_cards_to_free_page
          document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
         less_than(initial_capacities)
     )
+
+
+@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
+    (0, 10),  # Regular cards overflow, oversized do not
+    (10, 25),  # Oversized cards overflow, regular do not
+    (0, 30),  # Both sizes overflow
+
+])
+def test_method_move_excess_cards_to_free_pages_does_not_create_mixed_size_pages(
+        document: Document, initial_h_spacing: int, new_h_spacing: int):
+    """
+    Tests move_excess_cards_to_free_pages() does not create pages with mixed-size cards.
+    Regular and oversized cards overflow at different thresholds, so perform multiple tests to see that each
+    combination works
+    """
+    layout = copy.copy(document.page_layout)
+    layout.image_spacing_horizontal = initial_h_spacing
+    document.update_page_layout(layout)
+    initial_capacities = document.page_layout.compute_page_card_capacity(PageType.REGULAR),\
+                         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+    for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
+        card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+        capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
+        document.add_card(card, capacity-1)
+
+    layout.image_spacing_horizontal = new_h_spacing
+    document.update_page_layout(layout)
+
+    assert_that(
+        (document.page_layout.compute_page_card_capacity(PageType.REGULAR),
+         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
+        less_than(initial_capacities)
+    )
+    assert_that(
+        document.rowCount(),
+        is_(greater_than(2))
+    )
+    for page in document.pages:
+        assert_that(page.page_type(), is_in([PageType.REGULAR, PageType.OVERSIZED]))
+
+
+@pytest.mark.parametrize("page_type, v_spacing, h_spacing, expected", [
+    (PageType.REGULAR, 0, 0, 9),
+    (PageType.REGULAR, 10, 0, 6),
+    (PageType.REGULAR, 0, 10, 6),
+    (PageType.OVERSIZED, 0, 0, 4),
+    (PageType.OVERSIZED, 0, 10, 4),
+    (PageType.OVERSIZED, 0, 25, 2),
+])
+def test_page_layout_compute_page_card_capacity(page_type, v_spacing, h_spacing, expected):
+    layout = PageLayoutSettings.create_from_settings()
+    layout.image_spacing_horizontal = h_spacing
+    layout.image_spacing_vertical = v_spacing
+    assert_that(layout.compute_page_card_capacity(page_type), is_(expected))

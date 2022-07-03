@@ -67,9 +67,10 @@ class Page(typing.List[CardContainer]):
             return PageType.OVERSIZED
         return PageType.MIXED
 
-    def accepts_card(self, card: Card) -> bool:
+    def accepts_card(self, card: typing.Union[Card, PageType]) -> bool:
+        other_type = card.requested_page_type() if isinstance(card, Card) else card
         own_page_type = self.page_type()
-        return card.requested_page_type() == own_page_type or own_page_type is PageType.UNDETERMINED
+        return other_type == own_page_type or own_page_type is PageType.UNDETERMINED
 
 
 INVALID_INDEX = QModelIndex()
@@ -570,26 +571,33 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
-        if not self.page_layout.compute_page_card_capacity(PageType.REGULAR):
+        return self._move_excess_cards_of_type_to_free_pages(PageType.REGULAR) \
+            + self._move_excess_cards_of_type_to_free_pages(PageType.OVERSIZED)
+
+    def _move_excess_cards_of_type_to_free_pages(self, page_type: PageType) -> int:
+        # TODO: Increase minimum page size and then replace this constant
+        if not (page_capacity := self.page_layout.compute_page_card_capacity(page_type)):
             raise RuntimeError("Page capacity is zero!")
-        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages()
+        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages(page_type)
         logger.info(
             f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
         moved_cards = 0
         for page in overflowing_pages:
             # Fill free slots on other pages first
-            while (current_page_length := len(page)) > self.total_cards_per_page and pages_with_free_slots:
+            while (current_page_length := len(page)) > page_capacity and pages_with_free_slots:
                 page_to_fill = pages_with_free_slots.pop(0)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - self.total_cards_per_page)
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - page_capacity)
             # After filling all remaining free slots, it may still contain images for multiple new pages,
             # so add new pages until all excess images are moved.
-            while (current_page_length := len(page)) > self.total_cards_per_page:
+            while (current_page_length := len(page)) > page_capacity:
                 page_to_fill = self.add_page()
                 self._set_currently_edited_page(page_to_fill)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - self.total_cards_per_page)
-                if len(page_to_fill) < self.total_cards_per_page:
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - page_capacity)
+                if len(page_to_fill) < page_capacity:
                     pages_with_free_slots.append(page_to_fill)
-        logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
+        logger.info(
+            f"Moved {moved_cards} {'regular' if page_type == PageType.REGULAR else 'oversized'} "
+            f"cards away from overflowing pages.")
         return moved_cards
 
     def _set_currently_edited_page(self, page: Page):
@@ -597,15 +605,20 @@ class Document(QAbstractItemModel):
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
-    def find_overflowing_and_non_full_pages(self, total_cards_per_page: int = None):
+    def find_overflowing_and_non_full_pages(self, page_type: PageType, page_layout: PageLayoutSettings = None):
         """
         Returns two lists of pages: The first contains all pages that are currently overflowing,
         and the second contains that currently have free slots and therefore can fit additional cards.
+        :param page_type: Page type to look for. Should be one of PageType.REGULAR or PageType.OVERSIZED
+        :param page_layout: If given, base computation on the given layout, instead of the current one
         """
-        total_cards_per_page = total_cards_per_page or self.total_cards_per_page
+        layout = page_layout or self.page_layout
+        total_cards_per_page = layout.compute_page_card_capacity(page_type)
         overflowing_pages = []
         pages_with_free_slots: PageList = []
         for page_number, page in enumerate(self.pages):
+            if not page.accepts_card(page_type):
+                continue
             if len(page) > total_cards_per_page:
                 overflowing_pages.append(page)
             elif len(page) < total_cards_per_page:
