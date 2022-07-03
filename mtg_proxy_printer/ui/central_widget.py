@@ -104,14 +104,14 @@ class CentralWidget(QWidget):
     def on_document_rows_about_to_be_removed(self, index: QModelIndex, first: int, last: int):
         self.document_view: QListView
         current_row = self.document_view.currentIndex().row()
-        if index.parent().isValid() and not(first <= current_row <= last):
+        if index.parent().isValid() and not (last == current_row == (self.document.rowCount()-1)):
             return
         # Selecting a different page is required if the current page is the last page and is going to be deleted.
         # So re-selecting the page is required to prevent exceptions. Without this, the document view creates invalid
         # model indices.
         new_page_to_select = max(0, first-1)
         logger.debug(
-            f"Pages about to be removed. Currently selected: {current_row}. New page to select: {new_page_to_select}")
+            f"Currently selected last page {current_row} about to be removed. New page to select: {new_page_to_select}")
         self.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
 
     def _setup_page_renderer(self, document: Document):
