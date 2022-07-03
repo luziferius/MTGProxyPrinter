@@ -530,3 +530,37 @@ def test_update_page_layout_copies_the_passed_in_instance(document: Document):
     document.update_page_layout(layout)
     layout.image_spacing_horizontal = 2
     assert_that(document.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
+
+
+@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
+    (0, 10),  # Regular cards overflow, oversized do not
+    (10, 25),  # Oversized cards overflow, regular do not
+    (0, 30),  # Both sizes overflow
+
+])
+def test_creating_potential_overflow_calls_method_move_excess_cards_to_free_pages(
+        qtbot: QtBot, document: Document, initial_h_spacing: int, new_h_spacing: int):
+    """
+    Tests if increasing the horizontal spacing from a given value to another calls the logic to move excess cards
+    to new pages.
+    Regular and oversized cards overflow at different thresholds, so perform multiple tests to see that each
+    card type can individually trigger this
+    """
+    layout = copy.copy(document.page_layout)
+    layout.image_spacing_horizontal = initial_h_spacing
+    document.update_page_layout(layout)
+    initial_capacities = document.page_layout.compute_page_card_capacity(PageType.REGULAR),\
+                         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+    for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
+        card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+        document.add_card(card, document.page_layout.compute_page_card_capacity(card.requested_page_type()))
+    with unittest.mock.patch.object(Document, "move_excess_cards_to_free_pages") as expected_call_mock, \
+            qtbot.waitSignal(document.page_layout_changed, timeout=1000):
+        layout.image_spacing_horizontal = new_h_spacing
+        document.update_page_layout(layout)
+        expected_call_mock.assert_called_once()
+    assert_that(
+        (document.page_layout.compute_page_card_capacity(PageType.REGULAR),
+         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
+        less_than(initial_capacities)
+    )
