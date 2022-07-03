@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import copy
 import dataclasses
 import enum
 import itertools
@@ -106,8 +107,7 @@ class Document(QAbstractItemModel):
         self.page_index_cache: typing.Dict[int, int] = {}  # Mapping from page id() to list index in the page list
         self.add_page()
         self.currently_edited_page = self.pages[0]
-        self.page_layout = PageLayoutSettings()
-        self.page_layout.update_from_settings()
+        self.page_layout = PageLayoutSettings.create_from_settings()
         self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
 
     def on_ui_selects_new_page(self, new_page: QModelIndex):
@@ -131,13 +131,20 @@ class Document(QAbstractItemModel):
     @Slot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
-        self.page_layout.update_from_settings()
-        self.on_page_layout_updated()
+        self.update_page_layout(PageLayoutSettings.create_from_settings())
 
-    def on_page_layout_updated(self):
-        previous_card_count = self.total_cards_per_page
-        self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
-        if self.total_cards_per_page < previous_card_count:
+    @Slot(PageLayoutSettings)
+    def update_page_layout(self, new_layout: PageLayoutSettings):
+        if new_layout == self.page_layout:
+            return
+        old_capacities = self.page_layout.compute_page_card_capacity(PageType.REGULAR), \
+            self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        new_capacities = new_layout.compute_page_card_capacity(PageType.REGULAR), \
+            new_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        # Copy the values to cut all ties to the passed-in instance. This ensures that the instances used by settings
+        # widgets will stay separated.
+        self.page_layout = copy.copy(new_layout)
+        if new_capacities < old_capacities:
             self.move_excess_cards_to_free_pages()
         self.page_layout_changed.emit()
 
@@ -617,8 +624,7 @@ class Document(QAbstractItemModel):
     @Slot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
         self.clear()
-        self.page_layout.update_from_settings()
-        self.on_page_layout_updated()
+        self.update_page_layout(PageLayoutSettings.create_from_settings())
         self.save_file_path = None
 
     @Slot()

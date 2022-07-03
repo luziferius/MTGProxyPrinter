@@ -13,10 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import dataclasses
 import itertools
 import pathlib
 import typing
+import unittest.mock
 from tempfile import TemporaryDirectory
 import textwrap
 import time
@@ -42,31 +44,29 @@ from mtg_proxy_printer.model.imagedb import ImageKey
 
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
-    document.page_layout.page_height = 300
-    document.page_layout.page_width = 200
-    document.page_layout.margin_top = 20
-    document.page_layout.margin_bottom = 19
-    document.page_layout.margin_left = 18
-    document.page_layout.margin_right = 17
-    document.page_layout.image_spacing_horizontal = 3
-    document.page_layout.image_spacing_vertical = 2
-    document.page_layout.draw_cut_markers = True
-    document.on_page_layout_updated()
+    custom_layout = PageLayoutSettings(300, 200, 20, 19, 18, 17, 3, 2, True)
+    document.update_page_layout(custom_layout)
     yield document
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
-    default_layout = PageLayoutSettings()
-    default_layout.update_from_settings()
+    default_layout = PageLayoutSettings.create_from_settings()
     assert_that(
-        document_custom_layout.total_cards_per_page,
+        document_custom_layout,
+        has_property("page_layout", not_(equal_to(default_layout)))
+    )
+    assert_that(
+        document_custom_layout.page_layout.compute_page_row_count(),
         is_not(equal_to(default_layout.compute_page_card_capacity())),
         "Test setup failed."
     )
     with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=1000):
         document_custom_layout.clear_all_data()
 
-    assert_that(document_custom_layout.page_layout, is_(equal_to(default_layout)))
+    assert_that(
+        document_custom_layout,
+        has_property("page_layout", equal_to(default_layout))
+    )
 
 
 def test_document_two_overflow_events_only_add_one_new_page(document: Document):
@@ -268,6 +268,8 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
         "Setup failed. Duplicate values in page layout settings"
     )
+    layout = copy.copy(document_custom_layout.page_layout)
+    layout.page_height = 1000
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     # Prevent network access when re-loading the document
     document_custom_layout.image_db.loaded_images[
@@ -278,9 +280,8 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         document_custom_layout.save_as(save_dir)
         _validate_database_schema(save_dir)
         _validate_saved_document_settings(document_custom_layout)
-        document_custom_layout.page_layout.page_height = 1000
         with qtbot.waitSignal(document_custom_layout.page_layout_changed):
-            document_custom_layout.on_page_layout_updated()
+            document_custom_layout.update_page_layout(layout)
         document_custom_layout.save_to_disk()
         with qtbot.waitSignal(document_custom_layout.loading_state_changed, check_params_cb=lambda value: not value):
             document_custom_layout.loader.load_document(save_dir)
@@ -523,4 +524,9 @@ def test_add_card_does_not_overfill_oversized_pages(document: Document):
     assert_that(document.rowCount(), is_(3))
 
 
-
+def test_update_page_layout_copies_the_passed_in_instance(document: Document):
+    layout = copy.copy(document.page_layout)
+    layout.image_spacing_horizontal = 1
+    document.update_page_layout(layout)
+    layout.image_spacing_horizontal = 2
+    assert_that(document.page_layout, has_property("image_spacing_horizontal", equal_to(1)))

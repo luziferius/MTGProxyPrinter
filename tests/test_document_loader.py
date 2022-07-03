@@ -74,7 +74,8 @@ def test_valid_data_loads_correctly(
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
         image_spacing_horizontal=3, image_spacing_vertical=2, draw_cut_markers=True,
     )
-    assert_that(page_layout.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
+
+    assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
     empty_save_database.execute(
         textwrap.dedent("""\
             INSERT INTO DocumentSettings (rowid, page_height, page_width,
@@ -103,8 +104,12 @@ def test_valid_data_loads_correctly(
     assert_that(document.save_file_path, is_(equal_to(save_path)))
     assert_that(document.page_layout, is_(equal_to(page_layout)))
     assert_that(
-        document.total_cards_per_page,
-        is_(equal_to(page_layout.compute_page_card_capacity()))
+        document.page_layout.compute_page_card_capacity(PageType.REGULAR),
+        is_(equal_to(page_layout.compute_page_card_capacity(PageType.REGULAR)))
+    )
+    assert_that(
+        document.page_layout.compute_page_card_capacity(PageType.OVERSIZED),
+        is_(equal_to(page_layout.compute_page_card_capacity(PageType.OVERSIZED)))
     )
 
 

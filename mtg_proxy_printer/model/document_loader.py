@@ -70,17 +70,20 @@ class PageLayoutSettings:
     image_spacing_vertical: int = 0
     draw_cut_markers: bool = False
 
-    def update_from_settings(self):
+    @classmethod
+    def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
-        self.page_height = document_settings.getint("paper-height-mm")
-        self.page_width = document_settings.getint("paper-width-mm")
-        self.margin_top = document_settings.getint("margin-top-mm")
-        self.margin_bottom = document_settings.getint("margin-bottom-mm")
-        self.margin_left = document_settings.getint("margin-left-mm")
-        self.margin_right = document_settings.getint("margin-right-mm")
-        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
-        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
-        self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
+        return cls(
+            document_settings.getint("paper-height-mm"),
+            document_settings.getint("paper-width-mm"),
+            document_settings.getint("margin-top-mm"),
+            document_settings.getint("margin-bottom-mm"),
+            document_settings.getint("margin-left-mm"),
+            document_settings.getint("margin-right-mm"),
+            document_settings.getint("image-spacing-horizontal-mm"),
+            document_settings.getint("image-spacing-vertical-mm"),
+            document_settings.getboolean("print-cut-marker"),
+        )
 
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
@@ -333,8 +336,7 @@ class DocumentLoader(QObject):
                 )
                 settings.draw_cut_markers = bool(settings.draw_cut_markers)
             else:
-                settings = PageLayoutSettings()
-                settings.update_from_settings()
+                settings = PageLayoutSettings.create_from_settings()
             return settings
 
         @staticmethod
@@ -407,7 +409,7 @@ class DocumentLoader(QObject):
         self.worker.document_clear_requested.connect(self.document.clear)
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
-        self.worker.document_settings_loaded.connect(self.on_document_settings_loaded)
+        self.worker.document_settings_loaded.connect(self.document.update_page_layout)
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
         self.worker.loading_file_failed.connect(self.loading_file_failed)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
@@ -416,11 +418,6 @@ class DocumentLoader(QObject):
         self.worker.finished.connect(self.worker_thread.quit)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
-
-    @Slot(PageLayoutSettings)
-    def on_document_settings_loaded(self, settings: PageLayoutSettings):
-        self.document.page_layout = settings
-        self.document.on_page_layout_updated()
 
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()

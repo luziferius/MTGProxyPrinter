@@ -188,8 +188,7 @@ def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_v
     """
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
     qtbot.addWidget(widget)
-    other = PageLayoutSettings()
-    other.update_from_settings()
+    other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     expected = max(min_value, value)
     widget.load_from_page_layout(other)
@@ -205,8 +204,7 @@ def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_v
 def test_load_booleans_from_page_layout(qtbot: QtBot, attribute_name: str, value: bool):
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
     qtbot.addWidget(widget)
-    other = PageLayoutSettings()
-    other.update_from_settings()
+    other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     widget.load_from_page_layout(other)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
