@@ -430,6 +430,7 @@ class DocumentLoader(QObject):
         self.worker.loading_file_successful.connect(self.on_loading_file_successful)
         self.worker.network_error_occurred.connect(self.network_error_occurred)
         self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(self.document.fix_mixed_pages)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
 

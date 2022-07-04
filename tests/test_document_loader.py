@@ -88,12 +88,9 @@ def test_valid_data_loads_correctly(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, raising=True,
-                              check_params_cb=lambda value: not value), \
+        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value), \
                 qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000), \
-                qtbot.waitSignal(document.page_layout_changed, timeout=1000), \
-                qtbot.waitSignal(document.loading_state_changed, timeout=1000,
-                                 check_params_cb=lambda value: not value):
+                qtbot.waitSignal(document.page_layout_changed, timeout=1000):
             loader.load_document(save_path)
         mock.assert_called_once()
     assert_that(document.rowCount(), is_(equal_to(1)))
@@ -111,6 +108,39 @@ def test_valid_data_loads_correctly(
         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED),
         is_(equal_to(page_layout.compute_page_card_capacity(PageType.OVERSIZED)))
     )
+
+
+def test_document_with_mixed_pages_distributes_cards_based_on_size(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        empty_save_database: sqlite3.Connection):
+    empty_save_database.executemany(
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)', [
+            (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe"),
+            (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b"),
+         ]
+    )
+    empty_save_database.execute(
+        textwrap.dedent("""\
+            INSERT INTO DocumentSettings (rowid, page_height, page_width,
+                  margin_top, margin_bottom, margin_left, margin_right,
+                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
+              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """),
+        dataclasses.astuple(mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()))
+    loader = document.loader
+    save_path = pathlib.Path("/tmp/invalid.mtgproxies")
+    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
+        mock.return_value = empty_save_database
+        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value), \
+                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000):
+            loader.load_document(save_path)
+        mock.assert_called_once()
+    assert_that(document.rowCount(), is_(2))
+    total_cards = 0
+    for page in document.pages:
+        assert_that(page.page_type(), is_in([PageType.OVERSIZED, PageType.REGULAR]))
+        total_cards += len(page)
+    assert_that(total_cards, is_(2))
 
 
 @pytest.mark.parametrize("data", itertools.chain(

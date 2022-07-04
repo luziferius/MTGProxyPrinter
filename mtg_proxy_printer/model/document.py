@@ -625,6 +625,34 @@ class Document(QAbstractItemModel):
         return overflowing_pages, pages_with_free_slots
 
     @Slot()
+    def fix_mixed_pages(self):
+        """
+        Documents saved with older versions (or specifically crafted save files) can contain images with mixed
+        sizes on the same page.
+        This method is called when the document loading finishes and moves cards away from these mixed pages so that
+        all pages only contain a single image size.
+        """
+        mixed_pages = [page for page in self.pages if page.page_type() == PageType.MIXED]
+        logger.info(f"Fixing {len(mixed_pages)} mixed pages by moving cards away")
+        for page in mixed_pages:
+            regular_rows = []
+            oversized_rows = []
+            for row, container in enumerate(page):
+                if container.card.requested_page_type() == PageType.REGULAR:
+                    regular_rows.append(row)
+                else:
+                    oversized_rows.append(row)
+            card_rows_to_move = regular_rows if len(regular_rows) < len(oversized_rows) else oversized_rows
+            cards = [page[row].card for row in card_rows_to_move]
+            cards.reverse()  # Iterate from the end of the list to not shift indices
+            page_index = self.index(self.find_page_list_index(page), 0)
+            logger.info(f"Moving {len(cards)} cards from page {page_index.row()} to other pages.")
+            for card in card_rows_to_move:
+                self.remove_cards([self.index(card, 0, page_index)])
+            for card in cards:
+                self.add_card(card, 1)
+
+    @Slot()
     def clear(self):
         logger.info("Clearing current document")
         self.remove_pages(list(map(
