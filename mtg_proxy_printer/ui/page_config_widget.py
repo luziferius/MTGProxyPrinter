@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
@@ -42,22 +43,15 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        self.page_height.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "page_height", new))
-        self.page_width.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "page_width", new))
-        self.margin_top.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_top", new))
-        self.margin_bottom.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_bottom", new))
-        self.margin_left.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_left", new))
-        self.margin_right.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_right", new))
+        self.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
+        self.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
+        self.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
+        self.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
+        self.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
+        self.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
         self.image_spacing_horizontal.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "image_spacing_horizontal", new))
-        self.image_spacing_vertical.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "image_spacing_vertical", new))
+            partial(setattr, page_layout, "image_spacing_horizontal"))
+        self.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
         self.draw_cut_markers: QCheckBox
         self.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
