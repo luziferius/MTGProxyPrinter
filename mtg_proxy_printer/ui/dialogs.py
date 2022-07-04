@@ -256,7 +256,6 @@ class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialo
     def accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
         self.page_config_groupbox: PageConfigWidget
-        self.document.page_layout = self.page_config_groupbox.page_layout
-        self.document.on_page_layout_updated()
+        self.document.update_page_layout(self.page_config_groupbox.page_layout)
         super(DocumentSettingsDialog, self).accept()
         logger.debug("Saving settings in the document done.")

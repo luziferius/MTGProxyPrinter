@@ -3,6 +3,15 @@
 
 # Next version (in development)
 
+## New features
+
+- Proper, full support for oversized cards, like Archenemy schemes or Planechase plane cards. Regular cards and larger
+  cards are always kept on separate pages to ensure that drawn cut marker lines (if enabled) are always 100% accurate.
+  - Note: Some cards, like the Legacy Championship winner rewards, are tagged as being oversized, but are then served
+    with regular-size images by Scryfall.
+    When the image is downloaded, it will be treated as a regular card, even if the deck import wizard warns
+    about it being potentially oversized.
+
 ## Fixed issues
 
 - Fixed the “Remove selected” cards button in the deck list importer unexpectedly staying active

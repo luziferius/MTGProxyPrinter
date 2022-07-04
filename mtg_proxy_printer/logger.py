@@ -40,7 +40,7 @@ def get_logger(full_module_path: str) -> logging.Logger:
     return root_logger.getChild(module_path)
 
 
-def configure_root_logger():
+def configure_root_logger(output_stdout: bool = True):
     """
     Initialize the logging system.
     """
@@ -53,10 +53,11 @@ def configure_root_logger():
     debug_settings = mtg_proxy_printer.settings.settings["debug"]
     file_log_level = debug_settings["log-level"]
     root_logger.setLevel(1)
-    std_out_handler = logging.StreamHandler(sys.stdout)
-    std_out_handler.setLevel(file_log_level)
-    std_out_handler.setFormatter(logging.Formatter(LOG_FORMAT))
-    root_logger.addHandler(std_out_handler)
+    if output_stdout:
+        std_out_handler = logging.StreamHandler(sys.stdout)
+        std_out_handler.setLevel(file_log_level)
+        std_out_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+        root_logger.addHandler(std_out_handler)
     if debug_settings.getboolean("cutelog-integration"):
         socket_handler = logging.handlers.SocketHandler("127.0.0.1", 19996)  # default listening address
         root_logger.addHandler(socket_handler)

@@ -14,9 +14,43 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """Contains some constants, like the card size"""
+import enum
+from typing import NamedTuple
+
 import pint
 
 unit_registry = pint.UnitRegistry()
 DPI: pint.Quantity = 300 / unit_registry.inch
+
+
+class CardSize(NamedTuple):
+    width: int
+    height: int
+
+
+@enum.unique
+class CardSizes(enum.Enum):
+    REGULAR = CardSize(63, 88)
+    OVERSIZED = CardSize(88, 126)
+
+    @classmethod
+    def for_page_type(cls, page_type: "PageType"):
+        return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
+
+
 IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
 IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
+
+
+@enum.unique
+class PageType(enum.Enum):
+    """
+    This enum can be used to indicate what kind of images are placed on a Page.
+    A page that only contains regular-sized images is REGULAR, a page only containing oversized images is OVERSIZED.
+    An empty page has an UNDETERMINED image size and can be used for both oversized or regular sized cards
+    A page containing both is MIXED. This should never happen. A page being MIXED indicates a bug in the code.
+    """
+    UNDETERMINED = enum.auto()
+    REGULAR = enum.auto()
+    OVERSIZED = enum.auto()
+    MIXED = enum.auto()

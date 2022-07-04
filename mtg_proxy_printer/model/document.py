@@ -14,18 +14,21 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import copy
 import dataclasses
 import enum
-import functools
 import itertools
+import math
 import pathlib
 import random
 import textwrap
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QPersistentModelIndex
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
+    QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings
@@ -48,14 +51,30 @@ class DocumentColumns(enum.IntEnum):
 
 @dataclasses.dataclass
 class CardContainer:
-    parent: "CardList"
+    parent: "Page"
     card: Card
 
 
-CardList = typing.List[CardContainer]
-PageList = typing.List[CardList]
+class Page(typing.List[CardContainer]):
+
+    def page_type(self) -> PageType:
+        if not self:
+            return PageType.UNDETERMINED
+        found_types = set(container.card.requested_page_type() for container in self)
+        if found_types == {PageType.REGULAR}:
+            return PageType.REGULAR
+        if found_types == {PageType.OVERSIZED}:
+            return PageType.OVERSIZED
+        return PageType.MIXED
+
+    def accepts_card(self, card: typing.Union[Card, PageType]) -> bool:
+        other_type = card.requested_page_type() if isinstance(card, Card) else card
+        own_page_type = self.page_type()
+        return other_type == own_page_type or own_page_type is PageType.UNDETERMINED
+
 
 INVALID_INDEX = QModelIndex()
+PageList = typing.List[Page]
 
 
 class Document(QAbstractItemModel):
@@ -64,9 +83,9 @@ class Document(QAbstractItemModel):
     The pages hold the individual proxy images
     """
     loading_state_changed = Signal(bool)
-    total_cards_per_page_changed = Signal(int)
     current_page_changed = Signal(QPersistentModelIndex)
     page_layout_changed = Signal()
+    page_type_changed = Signal(QModelIndex)
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -89,9 +108,8 @@ class Document(QAbstractItemModel):
         self.page_index_cache: typing.Dict[int, int] = {}  # Mapping from page id() to list index in the page list
         self.add_page()
         self.currently_edited_page = self.pages[0]
-        self.page_layout = PageLayoutSettings()
-        self.page_layout.update_from_settings()
-        self.total_cards_per_page = self.compute_page_card_capacity()
+        self.page_layout = PageLayoutSettings.create_from_settings()
+        self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
 
     def on_ui_selects_new_page(self, new_page: QModelIndex):
         if new_page.parent().isValid():
@@ -114,26 +132,33 @@ class Document(QAbstractItemModel):
     @Slot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
-        self.page_layout.update_from_settings()
-        self.on_page_layout_updated()
+        self.update_page_layout(PageLayoutSettings.create_from_settings())
 
-    def on_page_layout_updated(self):
-        previous_card_count = self.total_cards_per_page
-        self.compute_page_row_count.cache_clear()
-        self.compute_page_column_count.cache_clear()
-        self.total_cards_per_page = self.compute_page_card_capacity()
-        if self.total_cards_per_page != previous_card_count:
-            self.total_cards_per_page_changed.emit(self.total_cards_per_page)
-        if self.total_cards_per_page < previous_card_count:
+    @Slot(PageLayoutSettings)
+    def update_page_layout(self, new_layout: PageLayoutSettings):
+        if new_layout == self.page_layout:
+            return
+        old_capacities = self.page_layout.compute_page_card_capacity(PageType.REGULAR), \
+            self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        new_capacities = new_layout.compute_page_card_capacity(PageType.REGULAR), \
+            new_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        # Copy the values to cut all ties to the passed-in instance. This ensures that the instances used by settings
+        # widgets will stay separated.
+        self.page_layout = copy.copy(new_layout)
+        if new_capacities < old_capacities:
             self.move_excess_cards_to_free_pages()
         self.page_layout_changed.emit()
 
     @Slot()
     @Slot(int)
-    def add_page(self, position: int = None) -> CardList:
+    def add_page(self, position: int = None) -> Page:
+        """
+        Inserts an empty page at the given position. Positions are clamped into the range [0, page_count].
+        Appends the new page to the document, if the position is None.
+        """
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(INVALID_INDEX, position, position)
-        new_page: CardList = []
+        new_page = Page()
         if position == self.rowCount():
             self.pages.append(new_page)
             self.page_index_cache[id(new_page)] = len(self.pages) - 1
@@ -150,14 +175,17 @@ class Document(QAbstractItemModel):
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
+        page_capacity_for_card = self.page_layout.compute_page_card_capacity(card.requested_page_type())
         current_page_position = self.find_page_list_index(self.currently_edited_page)
-        if len(self.currently_edited_page) < self.total_cards_per_page:
+        if len(self.currently_edited_page) < page_capacity_for_card \
+                and self.currently_edited_page.accepts_card(card):
             copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < self.rowCount():
-            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
+            if self.pages[current_page_position].accepts_card(card):
+                copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
+                logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
             current_page_position += 1
         if copies > 0:
             logger.debug("No empty slots found, appending new pages to the document, until all copies are added.")
@@ -175,19 +203,28 @@ class Document(QAbstractItemModel):
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
         """
         page_index = self.index(page_number, 0)
-        page_card_count = self.rowCount(page_index)
+        page = self.pages[page_number]
+        page_card_count = len(page)
+        # Not using the current page’s page type, because UNDETERMINED pages overestimate the capacity when adding
+        # oversized pages. Using the requested page type from the Card object is fine, because this method is only
+        # called, if the given card fits on the given page.
+        page_capacity = self.page_layout.compute_page_card_capacity(card.requested_page_type())
         first_index, last_index = page_card_count, page_card_count + count - 1
-        if last_index >= self.total_cards_per_page:
-            last_index = self.total_cards_per_page - 1
+        if last_index >= page_capacity:
+            last_index = page_capacity - 1
         cards_inserted = last_index - first_index + 1
         if not cards_inserted:
             logger.debug(f"Trying to add {count} cards into full page {page_number}. Doing nothing")
             return 0
         self.beginInsertRows(page_index, first_index, last_index)
-        page = self.pages[page_number]
+
+        old_page_type = page.page_type()
         page += (CardContainer(page, card) for _ in range(cards_inserted))
         logger.debug(f"After insert, page contains {len(page)} images.")
         self.endInsertRows()
+        if old_page_type != (new_page_type := page.page_type()):
+            logger.debug(f"Page type of page {page_number} changed from {old_page_type} to {new_page_type}")
+            self.page_type_changed.emit(page_index)
         logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
 
@@ -201,10 +238,7 @@ class Document(QAbstractItemModel):
         logger.debug(f"Removing pages {first_index} to {last_index}. {self.rowCount()=}")
         self.beginRemoveRows(INVALID_INDEX, first_index, last_index)
         logger.debug("BeginRemoveRows() called")
-        to_delete = set(index.row() for index in indices)
-        logger.debug(f"Rows to delete: {sorted(to_delete)}")
-        remaining = (page for index, page in enumerate(self.pages) if index not in to_delete)
-        self.pages[:] = remaining
+        del self.pages[first_index:last_index+1]
         self._recreate_page_index_cache()
         self.endRemoveRows()
         if not self.pages:
@@ -253,9 +287,13 @@ class Document(QAbstractItemModel):
         first_index, last_index = indices[0].row(), indices[-1].row()
         parent = indices[0].parent()
         self.beginRemoveRows(parent, first_index, last_index)
-        page: CardList = parent.internalPointer()
+        page: Page = parent.internalPointer()
+        old_page_type = page.page_type()
         del page[first_index:last_index+1]
         self.endRemoveRows()
+        if old_page_type != (new_page_type := page.page_type()):
+            logger.debug(f"Page type of page {parent.row()} changed from {old_page_type} to {new_page_type}")
+            self.page_type_changed.emit(parent)
         return last_index - first_index
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
@@ -279,11 +317,10 @@ class Document(QAbstractItemModel):
             return len(DocumentColumns)  # columnCount of an invalid index.
 
     def parent(self, child: QModelIndex) -> QModelIndex:
-        data: typing.Union[CardList, CardContainer] = child.internalPointer()
+        data: typing.Union[Page, CardContainer] = child.internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
-            page_id = id(page)
-            page_index = self.page_index_cache[page_id]
+            page_index = self.find_page_list_index(page)
             return self.createIndex(page_index, 0, page)
         return INVALID_INDEX  # Pages have no parent
 
@@ -351,7 +388,7 @@ class Document(QAbstractItemModel):
         if 0 > index.row() >= self.rowCount() or not index.isValid():
             logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
-        item: CardList = self.pages[index.row()]
+        item = self.pages[index.row()]
         if role == Qt.DisplayRole:
             return self._get_page_preview(item)
         elif role == Qt.ToolTipRole:
@@ -382,25 +419,11 @@ class Document(QAbstractItemModel):
                 return card.image_file
 
     @staticmethod
-    def _get_page_preview(page: CardList):
+    def _get_page_preview(page: Page):
         names = collections.Counter(container.card.name for container in page)
         return "\n".join(
             f"{count}× {name}" for name, count in names.items()
         )
-
-    @functools.lru_cache(maxsize=1)
-    def compute_page_column_count(self) -> int:
-        """Returns the total number of card columns that fit on a page."""
-        return self.page_layout.compute_page_column_count()
-
-    @functools.lru_cache(maxsize=1)
-    def compute_page_row_count(self) -> int:
-        """Returns the total number of card rows that fit on a page."""
-        return self.page_layout.compute_page_row_count()
-
-    def compute_page_card_capacity(self) -> int:
-        """Returns the total number of card images that fit on a single page."""
-        return self.compute_page_row_count() * self.compute_page_column_count()
 
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
@@ -453,16 +476,36 @@ class Document(QAbstractItemModel):
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
         logger.info("Compacting document.")
-        maximum_cards_per_page = self.total_cards_per_page
+        self._compact_pages_of_type(PageType.REGULAR)
+        self._compact_pages_of_type(PageType.OVERSIZED)
+        if not self.pages[-1]:
+            logger.debug("Determining empty pages")
+            first = last = self.rowCount()-1
+            for page in reversed(self.pages[1:-1]):
+                if not page:
+                    first -= 1
+            logger.debug(f"Removing empty pages {first} - {last}")
+            self.remove_pages([self.index(first, 0), self.index(last, 0)])
+        logger.info("Compacting done.")
+
+    def _compact_pages_of_type(self, page_type: PageType):
+        maximum_cards_per_page = self.page_layout.compute_page_card_capacity(page_type)
+        to_skip_type = PageType.OVERSIZED if page_type is PageType.REGULAR else PageType.REGULAR
         last_index = self.rowCount() - 1
         for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
+            if current_page.page_type() is to_skip_type:
+                continue
             if cards_to_add := maximum_cards_per_page - len(current_page):
                 logger.debug(f"Found {cards_to_add} empty slots on page {current_index}")
                 while cards_to_add and current_index < last_index:
-                    cards_to_add -= (moved_cards := self._move_cards(current_page, self.pages[last_index]))
+                    page_to_draw_from = self.pages[last_index]
+                    if page_to_draw_from.page_type() is to_skip_type:
+                        last_index -= 1
+                        continue
+                    cards_to_add -= (moved_cards := self._move_cards(current_page, page_to_draw_from))
                     logger.debug(f"Moved {moved_cards} from page {last_index} to page {current_index}. "
                                  f"Free slots in target: {maximum_cards_per_page-len(current_page)}")
-                    if not self.pages[last_index]:
+                    if not page_to_draw_from:
                         logger.debug(f"Last page {last_index} now empty.")
                         last_index -= 1
                     else:
@@ -471,40 +514,31 @@ class Document(QAbstractItemModel):
                     logger.debug("No more pages available to take cards from. Finished.")
                     break
 
-        empty_trailing_pages = list(map(
-            self.index, range(last_index+1, self.rowCount()), itertools.repeat(0)
-        ))
-
-        logger.debug(f"Removing {len(empty_trailing_pages)} empty, trailing pages.")
-        self.remove_pages(empty_trailing_pages)
-        logger.info("Compacting done.")
-
     def compute_pages_saved_by_compacting(self) -> int:
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
-            return 0
-        maximum_document_capacity = self.total_cards_per_page * self.rowCount()
-        total_cards_in_document = sum(map(len, self.pages))
-        if total_cards_in_document:
-            result = (maximum_document_capacity - total_cards_in_document) // self.total_cards_per_page
-        else:
-            # This is a special case that is not handled correctly by the formula above. If the document
-            # is empty, it can not be compacted to zero pages, but one.
-            result = self.rowCount() - 1
+        cards = collections.Counter()
+        for page in self.pages:
+            cards[page.page_type()] += len(page)
+        required_pages = (
+            math.ceil(cards[PageType.OVERSIZED] / self.page_layout.compute_page_card_capacity(PageType.OVERSIZED))
+            + math.ceil(cards[PageType.REGULAR] / self.page_layout.compute_page_card_capacity(PageType.REGULAR))
+        ) or 1
+        result = self.rowCount() - required_pages
         return result
 
-    def _move_cards(self, page_to_fill: CardList, source: CardList, maximum_card_count: int = None) -> int:
+    def _move_cards(self, page_to_fill: Page, source: Page, maximum_card_count: int = None) -> int:
         """
         Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
         If maximum_card_count is None, move as many cards as possible.
         """
         source_card_count = len(source)
         target_card_count = len(page_to_fill)
+        target_card_capacity = self.page_layout.compute_page_card_capacity(page_to_fill.page_type())
         if maximum_card_count is None:
             maximum_card_count = source_card_count
-        card_count_to_move = min(maximum_card_count, self.total_cards_per_page - target_card_count)
+        card_count_to_move = min(maximum_card_count, target_card_capacity - target_card_count)
         if not card_count_to_move:
             return 0
         source_page_index = self.index(self.find_page_list_index(source), 0)
@@ -523,7 +557,7 @@ class Document(QAbstractItemModel):
         self.endMoveRows()
         return card_count_to_move
 
-    def find_page_list_index(self, other: CardList):
+    def find_page_list_index(self, other: Page):
         """Finds the 0-indexed location of the given CardList in the pages list"""
         try:
             return self.page_index_cache[id(other)]
@@ -537,47 +571,86 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
-        if not self.total_cards_per_page:
+        return self._move_excess_cards_of_type_to_free_pages(PageType.REGULAR) \
+            + self._move_excess_cards_of_type_to_free_pages(PageType.OVERSIZED)
+
+    def _move_excess_cards_of_type_to_free_pages(self, page_type: PageType) -> int:
+        if not (page_capacity := self.page_layout.compute_page_card_capacity(page_type)):
             raise RuntimeError("Page capacity is zero!")
-        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages()
+        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages(page_type)
         logger.info(
             f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
         moved_cards = 0
         for page in overflowing_pages:
             # Fill free slots on other pages first
-            while (current_page_length := len(page)) > self.total_cards_per_page and pages_with_free_slots:
+            while (current_page_length := len(page)) > page_capacity and pages_with_free_slots:
                 page_to_fill = pages_with_free_slots.pop(0)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - self.total_cards_per_page)
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - page_capacity)
             # After filling all remaining free slots, it may still contain images for multiple new pages,
             # so add new pages until all excess images are moved.
-            while (current_page_length := len(page)) > self.total_cards_per_page:
+            while (current_page_length := len(page)) > page_capacity:
                 page_to_fill = self.add_page()
                 self._set_currently_edited_page(page_to_fill)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - self.total_cards_per_page)
-                if len(page_to_fill) < self.total_cards_per_page:
+                moved_cards += self._move_cards(page_to_fill, page, current_page_length - page_capacity)
+                if len(page_to_fill) < page_capacity:
                     pages_with_free_slots.append(page_to_fill)
-        logger.info(f"Moved {moved_cards} cards away from overflowing pages.")
+        logger.info(
+            f"Moved {moved_cards} {'regular' if page_type == PageType.REGULAR else 'oversized'} "
+            f"cards away from overflowing pages.")
         return moved_cards
 
-    def _set_currently_edited_page(self, page: CardList):
+    def _set_currently_edited_page(self, page: Page):
         self.currently_edited_page = page
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
-    def find_overflowing_and_non_full_pages(self, total_cards_per_page: int = None):
+    def find_overflowing_and_non_full_pages(self, page_type: PageType, page_layout: PageLayoutSettings = None):
         """
         Returns two lists of pages: The first contains all pages that are currently overflowing,
         and the second contains that currently have free slots and therefore can fit additional cards.
+        :param page_type: Page type to look for. Should be one of PageType.REGULAR or PageType.OVERSIZED
+        :param page_layout: If given, base computation on the given layout, instead of the current one
         """
-        total_cards_per_page = total_cards_per_page or self.total_cards_per_page
+        layout = page_layout or self.page_layout
+        total_cards_per_page = layout.compute_page_card_capacity(page_type)
         overflowing_pages = []
         pages_with_free_slots: PageList = []
         for page_number, page in enumerate(self.pages):
+            if not page.accepts_card(page_type):
+                continue
             if len(page) > total_cards_per_page:
                 overflowing_pages.append(page)
             elif len(page) < total_cards_per_page:
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
+
+    @Slot()
+    def fix_mixed_pages(self):
+        """
+        Documents saved with older versions (or specifically crafted save files) can contain images with mixed
+        sizes on the same page.
+        This method is called when the document loading finishes and moves cards away from these mixed pages so that
+        all pages only contain a single image size.
+        """
+        mixed_pages = [page for page in self.pages if page.page_type() == PageType.MIXED]
+        logger.info(f"Fixing {len(mixed_pages)} mixed pages by moving cards away")
+        for page in mixed_pages:
+            regular_rows = []
+            oversized_rows = []
+            for row, container in enumerate(page):
+                if container.card.requested_page_type() == PageType.REGULAR:
+                    regular_rows.append(row)
+                else:
+                    oversized_rows.append(row)
+            card_rows_to_move = regular_rows if len(regular_rows) < len(oversized_rows) else oversized_rows
+            cards = [page[row].card for row in card_rows_to_move]
+            cards.reverse()  # Iterate from the end of the list to not shift indices
+            page_index = self.index(self.find_page_list_index(page), 0)
+            logger.info(f"Moving {len(cards)} cards from page {page_index.row()} to other pages.")
+            for card in card_rows_to_move:
+                self.remove_cards([self.index(card, 0, page_index)])
+            for card in cards:
+                self.add_card(card, 1)
 
     @Slot()
     def clear(self):
@@ -591,8 +664,7 @@ class Document(QAbstractItemModel):
     @Slot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
         self.clear()
-        self.page_layout.update_from_settings()
-        self.on_page_layout_updated()
+        self.update_page_layout(PageLayoutSettings.create_from_settings())
         self.save_file_path = None
 
     @Slot()
@@ -650,7 +722,7 @@ class Document(QAbstractItemModel):
                     yield QPersistentModelIndex(self.index(card_row, 0, page_index))
 
     @staticmethod
-    def _get_page_content_as_scryfall_ids(page: CardList) -> typing.Iterable[typing.Tuple[str, bool]]:
+    def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
 
     def _recreate_page_index_cache(self):
