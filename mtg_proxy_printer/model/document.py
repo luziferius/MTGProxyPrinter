@@ -575,7 +575,6 @@ class Document(QAbstractItemModel):
             + self._move_excess_cards_of_type_to_free_pages(PageType.OVERSIZED)
 
     def _move_excess_cards_of_type_to_free_pages(self, page_type: PageType) -> int:
-        # TODO: Increase minimum page size and then replace this constant
         if not (page_capacity := self.page_layout.compute_page_card_capacity(page_type)):
             raise RuntimeError("Page capacity is zero!")
         overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages(page_type)
