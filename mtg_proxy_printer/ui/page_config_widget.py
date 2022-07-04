@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import IMAGE_WIDTH, IMAGE_HEIGHT
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -79,9 +79,10 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
+        oversized: CardSize = CardSizes.OVERSIZED.value
         pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + IMAGE_HEIGHT.to_tuple()[0]
-        min_page_width = pl.margin_left + pl.margin_right + IMAGE_WIDTH.to_tuple()[0]
+        min_page_height = pl.margin_bottom + pl.margin_top + oversized.height
+        min_page_width = pl.margin_left + pl.margin_right + oversized.width
         self.page_height: QSpinBox
         self.page_width: QSpinBox
         self.page_height.setMinimum(min_page_height)
