@@ -380,8 +380,19 @@ class Document(QAbstractItemModel):
             top_left = index.sibling(index.row(), index.column())
             bottom_right = top_left.siblingAtColumn(PageColumns.Image)
             card_container: CardContainer = top_left.internalPointer()
-            card_container.card = card
-            self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            page = card_container.parent
+            # When page length is one, the switch works because the only card present
+            # that may be blocking the switch will be removed
+            if page.accepts_card(card) or len(page) == 1:
+                card_container.card = card
+                self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            else:
+                # The user replaced a card with one of different size. This can only happen with the oversized
+                # commander cards that were included in older, pre-constructed commander decks.
+                # In this case, simply remove it from the page and add the new one. The logic in add_card() will
+                # find a suitable target page or create one, if necessary
+                self.remove_cards([index])
+                self.add_card(card,1)
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
