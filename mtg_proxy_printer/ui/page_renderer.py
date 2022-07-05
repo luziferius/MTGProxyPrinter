@@ -20,18 +20,15 @@ from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIn
     pyqtSignal as Signal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
 from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
-
 import pint
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
-from mtg_proxy_printer.model.document import Document, Page
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, DPI
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-unit_registry = pint.UnitRegistry()
-DPI: pint.Quantity = 300 / unit_registry.inch
 
 __all__ = [
     "RenderMode",
@@ -114,8 +111,8 @@ class PageScene(QGraphicsScene):
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
-                (DPI*width).to_reduced_units().to_tuple()[0],
-                (DPI*height).to_reduced_units().to_tuple()[0]
+                (DPI*width).to_reduced_units().magnitude,
+                (DPI*height).to_reduced_units().magnitude
             )
         )
         return page_size
