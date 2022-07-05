@@ -38,10 +38,6 @@ class CardSizes(enum.Enum):
         return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
 
 
-IMAGE_WIDTH: pint.Quantity = unit_registry("63 millimeter")
-IMAGE_HEIGHT: pint.Quantity = unit_registry("88 millimeter")
-
-
 @enum.unique
 class PageType(enum.Enum):
     """
