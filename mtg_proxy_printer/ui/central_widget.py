@@ -104,7 +104,10 @@ class CentralWidget(QWidget):
     def on_document_rows_about_to_be_removed(self, index: QModelIndex, first: int, last: int):
         self.document_view: QListView
         current_row = self.document_view.currentIndex().row()
-        if index.parent().isValid() and not (last == current_row == (self.document.rowCount()-1)):
+        if index.parent().isValid():
+            # Not interested in removed cards here, so return if cards are about to be removed.
+            return
+        if not index.parent().isValid() and not (last == current_row == (self.document.rowCount()-1)):
             return
         # Selecting a different page is required if the current page is the last page and is going to be deleted.
         # So re-selecting the page is required to prevent exceptions. Without this, the document view creates invalid
