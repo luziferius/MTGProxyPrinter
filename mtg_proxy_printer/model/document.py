@@ -464,6 +464,7 @@ class Document(QAbstractItemModel):
                 "INSERT INTO Card (page, slot, scryfall_id, is_front) VALUES (?, ?, ?, ?)",
                 flattened_data
             )
+            logger.debug(f"Written {db.execute('SELECT count() FROM Card').fetchone()[0]} cards.")
             db.execute(
                 textwrap.dedent("""\
                     INSERT OR REPLACE INTO DocumentSettings (rowid, page_height, page_width,
@@ -472,8 +473,10 @@ class Document(QAbstractItemModel):
                       VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """),
                 dataclasses.astuple(self.page_layout))
+            logger.debug("Written document settings")
             db.commit()
             db.execute("VACUUM")
+        logger.debug("Database saved and closed.")
 
     @Slot()
     def compact_pages(self):
