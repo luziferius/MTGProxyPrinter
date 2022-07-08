@@ -567,6 +567,48 @@ def _migrate_27_to_28(db: sqlite3.Connection):
         db.execute(statement)
 
 
+def _migrate_28_to_29(db: sqlite3.Connection):
+    db.execute("DROP VIEW HiddenPrintings\n")
+    db.execute(textwrap.dedent("""\
+    CREATE TABLE PrintingDisplayFilter2 (
+      -- Stores which filter applies to which printing.
+      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+      PRIMARY KEY (printing_id, filter_id)
+    ) WITHOUT ROWID;
+    """))
+    db.execute(textwrap.dedent("""\
+    INSERT INTO PrintingDisplayFilter2 (printing_id, filter_id)
+      SELECT printing_id, filter_id
+      FROM PrintingDisplayFilter
+      WHERE filter_applies IS TRUE
+    """))
+    db.execute("DROP TABLE PrintingDisplayFilter\n")
+    db.execute("ALTER TABLE PrintingDisplayFilter2 RENAME TO PrintingDisplayFilter\n")
+    db.execute(textwrap.dedent("""\
+    CREATE VIEW HiddenPrintingIDs AS
+      SELECT printing_id
+        FROM PrintingDisplayFilter
+        JOIN DisplayFilters USING (filter_id)
+        WHERE filter_active IS TRUE
+        GROUP BY printing_id
+    ;
+    """))
+    db.execute("DROP VIEW AllPrintings\n")
+    db.execute(textwrap.dedent("""\
+    CREATE VIEW AllPrintings AS
+      SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+             is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+      FROM Card
+      JOIN Printing USING (card_id)
+      JOIN MTGSet   USING (set_id)
+      JOIN CardFace USING (printing_id)
+      JOIN FaceName USING (face_name_id)
+      JOIN PrintLanguage USING (language_id)
+    ;
+    """))
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -589,6 +631,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (25, _migrate_25_to_26),
     (26, _migrate_26_to_27),
     (27, _migrate_27_to_28),
+    (28, _migrate_28_to_29),
 )
 
 
@@ -616,21 +659,22 @@ def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationSc
     :param migration_scripts: List of migration script functions to run, if applicable. Defaults to a built-in list of
       migration scripts. Should only be passed explicitly for testing purposes.
     """
-    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
+    begin_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
     if mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0:
-        logger.info(f"Database schema outdated, running database migrations. {current_schema_version=}")
+        logger.info(f"Database schema outdated, running database migrations. {begin_schema_version=}")
         if migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {migration_scripts}")
     else:
         logger.info("Database schema recent, not running any database migrations")
         return
     for source_version, migration_script in migration_scripts:
-        if db.execute("PRAGMA user_version").fetchone()[0] == source_version:
+        if db.execute("PRAGMA user_version\n").fetchone()[0] == source_version:
             logger.info(f"Running migration task for schema version {source_version}")
-            db.execute("BEGIN TRANSACTION")
+            db.execute("BEGIN TRANSACTION\n")
             migration_script(db)
-            db.execute(f"PRAGMA user_version = {source_version + 1}")
+            db.execute(f"PRAGMA user_version = {source_version + 1}\n")
             db.commit()
-
-    current_schema_version = db.execute("PRAGMA user_version").fetchone()[0]
-    logger.info(f"Finished database migrations. {current_schema_version=}")
+    current_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
+    logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
+    db.execute("VACUUM\n")
+    logger.info("Rebuild done.")

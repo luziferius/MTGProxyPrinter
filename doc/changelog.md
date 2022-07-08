@@ -1,6 +1,5 @@
 # Changelog
 
-
 # Next version (in development)
 
 ## New features
@@ -14,6 +13,8 @@
 
 ## Fixed issues
 
+- Significantly optimized card database size and import speed.
+  (The database now takes roughly 25% less time to update and uses about 30% less disk space)
 - Fixed the “Remove selected” cards button in the deck list importer unexpectedly staying active
   when clicked while multiple cells of the same row in the card table were selected.
 
