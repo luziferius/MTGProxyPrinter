@@ -594,6 +594,19 @@ def _migrate_28_to_29(db: sqlite3.Connection):
         GROUP BY printing_id
     ;
     """))
+    db.execute("DROP VIEW AllPrintings\n")
+    db.execute(textwrap.dedent("""\
+    CREATE VIEW AllPrintings AS
+      SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+             is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+      FROM Card
+      JOIN Printing USING (card_id)
+      JOIN MTGSet   USING (set_id)
+      JOIN CardFace USING (printing_id)
+      JOIN FaceName USING (face_name_id)
+      JOIN PrintLanguage USING (language_id)
+    ;
+    """))
 
 
 MIGRATION_SCRIPTS: MigrationScriptListing = (
