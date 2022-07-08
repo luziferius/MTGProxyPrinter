@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000028;
+PRAGMA user_version = 0000029;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -109,14 +109,14 @@ CREATE TABLE PrintingDisplayFilter (
   -- Stores which filter applies to which printing.
   printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
   filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
-  filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
   PRIMARY KEY (printing_id, filter_id)
 ) WITHOUT ROWID;
 
-CREATE VIEW HiddenPrintings AS
-  SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
+CREATE VIEW HiddenPrintingIDs AS
+SELECT printing_id
   FROM PrintingDisplayFilter
   JOIN DisplayFilters USING (filter_id)
+  WHERE filter_active IS TRUE
   GROUP BY printing_id
 ;
 

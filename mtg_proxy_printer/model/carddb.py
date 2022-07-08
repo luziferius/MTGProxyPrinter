@@ -751,7 +751,7 @@ class CardDatabase:
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
         return filters_in_settings != filters_in_db
 
-    @profile
+    @profile  # TODO: This decorator is unnecessary
     def _remove_old_printing_filters(self, section) -> bool:
         stored_filters = {
             filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
@@ -771,10 +771,12 @@ class CardDatabase:
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
-            SET is_hidden = HiddenPrintings.should_be_hidden
-            FROM HiddenPrintings
-            WHERE Printing.printing_id = HiddenPrintings.printing_id
-              AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+            SET is_hidden = Printing.printing_id IN (
+              SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
+            )
+            WHERE is_hidden <> (Printing.printing_id IN (
+              SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
+            ))
         ;
         """))
         progress_signal(2)

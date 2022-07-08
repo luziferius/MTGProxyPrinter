@@ -64,6 +64,14 @@ def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
     return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
 
 
+def load_multiple_json_cards(
+        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]]):
+    return [
+        load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
+        for json_file_or_name in json_files_or_names
+    ]
+
+
 def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
@@ -73,10 +81,7 @@ def fill_card_database_with_json_cards(
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
         settings_to_use.update(filter_settings)
-    data = [
-        load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
-        for json_file_or_name in json_files_or_names
-    ]
+    data = load_multiple_json_cards(json_files_or_names)
     with patch.dict(section, settings_to_use):
         populate_database(qtbot, card_db, data)
     return card_db

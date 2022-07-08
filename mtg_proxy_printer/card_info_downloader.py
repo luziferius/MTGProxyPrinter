@@ -576,12 +576,14 @@ def _insert_card_filters(
         model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool],
         printing_filter_ids: typing.Dict[str, int]):
     model.db.executemany(
-        cached_dedent("""\
-            INSERT OR REPLACE INTO PrintingDisplayFilter (printing_id, filter_id, filter_applies)
-              VALUES (?, ?, ?)
-        """),
-        ((printing_id, printing_filter_ids[filter_name], filter_applies)
-         for filter_name, filter_applies in filter_data.items())
+        "INSERT OR IGNORE INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
+        ((printing_id, printing_filter_ids[filter_name])
+         for filter_name, filter_applies in filter_data.items() if filter_applies)
+    )
+    model.db.executemany(
+        "DELETE FROM PrintingDisplayFilter WHERE printing_id = ? AND filter_id = ?\n",
+        ((printing_id, printing_filter_ids[filter_name])
+         for filter_name, filter_applies in filter_data.items() if not filter_applies)
     )
 
 
