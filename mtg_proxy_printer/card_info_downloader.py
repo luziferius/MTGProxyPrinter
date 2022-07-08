@@ -290,6 +290,10 @@ class CardInfoDownloadWorker(DownloaderBase):
         index = 0
         face_ids: IntTuples = []
         db: sqlite3.Connection = self.model.db
+        # Will be re-populated while iterating over the card data. Axing the previous data is far cheaper than trying
+        # to update it in-place by removing up to number-of-available-filters entries per each individual card,
+        # just to make sure that rare un-banned cards are updated properly.
+        db.execute("DELETE FROM PrintingDisplayFilter\n")
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -576,14 +580,9 @@ def _insert_card_filters(
         model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool],
         printing_filter_ids: typing.Dict[str, int]):
     model.db.executemany(
-        "INSERT OR IGNORE INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
+        "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
         ((printing_id, printing_filter_ids[filter_name])
          for filter_name, filter_applies in filter_data.items() if filter_applies)
-    )
-    model.db.executemany(
-        "DELETE FROM PrintingDisplayFilter WHERE printing_id = ? AND filter_id = ?\n",
-        ((printing_id, printing_filter_ids[filter_name])
-         for filter_name, filter_applies in filter_data.items() if not filter_applies)
     )
 
 
