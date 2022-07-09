@@ -69,6 +69,8 @@ class CentralWidget(QWidget):
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
         self.page_card_table_view.setModel(document)
+        # Signal has to be connected here, because setModel() implicitly creates the QItemSelectionModel
+        self.page_card_table_view.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
         self._setup_page_renderer(document)
         self._setup_add_card_widget(card_db, image_db)
         self._setup_document_view(document)
@@ -84,6 +86,13 @@ class CentralWidget(QWidget):
         self.document_view.setModel(document)
         self.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
+
+    @Slot()
+    def parsed_cards_table_selection_changed(self):
+        """Called whenever the selection in the page_card_table_view is changed. This manages the activation state
+        of the “Remove selected” button, which should only be clickable, if there are cards selected."""
+        selection_model: QItemSelectionModel = self.page_card_table_view.selectionModel()
+        self.delete_selected_images_button.setDisabled(selection_model.selection().isEmpty())
 
     def on_current_page_changed(self, new_page: QPersistentModelIndex):
         self.page_card_table_view: QTableView
