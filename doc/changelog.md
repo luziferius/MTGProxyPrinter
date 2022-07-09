@@ -17,6 +17,8 @@
   (The database now takes roughly 25% less time to update and uses about 30% less disk space)
 - Fixed the “Remove selected” cards button in the deck list importer unexpectedly staying active
   when clicked while multiple cells of the same row in the card table were selected.
+- Fixed unintended immediate removal of freshly-downloaded low-resolution images. These should only be removed, if
+  a high-resolution image becomes available.
 
 # Version 0.17.0 (2022-06-13)  <a name="v0_17_0"></a>
 
