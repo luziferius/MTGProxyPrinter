@@ -13,9 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import dataclasses
 import itertools
 import pathlib
+import typing
+import unittest.mock
 from tempfile import TemporaryDirectory
 import textwrap
 import time
@@ -34,38 +37,36 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, CardContainer
+from mtg_proxy_printer.model.document import Document, CardContainer, PageType
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageKey
 
 
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
-    document.page_layout.page_height = 300
-    document.page_layout.page_width = 200
-    document.page_layout.margin_top = 20
-    document.page_layout.margin_bottom = 19
-    document.page_layout.margin_left = 18
-    document.page_layout.margin_right = 17
-    document.page_layout.image_spacing_horizontal = 3
-    document.page_layout.image_spacing_vertical = 2
-    document.page_layout.draw_cut_markers = True
-    document.on_page_layout_updated()
+    custom_layout = PageLayoutSettings(300, 200, 20, 19, 18, 17, 3, 2, True)
+    document.update_page_layout(custom_layout)
     yield document
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
-    default_layout = PageLayoutSettings()
-    default_layout.update_from_settings()
+    default_layout = PageLayoutSettings.create_from_settings()
     assert_that(
-        document_custom_layout.total_cards_per_page,
+        document_custom_layout,
+        has_property("page_layout", not_(equal_to(default_layout)))
+    )
+    assert_that(
+        document_custom_layout.page_layout.compute_page_row_count(),
         is_not(equal_to(default_layout.compute_page_card_capacity())),
         "Test setup failed."
     )
-    with qtbot.waitSignal(document_custom_layout.total_cards_per_page_changed, timeout=1000):
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=1000):
         document_custom_layout.clear_all_data()
 
-    assert_that(document_custom_layout.page_layout, is_(equal_to(default_layout)))
+    assert_that(
+        document_custom_layout,
+        has_property("page_layout", equal_to(default_layout))
+    )
 
 
 def test_document_two_overflow_events_only_add_one_new_page(document: Document):
@@ -94,12 +95,16 @@ def test_clear_database_not_clearing_last_image_use_timestamps(document: Documen
 
 
 def test_document_is_created_empty(document: Document):
-    assert_that(document.compute_page_card_capacity(), is_(greater_than_or_equal_to(1)))
-    assert_that(document.total_cards_per_page, is_(equal_to(document.compute_page_card_capacity())))
+    capacity = document.page_layout.compute_page_card_capacity()
+    assert_that(capacity, is_(greater_than_or_equal_to(1)))
+    assert_that(document.total_cards_per_page, is_(equal_to(capacity)))
     assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
     assert_that(document.pages, has_length(1), "Expected creation of a single, empty page.")
     assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
     assert_that(document.pages[0], is_(empty()), "Expected empty page, but it is not empty")
+    assert_that(
+        document.pages[0].page_type(), is_(PageType.UNDETERMINED), "Empty page should have an undetermined page type"
+    )
 
 
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
@@ -190,6 +195,47 @@ def test_compacting_document(document: Document):
             )
 
 
+def test_compacting_document_with_regular_and_oversized_pages(document: Document):
+    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    for _ in range(3):
+        document.add_page()
+    assert_that(document.rowCount(), is_(4))
+    document.add_card_to_page(0, regular)
+    document.add_card_to_page(1, oversized)
+    document.add_card_to_page(2, regular)
+    document.add_card_to_page(3, oversized)
+    document.compact_pages()
+    assert_that(document.rowCount(), is_(2))
+    assert_that(
+        [document.pages[0].page_type(), document.pages[1].page_type()],
+        contains_inanyorder(PageType.REGULAR, PageType.OVERSIZED),
+        "Unexpectedly created a mixed-sizes page or left an empty page"
+    )
+
+
+def test_page_types_correctly_returned(document: Document):
+    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    assert_that(regular, is_(not_none()), "Test setup failed")
+    assert_that(oversized, is_(not_none()), "Test setup failed")
+    for _ in range(5):
+        document.add_page()
+    assert_that(document.rowCount(), is_(6))
+    document.add_card_to_page(0, regular)
+    document.add_card_to_page(1, oversized)
+    document.add_card_to_page(2, regular)
+    document.add_card_to_page(3, oversized)
+    document.add_card_to_page(4, regular)
+    document.add_card_to_page(4, oversized)
+    assert_that(document.pages[0].page_type(), is_(PageType.REGULAR))
+    assert_that(document.pages[1].page_type(), is_(PageType.OVERSIZED))
+    assert_that(document.pages[2].page_type(), is_(PageType.REGULAR))
+    assert_that(document.pages[3].page_type(), is_(PageType.OVERSIZED))
+    assert_that(document.pages[4].page_type(), is_(PageType.MIXED))
+    assert_that(document.pages[5].page_type(), is_(PageType.UNDETERMINED))
+
+
 @pytest.mark.parametrize("source_version", [2, 3])
 def test_save_migration(document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
@@ -225,6 +271,8 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
         "Setup failed. Duplicate values in page layout settings"
     )
+    layout = copy.copy(document_custom_layout.page_layout)
+    layout.page_height = 1000
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     # Prevent network access when re-loading the document
     document_custom_layout.image_db.loaded_images[
@@ -235,9 +283,8 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         document_custom_layout.save_as(save_dir)
         _validate_database_schema(save_dir)
         _validate_saved_document_settings(document_custom_layout)
-        document_custom_layout.page_layout.page_height = 1000
         with qtbot.waitSignal(document_custom_layout.page_layout_changed):
-            document_custom_layout.on_page_layout_updated()
+            document_custom_layout.update_page_layout(layout)
         document_custom_layout.save_to_disk()
         with qtbot.waitSignal(document_custom_layout.loading_state_changed, check_params_cb=lambda value: not value):
             document_custom_layout.loader.load_document(save_dir)
@@ -347,17 +394,257 @@ def test_get_missing_image_cards(qtbot: QtBot, document: Document):
 @pytest.mark.parametrize("result", [True, False])
 def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
     blank_image = document.image_db.blank_image
-    expected = Card(
+    blank_image_card = Card(
         "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
         blank_image)
-    unexpected = Card(
+    other_card = Card(
         "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
         QPixmap(blank_image)
     )
     if result:
-        document.add_card(expected, 2)
-    document.add_card(unexpected, 2)
+        document.add_card(blank_image_card, 2)
+    document.add_card(other_card, 2)
     assert_that(
         document.has_missing_images(),
         is_(result)
     )
+
+
+@pytest.mark.parametrize("pages_content, expected", [
+    ([], 0),
+    ([None, None], 1),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], 0),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"]*2, 1),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], 0),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]*2, 2),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b", None]*2, 4),
+])
+def test_compute_pages_saved_by_compacting(
+        document: Document, pages_content: typing.List[typing.Optional[str]], expected: int):
+    for page_number, scryfall_id in enumerate(pages_content):
+        if scryfall_id:
+            card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+            document.add_card_to_page(page_number, card)
+        document.add_page()
+    # Each iteration above keeps a trailing empty page. Remove that here.
+    document.remove_pages([document.index(document.rowCount()-1, 0)]*2)
+    assert_that(
+        document.compute_pages_saved_by_compacting(),
+        is_(equal_to(expected))
+    )
+
+
+@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
+    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.MIXED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.MIXED),
+])
+def test_add_cards_to_page_emits_page_type_changed_signal(
+      qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    for card in cards:
+        with qtbot.waitSignal(document.page_type_changed):
+            document.add_card_to_page(0, card)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+
+
+@pytest.mark.parametrize("scryfall_id, expected_page_type", [
+    ("0000579f-7b35-4ed3-b44c-db2a538066fe", PageType.REGULAR),
+    ("650722b4-d72b-4745-a1a5-00a34836282b", PageType.OVERSIZED),
+])
+def test_add_cards_to_page_only_emits_page_type_changed_signal_if_changed(
+      qtbot: QtBot, document: Document, scryfall_id: str, expected_page_type: PageType):
+    card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+    document.add_card_to_page(0, card)
+    with qtbot.assertNotEmitted(document.page_type_changed):
+        document.add_card_to_page(0, card)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+
+
+@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.UNDETERMINED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.UNDETERMINED),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
+])
+def test_remove_cards_emits_page_type_changed_signal(
+        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
+    """Removes the first card on the page. The second one (if present) determines the new page type."""
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    for card in cards:
+        document.add_card_to_page(0, card)
+    page_index = document.index(0, 0)
+    with qtbot.waitSignal(document.page_type_changed):
+        document.remove_cards([document.index(0, 0, page_index)]*2)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+
+
+@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
+    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
+    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.MIXED),
+    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.MIXED),
+])
+def test_remove_cards_only_emits_page_type_changed_signal_if_changed(
+        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
+    """
+    The first card is added two times and then the first card is removed. The parameters state what is left in the page
+    when remove_cards is called. In all of these situations, the page type does not change, thus the signal should not
+    be emitted.
+    """
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    document.add_card_to_page(0, cards[0])
+    for card in cards:
+        document.add_card_to_page(0, card)
+    page_index = document.index(0, 0)
+    with qtbot.assertNotEmitted(document.page_type_changed):
+        document.remove_cards([document.index(0, 0, page_index)]*2)
+    assert_that(document.pages[0].page_type(), is_(expected_page_type))
+
+
+@pytest.mark.parametrize("scryfall_ids", [
+    ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"],
+    ["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"],
+ ])
+def test_add_card_does_not_create_pages_with_mixed_card_sizes(
+        document: Document, scryfall_ids: typing.List[str]):
+    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
+    for card in cards:
+        document.add_card(card, 1)
+    assert_that(document.rowCount(), is_(2))
+    for page in document.pages:
+        assert_that(page.page_type(), is_in((PageType.REGULAR, PageType.OVERSIZED)))
+        assert_that(page, has_length(1))
+
+
+def test_add_card_does_not_overfill_oversized_pages(document: Document):
+    card = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    document.add_card(card, 7)
+    assert_that(document.rowCount(), is_(2))
+    document.add_card(card, 1)
+    document.add_card(card, 1)
+    assert_that(document.rowCount(), is_(3))
+
+
+def test_update_page_layout_copies_the_passed_in_instance(document: Document):
+    layout = copy.copy(document.page_layout)
+    layout.image_spacing_horizontal = 1
+    document.update_page_layout(layout)
+    layout.image_spacing_horizontal = 2
+    assert_that(document.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
+
+
+@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
+    (0, 10),  # Regular cards overflow, oversized do not
+    (10, 25),  # Oversized cards overflow, regular do not
+    (0, 30),  # Both sizes overflow
+
+])
+def test_creating_potential_overflow_calls_method_move_excess_cards_to_free_pages(
+        qtbot: QtBot, document: Document, initial_h_spacing: int, new_h_spacing: int):
+    """
+    Tests if increasing the horizontal spacing from a given value to another calls the logic to move excess cards
+    to new pages.
+    Regular and oversized cards overflow at different thresholds, so perform multiple tests to see that each
+    card type can individually trigger this
+    """
+    layout = copy.copy(document.page_layout)
+    layout.image_spacing_horizontal = initial_h_spacing
+    document.update_page_layout(layout)
+    initial_capacities = document.page_layout.compute_page_card_capacity(PageType.REGULAR),\
+                         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+    for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
+        card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+        document.add_card(card, document.page_layout.compute_page_card_capacity(card.requested_page_type()))
+    with unittest.mock.patch.object(Document, "move_excess_cards_to_free_pages") as expected_call_mock, \
+            qtbot.waitSignal(document.page_layout_changed, timeout=1000):
+        layout.image_spacing_horizontal = new_h_spacing
+        document.update_page_layout(layout)
+        expected_call_mock.assert_called_once()
+    assert_that(
+        (document.page_layout.compute_page_card_capacity(PageType.REGULAR),
+         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
+        less_than(initial_capacities)
+    )
+
+
+@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
+    (0, 10),  # Regular cards overflow, oversized do not
+    (10, 25),  # Oversized cards overflow, regular do not
+    (0, 30),  # Both sizes overflow
+
+])
+def test_method_move_excess_cards_to_free_pages_does_not_create_mixed_size_pages(
+        document: Document, initial_h_spacing: int, new_h_spacing: int):
+    """
+    Tests move_excess_cards_to_free_pages() does not create pages with mixed-size cards.
+    Regular and oversized cards overflow at different thresholds, so perform multiple tests to see that each
+    combination works
+    """
+    layout = copy.copy(document.page_layout)
+    layout.image_spacing_horizontal = initial_h_spacing
+    document.update_page_layout(layout)
+    initial_capacities = document.page_layout.compute_page_card_capacity(PageType.REGULAR),\
+                         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+    for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
+        card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
+        capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
+        document.add_card(card, capacity-1)
+
+    layout.image_spacing_horizontal = new_h_spacing
+    document.update_page_layout(layout)
+
+    assert_that(
+        (document.page_layout.compute_page_card_capacity(PageType.REGULAR),
+         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
+        less_than(initial_capacities)
+    )
+    assert_that(
+        document.rowCount(),
+        is_(greater_than(2))
+    )
+    for page in document.pages:
+        assert_that(page.page_type(), is_in([PageType.REGULAR, PageType.OVERSIZED]))
+
+
+@pytest.mark.parametrize("page_type, v_spacing, h_spacing, expected", [
+    (PageType.REGULAR, 0, 0, 9),
+    (PageType.REGULAR, 10, 0, 6),
+    (PageType.REGULAR, 0, 10, 6),
+    (PageType.OVERSIZED, 0, 0, 4),
+    (PageType.OVERSIZED, 0, 10, 4),
+    (PageType.OVERSIZED, 0, 25, 2),
+])
+def test_page_layout_compute_page_card_capacity(page_type:PageType, v_spacing: int, h_spacing: int, expected: int):
+    layout = PageLayoutSettings.create_from_settings()
+    layout.image_spacing_horizontal = h_spacing
+    layout.image_spacing_vertical = v_spacing
+    assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
+
+
+def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversized_away(document: Document):
+    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    document.add_card(regular, 2)
+    page_index = document.index(0, 0)
+    document._on_replacement_image_received(oversized, document.index(0, 0, page_index))
+    assert_that(document.rowCount(), is_(2))
+    assert_that(document.rowCount(page_index), is_(1))
+    assert_that(document.rowCount(document.index(1, 0)), is_(1))
+    assert_that(document.pages[0][0].card, is_(equal_to(regular)))
+    assert_that(document.pages[1][0].card, is_(equal_to(oversized)))
+    assert_that(document.pages[0].page_type(), is_(PageType.REGULAR))
+    assert_that(document.pages[1].page_type(), is_(PageType.OVERSIZED))
+
+
+def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_same_page(document: Document):
+    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    document.add_card(regular, 1)
+    page_index = document.index(0, 0)
+    document._on_replacement_image_received(oversized, document.index(0, 0, page_index))
+    assert_that(document.rowCount(), is_(1))
+    assert_that(document.rowCount(page_index), is_(1))
+    assert_that(document.pages[0][0].card, is_(equal_to(oversized)))
+    assert_that(document.pages[0].page_type(), is_(PageType.OVERSIZED))

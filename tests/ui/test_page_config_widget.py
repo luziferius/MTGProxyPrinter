@@ -73,8 +73,8 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
 
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
-    ("paper-height-mm", "page_height", 108),
-    ("paper-width-mm", "page_width", 70),
+    ("paper-height-mm", "page_height", 146),
+    ("paper-width-mm", "page_width", 95),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
@@ -116,8 +116,8 @@ def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, a
 
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
-    ("paper-height-mm", "page_height", 108),
-    ("paper-width-mm", "page_width", 77),
+    ("paper-height-mm", "page_height", 146),
+    ("paper-width-mm", "page_width", 102),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
@@ -172,8 +172,8 @@ def test_save_boolean_document_settings_to_config(
 
 @pytest.mark.parametrize("value", [0, 1, 200, 1000])
 @pytest.mark.parametrize("attribute_name, min_value", [
-    ("page_height", 108),
-    ("page_width", 77),
+    ("page_height", 146),
+    ("page_width", 102),
     ("margin_top", 0),
     ("margin_bottom", 0),
     ("margin_left", 0),
@@ -188,8 +188,7 @@ def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_v
     """
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
     qtbot.addWidget(widget)
-    other = PageLayoutSettings()
-    other.update_from_settings()
+    other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     expected = max(min_value, value)
     widget.load_from_page_layout(other)
@@ -205,8 +204,7 @@ def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_v
 def test_load_booleans_from_page_layout(qtbot: QtBot, attribute_name: str, value: bool):
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
     qtbot.addWidget(widget)
-    other = PageLayoutSettings()
-    other.update_from_settings()
+    other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     widget.load_from_page_layout(other)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))

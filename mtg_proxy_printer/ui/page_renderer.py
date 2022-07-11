@@ -20,17 +20,15 @@ from PySide6.QtCore import Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPers
     Signal, QEvent
 from PySide6.QtWidgets import QGraphicsView, QGraphicsScene, QWidget
 from PySide6.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QAction
-
 import pint
 
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, DPI
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-unit_registry = pint.UnitRegistry()
-DPI: pint.Quantity = 300 / unit_registry.inch
 
 __all__ = [
     "RenderMode",
@@ -57,8 +55,6 @@ class RenderMode(enum.Enum):
 
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
-    IMAGE_WIDTH = 63
-    IMAGE_HEIGHT = 88
 
     scene_size_changed = Signal()
 
@@ -78,6 +74,7 @@ class PageScene(QGraphicsScene):
         self.document.rowsMoved.connect(self.on_rows_moved)
         self.document.current_page_changed.connect(self.on_current_page_changed)
         self.document.dataChanged.connect(self.on_data_changed)
+        self.document.page_type_changed.connect(self.on_page_type_changed)
         self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
         self.background = None
         self.render_mode = render_mode
@@ -88,7 +85,10 @@ class PageScene(QGraphicsScene):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
         self.selected_page = selected_page
-        self.redraw()
+        if selected_page.isValid():
+            self.redraw()
+        else:
+            self.clear()
 
     @Slot()
     def on_settings_changed(self):
@@ -111,8 +111,8 @@ class PageScene(QGraphicsScene):
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
-                (DPI*width).to_reduced_units().to_tuple()[0],
-                (DPI*height).to_reduced_units().to_tuple()[0]
+                (DPI*width).to_reduced_units().magnitude,
+                (DPI*height).to_reduced_units().magnitude
             )
         )
         return page_size
@@ -135,6 +135,11 @@ class PageScene(QGraphicsScene):
             pixmap = self.addPixmap(image)
             pixmap.setTransformationMode(Qt.SmoothTransformation)
             pixmap.setPos(position)
+
+    @Slot(QModelIndex)
+    def on_page_type_changed(self, page: QModelIndex):
+        if page.row() == self.selected_page.row():
+            self.redraw()
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
         if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:
@@ -186,15 +191,17 @@ class PageScene(QGraphicsScene):
 
     def _compute_position_for_image(self, index: QModelIndex) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
+        page_type: PageType = self.selected_page.internalPointer().page_type()
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
         page_layout = self.document.page_layout
-        cards_per_row = self.document.compute_page_column_count()
+        cards_per_row = page_layout.compute_page_column_count(page_type)
         column = index.row() % cards_per_row
         row = index.row() // cards_per_row
         spacing_vertical = page_layout.image_spacing_vertical
         spacing_horizontal = page_layout.image_spacing_horizontal
 
-        x_pos = page_layout.margin_left + column * (PageScene.IMAGE_WIDTH + spacing_horizontal)
-        y_pos = page_layout.margin_top + row * (PageScene.IMAGE_HEIGHT + spacing_vertical)
+        x_pos = page_layout.margin_left + column * (card_size.width + spacing_horizontal)
+        y_pos = page_layout.margin_top + row * (card_size.height + spacing_vertical)
         scaling_horizontal = self.width() / page_layout.page_width
         scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
@@ -204,43 +211,48 @@ class PageScene(QGraphicsScene):
 
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
+        page_type: PageType = self.selected_page.internalPointer().page_type()
+        if page_type == PageType.MIXED:
+            logger.warning("Not drawing cut markers for page with mixed image sizes")
+            return
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
         line_color = QColor("black") if self.render_mode == RenderMode.ON_PAPER \
             else self.palette().color(QPalette.Active, QPalette.WindowText)
         logger.info(f"Drawing cut markers")
-        self._draw_vertical_markers(line_color)
-        self._draw_horizontal_markers(line_color)
+        self._draw_vertical_markers(line_color, card_size)
+        self._draw_horizontal_markers(line_color, card_size)
 
-    def _draw_vertical_markers(self, line_color):
+    def _draw_vertical_markers(self, line_color: QColor, card_size: CardSize):
         page_layout = self.document.page_layout
         scaling_horizontal = self.width() / page_layout.page_width
-        column_count = self.document.compute_page_column_count()
+        column_count = page_layout.compute_page_column_count(page_layout)
         if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
             column_px = scaling_horizontal * (
                     page_layout.margin_left +
-                    column * (PageScene.IMAGE_WIDTH + page_layout.image_spacing_horizontal)
+                    column * (card_size.width + page_layout.image_spacing_horizontal)
             )
             self._draw_vertical_line(column_px, line_color)
             if page_layout.image_spacing_horizontal:
-                offset = 1 + PageScene.IMAGE_WIDTH * scaling_horizontal
+                offset = 1 + card_size.width * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, line_color):
+    def _draw_horizontal_markers(self, line_color: QColor, card_size: CardSize):
         page_layout = self.document.page_layout
         scaling_vertical = self.height() / page_layout.page_height
-        row_count = self.document.compute_page_row_count()
+        row_count = page_layout.compute_page_row_count(page_layout)
         if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
             row_px = scaling_vertical * (
                     page_layout.margin_top +
-                    row * (PageScene.IMAGE_HEIGHT + page_layout.image_spacing_vertical)
+                    row * (card_size.height + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
             if page_layout.image_spacing_vertical:
-                offset = 1 + PageScene.IMAGE_HEIGHT * scaling_vertical
+                offset = 1 + card_size.height * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
 
@@ -279,6 +291,9 @@ class PageRenderer(QGraphicsView):
         self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def scene(self) -> PageScene:
+        return super().scene()
+
     def changeEvent(self, event: QEvent) -> None:
         if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:
             self._update_background_brush()
@@ -306,6 +321,8 @@ class PageRenderer(QGraphicsView):
         if self.automatic_scaling:
             self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
         else:
+            # The initial tooltip text showing the zoom options is rather large, so clear it once the user triggered a
+            # zoom action for the first time. This is done to un-clutter the area around the mouse cursor.
             self.setToolTip("")
             old_anchor = self.transformationAnchor()
             self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)

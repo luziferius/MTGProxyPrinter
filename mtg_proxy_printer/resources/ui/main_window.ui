@@ -282,7 +282,10 @@
     <iconset theme="edit-clear-history"/>
    </property>
    <property name="text">
-    <string>Cleanup local image cache</string>
+    <string>Cleanup card images</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete locally stored card images you no longer need.</string>
    </property>
   </action>
   <action name="action_show_toolbar">

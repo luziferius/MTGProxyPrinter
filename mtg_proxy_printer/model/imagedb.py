@@ -361,7 +361,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             logger.debug("Image not in disk cache, downloading from Scryfall")
             self._download_image_from_scryfall(card, cache_file_path)
             pixmap = QPixmap(str(cache_file_path))
-            self._remove_outdated_low_resolution_image(card)
+            if card.highres_image:
+                self._remove_outdated_low_resolution_image(card)
         return pixmap
 
     def _remove_outdated_low_resolution_image(self, card):

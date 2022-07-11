@@ -63,7 +63,7 @@ def create_qprinter(document: Document) -> QPrinter:
     else:
         page_size = QPageSize(QSizeF(page_width, page_height), QPageSize.Millimeter)
     printer.setPageSize(page_size)
-    printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
+    printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.magnitude)
     # Disable duplex printing by default
     printer.setDuplex(QPrinter.DuplexNone)
     printer.setOutputFormat(QPrinter.NativeFormat)
@@ -88,7 +88,7 @@ class PDFPrinter(QPdfWriter):
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
-        self.setResolution(mtg_proxy_printer.units_and_sizes.DPI.to_tuple()[0])
+        self.setResolution(mtg_proxy_printer.units_and_sizes.DPI.magnitude)
         self.setPageSize(QPageSize(
             QSizeF(document.page_layout.page_width, document.page_layout.page_height),
             QPageSize.Millimeter

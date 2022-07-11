@@ -30,8 +30,8 @@ import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.imagedb import ImageDatabase
-from tests.helpers import fill_card_database_with_json_card
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
+from tests.helpers import fill_card_database_with_json_cards
 
 
 @pytest.fixture(params=[False, True])
@@ -59,6 +59,17 @@ def image_db():
     with TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
         image_db = ImageDatabase(temp_path)
+        regular_width, regular_height = image_db.blank_image.width(), image_db.blank_image.height()
+        for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe"]:
+            # Regular card images
+            key = ImageKey(scryfall_id, True, True)
+            image_db.loaded_images[key] = image_db.blank_image.copy(0, 0, regular_width, regular_height)
+            image_db.images_on_disk.add(key)
+        for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
+            # Oversized card images
+            key = ImageKey(scryfall_id, True, True)
+            image_db.loaded_images[key] = image_db.blank_image.scaled(regular_height, regular_width*2)
+            image_db.images_on_disk.add(key)
         yield image_db
         if image_db.download_thread.isRunning():
             image_db.quit_background_thread()
@@ -71,7 +82,7 @@ def image_db():
 
 @pytest.fixture
 def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     document = Document(card_db, image_db)
     yield document
     stop_thread(document.loader.worker_thread)

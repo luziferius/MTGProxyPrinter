@@ -33,6 +33,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -115,6 +116,14 @@ class Card:
     is_oversized: bool = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+
+    def requested_page_type(self) -> PageType:
+        if self.image_file is None:
+            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
+        size = self.image_file.size()
+        if (size.width(), size.height()) == (1040, 1490):
+            return PageType.OVERSIZED
+        return PageType.REGULAR
 
 
 OptionalCard = typing.Optional[Card]
@@ -742,7 +751,7 @@ class CardDatabase:
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
         return filters_in_settings != filters_in_db
 
-    @profile
+    @profile  # TODO: This decorator is unnecessary
     def _remove_old_printing_filters(self, section) -> bool:
         stored_filters = {
             filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
@@ -762,10 +771,12 @@ class CardDatabase:
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
-            SET is_hidden = HiddenPrintings.should_be_hidden
-            FROM HiddenPrintings
-            WHERE Printing.printing_id = HiddenPrintings.printing_id
-              AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+            SET is_hidden = Printing.printing_id IN (
+              SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
+            )
+            WHERE is_hidden <> (Printing.printing_id IN (
+              SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
+            ))
         ;
         """))
         progress_signal(2)

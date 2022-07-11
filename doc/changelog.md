@@ -1,6 +1,27 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.18.0 (2022-07-09)  <a name="v0_18_0"></a>
+
+## New features
+
+- Proper, full support for oversized cards, like Archenemy schemes or Planechase plane cards. Regular cards and larger
+  cards are always kept on separate pages to ensure that drawn cut marker lines (if enabled) are always 100% accurate.
+  - Note: Some cards, like the Legacy Championship winner rewards, are tagged as being oversized, but are then served
+    with regular-size images by Scryfall.
+    When the image is downloaded, it will be treated as a regular card, even if the deck import wizard warns
+    about it being potentially oversized.
+
+## Fixed issues
+
+- Significantly optimized card database size and import speed.
+  (The database now takes roughly 25% less time to update on fast internet connections
+  and uses about 30% less disk space)
+- Fixed the “Remove selected” cards button in the deck list importer unexpectedly staying active
+  when clicked while multiple cells of the same row in the card table were selected.
+- Fixed unintended immediate removal of freshly-downloaded low-resolution images. These should only be removed, if
+  a high-resolution image becomes available.
+
+# Version 0.17.0 (2022-06-13)  <a name="v0_17_0"></a>
 
 ## New features
 
@@ -25,7 +46,7 @@
   list files instead of showing nothing.
 - Fixed potential crash when exiting the application while a card image download runs
 
-# Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
+# Version 0.16.1 (2022-05-23)  <a name="v0_16_1"></a>
 
 ## Changed features
 

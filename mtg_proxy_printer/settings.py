@@ -23,6 +23,7 @@ from PySide6.QtCore import QStandardPaths
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 __all__ = [
     "settings",
@@ -44,10 +45,6 @@ configparser.ConfigParser.BOOLEAN_STATES.update({
     "unknown": None,
     "none": None,
 })
-
-# TODO: Single-source these properties somewhere. The Document class holds similar constants.
-CARD_WIDTH = 63
-CARD_HEIGHT = 88
 
 VERSION_CHECK_RE = re.compile(
     # sourced from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
@@ -193,6 +190,7 @@ def _validate_images_section(settings: configparser.ConfigParser, section_name: 
 
 
 def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
+    sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "print-cut-marker")
@@ -207,12 +205,12 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if available_height < CARD_HEIGHT:
+    if available_height < sizes.height:
         # Can not fit a single card on a page
         section["paper-height-mm"] = defaults["paper-height-mm"]
-        section["margin-top-mm"] = defaults["margin-top-mm"]
+        section["margin-top-mm"] = defaults["marginop--tmm"]
         section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
-    if available_width < CARD_WIDTH:
+    if available_width < sizes.width:
         # Can not fit a single card on a page
         section["paper-width-mm"] = defaults["paper-width-mm"]
         section["margin-left-mm"] = defaults["margin-left-mm"]
@@ -224,10 +222,10 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - CARD_HEIGHT):
+    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - sizes.height):
         # Prevent vertical spacing from overlapping with bottom margin
         section["image-spacing-vertical-mm"] = str(available_spacing_vertical)
-    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - CARD_WIDTH):
+    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - sizes.width):
         # Prevent horizontal spacing from overlapping with right margin
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 

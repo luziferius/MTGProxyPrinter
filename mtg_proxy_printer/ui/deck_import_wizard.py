@@ -19,7 +19,7 @@ import pathlib
 import re
 import typing
 
-from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection
+from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, QAbstractTableModel
 from PySide6.QtGui import QValidator, QIcon
 from PySide6.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
 
@@ -124,7 +124,8 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
                         "Selecting a file will overwrite the existing deck list. Continue?",
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        ) == QMessageBox.StandardButton.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             # Ignore the used file type filter (second return value)
             parser: common.ParserBase = self.field("selected_parser")
@@ -339,7 +340,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
             accept_button.setToolTip("Append identified cards to the document")
 
-    def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
+    def _setup_parsed_cards_table(self, model: QAbstractTableModel) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
         self.parsed_cards_table.setModel(model)
         self.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
@@ -423,6 +424,8 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             self.card_list.remove_all_basic_lands()
         elif button_id == QWizard.CustomButton2:
             self._remove_selected_cards()
+            self.selected_cells_count = 0
+            self.wizard().button(QWizard.CustomButton2).setEnabled(False)
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")

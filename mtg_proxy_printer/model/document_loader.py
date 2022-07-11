@@ -15,6 +15,7 @@
 
 import collections
 import dataclasses
+import math
 import pathlib
 import socket
 import sqlite3
@@ -22,7 +23,6 @@ import textwrap
 import typing
 import urllib.error
 
-import pint
 from PySide6.QtCore import QObject, Signal, QThread, Slot
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
@@ -39,7 +39,7 @@ from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificatio
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import unit_registry, IMAGE_WIDTH, IMAGE_HEIGHT
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -52,6 +52,8 @@ __all__ = [
     "PageLayoutSettings"
 ]
 
+# ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
+SAVE_FILE_MAGIC_NUMBER = 41325044
 DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
 
 
@@ -68,46 +70,65 @@ class PageLayoutSettings:
     image_spacing_vertical: int = 0
     draw_cut_markers: bool = False
 
-    def update_from_settings(self):
+    @classmethod
+    def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
-        self.page_height = document_settings.getint("paper-height-mm")
-        self.page_width = document_settings.getint("paper-width-mm")
-        self.margin_top = document_settings.getint("margin-top-mm")
-        self.margin_bottom = document_settings.getint("margin-bottom-mm")
-        self.margin_left = document_settings.getint("margin-left-mm")
-        self.margin_right = document_settings.getint("margin-right-mm")
-        self.image_spacing_horizontal = document_settings.getint("image-spacing-horizontal-mm")
-        self.image_spacing_vertical = document_settings.getint("image-spacing-vertical-mm")
-        self.draw_cut_markers = document_settings.getboolean("print-cut-marker")
+        return cls(
+            document_settings.getint("paper-height-mm"),
+            document_settings.getint("paper-width-mm"),
+            document_settings.getint("margin-top-mm"),
+            document_settings.getint("margin-bottom-mm"),
+            document_settings.getint("margin-left-mm"),
+            document_settings.getint("margin-right-mm"),
+            document_settings.getint("image-spacing-horizontal-mm"),
+            document_settings.getint("image-spacing-vertical-mm"),
+            document_settings.getboolean("print-cut-marker"),
+        )
 
-    def compute_page_column_count(self) -> int:
+    def __lt__(self, other):
+        if not isinstance(other, self.__class__):
+            raise TypeError(
+                f"'<' not supported between instances of '{self.__class__.__name__}' and '{other.__class__.__name__}'")
+        return self.compute_page_row_count(PageType.REGULAR) < other.compute_page_card_capacity(PageType.REGULAR) or \
+            self.compute_page_row_count(PageType.OVERSIZED) < other.compute_page_card_capacity(PageType.OVERSIZED)
+
+    def __gt__(self, other):
+        if not isinstance(other, self.__class__):
+            raise TypeError(
+                f"'>' not supported between instances of '{self.__class__.__name__}' and '{other.__class__.__name__}'")
+        return self.compute_page_row_count(PageType.REGULAR) > other.compute_page_card_capacity(PageType.REGULAR) or \
+            self.compute_page_row_count(PageType.OVERSIZED) > other.compute_page_card_capacity(PageType.OVERSIZED)
+
+    def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
-        total_width: pint.Quantity = self.page_width * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_left + self.margin_right) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_horizontal * unit_registry.millimeter
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        total_width = self.page_width
+        margins = self.margin_left + self.margin_right
+        spacing = self.image_spacing_horizontal
 
         total_width -= margins
-        if total_width < IMAGE_WIDTH:
+        if total_width < card_size.width:
             return 0
-        total_width -= IMAGE_WIDTH
-        cards = total_width / (IMAGE_WIDTH+spacing) + 1
-        return int(cards.to_tuple()[0])
+        total_width -= card_size.width
+        cards = total_width / (card_size.width+spacing) + 1
+        return math.floor(cards)
 
-    def compute_page_row_count(self) -> int:
+    def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
-        total_height: pint.Quantity = self.page_height * unit_registry.millimeter
-        margins: pint.Quantity = (self.margin_top + self.margin_bottom) * unit_registry.millimeter
-        spacing: pint.Quantity = self.image_spacing_vertical * unit_registry.millimeter
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        total_height = self.page_height
+        margins = self.margin_top + self.margin_bottom
+        spacing = self.image_spacing_vertical
         total_height -= margins
-        if total_height < IMAGE_HEIGHT:
+        if total_height < card_size.height:
             return 0
-        total_height -= IMAGE_HEIGHT
-        cards = total_height / (IMAGE_HEIGHT+spacing) + 1
-        return int(cards.to_tuple()[0])
+        total_height -= card_size.height
+        cards = total_height / (card_size.height+spacing) + 1
+        return math.floor(cards)
 
-    def compute_page_card_capacity(self) -> int:
+    def compute_page_card_capacity(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card images that fit on a single page."""
-        return self.compute_page_row_count() * self.compute_page_column_count()
+        return self.compute_page_row_count(page_type) * self.compute_page_column_count(page_type)
 
 
 class DocumentLoader(QObject):
@@ -329,8 +350,7 @@ class DocumentLoader(QObject):
                 )
                 settings.draw_cut_markers = bool(settings.draw_cut_markers)
             else:
-                settings = PageLayoutSettings()
-                settings.update_from_settings()
+                settings = PageLayoutSettings.create_from_settings()
             return settings
 
         @staticmethod
@@ -341,8 +361,11 @@ class DocumentLoader(QObject):
             :raises AssertionError: If the provided file contains an invalid schema
             :returns: Database schema version
             """
-            if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
-                raise AssertionError("Not an MTGProxyPrinter save file!")
+            assert_that(
+                db_unsafe.execute("PRAGMA application_id").fetchone(),
+                contains_exactly(SAVE_FILE_MAGIC_NUMBER),
+                "Application ID mismatch. Not an MTGProxyPrinter save file!"
+            )
             user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
             try:
                 db_known_good = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
@@ -400,20 +423,16 @@ class DocumentLoader(QObject):
         self.worker.document_clear_requested.connect(self.document.clear)
         self.worker.new_page.connect(self.document.add_page)
         self.worker.add_card.connect(self._on_add_card)
-        self.worker.document_settings_loaded.connect(self.on_document_settings_loaded)
+        self.worker.document_settings_loaded.connect(self.document.update_page_layout)
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
         self.worker.loading_file_failed.connect(self.loading_file_failed)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
         self.worker.loading_file_successful.connect(self.on_loading_file_successful)
         self.worker.network_error_occurred.connect(self.network_error_occurred)
         self.worker.finished.connect(self.worker_thread.quit)
+        self.worker.finished.connect(self.document.fix_mixed_pages)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
-
-    @Slot(PageLayoutSettings)
-    def on_document_settings_loaded(self, settings: PageLayoutSettings):
-        self.document.page_layout = settings
-        self.document.on_page_layout_updated()
 
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()
