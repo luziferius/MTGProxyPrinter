@@ -751,7 +751,6 @@ class CardDatabase:
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
         return filters_in_settings != filters_in_db
 
-    @profile  # TODO: This decorator is unnecessary
     def _remove_old_printing_filters(self, section) -> bool:
         stored_filters = {
             filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
