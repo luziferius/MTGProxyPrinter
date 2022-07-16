@@ -40,5 +40,3 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
     )
     central_widget.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
     qtbot.mouseClick(central_widget.delete_selected_images_button, Qt.LeftButton)
-
-

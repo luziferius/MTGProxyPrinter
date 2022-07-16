@@ -502,7 +502,8 @@ class DeckImportWizard(QWizard):
                 self, "Oversized cards present",
                 f"There are {oversized_count} possibly oversized cards in the deck list that "
                 f"may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No) == QMessageBox.StandardButton.No:
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
+        ) == QMessageBox.StandardButton.No:
             return False
         return True
 

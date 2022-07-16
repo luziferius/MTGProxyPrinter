@@ -513,7 +513,8 @@ def _migrate_26_to_27(db: sqlite3.Connection):
         textwrap.dedent("""\
         CREATE VIEW VisiblePrintings AS
           SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
-                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
+                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id,
+                 release_date, wackiness_score
           FROM Card
           JOIN Printing USING (card_id)
           JOIN MTGSet   USING (set_id)

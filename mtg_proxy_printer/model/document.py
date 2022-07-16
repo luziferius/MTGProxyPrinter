@@ -391,7 +391,7 @@ class Document(QAbstractItemModel):
                 # In this case, simply remove it from the page and add the new one. The logic in add_card() will
                 # find a suitable target page or create one, if necessary
                 self.remove_cards([index])
-                self.add_card(card,1)
+                self.add_card(card, 1)
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""

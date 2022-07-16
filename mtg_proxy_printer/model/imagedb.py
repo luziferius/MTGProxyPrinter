@@ -161,7 +161,6 @@ class ImageDatabase(QObject):
             pass
         stop_thread(self.download_thread, logger)
 
-
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
         Takes a list of cards and returns a new list containing all cards from the source list that have
