@@ -97,7 +97,7 @@ DEFAULT_SETTINGS["documents"] = {
     "image-spacing-vertical-mm": "0",
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
-    "draw-sharp-corners": "False",
+    "print-sharp-corners": "False",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -203,7 +203,7 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-cut-marker", "draw-sharp-corners"}
+    boolean_settings = {"print-cut-marker", "print-sharp-corners"}
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:

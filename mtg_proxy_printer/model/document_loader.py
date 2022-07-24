@@ -69,6 +69,7 @@ class PageLayoutSettings:
     image_spacing_horizontal: int = 0
     image_spacing_vertical: int = 0
     draw_cut_markers: bool = False
+    draw_sharp_corners: bool = False
 
     @classmethod
     def create_from_settings(cls):
@@ -83,6 +84,7 @@ class PageLayoutSettings:
             document_settings.getint("image-spacing-horizontal-mm"),
             document_settings.getint("image-spacing-vertical-mm"),
             document_settings.getboolean("print-cut-marker"),
+            document_settings.getboolean("print-sharp-corners")
         )
 
     def __lt__(self, other):
@@ -295,7 +297,7 @@ class DocumentLoader(QObject):
                     SELECT page, slot, scryfall_id, 1 AS is_front
                         FROM Card
                         ORDER BY page ASC, slot ASC""")
-            elif user_version in {3, 4}:
+            elif user_version in {3, 4, 5}:
                 query = textwrap.dedent("""\
                     SELECT page, slot, scryfall_id, is_front
                         FROM Card
@@ -315,18 +317,19 @@ class DocumentLoader(QObject):
 
         @staticmethod
         def _read_page_layout_data_from_database(db, user_version):
-            if user_version == 4:
+            if user_version >= 4:
+                document_settings_query = textwrap.dedent(f"""\
+                    SELECT page_height, page_width,
+                           margin_top, margin_bottom, margin_left, margin_right,
+                           image_spacing_horizontal, image_spacing_vertical, draw_cut_markers,
+                           {'1' if user_version == 4 else 'draw_sharp_corners'}
+                        FROM DocumentSettings
+                        WHERE rowid == 1
+                    """)
                 assert_that(
                     db.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
                     contains_exactly(1),
                 )
-                document_settings_query = textwrap.dedent("""\
-                    SELECT page_height, page_width,
-                           margin_top, margin_bottom, margin_left, margin_right,
-                           image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
-                        FROM DocumentSettings
-                        WHERE rowid == 1
-                    """)
                 settings = PageLayoutSettings(*db.execute(document_settings_query).fetchone())
                 assert_that(
                     settings,
@@ -340,6 +343,7 @@ class DocumentLoader(QObject):
                         image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
                         image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
                         draw_cut_markers=is_in((0, 1)),
+                        draw_sharp_corners=is_in((0, 1)),
                     ),
                     "Document settings contain invalid data or data types"
                 )
@@ -349,6 +353,7 @@ class DocumentLoader(QObject):
                     "Document settings invalid: At least one card has to fit on a page."
                 )
                 settings.draw_cut_markers = bool(settings.draw_cut_markers)
+                settings.draw_sharp_corners = bool(settings.draw_sharp_corners)
             else:
                 settings = PageLayoutSettings.create_from_settings()
             return settings

@@ -456,7 +456,7 @@ class Document(QAbstractItemModel):
             in itertools.chain.from_iterable(cards)
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document-v4", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                self.save_file_path, "document-v5", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
             _migrate_database(db)
             db.execute("DELETE FROM Card")
@@ -469,8 +469,8 @@ class Document(QAbstractItemModel):
                 textwrap.dedent("""\
                     INSERT OR REPLACE INTO DocumentSettings (rowid, page_height, page_width,
                           margin_top, margin_bottom, margin_left, margin_right,
-                          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
-                      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners)
+                      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """),
                 dataclasses.astuple(self.page_layout))
             logger.debug("Written document settings")
@@ -747,7 +747,7 @@ class Document(QAbstractItemModel):
 
 
 def _migrate_database(db):
-    if db.execute("PRAGMA user_version").fetchone()[0] == 2:
+    if db.execute("PRAGMA user_version\n").fetchone()[0] == 2:
         for statement in [
             "ALTER TABLE Card RENAME TO Card_old",
             textwrap.dedent("""\
@@ -766,7 +766,7 @@ def _migrate_database(db):
             "PRAGMA user_version = 3",
         ]:
             db.execute(f"{statement};\n")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 3:
+    if db.execute("PRAGMA user_version\n").fetchone()[0] == 3:
         db.execute(textwrap.dedent("""\
         CREATE TABLE DocumentSettings (
           rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
@@ -781,3 +781,25 @@ def _migrate_database(db):
           draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (0, 1))
         );"""))
         db.execute(f"PRAGMA user_version = 4")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 4:
+        for statement in [
+            "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
+            textwrap.dedent("""\
+            CREATE TABLE DocumentSettings (
+              rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
+              page_height INTEGER NOT NULL CHECK (page_height > 0),
+              page_width INTEGER NOT NULL CHECK (page_width > 0),
+              margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
+              margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
+              margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
+              margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
+              image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
+              image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
+              draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (TRUE, FALSE)),
+              draw_sharp_corners INTEGER NOT NULL CHECK (draw_sharp_corners in (TRUE, FALSE))
+            )"""),
+            "INSERT INTO DocumentSettings SELECT *, FALSE FROM DocumentSettings_Old",
+            "DROP TABLE DocumentSettings_Old",
+            "PRAGMA user_version = 5",
+        ]:
+            db.execute(f"{statement}\n")
