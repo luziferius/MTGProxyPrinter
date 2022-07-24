@@ -24,6 +24,7 @@ import pint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, DPI
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -132,9 +133,29 @@ class PageScene(QGraphicsScene):
         position = self._compute_position_for_image(index)
         image: QPixmap = index.data(Qt.DisplayRole)
         if image is not None:
+            if self.document.page_layout.draw_sharp_corners:
+                self._draw_corners(index, position)
             pixmap = self.addPixmap(image)
             pixmap.setTransformationMode(Qt.SmoothTransformation)
             pixmap.setPos(position)
+
+    def _draw_corners(self, index: QModelIndex, position: QPointF):
+        card: Card = index.internalPointer().card
+        image = card.image_file
+        corner_size = QSizeF(50, 50)
+        logger.info(f"Drawing 90° corners behind {card.name}")
+        self.addRect(
+            QRectF(position, corner_size),
+            card.corner_color(CardCorner.TOP_LEFT), card.corner_color(CardCorner.TOP_LEFT))
+        self.addRect(
+            QRectF(position + image.rect().topRight() - QPointF(50, 0), corner_size),
+            card.corner_color(CardCorner.TOP_RIGHT), card.corner_color(CardCorner.TOP_RIGHT))
+        self.addRect(
+            QRectF(position + image.rect().bottomLeft() - QPointF(0, 50), corner_size),
+            card.corner_color(CardCorner.BOTTOM_LEFT), card.corner_color(CardCorner.BOTTOM_LEFT))
+        self.addRect(
+            QRectF(position + image.rect().bottomRight() - QPointF(50, 50), corner_size),
+            card.corner_color(CardCorner.BOTTOM_RIGHT), card.corner_color(CardCorner.BOTTOM_RIGHT))
 
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):

@@ -17,14 +17,15 @@ import atexit
 import configparser
 import dataclasses
 import datetime
+import enum
 import itertools
 import functools
 import pathlib
 import textwrap
 import typing
 
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtCore import Qt, QPoint
 import delegateto
 
 import mtg_proxy_printer.app_dirs
@@ -69,6 +70,7 @@ __all__ = [
     "CardIdentificationData",
     "MTGSet",
     "Card",
+    "CardCorner",
     "CardDatabase",
     "cached_dedent",
 ]
@@ -102,6 +104,15 @@ class MTGSet:
             return None
 
 
+@enum.unique
+class CardCorner(enum.Enum):
+    """The four corners of a card. Values are relative image positions in X and Y."""
+    TOP_LEFT = (0.1, 0.1)
+    TOP_RIGHT = (0.1, 0.9)
+    BOTTOM_LEFT = (0.9, 0.1)
+    BOTTOM_RIGHT = (0.9, 0.9)
+
+
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
     name: str = dataclasses.field(compare=True)
@@ -117,6 +128,10 @@ class Card:
     face_number: int = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
+    def set_image_file(self, image: QPixmap):
+        self.image_file = image
+        self.corner_color.cache_clear()
+
     def requested_page_type(self) -> PageType:
         if self.image_file is None:
             return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
@@ -124,6 +139,18 @@ class Card:
         if (size.width(), size.height()) == (1040, 1490):
             return PageType.OVERSIZED
         return PageType.REGULAR
+
+    @functools.lru_cache(maxsize=len(CardCorner))
+    def corner_color(self, corner: CardCorner) -> QColor:
+        """Returns the color of the card at the given corner. """
+        if self.image_file is None:
+            return QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
+        image = self.image_file.toImage()
+        sample_center = QPoint(
+            round(self.image_file.width() * corner.value[0]),
+            round(self.image_file.height() * corner.value[1]),
+        )
+        return image.pixelColor(sample_center)
 
 
 OptionalCard = typing.Optional[Card]

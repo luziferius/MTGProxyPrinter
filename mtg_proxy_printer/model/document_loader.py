@@ -204,7 +204,7 @@ class DocumentLoader(QObject):
                 self.network_errors_during_load.clear()
 
         def on_network_error_occurred(self, card: Card, error: str):
-            card.image_file = self.image_db.blank_image
+            card.set_image_file(self.image_db.blank_image)
             self.network_errors_during_load[error] += 1
 
         def load_document(self):
