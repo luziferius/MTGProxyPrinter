@@ -143,17 +143,18 @@ class PageScene(QGraphicsScene):
         card: Card = index.internalPointer().card
         image = card.image_file
         corner_size = QSizeF(50, 50)
+        # Needs to offset the corner position by some half pixels to not overlap
         self.addRect(
-            QRectF(position, corner_size),
+            QRectF(position + QPointF(0.5, 0.5), corner_size),
             card.corner_color(CardCorner.TOP_LEFT), card.corner_color(CardCorner.TOP_LEFT))
         self.addRect(
-            QRectF(position + image.rect().topRight() - QPointF(50, 0), corner_size),
+            QRectF(position + image.rect().topRight() - QPointF(49.5, -0.5), corner_size),
             card.corner_color(CardCorner.TOP_RIGHT), card.corner_color(CardCorner.TOP_RIGHT))
         self.addRect(
-            QRectF(position + image.rect().bottomLeft() - QPointF(0, 50), corner_size),
+            QRectF(position + image.rect().bottomLeft() - QPointF(-0.5, 49.5), corner_size),
             card.corner_color(CardCorner.BOTTOM_LEFT), card.corner_color(CardCorner.BOTTOM_LEFT))
         self.addRect(
-            QRectF(position + image.rect().bottomRight() - QPointF(50, 50), corner_size),
+            QRectF(position + image.rect().bottomRight() - QPointF(49.5, 49.5), corner_size),
             card.corner_color(CardCorner.BOTTOM_RIGHT), card.corner_color(CardCorner.BOTTOM_RIGHT))
 
     @Slot(QModelIndex)
