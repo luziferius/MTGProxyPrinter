@@ -226,8 +226,8 @@ class PageScene(QGraphicsScene):
         scaling_horizontal = self.width() / page_layout.page_width
         scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
-            x_pos * scaling_horizontal,
-            y_pos * scaling_vertical,
+            x_pos * scaling_horizontal + 0.5*column,
+            y_pos * scaling_vertical + 0.5*row,
         )
 
     def _draw_cut_markers(self):
@@ -250,7 +250,7 @@ class PageScene(QGraphicsScene):
         if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
-            column_px = scaling_horizontal * (
+            column_px = 0.5 * column + scaling_horizontal * (
                     page_layout.margin_left +
                     column * (card_size.width + page_layout.image_spacing_horizontal)
             )
@@ -267,13 +267,13 @@ class PageScene(QGraphicsScene):
         if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
-            row_px = scaling_vertical * (
+            row_px = 0.5 * row + scaling_vertical * (
                     page_layout.margin_top +
                     row * (card_size.height + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
             if page_layout.image_spacing_vertical:
-                offset = 1 + card_size.height * scaling_vertical
+                offset = 0.5 + card_size.height * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
 
