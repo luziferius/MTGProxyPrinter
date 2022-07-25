@@ -143,7 +143,6 @@ class PageScene(QGraphicsScene):
         card: Card = index.internalPointer().card
         image = card.image_file
         corner_size = QSizeF(50, 50)
-        logger.info(f"Drawing 90° corners behind {card.name}")
         self.addRect(
             QRectF(position, corner_size),
             card.corner_color(CardCorner.TOP_LEFT), card.corner_color(CardCorner.TOP_LEFT))
