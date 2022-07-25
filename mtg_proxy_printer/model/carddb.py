@@ -157,7 +157,7 @@ class Card:
                 round(self.image_file.height() * corner.value[1])),
             QSize(10, 10)
         ))
-        average_color = sample_area.scaled(1, 1).toImage().pixelColor(0, 0)
+        average_color = sample_area.scaled(1, 1, transformMode=Qt.SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
 
