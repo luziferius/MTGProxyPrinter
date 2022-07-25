@@ -24,6 +24,7 @@ import pint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, DPI
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -132,9 +133,29 @@ class PageScene(QGraphicsScene):
         position = self._compute_position_for_image(index)
         image: QPixmap = index.data(Qt.DisplayRole)
         if image is not None:
+            if self.document.page_layout.draw_sharp_corners:
+                self._draw_corners(index, position)
             pixmap = self.addPixmap(image)
             pixmap.setTransformationMode(Qt.SmoothTransformation)
             pixmap.setPos(position)
+
+    def _draw_corners(self, index: QModelIndex, position: QPointF):
+        card: Card = index.internalPointer().card
+        image = card.image_file
+        corner_size = QSizeF(50, 50)
+        # Needs to offset the corner position by some half pixels to not overlap
+        self.addRect(
+            QRectF(position + QPointF(0.5, 0.5), corner_size),
+            card.corner_color(CardCorner.TOP_LEFT), card.corner_color(CardCorner.TOP_LEFT))
+        self.addRect(
+            QRectF(position + image.rect().topRight() - QPointF(49.5, -0.5), corner_size),
+            card.corner_color(CardCorner.TOP_RIGHT), card.corner_color(CardCorner.TOP_RIGHT))
+        self.addRect(
+            QRectF(position + image.rect().bottomLeft() - QPointF(-0.5, 49.5), corner_size),
+            card.corner_color(CardCorner.BOTTOM_LEFT), card.corner_color(CardCorner.BOTTOM_LEFT))
+        self.addRect(
+            QRectF(position + image.rect().bottomRight() - QPointF(49.5, 49.5), corner_size),
+            card.corner_color(CardCorner.BOTTOM_RIGHT), card.corner_color(CardCorner.BOTTOM_RIGHT))
 
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):
@@ -205,8 +226,8 @@ class PageScene(QGraphicsScene):
         scaling_horizontal = self.width() / page_layout.page_width
         scaling_vertical = self.height() / page_layout.page_height
         return QPointF(
-            x_pos * scaling_horizontal,
-            y_pos * scaling_vertical,
+            x_pos * scaling_horizontal + 0.5*column,
+            y_pos * scaling_vertical + 0.5*row,
         )
 
     def _draw_cut_markers(self):
@@ -229,7 +250,7 @@ class PageScene(QGraphicsScene):
         if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
-            column_px = scaling_horizontal * (
+            column_px = 0.5 * column + scaling_horizontal * (
                     page_layout.margin_left +
                     column * (card_size.width + page_layout.image_spacing_horizontal)
             )
@@ -246,13 +267,13 @@ class PageScene(QGraphicsScene):
         if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
-            row_px = scaling_vertical * (
+            row_px = 0.5 * row + scaling_vertical * (
                     page_layout.margin_top +
                     row * (card_size.height + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
             if page_layout.image_spacing_vertical:
-                offset = 1 + card_size.height * scaling_vertical
+                offset = 0.5 + card_size.height * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
 

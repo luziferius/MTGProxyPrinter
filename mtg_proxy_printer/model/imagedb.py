@@ -313,7 +313,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.batch_processing_state_changed.emit(value)
 
     def _handle_network_error_during_download(self, card: Card, reason_str: str):
-        card.image_file = self.image_database.blank_image
+        card.set_image_file(self.image_database.blank_image)
         logger.warning(
             f"Image download failed for card {card}, reason is \"{reason_str}\". Using blank replacement image.")
         # Only return the error message for storage, if the queue currently processes a batch job.
@@ -344,7 +344,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.image_database.loaded_images[key] = pixmap
             self.image_database.images_on_disk.add(key)
             logger.debug("Image loaded")
-        card.image_file = pixmap
+        card.set_image_file(pixmap)
 
     def _fetch_image(self, card: Card) -> QPixmap:
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)

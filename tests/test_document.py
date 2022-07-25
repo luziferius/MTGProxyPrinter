@@ -236,7 +236,7 @@ def test_page_types_correctly_returned(document: Document):
     assert_that(document.pages[5].page_type(), is_(PageType.UNDETERMINED))
 
 
-@pytest.mark.parametrize("source_version", [2, 3])
+@pytest.mark.parametrize("source_version", [2, 3, 4])
 def test_save_migration(document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -305,7 +305,7 @@ def _validate_database_schema(db_path: pathlib.Path):
     :raises AssertionError: If the provided file contains an invalid schema
     :returns: Database schema version
     """
-    target_schema_version = 4
+    target_schema_version = 5
     db_unsafe = open_database(
         db_path, f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
     if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:

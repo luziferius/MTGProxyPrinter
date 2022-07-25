@@ -17,14 +17,15 @@ import atexit
 import configparser
 import dataclasses
 import datetime
+import enum
 import itertools
 import functools
 import pathlib
 import textwrap
 import typing
 
-from PySide6.QtGui import QPixmap
-from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap, QColor
+from PySide6.QtCore import Qt, QPoint, QRect, QSize
 import delegateto
 
 import mtg_proxy_printer.app_dirs
@@ -69,6 +70,7 @@ __all__ = [
     "CardIdentificationData",
     "MTGSet",
     "Card",
+    "CardCorner",
     "CardDatabase",
     "cached_dedent",
 ]
@@ -102,6 +104,21 @@ class MTGSet:
             return None
 
 
+@enum.unique
+class CardCorner(enum.Enum):
+    """
+    The four corners of a card. Values are relative image positions in X and Y.
+    These are fractions so that they work properly for both regular and oversized cards
+
+    Values are tuned to return the top-left corner of a 10x10 area
+    centered around (20,20) away from the respective corner.
+    """
+    TOP_LEFT = (15/745, 15/1040)
+    TOP_RIGHT = (1-25/745, 15/1040)
+    BOTTOM_LEFT = (15/745, 1-25/1040)
+    BOTTOM_RIGHT = (1-25/745, 1-25/1040)
+
+
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
     name: str = dataclasses.field(compare=True)
@@ -117,6 +134,10 @@ class Card:
     face_number: int = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
+    def set_image_file(self, image: QPixmap):
+        self.image_file = image
+        self.corner_color.cache_clear()
+
     def requested_page_type(self) -> PageType:
         if self.image_file is None:
             return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
@@ -124,6 +145,21 @@ class Card:
         if (size.width(), size.height()) == (1040, 1490):
             return PageType.OVERSIZED
         return PageType.REGULAR
+
+    @functools.lru_cache(maxsize=len(CardCorner))
+    def corner_color(self, corner: CardCorner) -> QColor:
+        """Returns the color of the card at the given corner. """
+        if self.image_file is None:
+            return QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
+        sample_area = self.image_file.copy(QRect(
+            QPoint(
+                round(self.image_file.width() * corner.value[0]),
+                round(self.image_file.height() * corner.value[1])),
+            QSize(10, 10)
+        ))
+        average_color = sample_area.scaled(
+            1, 1, mode=Qt.TransformationMode.SmoothTransformation).toImage().pixelColor(0, 0)
+        return average_color
 
 
 OptionalCard = typing.Optional[Card]
@@ -751,7 +787,6 @@ class CardDatabase:
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
         return filters_in_settings != filters_in_db
 
-    @profile  # TODO: This decorator is unnecessary
     def _remove_old_printing_filters(self, section) -> bool:
         stored_filters = {
             filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()

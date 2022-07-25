@@ -55,6 +55,9 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         self.draw_cut_markers: QCheckBox
         self.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
+        self.draw_sharp_corners: QCheckBox
+        self.draw_sharp_corners.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
         return page_layout
 
     @Slot()
@@ -85,10 +88,10 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         document_section = settings["documents"]
-        widgets_with_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_with_settings:
-            widget.setValue(document_section.getint(setting))
-        self.draw_cut_markers.setChecked(document_section.getboolean("print-cut-marker"))
+        for spinbox, setting in self._get_integer_settings_widgets():
+            spinbox.setValue(document_section.getint(setting))
+        for checkbox, setting in self._get_boolean_settings_widgets():
+            checkbox.setChecked(document_section.getboolean(setting))
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -111,13 +114,13 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
         documents_section = mtg_proxy_printer.settings.settings["documents"]
-        widgets_and_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_and_settings:
-            documents_section[setting] = str(widget.value())
-        documents_section["print-cut-marker"] = str(self.draw_cut_markers.isChecked())
+        for spinbox, setting in self._get_integer_settings_widgets():
+            documents_section[setting] = str(spinbox.value())
+        for checkbox, setting in self._get_boolean_settings_widgets():
+            documents_section[setting] = str(checkbox.isChecked())
         logger.debug("Saving done.")
 
-    def _get_document_settings_widgets(self):
+    def _get_integer_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
             (self.page_height, "paper-height-mm"),
             (self.page_width, "paper-width-mm"),
@@ -127,5 +130,12 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
             (self.margin_right, "margin-right-mm"),
             (self.image_spacing_horizontal, "image-spacing-horizontal-mm"),
             (self.image_spacing_vertical, "image-spacing-vertical-mm"),
+        ]
+        return widgets_with_settings
+
+    def _get_boolean_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.draw_cut_markers, "print-cut-marker"),
+            (self.draw_sharp_corners, "print-sharp-corners"),
         ]
         return widgets_with_settings
