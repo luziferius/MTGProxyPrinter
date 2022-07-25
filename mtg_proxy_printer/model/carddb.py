@@ -25,7 +25,7 @@ import textwrap
 import typing
 
 from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 import delegateto
 
 import mtg_proxy_printer.app_dirs
@@ -106,11 +106,17 @@ class MTGSet:
 
 @enum.unique
 class CardCorner(enum.Enum):
-    """The four corners of a card. Values are relative image positions in X and Y."""
-    TOP_LEFT = (0.02684, 0.019231)
-    TOP_RIGHT = (1-0.02684, 0.019231)
-    BOTTOM_LEFT = (0.02684, 1-0.019231)
-    BOTTOM_RIGHT = (1-0.02684, 1-0.019231)
+    """
+    The four corners of a card. Values are relative image positions in X and Y.
+    These are fractions so that they work properly for both regular and oversized cards
+
+    Values are tuned to return the top-left corner of a 10x10 area
+    centered around (20,20) away from the respective corner.
+    """
+    TOP_LEFT = (15/745, 15/1040)
+    TOP_RIGHT = (1-25/745, 15/1040)
+    BOTTOM_LEFT = (15/745, 1-25/1040)
+    BOTTOM_RIGHT = (1-25/745, 1-25/1040)
 
 
 @dataclasses.dataclass(unsafe_hash=True)
@@ -145,12 +151,14 @@ class Card:
         """Returns the color of the card at the given corner. """
         if self.image_file is None:
             return QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
-        image = self.image_file.toImage()
-        sample_center = QPoint(
-            round(self.image_file.width() * corner.value[0]),
-            round(self.image_file.height() * corner.value[1]),
-        )
-        return image.pixelColor(sample_center)
+        sample_area = self.image_file.copy(QRect(
+            QPoint(
+                round(self.image_file.width() * corner.value[0]),
+                round(self.image_file.height() * corner.value[1])),
+            QSize(10, 10)
+        ))
+        average_color = sample_area.scaled(1, 1).toImage().pixelColor(0, 0)
+        return average_color
 
 
 OptionalCard = typing.Optional[Card]
