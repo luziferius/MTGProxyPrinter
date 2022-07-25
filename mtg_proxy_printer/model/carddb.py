@@ -107,10 +107,10 @@ class MTGSet:
 @enum.unique
 class CardCorner(enum.Enum):
     """The four corners of a card. Values are relative image positions in X and Y."""
-    TOP_LEFT = (0.1, 0.1)
-    TOP_RIGHT = (0.1, 0.9)
-    BOTTOM_LEFT = (0.9, 0.1)
-    BOTTOM_RIGHT = (0.9, 0.9)
+    TOP_LEFT = (0.02684, 0.019231)
+    TOP_RIGHT = (1-0.02684, 0.019231)
+    BOTTOM_LEFT = (0.02684, 1-0.019231)
+    BOTTOM_RIGHT = (1-0.02684, 1-0.019231)
 
 
 @dataclasses.dataclass(unsafe_hash=True)
