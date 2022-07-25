@@ -1,5 +1,16 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Implemented optional drawing of 90° card corners. This can be enabled for all new documents
+  globally in the application settings or individually in the document settings.
+
+## Fixed issues
+
+- Fixed card images overlapping by one pixel when image spacing is set to zero.
+
 # Version 0.18.0 (2022-07-09)  <a name="v0_18_0"></a>
 
 ## New features

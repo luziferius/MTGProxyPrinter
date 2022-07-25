@@ -31,7 +31,7 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 
 
-@pytest.mark.parametrize("version", [-1, 0, 1, 5, 6])
+@pytest.mark.parametrize("version", [-1, 0, 1, 6, 7])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
     empty_save_database.execute(f"PRAGMA user_version = {version};")
     assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
@@ -80,8 +80,8 @@ def test_valid_data_loads_correctly(
         textwrap.dedent("""\
             INSERT INTO DocumentSettings (rowid, page_height, page_width,
                   margin_top, margin_bottom, margin_left, margin_right,
-                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
-              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners)
+              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """),
         dataclasses.astuple(page_layout))
     loader = document.loader
@@ -123,8 +123,8 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
         textwrap.dedent("""\
             INSERT INTO DocumentSettings (rowid, page_height, page_width,
                   margin_top, margin_bottom, margin_left, margin_right,
-                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers)
-              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners)
+              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """),
         dataclasses.astuple(mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()))
     loader = document.loader
@@ -216,15 +216,15 @@ def test_protects_against_infinite_settings_data(
         CREATE VIEW DocumentSettings (
           rowid, page_height, page_width,
           margin_top, margin_bottom, margin_left, margin_right,
-          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers) AS 
+          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners) AS 
         WITH RECURSIVE settings_gen (
           rowid, page_height, page_width,
           margin_top, margin_bottom, margin_left, margin_right,
-          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
+          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners
         ) AS (
-                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1
+                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1
                 UNION ALL 
-                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1
+                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1
                 FROM settings_gen
                 LIMIT 100000
             )

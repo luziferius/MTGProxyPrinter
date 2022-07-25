@@ -53,6 +53,15 @@ VERSION_CHECK_RE = re.compile(
     r"(?:\+(?P<buildmetadata>[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$"
 )
 
+# Below are the default application settings. How to define new ones:
+# - Add a key-value pair (String keys and values only) to a section or add a new section
+# - If adding a new section, also add a validator function for that section.
+# - Add the new key to the validator of the section it’s in. The validator has to check that the value can be properly
+#   cast into the expected type and perform a value range check.
+# - Add the option to the Settings window UI
+# - Wire up save and load functionality for the new key in the Settings UI
+# - The Settings GUI class has to also do a value range check.
+
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
     "automatically-add-opposing-faces": "True",
@@ -88,6 +97,7 @@ DEFAULT_SETTINGS["documents"] = {
     "image-spacing-vertical-mm": "0",
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
+    "print-sharp-corners": "False",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -193,12 +203,13 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    _validate_boolean(section, defaults, "print-cut-marker")
+    boolean_settings = {"print-cut-marker", "print-sharp-corners"}
     # Check syntax
     for key in section.keys():
-        if key in ("print-cut-marker",):
-            continue
-        _validate_non_negative_int(section, defaults, key)
+        if key in boolean_settings:
+            _validate_boolean(section, defaults, key)
+        else:
+            _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties
     available_height = section.getint("paper-height-mm") - \
         (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
