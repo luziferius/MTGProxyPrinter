@@ -17,7 +17,7 @@ import pathlib
 import typing
 
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
 
@@ -390,7 +390,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 f"to download the new version?",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No
                 ) == QMessageBox.Yes:
-            QDesktopServices.openUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE)
+            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.StrictMode)
+            QDesktopServices.openUrl(url)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(

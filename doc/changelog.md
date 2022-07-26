@@ -9,6 +9,7 @@
 
 ## Fixed issues
 
+- Fixed crashes when accepting to open the Application website in the update notification. This now works properly
 - Fixed card images overlapping by one pixel when image spacing is set to zero.
 
 # Version 0.18.0 (2022-07-09)  <a name="v0_18_0"></a>
