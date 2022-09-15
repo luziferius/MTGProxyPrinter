@@ -104,11 +104,6 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         self.print_guessing_enable.setChecked(options.getboolean("enable-print-guessing-by-default"))
         self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded-images"))
         self.translate_deck_list_enable.setChecked(options.getboolean("always-translate-deck-lists"))
-        parser: common.ParserBase = self.field("selected_parser")
-        if parser.requires_print_guessing:
-            logger.debug("Force-enabling print guessing, because the chosen parser requires it.")
-            self.print_guessing_enable.setChecked(True)
-            self.print_guessing_enable.setEnabled(False)
         logger.debug(f"Initialized {self.__class__.__name__}")
 
     def cleanupPage(self):
@@ -452,8 +447,8 @@ class DeckImportWizard(QWizard):
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)
         self.summary_page = SummaryPage(card_db, self)
-        self.addPage(self.select_deck_parser_page)
         self.addPage(self.load_list_page)
+        self.addPage(self.select_deck_parser_page)
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self._set_default_size()
