@@ -18,7 +18,9 @@ This module is responsible for downloading deck lists from a known list of deckb
 """
 import abc
 import re
+import typing
 
+from PyQt5.QtGui import QValidator
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
@@ -27,6 +29,22 @@ from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+
+
+class IsIdentifyingDeckUrlValidator(QValidator):
+    """
+    Validator that checks, if the given string is a valid URL prefix pointing to a deck on a known deck
+    building website.
+    If this validator passes, at least one downloader class is able to fetch a deck list from the given input string.
+    """
+
+    def validate(self, input_string: str, pos: int = 0) -> typing.Tuple[QValidator.State, str, int]:
+        logger.debug(f"Validating input: {input_string}")
+        for downloader_class in AVAILABLE_DOWNLOADERS:
+            if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
+                logger.debug(f"Input is valid URL for {downloader_class.APPLICABLE_WEBSITES}")
+                return QValidator.Acceptable
+        return QValidator.Intermediate
 
 
 class DecklistDownloader(DownloaderBase):
@@ -69,7 +87,7 @@ class ScryfallDownloader(DecklistDownloader):
 
 class MTGGoldfishDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://(www\.)?mtggoldfish\.com/deck/(?P<deck_id>\d+)(#.*)?"
+        r"https://(www\.)?mtggoldfish\.com/deck/(?P<deck_id>\d+)(#.*)?$"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "MTGGoldfish (mtggoldfish.com)"
@@ -80,3 +98,9 @@ class MTGGoldfishDownloader(DecklistDownloader):
         deck_id = match.group("deck_id")
         url = f"https://www.mtggoldfish.com/deck/download/{deck_id}?type=arena"
         return url
+
+
+AVAILABLE_DOWNLOADERS = [
+    ScryfallDownloader,
+    MTGGoldfishDownloader
+]
