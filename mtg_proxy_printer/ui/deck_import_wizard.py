@@ -26,6 +26,8 @@ from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, Q
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
+from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
+    get_downloader_class
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
@@ -82,6 +84,13 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
     def __init__(self, language_model: QStringListModel, *args, **kwargs):
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
+        self.deck_list_download_url_line_edit:QLineEdit
+        self.deck_list_download_url_line_edit.textChanged.connect(
+            lambda text: self.deck_list_download_button.setEnabled(self.deck_list_url_validator.validate(text)[0] == QValidator.Acceptable))
+        supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS))
+        self.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
+
         self.translate_deck_list_target_language.setModel(language_model)
         self.registerField("deck_list*", self.deck_list, "plainText", self.deck_list.textChanged)
         self.registerField("print-guessing-enable", self.print_guessing_enable)
@@ -131,6 +140,23 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
             selected_file, _ = QFileDialog.getOpenFileName(
                 self, "Select deck file", default_path, file_extension_filter)
             self._load_from_file(selected_file)
+
+    @Slot()
+    def on_deck_list_download_button_clicked(self):
+        if not self.deck_list.toPlainText() \
+                or QMessageBox.question(
+                        self, "Overwrite existing deck list?",
+                        "Downloading a deck list will overwrite the existing content. Continue?",
+                        QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            url = self.deck_list_download_url_line_edit.text()
+            logger.info(f"User requests to download a deck list from the internet: {url}")
+            downloader_class = get_downloader_class(url)
+            if downloader_class is not None:
+                downloader = downloader_class(self)
+                self.deck_list.setPlainText(downloader.download(url))
+
+
+
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \

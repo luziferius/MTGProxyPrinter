@@ -104,3 +104,10 @@ AVAILABLE_DOWNLOADERS = [
     ScryfallDownloader,
     MTGGoldfishDownloader
 ]
+
+
+def get_downloader_class(url: str):
+    for downloader in AVAILABLE_DOWNLOADERS:
+        if downloader.DECKLIST_PATH_RE.match(url) is not None:
+            return downloader
+    return None
