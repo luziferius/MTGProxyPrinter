@@ -25,7 +25,7 @@ from PyQt5.QtGui import QValidator
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser
-from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
+from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MTGOnlineParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -67,6 +67,7 @@ class DecklistDownloader(DownloaderBase):
 
     @abc.abstractmethod
     def map_to_download_url(self, decklist_url: str) -> str:
+        """Takes a URL to a deck list and returns a download URL"""
         pass
     pass
 
@@ -79,7 +80,6 @@ class ScryfallDownloader(DecklistDownloader):
     APPLICABLE_WEBSITES = "Scryfall (scryfall.com)"
 
     def map_to_download_url(self, decklist_url: str) -> str:
-        """Takes a URL to a deck list and returns a download URL"""
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         uuid = match.group("uuid")
         return f"https://api.scryfall.com/decks/{uuid}/export/csv"
@@ -93,16 +93,30 @@ class MTGGoldfishDownloader(DecklistDownloader):
     APPLICABLE_WEBSITES = "MTGGoldfish (mtggoldfish.com)"
 
     def map_to_download_url(self, decklist_url: str) -> str:
-        """Takes a URL to a deck list and returns a download URL"""
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         deck_id = match.group("deck_id")
         url = f"https://www.mtggoldfish.com/deck/download/{deck_id}?type=arena"
         return url
 
 
+class MTGWTFDownloader(DecklistDownloader):
+    """
+    Downloader for https://mtg.wtf. They offer a list of all official pre-constructed decks in existence.
+    """
+    DECKLIST_PATH_RE = re.compile(
+        r"https://mtg\.wtf/deck/\w+/(?P<name>\w+)/?"
+    )
+    PARSER_CLASS = None  # TODO
+    APPLICABLE_WEBSITES = "mtg.wtf"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return f"{decklist_url}/download"
+
+
 AVAILABLE_DOWNLOADERS = [
     ScryfallDownloader,
-    MTGGoldfishDownloader
+    MTGGoldfishDownloader,
+    MTGWTFDownloader
 ]
 
 

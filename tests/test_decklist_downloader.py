@@ -17,7 +17,8 @@ import itertools
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, IsIdentifyingDeckUrlValidator
+from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
+    IsIdentifyingDeckUrlValidator
 
 
 ACCEPTABLE_MTGGOLDFISH_URLS = [
@@ -57,6 +58,7 @@ ACCEPTABLE_SCRYFALL_URLS = [
     "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual&with=eur",
 ]
 
+
 @pytest.mark.parametrize("url", ACCEPTABLE_SCRYFALL_URLS)
 def test_scryfall_url_re(url: str):
     assert_that(
@@ -65,7 +67,25 @@ def test_scryfall_url_re(url: str):
     )
 
 
-@pytest.mark.parametrize("url", itertools.chain(ACCEPTABLE_MTGGOLDFISH_URLS, ACCEPTABLE_SCRYFALL_URLS))
+ACCEPTABLE_MTG_WTF_URLS = [
+    "https://mtg.wtf/deck/c21/prismari-performance",
+    "https://mtg.wtf/deck/c21/prismari-performance/",
+]
+
+
+@pytest.mark.parametrize("url", ACCEPTABLE_MTG_WTF_URLS)
+def test_mtg_wtf_url_re(url: str):
+    assert_that(
+        MTGWTFDownloader.DECKLIST_PATH_RE.match(url),
+        is_(not_none())
+    )
+
+
+@pytest.mark.parametrize("url", itertools.chain(
+    ACCEPTABLE_MTGGOLDFISH_URLS,
+    ACCEPTABLE_SCRYFALL_URLS,
+    ACCEPTABLE_MTG_WTF_URLS,
+))
 def test_IsIdentifyingDeckUrlValidator_validate(url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
