@@ -24,6 +24,9 @@ from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 
 class DecklistDownloader(DownloaderBase):
@@ -32,12 +35,16 @@ class DecklistDownloader(DownloaderBase):
     APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:
+        logger.info(f"About to fetch deck list from {decklist_url}")
         download_url = self.map_to_download_url(decklist_url)
+        logger.debug(f"Obtained download URL: {download_url}")
         data, monitor = self.read_from_url(download_url, "Downloading deck list:")
         with data, monitor:
             deck_list = data.read()
             if isinstance(deck_list, bytes):
                 deck_list = deck_list.decode("utf-8")
+        line_count = deck_list.count('\n')
+        logger.debug(f"Obtained deck list containing {line_count} lines.")
         return deck_list
 
     @abc.abstractmethod
