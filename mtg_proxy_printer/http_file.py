@@ -129,7 +129,7 @@ class MeteredSeekableHTTPFile(QObject):
                 raise e
         else:
             buffer_length = len(buffer)
-            read_less_than_expected = buffer_length < count
+            read_less_than_expected = count is not None and buffer_length < count
             position_after_read_within_file = self._pos + buffer_length < self.content_length
             read_not_unsuccessful = not(
                 count and self.seekable() and read_less_than_expected and position_after_read_within_file
