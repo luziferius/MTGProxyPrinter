@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import itertools
 import math
 import pathlib
 import re
@@ -134,12 +135,33 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
                         "Selecting a file will overwrite the existing deck list. Continue?",
                         QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
-            # Ignore the used file type filter (second return value)
-            parser: common.ParserBase = self.field("selected_parser")
-            file_extension_filter = parser.get_file_extension_filter()
+            file_extension_filter = self.get_file_extension_filter()
             selected_file, _ = QFileDialog.getOpenFileName(
                 self, "Select deck file", default_path, file_extension_filter)
             self._load_from_file(selected_file)
+
+    @staticmethod
+    def get_file_extension_filter() -> str:
+        parsers = [
+            re_parsers.MTGOnlineParser, re_parsers.MTGArenaParser, re_parsers.XMageParser,
+            csv_parsers.ScryfallCSVParser, csv_parsers.TappedOutCSVParser]
+        everything = "All files (*)"
+        individual_file_types = list(
+            itertools.chain.from_iterable(parser.SUPPORTED_FILE_TYPES.items() for parser in parsers)
+        )
+        # At this point, the data required (file extension list) is in a list of dict values containing
+        # lists of strings. Thus, it requires two levels of iterable unpacking. Because of duplicates in file,
+        # extensions across all parsers, de-duplicate and then sort the result.
+        all_supported = sorted(set(
+            itertools.chain.from_iterable(itertools.chain.from_iterable(
+                parser.SUPPORTED_FILE_TYPES.values() for parser in parsers))
+        ))
+        result = f'All Supported (*.{" *.".join(all_supported)});;' \
+                 + ";;".join(
+                     f'{name} (*.{" *.".join(extensions)})'
+                     for name, extensions in individual_file_types) \
+                 + f";;{everything}"
+        return result
 
     @Slot()
     def on_deck_list_download_button_clicked(self):
@@ -154,9 +176,6 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
             if downloader_class is not None:
                 downloader = downloader_class(self)
                 self.deck_list.setPlainText(downloader.download(url))
-
-
-
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
