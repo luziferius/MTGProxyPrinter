@@ -23,11 +23,13 @@ import re
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser
+from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
 
 
 class DecklistDownloader(DownloaderBase):
     DECKLIST_PATH_RE = re.compile(r"")
     PARSER_CLASS: ParserBase = None
+    APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:
         download_url = self.map_to_download_url(decklist_url)
@@ -49,6 +51,7 @@ class ScryfallDownloader(DecklistDownloader):
         r"https://scryfall\.com/@\w+/decks/(?P<uuid>[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12})/?"
     )
     PARSER_CLASS = ScryfallCSVParser
+    APPLICABLE_WEBSITES = "Scryfall (scryfall.com)"
 
     def map_to_download_url(self, decklist_url: str) -> str:
         """Takes a URL to a deck list and returns a download URL"""
@@ -57,4 +60,16 @@ class ScryfallDownloader(DecklistDownloader):
         return f"https://api.scryfall.com/decks/{uuid}/export/csv"
 
 
+class MTGGoldfishDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://(www\.)?mtggoldfish\.com/deck/(?P<deck_id>\d+)(#.*)?"
+    )
+    PARSER_CLASS = MTGArenaParser
+    APPLICABLE_WEBSITES = "MTGGoldfish (mtggoldfish.com)"
 
+    def map_to_download_url(self, decklist_url: str) -> str:
+        """Takes a URL to a deck list and returns a download URL"""
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        deck_id = match.group("deck_id")
+        url = f"https://www.mtggoldfish.com/deck/download/{deck_id}?type=arena"
+        return url
