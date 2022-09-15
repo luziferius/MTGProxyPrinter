@@ -43,8 +43,8 @@ class IsIdentifyingDeckUrlValidator(QValidator):
         for downloader_class in AVAILABLE_DOWNLOADERS:
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
                 logger.debug(f"Input is valid URL for {downloader_class.APPLICABLE_WEBSITES}")
-                return QValidator.Acceptable
-        return QValidator.Intermediate
+                return QValidator.Acceptable, input_string, pos
+        return QValidator.Intermediate, input_string, pos
 
 
 class DecklistDownloader(DownloaderBase):
@@ -87,7 +87,7 @@ class ScryfallDownloader(DecklistDownloader):
 
 class MTGGoldfishDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://(www\.)?mtggoldfish\.com/deck/(?P<deck_id>\d+)(#.*)?$"
+        r"https://(www\.)?mtggoldfish\.com/deck(/download)?/(?P<deck_id>\d+)([#?].*)?$"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "MTGGoldfish (mtggoldfish.com)"
