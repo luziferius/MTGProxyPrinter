@@ -1,5 +1,5 @@
 # Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
-import collections
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -12,6 +12,8 @@ import collections
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+from collections import Counter
 import typing
 
 from hamcrest import *
@@ -44,14 +46,14 @@ def test_add_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardD
     model = _populate_card_db_and_create_model(qtbot, card_db)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
     with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == count)):
-        model.add_cards({oversized: count})
+        model.add_cards(Counter({oversized: count}))
     assert_that(model.oversized_card_count, is_(equal_to(count)))
 
 
 def test_remove_oversized_card_updates_oversized_count(qtbot: QtBot, card_db: CardDatabase):
     model = _populate_card_db_and_create_model(qtbot, card_db)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
-    model.add_cards({oversized: 10})
+    model.add_cards(Counter({oversized: 10}))
     assert_that(model.oversized_card_count, is_(equal_to(10)))
 
     with qtbot.wait_signal(model.oversized_card_count_changed, check_params_cb=(lambda value: value == 8)):
@@ -67,7 +69,7 @@ def test_replace_oversized_with_regular_card_decrements_oversized_count(qtbot: Q
         regular.language, scryfall_id=regular.scryfall_id, is_front=regular.is_front)
 
     with qtbot.wait_signal(model.oversized_card_count_changed, timeout=100, check_params_cb=(lambda value: value == 1)):
-        model.add_cards({oversized: 1, regular: 1})
+        model.add_cards(Counter({oversized: 1, regular: 1}))
     oversized_index = model.index(0, 0)
     regular_index = model.index(1, 0)
     assert_that(model.cards[0].is_oversized, is_(True))
@@ -91,7 +93,7 @@ def test_replace_regular_with_oversized_card_increments_oversized_count(qtbot: Q
         oversized.language, scryfall_id=oversized.scryfall_id, is_front=oversized.is_front)
 
     with qtbot.wait_signal(model.oversized_card_count_changed, timeout=100, check_params_cb=(lambda value: value == 1)):
-        model.add_cards({oversized: 1, regular: 1})
+        model.add_cards(Counter({oversized: 1, regular: 1}))
 
     oversized_index = model.index(0, 0)
     regular_index = model.index(1, 0)
@@ -128,9 +130,13 @@ def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
     model = _populate_card_db_and_create_model(qtbot, card_db)
     regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
     oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
-    model.add_cards({oversized: 1})
-    model.add_cards({regular: 1})
-    model.add_cards({oversized: 1})
+    model.add_cards(Counter({
+        oversized: 1,
+        regular: 1,
+    }))
+    model.add_cards(Counter({
+        oversized: 1,
+    }))
     selection_model = QItemSelectionModel(model)
     selection_model.select(model.index(0, 0), QItemSelectionModel.Select)
     selection_model.select(model.index(2, 0), QItemSelectionModel.Select)
@@ -183,7 +189,7 @@ def test_has_basic_lands(
         include_wastes: bool, include_snow_basics: bool,
         present_cards: typing.List[str], expected: bool):
     model = _populate_card_db_and_create_model(qtbot, card_db)
-    model.add_cards(collections.Counter(
+    model.add_cards(Counter(
         {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
     assert_that(
