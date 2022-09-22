@@ -231,8 +231,8 @@ class CardListModel(QAbstractTableModel):
             self.cards[row] for row in row_order
         )
 
-    def has_basic_lands(self) -> bool:
-        basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids()
+    def has_basic_lands(self, include_wastes: bool = False, include_snow_basics: bool = False) -> bool:
+        basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics)
         return any(filter(lambda card: card.oracle_id in basic_land_oracle_ids, self.cards))
 
     def remove_all_basic_lands(self):
