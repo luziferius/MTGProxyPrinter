@@ -142,57 +142,27 @@ def test_remove_multi_selection(qtbot: QtBot, card_db: CardDatabase):
     assert_that(model.rowCount(), is_(equal_to(1)))
 
 
-@pytest.mark.parametrize("include_wastes, include_snow_basics", [
-    (False, False),
-    (False, True),
-    (True, False),
-    (True, True),
-])
-def test_has_basic_lands_returns_true_with_regular_basic_lands_in_list(
-        qtbot: QtBot, card_db: CardDatabase, include_wastes: bool, include_snow_basics: bool):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    forest = card_db.get_card_with_scryfall_id(FOREST_ID, True)
-    model.add_cards({forest: 1})
-    assert_that(
-        model.has_basic_lands(include_wastes, include_snow_basics),
-        is_(True)
-    )
+@pytest.mark.parametrize("include_wastes, include_snow_basics, present_cards, expected", [
+    (False, False, [], False),
+    (False, True, [], False),
+    (True, False, [], False),
+    (True, True, [], False),
 
+    (False, False, [REGULAR_ID], False),
+    (False, True, [REGULAR_ID], False),
+    (True, False, [REGULAR_ID], False),
+    (True, True, [REGULAR_ID], False),
 
-@pytest.mark.parametrize("include_wastes, include_snow_basics", [
-    (False, False),
-    (False, True),
-    (True, False),
-    (True, True),
-])
-def test_has_basic_lands_returns_false_when_empty(
-        qtbot: QtBot, card_db: CardDatabase, include_wastes: bool, include_snow_basics: bool):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    assert_that(
-        model.has_basic_lands(include_wastes, include_snow_basics),
-        is_(False)
-    )
+    (False, False, [REGULAR_ID, OVERSIZED_ID], False),
+    (False, True, [REGULAR_ID, OVERSIZED_ID], False),
+    (True, False, [REGULAR_ID, OVERSIZED_ID], False),
+    (True, True, [REGULAR_ID, OVERSIZED_ID], False),
 
+    (False, False, [FOREST_ID], True),
+    (False, True, [FOREST_ID], True),
+    (True, False, [FOREST_ID], True),
+    (True, True, [FOREST_ID], True),
 
-@pytest.mark.parametrize("include_wastes, include_snow_basics", [
-    (False, False),
-    (False, True),
-    (True, False),
-    (True, True),
-])
-def test_has_basic_lands_returns_false_without_basic_lands_in_list(
-        qtbot: QtBot, card_db: CardDatabase, include_wastes: bool, include_snow_basics: bool):
-    model = _populate_card_db_and_create_model(qtbot, card_db)
-    regular = card_db.get_card_with_scryfall_id(REGULAR_ID, True)
-    oversized = card_db.get_card_with_scryfall_id(OVERSIZED_ID, True)
-    model.add_cards({oversized: 1, regular: 1})
-    assert_that(
-        model.has_basic_lands(include_wastes, include_snow_basics),
-        is_(False)
-    )
-
-
-@pytest.mark.parametrize("include_wastes, include_snow_basics, present_basics, expected", [
     (False, False, [WASTES_ID], False),
     (False, True, [WASTES_ID], False),
     (True, False, [WASTES_ID], True),
@@ -208,13 +178,13 @@ def test_has_basic_lands_returns_false_without_basic_lands_in_list(
     (True, False, [SNOW_FOREST_ID, WASTES_ID], True),
     (True, True, [SNOW_FOREST_ID, WASTES_ID], True),
 ])
-def test_has_basic_lands_correctly_identifies_special_basics(
+def test_has_basic_lands(
         qtbot: QtBot, card_db: CardDatabase,
         include_wastes: bool, include_snow_basics: bool,
-        present_basics: typing.List[str], expected: bool):
+        present_cards: typing.List[str], expected: bool):
     model = _populate_card_db_and_create_model(qtbot, card_db)
     model.add_cards(collections.Counter(
-        {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_basics}
+        {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
     ))
     assert_that(
         model.has_basic_lands(include_wastes, include_snow_basics),
