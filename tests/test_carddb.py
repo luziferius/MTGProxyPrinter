@@ -830,3 +830,21 @@ def test_is_removed_printing(
         card_db.is_removed_printing(printing),
         is_(expected)
     )
+
+
+@pytest.mark.timeout(1)
+@pytest.mark.parametrize("include_wastes, include_snow_basics, expected_oracle_ids", [
+    (False, False, ["b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"]),
+    (True, False, ["b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6", "05d24b0c-904a-46b6-b42a-96a4d91a0dd4"]),
+    (False, True, ["b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6", "5f0d3be8-e63e-4ade-ae58-6b0c14f2ce6d"]),
+    (True, True, ["b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6", "05d24b0c-904a-46b6-b42a-96a4d91a0dd4", "5f0d3be8-e63e-4ade-ae58-6b0c14f2ce6d"]),
+])
+def test_get_basic_land_oracle_ids(
+        qtbot, card_db: CardDatabase,
+        include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: typing.List[str]):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
+    assert_that(
+        card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics),
+        contains_inanyorder(*expected_oracle_ids)
+    )
