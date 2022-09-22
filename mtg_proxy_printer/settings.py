@@ -119,6 +119,8 @@ DEFAULT_SETTINGS["decklist-import"] = {
     "enable-print-guessing-by-default": "True",
     "prefer-already-downloaded-images": "True",
     "always-translate-deck-lists": "False",
+    "remove-basic-wastes": "False",
+    "remove-snow-basics": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
