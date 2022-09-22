@@ -6,6 +6,9 @@
 
 - Implemented optional drawing of 90° card corners. This can be enabled for all new documents
   globally in the application settings or individually in the document settings.
+- The one-click basic land removal in the deck list import is now configurable in the application settings:
+  You can now individually enable the automatic removal of Wastes and Snow-Covered basic lands in
+  addition to plain basic lands.
 
 ## Fixed issues
 
