@@ -196,3 +196,40 @@ def test_has_basic_lands(
         model.has_basic_lands(include_wastes, include_snow_basics),
         is_(expected)
     )
+
+
+@pytest.mark.parametrize("remove_wastes, remove_snow_basics, present_cards, expected_remaining", [
+    (False, False, [], []),
+    (False, True, [], []),
+    (True, False, [], []),
+    (True, True, [], []),
+    
+    (False, False, [REGULAR_ID, OVERSIZED_ID], [REGULAR_ID, OVERSIZED_ID]),
+    (False, True, [REGULAR_ID, OVERSIZED_ID], [REGULAR_ID, OVERSIZED_ID]),
+    (True, False, [REGULAR_ID, OVERSIZED_ID], [REGULAR_ID, OVERSIZED_ID]),
+    (True, True, [REGULAR_ID, OVERSIZED_ID], [REGULAR_ID, OVERSIZED_ID]),
+
+    (False, False, [WASTES_ID, SNOW_FOREST_ID], [WASTES_ID, SNOW_FOREST_ID]),
+    (False, True, [WASTES_ID, SNOW_FOREST_ID], [WASTES_ID]),
+    (True, False, [WASTES_ID, SNOW_FOREST_ID], [SNOW_FOREST_ID]),
+    (True, True, [WASTES_ID, SNOW_FOREST_ID], []),
+
+    (False, False, [FOREST_ID], []),
+    (False, True, [FOREST_ID], []),
+    (True, False, [FOREST_ID], []),
+    (True, True, [FOREST_ID], []),
+])
+def test_remove_all_basic_lands(
+        qtbot: QtBot, card_db: CardDatabase,
+        remove_wastes: bool, remove_snow_basics: bool,
+        present_cards: typing.List[str], expected_remaining: typing.List[str]):
+    model = _populate_card_db_and_create_model(qtbot, card_db)
+    model.add_cards(Counter(
+        {card_db.get_card_with_scryfall_id(scryfall_id, True): 1 for scryfall_id in present_cards}
+    ))
+    model.remove_all_basic_lands(remove_wastes, remove_snow_basics)
+    remaining = [card.scryfall_id for card in model.cards]
+    assert_that(
+        remaining,
+        contains_exactly(*expected_remaining)
+    )
