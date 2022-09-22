@@ -830,3 +830,13 @@ def test_is_removed_printing(
         card_db.is_removed_printing(printing),
         is_(expected)
     )
+
+
+def test_get_basic_land_oracle_ids(qtbot, card_db: CardDatabase):
+    expected_oracle_ids = ["b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6", ]
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
+    assert_that(
+        card_db.get_basic_land_oracle_ids(),
+        contains_inanyorder(*expected_oracle_ids)
+    )
