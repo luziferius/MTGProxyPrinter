@@ -16,7 +16,7 @@
 import pathlib
 import typing
 
-from PySide6.QtCore import Slot, Signal, QStringListModel
+from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QToolBar, QLabel
 
@@ -394,7 +394,8 @@ class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
                 f"to download the new version?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
                 ) == QMessageBox.StandardButton.Yes:
-            QDesktopServices.openUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE)
+            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.StrictMode)
+            QDesktopServices.openUrl(url)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(

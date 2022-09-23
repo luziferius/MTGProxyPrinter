@@ -26,8 +26,33 @@
       <attribute name="title">
        <string>General</string>
       </attribute>
-      <layout class="QVBoxLayout" name="tab_general_layout">
-       <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="1" column="0">
+        <widget class="QLabel" name="preferred_language_label">
+         <property name="text">
+          <string>Preferred card language:</string>
+         </property>
+         <property name="buddy">
+          <cstring>preferred_language_combo_box</cstring>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QComboBox" name="preferred_language_combo_box">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Language choices will default to the chosen language here.
+
+Entries use the language codes as listed on Scryfall.</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0" colspan="2">
         <widget class="QGroupBox" name="look_and_feel_settings_group_box">
          <property name="title">
           <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
@@ -60,7 +85,7 @@ Vertical adds a tall search area between the page list and the currently edited 
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="3" column="0" colspan="2">
         <widget class="QGroupBox" name="double_faced_cards_group_box">
          <property name="title">
           <string>Double-faced cards</string>
@@ -81,18 +106,18 @@ Uncheck to disable this automatism.</string>
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="4" column="0" colspan="2">
         <widget class="QGroupBox" name="default_paths_group_box">
          <property name="toolTip">
           <string>These paths are selected by default when browsing the file system for files</string>
          </property>
          <property name="title">
-          <string>Default save and load paths</string>
+          <string>Default save paths</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
           <item row="1" column="1">
            <widget class="QLineEdit" name="pdf_save_path">
-            <property name="whatsThis">
+            <property name="toolTip">
              <string>If set, use this as the default location for saving exported PDF documents.</string>
             </property>
             <property name="inputMethodHints">
@@ -106,16 +131,9 @@ Uncheck to disable this automatism.</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="deck_list_search_path_label">
-            <property name="text">
-             <string>Deck list search path</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="1">
            <widget class="QLineEdit" name="document_save_path">
-            <property name="whatsThis">
+            <property name="toolTip">
              <string>If set, use this as the default location for saving documents.</string>
             </property>
             <property name="inputMethodHints">
@@ -131,19 +149,6 @@ Uncheck to disable this automatism.</string>
           </item>
           <item row="1" column="2">
            <widget class="QPushButton" name="pdf_save_path_browse_button">
-            <property name="toolTip">
-             <string>Browse…</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset theme="document-open"/>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="deck_list_search_path_browse_button">
             <property name="toolTip">
              <string>Browse…</string>
             </property>
@@ -175,22 +180,6 @@ Uncheck to disable this automatism.</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="deck_list_search_path">
-            <property name="whatsThis">
-             <string>If set, use this as the default location for saving exported PDF documents.</string>
-            </property>
-            <property name="inputMethodHints">
-             <set>Qt::ImhNoAutoUppercase</set>
-            </property>
-            <property name="placeholderText">
-             <string>Path to a directory</string>
-            </property>
-            <property name="clearButtonEnabled">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="2">
            <widget class="QPushButton" name="document_save_path_browse_button">
             <property name="toolTip">
@@ -207,7 +196,7 @@ Uncheck to disable this automatism.</string>
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="5" column="0" colspan="2">
         <widget class="QGroupBox" name="update_check_group_box">
          <property name="toolTip">
           <string/>
@@ -252,7 +241,7 @@ Uncheck to disable this automatism.</string>
          </layout>
         </widget>
        </item>
-       <item>
+       <item row="6" column="0" colspan="2">
         <spacer name="verticalSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -267,39 +256,119 @@ Uncheck to disable this automatism.</string>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_print_selection">
+     <widget class="QWidget" name="tab_decklist_import">
       <attribute name="title">
-       <string>Print selection</string>
+       <string>Deck list import</string>
       </attribute>
-      <layout class="QGridLayout" name="tab_print_selection_layout">
-       <item row="1" column="0" colspan="2">
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="deck_list_search_path">
+         <property name="toolTip">
+          <string>If set, use this as the default location for loading deck lists. Your webbrowser’s download directorry is a good choice.</string>
+         </property>
+         <property name="inputMethodHints">
+          <set>Qt::ImhNoAutoUppercase</set>
+         </property>
+         <property name="placeholderText">
+          <string>Path to a directory</string>
+         </property>
+         <property name="clearButtonEnabled">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="2">
+        <widget class="QPushButton" name="deck_list_search_path_browse_button">
+         <property name="toolTip">
+          <string>Browse…</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0" colspan="3">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>These options control the deck list import function.</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="0" colspan="3">
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>412</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="6" column="0" colspan="3">
+        <widget class="QGroupBox" name="basic_land_removal_group_box">
+         <property name="title">
+          <string>Control the one-click basic land removal</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QLabel" name="basic_land_removal_label">
+            <property name="text">
+             <string>These options control, if the automatic removal should also include Wastes or Snow-Covered basic lands.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="remove_basic_wastes_enable">
+            <property name="whatsThis">
+             <string>Include Wastes when removing basic lands.</string>
+            </property>
+            <property name="text">
+             <string>Enable removal of Basic Wastes</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="remove_snow_basics_enable">
+            <property name="whatsThis">
+             <string>Include Snow-Covered basic lands when removing basic lands.</string>
+            </property>
+            <property name="text">
+             <string>Enable removal of Snow-Covered Basic lands</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="deck_list_search_path_label">
+         <property name="text">
+          <string>Deck list search path</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0" colspan="3">
         <widget class="QGroupBox" name="print_guessing_group_box">
          <property name="toolTip">
           <string>Not all deck list formats always contain complete data.
 These options set the default behaviour when encountering ambiguous card</string>
          </property>
          <property name="title">
-          <string>Enable print guessing when importing deck lists</string>
+          <string>Control print guessing in ambiguous cases</string>
          </property>
          <property name="checked">
           <bool>false</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_6">
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="print_guessing_enable">
-            <property name="toolTip">
-             <string>Not all deck list formats always contain complete data.
-If enabled, choose an arbitrary printing, instead of failing to identify such cards.
-
-
-Enabling this option causes the deck import function
-to enable the print guessing option by default.</string>
-            </property>
-            <property name="text">
-             <string>Enable print guessing by default, where optional</string>
-            </property>
-           </widget>
-          </item>
           <item row="2" column="0">
            <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
             <property name="toolTip">
@@ -321,43 +390,19 @@ This avoids adding foreign language cards, if the deck list happens to contain s
             </property>
            </widget>
           </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="print_guessing_enable">
+            <property name="toolTip">
+             <string>Not all deck list formats always contain complete data to identify exact printings.
+If enabled, choose an arbitrary printing, instead of failing to identify such cards.
+With some deck list formats, this option is always enabled.</string>
+            </property>
+            <property name="text">
+             <string>Enable print guessing by default</string>
+            </property>
+           </widget>
+          </item>
          </layout>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="preferred_language_label">
-         <property name="text">
-          <string>Preferred card language:</string>
-         </property>
-         <property name="buddy">
-          <cstring>preferred_language_combo_box</cstring>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <spacer name="verticalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>412</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="1">
-        <widget class="QComboBox" name="preferred_language_combo_box">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Language choices will default to the chosen language here.&lt;/p&gt;&lt;p&gt;Entries use the language codes as listed on Scryfall.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
         </widget>
        </item>
       </layout>
@@ -396,7 +441,15 @@ This avoids adding foreign language cards, if the deck list happens to contain s
           </sizepolicy>
          </property>
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically split PDF documents, if they get longer than this many pages. Set to zero to disable splitting.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;When printing PDFs using a USB flash drive directly connected to the printer, the printer may refuse to print documents exceeding some arbitrary size limit.&lt;/p&gt;&lt;p&gt;To work around this limitation, you can enable this option and limit the number of pages per PDF. If the document has more pages, it will be exported into multiple PDF documents automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</string>
          </property>
          <property name="suffix">
           <string> pages</string>
@@ -409,7 +462,15 @@ This avoids adding foreign language cards, if the deck list happens to contain s
        <item row="1" column="0">
         <widget class="QLabel" name="pdf_page_count_limit_label">
          <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Automatically split PDF documents, if they get longer than this many pages. Set to zero to disable splitting.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;When printing PDFs using a USB flash drive directly connected to a printer, it may refuse to print documents exceeding some arbitrary size limit.&lt;/p&gt;&lt;p&gt;To work around this limitation, you can enable this option and limit the number of pages per PDF. If the document has more pages, it will be exported into multiple PDF documents automatically.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</string>
          </property>
          <property name="text">
           <string>Split PDF documents longer than</string>

@@ -272,16 +272,24 @@ class CardDatabase:
         ]
         return result
 
-    def get_basic_land_oracle_ids(self) -> typing.Set[str]:
-        """Returns the oracle ids of all Basic lands (currently except Wastes)."""
-        query = cached_dedent('''\
+    def get_basic_land_oracle_ids(
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> typing.Set[str]:
+        """Returns the oracle ids of all Basic lands."""
+        names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
+        # Ordering matters: If WotC ever prints "Snow-Covered Wastes" (as of writing, those don’t exist),
+        # this order does support them in the case include_wastes=False, include_snow_basics=True.
+        if include_wastes:
+            names.append("Wastes")
+        if include_snow_basics:
+            names += [f"Snow-Covered {name}" for name in names]
+        query = cached_dedent(f'''\
             SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
               FROM AllPrintings
               WHERE language = 'en'
               AND card_name IN 
-                ('Plains', 'Island', 'Swamp', 'Mountain', 'Forest')  -- Should this include Wastes here?
+                ({", ".join("?"*len(names))})
         ''')
-        return {item for item, in self.db.execute(query)}
+        return {item for item, in self.db.execute(query, names)}
 
     @profile
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
