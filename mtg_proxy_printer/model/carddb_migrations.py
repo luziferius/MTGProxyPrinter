@@ -609,6 +609,50 @@ def _migrate_28_to_29(db: sqlite3.Connection):
     """))
 
 
+def _migrate_29_to_30(db: sqlite3.Connection):
+    for statement in [
+        "DROP VIEW VisiblePrintings\n",
+        "DROP VIEW AllPrintings\n",
+        textwrap.dedent("""\
+        CREATE VIEW VisiblePrintings AS
+        WITH double_faced_printings(printing_id, is_dfc) AS (
+            SELECT DISTINCT printing_id, TRUE as is_dfc
+                FROM CardFace
+                WHERE is_front IS FALSE)
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                 is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, release_date,
+                 coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE
+        ;"""),
+        textwrap.dedent("""\
+        CREATE VIEW AllPrintings AS
+        WITH double_faced_printings(printing_id, is_dfc) AS (
+            SELECT DISTINCT printing_id, TRUE as is_dfc
+                FROM CardFace
+                WHERE is_front IS FALSE)
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                 is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden,
+                 coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)
+        ;"""),
+    ]:
+        db.execute(statement)
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -632,6 +676,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (26, _migrate_26_to_27),
     (27, _migrate_27_to_28),
     (28, _migrate_28_to_29),
+    (29, _migrate_29_to_30),
 )
 
 

@@ -371,10 +371,10 @@ def _validate_saved_document_settings(document: Document):
 def test_get_missing_image_cards(qtbot: QtBot, document: Document):
     blank_image = document.image_db.blank_image
     expected = Card(
-        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0, False,
         blank_image)
     unexpected = Card(
-        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0, False,
         QPixmap(blank_image)
     )
     document.add_card(expected, 2)
@@ -392,10 +392,10 @@ def test_get_missing_image_cards(qtbot: QtBot, document: Document):
 def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
     blank_image = document.image_db.blank_image
     blank_image_card = Card(
-        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0, False,
         blank_image)
     other_card = Card(
-        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0, False,
         QPixmap(blank_image)
     )
     if result:

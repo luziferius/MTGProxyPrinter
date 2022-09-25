@@ -608,6 +608,7 @@ def test_get_cards_from_data_works_on_oracle_id_alone(
                 }),
                 "language": equal_to("en"),
                 "scryfall_id": equal_to(scryfall_ids[0]),
+                "is_dfc": equal_to(False)
             }),
             has_properties({
                 "name": equal_to("Forest"),
@@ -617,6 +618,7 @@ def test_get_cards_from_data_works_on_oracle_id_alone(
                 }),
                 "language": equal_to("en"),
                 "scryfall_id": equal_to(scryfall_ids[1]),
+                "is_dfc": equal_to(False)
             }),
         ),
     )

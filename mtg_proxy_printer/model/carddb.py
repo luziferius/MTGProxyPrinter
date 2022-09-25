@@ -132,6 +132,7 @@ class Card:
     highres_image: bool = dataclasses.field(compare=False)
     is_oversized: bool = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
+    is_dfc: bool = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
     def set_image_file(self, image: QPixmap):
@@ -333,17 +334,12 @@ class CardDatabase:
         """
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
-                oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
-            FROM CardFace
-            JOIN Printing USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            JOIN MTGSet USING (set_id)
-            JOIN Card USING (card_id)
+                oracle_id, highres_image, is_oversized, face_number, language, is_dfc -- get_cards_from_data()
+            FROM VisiblePrintings
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = ['WHERE Printing.is_hidden IS FALSE']
+        where_clause = ['WHERE TRUE']  # Makes formatting of WHERE terms easier without causing significant overhead
         where_parameters = []
         if card.language:
             where_clause.append(f'AND "language" = ?')
@@ -371,8 +367,8 @@ class CardDatabase:
         order_by_terms = []
         if order_by_print_count:
             order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
-        order_by_terms.append("MTGSet.wackiness_score ASC")
-        order_by_terms.append("MTGSet.release_date DESC")
+        order_by_terms.append("wackiness_score ASC")
+        order_by_terms.append("release_date DESC")
         query += "ORDER BY " + "\n    ,".join(order_by_terms)
         result = self._get_cards_from_data(query, where_parameters)
         return result
@@ -382,9 +378,10 @@ class CardDatabase:
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
+        -- get_replacement_card_for_unknown_printing()
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
                VisiblePrintings.scryfall_id, is_front, oracle_id, highres_image,
-               is_oversized, face_number, VisiblePrintings.language -- get_replacement_card_for_unknown_printing()
+               is_oversized, face_number, VisiblePrintings.language, is_dfc
             FROM RemovedPrintings
             JOIN VisiblePrintings USING (oracle_id)
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
@@ -411,10 +408,10 @@ class CardDatabase:
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number,
+                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-                is_oversized, face_number, language in cursor
+                is_oversized, face_number, language, is_dfc in cursor
         ]
         return result
 
@@ -497,7 +494,7 @@ class CardDatabase:
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number -- get_card_with_scryfall_id()
+            highres_image, is_oversized, face_number, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
@@ -506,11 +503,11 @@ class CardDatabase:
             return None
         else:
             name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image,\
-                is_oversized, face_number = result
+                is_oversized, face_number, is_dfc = result
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
+                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
             )
 
     @profile
@@ -707,7 +704,7 @@ class CardDatabase:
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
                scryfall_id, png_image_uri, highres_image,
-               is_oversized, face_number,
+               is_oversized, face_number, is_dfc,
                MAX((set_code = ?) + (collector_number = ?)) AS similarity
             FROM VisiblePrintings
             WHERE oracle_id = ? AND language = ? AND is_front = ?
@@ -716,14 +713,14 @@ class CardDatabase:
         # Because of the aggregate function used, no hit will result in a single row consisting of only NULL values.
         result = self.db.execute(query, parameters).fetchone()
         name, set_code, set_name, collector_number, scryfall_id, image_uri, highres_image, \
-            is_oversized, face_number, similarity = result
+            is_oversized, face_number, is_dfc, similarity = result
         if similarity is None:
             logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
             return None
         return Card(
             name, MTGSet(set_code, set_name), collector_number,
             language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
-            bool(highres_image), bool(is_oversized), face_number
+            bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
         )
 
     @profile
@@ -732,7 +729,7 @@ class CardDatabase:
         """Returns all printings of the given card in the given language."""
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
-               highres_image, is_oversized, face_number -- find_all_translated_printings()
+               highres_image, is_oversized, face_number, is_dfc -- find_all_translated_printings()
             FROM VisiblePrintings
             {join_clause}
             WHERE oracle_id = ? AND language = ? AND is_front = ?
@@ -750,10 +747,10 @@ class CardDatabase:
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, card.is_front, card.oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
+                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, scryfall_id, image_uri,
-            highres_image, is_oversized, face_number
+            highres_image, is_oversized, face_number, is_dfc
             in self.db.execute(query, parameters)
         ]
         return result
