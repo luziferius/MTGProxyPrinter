@@ -30,6 +30,12 @@ class Dataclass:
     attr3: typing.Optional[str]
 
 
+@dataclasses.dataclass
+class Dataclass2:
+    attr1: str
+    attr2: typing.Union[str, int]
+
+
 @pytest.mark.parametrize("instance", [
     Dataclass(123, "attr2", "attr3"),
     Dataclass("attr1", 123.4, "attr3"),
@@ -62,6 +68,9 @@ def test_matches_type_annotation_passes_with_correct_types(instance: Dataclass):
     (Dataclass("abc", "", ""), Dataclass("xyz", "", "")),
     (Dataclass("a", "x", "a"), Dataclass("a", "x", "b")),
     (Dataclass("", 1, None), Dataclass("", 2, None)),
+    ("foo", Dataclass("", 2, None)),
+    (Dataclass2("", ""), Dataclass("", "", "")),
+    (Dataclass("", "", ""), Dataclass2("", "")),
 ])
 def test_is_dataclass_equal_to_raises_with_unequal_instances(instance: Dataclass, expected: Dataclass):
     assert_that(

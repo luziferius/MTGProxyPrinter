@@ -130,18 +130,51 @@ class is_dataclass_equal_to(BaseMatcher):
         self.expected = expected
 
     def _matches(self, item: dataclasses.dataclass) -> bool:
-        if not hasattr(item, "__annotations__"):
-            return False
+        return self._has_annotations(item) and self._has_equal_keys(item) and self._has_equal_values(item)
+
+    @staticmethod
+    def _has_annotations(item: dataclasses.dataclass):
+        return hasattr(item, "__annotations__")
+
+    def _has_equal_keys(self, item: dataclasses.dataclass) -> bool:
         return contains_inanyorder(
             *self.expected.__annotations__.keys()
-        ).matches(item.__annotations__.keys()) and \
-            has_properties({
-                key: equal_to(getattr(self.expected, key))
-                for key in self.expected.__annotations__.keys()
-            }).matches(item)
+        ).matches(item.__annotations__.keys())
+
+    def _has_equal_values(self, item: dataclasses.dataclass) -> bool:
+        return has_properties({
+            key: equal_to(getattr(self.expected, key))
+            for key in self.expected.__annotations__.keys()
+        }).matches(item)
 
     def describe_to(self, description: Description) -> None:
         description.append_text(f"dataclass instance containing values equal to {self.expected} ")
+
+    def describe_mismatch(self, item: dataclasses.dataclass, mismatch_description: Description) -> None:
+        if not self._has_annotations(item):
+            mismatch_description.append_text(f"{item} instance has no __annotations__ attribute")
+            return
+        if not self._has_equal_keys(item):
+            expected_keys = set(self.expected.__annotations__.keys())
+            got_keys = set(item.__annotations__.keys())
+            if missing_keys := expected_keys-got_keys:
+                mismatch_description.append_text(f"Missing attributes: {sorted(missing_keys)},")
+            if excess_keys := got_keys-expected_keys:
+                mismatch_description.append_text(f"Excess attributes: {sorted(excess_keys)},")
+            return
+        mismatched_values = {
+            key: (expected, got)
+            for key in self.expected.__annotations__.keys()
+            if (expected := (getattr(self.expected, key))) != (got := getattr(item, key))
+        }
+        mismatch_description.append_text(
+            f"Got unequal attributes: \n" +
+            "\n  ".join(
+                f"attribute={key}, {expected=}, {got=}"
+                for key, (expected, got)
+                in mismatched_values.items()
+            )
+        )
 
 
 class matches_type_annotation(BaseMatcher):
