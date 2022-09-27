@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2019-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,13 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import dataclasses
 import functools
 import json
 import typing
 from unittest.mock import patch, MagicMock
 import pkg_resources
 
-from hamcrest import assert_that, is_, empty, has_key, contains_inanyorder
+from hamcrest.core.base_matcher import BaseMatcher
+from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of
+from hamcrest.core.description import Description
 from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.model
@@ -119,3 +122,41 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
         )
     for relation in relations_to_check:
         assert_relation_is_empty(card_db, relation)
+
+
+class is_dataclass_equal_to(BaseMatcher):
+
+    def __init__(self, expected: dataclasses.dataclass):
+        self.expected = expected
+
+    def _matches(self, item: dataclasses.dataclass) -> bool:
+        if not hasattr(item, "__annotations__"):
+            return False
+        return contains_inanyorder(
+            *self.expected.__annotations__.keys()
+        ).matches(item.__annotations__.keys()) and \
+            has_properties({
+                key: equal_to(getattr(self.expected, key))
+                for key in self.expected.__annotations__.keys()
+            }).matches(item)
+
+    def describe_to(self, description: Description) -> None:
+        description.append_text(f"dataclass instance containing values equal to {self.expected} ")
+
+
+class matches_type_annotation(BaseMatcher):
+
+    def _matches(self, item: dataclasses.dataclass) -> bool:
+        return hasattr(item, "__annotations__") and has_properties({
+                key: self._get_matcher(annotated_type)
+                for key, annotated_type in item.__annotations__.items()
+            }).matches(item)
+
+    @staticmethod
+    def _get_matcher(value: typing.Any):
+        if hasattr(value, "__args__"):  # Unpack typing.Optional[Something], typing.Union[TypeList]
+            return any_of(*(instance_of(type_union_member) for type_union_member in value.__args__))
+        return instance_of(value)
+
+    def describe_to(self, description: Description) -> None:
+        description.append_text(f"dataclass instance containing correct types")
