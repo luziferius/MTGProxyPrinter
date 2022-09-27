@@ -379,7 +379,7 @@ class CardDatabase:
 
     @profile
     def get_replacement_card_for_unknown_printing(
-            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
+            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
@@ -405,7 +405,7 @@ class CardDatabase:
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     @profile
-    def _get_cards_from_data(self, query, parameters):
+    def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
         result = [
             Card(
