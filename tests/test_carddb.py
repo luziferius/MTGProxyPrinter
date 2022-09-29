@@ -364,59 +364,6 @@ def test_card_is_oversized(qtbot, card_db: CardDatabase, json_name: str, scryfal
         has_property("is_oversized", is_(expected))
     )
 
-
-@pytest.mark.parametrize("test_case", [
-    TestCaseData(  # English "Fury Sliver" from Time Spiral.
-        "regular_english_card", True, (
-            FaceData("Fury Sliver", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979", True),
-        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api"),
-        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
-    ),
-    TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
-        "oversized_card", True, (
-            FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
-        ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api"),
-        "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
-    ),
-])
-def test__translate_card(qtbot, card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
-    card = card_db.get_card_with_scryfall_id(test_case.scryfall_id, test_case.face_data[0].is_front)
-    # Use the private method to skip the internal shortcut in translate_card()
-    # that skips requested same-language translations.
-    assert_that(
-        card_db._translate_card(card, "en"), all_of(
-            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_properties({
-                "is_oversized": all_of(
-                    is_(test_case.is_oversized),
-                    instance_of(bool),
-                ),
-                "name": is_(equal_to(test_case.face_data[0].name)),
-                "is_front": all_of(
-                    is_(test_case.face_data[0].is_front),
-                    instance_of(bool),
-                ),
-                "oracle_id": is_(equal_to(test_case.oracle_id)),
-                "scryfall_id": is_(equal_to(test_case.scryfall_id)),
-                "language": is_(equal_to(test_case.language)),
-                "image_uri": is_(equal_to(test_case.face_data[0].image_uri)),
-                "collector_number": is_(equal_to(test_case.collector_number)),
-                "face_number": all_of(
-                    is_(card.face_number),
-                    instance_of(int),
-                ),
-                "highres_image": all_of(
-                    is_(test_case.highres_image),
-                    instance_of(bool),
-                ),
-                "set": has_properties({
-                    "name": test_case.set.set_name,
-                    "code": test_case.set.set_code,
-                }),
-            }),
-        ))
-
 def generate_test_cases_for_test_get_cards_from_data():
     yield CardIdentificationData("en", scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe"), [
         Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None),
@@ -596,6 +543,23 @@ def test_find_all_translated_printings(
                 matches_type_annotation(),
                 is_dataclass_equal_to(expected),
     )))
+
+
+# Re-use the test cases for test_find_all_translated_printings. Both should return the same data
+@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_find_all_translated_printings())
+def test__translate_card(qtbot, card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
+    is_front = card_data.is_front is None or card_data.is_front
+    to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, is_front)
+    # Use the private method to skip the internal shortcut in translate_card()
+    # that skips requested same-language translations.
+    assert_that(
+        card_db_with_cards._translate_card(to_translate, expected.language), all_of(
+            is_(Card),
+            is_not(same_instance(to_translate)),  # No shortcut taken, is actually a new instance
+            matches_type_annotation(),
+            is_dataclass_equal_to(expected),
+        )
+    )
 
 
 @pytest.mark.parametrize("card_count_data", [
