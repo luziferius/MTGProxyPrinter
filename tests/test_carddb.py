@@ -417,25 +417,6 @@ def test__translate_card(qtbot, card_db: CardDatabase, test_case: TestCaseData):
             }),
         ))
 
-
-@pytest.mark.parametrize("json_name, scryfall_id, expected", [
-    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
-    ("oversized_card", "650722b4-d72b-4745-a1a5-00a34836282b", True)
-])
-def test_find_all_translated_printings__card_attribute_is_oversized(  # FIXME: DEPRECATED
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
-    cards = card_db.find_all_translated_printings(card, "en")
-    assert_that(cards, has_length(1))
-    assert_that(
-        cards[0],  all_of(
-            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("is_oversized", is_(expected)),
-            has_property("is_oversized", instance_of(bool)),
-        ))
-
-
 def generate_test_cases_for_test_get_cards_from_data():
     yield CardIdentificationData("en", scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe"), [
         Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None),
@@ -534,44 +515,6 @@ def test_translate_card__card_attribute_is_front(  # FIXME: DEPRECATED
         ))
 
 
-@pytest.mark.parametrize("is_front", [True, False])
-@pytest.mark.parametrize("json_name, scryfall_id", [
-    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"),
-    ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e"),
-])
-def test_find_all_translated_printings__card_attribute_is_front(  # FIXME: DEPRECATED
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, is_front: bool):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-    cards = card_db.find_all_translated_printings(card, "en")
-    assert_that(cards, has_length(1))
-    assert_that(
-        cards[0],  all_of(
-            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("is_front", is_(is_front)),
-            has_property("is_front", instance_of(bool)),
-        ))
-
-
-@pytest.mark.parametrize("is_front", [True, False])
-@pytest.mark.parametrize("json_name, scryfall_id, highres_image", [
-    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
-    ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e", False),
-])
-def test_find_all_translated_printings__card_attribute_highres_image(  # FIXME: DEPRECATED
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, highres_image: bool, is_front: bool):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-    cards = card_db.find_all_translated_printings(card, "en")
-    assert_that(cards, has_length(1))
-    assert_that(
-        cards[0],  all_of(
-            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("highres_image", is_(highres_image)),
-            has_property("highres_image", instance_of(bool)),
-        ))
-
-
 @pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("card_count_data", [
     [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
@@ -612,6 +555,47 @@ def test_get_replacement_card(
             ("non-english-id", "invalid", "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"),
         ])
     card_db.get_replacement_card_for_unknown_printing(CardIdentificationData(scryfall_id="english-id", language="en"))
+
+
+def generate_test_cases_for_test_find_all_translated_printings():
+    # Regular card
+    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
+          Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None)
+    # Oversized card
+    yield CardIdentificationData(scryfall_id="650722b4-d72b-4745-a1a5-00a34836282b", is_front=True), \
+          Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, None)
+    # Translate Forest to German. Also tests is_highres==False
+    yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
+        Card('Wald', MTGSet('znr', 'Zendikar Rising'), '384', 'de', 'cd4cf73d-a408-48f1-9931-54707553c5d5', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/c/d/cd4cf73d-a408-48f1-9931-54707553c5d5.png?1602136077', False, False, 0, None),
+    # Translate Forest to Spanish. Also tests is_highres==False
+    yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
+        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, None),
+    # Translate German Forest to Spanish
+    yield CardIdentificationData(scryfall_id="cd4cf73d-a408-48f1-9931-54707553c5d5", is_front=True), \
+        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, None),
+    # Double-faced with high-res image
+    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=True), \
+        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, None),
+    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), \
+        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, None),
+
+
+@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_find_all_translated_printings())
+@pytest.mark.parametrize("order_by_print_count", [True, False])  # Ensure it does not affect result without usage data
+def test_find_all_translated_printings(
+        qtbot, card_db_with_cards: CardDatabase,
+        card_data: CardIdentificationData, expected: Card, order_by_print_count: bool):
+    card_to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
+    assert_that(card_to_translate, is_(not_none()), "Test setup failed")
+    assert_that(
+        card_db_with_cards.find_all_translated_printings(
+            card_to_translate, expected.language, order_by_print_count=order_by_print_count),
+        contains_exactly(
+            all_of(
+                is_not(same_instance(card_to_translate)),  # No shortcut taken, is actually a new instance
+                matches_type_annotation(),
+                is_dataclass_equal_to(expected),
+    )))
 
 
 @pytest.mark.parametrize("card_count_data", [
