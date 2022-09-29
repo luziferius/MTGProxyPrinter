@@ -13,6 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+"""
+This is a test module for the set of custom PyHamcrest matchers in tests/helpers.py
+"""
 
 import dataclasses
 import typing
