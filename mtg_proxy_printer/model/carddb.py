@@ -535,13 +535,12 @@ class CardDatabase:
     @profile
     def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
         """
-        Translates a card into the target_language. If the source language in the card data is not given,
-        try to guess it, or use English, if that also fails.
+        Translates a card into the target_language. Uses the language in the card data as the source language, if given.
+        If not, card names across all languages are searched.
 
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        source_language = card_data.language or self.guess_language_from_name(card_data.name) or "en"
-        # Implementation note: First two parameters may be None/NULL and can be used as a disambiguation in case
+        # Implementation note: First two query parameters may be None/NULL and can be used as a disambiguation in case
         # that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
         # the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
         # So given “Zwang” in German without further context, it may mean one of two cards.
@@ -567,7 +566,7 @@ class CardDatabase:
             JOIN source_context ON (
                coalesce(set_code = source_set_code, TRUE) AND
                coalesce(scryfall_id = source_scryfall_id, TRUE))
-            WHERE card_name = ? AND "language" = ?
+            WHERE card_name = ? AND COALESCE("language" = ?, TRUE)
             GROUP BY oracle_id, face_number
             )
         SELECT card_name
@@ -582,7 +581,7 @@ class CardDatabase:
         """)
         return self._read_optional_scalar_from_db(
             query,
-            (card_data.scryfall_id, card_data.set_code, card_data.name, source_language, target_language)
+            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
