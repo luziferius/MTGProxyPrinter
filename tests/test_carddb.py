@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import dataclasses
 import datetime
 import textwrap
 import typing
@@ -34,44 +33,6 @@ from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
-
-
-class DatabaseSetData(typing.NamedTuple):
-    """Row data stored in the Set relation"""
-    set_code: str
-    set_name: str
-    set_uri: str
-
-
-@dataclasses.dataclass(frozen=True)
-class FaceData:
-    """Contains all data that is unique per card face."""
-    # Implementation note: Implemented as a frozen dataclass,
-    # because this is not meant to be fed directly into an _assert_* method expecting a list of tuples.
-    name: str
-    image_uri: str
-    is_front: bool
-
-
-@dataclasses.dataclass(frozen=True)
-class TestCaseData:
-    """
-    Contains the JSON document name and all card data parsed from the JSON. This is sufficient to construct a test
-    case and contains all validation data. The methods db_*() return lists of tuples suitable to test database content.
-    """
-    # Implementation note: Implemented as a frozen dataclass,
-    # because this is not meant to be fed directly into an _assert_* method expecting a list of tuples.
-    json_name: str
-    highres_image: bool
-    face_data: typing.Tuple[FaceData, ...]
-    set: DatabaseSetData
-    language: str
-    collector_number: str
-    scryfall_id: str
-    oracle_id: str
-    is_oversized: bool
-
-    __test__ = False  # Instruct PyTest to not collect this as a Test class, even if the name starts with "Test"
 
 
 def test_has_data_on_empty_database_returns_false(card_db: CardDatabase):
@@ -235,6 +196,7 @@ def card_db_with_cards(qtbot, card_db: CardDatabase):
 
 
 def generate_test_cases_for_test_translate_card_name():
+    """Yields tuples with card data, target language and expected result."""
     # Same-language identity translation
     yield CardIdentificationData("en", "Forest"), "en", "Forest"
     yield CardIdentificationData("de", "Wald"), "de", "Wald"
@@ -262,7 +224,7 @@ def generate_test_cases_for_test_translate_card_name():
     yield CardIdentificationData("de", "Zwang", scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0"), "en", "Coercion"
     yield CardIdentificationData(None, "Zwang", scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0"), "en", "Coercion"
     yield CardIdentificationData("de", "Zwang", "7ed"), "en", "Duress"
-    yield CardIdentificationData(None, "Zwang","7ed"), "en", "Duress"
+    yield CardIdentificationData(None, "Zwang", "7ed"), "en", "Duress"
     yield CardIdentificationData("de", "Zwang", "6ed"), "en", "Coercion"
     yield CardIdentificationData(None, "Zwang", "6ed"), "en", "Coercion"
     # Card with updated, localized name. Tests that all names can be a source name.
@@ -363,6 +325,7 @@ def test_card_is_oversized(qtbot, card_db: CardDatabase, json_name: str, scryfal
         card_db.get_card_with_scryfall_id(scryfall_id, True),
         has_property("is_oversized", is_(expected))
     )
+
 
 def generate_test_cases_for_test_get_cards_from_data():
     yield CardIdentificationData("en", scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe"), [
@@ -507,10 +470,10 @@ def test_get_replacement_card(
 def generate_test_cases_for_test_find_all_translated_printings():
     # Regular card
     yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
-          Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None)
+        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None)
     # Oversized card
     yield CardIdentificationData(scryfall_id="650722b4-d72b-4745-a1a5-00a34836282b", is_front=True), \
-          Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, None)
+        Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, None)
     # Translate Forest to German. Also tests is_highres==False
     yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
         Card('Wald', MTGSet('znr', 'Zendikar Rising'), '384', 'de', 'cd4cf73d-a408-48f1-9931-54707553c5d5', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/c/d/cd4cf73d-a408-48f1-9931-54707553c5d5.png?1602136077', False, False, 0, None),
@@ -542,7 +505,8 @@ def test_find_all_translated_printings(
                 is_not(same_instance(card_to_translate)),  # No shortcut taken, is actually a new instance
                 matches_type_annotation(),
                 is_dataclass_equal_to(expected),
-    )))
+            ))
+    )
 
 
 # Re-use the test cases for test_find_all_translated_printings. Both should return the same data
