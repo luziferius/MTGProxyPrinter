@@ -480,20 +480,6 @@ class CardDatabase:
         return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
 
     @profile
-    def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
-        query = cached_dedent('''\
-        SELECT EXISTS ( -- is_scryfall_id_known()
-            SELECT scryfall_id
-            FROM Printing 
-            JOIN CardFace USING (printing_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND scryfall_id = ?
-              AND is_front = ?)
-        ''')
-        result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
-        return bool(result)
-
-    @profile
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
