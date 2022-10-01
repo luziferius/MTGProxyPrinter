@@ -250,7 +250,9 @@ def generate_test_cases_for_test_translate_card_name():
     yield CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="c6c93c85-5263-4770-b937-704e57912478"), "de", "Ehernen-Wald Baumvolk"
     yield CardIdentificationData("en", "Ironroot Treefolk", scryfall_id="6e6cfaae-ea9e-4c54-858e-381f8bf441a9"), "de", "Baumvolk des Ehernen-Waldes"
     yield CardIdentificationData(None, "Ironroot Treefolk", scryfall_id="6e6cfaae-ea9e-4c54-858e-381f8bf441a9"), "de", "Baumvolk des Ehernen-Waldes"
-    
+    # double-faced art series card. Same name on both sides
+    yield CardIdentificationData("en", "Clearwater Pathway"), "en", "Clearwater Pathway"
+
     
 @pytest.mark.parametrize("card_data, target_language, expected", generate_test_cases_for_test_translate_card_name())
 def test_translate_card_name(
@@ -391,40 +393,6 @@ def test_get_cards_from_data(
     )
 
 
-@pytest.mark.parametrize("front", [True, False])
-def test_translate_double_faced_card(qtbot, card_db: CardDatabase, front: bool):
-    fill_card_database_with_json_cards(qtbot, card_db, ["english_double_faced_card", "non_english_double_faced_card"])
-    english_card = card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", front)
-    non_english_card = card_db.get_card_with_scryfall_id("000847d3-ebde-4580-a00e-61d501e99485", front)
-    assert_that(
-        card_db.translate_card_name(CardIdentificationData(name=non_english_card.name), english_card.language),
-        is_(equal_to(english_card.name))
-    )
-    assert_that(
-        card_db.translate_card_name(CardIdentificationData(name=english_card.name), non_english_card.language),
-        is_(equal_to(non_english_card.name))
-    )
-
-
-@pytest.mark.parametrize("is_front", [True, False])
-@pytest.mark.parametrize("json_name, scryfall_id", [
-    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"),
-    ("english_double_faced_art_series_card", "002ad179-ddf4-4f48-9504-cfa02e11a52e"),
-])
-def test_translate_card__card_attribute_is_front(  # FIXME: DEPRECATED
-        qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, is_front: bool):
-    fill_card_database_with_json_card(qtbot, card_db, json_name)
-    card = card_db.get_card_with_scryfall_id(scryfall_id, is_front)
-    # Use the private method to skip the internal shortcut in translate_card()
-    # that skips requested same-language translations.
-    assert_that(
-        card_db._translate_card(card, "en"), all_of(
-            is_not(same_instance(card)),  # No shortcut taken, is actually a new instance
-            has_property("is_front", is_(is_front)),
-            has_property("is_front", instance_of(bool)),
-        ))
-
-
 @pytest.mark.parametrize("language", ["en", None])
 @pytest.mark.parametrize("card_count_data", [
     [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
@@ -488,6 +456,11 @@ def generate_test_cases_for_test_find_all_translated_printings():
         Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, None),
     yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), \
         Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, None),
+    # Art series card
+    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, None),
+    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, None),
 
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_find_all_translated_printings())
