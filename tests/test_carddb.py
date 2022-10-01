@@ -434,7 +434,10 @@ def test_get_card_with_scryfall_id(
     assert_that(
         card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front),
         is_(any_of(
-            none(),
+            all_of(
+                none(),
+                instance_of(type(expected))  # None if and only if expected is None
+            ),
             all_of(
                 is_(instance_of(Card)),
                 matches_type_annotation(),
@@ -533,6 +536,55 @@ def test__translate_card(qtbot, card_db_with_cards: CardDatabase, card_data: Car
             matches_type_annotation(),
             is_dataclass_equal_to(expected),
         )
+    )
+
+
+def generate_test_cases_for_test_get_opposing_face() -> \
+        typing.Generator[typing.Tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
+    # The back side of a regular card does not exist, Expect None
+    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
+        None
+    # The other side of a non-existing back side of a regular card returns the existing front
+    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=False), \
+        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None)
+    # Unknown scryfall_id returns None
+    yield CardIdentificationData(scryfall_id="ueueueue-abcd-1234-5678-abcdefabcdef", is_front=True), \
+        None
+    yield CardIdentificationData(scryfall_id="ueueueue-abcd-1234-5678-abcdefabcdef", is_front=False), \
+        None
+    # Double-faced with high-res image
+    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=True), \
+        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, None),
+    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), \
+        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, None),
+    # Art series card
+    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, None),
+    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, None),
+
+
+@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_opposing_face())
+def test_get_opposing_face(
+        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: typing.Optional[Card]):
+    assert_that(
+        card_db_with_cards.get_opposing_face(card_data),
+        is_(any_of(
+            all_of(
+                none(),
+                instance_of(type(expected))  # None if and only if expected is None
+            ),
+            all_of(
+                is_(instance_of(Card)),
+                matches_type_annotation(),
+                has_properties({
+                    # Verifies that the expected card matches the given card identification data.
+                    # Not strictly required, but ensures that the test data is consistent
+                    "scryfall_id": card_data.scryfall_id,
+                    "is_front": not card_data.is_front,  # Negation here
+                }),
+                is_dataclass_equal_to(expected),
+            )))
     )
 
 
