@@ -491,7 +491,7 @@ def test_get_replacement_card(
     card_db.get_replacement_card_for_unknown_printing(CardIdentificationData(scryfall_id="english-id", language="en"))
 
 
-def generate_test_cases_for_test_find_all_translated_printings():
+def generate_test_cases_for_test__translate_card():
     # Regular card
     yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
         Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, None)
@@ -519,27 +519,8 @@ def generate_test_cases_for_test_find_all_translated_printings():
         Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, None),
 
 
-@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_find_all_translated_printings())
-@pytest.mark.parametrize("order_by_print_count", [True, False])  # Ensure it does not affect result without usage data
-def test_find_all_translated_printings(
-        qtbot, card_db_with_cards: CardDatabase,
-        card_data: CardIdentificationData, expected: Card, order_by_print_count: bool):
-    card_to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
-    assert_that(card_to_translate, is_(not_none()), "Test setup failed")
-    assert_that(
-        card_db_with_cards.find_all_translated_printings(
-            card_to_translate, expected.language, order_by_print_count=order_by_print_count),
-        contains_exactly(
-            all_of(
-                is_not(same_instance(card_to_translate)),  # No shortcut taken, is actually a new instance
-                matches_type_annotation(),
-                is_dataclass_equal_to(expected),
-            ))
-    )
-
-
 # Re-use the test cases for test_find_all_translated_printings. Both should return the same data
-@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_find_all_translated_printings())
+@pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test__translate_card())
 def test__translate_card(qtbot, card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
     is_front = card_data.is_front is None or card_data.is_front
     to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, is_front)
@@ -551,31 +532,6 @@ def test__translate_card(qtbot, card_db_with_cards: CardDatabase, card_data: Car
             is_not(same_instance(to_translate)),  # No shortcut taken, is actually a new instance
             matches_type_annotation(),
             is_dataclass_equal_to(expected),
-        )
-    )
-
-
-@pytest.mark.parametrize("card_count_data", [
-    [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
-    [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)],
-])
-def test_find_all_translated_printings_order_by_print_count_enabled(qtbot, card_db: CardDatabase, card_count_data):
-    fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
-    card_db.db.executemany(
-        "INSERT INTO LastImageUseTimestamps (scryfall_id, is_front, usage_count) VALUES (?, 1, ?)",
-        card_count_data
-    )
-    card_to_translate = card_db.get_card_with_scryfall_id(card_count_data[0][0], True)
-    cards = card_db.find_all_translated_printings(card_to_translate, "en", order_by_print_count=True)
-    assert_that(
-        cards,
-        contains_exactly(
-            has_property("scryfall_id", equal_to(
-                card_count_data[0 if card_count_data[0][1] > card_count_data[1][1] else 1][0]
-            )),
-            has_property("scryfall_id", equal_to(
-                card_count_data[1 if card_count_data[0][1] > card_count_data[1][1] else 0][0]
-            )),
         )
     )
 

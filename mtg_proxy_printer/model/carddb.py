@@ -713,38 +713,6 @@ class CardDatabase:
         )
 
     @profile
-    def find_all_translated_printings(
-            self, card: Card, language: str, /, *, order_by_print_count: bool = False) -> CardList:
-        """Returns all printings of the given card in the given language."""
-        query = cached_dedent("""\
-        SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
-               highres_image, is_oversized, face_number -- find_all_translated_printings()
-            FROM VisiblePrintings
-            {join_clause}
-            WHERE oracle_id = ? AND language = ? AND is_front = ?
-            {order_by_clause}
-        """)
-        if order_by_print_count:
-            join_clause = "LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)"
-            order_by_clause = "ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST"
-        else:
-            join_clause = order_by_clause = ""
-        # format in both cases to always replace the format specifiers
-        query = query.format(join_clause=join_clause, order_by_clause=order_by_clause)
-        parameters = [card.oracle_id, language, card.is_front]
-        result = [
-            Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, card.is_front, card.oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
-            )
-            for name, set_code, set_name, collector_number, scryfall_id, image_uri,
-            highres_image, is_oversized, face_number
-            in self.db.execute(query, parameters)
-        ]
-        return result
-
-    @profile
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
                                        progress_signal: typing.Callable[[int], None] = None):
         if progress_signal is None:
