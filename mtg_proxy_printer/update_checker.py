@@ -43,7 +43,8 @@ OptStr = typing.Optional[str]
 VERSION_TAG_MATCHER = re.compile(r"v(?P<version>\d+\.\d+\.\d+)")
 KNOWN_APPLICATION_MIRRORS: StringList = [
     "http://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",
-    "http://1337net.duckdns.org:8080/MTGProxyPrinter",
+    # Don’t use the master repository for now, as it may not be able to handle load spikes
+    # "http://1337net.duckdns.org:8080/MTGProxyPrinter",
 ]
 
 
