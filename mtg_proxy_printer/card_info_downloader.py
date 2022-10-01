@@ -155,6 +155,25 @@ class CardInfoDownloadWorker(DownloaderBase):
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    @functools.lru_cache(maxsize=1)
+    def get_available_card_count(self) -> int:
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": "date>1970-01-01"
+        })
+        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
+        logger.debug(f"Card data update query URL: {url}")
+        try:
+            total_cards_available = next(self.read_json_card_data(url, "total_cards"))
+        except (urllib.error.URLError, socket.timeout, StopIteration):
+            # TODO: Perform better notification in any error case
+            total_cards_available = 0
+        logger.debug(f"Total cards currently available: {total_cards_available}")
+        return total_cards_available
+
     def download_card_data(self, url_or_path: typing.Union[Path, str] = None):
         try:
             url = url_or_path or self.get_scryfall_bulk_card_data_url(self.requested_item)

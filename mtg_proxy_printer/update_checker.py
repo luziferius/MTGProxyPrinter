@@ -59,7 +59,7 @@ class BackgroundWorker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(BackgroundWorker, self).__init__(parent)
         self.card_db = card_db
-        self.dw = None
+        self.dw: CardInfoDownloadWorker = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def on_thread_started(self):
@@ -90,21 +90,7 @@ class BackgroundWorker(QObject):
 
     def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
         total_cards_in_last_update = self.card_db.get_total_cards_in_last_update()
-        url_parameters = urllib.parse.urlencode({
-            "include_multilingual": "true",
-            "include_variations": "true",
-            "include_extras": "true",
-            "unique": "prints",
-            "q": "date>1970-01-01"
-        })
-        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
-        logger.debug(f"Card data update query URL: {url}")
-        try:
-            total_cards_available = next(self.dw.read_json_card_data(url, "total_cards"))
-        except (urllib.error.URLError, socket.timeout, StopIteration):
-            # TODO: Perform better notification in any error case
-            total_cards_available = 0
-        logger.debug(f"Total cards currently available: {total_cards_available}")
+        total_cards_available = self.dw.get_available_card_count()
         logger.debug(f"Total cards during last update: {total_cards_in_last_update}")
         return total_cards_available, total_cards_in_last_update
 
