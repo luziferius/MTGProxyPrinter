@@ -25,11 +25,10 @@ import pytest
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
     MTGSet
-import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.model.document import Document
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
-    fill_card_database_with_json_cards, load_json, is_dataclass_equal_to, matches_type_annotation
+    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
@@ -524,7 +523,7 @@ def generate_test_cases_for_test__translate_card():
 
 # Re-use the test cases for test_find_all_translated_printings. Both should return the same data
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test__translate_card())
-def test__translate_card(qtbot, card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
+def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
     is_front = card_data.is_front is None or card_data.is_front
     to_translate = card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, is_front)
     # Use the private method to skip the internal shortcut in translate_card()
@@ -592,18 +591,15 @@ def test_allow_updating_card_data_on_empty_database_returns_true(card_db: CardDa
     assert_that(card_db.allow_updating_card_data(), is_(True))
 
 
-def test_allow_updating_card_data_on_freshly_populated_database_returns_false(card_db: CardDatabase):
-    cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
-    card_data = [load_json("regular_english_card")]
-    cidw.populate_database(card_data)
+def test_allow_updating_card_data_on_freshly_populated_database_returns_false(qtbot, card_db: CardDatabase):
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     assert_that(card_db.allow_updating_card_data(), is_(False))
 
 
 @pytest.mark.parametrize("delta_days", [-2, -1, 0, 1, 2])
-def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_db: CardDatabase, delta_days: int):
-    cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
-    card_data = [load_json("regular_english_card")]
-    cidw.populate_database(card_data)
+def test_allow_updating_card_data_on_stale_populated_database_returns_true(
+        qtbot, card_db: CardDatabase, delta_days: int):
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
     today = datetime.date.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
     with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.date") as mock_date:
@@ -615,13 +611,12 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(card_
         )
 
 
-def test_get_total_cards_in_last_update(card_db: CardDatabase):
-    cidw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
-    card_data = [load_json("regular_english_card")]
-    cidw.populate_database(card_data)
+def test_get_total_cards_in_last_update(qtbot, card_db: CardDatabase):
+    card_data = ["regular_english_card"]
+    fill_card_database_with_json_cards(qtbot, card_db, card_data)
     assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
-    card_data.append(load_json("english_basic_Forest"))
-    cidw.populate_database(card_data)
+    card_data.append("english_basic_Forest")
+    fill_card_database_with_json_cards(qtbot, card_db, card_data)
     assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
 
 
