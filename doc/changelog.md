@@ -12,6 +12,8 @@
 
 ## Fixed issues
 
+- Fixed HTTP 403 errors when attempting to download card data or images. The new hoster used by Scryfall rejects the
+  previously used HTTP User-Agent value, so set it to a new one that isn’t blocked. 
 - Fixed crashes when accepting to open the Application website in the update notification. This now works properly
 - Fixed card images overlapping by one pixel when image spacing is set to zero.
 
