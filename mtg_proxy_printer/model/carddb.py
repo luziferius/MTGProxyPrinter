@@ -380,7 +380,7 @@ class CardDatabase:
 
     @profile
     def get_replacement_card_for_unknown_printing(
-            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
+            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
@@ -406,7 +406,7 @@ class CardDatabase:
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     @profile
-    def _get_cards_from_data(self, query, parameters):
+    def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
         result = [
             Card(
@@ -481,20 +481,6 @@ class CardDatabase:
         return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
 
     @profile
-    def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
-        query = cached_dedent('''\
-        SELECT EXISTS ( -- is_scryfall_id_known()
-            SELECT scryfall_id
-            FROM Printing 
-            JOIN CardFace USING (printing_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND scryfall_id = ?
-              AND is_front = ?)
-        ''')
-        result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
-        return bool(result)
-
-    @profile
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
@@ -550,13 +536,12 @@ class CardDatabase:
     @profile
     def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
         """
-        Translates a card into the target_language. If the source language in the card data is not given,
-        try to guess it, or use English, if that also fails.
+        Translates a card into the target_language. Uses the language in the card data as the source language, if given.
+        If not, card names across all languages are searched.
 
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        source_language = card_data.language or self.guess_language_from_name(card_data.name) or "en"
-        # Implementation note: First two parameters may be None/NULL and can be used as a disambiguation in case
+        # Implementation note: First two query parameters may be None/NULL and can be used as a disambiguation in case
         # that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
         # the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
         # So given “Zwang” in German without further context, it may mean one of two cards.
@@ -582,7 +567,7 @@ class CardDatabase:
             JOIN source_context ON (
                coalesce(set_code = source_set_code, TRUE) AND
                coalesce(scryfall_id = source_scryfall_id, TRUE))
-            WHERE card_name = ? AND "language" = ?
+            WHERE card_name = ? AND COALESCE("language" = ?, TRUE)
             GROUP BY oracle_id, face_number
             )
         SELECT card_name
@@ -597,7 +582,7 @@ class CardDatabase:
         """)
         return self._read_optional_scalar_from_db(
             query,
-            (card_data.scryfall_id, card_data.set_code, card_data.name, source_language, target_language)
+            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
@@ -726,38 +711,6 @@ class CardDatabase:
             language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
             bool(highres_image), bool(is_oversized), face_number
         )
-
-    @profile
-    def find_all_translated_printings(
-            self, card: Card, language: str, /, *, order_by_print_count: bool = False) -> CardList:
-        """Returns all printings of the given card in the given language."""
-        query = cached_dedent("""\
-        SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
-               highres_image, is_oversized, face_number -- find_all_translated_printings()
-            FROM VisiblePrintings
-            {join_clause}
-            WHERE oracle_id = ? AND language = ? AND is_front = ?
-            {order_by_clause}
-        """)
-        if order_by_print_count:
-            join_clause = "LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)"
-            order_by_clause = "ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST"
-        else:
-            join_clause = order_by_clause = ""
-        # format in both cases to always replace the format specifiers
-        query = query.format(join_clause=join_clause, order_by_clause=order_by_clause)
-        parameters = [card.oracle_id, language, card.is_front]
-        result = [
-            Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, card.is_front, card.oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
-            )
-            for name, set_code, set_name, collector_number, scryfall_id, image_uri,
-            highres_image, is_oversized, face_number
-            in self.db.execute(query, parameters)
-        ]
-        return result
 
     @profile
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
