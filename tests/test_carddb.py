@@ -429,7 +429,8 @@ def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
 
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_card_with_scryfall_id())
-def test_get_card_with_scryfall_id(card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
+def test_get_card_with_scryfall_id(
+        card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: typing.Optional[Card]):
     assert_that(
         card_db_with_cards.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front),
         is_(any_of(
