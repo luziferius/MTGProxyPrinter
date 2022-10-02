@@ -1,11 +1,52 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.19.0 (2022-10-02)  <a name="v0_19_0"></a>
+
+## New features
+
+- Implemented optional drawing of 90° card corners. This can be enabled for all new documents
+  globally in the application settings or individually in the document settings.
+- The one-click basic land removal in the deck list import is now configurable in the application settings:
+  You can now individually enable the automatic removal of Wastes and Snow-Covered basic lands in
+  addition to plain basic lands.
+
+## Fixed issues
+
+- Fixed HTTP 403 errors when attempting to download card data or images. The new hoster used by Scryfall rejects the
+  previously used HTTP User-Agent value, so set it to a new one that isn’t blocked. 
+- Fixed crashes when accepting to open the Application website in the update notification. This now works properly
+- Fixed card images overlapping by one pixel when image spacing is set to zero.
+
+# Version 0.18.0 (2022-07-09)  <a name="v0_18_0"></a>
+
+## New features
+
+- Proper, full support for oversized cards, like Archenemy schemes or Planechase plane cards. Regular cards and larger
+  cards are always kept on separate pages to ensure that drawn cut marker lines (if enabled) are always 100% accurate.
+  - Note: Some cards, like the Legacy Championship winner rewards, are tagged as being oversized, but are then served
+    with regular-size images by Scryfall.
+    When the image is downloaded, it will be treated as a regular card, even if the deck import wizard warns
+    about it being potentially oversized.
+
+## Fixed issues
+
+- Significantly optimized card database size and import speed.
+  (The database now takes roughly 25% less time to update on fast internet connections
+  and uses about 30% less disk space)
+- Fixed the “Remove selected” cards button in the deck list importer unexpectedly staying active
+  when clicked while multiple cells of the same row in the card table were selected.
+- Fixed unintended immediate removal of freshly-downloaded low-resolution images. These should only be removed, if
+  a high-resolution image becomes available.
+
+# Version 0.17.0 (2022-06-13)  <a name="v0_17_0"></a>
 
 ## New features
 
 - Added card removal feature to the deck import wizard: It is now possible to remove selected cards or all basic lands
   from the deck list before finishing the import.
+- Added Deck shuffling: A new button in the Edit menu allows shuffling the cards in the document. Use this to reduce
+  shuffling effort required after putting the printed deck in sleeves. Beware: The shuffling currently separates front 
+  and back faces of double faced cards. This may be improved in future versions.
 
 ## Changed features
 
@@ -20,8 +61,9 @@
 
 - Fixed broken file type filters when loading deck lists. The file selection dialog now properly filters for deck
   list files instead of showing nothing.
+- Fixed potential crash when exiting the application while a card image download runs
 
-# Version 0.16.1 (2022-05-06)  <a name="v0_16_1"></a>
+# Version 0.16.1 (2022-05-23)  <a name="v0_16_1"></a>
 
 ## Changed features
 

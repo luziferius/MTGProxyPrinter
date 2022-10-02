@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import sqlite3
 import typing
 import unittest.mock
 
@@ -187,7 +188,7 @@ def _assert_card_face_contains(card_db: CardDatabase, test_case: TestCaseData, r
         f"CardFace relation contains unexpected data: {data}")
 
 
-def _assert_all_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
+def _assert_visible_printings_contains(card_db: CardDatabase, test_case: TestCaseData):
     """
     Checks
       card_name, set_code, "language", collector_number, scryfall_id,
@@ -211,7 +212,7 @@ def assert_visible_import(card_db: CardDatabase, test_case: TestCaseData):
     _assert_set_contains(card_db, test_case)
     _assert_card_contains(card_db, test_case)
     _assert_print_language_contains(card_db, test_case)
-    _assert_all_printings_contains(card_db, test_case)
+    _assert_visible_printings_contains(card_db, test_case)
 
 
 def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
@@ -445,7 +446,7 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
     assert_hidden_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but include the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "False"})
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
     # The card should be in the database. The RemovedPrintings table should be empty
     assert_visible_import(card_db, test_case)
     assert_that(
@@ -453,6 +454,40 @@ def test_re_import_with_disabled_download_filter_removes_removed_printings_entry
         is_(empty()),
         "RemovedPrintings table not properly cleaned up."
     )
+
+
+@pytest.mark.parametrize("test_case_data", [
+    TestCaseData(  # English "Fury Sliver" from Time Spiral
+        "regular_english_card", True, (
+            FaceData("Fury Sliver", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979", True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api", "2006-10-06"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    ),
+])
+def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+    card_json = load_json(test_case_data.json_name)
+    with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
+        fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+        assert_hidden_import(card_db, test_case_data)
+    fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+    assert_visible_import(card_db, test_case_data)
+
+
+@pytest.mark.parametrize("test_case_data", [
+    TestCaseData(  # English "Fury Sliver" from Time Spiral
+        "regular_english_card", True, (
+            FaceData("Fury Sliver", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979", True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api", "2006-10-06"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    ),
+])
+def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, test_case_data: TestCaseData):
+    card_json = load_json(test_case_data.json_name)
+    fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+    assert_visible_import(card_db, test_case_data)
+    with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
+        fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
+        assert_hidden_import(card_db, test_case_data)
 
 
 def test_updates_language(qtbot, card_db: CardDatabase):

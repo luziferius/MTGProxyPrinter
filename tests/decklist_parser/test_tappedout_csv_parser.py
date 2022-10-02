@@ -103,10 +103,8 @@ def test_card_identification_works_in_simple_cases(
     fill_card_database_with_json_cards(qtbot, card_db, cards_to_import, {"hide-digital-cards": "False"})
     card = _get_expected_card_from_database(card_db, expected_card)
     parser = TappedOutCSVParser(card_db, image_db)
-    with unittest.mock.patch.object(CardDatabase, "find_all_translated_printings") as find_all_translated_printings, \
-            unittest.mock.patch.object(CardDatabase, "translate_card") as translate_card:
+    with unittest.mock.patch.object(CardDatabase, "translate_card") as translate_card:
         result = parser.parse_deck(deck_list, False, False, None)
-        find_all_translated_printings.assert_not_called()
         translate_card.assert_not_called()
         assert_that(
             result,

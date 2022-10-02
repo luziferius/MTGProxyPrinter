@@ -23,6 +23,7 @@ from PyQt5.QtCore import QStandardPaths
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 __all__ = [
     "settings",
@@ -45,16 +46,21 @@ configparser.ConfigParser.BOOLEAN_STATES.update({
     "none": None,
 })
 
-# TODO: Single-source these properties somewhere. The Document class holds similar constants.
-CARD_WIDTH = 63
-CARD_HEIGHT = 88
-
 VERSION_CHECK_RE = re.compile(
     # sourced from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
     r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*))*))?"
     r"(?:\+(?P<buildmetadata>[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$"
 )
+
+# Below are the default application settings. How to define new ones:
+# - Add a key-value pair (String keys and values only) to a section or add a new section
+# - If adding a new section, also add a validator function for that section.
+# - Add the new key to the validator of the section it’s in. The validator has to check that the value can be properly
+#   cast into the expected type and perform a value range check.
+# - Add the option to the Settings window UI
+# - Wire up save and load functionality for the new key in the Settings UI
+# - The Settings GUI class has to also do a value range check.
 
 DEFAULT_SETTINGS["images"] = {
     "preferred-language": "en",
@@ -91,6 +97,7 @@ DEFAULT_SETTINGS["documents"] = {
     "image-spacing-vertical-mm": "0",
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
+    "print-sharp-corners": "False",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -112,6 +119,8 @@ DEFAULT_SETTINGS["decklist-import"] = {
     "enable-print-guessing-by-default": "True",
     "prefer-already-downloaded-images": "True",
     "always-translate-deck-lists": "False",
+    "remove-basic-wastes": "False",
+    "remove-snow-basics": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
@@ -193,26 +202,28 @@ def _validate_images_section(settings: configparser.ConfigParser, section_name: 
 
 
 def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
+    sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    _validate_boolean(section, defaults, "print-cut-marker")
+    boolean_settings = {"print-cut-marker", "print-sharp-corners"}
     # Check syntax
     for key in section.keys():
-        if key in ("print-cut-marker",):
-            continue
-        _validate_non_negative_int(section, defaults, key)
+        if key in boolean_settings:
+            _validate_boolean(section, defaults, key)
+        else:
+            _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties
     available_height = section.getint("paper-height-mm") - \
         (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if available_height < CARD_HEIGHT:
+    if available_height < sizes.height:
         # Can not fit a single card on a page
         section["paper-height-mm"] = defaults["paper-height-mm"]
-        section["margin-top-mm"] = defaults["margin-top-mm"]
+        section["margin-top-mm"] = defaults["marginop--tmm"]
         section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
-    if available_width < CARD_WIDTH:
+    if available_width < sizes.width:
         # Can not fit a single card on a page
         section["paper-width-mm"] = defaults["paper-width-mm"]
         section["margin-left-mm"] = defaults["margin-left-mm"]
@@ -224,10 +235,10 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - CARD_HEIGHT):
+    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - sizes.height):
         # Prevent vertical spacing from overlapping with bottom margin
         section["image-spacing-vertical-mm"] = str(available_spacing_vertical)
-    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - CARD_WIDTH):
+    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - sizes.width):
         # Prevent horizontal spacing from overlapping with right margin
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 

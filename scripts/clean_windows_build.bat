@@ -45,7 +45,7 @@ popd
 pushd plugins
 
 :: Remove duplicated Qt5 base DLLs
-FOR %%G IN ( printsupport platforms imageformats
+FOR %%G IN ( printsupport platforms imageformats styles
 ) DO del %%G\Qt5*.dll
 
 

@@ -1,0 +1,123 @@
+{
+  "object": "card",
+  "id": "ca17acea-f079-4e53-8176-a2f5c5c408a1",
+  "oracle_id": "5f0d3be8-e63e-4ade-ae58-6b0c14f2ce6d",
+  "multiverse_ids": [
+    503904
+  ],
+  "mtgo_id": 87919,
+  "arena_id": 75335,
+  "tcgplayer_id": 230146,
+  "cardmarket_id": 530282,
+  "name": "Snow-Covered Forest",
+  "lang": "en",
+  "released_at": "2021-02-05",
+  "uri": "https://api.scryfall.com/cards/ca17acea-f079-4e53-8176-a2f5c5c408a1",
+  "scryfall_uri": "https://scryfall.com/card/khm/284/snow-covered-forest?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/c/a/ca17acea-f079-4e53-8176-a2f5c5c408a1.jpg?1631053531",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/c/a/ca17acea-f079-4e53-8176-a2f5c5c408a1.jpg?1631053531",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/c/a/ca17acea-f079-4e53-8176-a2f5c5c408a1.jpg?1631053531",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/c/a/ca17acea-f079-4e53-8176-a2f5c5c408a1.png?1631053531",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/c/a/ca17acea-f079-4e53-8176-a2f5c5c408a1.jpg?1631053531",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/c/a/ca17acea-f079-4e53-8176-a2f5c5c408a1.jpg?1631053531"
+  },
+  "mana_cost": "",
+  "cmc": 0,
+  "type_line": "Basic Snow Land — Forest",
+  "oracle_text": "({T}: Add {G}.)",
+  "colors": [],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [],
+  "produced_mana": [
+    "G"
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "explorer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal"
+  },
+  "games": [
+    "arena",
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "43057fad-b1c1-437f-bc48-0045bce6d8c9",
+  "set": "khm",
+  "set_name": "Kaldheim",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/43057fad-b1c1-437f-bc48-0045bce6d8c9",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Akhm&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/khm?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/ca17acea-f079-4e53-8176-a2f5c5c408a1/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A5f0d3be8-e63e-4ade-ae58-6b0c14f2ce6d&unique=prints",
+  "collector_number": "284",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Adam Paquette",
+  "artist_ids": [
+    "89023dad-e6c0-41e0-83fb-eb2bfbbdc3f2"
+  ],
+  "illustration_id": "b65c5dfb-fc5b-4ca9-b937-eae7ba395b34",
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "snow"
+  ],
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "prices": {
+    "usd": "0.83",
+    "usd_foil": "0.88",
+    "usd_etched": null,
+    "eur": "0.38",
+    "eur_foil": "1.17",
+    "tix": "0.03"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=503904",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Snow-Covered+Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Snow-Covered+Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Snow-Covered+Forest"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/230146?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Snow-Covered+Forest&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/87919?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

@@ -7,7 +7,7 @@
 *.sqlite3-shm
 *.sqlite3-wal
 .pytest_cache
-venv
+venv*
 *.egg-info
 .benchmarks
 .eggs

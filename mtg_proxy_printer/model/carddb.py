@@ -17,14 +17,15 @@ import atexit
 import configparser
 import dataclasses
 import datetime
+import enum
 import itertools
 import functools
 import pathlib
 import textwrap
 import typing
 
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 import delegateto
 
 import mtg_proxy_printer.app_dirs
@@ -33,6 +34,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -68,6 +70,7 @@ __all__ = [
     "CardIdentificationData",
     "MTGSet",
     "Card",
+    "CardCorner",
     "CardDatabase",
     "cached_dedent",
 ]
@@ -101,6 +104,21 @@ class MTGSet:
             return None
 
 
+@enum.unique
+class CardCorner(enum.Enum):
+    """
+    The four corners of a card. Values are relative image positions in X and Y.
+    These are fractions so that they work properly for both regular and oversized cards
+
+    Values are tuned to return the top-left corner of a 10x10 area
+    centered around (20,20) away from the respective corner.
+    """
+    TOP_LEFT = (15/745, 15/1040)
+    TOP_RIGHT = (1-25/745, 15/1040)
+    BOTTOM_LEFT = (15/745, 1-25/1040)
+    BOTTOM_RIGHT = (1-25/745, 1-25/1040)
+
+
 @dataclasses.dataclass(unsafe_hash=True)
 class Card:
     name: str = dataclasses.field(compare=True)
@@ -115,6 +133,32 @@ class Card:
     is_oversized: bool = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+
+    def set_image_file(self, image: QPixmap):
+        self.image_file = image
+        self.corner_color.cache_clear()
+
+    def requested_page_type(self) -> PageType:
+        if self.image_file is None:
+            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
+        size = self.image_file.size()
+        if (size.width(), size.height()) == (1040, 1490):
+            return PageType.OVERSIZED
+        return PageType.REGULAR
+
+    @functools.lru_cache(maxsize=len(CardCorner))
+    def corner_color(self, corner: CardCorner) -> QColor:
+        """Returns the color of the card at the given corner. """
+        if self.image_file is None:
+            return QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
+        sample_area = self.image_file.copy(QRect(
+            QPoint(
+                round(self.image_file.width() * corner.value[0]),
+                round(self.image_file.height() * corner.value[1])),
+            QSize(10, 10)
+        ))
+        average_color = sample_area.scaled(1, 1, transformMode=Qt.SmoothTransformation).toImage().pixelColor(0, 0)
+        return average_color
 
 
 OptionalCard = typing.Optional[Card]
@@ -227,16 +271,24 @@ class CardDatabase:
         ]
         return result
 
-    def get_basic_land_oracle_ids(self) -> typing.Set[str]:
-        """Returns the oracle ids of all Basic lands (currently except Wastes)."""
-        query = cached_dedent('''\
+    def get_basic_land_oracle_ids(
+            self, include_wastes: bool = False, include_snow_basics: bool = False) -> typing.Set[str]:
+        """Returns the oracle ids of all Basic lands."""
+        names = ['Plains', 'Island', 'Swamp', 'Mountain', 'Forest']
+        # Ordering matters: If WotC ever prints "Snow-Covered Wastes" (as of writing, those don’t exist),
+        # this order does support them in the case include_wastes=False, include_snow_basics=True.
+        if include_wastes:
+            names.append("Wastes")
+        if include_snow_basics:
+            names += [f"Snow-Covered {name}" for name in names]
+        query = cached_dedent(f'''\
             SELECT DISTINCT oracle_id -- get_basic_land_oracle_ids()
               FROM AllPrintings
               WHERE language = 'en'
               AND card_name IN 
-                ('Plains', 'Island', 'Swamp', 'Mountain', 'Forest')  -- Should this include Wastes here?
+                ({", ".join("?"*len(names))})
         ''')
-        return {item for item, in self.db.execute(query)}
+        return {item for item, in self.db.execute(query, names)}
 
     @profile
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
@@ -327,7 +379,7 @@ class CardDatabase:
 
     @profile
     def get_replacement_card_for_unknown_printing(
-            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False):
+            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
@@ -353,7 +405,7 @@ class CardDatabase:
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
     @profile
-    def _get_cards_from_data(self, query, parameters):
+    def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
         result = [
             Card(
@@ -428,20 +480,6 @@ class CardDatabase:
         return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
 
     @profile
-    def is_scryfall_id_known(self, scryfall_id: str, is_front: bool) -> bool:
-        query = cached_dedent('''\
-        SELECT EXISTS ( -- is_scryfall_id_known()
-            SELECT scryfall_id
-            FROM Printing 
-            JOIN CardFace USING (printing_id)
-            WHERE Printing.is_hidden IS FALSE
-              AND scryfall_id = ?
-              AND is_front = ?)
-        ''')
-        result = self._read_optional_scalar_from_db(query, (scryfall_id, is_front))
-        return bool(result)
-
-    @profile
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
@@ -497,13 +535,12 @@ class CardDatabase:
     @profile
     def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
         """
-        Translates a card into the target_language. If the source language in the card data is not given,
-        try to guess it, or use English, if that also fails.
+        Translates a card into the target_language. Uses the language in the card data as the source language, if given.
+        If not, card names across all languages are searched.
 
         :return: String with the translated card name, or None, if either unknown or unavailable in the target language.
         """
-        source_language = card_data.language or self.guess_language_from_name(card_data.name) or "en"
-        # Implementation note: First two parameters may be None/NULL and can be used as a disambiguation in case
+        # Implementation note: First two query parameters may be None/NULL and can be used as a disambiguation in case
         # that a translation is ambiguous. As an example, “Duress” is translated to “Zwang” in German, except for
         # the one time in the 6th Edition set, where the English “Coercion” was also translated to “Zwang”.
         # So given “Zwang” in German without further context, it may mean one of two cards.
@@ -529,7 +566,7 @@ class CardDatabase:
             JOIN source_context ON (
                coalesce(set_code = source_set_code, TRUE) AND
                coalesce(scryfall_id = source_scryfall_id, TRUE))
-            WHERE card_name = ? AND "language" = ?
+            WHERE card_name = ? AND COALESCE("language" = ?, TRUE)
             GROUP BY oracle_id, face_number
             )
         SELECT card_name
@@ -544,7 +581,7 @@ class CardDatabase:
         """)
         return self._read_optional_scalar_from_db(
             query,
-            (card_data.scryfall_id, card_data.set_code, card_data.name, source_language, target_language)
+            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
@@ -675,38 +712,6 @@ class CardDatabase:
         )
 
     @profile
-    def find_all_translated_printings(
-            self, card: Card, language: str, /, *, order_by_print_count: bool = False) -> CardList:
-        """Returns all printings of the given card in the given language."""
-        query = cached_dedent("""\
-        SELECT card_name, set_code, set_name, collector_number, scryfall_id, png_image_uri,
-               highres_image, is_oversized, face_number -- find_all_translated_printings()
-            FROM VisiblePrintings
-            {join_clause}
-            WHERE oracle_id = ? AND language = ? AND is_front = ?
-            {order_by_clause}
-        """)
-        if order_by_print_count:
-            join_clause = "LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)"
-            order_by_clause = "ORDER BY LastImageUseTimestamps.usage_count DESC NULLS LAST"
-        else:
-            join_clause = order_by_clause = ""
-        # format in both cases to always replace the format specifiers
-        query = query.format(join_clause=join_clause, order_by_clause=order_by_clause)
-        parameters = [card.oracle_id, language, card.is_front]
-        result = [
-            Card(
-                name, MTGSet(set_code, set_name), collector_number,
-                language, scryfall_id, card.is_front, card.oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
-            )
-            for name, set_code, set_name, collector_number, scryfall_id, image_uri,
-            highres_image, is_oversized, face_number
-            in self.db.execute(query, parameters)
-        ]
-        return result
-
-    @profile
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
                                        progress_signal: typing.Callable[[int], None] = None):
         if progress_signal is None:
@@ -742,7 +747,6 @@ class CardDatabase:
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
         return filters_in_settings != filters_in_db
 
-    @profile
     def _remove_old_printing_filters(self, section) -> bool:
         stored_filters = {
             filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
@@ -762,10 +766,12 @@ class CardDatabase:
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
-            SET is_hidden = HiddenPrintings.should_be_hidden
-            FROM HiddenPrintings
-            WHERE Printing.printing_id = HiddenPrintings.printing_id
-              AND Printing.is_hidden <> HiddenPrintings.should_be_hidden
+            SET is_hidden = Printing.printing_id IN (
+              SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
+            )
+            WHERE is_hidden <> (Printing.printing_id IN (
+              SELECT HiddenPrintingIDs.printing_id FROM HiddenPrintingIDs
+            ))
         ;
         """))
         progress_signal(2)

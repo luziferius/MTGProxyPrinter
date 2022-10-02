@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
@@ -22,7 +23,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import IMAGE_WIDTH, IMAGE_HEIGHT
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -42,25 +43,21 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        self.page_height.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "page_height", new))
-        self.page_width.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "page_width", new))
-        self.margin_top.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_top", new))
-        self.margin_bottom.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_bottom", new))
-        self.margin_left.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_left", new))
-        self.margin_right.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "margin_right", new))
+        self.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
+        self.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
+        self.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
+        self.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
+        self.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
+        self.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
         self.image_spacing_horizontal.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "image_spacing_horizontal", new))
-        self.image_spacing_vertical.valueChanged[int].connect(
-            lambda new: setattr(page_layout, "image_spacing_vertical", new))
+            partial(setattr, page_layout, "image_spacing_horizontal"))
+        self.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
         self.draw_cut_markers: QCheckBox
         self.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
+        self.draw_sharp_corners: QCheckBox
+        self.draw_sharp_corners.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
         return page_layout
 
     @Slot()
@@ -79,9 +76,10 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
+        oversized: CardSize = CardSizes.OVERSIZED.value
         pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + IMAGE_HEIGHT.to_tuple()[0]
-        min_page_width = pl.margin_left + pl.margin_right + IMAGE_WIDTH.to_tuple()[0]
+        min_page_height = pl.margin_bottom + pl.margin_top + oversized.height
+        min_page_width = pl.margin_left + pl.margin_right + oversized.width
         self.page_height: QSpinBox
         self.page_width: QSpinBox
         self.page_height.setMinimum(min_page_height)
@@ -90,10 +88,10 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         document_section = settings["documents"]
-        widgets_with_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_with_settings:
-            widget.setValue(document_section.getint(setting))
-        self.draw_cut_markers.setChecked(document_section.getboolean("print-cut-marker"))
+        for spinbox, setting in self._get_integer_settings_widgets():
+            spinbox.setValue(document_section.getint(setting))
+        for checkbox, setting in self._get_boolean_settings_widgets():
+            checkbox.setChecked(document_section.getboolean(setting))
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -116,13 +114,13 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
         documents_section = mtg_proxy_printer.settings.settings["documents"]
-        widgets_and_settings = self._get_document_settings_widgets()
-        for widget, setting in widgets_and_settings:
-            documents_section[setting] = str(widget.value())
-        documents_section["print-cut-marker"] = str(self.draw_cut_markers.isChecked())
+        for spinbox, setting in self._get_integer_settings_widgets():
+            documents_section[setting] = str(spinbox.value())
+        for checkbox, setting in self._get_boolean_settings_widgets():
+            documents_section[setting] = str(checkbox.isChecked())
         logger.debug("Saving done.")
 
-    def _get_document_settings_widgets(self):
+    def _get_integer_settings_widgets(self):
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
             (self.page_height, "paper-height-mm"),
             (self.page_width, "paper-width-mm"),
@@ -132,5 +130,12 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
             (self.margin_right, "margin-right-mm"),
             (self.image_spacing_horizontal, "image-spacing-horizontal-mm"),
             (self.image_spacing_vertical, "image-spacing-vertical-mm"),
+        ]
+        return widgets_with_settings
+
+    def _get_boolean_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (self.draw_cut_markers, "print-cut-marker"),
+            (self.draw_sharp_corners, "print-sharp-corners"),
         ]
         return widgets_with_settings

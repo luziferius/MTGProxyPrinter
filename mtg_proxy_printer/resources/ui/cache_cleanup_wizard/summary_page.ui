@@ -14,9 +14,6 @@
    <string>WizardPage</string>
   </property>
   <property name="title">
-   <string>Cleanup local image database</string>
-  </property>
-  <property name="subTitle">
    <string>Summary</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
