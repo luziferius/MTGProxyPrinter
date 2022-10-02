@@ -14,10 +14,10 @@
    <string>WizardPage</string>
   </property>
   <property name="title">
-   <string>Cleanup local image database</string>
+   <string>Select images for removal</string>
   </property>
   <property name="subTitle">
-   <string>Select images for removal. Click on entries in the tables below to mark or unmark them for removal</string>
+   <string>Click on entries in the tables below to mark or un-mark them for removal. All selected entries will be removed.</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>

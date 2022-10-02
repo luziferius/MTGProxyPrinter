@@ -32,6 +32,7 @@ __all__ = [
     "CardListModel",
     "PageColumns",
 ]
+INVALID_INDEX = QModelIndex()
 
 
 class PageColumns(enum.IntEnum):
@@ -61,14 +62,13 @@ class CardListModel(QAbstractTableModel):
         super(CardListModel, self).__init__(*args, **kwargs)
         self.card_db = card_db
         self.cards: CardList = []
-        self.basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids()
         self.oversized_card_count = 0
         self._oversized_icon = QIcon.fromTheme("data-warning")
 
-    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.cards)
 
-    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(CardListModel.header)
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
@@ -134,7 +134,7 @@ class CardListModel(QAbstractTableModel):
     def add_cards(self, cards: typing.Counter[Card]):
         for card, count in cards.items():
             first_index, last_index = self.rowCount(), self.rowCount() + count - 1
-            self.beginInsertRows(QModelIndex(), first_index, last_index)
+            self.beginInsertRows(INVALID_INDEX, first_index, last_index)
             self.cards += list(itertools.repeat(card, count))
             self.endInsertRows()
             self._add_card_handle_oversized_flag(card, count)
@@ -195,7 +195,7 @@ class CardListModel(QAbstractTableModel):
         :return: Number of cards removed
         """
         logger.debug(f"Removing range {top, bottom}")
-        self.beginRemoveRows(QModelIndex(), top, bottom)
+        self.beginRemoveRows(INVALID_INDEX, top, bottom)
         last_row = bottom + 1
         removed_cards = self.cards[top:last_row]
         del self.cards[top:last_row]
@@ -216,7 +216,7 @@ class CardListModel(QAbstractTableModel):
 
     def clear(self):
         logger.debug(f"About to clear {self.__class__.__name__} instance. Removing {self.rowCount()} entries.")
-        self.beginRemoveRows(QModelIndex(), 0, self.rowCount()-1)
+        self.beginRemoveRows(INVALID_INDEX, 0, self.rowCount()-1)
         self.cards.clear()
         self.endRemoveRows()
         if self.oversized_card_count:
@@ -231,14 +231,16 @@ class CardListModel(QAbstractTableModel):
             self.cards[row] for row in row_order
         )
 
-    def has_basic_lands(self) -> bool:
-        return any(filter(lambda card: card.oracle_id in self.basic_land_oracle_ids, self.cards))
+    def has_basic_lands(self, include_wastes: bool = False, include_snow_basics: bool = False) -> bool:
+        basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics)
+        return any(filter(lambda card: card.oracle_id in basic_land_oracle_ids, self.cards))
 
-    def remove_all_basic_lands(self):
+    def remove_all_basic_lands(self, remove_wastes: bool = False, remove_snow_basics: bool = False):
+        basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(remove_wastes, remove_snow_basics)
         to_remove_rows = list(
             (index, index)
             for index, card in enumerate(self.cards)
-            if card.oracle_id in self.basic_land_oracle_ids
+            if card.oracle_id in basic_land_oracle_ids
         )
         merged = reversed(self._merge_ranges(to_remove_rows))
         for top, bottom in merged:

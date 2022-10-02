@@ -1,0 +1,114 @@
+{
+  "object": "card",
+  "id": "9cc070d3-4b83-4684-9caf-063e5c473a77",
+  "oracle_id": "05d24b0c-904a-46b6-b42a-96a4d91a0dd4",
+  "multiverse_ids": [
+    407693
+  ],
+  "tcgplayer_id": 110703,
+  "cardmarket_id": 287178,
+  "name": "Wastes",
+  "lang": "en",
+  "released_at": "2016-01-22",
+  "uri": "https://api.scryfall.com/cards/9cc070d3-4b83-4684-9caf-063e5c473a77",
+  "scryfall_uri": "https://scryfall.com/card/ogw/183a/wastes?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.png?1657725364",
+    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364"
+  },
+  "mana_cost": "",
+  "cmc": 0,
+  "type_line": "Basic Land",
+  "oracle_text": "{T}: Add {C}.",
+  "colors": [],
+  "color_identity": [],
+  "keywords": [],
+  "produced_mana": [
+    "C"
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "legal",
+    "explorer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "cd51d245-8f95-45b0-ab5f-e2b3a3eb5dfe",
+  "set": "ogw",
+  "set_name": "Oath of the Gatewatch",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/cd51d245-8f95-45b0-ab5f-e2b3a3eb5dfe",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aogw&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/ogw?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/9cc070d3-4b83-4684-9caf-063e5c473a77/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A05d24b0c-904a-46b6-b42a-96a4d91a0dd4&unique=prints",
+  "collector_number": "183a",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Jason Felix",
+  "artist_ids": [
+    "af42a44c-8ec3-47a7-9047-5d29ddad186d"
+  ],
+  "illustration_id": "27777a6f-cf59-4515-bcc4-8a6020d0d865",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "prices": {
+    "usd": "2.21",
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": "0.99",
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=407693",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Wastes&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Wastes&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Wastes"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/110703?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Wastes&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Wastes&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

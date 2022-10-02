@@ -23,7 +23,7 @@ import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QSpinBox, QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
+    QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
@@ -33,6 +33,8 @@ from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import PageType
+
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
@@ -284,16 +286,24 @@ class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_
 
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
+        logger.info("User wants to save the settings.")
         self.page_configuration_group_box: PageConfigWidget
-        old_page_capacity = self.document.total_cards_per_page
-        new_page_capacity = self.page_configuration_group_box.page_layout.compute_page_card_capacity()
-        logger.info(f"accept() called. {old_page_capacity=}, {new_page_capacity=}")
-        if old_page_capacity > new_page_capacity:
-            overflowing_pages = len(self.document.find_overflowing_and_non_full_pages(new_page_capacity)[0])
-
+        old_layout = self.document.page_layout
+        new_layout = self.page_configuration_group_box.page_layout
+        old_regular_page_capacity = old_layout.compute_page_card_capacity(PageType.REGULAR)
+        new_regular_page_capacity = new_layout.compute_page_card_capacity(PageType.REGULAR)
+        old_oversized_page_capacity = old_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        new_oversized_page_capacity = new_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        if new_layout < old_layout:
+            overflowing_pages = len(self.document.find_overflowing_and_non_full_pages(PageType.REGULAR, new_layout)[0])\
+                + len(self.document.find_overflowing_and_non_full_pages(PageType.OVERSIZED, new_layout)[0])
+            logger.info(
+                f"The page layout was changed, causing {overflowing_pages} pages to overflow.")
             if overflowing_pages and QMessageBox.question(
                     self, "Overflowing pages found",
-                    f"The new settings reduce the page capacity from {old_page_capacity} to {new_page_capacity} cards. "
+                    f"The new settings decrease the page capacity from {old_regular_page_capacity} "
+                    f"to {new_regular_page_capacity} regular cards\nand from {old_oversized_page_capacity} "
+                    f"to {new_oversized_page_capacity} oversized cards."
                     f"This causes {overflowing_pages} pages to overflow.\n"
                     f"The overflowing cards from these pages will be moved automatically to free spaces on "
                     f"other pages, or new pages at the document end.\nNo cards will be lost, but the "

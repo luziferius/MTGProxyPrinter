@@ -82,12 +82,14 @@
        </item>
        <item>
         <widget class="QPushButton" name="delete_selected_images_button">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Remove selected</string>
          </property>
          <property name="icon">
-          <iconset theme="edit-delete">
-           <normaloff>.</normaloff>.</iconset>
+          <iconset theme="edit-delete"/>
          </property>
         </widget>
        </item>

@@ -19,8 +19,8 @@ import socket
 import urllib.error
 
 
-from PyQt5.QtCore import QStringListModel
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtCore import QStringListModel, QItemSelectionModel
+from PyQt5.QtWidgets import QMessageBox, QListView
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -36,27 +36,28 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget
-from tests.helpers import fill_card_database_with_json_card
+from tests.helpers import fill_card_database_with_json_cards
 
 
 @pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
-    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
+    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "_quit"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker, "get_scryfall_bulk_card_data_url"), \
+                mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "get_scryfall_bulk_card_data_url"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker, "read_json_card_data",
-                return_value=tuple()):
+                mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "read_json_card_data_from_url",
+                return_value=iter([10])):
         cid = CardInfoDownloader(card_db)
         main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
         with qtbot.wait_exposed(main_window, timeout=100):
             main_window.show()
         yield main_window
+        main_window.hide()
         stop_thread(cid.worker_thread)
 
 
@@ -111,8 +112,8 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_not_called()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_not_called()
     assert_that(main_window.action_download_card_data.isEnabled(), is_(True))
 
 
@@ -123,15 +124,15 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_called()
     assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
 
 
 @pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
 def test_action_download_card_data_enabled_if_error_occurs_after_accepting_card_data_update_offer(
         qtbot: QtBot, main_window: MainWindow, handled_error):
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
@@ -142,8 +143,8 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_card_
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
     warning_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_not_called()
     assert_that(
         main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
     )
@@ -152,7 +153,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_card_
 @pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
 def test_action_download_card_data_enabled_if_error_occurs_after_triggering_it(
         qtbot: QtBot, main_window: MainWindow, handled_error):
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
@@ -160,8 +161,8 @@ def test_action_download_card_data_enabled_if_error_occurs_after_triggering_it(
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         main_window.action_download_card_data.trigger()
     warning_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_not_called()
     assert_that(
         main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
     )
@@ -174,8 +175,8 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_not_called()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_not_called()
     assert_that(main_window.action_download_card_data.isEnabled(), is_(True))
 
 
@@ -186,15 +187,15 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
             qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_called()
     assert_that(main_window.action_download_card_data.isEnabled(), is_(False))
 
 
 @pytest.mark.parametrize("handled_error", [socket.timeout, urllib.error.URLError("Test reason")])
 def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_user_about_empty_database(
         qtbot: QtBot, main_window: MainWindow, handled_error):
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.side_effect = handled_error
     main_window.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
@@ -205,8 +206,8 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_u
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
     warning_box.assert_called_once()
-    main_window.card_data_downloader.download_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.download_worker.read_json_card_data.assert_not_called()
+    main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
+    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_not_called()
     assert_that(
         main_window.action_download_card_data.isEnabled(), is_(True), "Action not re-enabled after error condition"
     )
@@ -230,3 +231,56 @@ def test_declining_application_update_offer_does_nothing(main_window: MainWindow
         main_window.show_application_update_available_message_box("1.0.0-test")
         message_box.assert_called_once()
         open_url_service.assert_not_called()
+
+
+def test_creating_new_document_with_second_page_selected_works_without_raising_exception(
+        qtbot: QtBot, main_window: MainWindow):
+    """
+    Tests for an exception when creating a new document. Conditions required for reproduction:
+    - Cut markers enabled
+    - At least two pages present
+    - Any page but the first is currently selected
+    - User creates a new document
+    """
+    document = main_window.document
+    # Condition 1
+    document.page_layout.draw_cut_markers = True
+    document.page_layout_changed.emit()
+    main_window.action_new_page.trigger()  # Condition 2
+    assert_that(document.pages, has_length(2))
+    with qtbot.waitSignal(document.current_page_changed):
+        main_window.central_widget.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes), \
+            qtbot.waitSignal(document.current_page_changed):
+        # Condition 4. This triggered the exception
+        main_window.action_new_document.trigger()
+    assert_that(document.pages, has_length(1))
+
+
+def test_compacting_document_while_last_page_is_selected_works_without_raising_exception(main_window: MainWindow):
+    """
+    Tests for an exception when compacting the document. Conditions required for reproduction:
+    - 4 pages. Two with one regular card, two with one oversized card each
+    - Page capacity at least 2 for each page type
+    - Last page is selected
+    - User compacts the document
+    """
+    document = main_window.document
+    cards = [
+        main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True),
+        main_window.card_database.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
+    ]*2
+    for page, card in enumerate(cards):
+        document.add_card_to_page(page, card, 1)
+        document.add_page()
+    main_window.central_widget.document_view.setCurrentIndex(document.index(4, 0))
+    main_window.action_compact_document.trigger()
+    assert_that(document.rowCount(), is_(2))
+
+
+def test_removing_last_page_while_selected_works_without_raising_exception(main_window: MainWindow):
+    main_window.document.add_page()
+    main_window.central_widget.document_view.setCurrentIndex(main_window.document.index(1, 0))
+    main_window.action_discard_page.trigger()
+    assert_that(main_window.document.rowCount(), is_(1))

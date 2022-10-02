@@ -14,10 +14,10 @@
    <string>WizardPage</string>
   </property>
   <property name="title">
-   <string>Cleanup local image database</string>
+   <string>Cleanup locally stored card images</string>
   </property>
   <property name="subTitle">
-   <string>Optionally set automatic cleanup conditions. These will be used to select images for removal.</string>
+   <string>This wizard can be used to remove unwanted card images currently stored on your computer. You can enable automatic cleanup conditions below, to preselect images for removal.</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -88,11 +88,13 @@
       <item row="2" column="0" colspan="2">
        <widget class="QCheckBox" name="remove_unknown_cards_checkbox">
         <property name="toolTip">
-         <string>Cards become unknown, if your configured a stricter card filter in the settings.
-For example, if you downloaded images of silver-bordered cards and then configured the program to omit those, all these images become unknown.</string>
+         <string>Card images may become unknown, if printings are removed by Scryfall.
+This filter also applies to cards and printings hidden by a card filter in the settings.
+For example, if you downloaded images of silver-bordered cards and then configured the program to hide those,
+all these images become hidden and will be removed.</string>
         </property>
         <property name="text">
-         <string>Remove images belonging to unknown cards</string>
+         <string>Remove unknown images and images of hidden printings</string>
         </property>
        </widget>
       </item>

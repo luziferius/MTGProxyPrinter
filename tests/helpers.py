@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2019-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,13 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import dataclasses
 import functools
 import json
 import typing
 from unittest.mock import patch, MagicMock
 import pkg_resources
 
-from hamcrest import assert_that, is_, empty, has_key, contains_inanyorder
+from hamcrest.core.base_matcher import BaseMatcher
+from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of
+from hamcrest.core.description import Description
 from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.model
@@ -33,7 +36,7 @@ def setup_logging_for_testing():
     with patch.dict(
             mtg_proxy_printer.logger.mtg_proxy_printer.settings.settings["debug"],
             {"write-log-file": "False"}):
-        mtg_proxy_printer.logger.configure_root_logger()
+        mtg_proxy_printer.logger.configure_root_logger(output_stdout=False)
     mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
     mtg_proxy_printer.logger.root_logger.info(__name__)
 
@@ -52,7 +55,7 @@ def setup_settings_for_testing():
 
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(card_db)
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
         card_db.store_current_printing_filters()
         card_db.db.commit()
@@ -64,6 +67,14 @@ def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
     return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
 
 
+def load_multiple_json_cards(
+        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]]):
+    return [
+        load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
+        for json_file_or_name in json_files_or_names
+    ]
+
+
 def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
@@ -73,10 +84,7 @@ def fill_card_database_with_json_cards(
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
         settings_to_use.update(filter_settings)
-    data = [
-        load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
-        for json_file_or_name in json_files_or_names
-    ]
+    data = load_multiple_json_cards(json_files_or_names)
     with patch.dict(section, settings_to_use):
         populate_database(qtbot, card_db, data)
     return card_db
@@ -114,3 +122,74 @@ def assert_model_is_empty(card_db: mtg_proxy_printer.model.carddb.CardDatabase, 
         )
     for relation in relations_to_check:
         assert_relation_is_empty(card_db, relation)
+
+
+class is_dataclass_equal_to(BaseMatcher):
+
+    def __init__(self, expected: dataclasses.dataclass):
+        self.expected = expected
+
+    def _matches(self, item: dataclasses.dataclass) -> bool:
+        return self._has_annotations(item) and self._has_equal_keys(item) and self._has_equal_values(item)
+
+    @staticmethod
+    def _has_annotations(item: dataclasses.dataclass):
+        return hasattr(item, "__annotations__")
+
+    def _has_equal_keys(self, item: dataclasses.dataclass) -> bool:
+        return contains_inanyorder(
+            *self.expected.__annotations__.keys()
+        ).matches(item.__annotations__.keys())
+
+    def _has_equal_values(self, item: dataclasses.dataclass) -> bool:
+        return has_properties({
+            key: equal_to(getattr(self.expected, key))
+            for key in self.expected.__annotations__.keys()
+        }).matches(item)
+
+    def describe_to(self, description: Description) -> None:
+        description.append_text(f"dataclass instance containing values equal to {self.expected} ")
+
+    def describe_mismatch(self, item: dataclasses.dataclass, mismatch_description: Description) -> None:
+        if not self._has_annotations(item):
+            mismatch_description.append_text(f"{item} instance has no __annotations__ attribute")
+            return
+        if not self._has_equal_keys(item):
+            expected_keys = set(self.expected.__annotations__.keys())
+            got_keys = set(item.__annotations__.keys())
+            if missing_keys := expected_keys-got_keys:
+                mismatch_description.append_text(f"Missing attributes: {sorted(missing_keys)},")
+            if excess_keys := got_keys-expected_keys:
+                mismatch_description.append_text(f"Excess attributes: {sorted(excess_keys)},")
+            return
+        mismatched_values = {
+            key: (expected, got)
+            for key in self.expected.__annotations__.keys()
+            if (expected := (getattr(self.expected, key))) != (got := getattr(item, key))
+        }
+        mismatch_description.append_text(
+            f"Got unequal attributes: \n" +
+            "\n  ".join(
+                f"attribute={key}, {expected=}, {got=}"
+                for key, (expected, got)
+                in mismatched_values.items()
+            )
+        )
+
+
+class matches_type_annotation(BaseMatcher):
+
+    def _matches(self, item: dataclasses.dataclass) -> bool:
+        return hasattr(item, "__annotations__") and has_properties({
+                key: self._get_matcher(annotated_type)
+                for key, annotated_type in item.__annotations__.items()
+            }).matches(item)
+
+    @staticmethod
+    def _get_matcher(value: typing.Any):
+        if hasattr(value, "__args__"):  # Unpack typing.Optional[Something], typing.Union[TypeList]
+            return any_of(*(instance_of(type_union_member) for type_union_member in value.__args__))
+        return instance_of(value)
+
+    def describe_to(self, description: Description) -> None:
+        description.append_text(f"dataclass instance containing correct types")

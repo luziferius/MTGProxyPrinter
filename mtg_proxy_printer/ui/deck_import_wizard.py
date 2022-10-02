@@ -20,7 +20,7 @@ import re
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection
+    QItemSelection, QAbstractTableModel
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
 
@@ -343,7 +343,7 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
             accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
             accept_button.setToolTip("Append identified cards to the document")
 
-    def _setup_parsed_cards_table(self, model) -> ComboBoxItemDelegate:
+    def _setup_parsed_cards_table(self, model: QAbstractTableModel) -> ComboBoxItemDelegate:
         self.parsed_cards_table: QTableView
         self.parsed_cards_table.setModel(model)
         self.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
@@ -386,8 +386,11 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         wizard: QWizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
         wizard.setOption(QWizard.HaveCustomButton1, True)
+        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
         remove_basic_lands_button = wizard.button(QWizard.CustomButton1)
-        remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands())
+        remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
+            decklist_import_section.getboolean("remove-basic-wastes"),
+            decklist_import_section.getboolean("remove-snow-basics")))
         remove_basic_lands_button.setText("Remove basic lands")
         remove_basic_lands_button.setToolTip("Remove all basic lands in the deck list above")
         remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
@@ -424,9 +427,14 @@ class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_re
         if button_id == QWizard.CustomButton1:
             wizard.button(button_id).setEnabled(False)
             logger.info("User requests to remove all basic lands")
-            self.card_list.remove_all_basic_lands()
+            decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+            self.card_list.remove_all_basic_lands(
+                decklist_import_section.getboolean("remove-basic-wastes"),
+                decklist_import_section.getboolean("remove-snow-basics"))
         elif button_id == QWizard.CustomButton2:
             self._remove_selected_cards()
+            self.selected_cells_count = 0
+            self.wizard().button(QWizard.CustomButton2).setEnabled(False)
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")

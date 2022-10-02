@@ -165,7 +165,9 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
     def _setup_about_text(self):
         self.about_text: QTextBrowser
         formatted_about_text = self.about_text.toMarkdown().format(
-            application_name=mtg_proxy_printer.meta_data.PROGRAMNAME)
+            application_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
+            application_home_page=mtg_proxy_printer.meta_data.HOME_PAGE,
+        )
         self.about_text.setMarkdown(formatted_about_text)
 
     def _setup_license_text(self):
@@ -256,7 +258,6 @@ class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialo
     def accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
         self.page_config_groupbox: PageConfigWidget
-        self.document.page_layout = self.page_config_groupbox.page_layout
-        self.document.on_page_layout_updated()
+        self.document.update_page_layout(self.page_config_groupbox.page_layout)
         super(DocumentSettingsDialog, self).accept()
         logger.debug("Saving settings in the document done.")
