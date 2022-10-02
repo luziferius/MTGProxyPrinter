@@ -159,7 +159,7 @@ def card_db_at_version_21() -> sqlite3.Connection:
 def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_values(
         card_db_at_version_21: sqlite3.Connection, possible_error: BaseException):
     with unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker.read_json_card_data") as mock:
+            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.read_json_card_data") as mock:
         mock.side_effect = possible_error
         migrate_card_database(
             card_db_at_version_21,
@@ -177,7 +177,7 @@ def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_val
 def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from_api(
         card_db_at_version_21: sqlite3.Connection, expected):
     with unittest.mock.patch(
-            "mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker.read_json_card_data") as mock:
+            "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.read_json_card_data") as mock:
         mock.return_value = iter((expected,))
         migrate_card_database(
             card_db_at_version_21,

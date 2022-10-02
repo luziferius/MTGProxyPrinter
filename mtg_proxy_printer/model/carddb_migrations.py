@@ -339,7 +339,7 @@ def _migrate_21_to_22(db: sqlite3.Connection):
 
     # Import locally to break a cyclic dependency
     import mtg_proxy_printer.card_info_downloader
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(CardDatabaseMock(db))
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabaseMock(db))
     updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
     data = []
     for id_, timestamp in updates:

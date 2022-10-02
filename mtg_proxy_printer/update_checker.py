@@ -27,7 +27,7 @@ from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
+from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -59,12 +59,12 @@ class BackgroundWorker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(BackgroundWorker, self).__init__(parent)
         self.card_db = card_db
-        self.dw: CardInfoDownloadWorker = None
+        self.dw: CardInfoDatabaseImportWorker = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def on_thread_started(self):
         logger.debug(f"{self.__class__.__name__} event loop started, creating DownloadWorker")
-        self.dw = CardInfoDownloadWorker(self.card_db)
+        self.dw = CardInfoDatabaseImportWorker(self.card_db)
         self.dw.network_error_occurred.connect(self.network_error_occurred)
 
     def perform_card_data_update_check(self):

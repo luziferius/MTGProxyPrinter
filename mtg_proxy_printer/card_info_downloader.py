@@ -40,7 +40,7 @@ del get_logger
 
 __all__ = [
     "CardInfoDownloader",
-    "CardInfoDownloadWorker",
+    "CardInfoDatabaseImportWorker",
     "SetWackinessScore",
 ]
 
@@ -113,28 +113,40 @@ class CardInfoDownloader(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
-        self.download_worker = CardInfoDownloadWorker(model, requested_item)
+        self.database_import_worker = CardInfoDatabaseImportWorker(model, requested_item)  # No parent assignment
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
-        self.download_worker.moveToThread(self.worker_thread)
-        self.request_import_from_file.connect(self.download_worker.download_card_data)
-        self.request_import_from_url.connect(self.download_worker.download_card_data)
-        self.request_download_to_file.connect(self.download_worker.store_raw_card_data_in_file)
-        self.download_worker.download_begins.connect(self.download_begins)
-        self.download_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
-        self.download_worker.download_progress.connect(self.download_progress)
-        self.download_worker.download_finished.connect(self.download_finished)
-        self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
-        self.download_worker.network_error_occurred.connect(self.network_error_occurred)
-        self.download_worker.other_error_occurred.connect(self.other_error_occurred)
+        self.database_import_worker.moveToThread(self.worker_thread)
+        self.file_download_worker = self._create_file_download_worker(requested_item, self.worker_thread)
+        self.request_import_from_file.connect(self.database_import_worker.download_card_data)
+        self.request_import_from_url.connect(self.database_import_worker.download_card_data)
+        self.database_import_worker.download_begins.connect(self.download_begins)
+        self.database_import_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
+        self.database_import_worker.download_progress.connect(self.download_progress)
+        self.database_import_worker.download_finished.connect(self.download_finished)
+        self.database_import_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
+        self.database_import_worker.network_error_occurred.connect(self.network_error_occurred)
+        self.database_import_worker.other_error_occurred.connect(self.other_error_occurred)
         self.worker_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_file_download_worker(self, requested_item: str, thread: QThread) -> "CardInfoFileDownloadWorker":
+        # No Qt parent assignment, because cross-thread parent relationships are unsupported
+        worker = CardInfoFileDownloadWorker(requested_item)
+        worker.moveToThread(thread)  # Move to thread before connecting signals to create queued connections
+        worker.download_begins.connect(self.download_begins)
+        worker.download_progress.connect(self.download_progress)
+        worker.download_finished.connect(self.download_finished)
+        worker.network_error_occurred.connect(self.network_error_occurred)
+        worker.other_error_occurred.connect(self.other_error_occurred)
+        self.request_download_to_file.connect(worker.store_raw_card_data_in_file)
+        return worker
 
     def cancel_running_operations(self):
         if self.worker_thread.isRunning():
             logger.info("Cancelling currently running card download")
-            self.download_worker.should_run = False
+            self.database_import_worker.should_run = False
 
     def quit_background_thread(self):
         if self.worker_thread.isRunning():
@@ -142,16 +154,63 @@ class CardInfoDownloader(QObject):
             stop_thread(self.worker_thread, logger)
 
 
-class CardInfoDownloadWorker(DownloaderBase):
+class CardInfoWorkerBase(DownloaderBase):
+
+    def __init__(self, requested_item: str = "all_cards", parent: QObject = None):
+        self.requested_item = requested_item
+        super().__init__(parent)
+
+    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
+        """Returns the bulk data URL and item count"""
+        logger.info("Obtaining the card data URL from the API bulk data end point")
+        data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
+        with data:
+            for item in ijson.items(data, "data.item", use_float=True):
+                if item["type"] == requested_item:
+                    result = item["download_uri"]
+                    logger.debug(f"Bulk data located at: {result}")
+                    return result
+        raise RuntimeError(
+            "URL to the Scryfall bulk data export not found. "
+            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
+            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+
+
+class CardInfoFileDownloadWorker(CardInfoWorkerBase):
+    """
+    This class implements downloading the raw card data to a file stored in the file system
+    """
+
+    def store_raw_card_data_in_file(self, download_path: Path):
+        """
+        Allows the user to store the raw JSON card data at the given path.
+        Accessible by a button in the Debug tab in the Settings window.
+        """
+        logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
+        logger.debug("Request bulk data URL from the Scryfall API.")
+        url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+        file_name = urllib.parse.urlparse(url).path.split("/")[-1]
+        logger.debug(f"Obtained url: '{url}'")
+        monitor = self._open_url(url, "Downloading card data:")
+        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
+        if monitor.content_encoding() == "gzip":
+            file_name += ".gz"
+        download_file_path = download_path/file_name
+        logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
+        with download_file_path.open("wb") as download_file, monitor:
+            shutil.copyfileobj(monitor, download_file)
+        logger.info("Download completed")
+
+
+class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  requested_item: str = "all_cards", parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super(CardInfoDownloadWorker, self).__init__(parent)
+        super(CardInfoDatabaseImportWorker, self).__init__(requested_item, parent)
         self.model = model
-        self.requested_item = requested_item
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -190,21 +249,6 @@ class CardInfoDownloadWorker(DownloaderBase):
         else:
             self.download_finished.emit()
 
-    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
-        """Returns the bulk data URL and item count"""
-        logger.info("Obtaining the card data URL from the API bulk data end point")
-        data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
-        with data:
-            for item in ijson.items(data, "data.item", use_float=True):
-                if item["type"] == requested_item:
-                    result = item["download_uri"]
-                    logger.debug(f"Bulk data located at: {result}")
-                    return result
-        raise RuntimeError(
-            "URL to the Scryfall bulk data export not found. "
-            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
-            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
-
     def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") \
             -> typing.Generator[JSONType, None, None]:
         """
@@ -225,26 +269,6 @@ class CardInfoDownloadWorker(DownloaderBase):
         # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
         with source, monitor:
             yield from ijson.items(source, json_path)
-
-    def store_raw_card_data_in_file(self, download_path: Path):
-        """
-        Allows the user to store the raw JSON card data at the given path.
-        Accessible by a button in the Debug tab in the Settings window.
-        """
-        logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
-        logger.debug("Request bulk data URL from the Scryfall API.")
-        url = self.get_scryfall_bulk_card_data_url(self.requested_item)
-        file_name = urllib.parse.urlparse(url).path.split("/")[-1]
-        logger.debug(f"Obtained url: '{url}'")
-        monitor = self._open_url(url, "Downloading card data:")
-        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
-        if monitor.content_encoding() == "gzip":
-            file_name += ".gz"
-        download_file_path = download_path/file_name
-        logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
-        with download_file_path.open("wb") as download_file, monitor:
-            shutil.copyfileobj(monitor, download_file)
-        logger.info("Download completed")
 
     def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item") \
             -> typing.Generator[JSONType, None, None]:
