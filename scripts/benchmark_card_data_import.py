@@ -48,7 +48,7 @@ def parse_args() -> Namespace:
 
 
 to_be_profiled_functions = {
-    mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker: [
+    mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker: [
         "_populate_database",
         "_parse_single_printing",
     ],
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     elif args.keep:
         print("Re-use existing database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
-    cid = mtg_proxy_printer.card_info_downloader.CardInfoDownloadWorker(cdb)
+    cid = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(cdb)
     print("Starting benchmark…")
-    cid.download_card_data(args.card_data)
+    cid.import_card_data(args.card_data)
     print("Done")

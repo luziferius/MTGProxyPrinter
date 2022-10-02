@@ -1,14 +1,19 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.19.0 (2022-10-02)  <a name="v0_19_0"></a>
 
 ## New features
 
 - Implemented optional drawing of 90° card corners. This can be enabled for all new documents
   globally in the application settings or individually in the document settings.
+- The one-click basic land removal in the deck list import is now configurable in the application settings:
+  You can now individually enable the automatic removal of Wastes and Snow-Covered basic lands in
+  addition to plain basic lands.
 
 ## Fixed issues
 
+- Fixed HTTP 403 errors when attempting to download card data or images. The new hoster used by Scryfall rejects the
+  previously used HTTP User-Agent value, so set it to a new one that isn’t blocked. 
 - Fixed crashes when accepting to open the Application website in the update notification. This now works properly
 - Fixed card images overlapping by one pixel when image spacing is set to zero.
 
