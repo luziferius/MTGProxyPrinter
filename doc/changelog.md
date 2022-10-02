@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.19.0 (2022-10-02)  <a name="v0_19_0"></a>
 
 ## New features
 
