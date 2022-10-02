@@ -113,5 +113,5 @@ if __name__ == "__main__":
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
     cid = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(cdb)
     print("Starting benchmark…")
-    cid.download_card_data(args.card_data)
+    cid.import_card_data(args.card_data)
     print("Done")

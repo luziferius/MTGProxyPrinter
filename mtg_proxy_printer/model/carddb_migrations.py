@@ -351,7 +351,7 @@ def _migrate_21_to_22(db: sqlite3.Connection):
             "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
         })
         try:
-            card_count = next(dw.read_json_card_data(
+            card_count = next(dw.read_json_card_data_from_url(
                 f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
             ))
         except (urllib.error.URLError, socket.error):
