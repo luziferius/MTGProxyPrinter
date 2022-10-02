@@ -25,6 +25,7 @@ import urllib.request
 from PySide6.QtCore import QObject, Signal
 import delegateto
 
+from mtg_proxy_printer.meta_data import USER_AGENT
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -66,6 +67,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.ui_hint = ui_hint
         self.url = url
         self.headers = {} if headers is None else headers
+        self.headers["User-Agent"] = USER_AGENT
         self.closed = False
         self.file = None  # _urlopen() internally accesses file, so this assignment has to stay here
         self.file, _ = self._urlopen()

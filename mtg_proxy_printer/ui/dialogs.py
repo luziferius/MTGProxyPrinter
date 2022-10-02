@@ -165,7 +165,9 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
     def _setup_about_text(self):
         self.about_text: QTextBrowser
         formatted_about_text = self.about_text.toMarkdown().format(
-            application_name=mtg_proxy_printer.meta_data.PROGRAMNAME)
+            application_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
+            application_home_page=mtg_proxy_printer.meta_data.HOME_PAGE,
+        )
         self.about_text.setMarkdown(formatted_about_text)
 
     def _setup_license_text(self):
