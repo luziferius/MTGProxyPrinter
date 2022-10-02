@@ -56,6 +56,7 @@ class DownloaderBase(QObject):
         response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
-        response.total_bytes_processed.connect(self.download_progress)
-        response.io_begin.connect(self.download_begins)
+        if ui_hint:  # Only connect monitoring signals, if a UI progress hint is given
+            response.total_bytes_processed.connect(self.download_progress)
+            response.io_begin.connect(self.download_begins)
         return response

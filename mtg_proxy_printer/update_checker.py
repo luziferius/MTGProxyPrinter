@@ -27,7 +27,7 @@ from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.model.carddb import CardDatabase
-from mtg_proxy_printer.card_info_downloader import CardInfoDownloadWorker
+from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -59,12 +59,12 @@ class BackgroundWorker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(BackgroundWorker, self).__init__(parent)
         self.card_db = card_db
-        self.dw = None
+        self.dw: CardInfoDatabaseImportWorker = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def on_thread_started(self):
         logger.debug(f"{self.__class__.__name__} event loop started, creating DownloadWorker")
-        self.dw = CardInfoDownloadWorker(self.card_db)
+        self.dw = CardInfoDatabaseImportWorker(self.card_db)
         self.dw.network_error_occurred.connect(self.network_error_occurred)
 
     def perform_card_data_update_check(self):
@@ -90,21 +90,7 @@ class BackgroundWorker(QObject):
 
     def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
         total_cards_in_last_update = self.card_db.get_total_cards_in_last_update()
-        url_parameters = urllib.parse.urlencode({
-            "include_multilingual": "true",
-            "include_variations": "true",
-            "include_extras": "true",
-            "unique": "prints",
-            "q": "date>1970-01-01"
-        })
-        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
-        logger.debug(f"Card data update query URL: {url}")
-        try:
-            total_cards_available = next(self.dw.read_json_card_data(url, "total_cards"))
-        except (urllib.error.URLError, socket.timeout, StopIteration):
-            # TODO: Perform better notification in any error case
-            total_cards_available = 0
-        logger.debug(f"Total cards currently available: {total_cards_available}")
+        total_cards_available = self.dw.get_available_card_count()
         logger.debug(f"Total cards during last update: {total_cards_in_last_update}")
         return total_cards_available, total_cards_in_last_update
 

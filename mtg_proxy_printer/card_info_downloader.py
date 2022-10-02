@@ -40,7 +40,7 @@ del get_logger
 
 __all__ = [
     "CardInfoDownloader",
-    "CardInfoDownloadWorker",
+    "CardInfoDatabaseImportWorker",
     "SetWackinessScore",
 ]
 
@@ -49,6 +49,7 @@ __all__ = [
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
+CardStream = typing.Generator[JSONType, None, None]
 IntTuples = typing.List[typing.Tuple[int]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
 
@@ -113,28 +114,40 @@ class CardInfoDownloader(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
-        self.download_worker = CardInfoDownloadWorker(model, requested_item)
+        self.database_import_worker = CardInfoDatabaseImportWorker(model, requested_item)  # No parent assignment
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
-        self.download_worker.moveToThread(self.worker_thread)
-        self.request_import_from_file.connect(self.download_worker.download_card_data)
-        self.request_import_from_url.connect(self.download_worker.download_card_data)
-        self.request_download_to_file.connect(self.download_worker.store_raw_card_data_in_file)
-        self.download_worker.download_begins.connect(self.download_begins)
-        self.download_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
-        self.download_worker.download_progress.connect(self.download_progress)
-        self.download_worker.download_finished.connect(self.download_finished)
-        self.download_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
-        self.download_worker.network_error_occurred.connect(self.network_error_occurred)
-        self.download_worker.other_error_occurred.connect(self.other_error_occurred)
+        self.database_import_worker.moveToThread(self.worker_thread)
+        self.file_download_worker = self._create_file_download_worker(requested_item, self.worker_thread)
+        self.request_import_from_file.connect(self.database_import_worker.import_card_data_from_local_file)
+        self.request_import_from_url.connect(self.database_import_worker.import_card_data_from_online_api)
+        self.database_import_worker.download_begins.connect(self.download_begins)
+        self.database_import_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
+        self.database_import_worker.download_progress.connect(self.download_progress)
+        self.database_import_worker.download_finished.connect(self.download_finished)
+        self.database_import_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
+        self.database_import_worker.network_error_occurred.connect(self.network_error_occurred)
+        self.database_import_worker.other_error_occurred.connect(self.other_error_occurred)
         self.worker_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _create_file_download_worker(self, requested_item: str, thread: QThread) -> "CardInfoFileDownloadWorker":
+        # No Qt parent assignment, because cross-thread parent relationships are unsupported
+        worker = CardInfoFileDownloadWorker(requested_item)
+        worker.moveToThread(thread)  # Move to thread before connecting signals to create queued connections
+        worker.download_begins.connect(self.download_begins)
+        worker.download_progress.connect(self.download_progress)
+        worker.download_finished.connect(self.download_finished)
+        worker.network_error_occurred.connect(self.network_error_occurred)
+        worker.other_error_occurred.connect(self.other_error_occurred)
+        self.request_download_to_file.connect(worker.store_raw_card_data_in_file)
+        return worker
 
     def cancel_running_operations(self):
         if self.worker_thread.isRunning():
             logger.info("Cancelling currently running card download")
-            self.download_worker.should_run = False
+            self.database_import_worker.should_run = False
 
     def quit_background_thread(self):
         if self.worker_thread.isRunning():
@@ -142,34 +155,11 @@ class CardInfoDownloader(QObject):
             stop_thread(self.worker_thread, logger)
 
 
-class CardInfoDownloadWorker(DownloaderBase):
-    """
-    This class implements the actual data download and import
-    """
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 requested_item: str = "all_cards", parent: QObject = None):
-        logger.info(f"Creating {self.__class__.__name__} instance.")
-        super(CardInfoDownloadWorker, self).__init__(parent)
-        self.model = model
-        self.requested_item = requested_item
-        self.should_run = True
-        logger.info(f"Created {self.__class__.__name__} instance.")
+class CardInfoWorkerBase(DownloaderBase):
 
-    def download_card_data(self, url_or_path: typing.Union[Path, str] = None):
-        try:
-            url = url_or_path or self.get_scryfall_bulk_card_data_url(self.requested_item)
-            data = self.read_json_card_data(url)
-            self.populate_database(data)
-        except urllib.error.URLError as e:
-            logger.exception("Handling URLError during card data download.")
-            self.network_error_occurred.emit(str(e.reason))
-            self.model.db.rollback()
-        except socket.timeout as e:
-            logger.exception("Handling socket timeout error during card data download.")
-            self.network_error_occurred.emit(f"Reading from socket failed: {e}")
-            self.model.db.rollback()
-        else:
-            self.download_finished.emit()
+    def __init__(self, requested_item: str = "all_cards", parent: QObject = None):
+        self.requested_item = requested_item
+        super().__init__(parent)
 
     def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
         """Returns the bulk data URL and item count"""
@@ -186,26 +176,11 @@ class CardInfoDownloadWorker(DownloaderBase):
             "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
             "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
 
-    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") \
-            -> typing.Generator[JSONType, None, None]:
-        """
-        Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-        This function takes a URL pointing to the card data json object in the Scryfall API.
 
-        The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
-        So use an iterative parser to generate and yield individual card objects, without having to store the whole
-        document in memory.
-        """
-        if url is None:
-            logger.debug("Request bulk data URL from the Scryfall API.")
-            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
-            logger.debug(f"Obtained url: {url}")
-        else:
-            logger.debug(f"Reading from given URL {url}")
-        source, monitor = self.read_from_url(url, "Updating card data from Scryfall:")
-        # Entering and exiting the context manager with the monitor emits the IO begin/end signals.
-        with source, monitor:
-            yield from ijson.items(source, json_path)
+class CardInfoFileDownloadWorker(CardInfoWorkerBase):
+    """
+    This class implements downloading the raw card data to a file stored in the file system
+    """
 
     def store_raw_card_data_in_file(self, download_path: Path):
         """
@@ -227,31 +202,94 @@ class CardInfoDownloadWorker(DownloaderBase):
             shutil.copyfileobj(monitor, download_file)
         logger.info("Download completed")
 
-    def read_json_card_data(self, url_or_path: typing.Union[Path, str], json_path: str = "item") \
-            -> typing.Generator[JSONType, None, None]:
+
+class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
+    """
+    This class implements the actual data download and import
+    """
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
+                 requested_item: str = "all_cards", parent: QObject = None):
+        logger.info(f"Creating {self.__class__.__name__} instance.")
+        super(CardInfoDatabaseImportWorker, self).__init__(requested_item, parent)
+        self.model = model
+        self.should_run = True
+        logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @functools.lru_cache(maxsize=1)
+    def get_available_card_count(self) -> int:
+        url_parameters = urllib.parse.urlencode({
+            "include_multilingual": "true",
+            "include_variations": "true",
+            "include_extras": "true",
+            "unique": "prints",
+            "q": "date>1970-01-01"
+        })
+        url = f"https://api.scryfall.com/cards/search?{url_parameters}"
+        logger.debug(f"Card data update query URL: {url}")
+        try:
+            total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
+        except (urllib.error.URLError, socket.timeout, StopIteration):
+            # TODO: Perform better notification in any error case
+            total_cards_available = 0
+        logger.debug(f"Total cards currently available: {total_cards_available}")
+        return total_cards_available
+
+    def import_card_data_from_local_file(self, path: Path):
+        try:
+            data = self.read_json_card_data_from_file(path)
+            self.populate_database(data)
+        except Exception:
+            self.model.db.rollback()
+            logger.exception(f"Error during import from file: {path}")
+            self.other_error_occurred.emit(f"Error during import from file:\n{path}")
+        finally:
+            self.download_finished.emit()
+
+    def import_card_data_from_online_api(self):
+        try:
+            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            data = self.read_json_card_data_from_url(url)
+            estimated_total_card_count = self.get_available_card_count()
+            self.download_begins.emit(estimated_total_card_count, "Updating card data from Scryfall:")
+            self.populate_database(data, total_count=estimated_total_card_count)
+        except urllib.error.URLError as e:
+            logger.exception("Handling URLError during card data download.")
+            self.network_error_occurred.emit(str(e.reason))
+            self.model.db.rollback()
+        except socket.timeout as e:
+            logger.exception("Handling socket timeout error during card data download.")
+            self.network_error_occurred.emit(f"Reading from socket failed: {e}")
+            self.model.db.rollback()
+        finally:
+            self.download_finished.emit()
+
+    def read_json_card_data_from_url(self, url: str = None, json_path: str = "item") -> CardStream:
         """
         Parses the bulk card data json from https://scryfall.com/docs/api/bulk-data into individual objects.
-        This function can take a file path to a locally stored json document. Mainly for testing purposes.
-        Or a URL pointing to the card data json object in the Scryfall API.
+        This function takes a URL pointing to the card data json object in the Scryfall API.
 
         The all cards json document is quite large (> 1GiB in 2020-11) and requires about 4GiB RAM to parse in one go.
-        So use this iterative parser to generate and yield individual card objects, without having to store the whole
+        So use an iterative parser to generate and yield individual card objects, without having to store the whole
         document in memory.
         """
-        if isinstance(url_or_path, Path):
-            file_size = url_or_path.stat().st_size
-            raw_file = url_or_path.open("rb")
-            with self._wrap_in_metered_file(raw_file, file_size) as file:
-                if url_or_path.suffix.casefold() == ".gz":
-                    file = gzip.open(file, "rb")
-                yield from ijson.items(file, json_path)
-        elif looks_like_url_re.match(url_or_path):
-            yield from self.read_json_card_data_from_url(url_or_path, json_path)
+        if url is None:
+            logger.debug("Request bulk data URL from the Scryfall API.")
+            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            logger.debug(f"Obtained url: {url}")
         else:
-            file_size = os.stat(url_or_path).st_size
-            raw_file = open(url_or_path, "rb")
-            with self._wrap_in_metered_file(raw_file, file_size) as file:
-                yield from ijson.items(file, json_path)
+            logger.debug(f"Reading from given URL {url}")
+        # Ignore the monitor, because progress reporting is done in the main import loop.
+        source, _ = self.read_from_url(url)
+        with source:
+            yield from ijson.items(source, json_path)
+
+    def read_json_card_data_from_file(self, file_path: Path, json_path: str = "item") -> CardStream:
+        file_size = file_path.stat().st_size
+        raw_file = file_path.open("rb")
+        with self._wrap_in_metered_file(raw_file, file_size) as file:
+            if file_path.suffix.casefold() == ".gz":
+                file = gzip.open(file, "rb")
+            yield from ijson.items(file, json_path)
 
     def _wrap_in_metered_file(self, raw_file, file_size):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
@@ -259,14 +297,14 @@ class CardInfoDownloadWorker(DownloaderBase):
         monitor.io_begin.connect(lambda size: self.download_begins.emit(size, "Importing card data from disk:"))
         return monitor
 
-    def populate_database(self, card_data: typing.Generator[JSONType, None, None]):
+    def populate_database(self, card_data: CardStream, *, total_count: int = 0):
         """
         Takes an iterable returned by card_info_importer.read_json_card_data()
         and populates the database with card data.
         """
         card_count = 0
         try:
-            card_count = self._populate_database(card_data)
+            card_count = self._populate_database(card_data, total_count=total_count)
         except sqlite3.Error as e:
             logger.exception(f"Database error occurred: {e}")
             self.other_error_occurred.emit(str(e))
@@ -277,14 +315,12 @@ class CardInfoDownloadWorker(DownloaderBase):
             _clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")
 
-    def _populate_database(self, card_data: typing.Generator[JSONType, None, None]) -> int:
-        logger.info("About to populate the database with card data")
+    def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
+        logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
         self.model.begin_transaction()
+        progress_report_step = total_count // 100
         # Look up the printing filter ids only once per import
-        printing_filter_ids: typing.Dict[str, int] = {
-            filter_name: filter_id
-            for filter_name, filter_id
-            in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()}
+        printing_filter_ids = self._read_printing_filters_from_db()
         set_wackiness_score_cache: typing.Dict[str, SetWackinessScore] = {}
         skipped_cards = 0
         index = 0
@@ -321,6 +357,9 @@ class CardInfoDownloadWorker(DownloaderBase):
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
             if not index % 10000:
                 logger.debug(f"Imported {index} cards.")
+            if progress_report_step and not index % progress_report_step:
+                self.download_progress.emit(index)
+
         _clean_unused_data(self.model.db, face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         self.download_begins.emit(5, "Processing card filters")
@@ -338,6 +377,13 @@ class CardInfoDownloadWorker(DownloaderBase):
         db.execute("ANALYZE\n")
         db.commit()
         return index
+
+    def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
+        return {
+            filter_name: filter_id
+            for filter_name, filter_id
+            in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()
+        }
 
     def _parse_single_printing(self, card: JSONType, printing_filter_ids, wackiness_score_cache):
         language_id = _insert_language(self.model, card["lang"])
