@@ -24,8 +24,8 @@ import pathlib
 import textwrap
 import typing
 
-from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize
+from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF
 import delegateto
 
 import mtg_proxy_printer.app_dirs
@@ -160,6 +160,107 @@ class Card:
         ))
         average_color = sample_area.scaled(1, 1, transformMode=Qt.SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class CheckCard:
+    front: Card
+    back: Card
+
+    @property
+    def name(self) -> str:
+        return f"{self.front.name} // {self.back.name}"
+
+    @property
+    def set(self) -> MTGSet:
+        return self.front.set
+
+    @property
+    def collector_number(self) -> str:
+        return self.front.collector_number
+
+    @property
+    def language(self) -> str:
+        return self.front.language
+
+    @property
+    def scryfall_id(self) -> str:
+        return self.front.scryfall_id
+
+    @property
+    def is_front(self) -> bool:
+        return True
+
+    @property
+    def oracle_id(self) -> str:
+        return self.front.oracle_id
+
+    @property
+    def image_uri(self) -> str:
+        return ""
+
+    @property
+    def highres_image(self) -> bool:
+        return self.front.highres_image and self.back.highres_image
+
+    @property
+    def is_oversized(self):
+        return self.front.is_oversized
+
+    @property
+    def face_number(self) -> int:
+        return 0
+
+    @property
+    def is_dfc(self) -> bool:
+        return False
+
+    @property
+    def image_file(self) -> typing.Optional[QPixmap]:
+        if self.front.image_file is None or self.back.image_file is None:
+            return None
+        card_size = self.front.image_file.size()
+        # Unlike metric paper sizes, the MTG card aspect ratio does not follow the golden ratio.
+        # Cards thus can’t be scaled using a singular factor of sqrt(2) on both axis.
+        # The scaled cards get a bit compressed horizontally.
+        vertical_scaling_factor = card_size.width() / card_size.height()
+        horizontal_scaling_factor = card_size.height()/(card_size.width()*2)
+        combined_image = QPixmap(card_size)
+        combined_image.fill(QColor.fromRgb(255, 255, 255, 0))  # Fill with fully transparent white
+        painter = QPainter(combined_image)
+        painter.setRenderHints(QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        transformation = QTransform()
+        transformation.rotate(90)
+        transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)
+        painter.setTransform(transformation)
+        painter.drawPixmap(QPointF(card_size.width(), -card_size.height()), self.back.image_file)
+        painter.drawPixmap(QPointF(0, -card_size.height()), self.front.image_file)
+
+        return combined_image
+
+    def requested_page_type(self) -> PageType:
+        if self.front.image_file is None or self.back.image_file is None:
+            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
+        size = self.front.image_file.size()
+        if (size.width(), size.height()) == (1040, 1490):
+            return PageType.OVERSIZED
+        return PageType.REGULAR
+
+    @functools.lru_cache(maxsize=len(CardCorner))
+    def corner_color(self, corner: CardCorner) -> QColor:
+        """Returns the color of the card at the given corner. """
+        transparent = QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
+        if self.front.image_file is None or self.back.image_file is None:
+            return transparent
+        if corner == CardCorner.TOP_LEFT:
+            self.front.corner_color(CardCorner.BOTTOM_LEFT)
+        elif corner == CardCorner.TOP_RIGHT:
+            self.front.corner_color(CardCorner.TOP_LEFT)
+        elif corner == CardCorner.BOTTOM_LEFT:
+            self.back.corner_color(CardCorner.BOTTOM_RIGHT)
+        elif corner == CardCorner.BOTTOM_RIGHT:
+            self.back.corner_color(CardCorner.TOP_RIGHT)
+        return transparent
 
 
 OptionalCard = typing.Optional[Card]
