@@ -146,6 +146,7 @@ class MoxfieldDownloader(DecklistDownloader):
     def post_process(data: bytes) -> str:
         cards = MoxfieldDownloader._read_board(data, "mainboard")
         cards += MoxfieldDownloader._read_board(data, "sideboard")
+        cards += MoxfieldDownloader._read_board(data, "commanders")
         buffer = StringIO(newline="")
         writer = csv.writer(buffer, MoxfieldDownloader.PARSER_CLASS.Dialect)
         writer.writerow(("count", "scryfall_id", "lang", "name", "set_code", "collector_number"))
