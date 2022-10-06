@@ -59,8 +59,8 @@ class DecklistDownloader(DownloaderBase):
         data, monitor = self.read_from_url(download_url, "Downloading deck list:")
         with data, monitor:
             deck_list = data.read()
-            if isinstance(deck_list, bytes):
-                deck_list = deck_list.decode("utf-8")
+        deck_list = deck_list.replace(b"\r\n", b"\n")
+        deck_list = deck_list.decode("utf-8")
         line_count = deck_list.count('\n')
         logger.debug(f"Obtained deck list containing {line_count} lines.")
         return deck_list

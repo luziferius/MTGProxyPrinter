@@ -193,7 +193,43 @@ def generate_test_cases_for_test_deck_list_download() \
         columna,1,Mountain,"",Basic Land — Mountain,"Warhammer 40,000",40k,315,en,common,Diego Gisbert,false,0.8,0.11,0.01,https://scryfall.com/card/40k/315/mountain,a1ba2d4f-7a9b-4cf7-98fd-17b1b8c70bcd
         """)
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5136573", textwrap.dedent("""\
-    """)
+        1 Ancestral Recall
+        1 Black Lotus
+        1 Brainstorm
+        1 Dig Through Time
+        1 Dreadhorde Arcanist
+        4 Expressive Iteration
+        4 Flooded Strand
+        2 Force of Negation
+        4 Force of Will
+        1 Gitaxian Probe
+        1 Lavinia, Azorius Renegade
+        1 Mental Misstep
+        1 Merchant Scroll
+        4 Mishra's Bauble
+        1 Mox Pearl
+        1 Mox Ruby
+        1 Mox Sapphire
+        1 Ponder
+        4 Preordain
+        4 Prismatic Ending
+        4 Ragavan, Nimble Pilferer
+        4 Scalding Tarn
+        1 Strip Mine
+        1 Time Walk
+        1 Treasure Cruise
+        2 Tundra
+        4 Volcanic Island
+        4 Wasteland
+        
+        1 Force of Negation
+        1 Lurrus of the Dream-Den
+        2 Pyroblast
+        1 Red Elemental Blast
+        4 Shattering Spree
+        2 Swords to Plowshares
+        4 Tormod's Crypt
+        """)
 
 
 @pytest.mark.skip("Skipping network-hitting tests")
