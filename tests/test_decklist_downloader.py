@@ -20,7 +20,7 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
-    IsIdentifyingDeckUrlValidator, DecklistDownloader
+    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader
 
 
 ACCEPTABLE_MTGGOLDFISH_URLS = [
@@ -230,6 +230,12 @@ def generate_test_cases_for_test_deck_list_download() \
         2 Swords to Plowshares
         4 Tormod's Crypt
         """)
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/", textwrap.dedent("""\
+    Board,Qty,Name,Printing,Foil,Alter,Signed,Condition,Language
+    main,1,Forest,,,,,,
+    main,1,Island,,,,,,
+    main,1,Mountain,UNF,,,,,
+    """)
 
 
 @pytest.mark.skip("Skipping network-hitting tests")

@@ -24,7 +24,7 @@ from PyQt5.QtGui import QValidator
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
-from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser
+from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MTGOnlineParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -113,10 +113,24 @@ class MTGWTFDownloader(DecklistDownloader):
         return f"{decklist_url}/download"
 
 
+class TappedOutDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://tappedout.net/mtg-decks/(?P<name>[-\w_%]+)/?"
+    )
+    PARSER_CLASS = TappedOutCSVParser
+    APPLICABLE_WEBSITES = "TappedOut (tappedout.net)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        name = match.group("name")
+        return f"https://tappedout.net/mtg-decks/{name}/?fmt=csv"
+
+
 AVAILABLE_DOWNLOADERS = [
     ScryfallDownloader,
     MTGGoldfishDownloader,
-    MTGWTFDownloader
+    MTGWTFDownloader,
+    TappedOutDownloader,
 ]
 
 
