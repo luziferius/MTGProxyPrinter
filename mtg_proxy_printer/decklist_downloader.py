@@ -126,11 +126,25 @@ class TappedOutDownloader(DecklistDownloader):
         return f"https://tappedout.net/mtg-decks/{name}/?fmt=csv"
 
 
+class MoxfieldDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://www.moxfield.com/decks/(?P<moxfield_id>[-\w_]+)/?"
+    )
+    PARSER_CLASS = None  # TODO: Implement a MoxfieldParser
+    APPLICABLE_WEBSITES = "Moxfield (moxfield.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        moxfield_id = match.group("moxfield_id")
+        return f"https://api.moxfield.com/v2/decks/all/{moxfield_id}"
+
+
 AVAILABLE_DOWNLOADERS = [
     ScryfallDownloader,
     MTGGoldfishDownloader,
     MTGWTFDownloader,
     TappedOutDownloader,
+    MoxfieldDownloader,
 ]
 
 
