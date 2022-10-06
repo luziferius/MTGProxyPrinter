@@ -17,9 +17,12 @@
 This module is responsible for downloading deck lists from a known list of deckbuilder websites.
 """
 import abc
+import csv
+from io import StringIO
 import re
 import typing
 
+import ijson
 from PyQt5.QtGui import QValidator
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
@@ -58,11 +61,17 @@ class DecklistDownloader(DownloaderBase):
         logger.debug(f"Obtained download URL: {download_url}")
         data, monitor = self.read_from_url(download_url, "Downloading deck list:")
         with data, monitor:
-            deck_list = data.read()
-        deck_list = deck_list.replace(b"\r\n", b"\n")
-        deck_list = deck_list.decode("utf-8")
+            raw_data = data.read()
+        deck_list = self.post_process(raw_data)
         line_count = deck_list.count('\n')
         logger.debug(f"Obtained deck list containing {line_count} lines.")
+        return deck_list
+
+    @staticmethod
+    def post_process(data: bytes) -> str:
+        """Takes the raw, downloaded data and post-processes them into a user-presentable string."""
+        deck_list = data.replace(b"\r\n", b"\n")
+        deck_list = deck_list.decode("utf-8")
         return deck_list
 
     @abc.abstractmethod
@@ -130,8 +139,27 @@ class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://www.moxfield.com/decks/(?P<moxfield_id>[-\w_]+)/?"
     )
-    PARSER_CLASS = None  # TODO: Implement a MoxfieldParser
+    PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Moxfield (moxfield.com)"
+
+    @staticmethod
+    def post_process(data: bytes) -> str:
+        cards = MoxfieldDownloader._read_board(data, "mainboard")
+        cards += MoxfieldDownloader._read_board(data, "sideboard")
+        buffer = StringIO(newline="")
+        writer = csv.writer(buffer, MoxfieldDownloader.PARSER_CLASS.Dialect)
+        writer.writerow(("count", "scryfall_id", "lang", "name", "set_code", "collector_number"))
+        writer.writerows(cards)
+        return buffer.getvalue()
+
+    @staticmethod
+    def _read_board(data: bytes, board: str) -> typing.List[typing.Tuple[str, str, str, str, str, str]]:
+        result = []
+        for entry in next(ijson.items(data, board)).values():
+            card = entry["card"]
+            result.append(
+                (str(entry["quantity"]), card["scryfall_id"], card["lang"], card["name"], card["set"], card["cn"]))
+        return result
 
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)

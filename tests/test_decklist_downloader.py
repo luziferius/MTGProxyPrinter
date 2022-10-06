@@ -20,7 +20,7 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
-    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader
+    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader
 
 
 ACCEPTABLE_MTGGOLDFISH_URLS = [
@@ -236,6 +236,35 @@ def generate_test_cases_for_test_deck_list_download() \
     main,1,Island,,,,,,
     main,1,Mountain,UNF,,,,,
     """)
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks/g1i2wHXC3kW0lanwY4Llkw", textwrap.dedent("""\
+        count,scryfall_id,lang,name,set_code,collector_number
+        1,bc883e4e-e5f5-4823-ac2a-9ff8b7772926,en,"Zamriel, Seraph of Steel",gn3,1
+        1,e9d36855-c38a-4bba-a642-cff3f81e057e,en,Path to Exile,2xm,25
+        2,85d2ecc7-4a49-48f1-9036-6c3f0f0296c3,en,Banisher Priest,c20,77
+        1,52c5c5cf-0ed6-4953-a03a-af51038e3f54,en,Strength of Arms,soi,40
+        1,8e3c18f5-89cd-4d33-8d5b-12dacad9f9b3,en,Captain of the Watch,m13,8
+        1,99263917-25ca-4d54-b1f9-d6d316747088,en,Swords to Plowshares,40k,190
+        1,ce5391bc-6b50-49b0-96a1-df944a55d62e,en,"Danitha Capashen, Paragon",cmr,370
+        2,65998e94-15a0-41f1-8288-730b957f81df,en,Valorous Stance,frf,28
+        1,c17056e7-95c6-4bed-a747-3b40dcda275a,en,Forbidding Spirit,rna,9
+        1,084d66a3-5248-4ca9-82ed-5c510c2df40f,en,Vow of Duty,cma,29
+        1,88549b0e-063a-4faf-984e-efff33522f14,en,Heavenly Blademaster,c18,3
+        1,fb1b7468-85f9-472e-9f7c-b268f84aea1c,en,Argentum Armor,afc,198
+        2,88e2315e-41d9-4e46-bee4-c8f92e91e2a9,en,Kitesail Apprentice,wwk,10
+        1,fa35b2b5-3e91-4a6c-90b1-8581b4ecaf8b,en,Colossus Hammer,m20,223
+        2,d7cd85ac-e826-4b16-b9ab-864ae2cabed1,en,Kor Duelist,mm2,22
+        1,63b4041d-7c95-4cb9-a18b-6568db05942b,en,Greatsword,m12,209
+        2,00006596-1166-4a79-8443-ca9f82e6db4e,en,Kor Outfitter,zen,21
+        1,a4ace878-6d15-4276-9bfb-2f23667c6d7e,en,Moonsilver Spear,afc,212
+        2,c86714f5-e909-413f-8eb6-99dbea4d1897,en,Pilgrim of the Ages,stx,22
+        1,1ee2e94f-5b06-4df0-ba87-4499b1ee4dba,en,Ring of Thune,m13,213
+        2,d56afc99-5168-4853-afbb-eab32d62c472,en,Serra Angel,dvd,10
+        1,032af060-4d49-4a0a-8841-9eb2d45a4b77,en,Sword of Vengeance,cmr,475
+        1,5e635346-63e1-4e71-be1d-bd53afbaa037,en,Howling Golem,gn2,54
+        2,86c9838e-aa72-49fc-bae2-f880bcbc9313,en,Trusty Machete,zen,209
+        2,2ba18114-af6c-48cd-82c9-eb6541d566bf,en,Ancestral Blade,m20,3
+        26,116a7806-1513-44b9-ae95-cbedb7e96b89,en,Plains,und,87
+        """)
 
 
 @pytest.mark.skip("Skipping network-hitting tests")
