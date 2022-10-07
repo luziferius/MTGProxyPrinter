@@ -78,7 +78,6 @@ class DecklistDownloader(DownloaderBase):
     def map_to_download_url(self, decklist_url: str) -> str:
         """Takes a URL to a deck list and returns a download URL"""
         pass
-    pass
 
 
 class ScryfallDownloader(DecklistDownloader):
@@ -168,12 +167,28 @@ class MoxfieldDownloader(DecklistDownloader):
         return f"https://api.moxfield.com/v2/decks/all/{moxfield_id}"
 
 
+class DeckstatsDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://deckstats.net/decks/(?P<user>\d+)/(?P<name>[-\w_]+)-*/?.*"
+    )
+    PARSER_CLASS = MTGArenaParser
+    APPLICABLE_WEBSITES = "Deckstats (deckstats.net)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        user = match.group("user")
+        name = match.group("name")
+        return f"https://deckstats.net/decks/{user}/{name}?" \
+               f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
+
+
 AVAILABLE_DOWNLOADERS = [
     ScryfallDownloader,
     MTGGoldfishDownloader,
     MTGWTFDownloader,
     TappedOutDownloader,
     MoxfieldDownloader,
+    DeckstatsDownloader,
 ]
 
 

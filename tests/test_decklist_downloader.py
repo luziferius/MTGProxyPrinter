@@ -20,7 +20,7 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
-    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader
+    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader
 
 
 ACCEPTABLE_MTGGOLDFISH_URLS = [
@@ -265,18 +265,37 @@ def generate_test_cases_for_test_deck_list_download() \
         2,2ba18114-af6c-48cd-82c9-eb6541d566bf,en,Ancestral Blade,m20,3
         26,116a7806-1513-44b9-ae95-cbedb7e96b89,en,Plains,und,87
         """)
+    yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", textwrap.dedent("""\
+        2 Blighted Fen (BFZ) 230
+        2 Cinder Barrens (C19) 235
+        4 Foreboding Ruins (DMC) 211
+        5 Mountain (DMU) 271
+        4 Smoldering Marsh (DMC) 234
+        8 Swamp (DMU) 268
+        2 Collective Brutality (EMN) 85
+        4 Grasp of Darkness (M21) 102
+        3 Liliana, the Last Hope (2X2) 81
+        3 Live Fast (KLD) 87
+        1 Ob Nixilis Reignited (C21) 149
+        3 Ruinous Path (C18) 117
+        3 Transgress the Mind (BFZ) 101
+        4 Unlicensed Disintegration (2XM) 224
+        1 Combustible Gearhulk (C21) 163
+        4 Filigree Familiar (CMR) 308
+        3 Goblin Dark-Dwellers (C20) 153
+        2 Kalitas, Traitor of Ghet (OGW) 86
+        2 Noxious Gearhulk (NCC) 254
+        """)
 
 
 @pytest.mark.skip("Skipping network-hitting tests")
 @pytest.mark.parametrize("downloader_class, url, expected", generate_test_cases_for_test_deck_list_download())
 def test_deck_list_download(downloader_class: typing.Type[DecklistDownloader], url: str, expected: str):
     downloader = downloader_class()
+    result = downloader.download(url)
+    assert_that(result, is_(str))
     assert_that(
-        downloader.download(url),
-        is_(all_of(
-                expected,
-                instance_of(str),
-            )
-        )
+        result.splitlines(),
+        contains_inanyorder(*expected.splitlines())
     )
 
