@@ -114,8 +114,15 @@ class MTGWTFDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://mtg\.wtf/deck/\w+/(?P<name>\w+)/?"
     )
-    PARSER_CLASS = None  # TODO
+    PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "mtg.wtf"
+
+    def post_process(self, data: bytes) -> str:
+        deck_list = super().post_process(data)
+        card_re = re.compile("(COMMANDER: )?(?P<content>[^/]+)")
+        matches = map(card_re.match, deck_list.splitlines())
+        lines = (match["content"] for match in matches if match is not None)
+        return "\n".join(lines)
 
     def map_to_download_url(self, decklist_url: str) -> str:
         return f"{decklist_url}/download"
