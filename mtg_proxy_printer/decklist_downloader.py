@@ -28,7 +28,7 @@ from PyQt5.QtGui import QValidator
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
-from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MTGOnlineParser
+from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -43,7 +43,7 @@ class IsIdentifyingDeckUrlValidator(QValidator):
 
     def validate(self, input_string: str, pos: int = 0) -> typing.Tuple[QValidator.State, str, int]:
         logger.debug(f"Validating input: {input_string}")
-        for downloader_class in AVAILABLE_DOWNLOADERS:
+        for downloader_class in AVAILABLE_DOWNLOADERS.values():
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
                 logger.debug(f"Input is valid URL for {downloader_class.APPLICABLE_WEBSITES}")
                 return QValidator.Acceptable, input_string, pos
@@ -189,18 +189,20 @@ class DeckstatsDownloader(DecklistDownloader):
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
 
 
-AVAILABLE_DOWNLOADERS = [
-    ScryfallDownloader,
-    MTGGoldfishDownloader,
-    MTGWTFDownloader,
-    TappedOutDownloader,
-    MoxfieldDownloader,
-    DeckstatsDownloader,
-]
+AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
+    downloader.__name__: downloader for downloader in [
+        ScryfallDownloader,
+        MTGGoldfishDownloader,
+        MTGWTFDownloader,
+        TappedOutDownloader,
+        MoxfieldDownloader,
+        DeckstatsDownloader,
+    ]
+}
 
 
 def get_downloader_class(url: str):
-    for downloader in AVAILABLE_DOWNLOADERS:
+    for downloader in AVAILABLE_DOWNLOADERS.values():
         if downloader.DECKLIST_PATH_RE.match(url) is not None:
             return downloader
     return None
