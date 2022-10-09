@@ -69,7 +69,8 @@ class MeteredSeekableHTTPFile(QObject):
         self.headers = {} if headers is None else headers
         self.headers["User-Agent"] = USER_AGENT
         self.closed = False
-        self.file = None  # _urlopen() internally accesses file, so this assignment has to stay here
+        # _urlopen() internally accesses file, so this assignment has to stay here
+        self.file: Optional[http.client.HTTPResponse] = None
         self.file, _ = self._urlopen()
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
