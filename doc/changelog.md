@@ -7,8 +7,9 @@
 - Automatic deck list downloads. The deck list import wizard now has an input field that accepts
   links to deck lists on various deck list database websites. 
   - Currently supported are [Scryfall](https://scryfall.com),
-    [MTGGoldfish](https://www.mtggoldfish.com/) (`/deck` links only, `/archetype` is currently unsupported),
-    [mtg.wtf](https://mtg.wtf/), [TappedOut](https://tappedout.net/), [Moxfield](https://www.moxfield.com/) and
+    [MTGGoldfish](https://www.mtggoldfish.com/),
+    [mtg.wtf](https://mtg.wtf/), [TappedOut](https://tappedout.net/),
+    [Moxfield](https://www.moxfield.com/) and
     [Deckstats](https://deckstats.net/)
 
 ## Changed features

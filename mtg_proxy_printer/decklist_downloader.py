@@ -95,16 +95,32 @@ class ScryfallDownloader(DecklistDownloader):
 
 class MTGGoldfishDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://(www\.)?mtggoldfish\.com/deck(/download)?/(?P<deck_id>\d+)([#?].*)?$"
+        r"https://(www\.)?mtggoldfish\.com/"
+        r"(deck(/download)?/(?P<deck_id>\d+)|archetype/(?P<archetype_name>[-_\w]+))"
+        r"([#?].*)?$"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "MTGGoldfish (mtggoldfish.com)"
 
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
-        deck_id = match.group("deck_id")
+        deck_id = match.group("deck_id") or self._fetch_deck_id_of_archetype_link(decklist_url)
         url = f"https://www.mtggoldfish.com/deck/download/{deck_id}?type=arena"
         return url
+
+    def _fetch_deck_id_of_archetype_link(self, decklist_url: str):
+        logger.info("Got an archetype link. Downloading the website to obtain the deck id")
+        downloader, monitor = self.read_from_url(decklist_url, "Downloading website:")
+        with downloader, monitor:
+            raw_data = downloader.read()
+        encoding = re.search(
+            r"charset=(?P<charset>[^;]+)", monitor.file.headers["Content-Type"]  # Match up to a potential ";"
+        ).groupdict().get("charset", "utf-8")  # Fallback to utf-8, if the charset is not defined
+        decoded_site = raw_data.decode(encoding)
+        deck_id = re.search(r"/deck/download/(?P<deck_id>\d+)", decoded_site).group("deck_id")
+        return deck_id
+
+
 
 
 class MTGWTFDownloader(DecklistDownloader):

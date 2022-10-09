@@ -24,14 +24,20 @@ from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfis
 
 
 ACCEPTABLE_MTGGOLDFISH_URLS = [
+    # Plain deck links
     "https://www.mtggoldfish.com/deck/5077398#paper",
     "https://www.mtggoldfish.com/deck/5077398#arena",
     "https://www.mtggoldfish.com/deck/5077398#online",
+    # Download links
     "https://www.mtggoldfish.com/deck/download/5077398",
     "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=tabletop",
     "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=arena",
     "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=online",
     "https://www.mtggoldfish.com/deck/download/5077398?output=dek&type=online",
+    # Deck archetype links
+    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#paper",
+    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#arena",
+    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#online",
 ]
 
 
@@ -106,6 +112,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/", "1 Jaya Ballard"
     yield ScryfallDownloader, "https://scryfall.com/@luziferius/decks/e1a9af19-cfff-48c4-ae74-ed2dd78cb736", "Island"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5136573", "1 Ancestral Recall"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge", "4 Lion's Eye Diamond"
     yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/", "Island"
     yield MoxfieldDownloader, "https://www.moxfield.com/decks/g1i2wHXC3kW0lanwY4Llkw", '"Zamriel, Seraph of Steel"'
     yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", "2 Blighted Fen"
