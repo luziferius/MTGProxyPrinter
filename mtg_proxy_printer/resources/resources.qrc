@@ -1,29 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/">
-    <!-- UI files -->
-    <file>ui/about_dialog.ui</file>
-    <file>ui/main_window.ui</file>
-    <file>ui/central_widget/columnar.ui</file>
-    <file>ui/central_widget/grouped.ui</file>
-    <file>ui/central_widget/tabbed_vertical.ui</file>
-
-    <file>ui/add_card_widget/horizontal.ui</file>
-    <file>ui/add_card_widget/vertical.ui</file>
-
-    <file>ui/settings_window/format_printing_filter.ui</file>
-    <file>ui/settings_window/general_printing_filter.ui</file>
-    <file>ui/settings_window/settings_window.ui</file>
-
-    <file>ui/deck_import_wizard/load_list_page.ui</file>
-    <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>
-    <file>ui/deck_import_wizard/parser_result_page.ui</file>
-
-    <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
-    <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
-    <file>ui/cache_cleanup_wizard/summary_page.ui</file>
-    <file>ui/page_config_widget.ui</file>
-    <file>ui/page_config_dialog.ui</file>
-
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>
     <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
