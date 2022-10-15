@@ -30,7 +30,7 @@ __all__ = [
     "HAS_COMPILED_RESOURCES",
     "BlockedSignals",
     "set_url_label",
-    "inherits_from_ui_file_with_name",
+    "load_ui_from_file",
     "format_size",
 ]
 
@@ -94,19 +94,6 @@ def load_ui_from_file(name: str):
     finally:
         ui_file.close()
     return base_type
-
-
-"""
-This renamed function is supposed to be used during class definition to make the intention clear.
-Usage example:
-
-class SomeWidget(*inherits_from_ui_file_with_name("SomeWidgetUiFileName")):
-    def __init__(self, parent):
-        super(SomeWidget, self).__init__(parent)
-        self.setupUi(self)
-
-"""
-inherits_from_ui_file_with_name = load_ui_from_file
 
 
 def format_size(size: float) -> str:

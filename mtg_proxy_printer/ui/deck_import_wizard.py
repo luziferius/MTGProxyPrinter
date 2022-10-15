@@ -22,7 +22,8 @@ import typing
 
 from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, QAbstractTableModel
 from PySide6.QtGui import QValidator, QIcon
-from PySide6.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox
+from PySide6.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
+    QWizardPage
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -32,8 +33,18 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+
+try:
+    from mtg_proxy_printer.ui.generated.deck_import_wizard.load_list_page import Ui_WizardPage as Ui_LoadListPage
+    from mtg_proxy_printer.ui.generated.deck_import_wizard.parser_result_page import Ui_WizardPage as Ui_SummaryPage
+    from mtg_proxy_printer.ui.generated.deck_import_wizard.select_deck_parser_page import Ui_WizardPage as Ui_SelectDeckParserPage
+except ModuleNotFoundError:
+    Ui_LoadListPage, _ = load_ui_from_file("deck_import_wizard/load_list_page")
+    Ui_SummaryPage, _ = load_ui_from_file("deck_import_wizard/parser_result_page")
+    Ui_SelectDeckParserPage, _ = load_ui_from_file("deck_import_wizard/select_deck_parser_page")
+
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -77,7 +88,7 @@ class IsDecklistParserRegularExpressionValidator(QValidator):
         return QValidator.Intermediate
 
 
-class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
+class LoadListPage(QWizardPage, Ui_LoadListPage):
 
     LARGE_FILE_THRESHOLD_BYTES = 200*2**10
     deck_list_downloader_changed = Signal(str)
@@ -218,7 +229,7 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         return should_load
 
 
-class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/select_deck_parser_page")):
+class SelectDeckParserPage(QWizardPage, Ui_SelectDeckParserPage):
     """
     This page allows the user to choose which format their deck list uses.
     The result will be used to choose an appropriate parser implementation.
@@ -361,7 +372,7 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         return self.isComplete()
 
 
-class SummaryPage(*inherits_from_ui_file_with_name("deck_import_wizard/parser_result_page")):
+class SummaryPage(QWizardPage, Ui_SummaryPage):
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super(SummaryPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
