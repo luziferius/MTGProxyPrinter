@@ -38,9 +38,6 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
 
 
 setup_parameters = dict(
-    project_urls={
-        "Bug Tracker": "http://1337net.duckdns.org:8080/MTGProxyPrinter/ticket",
-    },
     cmdclass={
         'build_py': BuildWithQtResources,
     },

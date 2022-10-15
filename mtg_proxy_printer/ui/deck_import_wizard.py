@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import itertools
 import math
 import pathlib
 import re
@@ -25,6 +26,8 @@ from PySide6.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox,
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
+from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
+    get_downloader_class
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
@@ -77,17 +80,40 @@ class IsDecklistParserRegularExpressionValidator(QValidator):
 class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_list_page")):
 
     LARGE_FILE_THRESHOLD_BYTES = 200*2**10
+    deck_list_downloader_changed = Signal(str)
 
     def __init__(self, language_model: QStringListModel, *args, **kwargs):
         super(LoadListPage, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
+        self._deck_list_downloader: typing.Optional[str] = None
+        self.deck_list_download_url_line_edit:QLineEdit
+        self.deck_list_download_url_line_edit.textChanged.connect(
+            lambda text: self.deck_list_download_button.setEnabled(self.deck_list_url_validator.validate(text)[0] == QValidator.Acceptable))
+        supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
+        self.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
+
         self.translate_deck_list_target_language.setModel(language_model)
-        self.registerField("deck_list*", self.deck_list, )
+        self.registerField("deck_list*", self.deck_list)
         self.registerField("print-guessing-enable", self.print_guessing_enable)
         self.registerField("print-guessing-prefer-already-downloaded", self.print_guessing_prefer_already_downloaded)
         self.registerField("translate-deck-list-enable", self.translate_deck_list_enable)
-        self.registerField("translate-deck-list-target-language", self.translate_deck_list_target_language)
+        self.registerField("deck-list-downloaded", self, "deck_list_downloader", "deck_list_downloader_changed(str)")
+        self.registerField(
+            "translate-deck-list-target-language", self.translate_deck_list_target_language,
+            "currentText", "currentTextChanged(str)"
+        )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @Property(str, notify=deck_list_downloader_changed)
+    def deck_list_downloader(self):
+        return self._deck_list_downloader
+
+    @deck_list_downloader.setter
+    def deck_list_downloader(self, value: str):
+        if value is not self._deck_list_downloader:
+            self.deck_list_downloader_changed.emit(value)
+        self._deck_list_downloader = value
 
     def initializePage(self) -> None:
         super(LoadListPage, self).initializePage()
@@ -100,11 +126,6 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
         self.print_guessing_enable.setChecked(options.getboolean("enable-print-guessing-by-default"))
         self.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded-images"))
         self.translate_deck_list_enable.setChecked(options.getboolean("always-translate-deck-lists"))
-        parser: common.ParserBase = self.field("selected_parser")
-        if parser.requires_print_guessing:
-            logger.debug("Force-enabling print guessing, because the chosen parser requires it.")
-            self.print_guessing_enable.setChecked(True)
-            self.print_guessing_enable.setEnabled(False)
         logger.debug(f"Initialized {self.__class__.__name__}")
 
     def cleanupPage(self):
@@ -127,12 +148,48 @@ class LoadListPage(*inherits_from_ui_file_with_name("deck_import_wizard/load_lis
                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         ) == QMessageBox.StandardButton.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
-            # Ignore the used file type filter (second return value)
-            parser: common.ParserBase = self.field("selected_parser")
-            file_extension_filter = parser.get_file_extension_filter()
+            file_extension_filter = self.get_file_extension_filter()
             selected_file, _ = QFileDialog.getOpenFileName(
                 self, "Select deck file", default_path, file_extension_filter)
             self._load_from_file(selected_file)
+
+    @staticmethod
+    def get_file_extension_filter() -> str:
+        parsers = [
+            re_parsers.MTGOnlineParser, re_parsers.MTGArenaParser, re_parsers.XMageParser,
+            csv_parsers.ScryfallCSVParser, csv_parsers.TappedOutCSVParser]
+        everything = "All files (*)"
+        individual_file_types = list(
+            itertools.chain.from_iterable(parser.SUPPORTED_FILE_TYPES.items() for parser in parsers)
+        )
+        # At this point, the data required (file extension list) is in a list of dict values containing
+        # lists of strings. Thus, it requires two levels of iterable unpacking. Because of duplicates in file,
+        # extensions across all parsers, de-duplicate and then sort the result.
+        all_supported = sorted(set(
+            itertools.chain.from_iterable(itertools.chain.from_iterable(
+                parser.SUPPORTED_FILE_TYPES.values() for parser in parsers))
+        ))
+        result = f'All Supported (*.{" *.".join(all_supported)});;' \
+                 + ";;".join(
+                     f'{name} (*.{" *.".join(extensions)})'
+                     for name, extensions in individual_file_types) \
+                 + f";;{everything}"
+        return result
+
+    @Slot()
+    def on_deck_list_download_button_clicked(self):
+        if not self.deck_list.toPlainText() \
+                or QMessageBox.question(
+                        self, "Overwrite existing deck list?",
+                        "Downloading a deck list will overwrite the existing content. Continue?",
+                        QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            url = self.deck_list_download_url_line_edit.text()
+            logger.info(f"User requests to download a deck list from the internet: {url}")
+            downloader_class = get_downloader_class(url)
+            if downloader_class is not None:
+                self.setField("deck-list-downloaded", downloader_class.__name__)
+                downloader = downloader_class(self)
+                self.deck_list.setPlainText(downloader.download(url))
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
@@ -220,25 +277,38 @@ class SelectDeckParserPage(*inherits_from_ui_file_with_name("deck_import_wizard/
         self.complete = False
         self.registerField("custom_re", self.custom_re_input)
         self.registerField("selected_parser", self)
-        self.select_parser_mtg_arena.pressed.connect(
+        self.select_parser_mtg_arena.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_mtg_arena_parser)
         )
-        self.select_parser_mtg_online.pressed.connect(
+        self.select_parser_mtg_online.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_mtg_online_parser)
         )
-        self.select_parser_xmage.pressed.connect(
+        self.select_parser_xmage.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_xmage_parser)
         )
-        self.select_parser_scryfall_csv.pressed.connect(
+        self.select_parser_scryfall_csv.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_scryfall_csv_parser)
         )
-        self.select_parser_tappedout_csv.pressed.connect(
+        self.select_parser_tappedout_csv.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_tappedout_csv_parser)
         )
-        self.select_parser_custom_re.pressed.connect(
+        self.select_parser_custom_re.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_generic_re_parser)
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def initializePage(self) -> None:
+        super().initializePage()
+        used_downloader: str = self.field("deck-list-downloaded")
+        if used_downloader:
+            parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
+            {
+                re_parsers.MTGArenaParser: self.select_parser_mtg_arena,
+                re_parsers.MTGOnlineParser: self.select_parser_mtg_online,
+                re_parsers.XMageParser: self.select_parser_xmage,
+                csv_parsers.ScryfallCSVParser: self.select_parser_scryfall_csv,
+                csv_parsers.TappedOutCSVParser: self.select_parser_tappedout_csv,
+            }[parser_to_use].click()
 
     def append_group_to_custom_re_input(self, value: str):
         self.custom_re_input: QLineEdit
@@ -456,8 +526,8 @@ class DeckImportWizard(QWizard):
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)
         self.summary_page = SummaryPage(card_db, self)
-        self.addPage(self.select_deck_parser_page)
         self.addPage(self.load_list_page)
+        self.addPage(self.select_deck_parser_page)
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self._set_default_size()

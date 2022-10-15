@@ -24,9 +24,9 @@ import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
 
 
-
 @dataclasses.dataclass()
 class Namespace:
+    """Mock argparse Namespace used for type hinting."""
     database_path: Path
     card_data: Path
     keep: bool
@@ -67,21 +67,16 @@ to_be_profiled_functions = {
 
 
 def is_running_with_kernprof() -> bool:
-    """Determine if the script was called using kernprof."""
-    # Implementation detail: On the author’s machine, kernprof not only injects the profiler
-    # with name 'profile" into the globals, but also changes the type of __builtins__ from 'module' to 'dict'…!
-    if isinstance(__builtins__, dict):
-        running_with_kernprof = "profile" in __builtins__.keys()
+    """Determine if the script was called using kernprof. It is, if "profile" is present in the global scope."""
+    try:
+        profile
+    except AttributeError:
+        return False
     else:
-        running_with_kernprof = hasattr(__builtins__, "profile")
-    return running_with_kernprof
+        return True
 
 
 def inject_line_profiler():
-    if isinstance(__builtins__, dict):
-        profile = __builtins__["profile"]
-    else:
-        profile = __builtins__.profile
     for module_, function_list in to_be_profiled_functions.items():
         for func_name in function_list:
             try:
@@ -113,5 +108,5 @@ if __name__ == "__main__":
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
     cid = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(cdb)
     print("Starting benchmark…")
-    cid.import_card_data(args.card_data)
+    cid.import_card_data_from_local_file(args.card_data)
     print("Done")
