@@ -94,7 +94,7 @@ from the repository root directory (where `setup.py` and `pyproject.toml` are lo
 
 ## Usage
 
-Execute `mtg-proxy-printer` to start the GUI.
+Execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
 
 At first start and at somewhat regular intervals, MTGProxyPrinter requires downloading the MTG card data
 from the Scryfall API. This dataset containing the information about the available 380k+ printings is roughly 250-300 MiB large.
@@ -108,8 +108,8 @@ You can select images and remove them, if you accidentally added the wrong cards
 
 If you don’t want to use the built-in card search, MTGProxyPrinter can import deck lists from disk and from a set of
 card database websites. The import wizard is available from the File menu in the main window. After loading the list,
-the cards are presented in a table, where you can re-select printings, remove cards, and on-click remove all basic lands,
-before finishing the import.
+the cards are presented in a table, where you can re-select printings, remove cards,
+and one-click remove all basic lands, before finishing the import.
 
 You can save and load documents to continue working on your documents later and create PDF documents for printing.
 
