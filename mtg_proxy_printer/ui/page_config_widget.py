@@ -58,12 +58,16 @@ class PageConfigWidget(QGroupBox, Ui_PageConfigWidget):
         self.image_spacing_horizontal.valueChanged[int].connect(
             partial(setattr, page_layout, "image_spacing_horizontal"))
         self.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
+
+        # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
+        # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
         self.draw_cut_markers: QCheckBox
         self.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
+            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.CheckState.Checked.value))
         self.draw_sharp_corners: QCheckBox
         self.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked.value))
+
         return page_layout
 
     @Slot()
