@@ -26,12 +26,23 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.ui.page_renderer import PageRenderer
 from mtg_proxy_printer.ui.add_card import AddCardWidget
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+
+try:
+    from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_central_widget as Ui_Columnar
+    from mtg_proxy_printer.ui.generated.central_widget.grouped import Ui_central_widget as Ui_Grouped
+    from mtg_proxy_printer.ui.generated.central_widget.tabbed_vertical import Ui_central_widget as Ui_TabbedVertical
+except ModuleNotFoundError:
+    from mtg_proxy_printer.ui.common import load_ui_from_file
+    Ui_Columnar, _ = load_ui_from_file("central_widget/columnar")
+    Ui_Grouped, _ = load_ui_from_file("central_widget/grouped")
+    Ui_TabbedVertical, _ = load_ui_from_file("central_widget/tabbed_vertical")
+
 
 from mtg_proxy_printer.logger import get_logger
-
 logger = get_logger(__name__)
 del get_logger
+
+
 __all__ = [
     "TabbedVerticalCentralWidget",
     "ColumnarCentralWidget",
@@ -159,12 +170,12 @@ class CentralWidget(QWidget):
         self.document.remove_pages([self.document.index(to_be_deleted, 0)])
 
 
-class ColumnarCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/columnar")):
+class ColumnarCentralWidget(CentralWidget, Ui_Columnar):
     """This layout uses columns and is optimized for wide screens."""
     pass
 
 
-class GroupedCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/grouped")):
+class GroupedCentralWidget(CentralWidget, Ui_Grouped):
     """
     This layout uses group boxes and is optimized for (near) square screens between 3:4 and 4:3.
     It tries to effectively use vertical space.
@@ -172,7 +183,7 @@ class GroupedCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("cent
     pass
 
 
-class TabbedVerticalCentralWidget(CentralWidget, *inherits_from_ui_file_with_name("central_widget/tabbed_vertical")):
+class TabbedVerticalCentralWidget(CentralWidget, Ui_TabbedVertical):
     """
     This layout uses tabs to only show one columnar widget at a time, optimized for very narrow screens, like
     16:9 screens in portrait mode (i.e. 9:16).
