@@ -114,13 +114,20 @@ def generate_class_stub(class_root: ast.ClassDef) -> str:
             break
     else:
         raise RuntimeError(f"No setupUi() definition found in class {class_root.name}")
+    function_signatures = textwrap.indent(
+        "\n\n".join(map(
+            get_function_stub,
+            type_filter(class_root.body, ast.FunctionDef)
+        )), " "*4
+    )
     assignment_body = textwrap.indent(
         "\n".join(map(
             str, get_assignments(setup_ui.body)
         )),
         " "*4
     )
-    return header + "\n" + assignment_body
+
+    return "\n\n".join((header, function_signatures, assignment_body))
 
 
 def generate_class_header(class_root: ast.ClassDef) -> str:
@@ -136,8 +143,16 @@ def get_assignments(function_body: ast.FunctionDef) -> List[Assignment]:
         )
         for assignment
         in type_filter(function_body, ast.Assign)
-        if hasattr(assignment.targets[0], "attr")
+        if hasattr(assignment.targets[0], "attr")  # Filter out local variables
     ]
+
+
+def get_function_stub(function_body: ast.FunctionDef):
+    old_body = function_body.body
+    function_body.body = [ast.Constant(Ellipsis)]
+    result = ast.unparse(function_body)
+    function_body.body = old_body
+    return result
 
 
 if __name__ == "__main__":
