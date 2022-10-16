@@ -47,7 +47,7 @@ def create_python_package(location: Path, /):
 
 def compile_ui_files(
         target_path: Path,
-        source_path: Path = Path(__file__).parent/"mtg_proxy_printer/resources/ui"):
+        source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
 
@@ -63,8 +63,8 @@ def compile_ui_files(
 
 
 def create_ui_type_stubs(
-        target_path: Path = Path(__file__).parent/"mtg_proxy_printer/ui/generated",
-        source_path: Path = Path(__file__).parent/"mtg_proxy_printer/resources/ui"):
+        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
+        source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
     """
     Creates type hinting stubs for all UI files found in source_path, storing results in target_path.
 
@@ -156,4 +156,4 @@ def get_function_stub(function_body: ast.FunctionDef):
 
 
 if __name__ == "__main__":
-    pass
+    create_ui_type_stubs()
