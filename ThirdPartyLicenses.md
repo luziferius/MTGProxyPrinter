@@ -509,15 +509,12 @@ Library.
 
 &nbsp;
 
-# PyQt5
+# Qt6, PySide6
 
-Copyright (c) [Riverbank Computing Limited](https://www.riverbankcomputing.com/).
+Qt and PySide6 are available under the GNU Lesser General Public License version 3.
 
-The included copy is licensed under the terms of the 
-GNU General Public License version 3 as published by the Free Software Foundation.
-
-See LICENSE.md (when viewing from the source code archive) or the License tab in the
-MTGProxyPrinter About dialog for details.
+The Qt Toolkit is Copyright (C) 2018 The Qt Company Ltd. and other contributors.
+Contact: https://www.qt.io/licensing/
 
 &nbsp;
 
