@@ -34,6 +34,7 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
         command = ("pyside6-rcc", "--compress", "9", "--generator", "python", str(resources_source))
         compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
         target_file.write_text(compiled, "utf-8")
+        return target_file
 
     @staticmethod
     def generate_ui_classes(base_dir: Path):

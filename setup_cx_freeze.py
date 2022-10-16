@@ -121,9 +121,8 @@ setup_py.setup_parameters["options"] = {
 
 if __name__ == "__main__":
     # Perform in-tree resource compilation.
-    resources_path = pathlib.Path(__file__).parent / setup_py.main_package / "ui" / "compiled_resources.py"
+    resources_path = pathlib.Path(__file__).parent / setup_py.main_package / "ui"
     resources_path = resources_path.resolve()
-    resources_path.parent.mkdir(exist_ok=True, parents=True)
-    atexit.register(resources_path.unlink, True)
-    setup_py.BuildWithQtResources.compile_resources(resources_path)
+    resources_file = setup_py.BuildWithQtResources.compile_resources(resources_path)
+    atexit.register(resources_file.unlink, True)
     setup(**setup_py.setup_parameters)
