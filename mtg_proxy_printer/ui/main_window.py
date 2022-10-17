@@ -18,7 +18,7 @@ import typing
 
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices
-from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QToolBar, QLabel, QMainWindow
+from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QLabel, QMainWindow
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
@@ -87,7 +87,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.should_update_languages.connect(self.central_widget.add_card_widget.update_selected_language)
         self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.central_widget.settings_changed)
-        self.action_show_toolbar: QAction
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -217,7 +216,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.document.loader.cancel_running_operations()
         self.document.loader.quit_background_thread()
         self.image_db.quit_background_thread()
-        self.toolBar: QToolBar
         if self.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.toolBar.isVisible())

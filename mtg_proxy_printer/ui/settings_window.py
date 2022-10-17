@@ -20,17 +20,15 @@ import sqlite3
 import typing
 
 from PySide6.QtCore import QStringListModel, Signal, Slot, Qt, QUrl, QStandardPaths
-from PySide6.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, QDialog, \
-    QFileDialog, QLineEdit, QMessageBox, QWidget, QPushButton, QApplication
+from PySide6.QtWidgets import QDialogButtonBox, QCheckBox, QDialog, \
+    QFileDialog, QLineEdit, QMessageBox, QWidget, QApplication
 from PySide6.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.ui.printing_filter_widgets import AbstractPrintingFilterWidget
 from mtg_proxy_printer.units_and_sizes import PageType
 
 try:
@@ -67,18 +65,13 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         self.language_model = language_model
         self.document = document
         self.card_db = document.card_db
-        self.debug_download_card_data_as_file: QPushButton
         self.requested_card_download.connect(lambda _: self.debug_download_card_data_as_file.setEnabled(False))
-        self.preferred_language_combo_box: QComboBox
         self.preferred_language_combo_box.setModel(self.language_model)
-        self.page_configuration_group_box: PageConfigWidget
         self.page_configuration_group_box.setTitle("Default settings for new documents")
-        self.add_card_widget_style_combo_box: QComboBox
         self.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
         self.add_card_widget_style_combo_box.addItem("Columnar layout", "columnar")
         self.add_card_widget_style_combo_box.addItem("Tabbed layout", "tabbed")
 
-        self.log_level_combo_box: QComboBox
         self.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
 
         self._setup_button_box()
@@ -91,7 +84,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         QApplication.instance().processEvents()
 
     def _setup_button_box(self):
-        self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
         self.button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
         buttons_with_icons = [
@@ -115,7 +107,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         self._load_look_and_feel_settings(settings)
         self._load_images_settings(settings)
         self._load_download_settings(settings)
-        self.page_configuration_group_box: PageConfigWidget
         self.page_configuration_group_box.load_document_settings_from_config(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
@@ -130,13 +121,11 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
             widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
 
     def _load_look_and_feel_settings(self, settings: configparser.ConfigParser):
-        self.add_card_widget_style_combo_box: QComboBox
         gui_section = settings["gui"]
         search_layout_index = self.add_card_widget_style_combo_box.findData(gui_section["central-widget-layout"])
         self.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
 
     def _load_images_settings(self, settings: configparser.ConfigParser):
-        self.preferred_language_combo_box: QComboBox
         images_section = settings["images"]
         preferred_language = images_section.get("preferred-language")
         if not (known := self.preferred_language_combo_box.model().stringList()) or preferred_language not in known:
@@ -152,8 +141,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
 
     def _load_download_settings(self, settings: configparser.ConfigParser):
         section = settings["card-filter"]
-        self.card_filter_general_settings: AbstractPrintingFilterWidget
-        self.card_filter_format_settings: AbstractPrintingFilterWidget
         self.card_filter_general_settings.load_settings(section)
         self.card_filter_format_settings.load_settings(section)
 
@@ -167,7 +154,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
-        self.log_level_combo_box: QComboBox
         self.log_level_combo_box.setCurrentIndex(self.log_level_combo_box.findText(section["log-level"]))
 
     def _load_print_guessing_settings(self, settings: configparser.ConfigParser):
@@ -208,7 +194,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
         logger.info("User wants to save the settings.")
-        self.page_configuration_group_box: PageConfigWidget
         old_layout = self.document.page_layout
         new_layout = self.page_configuration_group_box.page_layout
         old_regular_page_capacity = old_layout.compute_page_card_capacity(PageType.REGULAR)
@@ -251,7 +236,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         self._save_look_and_feel_settings()
         self._save_images_settings()
         self._save_downloads_settings()
-        self.page_configuration_group_box: PageConfigWidget
         self.page_configuration_group_box.save_document_settings_to_config()
         self._save_documents_settings()
         self._save_save_path_settings()
@@ -270,7 +254,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
 
     def _save_look_and_feel_settings(self):
         gui_section = mtg_proxy_printer.settings.settings["gui"]
-        self.add_card_widget_style_combo_box: QComboBox
         gui_section["central-widget-layout"] = self.add_card_widget_style_combo_box.currentData(Qt.UserRole)
 
     def _save_images_settings(self):
@@ -279,8 +262,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         images_section["automatically-add-opposing-faces"] = str(self.automatically_add_opposing_faces.isChecked())
 
     def _save_downloads_settings(self):
-        self.card_filter_general_settings: AbstractPrintingFilterWidget
-        self.card_filter_format_settings: AbstractPrintingFilterWidget
         section = mtg_proxy_printer.settings.settings["card-filter"]
         self.card_filter_general_settings.save_settings(section)
         self.card_filter_format_settings.save_settings(section)
@@ -307,7 +288,6 @@ class SettingsWindow(QDialog, Ui_SettingsWindow):
         debug_section = mtg_proxy_printer.settings.settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             debug_section[setting] = str(widget.isChecked())
-        self.log_level_combo_box: QComboBox
         debug_section["log-level"] = self.log_level_combo_box.currentText()
 
     def _save_print_guessing_settings(self):

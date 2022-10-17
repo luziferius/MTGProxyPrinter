@@ -18,7 +18,7 @@ from functools import partial
 import typing
 
 from PySide6.QtCore import Slot, Qt
-from PySide6.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
+from PySide6.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
@@ -61,10 +61,8 @@ class PageConfigWidget(QGroupBox, Ui_PageConfigWidget):
 
         # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
         # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
-        self.draw_cut_markers: QCheckBox
         self.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.CheckState.Checked.value))
-        self.draw_sharp_corners: QCheckBox
         self.draw_sharp_corners.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked.value))
 
@@ -76,7 +74,6 @@ class PageConfigWidget(QGroupBox, Ui_PageConfigWidget):
         Recomputes and updates the page capacity value, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
-        self.page_capacity: QLabel
         new_capacity = self.page_layout.compute_page_card_capacity()
         self.page_capacity.setText(str(new_capacity))
 
@@ -90,8 +87,6 @@ class PageConfigWidget(QGroupBox, Ui_PageConfigWidget):
         pl = self.page_layout
         min_page_height = pl.margin_bottom + pl.margin_top + oversized.height
         min_page_width = pl.margin_left + pl.margin_right + oversized.width
-        self.page_height: QSpinBox
-        self.page_width: QSpinBox
         self.page_height.setMinimum(min_page_height)
         self.page_width.setMinimum(min_page_width)
 

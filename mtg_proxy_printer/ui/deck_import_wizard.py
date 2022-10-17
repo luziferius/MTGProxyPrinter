@@ -22,8 +22,7 @@ import typing
 
 from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, QAbstractTableModel
 from PySide6.QtGui import QValidator, QIcon
-from PySide6.QtWidgets import QWizard, QFileDialog, QPlainTextEdit, QMessageBox, QLineEdit, QTableView, QComboBox, \
-    QWizardPage
+from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -98,7 +97,6 @@ class LoadListPage(QWizardPage, Ui_LoadListPage):
         self.setupUi(self)
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
         self._deck_list_downloader: typing.Optional[str] = None
-        self.deck_list_download_url_line_edit:QLineEdit
         self.deck_list_download_url_line_edit.textChanged.connect(
             lambda text: self.deck_list_download_button.setEnabled(self.deck_list_url_validator.validate(text)[0] == QValidator.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
@@ -128,7 +126,6 @@ class LoadListPage(QWizardPage, Ui_LoadListPage):
 
     def initializePage(self) -> None:
         super(LoadListPage, self).initializePage()
-        self.translate_deck_list_target_language: QComboBox
         language_model: QStringListModel = self.translate_deck_list_target_language.model()
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         preferred_language_index = language_model.stringList().index(preferred_language)
@@ -150,7 +147,6 @@ class LoadListPage(QWizardPage, Ui_LoadListPage):
     @Slot()
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
-        self.deck_list: QPlainTextEdit
         default_path: str = mtg_proxy_printer.settings.settings["default-filesystem-paths"]["deck-list-search-path"]
         if not self.deck_list.toPlainText() \
                 or QMessageBox.question(
@@ -265,7 +261,6 @@ class SelectDeckParserPage(QWizardPage, Ui_SelectDeckParserPage):
         self.image_db = image_db
         self._selected_parser = None
         self.parser_creator: typing.Callable[[], None] = (lambda: None)
-        self.custom_re_input: QLineEdit
         self.custom_re_input.setToolTip(
             f"Enter a Regular Expression containing at least one supported, named group.\n\n"
             f"Supported named groups are: "
@@ -322,7 +317,6 @@ class SelectDeckParserPage(QWizardPage, Ui_SelectDeckParserPage):
             }[parser_to_use].click()
 
     def append_group_to_custom_re_input(self, value: str):
-        self.custom_re_input: QLineEdit
         self.custom_re_input.setText(self.custom_re_input.text()+value)
 
     def _create_mtg_arena_parser(self):
@@ -422,7 +416,6 @@ class SummaryPage(QWizardPage, Ui_SummaryPage):
             accept_button.setToolTip("Append identified cards to the document")
 
     def _setup_parsed_cards_table(self, model: QAbstractTableModel) -> ComboBoxItemDelegate:
-        self.parsed_cards_table: QTableView
         self.parsed_cards_table.setModel(model)
         self.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
         delegate = ComboBoxItemDelegate(self.parsed_cards_table)
@@ -440,7 +433,6 @@ class SummaryPage(QWizardPage, Ui_SummaryPage):
     def initializePage(self) -> None:
         super(SummaryPage, self).initializePage()
         self.selected_cells_count = 0
-        self.parsed_cards_table: QTableView
         parser: common.ParserBase = self.field("selected_parser")
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
         if self.field("translate-deck-list-enable"):
@@ -454,7 +446,6 @@ class SummaryPage(QWizardPage, Ui_SummaryPage):
             self.field("print-guessing-prefer-already-downloaded"),
             language_override
         )
-        self.unparsed_lines_text: QPlainTextEdit
         self.card_list.add_cards(parsed_deck)
         self.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
         self._initialize_custom_buttons()
@@ -516,7 +507,6 @@ class SummaryPage(QWizardPage, Ui_SummaryPage):
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")
-        self.parsed_cards_table: QTableView
         selection_mapped_to_source = self.card_list_sort_model.mapSelectionToSource(
             self.parsed_cards_table.selectionModel().selection())
         self.card_list.remove_multi_selection(selection_mapped_to_source)
