@@ -34,9 +34,8 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
         resources_source = BuildWithQtResources.get_resources_qrc_file_path()
         command = ("pyrcc5", "-compress", "9", str(resources_source))  # noqa  # "pyrcc5" is a program name, not a typo
         compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
-        with target_file.open("wt") as compiled_qt_resources_file:
-            compiled_qt_resources_file.write(compiled)
-        return compiled
+        target_file.write_text(compiled, "utf-8")
+        return target_file
 
     @staticmethod
     def generate_ui_classes(base_dir: Path):
