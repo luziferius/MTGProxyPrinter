@@ -121,8 +121,6 @@ class MTGGoldfishDownloader(DecklistDownloader):
         return deck_id
 
 
-
-
 class MTGWTFDownloader(DecklistDownloader):
     """
     Downloader for https://mtg.wtf. They offer a list of all official pre-constructed decks in existence.

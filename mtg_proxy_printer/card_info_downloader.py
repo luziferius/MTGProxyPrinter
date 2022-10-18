@@ -16,7 +16,6 @@
 import enum
 import functools
 import gzip
-import os
 import shutil
 from pathlib import Path
 import re

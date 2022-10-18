@@ -23,7 +23,7 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel, QWizardPage
+from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
@@ -290,7 +290,6 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
         self.setupUi(self)
         self.card_db = card_db
         self.image_db = image_db
-        self.unknown_image_view: QTableView
         self.card_image_model = KnownCardImageModel(parent=self)
         self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
         self._setup_card_image_view(self.card_image_sort_model)
@@ -334,7 +333,6 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
 
     def _apply_filter(self):
         self._select_unknown_cards_if_enabled()
-        self.card_image_view: QTableView
         if self.field("remove-everything-enabled"):
             self._select_indices(range(self.card_image_model.rowCount()))
         else:
@@ -350,7 +348,6 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
                 self._select_indices(indices)
 
     def _select_unknown_cards_if_enabled(self):
-        self.unknown_image_view: QTableView
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
             for row in range(self.unknown_image_model.rowCount()):
                 self.unknown_image_view.selectionModel().select(
@@ -359,7 +356,6 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
                 )
 
     def _select_indices(self, indices: typing.Iterable[int]):
-        self.card_image_view: QTableView
         selection_model = self.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
@@ -374,8 +370,6 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
 
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
-        self.unknown_image_view: QTableView
-        self.card_image_view: QTableView
         selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
             (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.IsFront).data(Qt.EditRole),
@@ -401,8 +395,6 @@ class SummaryPage(QWizardPage, Ui_SummaryPage):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
-        self.image_count_summary: QLabel
-        self.filesize_summary: QLabel
         indices = self.field("selected-images")
         disk_space_freed = format_size(sum(size_bytes for _, _, _, size_bytes in indices))
         self.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")

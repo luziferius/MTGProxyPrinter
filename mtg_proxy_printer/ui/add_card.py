@@ -44,8 +44,6 @@ __all__ = [
 ]
 
 
-
-
 class AddCardWidget(QWidget):
 
     card_added = Signal(mtg_proxy_printer.model.carddb.Card, int)
