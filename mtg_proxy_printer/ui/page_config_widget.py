@@ -18,19 +18,25 @@ from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
+from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
+
+try:
+    from mtg_proxy_printer.ui.generated.page_config_widget import Ui_page_configuration_group_box as Ui_PageConfigWidget
+except ModuleNotFoundError:
+    Ui_PageConfigWidget, _ = load_ui_from_file("page_config_widget")
+
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
 
-class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0], QGroupBox):
+class PageConfigWidget(QGroupBox, Ui_PageConfigWidget):
     def __init__(self, parent: QWidget = None):
         super(PageConfigWidget, self).__init__(parent)
         self.setupUi(self)
@@ -52,10 +58,8 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         self.image_spacing_horizontal.valueChanged[int].connect(
             partial(setattr, page_layout, "image_spacing_horizontal"))
         self.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
-        self.draw_cut_markers: QCheckBox
         self.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
-        self.draw_sharp_corners: QCheckBox
         self.draw_sharp_corners.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
         return page_layout
@@ -66,7 +70,6 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         Recomputes and updates the page capacity value, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
-        self.page_capacity: QLabel
         new_capacity = self.page_layout.compute_page_card_capacity()
         self.page_capacity.setText(str(new_capacity))
 
@@ -80,8 +83,6 @@ class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0],
         pl = self.page_layout
         min_page_height = pl.margin_bottom + pl.margin_top + oversized.height
         min_page_width = pl.margin_left + pl.margin_right + oversized.width
-        self.page_height: QSpinBox
-        self.page_width: QSpinBox
         self.page_height.setMinimum(min_page_height)
         self.page_width.setMinimum(min_page_width)
 

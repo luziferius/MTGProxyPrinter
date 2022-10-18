@@ -17,7 +17,7 @@ import pathlib
 import sys
 
 from PyQt5.QtCore import QFile, pyqtSlot as Slot
-from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QDialogButtonBox
+from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
@@ -28,9 +28,15 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
-from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 from mtg_proxy_printer.logger import get_logger
+
+try:
+    from mtg_proxy_printer.ui.generated.about_dialog import Ui_Dialog as Ui_AboutDialog
+    from mtg_proxy_printer.ui.generated.page_config_dialog import Ui_Dialog as Ui_PageConfigDialog
+except ModuleNotFoundError:
+    from mtg_proxy_printer.ui.common import load_ui_from_file
+    Ui_AboutDialog, _ = load_ui_from_file("about_dialog")
+    Ui_PageConfigDialog, _ = load_ui_from_file("page_config_dialog")
 
 logger = get_logger(__name__)
 del get_logger
@@ -130,7 +136,7 @@ class LoadDocumentDialog(QFileDialog):
         return result
 
 
-class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_file_with_name("about_dialog")):
+class AboutMTGProxyPrinterDialog(QDialog, Ui_AboutDialog):
 
     def __init__(self, *args, **kwargs):
         super(AboutMTGProxyPrinterDialog, self).__init__(*args, **kwargs)
@@ -139,8 +145,6 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self._setup_changelog_text()
         self._setup_license_text()
         self._setup_third_party_license_text()
-        self.mtg_proxy_printer_version_label: QLabel
-        self.python_version_label: QLabel
         self.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.python_version_label.setText(sys.version.replace("\n", " "))
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -163,7 +167,6 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
             return mtg_proxy_printer.ui.common.RESOURCE_PATH_PREFIX + fallback_filesystem_path
 
     def _setup_about_text(self):
-        self.about_text: QTextBrowser
         formatted_about_text = self.about_text.toMarkdown().format(
             application_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
             application_home_page=mtg_proxy_printer.meta_data.HOME_PAGE,
@@ -171,17 +174,14 @@ class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_f
         self.about_text.setMarkdown(formatted_about_text)
 
     def _setup_license_text(self):
-        self.license_text_browser: QTextBrowser
         file_path = self._get_file_path(":/License.md", "/../../LICENSE.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.license_text_browser)
 
     def _setup_third_party_license_text(self):
-        self.third_party_license_text_browser: QTextBrowser
         file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../ThirdPartyLicenses.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.third_party_license_text_browser)
 
     def _setup_changelog_text(self):
-        self.changelog_text_browser: QTextBrowser
         file_path = self._get_file_path(":/changelog.md", "/../../doc/changelog.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.changelog_text_browser)
 
@@ -217,21 +217,19 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialog")):
+class DocumentSettingsDialog(QDialog, Ui_PageConfigDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         super(DocumentSettingsDialog, self).__init__(parent)
         self.setupUi(self)
         self.setModal(True)
         self.document = document
-        self.page_config_groupbox: PageConfigWidget
         self.page_config_groupbox.load_from_page_layout(document.page_layout)
         self.page_config_groupbox.setTitle("These settings only affect the current document")
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
-        self.button_box: QDialogButtonBox
         self.button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
             lambda: logger.info("User reverts the document settings to the values from the global configuration")
         )
@@ -257,7 +255,6 @@ class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialo
 
     def accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
-        self.page_config_groupbox: PageConfigWidget
         self.document.update_page_layout(self.page_config_groupbox.page_layout)
         super(DocumentSettingsDialog, self).accept()
         logger.debug("Saving settings in the document done.")

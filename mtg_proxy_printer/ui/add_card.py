@@ -23,11 +23,19 @@ import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
+from mtg_proxy_printer.ui.common import load_ui_from_file
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+
+try:
+    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget as Ui_vertical
+    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget as Ui_horizontal
+except ModuleNotFoundError:
+    Ui_vertical, _ = load_ui_from_file("add_card_widget/vertical")
+    Ui_horizontal, _ = load_ui_from_file("add_card_widget/horizontal")
+
 
 __all__ = [
     "AddCardWidget",
@@ -276,9 +284,9 @@ class AddCardWidget(QWidget):
             return None
 
 
-class VerticalAddCardWidget(AddCardWidget, *inherits_from_ui_file_with_name(f"add_card_widget/vertical")):
+class VerticalAddCardWidget(AddCardWidget, Ui_vertical):
     pass
 
 
-class HorizontalAddCardWidget(AddCardWidget, *inherits_from_ui_file_with_name(f"add_card_widget/horizontal")):
+class HorizontalAddCardWidget(AddCardWidget, Ui_horizontal):
     pass

@@ -5,6 +5,7 @@
 from pathlib import Path
 import subprocess
 
+import PyQt5.uic
 from setuptools import setup
 import setuptools.command.build_py
 
@@ -15,10 +16,10 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
     """Try to build the Qt resources file for MTGProxyPrinter."""
     def run(self):
         if not self.dry_run:  # Obey the --dry-run switch
-            output_path = Path(self.build_lib, main_package, "ui", "compiled_resources.py").resolve()
-            if not output_path.exists():
-                self.mkpath(str(output_path.parent))
-                self.compile_resources(output_path)
+            target_dir = Path(self.build_lib, main_package, "ui").resolve()
+            target_dir.mkdir(exist_ok=True, parents=True)
+            self.compile_resources(target_dir)
+            self.generate_ui_classes(target_dir)
         super(BuildWithQtResources, self).run()
 
     @staticmethod
@@ -28,13 +29,33 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
         return resources_file
 
     @staticmethod
-    def compile_resources(target_file: Path):
+    def compile_resources(target_dir: Path):
+        target_file = target_dir / "compiled_resources.py"
         resources_source = BuildWithQtResources.get_resources_qrc_file_path()
         command = ("pyrcc5", "-compress", "9", str(resources_source))  # noqa  # "pyrcc5" is a program name, not a typo
         compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
-        with target_file.open("wt") as compiled_qt_resources_file:
-            compiled_qt_resources_file.write(compiled)
-        return compiled
+        target_file.write_text(compiled, "utf-8")
+        return target_file
+
+    @staticmethod
+    def generate_ui_classes(base_dir: Path):
+        source_ui_files_dir = Path(main_package, "resources", "ui").resolve()
+        target_dir = base_dir / "generated"
+        target_dir.mkdir(exist_ok=True)
+
+        def map_to_output(directory, file_name):
+            dir_path = Path(directory).relative_to(source_ui_files_dir)
+            return target_dir/dir_path, file_name
+
+        PyQt5.uic.compileUiDir(str(source_ui_files_dir), recurse=True, map=map_to_output)
+        BuildWithQtResources.create_proper_package(target_dir)
+
+    @staticmethod
+    def create_proper_package(target_dir: Path):
+        (target_dir/"__init__.py").touch(exist_ok=True)
+        for entry in target_dir.rglob("*"):
+            if entry.is_dir():
+                (entry/"__init__.py").touch(exist_ok=True)
 
 
 setup_parameters = dict(
