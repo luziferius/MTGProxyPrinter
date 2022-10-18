@@ -17,7 +17,7 @@ import pathlib
 import sys
 
 from PyQt5.QtCore import QFile, pyqtSlot as Slot
-from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QDialogButtonBox
+from PyQt5.QtWidgets import QFileDialog, QWidget, QLabel, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
@@ -28,9 +28,16 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 from mtg_proxy_printer.logger import get_logger
+
+try:
+    from mtg_proxy_printer.ui.generated.about_dialog import Ui_Dialog as Ui_AboutDialog
+    from mtg_proxy_printer.ui.generated.page_config_dialog import Ui_Dialog as Ui_PageConfigDialog
+except ModuleNotFoundError:
+    from mtg_proxy_printer.ui.common import load_ui_from_file
+    Ui_AboutDialog, _ = load_ui_from_file("about_dialog")
+    Ui_PageConfigDialog, _ = load_ui_from_file("page_config_dialog")
 
 logger = get_logger(__name__)
 del get_logger
@@ -130,7 +137,7 @@ class LoadDocumentDialog(QFileDialog):
         return result
 
 
-class AboutMTGProxyPrinterDialog(*mtg_proxy_printer.ui.common.inherits_from_ui_file_with_name("about_dialog")):
+class AboutMTGProxyPrinterDialog(QDialog, Ui_AboutDialog):
 
     def __init__(self, *args, **kwargs):
         super(AboutMTGProxyPrinterDialog, self).__init__(*args, **kwargs)
@@ -217,7 +224,7 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class DocumentSettingsDialog(*inherits_from_ui_file_with_name("page_config_dialog")):
+class DocumentSettingsDialog(QDialog, Ui_PageConfigDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         super(DocumentSettingsDialog, self).__init__(parent)

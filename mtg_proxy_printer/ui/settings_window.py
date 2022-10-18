@@ -13,9 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import abc
 import configparser
-import functools
 import logging
 import pathlib
 import sqlite3
@@ -23,25 +21,29 @@ import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths
 from PyQt5.QtWidgets import QDialogButtonBox, QComboBox, QCheckBox, \
-    QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication
+    QFileDialog, QLineEdit, QMessageBox, QGroupBox, QWidget, QPushButton, QApplication, QDialog
 from PyQt5.QtGui import QDesktopServices, QIcon
+
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.ui.printing_filter_widgets import AbstractPrintingFilterWidget
 from mtg_proxy_printer.units_and_sizes import PageType
+
+try:
+    from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_Dialog as Ui_SettingsWindow
+except ModuleNotFoundError:
+    from mtg_proxy_printer.ui.common import load_ui_from_file
+    Ui_SettingsWindow, _ = load_ui_from_file("settings_window/settings_window")
 
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
     "SettingsWindow",
-    "AbstractPrintingFilterWidget",
-    "GeneralPrintingFilterWidget",
-    "FormatPrintingFilterWidget",
 ]
 bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
     True: Qt.Checked,
@@ -51,87 +53,7 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
 check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 
 
-class AbstractPrintingFilterWidget(QGroupBox):
-
-    def __init__(self, parent: QWidget = None):
-        super(AbstractPrintingFilterWidget, self).__init__(parent)
-        self.setupUi(self)
-
-    def load_settings(self, settings: configparser.SectionProxy):
-        for widget, key in self._get_widgets_with_keys():
-            widget.setChecked(settings.getboolean(key))
-
-    def save_settings(self, settings: configparser.SectionProxy):
-        for widget, key in self._get_widgets_with_keys():
-            settings[key] = str(widget.isChecked())
-
-    @staticmethod
-    def view_query_on_scryfall(query: str):
-        query_url = QUrl("https://scryfall.com/search", QUrl.StrictMode)
-        query_url.setQuery(f"q={query}", QUrl.StrictMode)
-        QDesktopServices.openUrl(query_url)
-
-    @abc.abstractmethod
-    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
-        pass
-
-
-class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget,
-                                  *inherits_from_ui_file_with_name("settings_window/general_printing_filter")):
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        self.view_cards_depicting_racism.clicked.connect(
-            lambda: self.view_query_on_scryfall("function:banned-due-to-racist-imagery"))
-        self.view_oversized_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:oversized"))
-        self.view_white_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:white"))
-        self.view_gold_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:gold"))
-        self.view_funny_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:funny"))
-        self.view_token.clicked.connect(lambda: self.view_query_on_scryfall("is:token"))
-        self.view_digital_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:digital"))
-
-    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.hide_cards_depicting_racism, "hide-cards-depicting-racism"),
-            (self.hide_cards_without_images, "hide-cards-without-images"),
-            (self.hide_oversized_cards, "hide-oversized-cards"),
-            (self.hide_white_bordered_cards, "hide-white-bordered"),
-            (self.hide_gold_bordered_cards, "hide-gold-bordered"),
-            (self.hide_funny_cards, "hide-funny-cards"),
-            (self.hide_token, "hide-token"),
-            (self.hide_digital_cards, "hide-digital-cards"),
-        ]
-        return widgets_with_settings
-
-
-class FormatPrintingFilterWidget(AbstractPrintingFilterWidget,
-                                 *inherits_from_ui_file_with_name("settings_window/format_printing_filter")):
-
-    def __init__(self, parent: QWidget = None):
-        super().__init__(parent)
-        for _, key in self._get_widgets_with_keys():
-            format_name = key.split("-")[-1]
-            button: QPushButton = getattr(self, f"view_banned_in_{format_name}")
-            button.clicked.connect(
-                functools.partial(self.view_query_on_scryfall, f"banned:{format_name}")
-            )
-
-    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.hide_banned_in_brawl, "hide-banned-in-brawl"),
-            (self.hide_banned_in_commander, "hide-banned-in-commander"),
-            (self.hide_banned_in_historic, "hide-banned-in-historic"),
-            (self.hide_banned_in_legacy, "hide-banned-in-legacy"),
-            (self.hide_banned_in_modern, "hide-banned-in-modern"),
-            (self.hide_banned_in_pauper, "hide-banned-in-pauper"),
-            (self.hide_banned_in_penny, "hide-banned-in-penny"),
-            (self.hide_banned_in_pioneer, "hide-banned-in-pioneer"),
-            (self.hide_banned_in_standard, "hide-banned-in-standard"),
-            (self.hide_banned_in_vintage, "hide-banned-in-vintage"),
-        ]
-        return widgets_with_settings
-
-
-class SettingsWindow(*inherits_from_ui_file_with_name("settings_window/settings_window")):
+class SettingsWindow(QDialog, Ui_SettingsWindow):
     """Implements the Settings window."""
     saved = Signal()
     error_occurred = Signal(str)

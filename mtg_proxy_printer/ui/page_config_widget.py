@@ -21,16 +21,22 @@ from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QLabel, QCheckBox
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, BlockedSignals
+from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
+
+try:
+    from mtg_proxy_printer.ui.generated.page_config_widget import Ui_page_configuration_group_box as Ui_PageConfigWidget
+except ModuleNotFoundError:
+    Ui_PageConfigWidget, _ = load_ui_from_file("page_config_widget")
+
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
 
-class PageConfigWidget(inherits_from_ui_file_with_name("page_config_widget")[0], QGroupBox):
+class PageConfigWidget(QGroupBox, Ui_PageConfigWidget):
     def __init__(self, parent: QWidget = None):
         super(PageConfigWidget, self).__init__(parent)
         self.setupUi(self)

@@ -23,15 +23,24 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
+from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+
+try:
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.card_filter_page import Ui_WizardPage as Ui_CardFilterPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_WizardPage as Ui_FilterSetupPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_WizardPage as Ui_SummaryPage
+except ModuleNotFoundError:
+    Ui_CardFilterPage, _ = load_ui_from_file("cache_cleanup_wizard/card_filter_page")
+    Ui_FilterSetupPage, _ = load_ui_from_file("cache_cleanup_wizard/filter_setup_page")
+    Ui_SummaryPage, _ = load_ui_from_file("cache_cleanup_wizard/summary_page")
 
 __all__ = [
     "CacheCleanupWizard",
@@ -260,7 +269,7 @@ class UnknownCardImageModel(QAbstractTableModel):
         self.endResetModel()
 
 
-class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/filter_setup_page")):
+class FilterSetupPage(QWizardPage, Ui_FilterSetupPage):
 
     def __init__(self, parent: QWidget = None):
         super(FilterSetupPage, self).__init__(parent)
@@ -274,7 +283,7 @@ class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/fil
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card_filter_page")):
+class CardFilterPage(QWizardPage, Ui_CardFilterPage):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QWidget = None):
         super(CardFilterPage, self).__init__(parent)
@@ -384,7 +393,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         return super(CardFilterPage, self).validatePage()
 
 
-class SummaryPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/summary_page")):
+class SummaryPage(QWizardPage, Ui_SummaryPage):
 
     def __init__(self, parent: QWidget = None):
         super(SummaryPage, self).__init__(parent)

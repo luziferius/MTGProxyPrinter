@@ -16,11 +16,9 @@
 import pathlib
 import typing
 
-
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel
-
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QToolBar, QLabel, QMainWindow
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
@@ -29,14 +27,20 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name
 from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, get_configured_central_widget_layout_class
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
+try:
+    from mtg_proxy_printer.ui.generated.main_window import Ui_main_window as Ui_MainWindow
+except ModuleNotFoundError:
+    from mtg_proxy_printer.ui.common import load_ui_from_file
+    Ui_MainWindow, _ = load_ui_from_file("main_window")
+
 from mtg_proxy_printer.logger import get_logger
+
 logger = get_logger(__name__)
 del get_logger
 __all__ = [
@@ -44,7 +48,7 @@ __all__ = [
 ]
 
 
-class MainWindow(*inherits_from_ui_file_with_name(f"main_window")):
+class MainWindow(QMainWindow, Ui_MainWindow):
 
     should_update_languages = Signal()
     settings_changed = Signal()
