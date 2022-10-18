@@ -86,6 +86,7 @@ def create_ui_type_stubs(
         compiled = compile_ui_file(ui_file)
         stub = generate_stub(compiled, ui_file)
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
+        parent_dir.mkdir(exist_ok=True)
         (parent_dir/f"{ui_file.stem}.pyi").write_text(stub, "utf-8")
     create_proper_package(target_path)
 
