@@ -61,6 +61,6 @@ def test_all_resource_files_are_listed_in_resources_qrc(resource_path: Path):
     listed_paths = set(Path(node.text) for node in resource_document.findall("qresource/file"))
     existing_files = list_dir(base_dir)
     for file in existing_files:
-        if file.name == "resources.qrc":
+        if file.name == "resources.qrc" or file.suffix.casefold() == ".ui":
             continue
         assert_that(file, is_in(listed_paths), "File not listed in resources.qrc")
