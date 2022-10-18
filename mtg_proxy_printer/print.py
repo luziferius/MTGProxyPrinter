@@ -51,7 +51,7 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 
 def create_qprinter(document: Document) -> QPrinter:
-    printer = QPrinter(QPrinter.HighResolution)
+    printer = QPrinter(QPrinter.PrinterMode.HighResolution)
     page_width = document.page_layout.page_width
     page_height = document.page_layout.page_height
     if page_width > page_height:
@@ -65,8 +65,8 @@ def create_qprinter(document: Document) -> QPrinter:
     printer.setPageSize(page_size)
     printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.magnitude)
     # Disable duplex printing by default
-    printer.setDuplex(QPrinter.DuplexNone)
-    printer.setOutputFormat(QPrinter.NativeFormat)
+    printer.setDuplex(QPrinter.DuplexMode.DuplexNone)
+    printer.setOutputFormat(QPrinter.OutputFormat.NativeFormat)
     # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
     printer.setFullPage(True)
     printer.setPageMargins(QMarginsF(0, 0, 0, 0))
