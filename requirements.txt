@@ -1,5 +1,5 @@
 # Main dependencies
-PySide6-Essentials >= 6.3.0
+PySide6-Essentials >= 6.4.0
 pint
 appdirs >= 1.4.3
 ijson >= 3.1.0

@@ -25,12 +25,12 @@ classifiers = [
 ]
 dependencies = [
     "appdirs >= 1.4.3",
-    "PySide6-Essentials >= 6.3.0",
+    "PySide6-Essentials >= 6.4.0",
     "ijson >= 3.1.0",
     "pint",
     "delegateto == 1.5",
     "PyHamcrest >= 1.8.1",
-]
+    ]
 dynamic = [
     "version",
 ]
@@ -66,7 +66,7 @@ version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 requires = [
     "setuptools >=61",
     "wheel",
-    "PySide6-Essentials >= 6.3.0",
+    "PySide6-Essentials >= 6.4.0",
     "build",
     "tox >= 3.8",
 ]
@@ -93,7 +93,7 @@ platform =
 deps =
     appdirs >= 1.4.3
     build
-    PySide6-Essentials >= 6.3.0
+    PySide6-Essentials >= 6.4.0
     ijson >= 3.1.0
     pint
     delegateto == 1.5
