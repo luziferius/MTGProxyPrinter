@@ -198,9 +198,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         handling, you should reimplement the event handler and ignore() the event.
         """
         logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
-        event.ignore()
+        event.accept()
         if self.is_running:
-            event.ignore()
+            event.accept()
             self._quit()
 
     @Slot()
