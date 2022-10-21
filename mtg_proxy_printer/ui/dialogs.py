@@ -35,8 +35,8 @@ try:
     from mtg_proxy_printer.ui.generated.page_config_dialog import Ui_Dialog as Ui_PageConfigDialog
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
-    Ui_AboutDialog, _ = load_ui_from_file("about_dialog")
-    Ui_PageConfigDialog, _ = load_ui_from_file("page_config_dialog")
+    Ui_AboutDialog = load_ui_from_file("about_dialog")
+    Ui_PageConfigDialog = load_ui_from_file("page_config_dialog")
 
 logger = get_logger(__name__)
 del get_logger

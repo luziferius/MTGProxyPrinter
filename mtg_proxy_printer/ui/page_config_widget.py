@@ -28,7 +28,7 @@ from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_page_configuration_group_box as Ui_PageConfigWidget
 except ModuleNotFoundError:
-    Ui_PageConfigWidget, _ = load_ui_from_file("page_config_widget")
+    Ui_PageConfigWidget = load_ui_from_file("page_config_widget")
 
 from mtg_proxy_printer.logger import get_logger
 

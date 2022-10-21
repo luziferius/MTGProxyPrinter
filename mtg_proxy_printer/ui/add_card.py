@@ -33,8 +33,8 @@ try:
     from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget as Ui_vertical
     from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget as Ui_horizontal
 except ModuleNotFoundError:
-    Ui_vertical, _ = load_ui_from_file("add_card_widget/vertical")
-    Ui_horizontal, _ = load_ui_from_file("add_card_widget/horizontal")
+    Ui_vertical = load_ui_from_file("add_card_widget/vertical")
+    Ui_horizontal = load_ui_from_file("add_card_widget/horizontal")
 
 
 __all__ = [

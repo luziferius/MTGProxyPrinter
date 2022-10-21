@@ -33,9 +33,9 @@ try:
     from mtg_proxy_printer.ui.generated.central_widget.tabbed_vertical import Ui_central_widget as Ui_TabbedVertical
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
-    Ui_Columnar, _ = load_ui_from_file("central_widget/columnar")
-    Ui_Grouped, _ = load_ui_from_file("central_widget/grouped")
-    Ui_TabbedVertical, _ = load_ui_from_file("central_widget/tabbed_vertical")
+    Ui_Columnar = load_ui_from_file("central_widget/columnar")
+    Ui_Grouped = load_ui_from_file("central_widget/grouped")
+    Ui_TabbedVertical = load_ui_from_file("central_widget/tabbed_vertical")
 
 
 from mtg_proxy_printer.logger import get_logger

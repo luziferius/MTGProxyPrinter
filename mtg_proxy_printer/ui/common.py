@@ -90,7 +90,7 @@ def load_ui_from_file(name: str):
         logger.error(error_message)
         raise FileNotFoundError(error_message)
     try:
-        base_type = loadUiType(file_path)
+        base_type, _ = loadUiType(file_path)
     finally:
         ui_file.close()
     return base_type

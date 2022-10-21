@@ -37,7 +37,7 @@ try:
     from mtg_proxy_printer.ui.generated.main_window import Ui_main_window as Ui_MainWindow
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
-    Ui_MainWindow, _ = load_ui_from_file("main_window")
+    Ui_MainWindow = load_ui_from_file("main_window")
 
 from mtg_proxy_printer.logger import get_logger
 
