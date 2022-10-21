@@ -79,20 +79,17 @@ def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
 
 def load_ui_from_file(name: str):
     """
-    Returns a tuple from PySide6.QtUiTools.loadUiType(), loading the ui file with the given name.
-    :param name:
-    :return:
+    Returns the Ui class type as returned by PySide6.QtUiTools.loadUiType(), loading the ui file with the given name.
+    :param name: Path to the UI file
+    :return: class implementing the requested Ui
+    :raises FileNotFoundError: If the given ui file does not exist
     """
     file_path = f"{RESOURCE_PATH_PREFIX}/ui/{name}.ui"
-    ui_file = QFile(file_path)
-    if not ui_file.exists():
+    if not QFile.exists(file_path):
         error_message = f"UI file not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    try:
-        base_type, _ = loadUiType(file_path)
-    finally:
-        ui_file.close()
+    base_type, _ = loadUiType(file_path)
     return base_type
 
 
