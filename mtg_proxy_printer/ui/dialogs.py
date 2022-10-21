@@ -189,7 +189,7 @@ class AboutMTGProxyPrinterDialog(QDialog, Ui_AboutDialog):
         file = QFile(file_path, self)
         file.open(QFile.ReadOnly)
         try:
-            content = bytes(file.readAll()).decode("utf-8")
+            content = file.readAll().toStdString()
         finally:
             file.close()
         text_browser.setMarkdown(content)
