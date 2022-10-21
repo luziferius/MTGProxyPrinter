@@ -70,7 +70,7 @@ def is_running_with_kernprof() -> bool:
     """Determine if the script was called using kernprof. It is, if "profile" is present in the global scope."""
     try:
         profile
-    except AttributeError:
+    except (AttributeError, NameError):
         return False
     else:
         return True
