@@ -27,7 +27,6 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
-from mtg_proxy_printer.ui.central_widget import CentralWidget
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
@@ -78,7 +77,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.language_model = language_model
         self.card_data_downloader = card_info_downloader
         self._connect_card_info_downloader_signals(card_info_downloader)
-        self.central_widget: CentralWidget
         self._setup_central_widget()
         self._setup_loading_state_connections()
         self.should_update_languages.connect(

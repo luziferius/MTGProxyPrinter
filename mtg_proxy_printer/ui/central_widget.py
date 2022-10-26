@@ -66,7 +66,6 @@ class CentralWidget(QWidget):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_page_card_table_view(self) -> ComboBoxItemDelegate:
-        self.page_card_table_view: QTableView
         combo_box_delegate = ComboBoxItemDelegate(self.ui.page_card_table_view)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
