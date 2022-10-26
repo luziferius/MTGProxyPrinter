@@ -35,11 +35,11 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.ui.central_widget import ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget
+from mtg_proxy_printer.ui.central_widget import Ui_Columnar, Ui_Grouped, Ui_TabbedVertical
 from tests.helpers import fill_card_database_with_json_cards
 
 
-@pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
+@pytest.fixture(params=[Ui_Columnar, Ui_Grouped, Ui_TabbedVertical])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
