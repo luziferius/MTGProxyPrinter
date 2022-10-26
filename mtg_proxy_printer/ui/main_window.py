@@ -111,9 +111,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
-        self.central_widget: CentralWidget
-        self.central_widget = CentralWidget(self)
-        self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.action_discard_page.triggered.connect(self.central_widget.action_discard_page_triggered)
 
