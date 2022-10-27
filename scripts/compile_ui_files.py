@@ -56,7 +56,8 @@ def compile_ui_files(
     def map_to_output(directory, file_name):
         dir_path = Path(directory).relative_to(source_path)
         return target_path/dir_path, file_name
-
+    import functools
+    PyQt5.uic.open = functools.partial(open, encoding="utf-8")
     PyQt5.uic.compileUiDir(str(source_path), recurse=True, map=map_to_output)
     create_proper_package(target_path)
 

@@ -46,7 +46,13 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
         def map_to_output(directory, file_name):
             dir_path = Path(directory).relative_to(source_ui_files_dir)
             return target_dir/dir_path, file_name
-
+        
+        # Workaroud PyQt5 bug: compileUiDir calls open() without setting an encoding.
+        # This breaks with UTF-8 encoded UI files on Windows machines.
+        # So simply enforce utf-8 by replacing the open function in the uic module.
+        # The issue is reported, so hopefully gets fixed at some point, rendering this obsolete
+        import functools
+        PyQt5.uic.open = functools.partial(open, encoding="utf-8")
         PyQt5.uic.compileUiDir(str(source_ui_files_dir), recurse=True, map=map_to_output)
         BuildWithQtResources.create_proper_package(target_dir)
 
