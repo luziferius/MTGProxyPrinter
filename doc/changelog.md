@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Other
+
+- Rewritten GUI handling. This results in a slightly faster application startup
+
 # Version 0.20.0 (2022-10-09)  <a name="v0_20_0"></a>
 
 ## New features
