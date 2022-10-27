@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
 
 - Fixed crash in the card data importer: The importer now handles double faced cards with missing back face images.
   These cards are skipped during the import.
