@@ -41,9 +41,9 @@ try:
     from mtg_proxy_printer.ui.generated.deck_import_wizard.parser_result_page import Ui_WizardPage as Ui_SummaryPage
     from mtg_proxy_printer.ui.generated.deck_import_wizard.select_deck_parser_page import Ui_WizardPage as Ui_SelectDeckParserPage
 except ModuleNotFoundError:
-    Ui_LoadListPage, _ = load_ui_from_file("deck_import_wizard/load_list_page")
-    Ui_SummaryPage, _ = load_ui_from_file("deck_import_wizard/parser_result_page")
-    Ui_SelectDeckParserPage, _ = load_ui_from_file("deck_import_wizard/select_deck_parser_page")
+    Ui_LoadListPage = load_ui_from_file("deck_import_wizard/load_list_page")
+    Ui_SummaryPage = load_ui_from_file("deck_import_wizard/parser_result_page")
+    Ui_SelectDeckParserPage = load_ui_from_file("deck_import_wizard/select_deck_parser_page")
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)

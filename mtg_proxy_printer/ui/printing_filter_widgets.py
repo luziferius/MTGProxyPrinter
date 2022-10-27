@@ -28,8 +28,8 @@ try:
     from mtg_proxy_printer.ui.generated.settings_window.general_printing_filter import Ui_Form as Ui_GeneralPrintingFilter
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
-    Ui_FormatPrintingFilter, _ = load_ui_from_file("settings_window/format_printing_filter")
-    Ui_GeneralPrintingFilter, _ = load_ui_from_file("settings_window/general_printing_filter")
+    Ui_FormatPrintingFilter = load_ui_from_file("settings_window/format_printing_filter")
+    Ui_GeneralPrintingFilter = load_ui_from_file("settings_window/general_printing_filter")
 
 
 class AbstractPrintingFilterWidget(QGroupBox):

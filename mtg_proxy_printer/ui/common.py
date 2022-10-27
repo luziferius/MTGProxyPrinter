@@ -91,7 +91,7 @@ def load_ui_from_file(name: str):
         raise FileNotFoundError(error_message)
     try:
         ui_file.open(QFile.ReadOnly)
-        base_type = uic.loadUiType(ui_file, from_imports=True)
+        base_type, _ = uic.loadUiType(ui_file, from_imports=True)
     finally:
         ui_file.close()
     return base_type
