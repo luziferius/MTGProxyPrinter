@@ -77,9 +77,9 @@ def _move_wizard_backward(qtbot: QtBot, wizard: QWizard):
 def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
     with qtbot.wait_signal(page.completeChanged, timeout=100):
-        cb: QCheckBox = page.select_parser_mtg_online
+        cb: QCheckBox = page.ui.select_parser_mtg_online
         cb.click()
-    assert_that(page.select_parser_mtg_online.isChecked())
+    assert_that(page.ui.select_parser_mtg_online.isChecked())
     assert_that(page.complete, is_(True))
     assert_that(page.isComplete())
     assert_that(page.parser_creator, is_(page._create_mtg_online_parser))
@@ -89,10 +89,10 @@ def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
 
 def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
-    cb: QCheckBox = page.select_parser_mtg_arena
+    cb: QCheckBox = page.ui.select_parser_mtg_arena
     with qtbot.wait_signal(cb.clicked, timeout=100):
         cb.click()
-    assert_that(page.select_parser_mtg_arena.isChecked())
+    assert_that(page.ui.select_parser_mtg_arena.isChecked())
     assert_that(page.complete, is_(True))
     assert_that(page.isComplete())
     assert_that(page.parser_creator, is_(page._create_mtg_arena_parser))
@@ -102,12 +102,12 @@ def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
 
 def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, is_identifying_re: bool):
     page = wizard.select_deck_parser_page
-    cb: QCheckBox = page.select_parser_custom_re
-    le: QLineEdit = page.custom_re_input
+    cb: QCheckBox = page.ui.select_parser_custom_re
+    le: QLineEdit = page.ui.custom_re_input
     with qtbot.wait_signal(le.textChanged, timeout=5000):
         cb.click()
         le.setText(re)
-    assert_that(page.select_parser_custom_re.isChecked())
+    assert_that(page.ui.select_parser_custom_re.isChecked())
     assert_that(le.text(), is_(equal_to(re)))
     assert_that(page.complete, is_(is_identifying_re))
     assert_that(page.isComplete(), is_(is_identifying_re))
@@ -121,13 +121,12 @@ def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, i
 
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, enable_print_guessing: bool = False):
     page = wizard.load_list_page
-    with qtbot.wait_signal(page.deck_list.textChanged, timeout=100):
-        page.deck_list.setPlainText(deck_list)
+    with qtbot.wait_signal(page.ui.deck_list.textChanged, timeout=100):
+        page.ui.deck_list.setPlainText(deck_list)
     assert_that(wizard.field("deck_list"), is_(equal_to(deck_list)))
     assert_that(page.isComplete())
-    cb: QCheckBox = page.print_guessing_enable
+    cb: QCheckBox = page.ui.print_guessing_enable
     if enable_print_guessing and not cb.isChecked():
-        cb: QCheckBox = page.print_guessing_enable
         with qtbot.wait_signal(cb.stateChanged, timeout=100):
             cb.click()
         assert_that(cb.isChecked())
@@ -169,7 +168,7 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
     _move_wizard_forward(qtbot, wizard)
     _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     cell_position = QPoint(
         table_view.columnViewportPosition(PageColumns.Set) + 5,
         table_view.rowViewportPosition(0) + 5
@@ -239,7 +238,7 @@ def test_complete_button_disabled_if_zero_cards_identified(qtbot: QtBot, card_db
     _move_wizard_forward(qtbot, wizard)
     _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
@@ -255,7 +254,7 @@ def test_complete_button_enabled_if_one_card_identified(qtbot: QtBot, card_db: C
     _move_wizard_forward(qtbot, wizard)
     _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
@@ -273,7 +272,7 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
     _move_wizard_forward(qtbot, wizard)
     _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
@@ -311,7 +310,7 @@ def test_custom_re_parser_works(qtbot: QtBot, card_db: CardDatabase):
     _move_wizard_forward(qtbot, wizard)
     _select_generic_re_parser(qtbot, wizard, valid_re, True)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))

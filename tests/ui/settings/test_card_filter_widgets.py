@@ -53,8 +53,9 @@ general_printing_widget_mapping = {
 def test_general_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
     download_section[setting] = str(value)
     widget = _create_widget_with_loaded_settings(qtbot, GeneralPrintingFilterWidget, download_section)
+    ui = widget.ui
     for key, widget_name in general_printing_widget_mapping.items():
-        checkbox = getattr(widget, widget_name)
+        checkbox = getattr(ui, widget_name)
         assert_that(
             checkbox.isChecked(),
             is_(equal_to(download_section.getboolean(key))),
@@ -90,13 +91,14 @@ format_printing_widget_mapping = {
 def test_format_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
     download_section[setting] = str(value)
     widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilterWidget, download_section)
-    checkbox: QCheckBox = getattr(widget, format_printing_widget_mapping[setting])
+    ui = widget.ui
+    checkbox: QCheckBox = getattr(ui, format_printing_widget_mapping[setting])
     assert_that(
         checkbox.isChecked(),
         is_(equal_to(value))
     )
     for key, widget_name in format_printing_widget_mapping.items():
-        checkbox: QCheckBox = getattr(widget, widget_name)
+        checkbox: QCheckBox = getattr(ui, widget_name)
         assert_that(checkbox, is_(instance_of(QCheckBox)))
         assert_that(
             checkbox.isChecked(),
@@ -109,7 +111,7 @@ def test_format_printing_filter_loads_correctly(qtbot, download_section, setting
 @pytest.mark.parametrize("setting", format_printing_widget_mapping.keys())
 def test_format_printing_filter_saves_correctly(qtbot, download_section, setting: str, value: bool):
     widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilterWidget, download_section)
-    checkbox: QCheckBox = getattr(widget, format_printing_widget_mapping[setting])
+    checkbox: QCheckBox = getattr(widget.ui, format_printing_widget_mapping[setting])
     assert_that(checkbox, is_(instance_of(QCheckBox)))
     checkbox.setChecked(value)
     widget.save_settings(download_section)
