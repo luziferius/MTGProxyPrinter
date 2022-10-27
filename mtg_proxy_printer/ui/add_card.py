@@ -78,11 +78,10 @@ class AddCardWidget(QWidget):
 
     def _setup_language_combo_box(self) -> QStringListModel:
         self.language_combo_box: QComboBox
-        self.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed)
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
-        model = QStringListModel([preferred_language], self.language_combo_box)
-        with mtg_proxy_printer.ui.common.BlockedSignals(self.language_combo_box):
-            self.language_combo_box.setModel(model)
+        model = QStringListModel([preferred_language], self)
+        self.language_combo_box.setModel(model)
+        self.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed)
         return model
 
     def _setup_card_name_box(self) -> QStringListModel:
