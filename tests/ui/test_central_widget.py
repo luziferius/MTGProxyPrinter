@@ -28,7 +28,7 @@ from .test_main_window import main_window  # noqa
 def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBot, main_window):
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = main_window.document
-    central_widget: CentralWidget = main_window.central_widget
+    central_widget = main_window.ui.central_widget
     assert_that(
         document.pages,
         only_contains(instance_of(Page))
@@ -38,5 +38,5 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
         document.pages,
         only_contains(instance_of(Page))
     )
-    central_widget.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
-    qtbot.mouseClick(central_widget.delete_selected_images_button, Qt.LeftButton)
+    central_widget.ui.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
+    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.LeftButton)
