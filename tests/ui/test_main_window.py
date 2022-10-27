@@ -35,15 +35,15 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.ui.central_widget import ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget
+from mtg_proxy_printer.ui.central_widget import Ui_Columnar, Ui_Grouped, Ui_TabbedVertical
 from tests.helpers import fill_card_database_with_json_cards
 
 
-@pytest.fixture(params=[ColumnarCentralWidget, GroupedCentralWidget, TabbedVerticalCentralWidget])
+@pytest.fixture(params=[Ui_Columnar, Ui_Grouped, Ui_TabbedVertical])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(
-            "mtg_proxy_printer.ui.main_window.get_configured_central_widget_layout_class",
+            "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "_quit"), \
             unittest.mock.patch.object(
@@ -249,7 +249,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     main_window.action_new_page.trigger()  # Condition 2
     assert_that(document.pages, has_length(2))
     with qtbot.waitSignal(document.current_page_changed):
-        main_window.central_widget.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
+        main_window.central_widget.ui.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes), \
             qtbot.waitSignal(document.current_page_changed):
@@ -274,13 +274,13 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
     for page, card in enumerate(cards):
         document.add_card_to_page(page, card, 1)
         document.add_page()
-    main_window.central_widget.document_view.setCurrentIndex(document.index(4, 0))
+    main_window.central_widget.ui.document_view.setCurrentIndex(document.index(4, 0))
     main_window.action_compact_document.trigger()
     assert_that(document.rowCount(), is_(2))
 
 
 def test_removing_last_page_while_selected_works_without_raising_exception(main_window: MainWindow):
     main_window.document.add_page()
-    main_window.central_widget.document_view.setCurrentIndex(main_window.document.index(1, 0))
+    main_window.central_widget.ui.document_view.setCurrentIndex(main_window.document.index(1, 0))
     main_window.action_discard_page.trigger()
     assert_that(main_window.document.rowCount(), is_(1))

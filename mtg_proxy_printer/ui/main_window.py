@@ -28,7 +28,6 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
-from mtg_proxy_printer.ui.central_widget import CentralWidgetTypes, get_configured_central_widget_layout_class
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
@@ -79,13 +78,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.language_model = language_model
         self.card_data_downloader = card_info_downloader
         self._connect_card_info_downloader_signals(card_info_downloader)
-        self.central_widget: CentralWidgetTypes
         self._setup_central_widget()
         self._setup_loading_state_connections()
         self.should_update_languages.connect(
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
-        self.should_update_languages.connect(self.central_widget.add_card_widget.update_selected_language)
+        self.should_update_languages.connect(self.central_widget.ui.add_card_widget.update_selected_language)
         self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.central_widget.settings_changed)
         self.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
@@ -112,10 +110,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             action.setShortcut(shortcut)
 
     def _setup_central_widget(self):
-        central_widget_class = get_configured_central_widget_layout_class()
-        logger.debug(f"Using central widget class {central_widget_class.__name__}")
-        self.central_widget: CentralWidgetTypes
-        self.central_widget = central_widget_class(self)
         self.setCentralWidget(self.central_widget)
         self.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.action_discard_page.triggered.connect(self.central_widget.action_discard_page_triggered)
