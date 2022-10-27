@@ -38,9 +38,9 @@ try:
     from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_WizardPage as Ui_FilterSetupPage
     from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_WizardPage as Ui_SummaryPage
 except ModuleNotFoundError:
-    Ui_CardFilterPage, _ = load_ui_from_file("cache_cleanup_wizard/card_filter_page")
-    Ui_FilterSetupPage, _ = load_ui_from_file("cache_cleanup_wizard/filter_setup_page")
-    Ui_SummaryPage, _ = load_ui_from_file("cache_cleanup_wizard/summary_page")
+    Ui_CardFilterPage = load_ui_from_file("cache_cleanup_wizard/card_filter_page")
+    Ui_FilterSetupPage = load_ui_from_file("cache_cleanup_wizard/filter_setup_page")
+    Ui_SummaryPage = load_ui_from_file("cache_cleanup_wizard/summary_page")
 
 __all__ = [
     "CacheCleanupWizard",
@@ -269,32 +269,34 @@ class UnknownCardImageModel(QAbstractTableModel):
         self.endResetModel()
 
 
-class FilterSetupPage(QWizardPage, Ui_FilterSetupPage):
+class FilterSetupPage(QWizardPage):
 
     def __init__(self, parent: QWidget = None):
         super(FilterSetupPage, self).__init__(parent)
-        self.setupUi(self)
-        self.registerField("remove-everything-enabled", self.delete_everything_checkbox)
-        self.registerField("time-filter-enabled", self.time_filter_enabled_checkbox)
-        self.registerField("time-filter-value", self.time_filter_value_spinbox)
-        self.registerField("count-filter-enabled", self.count_filter_enabled_checkbox)
-        self.registerField("count-filter-value", self.count_filter_value_spinbox)
-        self.registerField("remove-unknown-cards-enabled", self.remove_unknown_cards_checkbox)
+        self.ui = Ui_FilterSetupPage()
+        self.ui.setupUi(self)
+        self.registerField("remove-everything-enabled", self.ui.delete_everything_checkbox)
+        self.registerField("time-filter-enabled", self.ui.time_filter_enabled_checkbox)
+        self.registerField("time-filter-value", self.ui.time_filter_value_spinbox)
+        self.registerField("count-filter-enabled", self.ui.count_filter_enabled_checkbox)
+        self.registerField("count-filter-value", self.ui.count_filter_value_spinbox)
+        self.registerField("remove-unknown-cards-enabled", self.ui.remove_unknown_cards_checkbox)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class CardFilterPage(QWizardPage, Ui_CardFilterPage):
+class CardFilterPage(QWizardPage):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QWidget = None):
         super(CardFilterPage, self).__init__(parent)
-        self.setupUi(self)
+        self.ui = Ui_CardFilterPage()
+        self.ui.setupUi(self)
         self.card_db = card_db
         self.image_db = image_db
         self.card_image_model = KnownCardImageModel(parent=self)
         self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
         self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
-        self.unknown_image_view.setModel(self.unknown_image_model)
+        self.ui.unknown_image_view.setModel(self.unknown_image_model)
         self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -307,7 +309,7 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
-        view: QTableView = self.card_image_view
+        view: QTableView = self.ui.card_image_view
         view: QTableView
         view.setModel(model)
         view.setSortingEnabled(True)
@@ -350,13 +352,13 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
     def _select_unknown_cards_if_enabled(self):
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
             for row in range(self.unknown_image_model.rowCount()):
-                self.unknown_image_view.selectionModel().select(
+                self.ui.unknown_image_view.selectionModel().select(
                     self.unknown_image_model.createIndex(row, UnknownCardColumns.ScryfallId),
                     QItemSelectionModel.Select | QItemSelectionModel.Rows
                 )
 
     def _select_indices(self, indices: typing.Iterable[int]):
-        selection_model = self.card_image_view.selectionModel()
+        selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
                 self.card_image_model.createIndex(index, KnownCardColumns.Name),
@@ -375,30 +377,31 @@ class CardFilterPage(QWizardPage, Ui_CardFilterPage):
              index.siblingAtColumn(UnknownCardColumns.IsFront).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.Size).data(Qt.EditRole))
-            for index in self.unknown_image_view.selectedIndexes() if not index.column()
+            for index in self.ui.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
             (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.IsFront).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.Size).data(Qt.EditRole))
-            for index in self.card_image_view.selectedIndexes() if not index.column()
+            for index in self.ui.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
         return super(CardFilterPage, self).validatePage()
 
 
-class SummaryPage(QWizardPage, Ui_SummaryPage):
+class SummaryPage(QWizardPage):
 
     def __init__(self, parent: QWidget = None):
         super(SummaryPage, self).__init__(parent)
-        self.setupUi(self)
+        self.ui = Ui_SummaryPage()
+        self.ui.setupUi(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
         indices = self.field("selected-images")
         disk_space_freed = format_size(sum(size_bytes for _, _, _, size_bytes in indices))
-        self.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
-        self.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
+        self.ui.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
+        self.ui.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
         logger.debug(f"{self.__class__.__name__} populated.")
 
 
