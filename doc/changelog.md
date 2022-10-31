@@ -2,6 +2,9 @@
 
 # Next version (in development)
 
+- Fixed crash in the card data importer: The importer now handles double faced cards with missing back face images.
+  These cards are skipped during the import.
+
 ## Other
 
 - Rewritten GUI handling. This results in a slightly faster application startup
