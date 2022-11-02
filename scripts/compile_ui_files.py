@@ -21,7 +21,7 @@ import ast
 import textwrap
 from pathlib import Path
 import subprocess
-from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List
+from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any
 
 
 class Assignment(NamedTuple):
@@ -35,7 +35,7 @@ class Assignment(NamedTuple):
 T = TypeVar("T")
 
 
-def type_filter(any_: Iterable[T], types: [Union[Type, Tuple[Type]]]) -> Iterable[T]:
+def type_filter(any_: Iterable[Any], types: [Union[Type[T], Tuple[Type[T], ...]]]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
 
