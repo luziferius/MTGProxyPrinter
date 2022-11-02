@@ -403,7 +403,6 @@ class MainWindow(QMainWindow):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 ) == QMessageBox.StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.ui.action_download_card_data.trigger()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
