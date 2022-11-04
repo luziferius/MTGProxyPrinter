@@ -554,8 +554,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 face_ids.append(face_id)
         return face_ids
 
-    @staticmethod
-    def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
+    def _get_card_filter_data(self, card: JSONType) -> typing.Dict[str, bool]:
         legalities: typing.Dict[str, str] = card["legalities"]
         return {
             # Racism filter
