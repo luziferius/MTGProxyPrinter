@@ -50,7 +50,7 @@ looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
 JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
 CardStream = typing.Generator[JSONType, None, None]
 IntTuples = typing.List[typing.Tuple[int]]
-BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
+BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
 
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
@@ -165,15 +165,10 @@ class CardInfoWorkerBase(DownloaderBase):
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            for item in ijson.items(data, "data.item", use_float=True):
-                if item["type"] == requested_item:
-                    result = item["download_uri"]
-                    logger.debug(f"Bulk data located at: {result}")
-                    return result
-        raise RuntimeError(
-            "URL to the Scryfall bulk data export not found. "
-            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
-            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+            item = ijson.items(data, "", use_float=True)[0]
+        result = item["download_uri"]
+        logger.debug(f"Bulk data located at: {result}")
+        return result
 
 
 class CardInfoFileDownloadWorker(CardInfoWorkerBase):
