@@ -107,18 +107,17 @@ class CardInfoDownloader(QObject):
     request_import_from_url = Signal()
     request_download_to_file = Signal(Path)
 
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 requested_item: str = "all_cards", parent: QObject = None):
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
-        self.database_import_worker = CardInfoDatabaseImportWorker(model, requested_item)  # No parent assignment
+        self.database_import_worker = CardInfoDatabaseImportWorker(model)  # No parent assignment
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.database_import_worker.moveToThread(self.worker_thread)
-        self.file_download_worker = self._create_file_download_worker(requested_item, self.worker_thread)
+        self.file_download_worker = self._create_file_download_worker(self.worker_thread)
         self.request_import_from_file.connect(self.database_import_worker.import_card_data_from_local_file)
         self.request_import_from_url.connect(self.database_import_worker.import_card_data_from_online_api)
         self.database_import_worker.download_begins.connect(self.download_begins)
@@ -131,9 +130,9 @@ class CardInfoDownloader(QObject):
         self.worker_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_file_download_worker(self, requested_item: str, thread: QThread) -> "CardInfoFileDownloadWorker":
+    def _create_file_download_worker(self, thread: QThread) -> "CardInfoFileDownloadWorker":
         # No Qt parent assignment, because cross-thread parent relationships are unsupported
-        worker = CardInfoFileDownloadWorker(requested_item)
+        worker = CardInfoFileDownloadWorker()
         worker.moveToThread(thread)  # Move to thread before connecting signals to create queued connections
         worker.download_begins.connect(self.download_begins)
         worker.download_progress.connect(self.download_progress)
@@ -156,11 +155,7 @@ class CardInfoDownloader(QObject):
 
 class CardInfoWorkerBase(DownloaderBase):
 
-    def __init__(self, requested_item: str = "all_cards", parent: QObject = None):
-        self.requested_item = requested_item
-        super().__init__(parent)
-
-    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
+    def get_scryfall_bulk_card_data_url(self) -> str:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
@@ -183,7 +178,7 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         """
         logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
         logger.debug("Request bulk data URL from the Scryfall API.")
-        url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+        url = self.get_scryfall_bulk_card_data_url()
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
         monitor = self._open_url(url, "Downloading card data:")
@@ -201,10 +196,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 requested_item: str = "all_cards", parent: QObject = None):
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super(CardInfoDatabaseImportWorker, self).__init__(requested_item, parent)
+        super().__init__(parent)
         self.model = model
         self.should_run = True
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -241,7 +235,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def import_card_data_from_online_api(self):
         try:
-            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            url = self.get_scryfall_bulk_card_data_url()
             data = self.read_json_card_data_from_url(url)
             estimated_total_card_count = self.get_available_card_count()
             self.download_begins.emit(estimated_total_card_count, "Updating card data from Scryfall:")
@@ -268,7 +262,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """
         if url is None:
             logger.debug("Request bulk data URL from the Scryfall API.")
-            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            url = self.get_scryfall_bulk_card_data_url()
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")

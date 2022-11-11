@@ -115,7 +115,6 @@ class MainWindow(QMainWindow):
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
         self.ui.action_discard_page.triggered.connect(self.ui.central_widget.action_discard_page_triggered)
 
-
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
