@@ -58,8 +58,6 @@ to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker: [
         "_populate_database",
         "_parse_single_printing",
-    ],
-    mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
         "_insert_card_faces",
         "_get_card_filter_data",
@@ -68,7 +66,6 @@ to_be_profiled_functions = {
         "_insert_card",
         "_insert_printing",
         "_insert_face_name",
-        "_get_set_wackiness_score",
     ],
 }
 

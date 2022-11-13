@@ -212,6 +212,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         super(CardInfoDatabaseImportWorker, self).__init__(requested_item, parent)
         self.model = model
         self.should_run = True
+        self.set_code_cache: typing.Dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @functools.lru_cache(maxsize=1)
@@ -311,7 +312,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             logger.exception(f"Error in parsing step")
             self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
         finally:
-            _clear_lru_caches()
+            self._clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")
 
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
@@ -320,12 +321,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         progress_report_step = total_count // 100
         # Look up the printing filter ids only once per import
         printing_filter_ids = self._read_printing_filters_from_db()
-        set_wackiness_score_cache: typing.Dict[str, SetWackinessScore] = {}
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
         db: sqlite3.Connection = self.model.db
-        # Will be re-populated while iterating over the card data. Axing the previous data is far cheaper than trying
+        # PrintingDisplayFilter will be re-populated while iterating over the card data.
+        # Axing the previous data is far cheaper than trying
         # to update it in-place by removing up to number-of-available-filters entries per each individual card,
         # just to make sure that rare un-banned cards are updated properly.
         db.execute("DELETE FROM PrintingDisplayFilter\n")
@@ -337,7 +338,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if _should_skip_card(card):
+            if self._should_skip_card(card):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
                     INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
@@ -347,10 +348,10 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                             language = excluded.language
                         WHERE oracle_id <> excluded.oracle_id
                            OR language <> excluded.language
-                    ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
+                    ;"""), (card["id"], card["lang"], self._get_oracle_id(card)))
                 continue
             try:
-                face_ids += self._parse_single_printing(card, printing_filter_ids, set_wackiness_score_cache)
+                face_ids += self._parse_single_printing(card, printing_filter_ids)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -359,7 +360,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             if progress_report_step and not index % progress_report_step:
                 self.download_progress.emit(index)
 
-        _clean_unused_data(self.model.db, face_ids)
+        self._clean_unused_data(face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
         self.download_begins.emit(5, "Processing card filters")
         self.model.store_current_printing_filters(
@@ -384,333 +385,291 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()
         }
 
-    def _parse_single_printing(self, card: JSONType, printing_filter_ids, wackiness_score_cache):
-        language_id = _insert_language(self.model, card["lang"])
-        oracle_id = _get_oracle_id(card)
-        card_id = _insert_card(self.model, oracle_id)
-        set_id = _insert_set(self.model, card, wackiness_score_cache)
-        printing_id = insert_printing(self.model, card, card_id, set_id)
-        _insert_card_filters(self.model, printing_id, _get_card_filter_data(card), printing_filter_ids)
-        new_face_ids = _insert_card_faces(self.model, card, language_id, printing_id)
+    def _parse_single_printing(self, card: JSONType, printing_filter_ids):
+        language_id = self._insert_language(card["lang"])
+        oracle_id = self._get_oracle_id(card)
+        card_id = self._insert_card(oracle_id)
+        set_id = self.set_code_cache.get(card["set"])
+        if not set_id:
+            self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
+        printing_id = self._insert_printing(card, card_id, set_id)
+        filter_data = self._get_card_filter_data(card)
+        self._insert_card_filters(printing_id, filter_data, printing_filter_ids)
+        new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
 
+    def _clear_lru_caches(self):
+        """
+        Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
+        the import. This will lead to assignment of wrong data via invalid foreign key relations.
+        To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
+        """
+        for cache in (self._insert_language, self._insert_card):
+            logger.debug(str(cache.cache_info()))
+            cache.cache_clear()
+        self.set_code_cache.clear()
 
-def _clear_lru_caches():
-    """
-    Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
-    the import. This will lead to assignment of wrong data via invalid foreign key relations.
-    To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
-    """
-    for cache in (_insert_language, _insert_set_data, _insert_card):
-        logger.debug(str(cache.cache_info()))
-        cache.cache_clear()
+    def _clean_unused_data(self, new_face_ids: IntTuples):
+        """Purges all excess data, like printings that are no longer in the import data."""
+        db = self.model.db
+        db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
+        excess_face_ids = db_face_ids.difference(new_face_ids)
+        logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
+        db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
+        db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
+        db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
+        db.execute('DELETE FROM MTGSet WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
+        db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
+        db.execute(cached_dedent("""\
+        DELETE FROM PrintLanguage
+            WHERE language_id NOT IN (
+              SELECT FaceName.language_id
+              FROM FaceName
+            )
+        """))
 
+    @functools.lru_cache(None)
+    def _insert_language(self, language: str) -> int:
+        """
+        Inserts the given language into the database and returns the generated ID.
+        If the language is already present, just return the ID.
+        """
+        db = self.model.db
+        parameters = language,
+        if result := db.execute(
+                'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
+                parameters).fetchone():
+            language_id, = result
+        else:
+            language_id = db.execute(
+                'INSERT INTO PrintLanguage("language") VALUES (?)\n',
+                parameters).lastrowid
+        return language_id
 
-def _clean_unused_data(db: sqlite3.Connection, new_face_ids: IntTuples):
-    """Purges all excess data, like printings that are no longer in the import data."""
-    db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
-    excess_face_ids = db_face_ids.difference(new_face_ids)
-    logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
-    db.executemany("DELETE FROM CardFace WHERE card_face_id = ?\n", excess_face_ids)
-    db.execute("DELETE FROM FaceName WHERE face_name_id NOT IN (SELECT CardFace.face_name_id FROM CardFace)\n")
-    db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
-    db.execute('DELETE FROM MTGSet WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
-    db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
-    db.execute(cached_dedent("""\
-    DELETE FROM PrintLanguage
-        WHERE language_id NOT IN (
-          SELECT FaceName.language_id
-          FROM FaceName
-        )
-    """))
+    @functools.lru_cache(None)
+    def _insert_card(self, oracle_id: str) -> int:
+        db = self.model.db
+        parameters = oracle_id,
+        if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
+            card_id, = result
+        else:
+            card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
+        return card_id
 
-
-@functools.lru_cache(None)
-def _insert_language(model: CardDatabase, language: str) -> int:
-    """
-    Inserts the given language into the database and returns the generated ID.
-    If the language is already present, just return the ID.
-    """
-    parameters = language,
-    if result := model.db.execute(
-            'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
-            parameters).fetchone():
-        language_id, = result
-    else:
-        language_id = model.db.execute(
-            'INSERT INTO PrintLanguage("language") VALUES (?)\n',
-            parameters).lastrowid
-    return language_id
-
-
-@functools.lru_cache(None)
-def _insert_card(model: CardDatabase, oracle_id: str) -> int:
-    parameters = oracle_id,
-    if result := model.db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
-        card_id, = result
-    else:
-        card_id = model.db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
-    return card_id
-
-
-def _insert_set(model: CardDatabase, card: JSONType, wackiness_score_cache) -> int:
-    # Can’t use lru_cache here, because each card object is unique. So extract a hashable parameter set
-    # and delegate to a cacheable function.
-    set_abbr, set_name, set_uri = card["set"], card["set_name"], card["scryfall_set_uri"]
-    release_date = card["released_at"]
-    wackiness_score = _get_set_wackiness_score(card, wackiness_score_cache)
-    return _insert_set_data(model, set_abbr, set_name, set_uri, release_date, wackiness_score)
-
-
-@functools.lru_cache(None)
-def _insert_set_data(
-        model: CardDatabase, set_abbr: str, set_name: str, set_uri: str,
-        release_date: str, wackiness_score: SetWackinessScore) -> int:
-    model.db.execute(cached_dedent(
-        """\
-        INSERT INTO MTGSet (set_code, set_name, set_uri, release_date, wackiness_score)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (set_code) DO
-            UPDATE SET
-              set_name = excluded.set_name,
-              set_uri = excluded.set_uri,
-              release_date = excluded.release_date,
-              wackiness_score  = excluded.wackiness_score
-            WHERE set_name <> excluded.set_name
-              OR set_uri <> excluded.set_uri
-              -- Wizards started to add “The List” cards to older sets, i.e. reusing the original set code for newer
-              -- reprints of cards in that set. This greater than searches for the oldest release date for a given set
-              OR release_date > excluded.release_date
-              OR wackiness_score <> excluded.wackiness_score
-        """),
-        (set_abbr, set_name, set_uri, release_date, wackiness_score)
-    )
-    set_id, = model.db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
-    return set_id
-
-
-def _insert_face_name(model: CardDatabase, printed_name: str, language_id: int) -> int:
-    """
-    Insert the given, printed face name into the database, if it not already stored. Returns the integer
-    PRIMARY KEY face_name_id, used to reference the inserted face name.
-    """
-    parameters = (printed_name, language_id)
-    if result := model.db.execute(
-            "SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n", parameters).fetchone():
-        face_name_id, = result
-    else:
-        face_name_id = model.db.execute(
-            "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
-    return face_name_id
-
-
-def insert_printing(model: CardDatabase, card: JSONType, card_id: int, set_id: int) -> int:
-    data = PrintingData(
-        card_id,
-        set_id,
-        card["collector_number"],
-        card["id"],
-        card["oversized"],
-        card["highres_image"],
-    )
-    return _insert_printing(model, data)
-
-
-def _insert_printing(model: CardDatabase, data: PrintingData) -> int:
-    model.db.execute(cached_dedent(
-        """\
-        INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT (scryfall_id) DO UPDATE
-                SET card_id = excluded.card_id,
-                    set_id = excluded.set_id,
-                    collector_number = excluded.collector_number,
-                    is_oversized = excluded.is_oversized,
-                    highres_image = excluded.highres_image
-            WHERE card_id <> excluded.card_id
-               OR set_id <> excluded.set_id
-               OR collector_number <> excluded.collector_number
-               OR is_oversized <> excluded.is_oversized
-               OR highres_image <> excluded.highres_image
-        """), data,
-    )
-    printing_id, = model.db.execute(cached_dedent(
-        """\
-        SELECT printing_id
-            FROM Printing
-            WHERE scryfall_id = ?
-        """), (data.scryfall_id,)
-    ).fetchone()
-    return printing_id
-
-
-def _insert_card_faces(model: CardDatabase, card: JSONType, language_id: int, printing_id: int) -> IntTuples:
-    """Inserts all faces of the given card together with their names."""
-    face_ids: IntTuples = []
-    for face in _get_card_faces(card):
-        face_name_id = _insert_face_name(model, face.printed_face_name, language_id)
-        face_id: typing.Tuple[int] = model.db.execute(cached_dedent(
+    def _insert_set(self, card: JSONType) -> int:
+        db = self.model.db
+        set_abbr = card["set"]
+        wackiness_score = self._get_set_wackiness_score(card)
+        db.execute(cached_dedent(
             """\
-            INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
+            INSERT INTO MTGSet (set_code, set_name, set_uri, release_date, wackiness_score)
                 VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
-                SET png_image_uri = excluded.png_image_uri,
-                    face_number = excluded.face_number
-                RETURNING card_face_id
+                ON CONFLICT (set_code) DO
+                UPDATE SET
+                  set_name = excluded.set_name,
+                  set_uri = excluded.set_uri,
+                  release_date = excluded.release_date,
+                  wackiness_score  = excluded.wackiness_score
+                WHERE set_name <> excluded.set_name
+                  OR set_uri <> excluded.set_uri
+                  -- Wizards started to add “The List” cards to older sets, i.e. reusing the original set code for newer
+                  -- reprints of cards in that set. This greater than searches for the oldest release date for a given set
+                  OR release_date > excluded.release_date
+                  OR wackiness_score <> excluded.wackiness_score
             """),
-            (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+            (set_abbr, card["set_name"], card["scryfall_set_uri"], card["released_at"], wackiness_score)
+        )
+        set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
+        return set_id
+
+    def _insert_face_name(self, printed_name: str, language_id: int) -> int:
+        """
+        Insert the given, printed face name into the database, if it not already stored. Returns the integer
+        PRIMARY KEY face_name_id, used to reference the inserted face name.
+        """
+        db = self.model.db
+        parameters = (printed_name, language_id)
+        if result := db.execute(
+                "SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n", parameters).fetchone():
+            face_name_id, = result
+        else:
+            face_name_id = db.execute(
+                "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
+        return face_name_id
+
+    def _insert_printing(self, card: JSONType, card_id: int, set_id: int) -> int:
+        db = self.model.db
+        data = PrintingData(
+            card_id,
+            set_id,
+            card["collector_number"],
+            card["id"],
+            card["oversized"],
+            card["highres_image"],
+        )
+        db.execute(cached_dedent(
+            """\
+            INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (scryfall_id) DO UPDATE
+                    SET card_id = excluded.card_id,
+                        set_id = excluded.set_id,
+                        collector_number = excluded.collector_number,
+                        is_oversized = excluded.is_oversized,
+                        highres_image = excluded.highres_image
+                WHERE card_id <> excluded.card_id
+                   OR set_id <> excluded.set_id
+                   OR collector_number <> excluded.collector_number
+                   OR is_oversized <> excluded.is_oversized
+                   OR highres_image <> excluded.highres_image
+            """), data,
+        )
+        printing_id, = db.execute(cached_dedent(
+            """\
+            SELECT printing_id
+                FROM Printing
+                WHERE scryfall_id = ?
+            """), (data.scryfall_id,)
         ).fetchone()
-        if face_id is not None:
-            face_ids.append(face_id)
-    return face_ids
+        return printing_id
 
+    def _insert_card_faces(self, card: JSONType, language_id: int, printing_id: int) -> IntTuples:
+        """Inserts all faces of the given card together with their names."""
+        db = self.model.db
+        face_ids: IntTuples = []
+        for face in self._get_card_faces(card):
+            face_name_id = self._insert_face_name(face.printed_face_name, language_id)
+            face_id: typing.Tuple[int] = db.execute(cached_dedent(
+                """\
+                INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
+                    SET png_image_uri = excluded.png_image_uri,
+                        face_number = excluded.face_number
+                    RETURNING card_face_id
+                """),
+                (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+            ).fetchone()
+            if face_id is not None:
+                face_ids.append(face_id)
+        return face_ids
 
-def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
-    legalities: typing.Dict[str, str] = card["legalities"]
-    return {
-        # Racism filter
-        "hide-cards-depicting-racism": card.get("content_warning", False),
-        # Cards with placeholder images (low-res image with "not available in your language" overlay)
-        "hide-cards-without-images": card["image_status"] == "placeholder",
-        "hide-oversized-cards": card["oversized"],
-        # Border filter
-        "hide-white-bordered": card["border_color"] == "white",
-        "hide-gold-bordered": card["border_color"] == "gold",
-        # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
-        # black-bordered promotional cards, in addition to silver-bordered cards.
-        "hide-funny-cards": card["set_type"] == "funny",
-        # Token cards
-        "hide-token": card["layout"] == "token",
-        "hide-digital-cards": card["digital"],
-        # Specific format legality. Use .get() with a default instead of [] to not fail
-        # if Scryfall removes one of the listed formats in the future.
-        "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
-        "hide-banned-in-commander": legalities.get("commander", "") == "banned",
-        "hide-banned-in-historic": legalities.get("historic", "") == "banned",
-        "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
-        "hide-banned-in-modern": legalities.get("modern", "") == "banned",
-        "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
-        "hide-banned-in-penny": legalities.get("penny", "") == "banned",
-        "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
-        "hide-banned-in-standard": legalities.get("standard", "") == "banned",
-        "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
-    }
+    def _get_card_filter_data(self, card: JSONType) -> typing.Dict[str, bool]:
+        legalities: typing.Dict[str, str] = card["legalities"]
+        return {
+            # Racism filter
+            "hide-cards-depicting-racism": card.get("content_warning", False),
+            # Cards with placeholder images (low-res image with "not available in your language" overlay)
+            "hide-cards-without-images": card["image_status"] == "placeholder",
+            "hide-oversized-cards": card["oversized"],
+            # Border filter
+            "hide-white-bordered": card["border_color"] == "white",
+            "hide-gold-bordered": card["border_color"] == "gold",
+            # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+            # black-bordered promotional cards, in addition to silver-bordered cards.
+            "hide-funny-cards": card["set_type"] == "funny",
+            # Token cards
+            "hide-token": card["layout"] == "token",
+            "hide-digital-cards": card["digital"],
+            # Specific format legality. Use .get() with a default instead of [] to not fail
+            # if Scryfall removes one of the listed formats in the future.
+            "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
+            "hide-banned-in-commander": legalities.get("commander", "") == "banned",
+            "hide-banned-in-historic": legalities.get("historic", "") == "banned",
+            "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
+            "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+            "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
+            "hide-banned-in-penny": legalities.get("penny", "") == "banned",
+            "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
+            "hide-banned-in-standard": legalities.get("standard", "") == "banned",
+            "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
+        }
 
+    @staticmethod
+    def _get_set_wackiness_score(card: JSONType) -> SetWackinessScore:
+        if card["oversized"]:
+            result = SetWackinessScore.OVERSIZED
+        elif card["layout"] == "art_series":
+            result = SetWackinessScore.ART_SERIES
+        elif card["digital"]:
+            result = SetWackinessScore.DIGITAL
+        elif card["border_color"] == "white":
+            result = SetWackinessScore.WHITE_BORDERED
+        elif card["set_type"] == "funny":
+            result = SetWackinessScore.FUNNY
+        elif card["border_color"] == "gold":
+            result = SetWackinessScore.GOLD_BORDERED
+        elif card["set_type"] == "promo":
+            result = SetWackinessScore.PROMOTIONAL
+        else:
+            result = SetWackinessScore.REGULAR
+        return result
 
-def _get_set_wackiness_score(card: JSONType, cache: typing.Dict[str, SetWackinessScore]) -> SetWackinessScore:
-    set_code = card["set"]
-    if (score := cache.get(set_code)) is not None:
-        return score
-    if card["oversized"]:
-        result = SetWackinessScore.OVERSIZED
-    elif card["layout"] == "art_series":
-        result = SetWackinessScore.ART_SERIES
-    elif card["digital"]:
-        result = SetWackinessScore.DIGITAL
-    elif card["border_color"] == "white":
-        result = SetWackinessScore.WHITE_BORDERED
-    elif card["set_type"] == "funny":
-        result = SetWackinessScore.FUNNY
-    elif card["border_color"] == "gold":
-        result = SetWackinessScore.GOLD_BORDERED
-    elif card["set_type"] == "promo":
-        result = SetWackinessScore.PROMOTIONAL
-    else:
-        result = SetWackinessScore.REGULAR
-    cache[set_code] = result
-    return result
+    def _insert_card_filters(
+            self, printing_id: int, filter_data: typing.Dict[str, bool],
+            printing_filter_ids: typing.Dict[str, int]):
+        self.model.db.executemany(
+            "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
+            ((printing_id, printing_filter_ids[filter_name])
+             for filter_name, filter_applies in filter_data.items() if filter_applies)
+        )
 
+    @staticmethod
+    def _should_skip_card(card: JSONType) -> bool:
+        # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
+        # Also skip double faced cards that have at least one face without images
+        return card["image_status"] == "missing" or (
+                "card_faces" in card
+                and "image_uris" not in card
+                and any("image_uris" not in face for face in card["card_faces"])
+        )
 
-def _insert_card_filters(
-        model: CardDatabase, printing_id: int, filter_data: typing.Dict[str, bool],
-        printing_filter_ids: typing.Dict[str, int]):
-    model.db.executemany(
-        "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
-        ((printing_id, printing_filter_ids[filter_name])
-         for filter_name, filter_applies in filter_data.items() if filter_applies)
-    )
+    def _get_card_faces(self, card: JSONType) -> typing.Generator[CardFaceData, None, None]:
+        """
+        Yields a CardFaceData object for each face found in the card object.
+        The printed name falls back to the English name, if the card has no printed_name key.
 
-
-def _should_skip_card(card: JSONType) -> bool:
-    # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
-    # Also skip double faced cards that have at least one face without images
-    return card["image_status"] == "missing" or (
-            "card_faces" in card
-            and "image_uris" not in card
-            and not all("image_uris" in face for face in card["card_faces"])
-    )
-
-
-def _get_card_faces(card: JSONType) -> typing.Generator[CardFaceData, None, None]:
-    """
-    Yields a CardFaceData object for each face found in the card object.
-    The printed name falls back to the English name, if the card has no printed_name key.
-
-    Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
-    this function builds a "card_face" object providing only the required information from the card object itself.
-    """
-    try:
-        faces: typing.List[JSONType] = card["card_faces"]
-    except KeyError:
-        faces: typing.List[JSONType] = [
+        Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
+        this function builds a "card_face" object providing only the required information from the card object itself.
+        """
+        faces: typing.List[JSONType] = card.get("card_faces") or [
             {
-                "printed_name": _get_card_name(card),
+                "printed_name": self._get_card_name(card),
                 "image_uris": card["image_uris"],
             }
         ]
-    return (
-        CardFaceData(
-            _get_card_name(face),
-            (image_uri := _get_png_image_uri(card, face)),
-            _is_front_face(image_uri),
-            face_number
+        return (
+            CardFaceData(
+                self._get_card_name(face),
+                image_uri := (face.get("image_uris") or card["image_uris"])["png"],
+                # (image_uri := self._get_png_image_uri(card, face)),
+                # The API does not expose which side a face is, so get that
+                # detail using the directory structure in the URI. This is kind of a hack, though.
+                "/front/" in image_uri,
+                face_number
+            )
+            for face_number, face in enumerate(faces)
         )
-        for face_number, face in enumerate(faces)
-    )
 
+    @staticmethod
+    def _get_oracle_id(card: JSONType) -> str:
+        """
+        Reads the oracle_id property of the given card.
 
-def _get_png_image_uri(card: JSONType, face: JSONType):
-    """
-    Get the PNG image URI of the given card face.
+        This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
+        card object does not contain the oracle_id.
+        """
+        try:
+            return card["oracle_id"]
+        except KeyError:
+            first_face: JSONType = card["card_faces"][0]
+            return first_face["oracle_id"]
 
-    Double-faced cards have multiple faces and an image in each face.
-    Split cards have multiple faces, but the singular image is located in the card itself.
-    """
-    try:
-        return face["image_uris"]["png"]
-    except KeyError:
-        return card["image_uris"]["png"]
+    @staticmethod
+    def _get_card_name(card_or_face: JSONType) -> str:
+        """
+        Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
+        English cards only have the “name” attribute, so use that as a fallback.
+        """
+        return card_or_face.get("printed_name") or card_or_face["name"]
 
-
-def _get_oracle_id(card: JSONType) -> str:
-    """
-    Reads the oracle_id property of the given card.
-
-    This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
-    card object does not contain the oracle_id.
-    """
-    try:
-        return card["oracle_id"]
-    except KeyError:
-        first_face: JSONType = card["card_faces"][0]
-        return first_face["oracle_id"]
-
-
-def _is_front_face(image_uri: str) -> bool:
-    """
-    Determine if the PNG image URI is a front or back face. The API does not expose which side a face is, so get that
-    detail using the directory structure in the URI. This is kind of a hack, though.
-
-    :param image_uri: URI pointing to the image on the Scryfall servers
-    :return: True, if the face is a front face, False otherwise
-    """
-    return "/front/" in image_uri
-
-
-def _get_card_name(card_or_face: JSONType) -> str:
-    # Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
-    # English cards only have the “name” attribute, so use that as a fallback.
-    try:
-        return card_or_face["printed_name"]
-    except KeyError:
-        return card_or_face["name"]
