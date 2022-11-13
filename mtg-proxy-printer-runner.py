@@ -26,6 +26,68 @@ import sys
 root_path = pathlib.Path(__file__).parent.absolute().resolve()
 sys.path.insert(0, str(root_path))
 
+import mtg_proxy_printer.model.carddb
 from mtg_proxy_printer.__main__ import main  # noqa
 
-main()
+
+# These methods are wrapped by the profile() function
+# if this script is run using the kernprof line profiler.
+to_be_profiled_functions = {
+    mtg_proxy_printer.model.carddb.CardDatabase: [
+        "get_all_languages",
+        "get_card_names",
+        "is_valid_and_unique_card",
+        "get_cards_from_data",
+        "get_replacement_card_for_unknown_printing",
+        "_get_cards_from_data",
+        "find_collector_numbers_matching",
+        "find_sets_matching",
+        "get_card_with_scryfall_id",
+        "get_opposing_face",
+        "guess_language_from_name",
+        "translate_card_name",
+        "is_removed_printing",
+        "cards_not_used_since",
+        "cards_used_less_often_then",
+        "_translate_card",
+        "store_current_printing_filters",
+        "_update_cached_data",
+    ],
+}
+
+
+def is_running_with_kernprof() -> bool:
+    """
+    Determine if the script was called using kernprof.
+    It is, if "profile" is present in the global scope.
+    """
+    try:
+        profile
+    except (AttributeError, NameError):
+        return False
+    else:
+        return True
+
+
+def inject_line_profiler():
+    for module_, function_list in to_be_profiled_functions.items():
+        for func_name in function_list:
+            try:
+                func = getattr(module_, func_name)
+            except AttributeError:
+                import warnings
+                warnings.warn(f"""Function "{func_name}" in module/class "{module_.__name__}" not found, skipping.""")
+            else:
+                # Bypass any functools LRU cache
+                if hasattr(func, "__wrapped__"):
+                    func.__wrapped__ = profile(func.__wrapped__)
+                else:
+                    func = profile(func)
+                setattr(module_, func_name, func)
+
+
+if __name__ == "__main__":
+    if is_running_with_kernprof():
+        print("Running with kernprof. Injecting profile decorator.")
+        inject_line_profiler()
+    main()
