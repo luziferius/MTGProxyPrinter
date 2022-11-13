@@ -51,16 +51,6 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
     "CardDatabase.sqlite3"
 )
 
-try:
-    # Profiling decorator, injected into globals by line-profiler. Because the injection does funky stuff, this
-    # is the easiest way to test if the profile() function is defined.
-    # noinspection PyUnresolvedReferences,PyUnboundLocalVariable
-    profile
-except NameError:
-    # If not defined, use this identity decorator as a replacement
-    def profile(func):
-        return func
-
 
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
@@ -233,7 +223,6 @@ class CardDatabase:
         allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.date.today()
         return allow_update
 
-    @profile
     def get_all_languages(self) -> StringList:
         """Returns the list of all known and visible languages, sorted ascending."""
         logger.debug("Reading all known languages")
@@ -244,7 +233,6 @@ class CardDatabase:
         '''))]
         return result
 
-    @profile
     def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
         """Returns a list with all card names in the given language."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
@@ -290,7 +278,6 @@ class CardDatabase:
         ''')
         return {item for item, in self.db.execute(query, names)}
 
-    @profile
     def is_valid_and_unique_card(self, card: CardIdentificationData) -> bool:
         """Checks, if the given card data represents a unique card printing"""
         query = cached_dedent('''\
@@ -321,7 +308,6 @@ class CardDatabase:
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    @profile
     def get_cards_from_data(self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         """
         Called with some card identification data and returns all matching cards.
@@ -377,7 +363,6 @@ class CardDatabase:
         result = self._get_cards_from_data(query, where_parameters)
         return result
 
-    @profile
     def get_replacement_card_for_unknown_printing(
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
@@ -404,7 +389,6 @@ class CardDatabase:
         query += '        , VisiblePrintings.highres_image DESC\n'
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
-    @profile
     def _get_cards_from_data(self, query, parameters) -> CardList:
         cursor = self.db.execute(query, parameters)
         result = [
@@ -418,7 +402,6 @@ class CardDatabase:
         ]
         return result
 
-    @profile
     def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
         """
         Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
@@ -447,7 +430,6 @@ class CardDatabase:
         ''')
         return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
 
-    @profile
     def find_sets_matching(
             self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[MTGSet]:
         """
@@ -479,7 +461,6 @@ class CardDatabase:
         query += '    ORDER BY set_name ASC\n'
         return list(itertools.starmap(MTGSet, self.db.execute(query, parameters)))
 
-    @profile
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
@@ -499,14 +480,12 @@ class CardDatabase:
                 bool(highres_image), bool(is_oversized), face_number
             )
 
-    @profile
     def get_opposing_face(self, card) -> OptionalCard:
         """
         Returns the opposing face for double faced cards, or None for single-faced cards.
         """
         return self.get_card_with_scryfall_id(card.scryfall_id, not card.is_front)
 
-    @profile
     def guess_language_from_name(self, name: str) -> typing.Optional[str]:
         """Guesses the card language from the card name. Returns None, if no result was found."""
         query = cached_dedent('''\
@@ -520,7 +499,6 @@ class CardDatabase:
         ''')
         return self._read_optional_scalar_from_db(query, (name,))
 
-    @profile
     def is_known_language(self, language: str) -> bool:
         """Returns true, if the given two-letter code is a known language. Returns False otherwise."""
         query = cached_dedent('''
@@ -532,7 +510,6 @@ class CardDatabase:
         ''')
         return bool(self._read_optional_scalar_from_db(query, (language,)))
 
-    @profile
     def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
@@ -590,7 +567,6 @@ class CardDatabase:
         else:
             return None
 
-    @profile
     def is_removed_printing(self, scryfall_id: str) -> bool:
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
@@ -601,7 +577,6 @@ class CardDatabase:
         """)
         return bool(self._read_optional_scalar_from_db(query, parameters))
 
-    @profile
     def cards_not_used_since(self, keys: typing.List[typing.Tuple[str, bool]], date: datetime.date) -> typing.List[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
@@ -620,7 +595,6 @@ class CardDatabase:
                 cards_not_used_since.append(index)
         return cards_not_used_since
 
-    @profile
     def cards_used_less_often_then(self,  keys: typing.List[typing.Tuple[str, bool]], count: int) -> typing.List[int]:
         """
         Filters the given list of card keys (tuple scryfall_id, is_front). Returns a new list containing the indices
@@ -675,7 +649,6 @@ class CardDatabase:
             return result
         return to_translate
 
-    @profile
     def _translate_card(self, card: Card, language_override: str) -> OptionalCard:
         """
         Tries to translate the given card into the given language.
@@ -711,7 +684,6 @@ class CardDatabase:
             bool(highres_image), bool(is_oversized), face_number
         )
 
-    @profile
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
                                        progress_signal: typing.Callable[[int], None] = None):
         if progress_signal is None:
@@ -761,7 +733,6 @@ class CardDatabase:
             )
         return bool(old_filters)
 
-    @profile
     def _update_cached_data(self, progress_signal: typing.Callable[[int], None]):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
