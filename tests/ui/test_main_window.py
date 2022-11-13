@@ -123,11 +123,15 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
+            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.request_import_from_url, timeout=1000):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
     main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_called()
+    assert_that(
+        main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url,
+        has_property("call_count", equal_to(2))
+    )
     assert_that(ui.action_download_card_data.isEnabled(), is_(False))
 
 
@@ -190,11 +194,15 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value):
+            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.request_import_from_url, timeout=1000):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
     main_window.card_data_downloader.database_import_worker.get_scryfall_bulk_card_data_url.assert_called_once()
-    main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url.assert_called()
+    assert_that(
+        main_window.card_data_downloader.database_import_worker.read_json_card_data_from_url,
+        has_property("call_count", equal_to(2))
+    )
     assert_that(ui.action_download_card_data.isEnabled(), is_(False))
 
 
