@@ -51,8 +51,6 @@ to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker: [
         "_populate_database",
         "_parse_single_printing",
-    ],
-    mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
         "_insert_card_faces",
         "_get_card_filter_data",
@@ -61,7 +59,6 @@ to_be_profiled_functions = {
         "_insert_card",
         "_insert_printing",
         "_insert_face_name",
-        "_get_set_wackiness_score",
     ],
 }
 
@@ -70,7 +67,7 @@ def is_running_with_kernprof() -> bool:
     """Determine if the script was called using kernprof. It is, if "profile" is present in the global scope."""
     try:
         profile
-    except AttributeError:
+    except (AttributeError, NameError):
         return False
     else:
         return True
