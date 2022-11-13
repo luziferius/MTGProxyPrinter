@@ -160,7 +160,7 @@ class CardInfoWorkerBase(DownloaderBase):
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            item = ijson.items(data, "", use_float=True)[0]
+            item = next(ijson.items(data, "", use_float=True))
         result = item["download_uri"]
         logger.debug(f"Bulk data located at: {result}")
         return result
@@ -234,6 +234,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             self.download_finished.emit()
 
     def import_card_data_from_online_api(self):
+        logger.info("About to import card data from Scryfall")
         try:
             url = self.get_scryfall_bulk_card_data_url()
             data = self.read_json_card_data_from_url(url)
