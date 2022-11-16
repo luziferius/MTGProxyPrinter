@@ -16,16 +16,14 @@
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonFollowStyle</enum>
   </property>
-  <widget class="QWidget" name="central_widget">
-   <layout class="QGridLayout" name="gridLayout"/>
-  </widget>
+  <widget class="CentralWidget" name="central_widget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
      <width>1050</width>
-     <height>29</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -324,6 +322,14 @@ use this to reduce the initial deck shuffling required</string>
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CentralWidget</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.central_widget</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

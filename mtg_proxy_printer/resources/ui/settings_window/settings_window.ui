@@ -633,13 +633,13 @@ it will be exported into multiple PDF documents automatically.</string>
   <customwidget>
    <class>GeneralPrintingFilterWidget</class>
    <extends>QGroupBox</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>FormatPrintingFilterWidget</class>
    <extends>QGroupBox</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

@@ -20,7 +20,40 @@
    <string>Load a deck file from disk or paste deck list in the text field below</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <item row="5" column="0">
+    <widget class="QCheckBox" name="translate_deck_list_enable">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Translate deck list to:</string>
+     </property>
+    </widget>
+   </item>
    <item row="0" column="0" colspan="2">
+    <widget class="QLineEdit" name="deck_list_download_url_line_edit">
+     <property name="placeholderText">
+      <string>Paste a link to a deck list here. Hover to see supported sites.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QPushButton" name="deck_list_download_button">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>Download</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-download"/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="3">
     <widget class="QPushButton" name="deck_list_browse_button">
      <property name="toolTip">
       <string>Opens a file picker and let’s you load a deck file from disk.</string>
@@ -34,34 +67,14 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0" colspan="2">
+   <item row="3" column="0" colspan="3">
     <widget class="QPlainTextEdit" name="deck_list">
      <property name="placeholderText">
       <string>Paste your deck list here or select a file using the button above.</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QCheckBox" name="translate_deck_list_enable">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>Translate deck list to:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
+   <item row="5" column="1" colspan="2">
     <widget class="QComboBox" name="translate_deck_list_target_language">
      <property name="enabled">
       <bool>false</bool>
@@ -74,7 +87,14 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="2">
+   <item row="4" column="0" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0" colspan="3">
     <widget class="QCheckBox" name="print_guessing_enable">
      <property name="toolTip">
       <string>If checked, choose an arbitrary printing, if a unique printing is not identified.
@@ -85,7 +105,7 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
      </property>
     </widget>
    </item>
-   <item row="5" column="0" colspan="2">
+   <item row="7" column="0" colspan="3">
     <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
      <property name="enabled">
       <bool>true</bool>
@@ -102,6 +122,8 @@ Enabling this can potentially save disk space and download volume, based on the 
   </layout>
  </widget>
  <tabstops>
+  <tabstop>deck_list_download_url_line_edit</tabstop>
+  <tabstop>deck_list_download_button</tabstop>
   <tabstop>deck_list_browse_button</tabstop>
   <tabstop>deck_list</tabstop>
   <tabstop>translate_deck_list_enable</tabstop>
@@ -118,12 +140,12 @@ Enabling this can potentially save disk space and download volume, based on the 
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>122</x>
-     <y>277</y>
+     <x>128</x>
+     <y>275</y>
     </hint>
     <hint type="destinationlabel">
-     <x>557</x>
-     <y>282</y>
+     <x>574</x>
+     <y>280</y>
     </hint>
    </hints>
   </connection>

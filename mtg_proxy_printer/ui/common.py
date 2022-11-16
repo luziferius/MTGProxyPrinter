@@ -30,7 +30,7 @@ __all__ = [
     "HAS_COMPILED_RESOURCES",
     "BlockedSignals",
     "set_url_label",
-    "inherits_from_ui_file_with_name",
+    "load_ui_from_file",
     "format_size",
 ]
 
@@ -79,35 +79,19 @@ def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
 
 def load_ui_from_file(name: str):
     """
-    Returns a tuple from uic.loadUiType(), loading the ui file with the given name.
-    :param name:
-    :return:
+    Returns the Ui class type from uic.loadUiType(), loading the ui file with the given name.
+
+    :param name:Path to the UI file
+    :return: class implementing the requested Ui
+    :raises FileNotFoundError: If the given ui file does not exist
     """
     file_path = f"{RESOURCE_PATH_PREFIX}/ui/{name}.ui"
-    ui_file = QFile(file_path)
-    if not ui_file.exists():
+    if not QFile.exists(file_path):
         error_message = f"UI file not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    try:
-        ui_file.open(QFile.ReadOnly)
-        base_type = uic.loadUiType(ui_file, from_imports=True)
-    finally:
-        ui_file.close()
+    base_type, _ = uic.loadUiType(file_path, from_imports=True)
     return base_type
-
-
-"""
-This renamed function is supposed to be used during class definition to make the intention clear.
-Usage example:
-
-class SomeWidget(*inherits_from_ui_file_with_name("SomeWidgetUiFileName")):
-    def __init__(self, parent):
-        super(SomeWidget, self).__init__(parent)
-        self.setupUi(self)
-
-"""
-inherits_from_ui_file_with_name = load_ui_from_file
 
 
 def format_size(size: float) -> str:

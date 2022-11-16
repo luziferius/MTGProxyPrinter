@@ -72,7 +72,7 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        self.main_window.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
@@ -120,7 +120,7 @@ class Application(QApplication):
         settings_window.process_updated.connect(main_window.progress_bar.setValue)
         settings_window.process_finished.connect(main_window.hide_progress_bar)
         settings_window.error_occurred.connect(main_window.on_error_occurred)
-        main_window.action_show_settings.triggered.connect(settings_window.show)
+        main_window.ui.action_show_settings.triggered.connect(settings_window.show)
         return settings_window
 
     def _create_document_instance(

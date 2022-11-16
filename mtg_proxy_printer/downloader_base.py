@@ -40,6 +40,9 @@ class DownloaderBase(QObject):
     def read_from_url(self, url: str, ui_hint: str = ""):
         """
         Reads a given URL and returns a file-like object that can and should be used as a context manager.
+        GZip-Streams are implicitly decompressed.
+        :param url: URL to fetch
+        :param ui_hint: Display text shown in the UI next to the progress bar. If empty, no progress bar is shown at all
         """
         monitor = self._open_url(url, ui_hint)
         encoding = monitor.content_encoding()
@@ -56,7 +59,7 @@ class DownloaderBase(QObject):
         response = mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(url, headers, self, ui_hint=ui_hint)
         if (response_code := response.getcode()) >= 300:
             raise RuntimeError(f"Error from server! Error code: {response_code}")
-        if ui_hint:  # Only connect monitoring signals, if a UI progress hint is given
+        if ui_hint:  # Without a display text for the UI, there is no meaningful progress report. So skip if not given
             response.total_bytes_processed.connect(self.download_progress)
             response.io_begin.connect(self.download_begins)
         return response

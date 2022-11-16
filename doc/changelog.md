@@ -1,5 +1,30 @@
 # Changelog
 
+# Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
+
+- Fixed crash in the card data importer: The importer now handles double faced cards with missing back face images.
+  These cards are skipped during the import.
+
+## Other
+
+- Rewritten GUI handling. This results in a slightly faster application startup
+
+# Version 0.20.0 (2022-10-09)  <a name="v0_20_0"></a>
+
+## New features
+
+- Automatic deck list downloads. The deck list import wizard now has an input field that accepts
+  links to deck lists on various deck list database websites. 
+  - Currently supported are [Scryfall](https://scryfall.com),
+    [MTGGoldfish](https://www.mtggoldfish.com/),
+    [mtg.wtf](https://mtg.wtf/), [TappedOut](https://tappedout.net/),
+    [Moxfield](https://www.moxfield.com/) and
+    [Deckstats](https://deckstats.net/)
+
+## Changed features
+
+- Re-structured the deck list import wizard. The deck list input is now the first step.
+
 # Version 0.19.0 (2022-10-02)  <a name="v0_19_0"></a>
 
 ## New features
