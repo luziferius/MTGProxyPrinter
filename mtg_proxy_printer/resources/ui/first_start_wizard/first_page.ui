@@ -15,9 +15,12 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="introduction_label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;It seems like this is the first time you run {application_name}. This wizard will guide you through the initial configuration and also serve as a small introduction.&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;All options you set throughout this wizard are also available in the application settings, accessible from a menu point in the main window.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>It seems like this is the first time you run {application_name}. This wizard will guide you through the initial configuration and also serve as a small introduction.
+
+
+All options you set throughout this wizard are also available in the application settings, accessible from a menu point in the main window.</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignJustify|Qt::AlignVCenter</set>

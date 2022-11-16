@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>531</width>
-    <height>433</height>
+    <width>586</width>
+    <height>512</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,36 +16,9 @@
   <property name="title">
    <string>Local card database</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <widget class="QLabel" name="label_2">
-     <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;{application_name} creates a local database on your computer that contains information about all available Magic: The Gathering (TM) cards. It is used for fast card search, deck list imports and also contains URLs to the online image files.&lt;/p&gt;&lt;p&gt;The database is currently empty and has to be filled with card data from Scryfall to be functional. It also has to be updated from time to time, to keep up with newly released cards and sets.&lt;/p&gt;&lt;p&gt;The downloaded card data can be customized in the settings, so that you can omit cards based on certain criteria. For example, you can omit all Silver-bordered cards or cards banned in the formats you are interested in, if those are supported by Scryfall.&lt;/p&gt;&lt;p&gt;If you like, click on the {settings} button below to open the settings window and customize the download filters, then click the {download} button to start the card data download in the background.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignJustify|Qt::AlignVCenter</set>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="open_settings_button">
-     <property name="text">
-      <string>Settings</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QPushButton" name="download_card_data_button">
-     <property name="text">
-      <string>Download card data</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QLabel" name="label">
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="3" column="0" colspan="2">
+    <widget class="QLabel" name="progress_monitor_label">
      <property name="text">
       <string>You can monitor the progress of all background operations in the status bar at the bottom of the main window. You can continue this wizard, while the card data is fetched.</string>
      </property>
@@ -57,7 +30,34 @@
      </property>
     </widget>
    </item>
-   <item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QPushButton" name="download_card_data_button">
+     <property name="text">
+      <string>Download card data</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-download"/>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QLabel" name="carddb_description_label">
+     <property name="text">
+      <string>{application_name} creates a local database on your computer that contains information about all official Magic: The Gathering (TM) cards. It is used for fast card search, deck list imports and also contains URLs to the online image files.
+
+The database has to be filled with card data from Scryfall to be functional. It also has to be updated from time to time, to keep up with newly released cards and sets.
+
+Click the {download} button to start the download in the background. This will fetch roughly 300 MiB of data. The amount of data will slowly grow over time, as new sets and cards get released</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignJustify|Qt::AlignVCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
