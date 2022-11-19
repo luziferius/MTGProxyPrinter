@@ -18,6 +18,7 @@ import typing
 from PyQt5.QtCore import pyqtSignal as Signal
 from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QLabel, QComboBox
 
+import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings, write_settings_to_file
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer import meta_data
@@ -55,6 +56,7 @@ class FirstStartWizard(QWizard):
 
     def __init__(self, *args, disable_card_data_download_button: bool = False):
         super().__init__(*args)
+        self.setWindowTitle(f"{mtg_proxy_printer.meta_data.PROGRAMNAME} first start")
         self.addPage(FirstPage(self))
         self.addPage(card_db_page := CardDBPage(disable_card_data_download_button, self))
         card_db_page.card_data_download_requested.connect(self.card_data_download_requested)
