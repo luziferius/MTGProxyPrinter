@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSignal as Signal
 from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QLabel, QComboBox
 
 from mtg_proxy_printer.settings import settings
