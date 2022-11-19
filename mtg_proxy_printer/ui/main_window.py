@@ -378,7 +378,7 @@ class MainWindow(QMainWindow):
                 self, "Unrecognized cards in loaded document found",
                 f"Skipped {unknown} unrecognized cards in the loaded document. "
                 f"Saving the document will remove these entries permanently.\n\nThe locally stored card "
-                f"data may be outdated or the document was created using a less restrictive download filter.",
+                f"data may be outdated or the document was tampered with.",
                 QMessageBox.Ok, QMessageBox.Ok
             )
 
