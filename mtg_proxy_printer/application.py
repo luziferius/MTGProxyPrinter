@@ -84,7 +84,9 @@ class Application(QApplication):
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.request_import_from_file.emit(args.card_data)
-        elif not self.card_db.has_data() and not args.test_exit_on_launch:
+        elif not self.card_db.has_data() and \
+                not args.test_exit_on_launch and \
+                not mtg_proxy_printer.settings.is_first_start():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
@@ -151,7 +153,7 @@ class Application(QApplication):
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
         update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
-        if not args.test_exit_on_launch:
+        if not args.test_exit_on_launch and not mtg_proxy_printer.settings.is_first_start():
             QTimer.singleShot(100, self._check_for_undecided_update_settings)
         return update_checker
 

@@ -29,8 +29,8 @@ import mtg_proxy_printer.ui.first_start_wizard as fsw
 T = typing.TypeVar("T")
 
 
-def create_widget(qtbot: QtBot, widget_class: typing.Type[T]) -> T:
-    widget = widget_class()
+def create_widget(qtbot: QtBot, widget_class: typing.Type[T], **kwargs) -> T:
+    widget = widget_class(**kwargs)
     qtbot.add_widget(widget)
     with qtbot.waitExposed(widget):
         widget.show()
@@ -71,6 +71,13 @@ def test_first_start_wizard_relays_card_data_download_request_signal(qtbot: QtBo
     assert_that(page, is_(instance_of(fsw.CardDBPage)), "Wrong page order, fix test")
     with qtbot.waitSignal(wizard.card_data_download_requested):
         page.ui.download_card_data_button.click()
+
+
+def test_first_start_wizard_disables_card_data_download_button_if_requested(qtbot: QtBot):
+    wizard = create_widget(qtbot, fsw.FirstStartWizard, disable_card_data_download_button=True)
+    wizard.next()
+    page: fsw.CardDBPage = wizard.currentPage()
+    assert_that(page.ui.download_card_data_button.isEnabled(), is_(False))
 
 
 @pytest.mark.parametrize("field, settings_key", [

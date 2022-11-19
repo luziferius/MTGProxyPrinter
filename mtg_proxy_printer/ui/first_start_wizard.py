@@ -53,10 +53,10 @@ class FirstStartWizard(QWizard):
 
     card_data_download_requested = Signal()
 
-    def __init__(self, *args):
+    def __init__(self, *args, disable_card_data_download_button: bool = False):
         super().__init__(*args)
         self.addPage(FirstPage(self))
-        self.addPage(card_db_page := CardDBPage(self))
+        self.addPage(card_db_page := CardDBPage(disable_card_data_download_button, self))
         card_db_page.card_data_download_requested.connect(self.card_data_download_requested)
         self.addPage(UpdateCheckPage(self))
 
@@ -90,7 +90,7 @@ class CardDBPage(QWizardPage):
 
     card_data_download_requested = Signal()
 
-    def __init__(self, parent: QWidget = None):
+    def __init__(self, disable_card_db_download_button: bool = False, parent: QWidget = None):
         super().__init__(parent)
         self.ui = Ui_CardDBPage()
         self.ui.setupUi(self)
@@ -98,6 +98,9 @@ class CardDBPage(QWizardPage):
             "application_name": meta_data.PROGRAMNAME,
             "download": f"“{self.ui.download_card_data_button.text()}”"
         })
+        if disable_card_db_download_button:
+            self.ui.download_card_data_button.setDisabled(True)
+            self.ui.download_card_data_button.setToolTip("Download disabled. An import is already running")
         self.ui.download_card_data_button.clicked.connect(self.card_data_download_requested)
 
 
