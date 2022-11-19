@@ -40,6 +40,7 @@ import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
+import mtg_proxy_printer.ui.first_start_wizard
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -81,7 +82,8 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.on_action_quit_triggered)
         self.update_checker = self._create_update_checker(args)
         self._show_changelog_after_update(args)
-        if args.card_data and args.card_data.is_file():
+        import_card_data_from_file = bool(args.card_data) and args.card_data.is_file()
+        if import_card_data_from_file:
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.request_import_from_file.emit(args.card_data)
         elif not self.card_db.has_data() and \
@@ -89,6 +91,9 @@ class Application(QApplication):
                 not mtg_proxy_printer.settings.is_first_start():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
+        if mtg_proxy_printer.settings.is_first_start():
+            self.first_start_wizard = self._create_first_launch_wizard(
+                self.main_window, self.card_info_downloader, import_card_data_from_file)
         self.main_window.should_update_languages.emit()
         logger.debug("Initialisation done. Starting event loop.")
         self.exec_()
@@ -108,6 +113,15 @@ class Application(QApplication):
         card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         return card_db, image_db
+
+    @staticmethod
+    def _create_first_launch_wizard(parent, card_info_downloader, import_card_data_from_file: bool):
+        wizard = mtg_proxy_printer.ui.first_start_wizard.FirstStartWizard(
+            parent, disable_card_data_download_button=import_card_data_from_file)
+        wizard.card_data_download_requested.connect(
+            card_info_downloader.request_import_from_url)
+        QTimer.singleShot(0, wizard.show)
+        return wizard
 
     @staticmethod
     def _create_settings_window(
