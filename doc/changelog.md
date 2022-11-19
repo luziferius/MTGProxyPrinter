@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Fixed crash in the settings validation logic, introduced in version 0.19.0.
+  Triggering this crash required manually fiddling with the app configuration file
+
 # Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
 
 - Fixed crash in the card data importer: The importer now handles double faced cards with missing back face images.
