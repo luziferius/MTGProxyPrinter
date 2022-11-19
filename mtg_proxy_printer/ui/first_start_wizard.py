@@ -18,7 +18,7 @@ import typing
 from PyQt5.QtCore import pyqtSignal as Signal
 from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage, QLabel, QComboBox
 
-from mtg_proxy_printer.settings import settings
+from mtg_proxy_printer.settings import settings, write_settings_to_file
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer import meta_data
 from mtg_proxy_printer.logger import get_logger
@@ -64,6 +64,7 @@ class FirstStartWizard(QWizard):
         update_section = settings["application"]
         update_section["check-for-application-updates"] = COMBO_BOX_CHOICES[self.field("application_update_choice")][1]
         update_section["check-for-card-data-updates"] = COMBO_BOX_CHOICES[self.field("card_data_update_choice")][1]
+        write_settings_to_file()
         super().accept()
 
 

@@ -86,9 +86,11 @@ def test_first_start_wizard_accept_stores_settings(qtbot: QtBot, field: str, set
             section, {
                 "check-for-application-updates": "None",
                 "check-for-card-data-updates": "None",
-            }):
+            }), \
+            unittest.mock.patch("mtg_proxy_printer.ui.first_start_wizard.write_settings_to_file") as settings_save_mock:
         wizard.accept()
         assert_that(section, has_entry(settings_key, settings_value))
+    settings_save_mock.assert_called_once()
 
 
 def test_card_database_page_download_request_button_emits_signal(qtbot: QtBot,):
