@@ -32,6 +32,7 @@ __all__ = [
     "write_settings_to_file",
     "validate_settings",
     "update_version_string",
+    "is_first_start",
 ]
 
 
@@ -130,6 +131,9 @@ DEFAULT_SETTINGS["application"] = {
 
 
 def read_settings_from_file():
+    """
+    Reads the settings from the configuration file. Uses the default configuration, if the file doesn’t exist.
+    """
     global settings, DEFAULT_SETTINGS
     settings.clear()
     if not config_file_path.exists():
@@ -156,6 +160,7 @@ def read_settings_from_file():
 
 
 def write_settings_to_file():
+    """Persists the current settings in the configuration file. Creates the file system path, if necessary."""
     global settings
     if not config_file_path.parent.exists():
         config_file_path.parent.mkdir(parents=True)
@@ -165,6 +170,10 @@ def write_settings_to_file():
 
 def update_version_string():
     settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
+
+
+def is_first_start() -> bool:
+    return not config_file_path.exists()
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
