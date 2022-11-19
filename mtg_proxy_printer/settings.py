@@ -221,7 +221,7 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     if available_height < sizes.height:
         # Can not fit a single card on a page
         section["paper-height-mm"] = defaults["paper-height-mm"]
-        section["margin-top-mm"] = defaults["marginop--tmm"]
+        section["margin-top-mm"] = defaults["margin-top-mm"]
         section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
     if available_width < sizes.width:
         # Can not fit a single card on a page
