@@ -101,6 +101,15 @@ def test_card_database_page_download_request_button_emits_signal(qtbot: QtBot,):
         page.ui.download_card_data_button.click()
 
 
+def test_card_database_page_download_request_button_disables_itself_on_click(qtbot: QtBot,):
+    page = create_widget(qtbot, fsw.CardDBPage)
+    assert_that(page.ui, is_(not_none()))
+    assert_that(page.ui.download_card_data_button, is_(not_none()))
+    assert_that(page.ui.download_card_data_button.isEnabled(), is_(True))
+    page.ui.download_card_data_button.click()
+    assert_that(page.ui.download_card_data_button.isEnabled(), is_(False))
+
+
 @pytest.mark.parametrize("combo_box_name", [
     "application_update_selection_combo_box", "card_data_update_selection_combo_box"
 ])

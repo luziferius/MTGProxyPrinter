@@ -62,5 +62,22 @@ Click the {download} button to start the download in the background. This will f
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>download_card_data_button</sender>
+   <signal>clicked(bool)</signal>
+   <receiver>download_card_data_button</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>143</x>
+     <y>157</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>346</x>
+     <y>174</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>
