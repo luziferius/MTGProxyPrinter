@@ -57,6 +57,8 @@ class FirstStartWizard(QWizard):
     def __init__(self, *args, disable_card_data_download_button: bool = False):
         super().__init__(*args)
         self.setWindowTitle(f"{mtg_proxy_printer.meta_data.PROGRAMNAME} first start")
+        self.setBaseSize(self.baseSize()*1.5)
+        self.setModal(True)
         self.addPage(FirstPage(self))
         self.addPage(card_db_page := CardDBPage(disable_card_data_download_button, self))
         card_db_page.card_data_download_requested.connect(self.card_data_download_requested)
