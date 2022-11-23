@@ -3,11 +3,48 @@
  <class>WizardPage</class>
  <widget class="QWizardPage" name="WizardPage">
   <property name="title">
-   <string>Optional update checks</string>
+   <string>Automatic update checks</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="4" column="2">
+   <item row="2" column="0" colspan="2">
+    <widget class="QLabel" name="card_data_update_label">
+     <property name="text">
+      <string>Check for card data updates?</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="3">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QLabel" name="application_update_label">
+     <property name="text">
+      <string>Check for application updates?</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QComboBox" name="card_data_update_selection_combo_box"/>
+   </item>
+   <item row="3" column="2">
     <widget class="QComboBox" name="application_update_selection_combo_box"/>
+   </item>
+   <item row="1" column="0" colspan="3">
+    <widget class="Line" name="line_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
    </item>
    <item row="0" column="0" colspan="3">
     <widget class="QLabel" name="update_label">
@@ -21,50 +58,6 @@
       <bool>true</bool>
      </property>
     </widget>
-   </item>
-   <item row="5" column="0" colspan="3">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="1" column="0" colspan="3">
-    <widget class="Line" name="line_2">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0" colspan="2">
-    <widget class="QLabel" name="application_update_label">
-     <property name="text">
-      <string>Check for application updates?</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="3">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="2">
-    <widget class="QLabel" name="card_data_update_label">
-     <property name="text">
-      <string>Check for card data updates?</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="2">
-    <widget class="QComboBox" name="card_data_update_selection_combo_box"/>
    </item>
   </layout>
  </widget>
