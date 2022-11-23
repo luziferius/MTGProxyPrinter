@@ -198,9 +198,9 @@ class Application(QApplication):
         self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
     @Slot()
-    def shutdown(self):
+    def quit(self):
         logger.info("About to exit.")
         self.update_checker.stop_background_worker()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")
-        self.quit()
+        super().quit()
