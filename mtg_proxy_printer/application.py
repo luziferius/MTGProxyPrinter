@@ -88,9 +88,6 @@ class Application(QApplication):
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
         self.main_window.should_update_languages.emit()
-        logger.debug("Initialisation done. Starting event loop.")
-        self.exec_()
-        logger.debug("Left event loop.")
 
     def _open_databases(self, args: Namespace):
         if args.test_exit_on_launch:

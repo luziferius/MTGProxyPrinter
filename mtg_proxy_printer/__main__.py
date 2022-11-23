@@ -27,6 +27,7 @@ import mtg_proxy_printer.application
 # when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
 # on application exit.
 _app = None
+logger = mtg_proxy_printer.logger.get_logger(__name__)
 
 
 def main():
@@ -37,6 +38,9 @@ def main():
     # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     _app = mtg_proxy_printer.application.Application(arguments)
+    logger.debug("Initialisation done. Starting event loop.")
+    _app.exec_()
+    logger.debug("Left event loop.")
 
 
 if __name__ == "__main__":
