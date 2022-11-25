@@ -148,8 +148,12 @@ class Application(QApplication):
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
         update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
-        if not args.test_exit_on_launch:
+        if args.test_exit_on_launch:
+            logger.info("Update check will not run, because immediate application exit is requested.")
+        else:
+            logger.debug("Enqueueing update check")
             QTimer.singleShot(100, self._check_for_undecided_update_settings)
+            QTimer.singleShot(100, update_checker.check_for_updates)
         return update_checker
 
     def _check_for_undecided_update_settings(self):
