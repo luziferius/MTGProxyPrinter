@@ -34,7 +34,6 @@ import mtg_proxy_printer.model.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 from mtg_proxy_printer import settings
-from mtg_proxy_printer.natsort import str_less_than
 from mtg_proxy_printer.update_checker import UpdateChecker
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
@@ -76,18 +75,43 @@ class Application(QApplication):
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
-        if args.test_exit_on_launch:
-            logger.info("Enqueue application exit to run when event loop starts.")
-            QTimer.singleShot(0, self.main_window.on_action_quit_triggered)
         self.update_checker = self._create_update_checker(args)
-        self._show_changelog_after_update(args)
+        self.main_window.should_update_languages.emit()
+
+    def run_startup_tasks(self, args: Namespace):
+        """
+        Enqueues all tasks that should run in the Qt event loop at application start.
+        Includes
+        - checking for updates or undecided update policy settings
+        - notifying on empty card database
+        - running the card data import, if a JSON card data document is given as a command line argument
+        - opening a document given via command line arguments
+        - etc…
+        """
+        if settings.was_application_updated():
+            logger.info(
+                f'Updated application from {settings.settings["application"]["last-used-version"]} '
+                f'to {meta_data.__version__}')
+            settings.update_stored_version_string()
+            settings.write_settings_to_file()
+            QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
+        logger.debug("Enqueueing update check")
+        QTimer.singleShot(100, self._check_for_undecided_update_settings)
+        QTimer.singleShot(100, self.update_checker.check_for_updates)
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.request_import_from_file.emit(args.card_data)
-        elif not self.card_db.has_data() and not args.test_exit_on_launch:
+        elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
-        self.main_window.should_update_languages.emit()
+        if args.file is not None:
+            if args.file.is_file():
+                QTimer.singleShot(0, functools.partial(self.document.loader.load_document, args.file))
+                logger.info(f'Enqueued loading of document "{args.file}"')
+            elif args.file.exists():
+                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
+            else:
+                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
 
     def _open_databases(self, args: Namespace):
         if args.test_exit_on_launch:
@@ -127,15 +151,6 @@ class Application(QApplication):
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
         image_db.card_image_obtained.connect(document.add_card)
-        if args.file is not None:
-            if args.file.is_file():
-                # Wait until after __init__ finished and the main loop starts
-                QTimer.singleShot(0, lambda: document.loader.load_document(args.file))
-                logger.info(f'Enqueued loading of document "{args.file}"')
-            elif args.file.exists():
-                logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
-            else:
-                logger.warning(f'Command line argument "{args.file}" does not exist. Ignoring it.')
         return document
 
     def _create_language_model(self):
@@ -148,32 +163,16 @@ class Application(QApplication):
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
         update_checker.application_update_found.connect(self.main_window.show_application_update_available_message_box)
-        if args.test_exit_on_launch:
-            logger.info("Update check will not run, because immediate application exit is requested.")
-        else:
-            logger.debug("Enqueueing update check")
-            QTimer.singleShot(100, self._check_for_undecided_update_settings)
-            QTimer.singleShot(100, update_checker.check_for_updates)
         return update_checker
 
     def _check_for_undecided_update_settings(self):
-        if settings.settings["application"].getboolean("check-for-application-updates") is None:
+        section = settings.settings["application"]
+        if section.getboolean("check-for-application-updates") is None:
             logger.info("No user setting for application updates set. About to ask.")
             self.main_window.ask_user_about_application_update_policy()
-        if settings.settings["application"].getboolean("check-for-card-data-updates") is None:
+        if section.getboolean("check-for-card-data-updates") is None:
             logger.info("No user setting for card data updates set. About to ask.")
             self.main_window.ask_user_about_card_data_update_policy()
-
-    def _show_changelog_after_update(self, args: Namespace):
-        if args.test_exit_on_launch:
-            return
-        if str_less_than(settings.settings["application"]["last-used-version"], meta_data.__version__):
-            logger.info(
-                f'Updated application from {settings.settings["application"]["last-used-version"]} '
-                f'to {meta_data.__version__}')
-            settings.update_version_string()
-            settings.write_settings_to_file()
-            QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
 
     def _setup_icons(self):
         # The current icon theme name is empty by default, which causes the system-default theme, returned by
