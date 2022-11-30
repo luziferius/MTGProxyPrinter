@@ -187,24 +187,18 @@ class MainWindow(QMainWindow):
         This function is automatically called when the window is closed using the close [X] button in the window
         decorations or by right-clicking in the system window list and using the close action, or similar ways to close
         the window.
-        Just ignore this event and simulate that the user used action_quit instead.
-
-        To quote the Qt5 QCloseEvent documentation: If you do not want your widget to be hidden, or want some special
-        handling, you should reimplement the event handler and ignore() the event.
         """
-        logger.debug("User tried to close the window. Ignore the event and trigger the quit action")
+        logger.debug("User closed the main window, closing application…")
         event.accept()
+        # Triggering the quit action implicitly closes all windows, thus causes this event to fire during application
+        # quit. This check prevents the quit logic from running twice.
         if self.is_running:
             event.accept()
-            self._quit()
+            self.on_action_quit_triggered()
 
     @Slot()
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
-        self.is_running = False
-        self._quit()
-
-    def _quit(self):
         self.is_running = False
         self.card_data_downloader.cancel_running_operations()
         self.card_data_downloader.quit_background_thread()
@@ -215,7 +209,7 @@ class MainWindow(QMainWindow):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.ui.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
-        QApplication.instance().shutdown()
+        QApplication.instance().quit()
 
     @Slot()
     def on_action_cleanup_local_image_cache_triggered(self):

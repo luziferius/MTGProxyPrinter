@@ -23,6 +23,7 @@ from PySide6.QtCore import QStandardPaths
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
+import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 __all__ = [
@@ -31,7 +32,7 @@ __all__ = [
     "read_settings_from_file",
     "write_settings_to_file",
     "validate_settings",
-    "update_version_string",
+    "update_stored_version_string",
 ]
 
 
@@ -163,8 +164,20 @@ def write_settings_to_file():
         settings.write(config_file)
 
 
-def update_version_string():
+def update_stored_version_string():
+    """Sets the version string stored in the configuration file to the version of the currently running instance."""
     settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
+
+
+def was_application_updated() -> bool:
+    """
+    Returns True, if the application was updated since last start, i.e. if the internal version number
+    is greater than the version string stored in the configuration file. Returns False otherwise.
+    """
+    return mtg_proxy_printer.natsort.str_less_than(
+        settings["application"]["last-used-version"],
+        mtg_proxy_printer.meta_data.__version__
+    )
 
 
 def validate_settings(read_settings: configparser.ConfigParser):

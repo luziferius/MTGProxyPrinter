@@ -45,7 +45,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
-            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "_quit"), \
+            unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
                 mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "get_scryfall_bulk_card_data_url"), \
             unittest.mock.patch.object(

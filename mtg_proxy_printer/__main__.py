@@ -16,7 +16,7 @@
 # Import and implicitly load the settings first, before importing any modules that pull in GUI classes.
 import mtg_proxy_printer.settings
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication
 
 import mtg_proxy_printer.argument_parser
@@ -27,6 +27,7 @@ import mtg_proxy_printer.application
 # when main() is left. Without, the Python GC interferes with Qt’s memory management and may cause segmentation faults
 # on application exit.
 _app = None
+logger = mtg_proxy_printer.logger.get_logger(__name__)
 
 
 def main():
@@ -37,6 +38,15 @@ def main():
     # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     _app = mtg_proxy_printer.application.Application(arguments)
+    if arguments.test_exit_on_launch:
+        logger.info("Skipping startup tasks, because immediate application exit was requested.")
+        QTimer.singleShot(0, _app.main_window.on_action_quit_triggered)
+    else:
+        logger.debug("Enqueueing startup tasks.")
+        _app.run_startup_tasks(arguments)
+    logger.debug("Initialisation done. Starting event loop.")
+    _app.exec()
+    logger.debug("Left event loop.")
 
 
 if __name__ == "__main__":

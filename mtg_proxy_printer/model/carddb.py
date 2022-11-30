@@ -531,8 +531,8 @@ class CardDatabase:
           source_oracle_id (oracle_id, face_number, source_likeliness, source_set_code) AS (
             SELECT oracle_id, face_number, (
                 SELECT count() FROM Card)
-                  * (ifnull(scryfall_id = source_scryfall_id, 0)
-                     OR ifnull(set_code = source_set_code, 0))
+                  * (COALESCE(scryfall_id = source_scryfall_id, 0)
+                     OR COALESCE(set_code = source_set_code, 0))
                   + count(oracle_id) AS source_likeliness,
                 set_code AS source_set_code
             FROM FaceName
@@ -542,8 +542,8 @@ class CardDatabase:
             JOIN Card USING (card_id)
             JOIN MTGSet USING (set_id)
             JOIN source_context ON (
-               coalesce(set_code = source_set_code, TRUE) AND
-               coalesce(scryfall_id = source_scryfall_id, TRUE))
+               COALESCE(set_code = source_set_code, TRUE) AND
+               COALESCE(scryfall_id = source_scryfall_id, TRUE))
             WHERE card_name = ? AND COALESCE("language" = ?, TRUE)
             GROUP BY oracle_id, face_number
             )
