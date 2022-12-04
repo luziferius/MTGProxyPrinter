@@ -165,10 +165,6 @@ class UpdateChecker(QObject):
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
         self.background_thread.start()
-        if args.test_exit_on_launch:
-            logger.info("Update check will not run, because immediate application exit is requested.")
-        else:
-            QTimer.singleShot(100, self.check_for_updates)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_background_worker(self, card_db: CardDatabase, thread_to_use: QThread) -> BackgroundWorker:
