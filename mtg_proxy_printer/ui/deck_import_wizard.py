@@ -50,6 +50,7 @@ del get_logger
 __all__ = [
     "DeckImportWizard",
 ]
+WizardButton = QWizard.WizardButton
 
 
 class IsDecklistParserRegularExpressionValidator(QValidator):
@@ -395,7 +396,7 @@ class SummaryPage(QWizardPage):
 
     @Slot(int)
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
-        accept_button = self.wizard().button(QWizard.WizardButton.FinishButton)
+        accept_button = self.wizard().button(WizardButton.FinishButton)
         if oversized_cards:
             accept_button.setIcon(QIcon.fromTheme("data-warning"))
             accept_button.setToolTip(
@@ -411,7 +412,7 @@ class SummaryPage(QWizardPage):
 
     @Slot(bool)
     def _update_accept_button_on_replace_document_option_toggled(self, enabled: bool):
-        accept_button = self.wizard().button(QWizard.WizardButton.FinishButton)
+        accept_button = self.wizard().button(WizardButton.FinishButton)
         if accept_button.icon().name() == "data-warning":
             return
         if enabled:
@@ -462,7 +463,7 @@ class SummaryPage(QWizardPage):
         wizard.customButtonClicked.connect(self.custom_button_clicked)
         wizard.setOption(QWizard.WizardOption.HaveCustomButton1, True)
         decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
-        remove_basic_lands_button = wizard.button(QWizard.WizardButton.CustomButton1)
+        remove_basic_lands_button = wizard.button(WizardButton.CustomButton1)
         remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
             decklist_import_section.getboolean("remove-basic-wastes"),
             decklist_import_section.getboolean("remove-snow-basics")))
@@ -470,7 +471,7 @@ class SummaryPage(QWizardPage):
         remove_basic_lands_button.setToolTip("Remove all basic lands in the deck list above")
         remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
         wizard.setOption(QWizard.WizardOption.HaveCustomButton2, True)
-        remove_selected_cards_button = wizard.button(QWizard.WizardButton.CustomButton2)
+        remove_selected_cards_button = wizard.button(WizardButton.CustomButton2)
         remove_selected_cards_button.setEnabled(False)
         remove_selected_cards_button.setText("Remove selected")
         remove_selected_cards_button.setToolTip("Remove all selected cards in the deck list above")
@@ -494,22 +495,22 @@ class SummaryPage(QWizardPage):
         self.selected_cells_count += selected.count() - deselected.count()
         logger.debug(f"Selection changed: Currently selected cells: {self.selected_cells_count}")
         wizard: QWizard = self.wizard()
-        wizard.button(QWizard.WizardButton.CustomButton2).setEnabled(self.selected_cells_count > 0)
+        wizard.button(WizardButton.CustomButton2).setEnabled(self.selected_cells_count > 0)
 
     @Slot(int)
     def custom_button_clicked(self, button_id: int):
+        button = WizardButton(button_id)
         wizard: QWizard = self.wizard()
-        if button_id == QWizard.WizardButton.CustomButton1.value:
-            wizard.button(QWizard.WizardButton.CustomButton1).setEnabled(False)
+        wizard.button(button).setEnabled(False)
+        if button == WizardButton.CustomButton1:
             logger.info("User requests to remove all basic lands")
             decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
             self.card_list.remove_all_basic_lands(
                 decklist_import_section.getboolean("remove-basic-wastes"),
                 decklist_import_section.getboolean("remove-snow-basics"))
-        elif button_id == QWizard.WizardButton.CustomButton2.value:
+        elif button == WizardButton.CustomButton2:
             self._remove_selected_cards()
             self.selected_cells_count = 0
-            wizard.button(QWizard.WizardButton.CustomButton2).setEnabled(False)
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")
@@ -556,8 +557,8 @@ class DeckImportWizard(QWizard):
 
     def _setup_dialog_button_icons(self):
         buttons_with_icons = [
-            (QWizard.WizardButton.FinishButton, "dialog-ok"),
-            (QWizard.WizardButton.CancelButton, "dialog-cancel"),
+            (WizardButton.FinishButton, "dialog-ok"),
+            (WizardButton.CancelButton, "dialog-cancel"),
         ]
         for role, icon in buttons_with_icons:
             button = self.button(role)
