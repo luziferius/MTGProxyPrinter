@@ -99,6 +99,32 @@ def test_remove_basic_lands_button_works(
     assert_that(card_names_in_model, contains_exactly(*expected_cards))
 
 
+def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
+    deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
+    wizard = create_and_show_wizard(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]
+    )
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    list_model = wizard.summary_page.card_list
+    assert_that(list_model.rowCount(), is_(3))
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
+    # Select the Forest for removal
+    wizard.summary_page.ui.parsed_cards_table.selectRow(0)
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(True))
+    # Remove it
+    wizard.button(wizard.WizardButton.CustomButton2).click()
+    # Verify effects: Button is disabled and the Forest is no longer present in the parsed cards
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
+    card_names_in_model: StringList = [
+        list_model.data(list_model.index(row, PageColumns.CardName))
+        for row in range(list_model.rowCount())
+    ]
+    assert_that(card_names_in_model, contains_exactly("Snow-Covered Forest", "Wastes"))
+
+
 def _move_wizard_forward(qtbot: QtBot, wizard: QWizard):
     with qtbot.wait_signal(wizard.currentIdChanged, timeout=100):
         wizard.next()
