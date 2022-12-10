@@ -86,3 +86,10 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     document = Document(card_db, image_db)
     yield document
     stop_thread(document.loader.worker_thread)
+
+
+@pytest.fixture
+def document_light() -> Document:
+    document = Document(unittest.mock.MagicMock(), unittest.mock.MagicMock())
+    yield document
+    stop_thread(document.loader.worker_thread)
