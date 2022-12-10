@@ -572,7 +572,7 @@ class Document(QAbstractItemModel):
         return card_count_to_move
 
     def find_page_list_index(self, other: Page):
-        """Finds the 0-indexed location of the given CardList in the pages list"""
+        """Finds the 0-indexed location of the given Page in the pages list"""
         try:
             return self.page_index_cache[id(other)]
         except KeyError as k:
