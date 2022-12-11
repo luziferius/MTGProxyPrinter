@@ -100,13 +100,14 @@ def test_apply_with_position_and_count_deletes_given_number_of_pages(document_li
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_apply_with_position_and_count_includes_currently_edited_page_if_within_range(document_light):
+def test_apply_with_position_and_count_includes_currently_edited_page_if_within_range(qtbot, document_light):
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
     removed_pages = document_light.pages[1:3]
     document_light._set_currently_edited_page(document_light.pages[2])
     action = ActionRemovePage(1, 2)
-    action.apply(document_light)
+    with qtbot.wait_signal(document_light.current_page_changed):
+        action.apply(document_light)
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -125,13 +126,14 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_apply_without_position_deletes_currently_edited_page(document_light):
+def test_apply_without_position_deletes_currently_edited_page(qtbot, document_light):
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[1]
     document_light._set_currently_edited_page(removed_page)
     insert_mock_in_page(removed_page)
     action = ActionRemovePage()
-    action.apply(document_light)
+    with qtbot.wait_signal(document_light.current_page_changed):
+        action.apply(document_light)
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -184,11 +186,13 @@ def test_undo_with_position_restores_multiple_pages_at_given_middle_position(doc
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_undo_with_position_restores_page_at_given_middle_position(document_light):
+def test_undo_restores_currently_edited_page(qtbot, document_light):
     append_new_pages(document_light, 1)
     action = ActionRemovePage(2)
     action.removed_pages.append(removed_page := Page())
-    action.undo(document_light)
+    action.currently_edited_page = removed_page
+    with qtbot.wait_signal(document_light.current_page_changed):
+        action.undo(document_light)
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -197,6 +201,7 @@ def test_undo_with_position_restores_page_at_given_middle_position(document_ligh
             same_instance(removed_page),
         )
     )
+    assert_that(document_light.currently_edited_page, is_(same_instance(removed_page)))
     verify_page_index_cache_is_valid(document_light)
 
 
