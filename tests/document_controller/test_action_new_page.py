@@ -47,7 +47,7 @@ def append_new_pages(document, count: int):
 def test_apply_without_position_appends_new_page(document_light):
     insert_mock_in_page(document_light.pages[0])
     action = ActionNewPage()
-    action.apply(document_light)
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -64,7 +64,7 @@ def test_apply_with_position_inserts_new_page_at_the_given_position(document_lig
     insert_mock_in_page(document_light.pages[0], 2)
     insert_mock_in_page(document_light.pages[1], 1)
     action = ActionNewPage(1)
-    action.apply(document_light)
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -90,7 +90,7 @@ def test_undo_with_position_removes_last_page(document_light):
     insert_mock_in_page(document_light.pages[0])
     insert_mock_in_page(document_light.pages[2])
     action = ActionNewPage(1)
-    action.undo(document_light)
+    assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(

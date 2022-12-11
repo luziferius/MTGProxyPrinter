@@ -28,7 +28,7 @@ def test_apply_with_position_deletes_given_page_1(document_light):
     removed_page = document_light.pages[1]
     insert_mock_in_page(removed_page)
     action = ActionRemovePage(1)
-    action.apply(document_light)
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -56,7 +56,7 @@ def test_apply_with_position_deletes_given_page_0(document_light):
     insert_mock_in_page(remaining_page)
     document_light._set_currently_edited_page(remaining_page)
     action = ActionRemovePage(0)
-    action.apply(document_light)
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -81,7 +81,7 @@ def test_apply_with_position_and_count_deletes_given_number_of_pages(document_li
     removed_pages = document_light.pages[1:3]
     document_light._set_currently_edited_page(remaining_page)
     action = ActionRemovePage(1, 2)
-    action.apply(document_light)
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -107,7 +107,7 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
     document_light._set_currently_edited_page(document_light.pages[2])
     action = ActionRemovePage(1, 2)
     with qtbot.wait_signal(document_light.current_page_changed):
-        action.apply(document_light)
+        assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -133,7 +133,7 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot, document_li
     insert_mock_in_page(removed_page)
     action = ActionRemovePage()
     with qtbot.wait_signal(document_light.current_page_changed):
-        action.apply(document_light)
+        assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -156,7 +156,7 @@ def test_undo_with_position_restores_page_at_given_middle_position(document_ligh
     append_new_pages(document_light, 1)
     action = ActionRemovePage(1)
     action.removed_pages.append(removed_page := Page())
-    action.undo(document_light)
+    assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -173,7 +173,7 @@ def test_undo_with_position_restores_multiple_pages_at_given_middle_position(doc
     action = ActionRemovePage(1, 2)
     action.removed_pages.append(removed_page_1 := Page())
     action.removed_pages.append(removed_page_2 := Page())
-    action.undo(document_light)
+    assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -192,7 +192,7 @@ def test_undo_restores_currently_edited_page(qtbot, document_light):
     action.removed_pages.append(removed_page := Page())
     action.currently_edited_page = removed_page
     with qtbot.wait_signal(document_light.current_page_changed):
-        action.undo(document_light)
+        assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(

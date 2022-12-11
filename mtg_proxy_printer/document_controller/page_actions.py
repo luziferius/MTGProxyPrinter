@@ -54,6 +54,7 @@ class ActionNewPage(DocumentAction):
         if self.position is None:
             raise IllegalStateError("Page position not set")
         ActionRemovePage(self.position).apply(document)
+        return self
 
 
 class ActionRemovePage(DocumentAction):
@@ -90,6 +91,7 @@ class ActionRemovePage(DocumentAction):
             # Since the page list is non-empty, there is always a page to select.
             # Choose the first after the removed range or the last, whichever comes first.
             document._set_currently_edited_page(document.pages[min(first_index, document.rowCount()-1)])
+        return self
 
     def undo(self, document: Document):
         if self.position is None:
@@ -104,6 +106,7 @@ class ActionRemovePage(DocumentAction):
         document.endInsertRows()
         if self.currently_edited_page is not None:
             document._set_currently_edited_page(self.currently_edited_page)
+        return self
 
     def _append_pages(self, document: Document, start: int):
         document.pages += self.removed_pages
