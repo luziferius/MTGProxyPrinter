@@ -16,6 +16,7 @@
 from unittest.mock import MagicMock
 
 from hamcrest import *
+import pytest
 
 from mtg_proxy_printer.model.document import Page, CardContainer, Card
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, IllegalStateError
@@ -44,10 +45,11 @@ def append_new_pages(document, count: int):
     document.recreate_page_index_cache()
         
 
-def test_apply_without_position_appends_new_page(document_light):
+def test_apply_without_position_appends_new_page(qtbot, document_light):
     insert_mock_in_page(document_light.pages[0])
     action = ActionNewPage()
-    assert_that(action.apply(document_light), is_(same_instance(action)))
+    with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -59,17 +61,55 @@ def test_apply_without_position_appends_new_page(document_light):
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_apply_with_position_inserts_new_page_at_the_given_position(document_light):
-    document_light.pages.append(Page())
+@pytest.mark.parametrize("count", [1, 3])
+def test_apply_without_position_appends_count_new_pages(qtbot, document_light, count):
+    insert_mock_in_page(document_light.pages[0])
+    action = ActionNewPage(count=count)
+    with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
+    assert_that(
+        document_light.pages,
+        contains_exactly(
+            all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
+            *[all_of(instance_of(Page), is_(empty()))]*count,
+        ),
+        "Page not appended correctly"
+    )
+    verify_page_index_cache_is_valid(document_light)
+
+
+def test_apply_with_position_inserts_new_page_at_the_given_position(qtbot, document_light):
+    append_new_pages(document_light, 1)
     insert_mock_in_page(document_light.pages[0], 2)
     insert_mock_in_page(document_light.pages[1], 1)
     action = ActionNewPage(1)
-    assert_that(action.apply(document_light), is_(same_instance(action)))
+    with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
             all_of(instance_of(Page), contains_exactly(*[instance_of(CardContainer)]*2)),
             all_of(instance_of(Page), is_(empty())),
+            all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
+        ),
+        "Page not inserted at the specified position"
+    )
+    verify_page_index_cache_is_valid(document_light)
+
+
+@pytest.mark.parametrize("count", [1, 3])
+def test_apply_with_position_inserts_count_new_pages_at_the_given_position(qtbot, document_light, count: int):
+    append_new_pages(document_light, 1)
+    insert_mock_in_page(document_light.pages[0], 2)
+    insert_mock_in_page(document_light.pages[1], 1)
+    action = ActionNewPage(1, count=count)
+    with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
+    assert_that(
+        document_light.pages,
+        contains_exactly(
+            all_of(instance_of(Page), contains_exactly(*[instance_of(CardContainer)]*2)),
+            *[all_of(instance_of(Page), is_(empty()))]*count,
             all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
         ),
         "Page not inserted at the specified position"
@@ -84,13 +124,30 @@ def test_undo_without_position_raises_exception(document_light):
     assert_that(calling(action.undo).with_args(document_light), raises(IllegalStateError))
 
 
-def test_undo_with_position_removes_last_page(document_light):
-    document_light.pages.append(Page())
-    document_light.pages.append(Page())
+def test_undo_with_position_removes_inserted_page(qtbot, document_light):
+    append_new_pages(document_light, 2)
     insert_mock_in_page(document_light.pages[0])
     insert_mock_in_page(document_light.pages[2])
     action = ActionNewPage(1)
-    assert_that(action.undo(document_light), is_(same_instance(action)))
+    with qtbot.wait_signal(document_light.rowsAboutToBeRemoved), qtbot.wait_signal(document_light.rowsRemoved):
+        assert_that(action.undo(document_light), is_(same_instance(action)))
+    assert_that(
+        document_light.pages,
+        contains_exactly(
+            all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
+            all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
+        )
+    )
+    verify_page_index_cache_is_valid(document_light)
+
+
+def test_undo_removes_count_pages(qtbot, document_light):
+    append_new_pages(document_light, 3)
+    insert_mock_in_page(document_light.pages[0])
+    insert_mock_in_page(document_light.pages[3])
+    action = ActionNewPage(1, count=2)
+    with qtbot.wait_signal(document_light.rowsAboutToBeRemoved), qtbot.wait_signal(document_light.rowsRemoved):
+        assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(

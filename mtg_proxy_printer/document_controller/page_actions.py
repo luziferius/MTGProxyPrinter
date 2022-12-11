@@ -28,24 +28,27 @@ __all__ = [
 
 class ActionNewPage(DocumentAction):
 
-    def __init__(self, position: int = None):
+    def __init__(self, position: int = None, *, count: int = 1):
         """
-        Insert a new, empty page at the given index. Positions are clamped into the range [0, page_count].
-        If given None, append the page to the document end instead.
+        Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
+        If given None for the position, append the page to the document end instead. Page count defaults to 1.
         """
         super().__init__()
         self.position = position
+        self.count = count
 
     def apply(self, document: Document):
         self.position = document.rowCount() if self.position is None \
             else max(0, min(self.position, document.rowCount()))
-        document.beginInsertRows(INVALID_INDEX, self.position, self.position)
-        new_page = Page()
+        document.beginInsertRows(INVALID_INDEX, self.position, self.position+self.count-1)
         if self.position == document.rowCount():
-            document.pages.append(new_page)
-            document.page_index_cache[id(new_page)] = len(document.pages) - 1
+            for _ in range(self.count):
+                new_page = Page()
+                document.pages.append(new_page)
+                document.page_index_cache[id(new_page)] = len(document.pages) - 1
         else:
-            document.pages.insert(self.position, new_page)
+            for _ in range(self.count):
+                document.pages.insert(self.position, Page())
             document.recreate_page_index_cache()
         document.endInsertRows()
         return self
@@ -53,7 +56,7 @@ class ActionNewPage(DocumentAction):
     def undo(self, document: Document):
         if self.position is None:
             raise IllegalStateError("Page position not set")
-        ActionRemovePage(self.position).apply(document)
+        ActionRemovePage(self.position, self.count).apply(document)
         return self
 
 
