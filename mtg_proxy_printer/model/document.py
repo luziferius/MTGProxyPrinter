@@ -164,7 +164,7 @@ class Document(QAbstractItemModel):
             self.page_index_cache[id(new_page)] = len(self.pages) - 1
         else:
             self.pages.insert(position, new_page)
-            self._recreate_page_index_cache()
+            self.recreate_page_index_cache()
         self.endInsertRows()
         return new_page
 
@@ -239,7 +239,7 @@ class Document(QAbstractItemModel):
         self.beginRemoveRows(INVALID_INDEX, first_index, last_index)
         logger.debug("BeginRemoveRows() called")
         del self.pages[first_index:last_index+1]
-        self._recreate_page_index_cache()
+        self.recreate_page_index_cache()
         self.endRemoveRows()
         if not self.pages:
             self.currently_edited_page = self.add_page()
@@ -739,7 +739,7 @@ class Document(QAbstractItemModel):
     def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
 
-    def _recreate_page_index_cache(self):
+    def recreate_page_index_cache(self):
         self.page_index_cache.clear()
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)

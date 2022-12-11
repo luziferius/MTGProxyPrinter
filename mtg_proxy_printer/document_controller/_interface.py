@@ -28,6 +28,7 @@ except ImportError:  # Compatibility with Python < 3.11
 __all__ = [
     "DocumentAction",
     "IllegalStateError",
+    "Self",
 ]
 
 

@@ -16,7 +16,8 @@
 from hamcrest import *
 
 from mtg_proxy_printer.model.document import Page, CardContainer
-from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage, IllegalStateError
+from mtg_proxy_printer.document_controller._interface import IllegalStateError
+from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 
 from .test_action_new_page import insert_mock_in_page, verify_page_index_cache_is_valid, append_new_pages
 

@@ -14,9 +14,6 @@ import typing
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtCore import QPersistentModelIndex
-
-from mtg_proxy_printer.model.carddb import CardList
 from mtg_proxy_printer.model.document import Document, INVALID_INDEX, Page
 from ._interface import DocumentAction, IllegalStateError
 from mtg_proxy_printer.logger import get_logger
@@ -49,7 +46,7 @@ class ActionNewPage(DocumentAction):
             document.page_index_cache[id(new_page)] = len(document.pages) - 1
         else:
             document.pages.insert(self.position, new_page)
-            document._recreate_page_index_cache()
+            document.recreate_page_index_cache()
         document.endInsertRows()
         return self
 
@@ -84,7 +81,7 @@ class ActionRemovePage(DocumentAction):
         document.beginRemoveRows(INVALID_INDEX, first_index, last_index)
         logger.debug("BeginRemoveRows() called")
         del document.pages[first_index:last_index+1]
-        document._recreate_page_index_cache()
+        document.recreate_page_index_cache()
         document.endRemoveRows()
         if not document.pages:
             document._set_currently_edited_page(document.add_page())
@@ -117,4 +114,4 @@ class ActionRemovePage(DocumentAction):
     def _insert_pages(self, document: Document, start: int):
         for index, page in enumerate(self.removed_pages, start=start):
             document.pages.insert(index, page)
-        document._recreate_page_index_cache()
+        document.recreate_page_index_cache()

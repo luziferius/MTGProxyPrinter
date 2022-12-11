@@ -41,7 +41,7 @@ def verify_page_index_cache_is_valid(document_light):
 def append_new_pages(document, count: int):
     for _ in range(count):
         document.pages.append(Page())
-    document._recreate_page_index_cache()
+    document.recreate_page_index_cache()
         
 
 def test_apply_without_position_appends_new_page(document_light):
