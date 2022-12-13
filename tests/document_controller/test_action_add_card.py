@@ -42,7 +42,7 @@ def card():
 def test_apply_without_count_adds_single_card(qtbot, card, document_light):
     action = ActionAddCard(card)
     page = document_light.pages[0]
-    assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         page,
         contains_exactly(
@@ -63,7 +63,7 @@ def test_apply_without_count_adds_single_card(qtbot, card, document_light):
 def test_apply_with_count_adds_single_card(qtbot, card, document_light, count: int):
     action = ActionAddCard(card, count)
     page = document_light.pages[0]
-    assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         page,
         contains_exactly(
@@ -84,7 +84,7 @@ def test_apply_with_count_overflowing_page_adds_new_page(qtbot, card, document_l
     capacity = document_light.page_layout.compute_page_card_capacity()
     count = capacity * 3
     action = ActionAddCard(card, count)
-    assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
+    assert_that(action.apply(document_light), is_(same_instance(action)))
     for page in document_light.pages:
         assert_that(
             page,
@@ -115,7 +115,6 @@ def test_undo_without_internal_saved_state_raises_exception(card):
 
 
 def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
-    pytest.skip("Unfinished")
     capacity = document_light.page_layout.compute_page_card_capacity()
     append_new_pages(document_light, 2)
     for page in range(3):
@@ -125,12 +124,16 @@ def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
     action.added_new_pages = 2
     action.added_cards_to_existing_pages.append((0, capacity-1))
 
-    assert_that(action.undo(document_light), is_(instance_of(DocumentAction)))
+    assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
-        contains_exactly(all_of(
-            instance_of(CardContainer),
-            has_properties({
-                "parent": same_instance(page),
-                "card": same_instance(card)
-            }))))
+        contains_exactly(
+            contains_exactly(all_of(
+                instance_of(CardContainer),
+                has_properties({
+                    "parent": same_instance(document_light.pages[0]),
+                    "card": same_instance(card)
+                }))
+            )
+        )
+    )

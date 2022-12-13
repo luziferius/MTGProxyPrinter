@@ -1,6 +1,4 @@
 # Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-import math
-import typing
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,10 +13,12 @@ import typing
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import itertools
+import math
 import typing
 
 from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.document import Document, INVALID_INDEX, Page, PageList, CardContainer
+from mtg_proxy_printer.model.document import Document, CardContainer
 from ._interface import DocumentAction, IllegalStateError
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
@@ -110,20 +110,61 @@ class ActionAddCard(DocumentAction):
             raise IllegalStateError("No cards added to undo")
         if self.added_new_pages:  # Drop all appended pages, implicitly removing all cards on them
             ActionRemovePage(document.rowCount() - self.added_new_pages, count=self.added_new_pages).apply(document)
-        for page, count in self.added_cards_to_existing_pages:
-            ActionRemoveCards().apply(document)  # TODO: Fix parameters
+        for page_number, count in self.added_cards_to_existing_pages:
+            cards_on_page = len(document.pages[page_number])
+            # Cards are always appended when filling a page via this action. So remove the last count cards will remove
+            # the cards added during apply().
+            ActionRemoveCards(
+                range(cards_on_page-count, cards_on_page),
+                page_number
+            ).apply(document)
         return self
 
 
 class ActionRemoveCards(DocumentAction):
 
-    def __init__(self, cards, page: int = 0):
+    def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         super().__init__()
-        self.cards = cards
-        self.page = page
+        if not cards_to_remove:
+            raise ValueError("Parameter cards_to_remove must not be empty")
+        self.card_ranges_to_remove = self._to_list_of_ranges(cards_to_remove)
+        self.page_number = page_number
+        self.removed_cards: typing.List[typing.List[CardContainer]] = []
 
     def apply(self, document: Document):
+        if self.page_number is None:
+            self.page_number = document.find_page_list_index(document.currently_edited_page)
+        page_index = document.index(self.page_number, 0)
+        page = document.pages[self.page_number]
+        for lower, upper in reversed(self.card_ranges_to_remove):
+            document.beginRemoveRows(page_index, lower, upper)
+            self.removed_cards.append(page[lower:upper+1])
+            del page[lower:upper+1]
+            document.endRemoveRows()
+        self.removed_cards.reverse()
         return self
 
     def undo(self, document: Document):
+        if self.page_number is None:
+            raise IllegalStateError("page_number is None")
+        page = document.pages[self.page_number]
+        page_index = document.index(self.page_number, 0)
+        for (begin, end), cards in zip(self.card_ranges_to_remove, self.removed_cards):
+            document.beginInsertRows(page_index, begin, end)
+            for card in reversed(cards):
+                page.insert(begin, card)
+            document.endInsertRows()
         return self
+
+    @staticmethod
+    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
+        ranges: typing.List[typing.Tuple[int, int]] = []
+        sequence = itertools.chain(sequence, (sentinel := object(),))
+        lower = upper = next(sequence)
+        for item in sequence:
+            if item is sentinel or upper != item-1:
+                ranges.append((lower, upper))
+                lower = upper = item
+            else:
+                upper = item
+        return ranges

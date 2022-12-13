@@ -1,5 +1,4 @@
 # Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-import typing
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +12,8 @@ import typing
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import typing
 
 from mtg_proxy_printer.model.document import Document, INVALID_INDEX, Page
 from ._interface import DocumentAction, IllegalStateError
