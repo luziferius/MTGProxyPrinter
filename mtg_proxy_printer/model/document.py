@@ -103,6 +103,7 @@ class Document(QAbstractItemModel):
             self.redo_stack.clear()
             self.redo_available_changed.emit(False)
         emit_undo_available_signal = not self.undo_stack
+        logger.debug(f"Applying {action.__class__.__name__}")
         self.undo_stack.append(action.apply(self))
         self.action_applied.emit(action)
         if emit_undo_available_signal:
@@ -113,6 +114,7 @@ class Document(QAbstractItemModel):
         """Undo the last action on the undo stack and push it onto the redo stack."""
         emit_redo_available_signal = not self.redo_stack
         action = self.undo_stack.pop()
+        logger.debug(f"Undo {action.__class__.__name__}")
         self.redo_stack.append(action.undo(self))
         self.action_undone.emit(action)
         if not self.undo_stack:
@@ -125,6 +127,7 @@ class Document(QAbstractItemModel):
         """Apply the last action on the redo stack and push it onto the undo stack."""
         emit_undo_available_signal = not self.undo_stack
         action = self.redo_stack.pop()
+        logger.debug(f"Redo {action.__class__.__name__}")
         self.undo_stack.append(action.apply(self))
         self.action_applied.emit(action)
         if not self.redo_stack:
@@ -265,31 +268,6 @@ class Document(QAbstractItemModel):
         if not self.pages:
             self.currently_edited_page = self.add_page()
             self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
-
-    @Slot(list)
-    def remove_card_multi_selection(self, indices: typing.List[QModelIndex]) -> int:
-        """
-        Remove all cards in the given multi-selection.
-
-        :param indices: List with QModelIndex instances that represents a multi-selection.
-          As returned by a QSelectionModel.
-        :return: Number of cards removed
-        """
-        current_range: typing.List[QModelIndex] = []
-        ranges: typing.List[typing.List[QModelIndex]] = []
-        for index in indices:
-            if not index.parent().isValid():
-                raise RuntimeError("Tried to remove a page in remove_card_multi_selection()!")
-            if not current_range or index.row() == current_range[-1].row() + 1:
-                current_range.append(index)
-            else:
-                ranges.append(current_range)
-                current_range = [index]
-        if current_range:
-            ranges.append(current_range)
-        if ranges:
-            ranges.reverse()
-            return sum(map(self.remove_cards, ranges))
 
     def clear_page(self, index: QModelIndex):
         if isinstance(index.internalPointer(), list):

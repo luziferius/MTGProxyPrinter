@@ -16,13 +16,14 @@ import math
 import typing
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex
-from PyQt5.QtWidgets import QTableView, QWidget
+from PyQt5.QtWidgets import QWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
 try:
@@ -51,6 +52,7 @@ UiType = typing.Union[typing.Type[Ui_Grouped], typing.Type[Ui_Columnar], typing.
 class CentralWidget(QWidget):
 
     settings_changed = Signal()
+    request_action = Signal(ActionRemoveCards)
 
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
@@ -78,6 +80,7 @@ class CentralWidget(QWidget):
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
+        self.request_action.connect(document.apply)
         self.ui.page_card_table_view.setModel(document)
         # Signal has to be connected here, because setModel() implicitly creates the QItemSelectionModel
         self.ui.page_card_table_view.selectionModel().selectionChanged.connect(
@@ -140,10 +143,12 @@ class CentralWidget(QWidget):
 
     @Slot()
     def on_delete_selected_images_button_clicked(self):
-        self.page_card_table_view: QTableView
         multi_selection = self.ui.page_card_table_view.selectionModel().selectedRows()
-        logger.debug(f"User removes {len(multi_selection)} items from the current page.")
-        self.ui.page_card_table_view.model().remove_card_multi_selection(multi_selection)
+        if multi_selection:
+            rows = [index.row() for index in multi_selection]
+            logger.debug(f"User removes {len(multi_selection)} items from the current page.")
+            action = ActionRemoveCards(rows)
+            self.request_action.emit(action)
 
     @Slot()
     def select_first_page(self, loading_in_progress: bool = False):
