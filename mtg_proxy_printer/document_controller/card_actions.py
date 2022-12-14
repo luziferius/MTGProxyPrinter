@@ -18,7 +18,8 @@ import math
 import typing
 
 from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.document import Document, CardContainer
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_page import CardContainer
 from ._interface import DocumentAction, IllegalStateError
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger

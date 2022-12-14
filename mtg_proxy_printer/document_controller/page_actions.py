@@ -15,7 +15,8 @@
 
 import typing
 
-from mtg_proxy_printer.model.document import Document, INVALID_INDEX, Page
+from mtg_proxy_printer.model.document import Document, INVALID_INDEX
+from mtg_proxy_printer.model.document_page import Page
 from ._interface import DocumentAction, IllegalStateError
 from mtg_proxy_printer.logger import get_logger
 

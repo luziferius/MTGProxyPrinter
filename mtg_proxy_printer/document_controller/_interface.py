@@ -18,7 +18,8 @@ from abc import abstractmethod
 
 from PyQt5.QtCore import QObject
 
-from mtg_proxy_printer.model.document import Document
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
 
 try:
     from typing import Self
@@ -39,9 +40,9 @@ class IllegalStateError(RuntimeError):
 class DocumentAction(QObject):
 
     @abstractmethod
-    def apply(self, document: Document) -> Self:
+    def apply(self, document: "Document") -> Self:
         pass
 
     @abstractmethod
-    def undo(self, document: Document) -> Self:
+    def undo(self, document: "Document") -> Self:
         pass

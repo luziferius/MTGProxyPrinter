@@ -1,4 +1,4 @@
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
     QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
+from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -35,13 +36,13 @@ from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSave
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
+from mtg_proxy_printer.document_controller import DocumentAction
+
 logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
-    "PageList",
     "Document",
-    "CardContainer",
 ]
 
 
@@ -49,32 +50,8 @@ class DocumentColumns(enum.IntEnum):
     Page = 0
 
 
-@dataclasses.dataclass
-class CardContainer:
-    parent: "Page"
-    card: Card
-
-
-class Page(typing.List[CardContainer]):
-
-    def page_type(self) -> PageType:
-        if not self:
-            return PageType.UNDETERMINED
-        found_types = set(container.card.requested_page_type() for container in self)
-        if found_types == {PageType.REGULAR}:
-            return PageType.REGULAR
-        if found_types == {PageType.OVERSIZED}:
-            return PageType.OVERSIZED
-        return PageType.MIXED
-
-    def accepts_card(self, card: typing.Union[Card, PageType]) -> bool:
-        other_type = card.requested_page_type() if isinstance(card, Card) else card
-        own_page_type = self.page_type()
-        return other_type == own_page_type or own_page_type is PageType.UNDETERMINED
-
-
 INVALID_INDEX = QModelIndex()
-PageList = typing.List[Page]
+ActionStack = typing.Deque[DocumentAction]
 
 
 class Document(QAbstractItemModel):
@@ -87,6 +64,11 @@ class Document(QAbstractItemModel):
     page_layout_changed = Signal()
     page_type_changed = Signal(QModelIndex)
 
+    action_applied = Signal(DocumentAction)
+    action_undone = Signal(DocumentAction)
+    undo_available_changed = Signal(bool)
+    redo_available_changed = Signal(bool)
+
     page_header = {
         PageColumns.CardName: "Card name",
         PageColumns.Set: "Set",
@@ -98,6 +80,8 @@ class Document(QAbstractItemModel):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
+        self.undo_stack: ActionStack = collections.deque()
+        self.redo_stack: ActionStack = collections.deque()
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
@@ -110,6 +94,43 @@ class Document(QAbstractItemModel):
         self.currently_edited_page = self.pages[0]
         self.page_layout = PageLayoutSettings.create_from_settings()
         self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
+
+    @Slot(DocumentAction)
+    def apply(self, action: DocumentAction):
+        if self.redo_stack:
+            # TODO: Implement action comparison and perform a redo instead of clearing the stack if the given action
+            #  is equal to the top of the redo stack.
+            self.redo_stack.clear()
+            self.redo_available_changed.emit(False)
+        emit_undo_available_signal = not self.undo_stack
+        self.undo_stack.append(action.apply(self))
+        self.action_applied.emit(action)
+        if emit_undo_available_signal:
+            self.undo_available_changed.emit(True)
+
+    @Slot()
+    def undo(self):
+        """Undo the last action on the undo stack and push it onto the redo stack."""
+        emit_redo_available_signal = not self.redo_stack
+        action = self.undo_stack.pop()
+        self.redo_stack.append(action.undo(self))
+        self.action_undone.emit(action)
+        if not self.undo_stack:
+            self.undo_available_changed.emit(False)
+        if emit_redo_available_signal:
+            self.redo_available_changed.emit(True)
+
+    @Slot()
+    def redo(self):
+        """Apply the last action on the redo stack and push it onto the undo stack."""
+        emit_undo_available_signal = not self.undo_stack
+        action = self.redo_stack.pop()
+        self.undo_stack.append(action.apply(self))
+        self.action_applied.emit(action)
+        if not self.redo_stack:
+            self.redo_available_changed.emit(False)
+        if emit_undo_available_signal:
+            self.undo_available_changed.emit(True)
 
     def on_ui_selects_new_page(self, new_page: QModelIndex):
         if new_page.parent().isValid():

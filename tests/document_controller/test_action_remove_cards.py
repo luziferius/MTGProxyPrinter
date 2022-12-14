@@ -19,8 +19,8 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Page, CardContainer
-from mtg_proxy_printer.document_controller._interface import IllegalStateError, DocumentAction
+from mtg_proxy_printer.model.document_page import CardContainer, Page
+from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
 
 from .test_action_new_page import append_new_pages

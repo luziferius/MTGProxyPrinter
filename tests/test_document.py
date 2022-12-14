@@ -37,9 +37,236 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, CardContainer, PageType
+from mtg_proxy_printer.model.document import Document, PageType
+from mtg_proxy_printer.model.document_page import CardContainer
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageKey
+
+from mtg_proxy_printer.document_controller import DocumentAction
+
+
+class DummyAction(DocumentAction):
+    """A dummy DocumentAction that does nothing. apply() and undo() are replaced with MagicMock instances."""
+    apply: unittest.mock.MagicMock
+    undo: unittest.mock.MagicMock
+
+    def __init__(self):
+        super().__init__()
+        self.apply = unittest.mock.MagicMock(return_value=self)
+        self.undo = unittest.mock.MagicMock(return_value=self)
+
+
+def assert_unused(action: DummyAction):
+    action.apply.assert_not_called()
+    action.undo.assert_not_called()
+
+
+def assert_applied(action: DummyAction, document: Document):
+    action.apply.assert_called_once_with(document)
+    action.undo.assert_not_called()
+
+
+def assert_undone(action: DummyAction, document: Document):
+    action.apply.assert_not_called()
+    action.undo.assert_called_once_with(document)
+
+
+def test_apply_on_empty_undo_stack_empty_redo_stack(qtbot: QtBot, document_light: Document):
+    action = DummyAction()
+    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=100), \
+            qtbot.assert_not_emitted(document_light.redo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_undone):
+        document_light.apply(action)
+
+    assert_that(document_light.redo_stack, is_(empty()))
+    assert_that(document_light.undo_stack, contains_exactly(action))
+
+    assert_applied(action, document_light)
+
+
+def test_apply_on_empty_undo_stack_filled_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(redo_dummy := DummyAction())
+    action = DummyAction()
+    with qtbot.wait_signals([
+                document_light.undo_available_changed,
+                document_light.redo_available_changed,
+                document_light.action_applied], timeout=100), \
+            qtbot.assert_not_emitted(document_light.action_undone):
+        document_light.apply(action)
+
+    assert_that(document_light.redo_stack, is_(empty()))
+    assert_that(document_light.undo_stack, contains_exactly(action))
+
+    assert_unused(redo_dummy)
+    assert_applied(action, document_light)
+
+
+def test_apply_on_filled_undo_stack_empty_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.undo_stack.append(previous_action := DummyAction())
+    action = DummyAction()
+    with qtbot.assert_not_emitted(document_light.undo_available_changed), \
+            qtbot.assert_not_emitted(document_light.redo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_undone), \
+            qtbot.wait_signal(document_light.action_applied, timeout=100):
+        document_light.apply(action)
+
+    assert_that(document_light.redo_stack, is_(empty()))
+    assert_that(document_light.undo_stack, contains_exactly(previous_action, action))
+
+    assert_unused(previous_action)
+    assert_applied(action, document_light)
+
+
+def test_apply_on_filled_undo_stack_filled_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.undo_stack.append(previous_action := DummyAction())
+    document_light.redo_stack.append(redo_dummy := DummyAction())
+    action = DummyAction()
+    expected_signals = [document_light.redo_available_changed, document_light.action_applied]
+    with qtbot.wait_signals(expected_signals, timeout=100), \
+            qtbot.assert_not_emitted(document_light.undo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_undone):
+        document_light.apply(action)
+
+    assert_that(document_light.redo_stack, is_(empty()))
+    assert_that(document_light.undo_stack, contains_exactly(previous_action, action))
+
+    assert_unused(redo_dummy)
+    assert_unused(previous_action)
+    assert_applied(action, document_light)
+
+
+def test_undo_on_empty_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, document_light: Document):
+    document_light.undo_stack.append(first := DummyAction())
+    document_light.undo_stack.append(second := DummyAction())
+    expected_signals = [document_light.redo_available_changed, document_light.action_undone,]
+    with qtbot.wait_signals(expected_signals, timeout=100),\
+            qtbot.assert_not_emitted(document_light.undo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_applied):
+        document_light.undo()
+
+    assert_that(document_light.undo_stack, contains_exactly(first))
+    assert_that(document_light.redo_stack, contains_exactly(second))
+
+    assert_unused(first)
+    assert_undone(second, document_light)
+
+
+def test_undo_on_empty_redo_stack_1_element_on_undo_stack(qtbot: QtBot, document_light: Document):
+    document_light.undo_stack.append(first := DummyAction())
+    expected_signals = [
+        document_light.redo_available_changed, document_light.undo_available_changed, document_light.action_undone,
+    ]
+    with qtbot.wait_signals(expected_signals, timeout=100), \
+            qtbot.assert_not_emitted(document_light.action_applied):
+        document_light.undo()
+
+    assert_that(document_light.undo_stack, is_(empty()))
+    assert_that(document_light.redo_stack, contains_exactly(first))
+
+    assert_undone(first, document_light)
+
+
+def test_undo_on_filled_redo_stack_1_element_on_undo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(redo_dummy := DummyAction())
+    document_light.undo_stack.append(first := DummyAction())
+    expected_signals = [document_light.undo_available_changed, document_light.action_undone,]
+    with qtbot.wait_signals(expected_signals, timeout=100), \
+            qtbot.assert_not_emitted(document_light.redo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_applied):
+        document_light.undo()
+
+    assert_that(document_light.undo_stack, is_(empty()))
+    assert_that(document_light.redo_stack, contains_exactly(redo_dummy, first))
+
+    assert_unused(redo_dummy)
+    assert_undone(first, document_light)
+
+
+def test_undo_on_filled_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(redo_dummy := DummyAction())
+    document_light.undo_stack.append(first := DummyAction())
+    document_light.undo_stack.append(second := DummyAction())
+
+    with qtbot.assert_not_emitted(document_light.undo_available_changed), \
+            qtbot.assert_not_emitted(document_light.redo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_applied), \
+            qtbot.wait_signal(document_light.action_undone, timeout=100):
+        document_light.undo()
+
+    assert_that(document_light.undo_stack, contains_exactly(first))
+    assert_that(document_light.redo_stack, contains_exactly(redo_dummy, second))
+
+    assert_unused(redo_dummy)
+    assert_unused(first)
+    assert_undone(second, document_light)
+
+
+def test_redo_on_empty_undo_stack_1_element_on_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(first := DummyAction())
+    expected_signals = [
+        document_light.undo_available_changed, document_light.redo_available_changed, document_light.action_applied
+    ]
+    with qtbot.wait_signals(
+            expected_signals, timeout=100), \
+            qtbot.assert_not_emitted(document_light.action_undone):
+        document_light.redo()
+
+    assert_that(document_light.redo_stack, is_(empty()))
+    assert_that(document_light.undo_stack, contains_exactly(first))
+
+    assert_applied(first, document_light)
+
+
+def test_redo_on_empty_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(first := DummyAction())
+    document_light.redo_stack.append(second := DummyAction())
+
+    expected_signals = [document_light.undo_available_changed, document_light.action_applied]
+    with qtbot.wait_signals(expected_signals, timeout=100), \
+            qtbot.assert_not_emitted(document_light.redo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_undone):
+        document_light.redo()
+
+    assert_that(document_light.redo_stack, contains_exactly(first))
+    assert_that(document_light.undo_stack, contains_exactly(second))
+
+    assert_unused(first)
+    assert_applied(second, document_light)
+
+
+def test_redo_on_filled_undo_stack_1_element_on_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(first := DummyAction())
+    document_light.undo_stack.append(undo_dummy := DummyAction())
+    expected_signals = [document_light.redo_available_changed, document_light.action_applied]
+    with qtbot.wait_signals(expected_signals, timeout=100),\
+            qtbot.assert_not_emitted(document_light.undo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_undone):
+        document_light.redo()
+
+    assert_that(document_light.undo_stack, contains_exactly(undo_dummy, first))
+    assert_that(document_light.redo_stack, is_(empty()))
+
+    assert_unused(undo_dummy)
+    assert_applied(first, document_light)
+
+
+def test_redo_on_filled_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, document_light: Document):
+    document_light.redo_stack.append(first := DummyAction())
+    document_light.redo_stack.append(second := DummyAction())
+    document_light.undo_stack.append(undo_dummy := DummyAction())
+
+    with qtbot.assert_not_emitted(document_light.undo_available_changed), \
+            qtbot.assert_not_emitted(document_light.redo_available_changed), \
+            qtbot.assert_not_emitted(document_light.action_undone), \
+            qtbot.wait_signal(document_light.action_applied, timeout=100):
+        document_light.redo()
+
+    assert_that(document_light.undo_stack, contains_exactly(undo_dummy, second))
+    assert_that(document_light.redo_stack, contains_exactly(first))
+
+    assert_unused(undo_dummy)
+    assert_unused(first)
+    assert_applied(second, document_light)
 
 
 @pytest.fixture

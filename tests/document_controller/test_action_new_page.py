@@ -18,8 +18,10 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.document import Page, CardContainer, Card
-from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, IllegalStateError
+from mtg_proxy_printer.model.document import Card
+from mtg_proxy_printer.model.document_page import CardContainer, Page
+from mtg_proxy_printer.document_controller import IllegalStateError
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
 
 def insert_mock_in_page(page: Page, count: int = 1):
