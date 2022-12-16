@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
         self._connect_card_info_downloader_signals(card_info_downloader)
         self._setup_central_widget()
         self._setup_loading_state_connections()
+        self._setup_undo_redo_actions(document)
         self.should_update_languages.connect(
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
@@ -118,6 +119,12 @@ class MainWindow(QMainWindow):
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
+
+    def _setup_undo_redo_actions(self, document: Document):
+        self.ui.action_undo.triggered.connect(document.undo)
+        self.ui.action_redo.triggered.connect(document.redo)
+        document.undo_available_changed.connect(self.ui.action_undo.setEnabled)
+        document.redo_available_changed.connect(self.ui.action_redo.setEnabled)
 
     def _connect_document_signals(self, document: Document):
         document.loading_state_changed.connect(self.loading_state_changed)
