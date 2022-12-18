@@ -13,22 +13,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from functools import partial
+
 from hamcrest import *
+from PyQt5.QtCore import QModelIndex
 
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 from mtg_proxy_printer.document_controller import IllegalStateError
-from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
+from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage, ActionNewPage
 
 from .test_action_new_page import insert_mock_in_page, verify_page_index_cache_is_valid, append_new_pages
 
 
-def test_apply_with_position_deletes_given_page_1(document_light):
+def validate_qt_model_signal_parameter(
+        expected_first: int, expected_last: int,
+        parent: QModelIndex, first: int, last: int) -> bool:
+    return not parent.isValid() and first == expected_first and last == expected_last
+
+
+def test_apply_with_position_deletes_given_page_1(qtbot, document_light):
     append_new_pages(document_light, 1)
     remaining_page = document_light.pages[0]
     removed_page = document_light.pages[1]
     insert_mock_in_page(removed_page)
     action = ActionRemovePage(1)
-    assert_that(action.apply(document_light), is_(same_instance(action)))
+    validator = partial(validate_qt_model_signal_parameter, 1, 1)
+    with qtbot.wait_signals(
+            [document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
+            check_params_cbs=[validator]*2, timeout=100):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -49,14 +62,18 @@ def test_apply_with_position_deletes_given_page_1(document_light):
     )
 
 
-def test_apply_with_position_deletes_given_page_0(document_light):
+def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[0]
     remaining_page = document_light.pages[1]
     insert_mock_in_page(remaining_page)
     document_light._set_currently_edited_page(remaining_page)
     action = ActionRemovePage(0)
-    assert_that(action.apply(document_light), is_(same_instance(action)))
+    validator = partial(validate_qt_model_signal_parameter, 0, 0)
+    with qtbot.wait_signals(
+            [document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
+            check_params_cbs=[validator]*2, timeout=100):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -75,13 +92,18 @@ def test_apply_with_position_deletes_given_page_0(document_light):
     )
 
 
-def test_apply_with_position_and_count_deletes_given_number_of_pages(document_light):
+def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot, document_light):
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
     removed_pages = document_light.pages[1:3]
     document_light._set_currently_edited_page(remaining_page)
     action = ActionRemovePage(1, 2)
-    assert_that(action.apply(document_light), is_(same_instance(action)))
+    validator = partial(validate_qt_model_signal_parameter, 1, 2)
+    with qtbot.wait_signals(
+            [document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
+            check_params_cbs=[validator]*2, timeout=100):
+        assert_that(action.apply(document_light), is_(same_instance(action)))
+
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -106,7 +128,10 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
     removed_pages = document_light.pages[1:3]
     document_light._set_currently_edited_page(document_light.pages[2])
     action = ActionRemovePage(1, 2)
-    with qtbot.wait_signal(document_light.current_page_changed):
+    validator = partial(validate_qt_model_signal_parameter, 1, 2)
+    with qtbot.wait_signals(
+            [document_light.current_page_changed, document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
+            check_params_cbs=[(lambda index: index.row() == index.column() == 0)] + [validator]*2, timeout=100):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -132,7 +157,11 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot, document_li
     document_light._set_currently_edited_page(removed_page)
     insert_mock_in_page(removed_page)
     action = ActionRemovePage()
-    with qtbot.wait_signal(document_light.current_page_changed):
+    validator = partial(validate_qt_model_signal_parameter, 1, 1)
+
+    with qtbot.wait_signals(
+            [document_light.current_page_changed, document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
+            check_params_cbs=[(lambda index: index.row() == index.column() == 0)] + [validator]*2, timeout=100):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -152,11 +181,18 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot, document_li
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_undo_with_position_restores_page_at_given_middle_position(document_light):
+def test_undo_with_position_restores_page_at_given_middle_position(qtbot, document_light):
     append_new_pages(document_light, 1)
     action = ActionRemovePage(1)
     action.removed_pages.append(removed_page := Page())
-    assert_that(action.undo(document_light), is_(same_instance(action)))
+
+    validator = partial(validate_qt_model_signal_parameter, 1, 1)
+    with qtbot.wait_signals(
+            [document_light.rowsAboutToBeInserted, document_light.rowsInserted],
+            check_params_cbs=[validator]*2, timeout=100):
+        assert_that(action.undo(document_light), is_(same_instance(action)))
+
+
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -168,12 +204,17 @@ def test_undo_with_position_restores_page_at_given_middle_position(document_ligh
     verify_page_index_cache_is_valid(document_light)
 
 
-def test_undo_with_position_restores_multiple_pages_at_given_middle_position(document_light):
+def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtbot, document_light):
     append_new_pages(document_light, 1)
     action = ActionRemovePage(1, 2)
     action.removed_pages.append(removed_page_1 := Page())
     action.removed_pages.append(removed_page_2 := Page())
-    assert_that(action.undo(document_light), is_(same_instance(action)))
+    validator = partial(validate_qt_model_signal_parameter, 1, 2)
+    with qtbot.wait_signals(
+            [document_light.rowsAboutToBeInserted, document_light.rowsInserted],
+            check_params_cbs=[validator] * 2, timeout=100):
+        assert_that(action.undo(document_light), is_(same_instance(action)))
+
     assert_that(
         document_light.pages,
         contains_exactly(
@@ -191,7 +232,10 @@ def test_undo_restores_currently_edited_page(qtbot, document_light):
     action = ActionRemovePage(2)
     action.removed_pages.append(removed_page := Page())
     action.currently_edited_page = removed_page
-    with qtbot.wait_signal(document_light.current_page_changed):
+    validator = partial(validate_qt_model_signal_parameter, 2, 2)
+    with qtbot.wait_signals(
+            [document_light.current_page_changed, document_light.rowsAboutToBeInserted, document_light.rowsInserted],
+            check_params_cbs=[(lambda index: index.row() == 2 and index.column() == 0)] + [validator]*2, timeout=100):
         assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -210,3 +254,4 @@ def test_undo_without_initial_position_raises_exception(document_light):
     document_light._set_currently_edited_page(document_light.pages[1])
     action = ActionRemovePage()
     assert_that(calling(action.undo).with_args(document_light), raises(IllegalStateError))
+

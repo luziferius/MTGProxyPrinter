@@ -85,24 +85,24 @@ class ActionRemovePage(DocumentAction):
         if currently_edited_page_removed:
             self.currently_edited_page = document.currently_edited_page
         document.beginRemoveRows(INVALID_INDEX, first_index, last_index)
-        logger.debug("BeginRemoveRows() called")
         del document.pages[first_index:last_index+1]
         document.recreate_page_index_cache()
         document.endRemoveRows()
         if not document.pages:
             document._set_currently_edited_page(document.add_page())
         elif currently_edited_page_removed:
-            logger.debug("Currently edited page is removed, switching to another page")
+            newly_selected_page = min(first_index, document.rowCount()-1)
+            logger.debug(f"Currently edited page is removed, switching to page {newly_selected_page}")
             # Since the page list is non-empty, there is always a page to select.
             # Choose the first after the removed range or the last, whichever comes first.
-            document._set_currently_edited_page(document.pages[min(first_index, document.rowCount()-1)])
+            document._set_currently_edited_page(document.pages[newly_selected_page])
         return self
 
     def undo(self, document: Document):
         if self.position is None:
             raise IllegalStateError("Cannot undo page removal without location to restore")
         start = self.position
-        end = start + len(self.removed_pages)
+        end = start + len(self.removed_pages) - 1
         document.beginInsertRows(INVALID_INDEX, start, end)
         if self.position == document.rowCount():
             self._append_pages(document, start)
