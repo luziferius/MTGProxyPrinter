@@ -269,11 +269,6 @@ class Document(QAbstractItemModel):
             self.currently_edited_page = self.add_page()
             self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
 
-    def clear_page(self, index: QModelIndex):
-        if isinstance(index.internalPointer(), list):
-            cards = list(map(index.child, range(self.rowCount(index)), itertools.repeat(0)))
-            self.remove_cards(cards)
-
     @Slot(list)
     def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
         """

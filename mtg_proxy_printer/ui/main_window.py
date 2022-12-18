@@ -26,6 +26,7 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -114,7 +115,6 @@ class MainWindow(QMainWindow):
     def _setup_central_widget(self):
         self.setCentralWidget(self.ui.central_widget)
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
-        self.ui.action_discard_page.triggered.connect(self.ui.central_widget.action_discard_page_triggered)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
@@ -131,7 +131,8 @@ class MainWindow(QMainWindow):
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
-        self.ui.action_new_page.triggered.connect(document.add_page)
+        self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
+        self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
         self.ui.action_compact_document.triggered.connect(document.compact_pages)
         self.ui.action_shuffle_document.triggered.connect(document.shuffle_document)
 

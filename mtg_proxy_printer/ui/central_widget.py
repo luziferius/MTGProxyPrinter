@@ -158,16 +158,6 @@ class CentralWidget(QWidget):
             self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
             self.document.on_ui_selects_new_page(new_selection)
 
-    @Slot()
-    def action_discard_page_triggered(self):
-        if self.document.rowCount() == 1:
-            logger.info(f"User selects to delete the only page, so clearing it.")
-            self.document.clear_page(self.document.index(0, 0))
-            return
-        to_be_deleted: int = self.ui.document_view.selectedIndexes()[0].row()
-        logger.info(f"User selects to delete the currently selected page {to_be_deleted}. Deleting it")
-        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
-
 
 def get_configured_central_widget_layout_class() -> UiType:
     gui_settings = mtg_proxy_printer.settings.settings["gui"]
