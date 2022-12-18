@@ -43,6 +43,8 @@ from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSe
 from mtg_proxy_printer.model.imagedb import ImageKey
 
 from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 
 class DummyAction(DocumentAction):
@@ -298,17 +300,17 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
 
 def test_document_two_overflow_events_only_add_one_new_page(document: Document):
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, document.total_cards_per_page)
+    document.apply(ActionAddCard(card, document.total_cards_per_page))
     assert_that(document.rowCount(), is_(equal_to(1)))
     for _ in range(document.total_cards_per_page):
-        document.add_card(card, 1)
+        document.apply(ActionAddCard(card))
         assert_that(document.pages, has_length(2), "Unexpected page break occurred")
 
 
 def test_clear_database_not_clearing_last_image_use_timestamps(document: Document):
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     # Add two copies. Should only count as one usage
-    document.add_card(card, 2)
+    document.apply(ActionAddCard(card, 2))
     document.store_image_usage()
     usages = document.card_db.db.execute(
         "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
@@ -337,7 +339,7 @@ def test_document_is_created_empty(document: Document):
 @pytest.mark.parametrize("pages_to_fill", range(1, 5))
 def test_add_card_and_row_count(document: Document, pages_to_fill: int):
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, pages_to_fill * document.total_cards_per_page)
+    document.apply(ActionAddCard(card, pages_to_fill * document.total_cards_per_page))
     assert_that(
         document.pages,
         has_length(pages_to_fill),
@@ -398,7 +400,7 @@ def test_remove_pages_removes_middle_page(document: Document):
 def test_compacting_document(document: Document):
     pages_to_fill = 5
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, pages_to_fill * document.total_cards_per_page)
+    document.apply(ActionAddCard(card, pages_to_fill * document.total_cards_per_page))
     cards_to_remove = 6
     for page_index in range(1, 4):
         document.remove_cards(
@@ -464,7 +466,7 @@ def test_page_types_correctly_returned(document: Document):
 def test_save_migration(document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.add_card(card, document.total_cards_per_page)
+    document.apply(ActionAddCard(card, document.total_cards_per_page))
     with TemporaryDirectory() as temp_dir:
         document.save_file_path = _create_save_file(pathlib.Path(temp_dir), source_version)
         document.save_to_disk()
@@ -480,7 +482,7 @@ def test_create_save(document_custom_layout: Document):
         "Setup failed. Duplicate values in page layout settings"
     )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document_custom_layout.add_card(card, document_custom_layout.total_cards_per_page)
+    document_custom_layout.apply(ActionAddCard(card, document_custom_layout.total_cards_per_page))
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
         document_custom_layout.save_as(save_dir)
@@ -501,7 +503,7 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
     # Prevent network access when re-loading the document
     document_custom_layout.image_db.loaded_images[
         ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
-    document_custom_layout.add_card(card, document_custom_layout.total_cards_per_page)
+    document_custom_layout.apply(ActionAddCard(card, document_custom_layout.total_cards_per_page))
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
         document_custom_layout.save_as(save_dir)
@@ -604,8 +606,8 @@ def test_get_missing_image_cards(qtbot: QtBot, document: Document):
         "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
         QPixmap(blank_image)
     )
-    document.add_card(expected, 2)
-    document.add_card(unexpected, 2)
+    document.apply(ActionAddCard(expected, 2))
+    document.apply(ActionAddCard(unexpected, 2))
     assert_that(
         result := list(document.get_missing_image_cards()),
         has_length(2)
@@ -626,8 +628,8 @@ def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
         QPixmap(blank_image)
     )
     if result:
-        document.add_card(blank_image_card, 2)
-    document.add_card(other_card, 2)
+        document.apply(ActionAddCard(blank_image_card, 2))
+    document.apply(ActionAddCard(other_card, 2))
     assert_that(
         document.has_missing_images(),
         is_(result)
@@ -735,7 +737,7 @@ def test_add_card_does_not_create_pages_with_mixed_card_sizes(
         document: Document, scryfall_ids: typing.List[str]):
     cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
     for card in cards:
-        document.add_card(card, 1)
+        document.apply(ActionAddCard(card, 1))
     assert_that(document.rowCount(), is_(2))
     for page in document.pages:
         assert_that(page.page_type(), is_in((PageType.REGULAR, PageType.OVERSIZED)))
@@ -744,10 +746,9 @@ def test_add_card_does_not_create_pages_with_mixed_card_sizes(
 
 def test_add_card_does_not_overfill_oversized_pages(document: Document):
     card = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.add_card(card, 7)
+    document.apply(ActionAddCard(card, 7))
     assert_that(document.rowCount(), is_(2))
-    document.add_card(card, 1)
-    document.add_card(card, 1)
+    document.apply(ActionAddCard(card, 2))
     assert_that(document.rowCount(), is_(3))
 
 
@@ -780,7 +781,7 @@ def test_creating_potential_overflow_calls_method_move_excess_cards_to_free_page
                          document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
     for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
         card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
-        document.add_card(card, document.page_layout.compute_page_card_capacity(card.requested_page_type()))
+        document.apply(ActionAddCard(card, document.page_layout.compute_page_card_capacity(card.requested_page_type())))
     with unittest.mock.patch.object(Document, "move_excess_cards_to_free_pages") as expected_call_mock, \
             qtbot.waitSignal(document.page_layout_changed, timeout=1000):
         layout.image_spacing_horizontal = new_h_spacing
@@ -814,7 +815,7 @@ def test_method_move_excess_cards_to_free_pages_does_not_create_mixed_size_pages
     for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
         card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
         capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
-        document.add_card(card, capacity-1)
+        document.apply(ActionAddCard(card, capacity-1))
 
     layout.image_spacing_horizontal = new_h_spacing
     document.update_page_layout(layout)
@@ -850,7 +851,7 @@ def test_page_layout_compute_page_card_capacity(page_type:PageType, v_spacing: i
 def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversized_away(document: Document):
     regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.add_card(regular, 2)
+    document.apply(ActionAddCard(regular, 2))
     page_index = document.index(0, 0)
     document._on_replacement_image_received(oversized, document.index(0, 0, page_index))
     assert_that(document.rowCount(), is_(2))
@@ -865,7 +866,7 @@ def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversiz
 def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_same_page(document: Document):
     regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.add_card(regular, 1)
+    document.apply(ActionAddCard(regular, 1))
     page_index = document.index(0, 0)
     document._on_replacement_image_received(oversized, document.index(0, 0, page_index))
     assert_that(document.rowCount(), is_(1))
