@@ -102,12 +102,12 @@ class ActionRemovePage(DocumentAction):
         return self
 
     def undo(self, document: Document):
-        if self.position is None:
-            raise IllegalStateError("Cannot undo page removal without location to restore")
         start = self.position
+        if start is None:
+            raise IllegalStateError("Cannot undo page removal without location to restore")
         end = start + len(self.removed_pages) - 1
         document.beginInsertRows(INVALID_INDEX, start, end)
-        if self.position == document.rowCount() or self.removed_all_pages:
+        if start == document.rowCount():
             self._append_pages(document, start)
         else:
             self._insert_pages(document, start)
@@ -116,10 +116,11 @@ class ActionRemovePage(DocumentAction):
             document._set_currently_edited_page(self.currently_edited_page)
         if self.removed_all_pages:
             # The Action replaced the whole document with an empty page during apply().
-            # To undo the creation of the empty replacement page, delete the now obsolete first page
-            document.beginRemoveRows(INVALID_INDEX, 0, 0)
-            del document.page_index_cache[id(document.pages[0])]
-            del document.pages[0]
+            # To undo the creation of the empty replacement page, delete the now obsolete page
+            page_to_remove = end + 1
+            document.beginRemoveRows(INVALID_INDEX, page_to_remove, page_to_remove)
+            del document.page_index_cache[id(document.pages[page_to_remove])]
+            del document.pages[page_to_remove]
             document.endRemoveRows()
         return self
 

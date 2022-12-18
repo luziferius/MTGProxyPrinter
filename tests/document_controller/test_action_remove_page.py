@@ -266,7 +266,15 @@ def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_pa
     action.data = {"to-remove": id(document_light.pages[0]), "to-insert": id(removed_page)}
     action.currently_edited_page = removed_page
     action.removed_all_pages = True
-    with qtbot.wait_signal(document_light.current_page_changed):
+    insert_validator = partial(validate_qt_model_signal_parameter, 0, 0)
+    remove_validator = partial(validate_qt_model_signal_parameter, 1, 1)
+
+    with qtbot.wait_signals(
+            [document_light.current_page_changed,
+             document_light.rowsAboutToBeInserted, document_light.rowsInserted,
+             document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
+            check_params_cbs=[lambda index: index.row() == index.column() == 0] +
+                             [insert_validator]*2 + [remove_validator]*2, timeout=100):
         action.undo(document_light)
     document_light.currently_edited_page, is_(same_instance(removed_page))
     assert_that(document_light.pages, contains_exactly(same_instance(removed_page)))
