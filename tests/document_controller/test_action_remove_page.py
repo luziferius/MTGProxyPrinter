@@ -92,6 +92,16 @@ def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     )
 
 
+def test_apply_with_one_page_correctly_replaces_the_existing_page(qtbot, document_light):
+    old_page = document_light.pages[0]
+    action = ActionRemovePage()
+    with qtbot.wait_signal(document_light.current_page_changed):
+        action.apply(document_light)
+    assert_that(document_light.current_page_changed, is_not(same_instance(old_page)))
+    assert_that(action.currently_edited_page, is_(same_instance(old_page)))
+    assert_that(action.removed_pages, contains_exactly(same_instance(old_page)))
+
+
 def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot, document_light):
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
@@ -247,6 +257,20 @@ def test_undo_restores_currently_edited_page(qtbot, document_light):
     )
     assert_that(document_light.currently_edited_page, is_(same_instance(removed_page)))
     verify_page_index_cache_is_valid(document_light)
+
+
+def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_page(qtbot, document_light):
+    removed_page = Page()
+    action = ActionRemovePage(0)
+    action.removed_pages.append(removed_page)
+    action.data = {"to-remove": id(document_light.pages[0]), "to-insert": id(removed_page)}
+    action.currently_edited_page = removed_page
+    action.removed_all_pages = True
+    with qtbot.wait_signal(document_light.current_page_changed):
+        action.undo(document_light)
+    document_light.currently_edited_page, is_(same_instance(removed_page))
+    assert_that(document_light.pages, contains_exactly(same_instance(removed_page)))
+
 
 
 def test_undo_without_initial_position_raises_exception(document_light):

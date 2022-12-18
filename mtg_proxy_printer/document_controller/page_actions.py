@@ -71,6 +71,7 @@ class ActionRemovePage(DocumentAction):
         self.count = count
         self.removed_pages: typing.List[Page] = []
         self.currently_edited_page = None  # Set, if the currently edited page is removed
+        self.removed_all_pages: bool = False
 
     def apply(self, document: Document):
         self.position = first_index = self.position if self.position is not None \
@@ -89,7 +90,9 @@ class ActionRemovePage(DocumentAction):
         document.recreate_page_index_cache()
         document.endRemoveRows()
         if not document.pages:
-            document._set_currently_edited_page(document.add_page())
+            self.removed_all_pages = True
+            ActionNewPage().apply(document)
+            document._set_currently_edited_page(document.pages[0])
         elif currently_edited_page_removed:
             newly_selected_page = min(first_index, document.rowCount()-1)
             logger.debug(f"Currently edited page is removed, switching to page {newly_selected_page}")
@@ -104,13 +107,20 @@ class ActionRemovePage(DocumentAction):
         start = self.position
         end = start + len(self.removed_pages) - 1
         document.beginInsertRows(INVALID_INDEX, start, end)
-        if self.position == document.rowCount():
+        if self.position == document.rowCount() or self.removed_all_pages:
             self._append_pages(document, start)
         else:
             self._insert_pages(document, start)
         document.endInsertRows()
         if self.currently_edited_page is not None:
             document._set_currently_edited_page(self.currently_edited_page)
+        if self.removed_all_pages:
+            # The Action replaced the whole document with an empty page during apply().
+            # To undo the creation of the empty replacement page, delete the now obsolete first page
+            document.beginRemoveRows(INVALID_INDEX, 0, 0)
+            del document.page_index_cache[id(document.pages[0])]
+            del document.pages[0]
+            document.endRemoveRows()
         return self
 
     def _append_pages(self, document: Document, start: int):
