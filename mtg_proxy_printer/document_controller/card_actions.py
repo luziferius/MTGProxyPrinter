@@ -33,6 +33,10 @@ __all__ = [
 
 
 class ActionAddCard(DocumentAction):
+    """
+    Add an amount of copies of a card to a document page. If the count exceeds the available space on that page,
+    distribute the remainder across free spots on later pages or append new pages to the document end.
+    """
 
     def __init__(self, card: Card, count: int = 1):
         super().__init__()
@@ -43,7 +47,7 @@ class ActionAddCard(DocumentAction):
 
     def apply(self, document: Document):
         """
-        Adds the given card copies times to the currently edited page. If copies is greater than the number of
+        Adds the given card count times to the currently edited page. If count is greater than the number of
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
@@ -123,6 +127,7 @@ class ActionAddCard(DocumentAction):
 
 
 class ActionRemoveCards(DocumentAction):
+    """Deletes one or more cards from a page. The cards are given as an ascendingly sorted sequence of array indices."""
 
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         super().__init__()

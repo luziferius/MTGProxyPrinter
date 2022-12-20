@@ -29,12 +29,11 @@ __all__ = [
 
 
 class ActionNewPage(DocumentAction):
-
+    """
+    Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
+    If given None for the position, append the page to the document end instead. Page count defaults to 1.
+    """
     def __init__(self, position: int = None, *, count: int = 1):
-        """
-        Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
-        If given None for the position, append the page to the document end instead. Page count defaults to 1.
-        """
         super().__init__()
         self.position = position
         self.count = count
@@ -63,9 +62,12 @@ class ActionNewPage(DocumentAction):
 
 
 class ActionRemovePage(DocumentAction):
+    """
+    Delete count pages starting at the given index.
+    If position is None, start deleting at the current page instead.
+    """
 
     def __init__(self, position: int = None, count: int = 1):
-        """Delete count pages at the given index. If given None for the position, delete the current page instead."""
         super().__init__()
         self.position = position
         self.count = count
