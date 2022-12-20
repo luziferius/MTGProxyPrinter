@@ -19,7 +19,7 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document_page import CardContainer, Page
+from mtg_proxy_printer.model.document_page import CardContainer, Page, PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
@@ -37,6 +37,11 @@ def insert_card_in_page(page: Page, card, count: int = 1):
 @pytest.fixture()
 def card():
     return Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, None)
+
+
+@pytest.fixture()
+def oversized_card():
+    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, True, 0, None)
 
 
 def test_apply_without_count_adds_single_card(qtbot, card, document_light):
@@ -137,3 +142,38 @@ def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
             )
         )
     )
+
+
+@pytest.mark.parametrize("oversized_first", [True, False])
+def test_apply_does_not_create_pages_with_mixed_card_sizes(
+        document_light, card: Card, oversized_card: Card, oversized_first: bool):
+    if oversized_first:
+        ActionAddCard(oversized_card).apply(document_light)
+        ActionAddCard(card).apply(document_light)
+    else:
+        ActionAddCard(card).apply(document_light)
+        ActionAddCard(oversized_card).apply(document_light)
+
+    assert_that(document_light.rowCount(), is_(2))
+    for page in document_light.pages:
+        assert_that(page.page_type(), is_in((PageType.REGULAR, PageType.OVERSIZED)))
+        assert_that(page, has_length(1))
+
+
+def test_apply_does_not_overfill_oversized_pages(document_light, oversized_card: Card):
+    ActionAddCard(oversized_card, 7).apply(document_light)
+    assert_that(document_light.rowCount(), is_(2))
+    ActionAddCard(oversized_card, 2).apply(document_light)
+    assert_that(document_light.rowCount(), is_(3))
+
+
+@pytest.mark.parametrize("page_type", [PageType.REGULAR, PageType.OVERSIZED])
+def test_apply_only_emits_page_type_changed_signal_if_changed(
+        qtbot, document_light, card, oversized_card, page_type: PageType):
+    added_card = oversized_card if page_type == PageType.OVERSIZED else card
+
+    with qtbot.wait_signal(document_light.page_type_changed):
+        ActionAddCard(added_card).apply(document_light)
+    with qtbot.assertNotEmitted(document_light.page_type_changed):
+        ActionAddCard(added_card).apply(document_light)
+    assert_that(document_light.pages[0].page_type(), is_(page_type))

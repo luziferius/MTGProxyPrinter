@@ -687,34 +687,6 @@ def test_compute_pages_saved_by_compacting(
 
 
 @pytest.mark.parametrize("scryfall_ids, expected_page_type", [
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
-    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.MIXED),
-    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.MIXED),
-])
-def test_add_cards_to_page_emits_page_type_changed_signal(
-      qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
-    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
-    for card in cards:
-        with qtbot.waitSignal(document.page_type_changed):
-            document.add_card_to_page(0, card)
-    assert_that(document.pages[0].page_type(), is_(expected_page_type))
-
-
-@pytest.mark.parametrize("scryfall_id, expected_page_type", [
-    ("0000579f-7b35-4ed3-b44c-db2a538066fe", PageType.REGULAR),
-    ("650722b4-d72b-4745-a1a5-00a34836282b", PageType.OVERSIZED),
-])
-def test_add_cards_to_page_only_emits_page_type_changed_signal_if_changed(
-      qtbot: QtBot, document: Document, scryfall_id: str, expected_page_type: PageType):
-    card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
-    document.add_card_to_page(0, card)
-    with qtbot.assertNotEmitted(document.page_type_changed):
-        document.add_card_to_page(0, card)
-    assert_that(document.pages[0].page_type(), is_(expected_page_type))
-
-
-@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
     (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.UNDETERMINED),
     (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.UNDETERMINED),
     (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
@@ -753,29 +725,6 @@ def test_remove_cards_only_emits_page_type_changed_signal_if_changed(
     with qtbot.assertNotEmitted(document.page_type_changed):
         document.remove_cards([document.index(0, 0, page_index)]*2)
     assert_that(document.pages[0].page_type(), is_(expected_page_type))
-
-
-@pytest.mark.parametrize("scryfall_ids", [
-    ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"],
-    ["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"],
- ])
-def test_add_card_does_not_create_pages_with_mixed_card_sizes(
-        document: Document, scryfall_ids: typing.List[str]):
-    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
-    for card in cards:
-        document.apply(ActionAddCard(card, 1))
-    assert_that(document.rowCount(), is_(2))
-    for page in document.pages:
-        assert_that(page.page_type(), is_in((PageType.REGULAR, PageType.OVERSIZED)))
-        assert_that(page, has_length(1))
-
-
-def test_add_card_does_not_overfill_oversized_pages(document: Document):
-    card = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.apply(ActionAddCard(card, 7))
-    assert_that(document.rowCount(), is_(2))
-    document.apply(ActionAddCard(card, 2))
-    assert_that(document.rowCount(), is_(3))
 
 
 def test_update_page_layout_copies_the_passed_in_instance(document: Document):
