@@ -300,6 +300,30 @@ def test_redo_on_filled_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, docume
     assert_applied(second, document_light)
 
 
+@pytest.mark.parametrize("additional_pages", range(3))
+def test_rowCount_without_index_parameter_return_page_count(document_light, additional_pages: int):
+    if additional_pages:
+        document_light.apply(ActionNewPage(count=additional_pages))
+    assert_that(document_light.pages, has_length(1+additional_pages), "Test setup failed")
+    assert_that(document_light.rowCount(), is_(1+additional_pages), "Wrong rowCount() returned")
+
+
+def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(document_light):
+    document_light.apply(ActionNewPage(count=3))
+    for count in range(1, 4):
+        document_light._set_currently_edited_page(document_light.pages[count])
+        document_light.apply(
+            ActionAddCard(Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, None), count=count)
+        )
+        assert_that(document_light.currently_edited_page, has_length(count), "Test setup failed")
+    for page in range(4):
+        assert_that(
+            document_light.rowCount(document_light.index(page, 0)),
+            is_(equal_to(page)),
+            f"Wrong rowCount() returned for page {page}"
+        )
+
+
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(300, 200, 20, 19, 18, 17, 3, 2, True)
@@ -325,15 +349,6 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
         document_custom_layout,
         has_property("page_layout", equal_to(default_layout))
     )
-
-
-def test_document_two_overflow_events_only_add_one_new_page(document: Document):
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.apply(ActionAddCard(card, document.total_cards_per_page))
-    assert_that(document.rowCount(), is_(equal_to(1)))
-    for _ in range(document.total_cards_per_page):
-        document.apply(ActionAddCard(card))
-        assert_that(document.pages, has_length(2), "Unexpected page break occurred")
 
 
 def test_clear_database_not_clearing_last_image_use_timestamps(document: Document):
@@ -407,21 +422,6 @@ def test_add_card_and_row_count(document: Document, pages_to_fill: int):
                 ),
                 "Parent relationship broken"
             )
-
-
-def test_remove_pages_removes_middle_page(document: Document):
-    target_page_count = 10
-    document.apply(ActionNewPage(count=target_page_count-1))
-    assert_that(document.rowCount(), is_(equal_to(target_page_count)), "Unexpected page count before deletion.")
-    assert_that(document.pages, has_length(target_page_count), "Unexpected page count before deletion.")
-    page_to_delete = document.pages[5]
-    document.remove_pages([document.index(5, 0)])
-    assert_that(document.rowCount(), is_(equal_to(target_page_count - 1)), "Unexpected page count after deletion.")
-    assert_that(document.pages, has_length(target_page_count - 1), "Unexpected page count after deletion.")
-    assert_that(
-        calling(document.find_page_list_index).with_args(page_to_delete),
-        raises(ValueError), "Wrong page deleted."
-    )
 
 
 @pytest.mark.timeout(0.5)
