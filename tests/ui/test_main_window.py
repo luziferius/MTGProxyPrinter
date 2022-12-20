@@ -36,6 +36,8 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_Columnar, Ui_Grouped, Ui_TabbedVertical
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+
 from tests.helpers import fill_card_database_with_json_cards
 
 
@@ -290,7 +292,7 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
     ]*2
     for page, card in enumerate(cards):
         document.add_card_to_page(page, card, 1)
-        document.add_page()
+        document.apply(ActionNewPage())
     ui.central_widget.ui.document_view.setCurrentIndex(document.index(4, 0))
     ui.action_compact_document.trigger()
     assert_that(document.rowCount(), is_(2))
@@ -298,7 +300,7 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
 
 def test_removing_last_page_while_selected_works_without_raising_exception(main_window: MainWindow):
     ui = main_window.ui
-    main_window.document.add_page()
+    main_window.document.apply(ActionNewPage())
     ui.central_widget.ui.document_view.setCurrentIndex(main_window.document.index(1, 0))
     ui.action_discard_page.trigger()
     assert_that(main_window.document.rowCount(), is_(1))

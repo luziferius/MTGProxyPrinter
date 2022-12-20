@@ -381,15 +381,14 @@ def test_add_card_and_row_count(document: Document, pages_to_fill: int):
 
 
 def test_remove_pages_removes_middle_page(document: Document):
-    pages_to_create = 10
-    for _ in range(pages_to_create-1):  # Create one less, because the document has one page by default
-        document.add_page()
-    assert_that(document.rowCount(), is_(equal_to(pages_to_create)), "Unexpected page count before deletion.")
-    assert_that(document.pages, has_length(pages_to_create), "Unexpected page count before deletion.")
+    target_page_count = 10
+    document.apply(ActionNewPage(count=target_page_count-1))
+    assert_that(document.rowCount(), is_(equal_to(target_page_count)), "Unexpected page count before deletion.")
+    assert_that(document.pages, has_length(target_page_count), "Unexpected page count before deletion.")
     page_to_delete = document.pages[5]
     document.remove_pages([document.index(5, 0)])
-    assert_that(document.rowCount(), is_(equal_to(pages_to_create - 1)), "Unexpected page count after deletion.")
-    assert_that(document.pages, has_length(pages_to_create - 1), "Unexpected page count after deletion.")
+    assert_that(document.rowCount(), is_(equal_to(target_page_count - 1)), "Unexpected page count after deletion.")
+    assert_that(document.pages, has_length(target_page_count - 1), "Unexpected page count after deletion.")
     assert_that(
         calling(document.find_page_list_index).with_args(page_to_delete),
         raises(ValueError), "Wrong page deleted."
@@ -424,8 +423,7 @@ def test_compacting_document(document: Document):
 def test_compacting_document_with_regular_and_oversized_pages(document: Document):
     regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    for _ in range(3):
-        document.add_page()
+    document.apply(ActionNewPage(count=3))
     assert_that(document.rowCount(), is_(4))
     document.add_card_to_page(0, regular)
     document.add_card_to_page(1, oversized)
@@ -445,8 +443,7 @@ def test_page_types_correctly_returned(document: Document):
     oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
     assert_that(regular, is_(not_none()), "Test setup failed")
     assert_that(oversized, is_(not_none()), "Test setup failed")
-    for _ in range(5):
-        document.add_page()
+    document.apply(ActionNewPage(count=5))
     assert_that(document.rowCount(), is_(6))
     document.add_card_to_page(0, regular)
     document.add_card_to_page(1, oversized)
@@ -651,7 +648,7 @@ def test_compute_pages_saved_by_compacting(
         if scryfall_id:
             card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
             document.add_card_to_page(page_number, card)
-        document.add_page()
+        document.apply(ActionNewPage())
     # Each iteration above keeps a trailing empty page. Remove that here.
     document.remove_pages([document.index(document.rowCount()-1, 0)]*2)
     assert_that(
