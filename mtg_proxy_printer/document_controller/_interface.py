@@ -46,3 +46,7 @@ class DocumentAction(QObject):
     @abstractmethod
     def undo(self, document: "Document") -> Self:
         pass
+
+    @abstractmethod
+    def __eq__(self, other) -> bool:
+        pass

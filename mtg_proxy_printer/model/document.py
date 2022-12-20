@@ -98,10 +98,11 @@ class Document(QAbstractItemModel):
     @Slot(DocumentAction)
     def apply(self, action: DocumentAction):
         if self.redo_stack:
-            # TODO: Implement action comparison and perform a redo instead of clearing the stack if the given action
-            #  is equal to the top of the redo stack.
-            self.redo_stack.clear()
-            self.redo_available_changed.emit(False)
+            # Do not discard the rest redo stack if the top is equal to the given action
+            if self.redo_stack.pop() != action:
+                self.redo_stack.clear()
+            if not self.redo_stack:
+                self.redo_available_changed.emit(False)
         emit_undo_available_signal = not self.undo_stack
         logger.debug(f"Applying {action.__class__.__name__}")
         self.undo_stack.append(action.apply(self))
