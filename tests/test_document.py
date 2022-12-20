@@ -36,9 +36,9 @@ import pytest
 from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, PageType
-from mtg_proxy_printer.model.document_page import CardContainer
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageKey
 
