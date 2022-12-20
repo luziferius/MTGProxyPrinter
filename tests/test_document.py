@@ -380,50 +380,6 @@ def test_document_is_created_empty(document: Document):
     )
 
 
-@pytest.mark.parametrize("pages_to_fill", range(1, 5))
-def test_add_card_and_row_count(document: Document, pages_to_fill: int):
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.apply(ActionAddCard(card, pages_to_fill * document.total_cards_per_page))
-    assert_that(
-        document.pages,
-        has_length(pages_to_fill),
-        "Unexpected page count"
-    )
-    assert_that(document.rowCount(), is_(equal_to(pages_to_fill)))
-    for page_row, page in enumerate(document.pages):
-        assert_that(
-            page,
-            has_length(document.total_cards_per_page),
-            "Unexpected number of cards in page."
-        )
-        assert_that(document.index(page_row, 0).isValid(), is_(True))
-        assert_that(
-            document.index(page_row, 0).internalPointer(),
-            is_(page),
-            "Root element internal pointer not referring the page data list."
-        )
-        assert_that(
-            document.rowCount(document.index(page_row, 0)),
-            is_(equal_to(document.total_cards_per_page)),
-            f"rowCount() of parent index at row {page_row} wrong."
-        )
-        for card_index in range(document.total_cards_per_page):
-            assert_that(
-                document.index(page_row, 0).child(card_index, 0).internalPointer(),
-                all_of(
-                    instance_of(CardContainer),
-                    has_property("parent", is_(page)),
-                    has_property(
-                        "card", all_of(
-                            instance_of(Card),
-                            has_property("scryfall_id", equal_to("0000579f-7b35-4ed3-b44c-db2a538066fe")),
-                        ),
-                    ),
-                ),
-                "Parent relationship broken"
-            )
-
-
 @pytest.mark.timeout(0.5)
 def test_compacting_document(document: Document):
     pages_to_fill = 5
@@ -684,47 +640,6 @@ def test_compute_pages_saved_by_compacting(
         document.compute_pages_saved_by_compacting(),
         is_(equal_to(expected))
     )
-
-
-@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.UNDETERMINED),
-    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.UNDETERMINED),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
-    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
-])
-def test_remove_cards_emits_page_type_changed_signal(
-        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
-    """Removes the first card on the page. The second one (if present) determines the new page type."""
-    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
-    for card in cards:
-        document.add_card_to_page(0, card)
-    page_index = document.index(0, 0)
-    with qtbot.waitSignal(document.page_type_changed):
-        document.remove_cards([document.index(0, 0, page_index)]*2)
-    assert_that(document.pages[0].page_type(), is_(expected_page_type))
-
-
-@pytest.mark.parametrize("scryfall_ids, expected_page_type", [
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.REGULAR),
-    (["650722b4-d72b-4745-a1a5-00a34836282b"], PageType.OVERSIZED),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], PageType.MIXED),
-    (["650722b4-d72b-4745-a1a5-00a34836282b", "0000579f-7b35-4ed3-b44c-db2a538066fe"], PageType.MIXED),
-])
-def test_remove_cards_only_emits_page_type_changed_signal_if_changed(
-        qtbot: QtBot, document: Document, scryfall_ids: typing.List[str], expected_page_type: PageType):
-    """
-    The first card is added two times and then the first card is removed. The parameters state what is left in the page
-    when remove_cards is called. In all of these situations, the page type does not change, thus the signal should not
-    be emitted.
-    """
-    cards = [document.card_db.get_card_with_scryfall_id(scryfall_id, True) for scryfall_id in scryfall_ids]
-    document.add_card_to_page(0, cards[0])
-    for card in cards:
-        document.add_card_to_page(0, card)
-    page_index = document.index(0, 0)
-    with qtbot.assertNotEmitted(document.page_type_changed):
-        document.remove_cards([document.index(0, 0, page_index)]*2)
-    assert_that(document.pages[0].page_type(), is_(expected_page_type))
 
 
 def test_update_page_layout_copies_the_passed_in_instance(document: Document):

@@ -149,12 +149,15 @@ class ActionRemoveCards(DocumentAction):
             self.page_number = document.find_page_list_index(document.currently_edited_page)
         page_index = document.index(self.page_number, 0)
         page = document.pages[self.page_number]
+        old_page_type = page.page_type()
         for lower, upper in reversed(self.card_ranges_to_remove):
             document.beginRemoveRows(page_index, lower, upper)
             self.removed_cards.append(page[lower:upper+1])
             del page[lower:upper+1]
             document.endRemoveRows()
         self.removed_cards.reverse()
+        if page.page_type() != old_page_type:
+            document.page_type_changed.emit(document.index(self.page_number, 0))
         return self
 
     def undo(self, document: Document):

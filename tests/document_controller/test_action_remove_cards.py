@@ -19,11 +19,9 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document_page import CardContainer, Page
+from mtg_proxy_printer.model.document_page import CardContainer, Page, PageType
 from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
-
-from .test_action_new_page import append_new_pages
 
 
 def create_card_in_container(page: Page, name: str):
@@ -117,6 +115,22 @@ def test_apply_removes_one_2_card_range(qtbot, document_light):
             ),
         )
     )
+
+
+def test_apply_emits_page_type_changed_signal_if_changed(qtbot, document_light):
+    """Removes the first card on the page. The second one (if present) determines the new page type."""
+    page = document_light.currently_edited_page
+    page.append(create_card_in_container(page, "Removed 1"))
+    page.append(create_card_in_container(page, "Removed 2"))
+    assert_that(page, has_length(2), "Test setup failed")
+    assert_that(page.page_type(), is_(PageType.REGULAR), "Test setup failed")
+
+    with qtbot.assert_not_emitted(document_light.page_type_changed):
+        ActionRemoveCards([0]).apply(document_light)
+    assert_that(page.page_type(), is_(PageType.REGULAR))
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=100):
+        ActionRemoveCards([0]).apply(document_light)
+    assert_that(page.page_type(), is_(PageType.UNDETERMINED))
 
 
 def test_undo_restores_two_1_card_ranges(qtbot, document_light):
