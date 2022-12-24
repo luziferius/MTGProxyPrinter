@@ -32,6 +32,7 @@ __all__ = [
 class ActionMoveCards(DocumentAction):
     """
     Moves a sequence of cards from a source page to a target page.
+    Values of consecutive card ranges are inclusive.
     """
 
     def __init__(self, source: int, cards_to_move: typing.Sequence[int], target: int):
@@ -50,15 +51,16 @@ class ActionMoveCards(DocumentAction):
             )
         source_index = document.index(self.source_page, 0)
         target_index = document.index(self.target_page, 0)
-
-        destination_row = len(target_page)
         source_page_type = source_page.page_type()
         target_page_type = target_page.page_type()
+
+        destination_row = len(target_page)
         for source_row_first, source_row_last in reversed(self.card_ranges_to_move):
             document.beginMoveRows(source_index, source_row_first, source_row_last, target_index, destination_row)
             target_page[destination_row:destination_row] = source_page[source_row_first:source_row_last+1]
             del source_page[source_row_first:source_row_last+1]
             document.endMoveRows()
+
         if source_page.page_type() != source_page_type:
             document.page_type_changed.emit(source_index)
         if target_page.page_type() != target_page_type:
@@ -66,8 +68,28 @@ class ActionMoveCards(DocumentAction):
         return self
 
     def undo(self, document: "Document"):
-        raise NotImplementedError("undo() not yet implemented")
-        # return self
+        source_page = document.pages[self.target_page]  # Swap source and target page for undo
+        target_page = document.pages[self.source_page]
+        source_index = document.index(self.target_page, 0)  # Same for the model index
+        target_index = document.index(self.source_page, 0)
+        source_page_type = source_page.page_type()
+        target_page_type = target_page.page_type()
+
+        # During apply(), all cards were appended to the target page. During undo, the ranges are extracted in order
+        # from the source page. Thus, the first source row is now constant across all ranges
+        source_row_first = len(source_page) - self._total_moved_cards()
+        for target_row_first, target_row_last in self.card_ranges_to_move:
+            source_row_last = source_row_first + target_row_last - target_row_first
+            document.beginMoveRows(source_index, source_row_first, source_row_last, target_index, target_row_first)
+            target_page[target_row_first:target_row_first] = source_page[source_row_first:source_row_last+1]
+            del source_page[source_row_first:source_row_last+1]
+            document.endMoveRows()
+
+        if source_page.page_type() != source_page_type:
+            document.page_type_changed.emit(source_index)
+        if target_page.page_type() != target_page_type:
+            document.page_type_changed.emit(target_index)
+        return self
 
     @staticmethod
     def _to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
@@ -81,6 +103,9 @@ class ActionMoveCards(DocumentAction):
             else:
                 upper = item
         return ranges
+
+    def _total_moved_cards(self) -> int:
+        return sum(last-first+1 for first, last in self.card_ranges_to_move)
 
     def __eq__(self, other):
         return isinstance(other, ActionMoveCards) \
