@@ -98,6 +98,8 @@ class ActionEditDocumentSettings(DocumentAction):
             document.page_layout_changed.emit()
         for action in reversed(self.reflow_actions):
             action.undo(document)
+        self.old_settings = None
+        self.reflow_actions.clear()
         return self
 
     def __eq__(self, other):

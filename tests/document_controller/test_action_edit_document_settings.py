@@ -164,6 +164,8 @@ def test_undo_restores_old_page_layout(qtbot, document_light):
         action.undo(document_light)
     reflow_mock.assert_not_called()
     assert_that(document_light.page_layout, is_(equal_to(old_settings)))
+    assert_that(action.reflow_actions, is_(empty()))
+    assert_that(action.old_settings, is_(none()))
 
 
 def test_undo_restores_old_page_content(qtbot, document_light):
@@ -173,7 +175,7 @@ def test_undo_restores_old_page_content(qtbot, document_light):
     ActionAddCard((card_2 := card("Moves to 0")), 3).apply(document_light)
 
     action = ActionEditDocumentSettings(document_light.page_layout)
-    action.old_settings = copy.copy(document_light.page_layout)
+    old_settings = action.old_settings = copy.copy(document_light.page_layout)
     document_light.page_layout.page_height += 1
     action.reflow_actions += [
         new_page,
@@ -183,10 +185,12 @@ def test_undo_restores_old_page_content(qtbot, document_light):
     with qtbot.wait_signals([document_light.page_layout_changed]):
         action.undo(document_light)
 
-    assert_that(document_light.page_layout, is_(equal_to(action.old_settings)))
+    assert_that(document_light.page_layout, is_(equal_to(old_settings)))
     assert_that(
         document_light.pages,
         contains_exactly(
             contains_exactly(*[card_container_with(card_1)]*6 + [card_container_with(card_2)]*3)
         )
     )
+    assert_that(action.reflow_actions, is_(empty()))
+    assert_that(action.old_settings, is_(none()))
