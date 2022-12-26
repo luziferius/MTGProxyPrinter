@@ -22,9 +22,11 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.model.document import CardContainer
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 card_container_with = functools.partial(has_property, "card")
@@ -146,5 +148,45 @@ def test_reflow_appends_new_page_if_required(qtbot, document_light):
     )
 
 
-def test_undo(qtbot, document_light):
-    pytest.skip()
+def test_undo_restores_old_page_layout(qtbot, document_light):
+    # Alter the settings and store that in the action as the new settings, while keeping a backup in the old_settings
+    # undo() should then restore the old values
+    old_settings = copy.copy(document_light.page_layout)
+    document_light.page_layout.page_height += 1
+    new_settings = copy.copy(document_light.page_layout)
+
+    action = ActionEditDocumentSettings(new_settings)
+    action.old_settings = old_settings
+
+    with patch(
+            "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
+            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=100):
+        action.undo(document_light)
+    reflow_mock.assert_not_called()
+    assert_that(document_light.page_layout, is_(equal_to(old_settings)))
+
+
+def test_undo_restores_old_page_content(qtbot, document_light):
+    new_page = ActionNewPage(1).apply(document_light)
+    ActionAddCard((card_1 := card("Stays on 0")), 6).apply(document_light)
+    document_light._set_currently_edited_page(document_light.pages[1])
+    ActionAddCard((card_2 := card("Moves to 0")), 3).apply(document_light)
+
+    action = ActionEditDocumentSettings(document_light.page_layout)
+    action.old_settings = copy.copy(document_light.page_layout)
+    document_light.page_layout.page_height += 1
+    action.reflow_actions += [
+        new_page,
+        ActionMoveCards(0, range(7, 10), 1)
+    ]
+
+    with qtbot.wait_signals([document_light.page_layout_changed]):
+        action.undo(document_light)
+
+    assert_that(document_light.page_layout, is_(equal_to(action.old_settings)))
+    assert_that(
+        document_light.pages,
+        contains_exactly(
+            contains_exactly(*[card_container_with(card_1)]*6 + [card_container_with(card_2)]*3)
+        )
+    )

@@ -91,10 +91,15 @@ class ActionEditDocumentSettings(DocumentAction):
         return None
 
     def undo(self, document: "Document"):
-        raise NotImplementedError("undo() not yet implemented")
+        document.page_layout = self.old_settings
+        if self.old_settings != self.new_settings:
+            document.page_layout_changed.emit()
+        for action in reversed(self.reflow_actions):
+            action.undo(document)
         return self
 
     def __eq__(self, other):
         return isinstance(other, ActionEditDocumentSettings) \
             and other.new_settings == self.new_settings \
-            and other.old_settings == self.old_settings
+            and other.old_settings == self.old_settings \
+            and other.reflow_actions == self.reflow_actions
