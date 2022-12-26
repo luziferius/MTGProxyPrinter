@@ -129,6 +129,10 @@ class ActionRemovePage(DocumentAction):
             del document.page_index_cache[id(document.pages[page_to_remove])]
             del document.pages[page_to_remove]
             document.endRemoveRows()
+        # Clear state gathered during apply()
+        self.removed_pages.clear()
+        self.currently_edited_page = None
+        self.removed_all_pages = False
         return self
 
     def _append_pages(self, document: Document, start: int):

@@ -212,6 +212,9 @@ def test_undo_with_position_restores_page_at_given_middle_position(qtbot, docume
         )
     )
     verify_page_index_cache_is_valid(document_light)
+    assert_that(action.removed_pages, is_(empty()))
+    assert_that(action.currently_edited_page, is_(None))
+    assert_that(action.removed_all_pages, is_(False))
 
 
 def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtbot, document_light):
@@ -235,6 +238,9 @@ def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtb
         )
     )
     verify_page_index_cache_is_valid(document_light)
+    assert_that(action.removed_pages, is_(empty()))
+    assert_that(action.currently_edited_page, is_(None))
+    assert_that(action.removed_all_pages, is_(False))
 
 
 def test_undo_restores_currently_edited_page(qtbot, document_light):
@@ -257,6 +263,9 @@ def test_undo_restores_currently_edited_page(qtbot, document_light):
     )
     assert_that(document_light.currently_edited_page, is_(same_instance(removed_page)))
     verify_page_index_cache_is_valid(document_light)
+    assert_that(action.removed_pages, is_(empty()))
+    assert_that(action.currently_edited_page, is_(None))
+    assert_that(action.removed_all_pages, is_(False))
 
 
 def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_page(qtbot, document_light):
@@ -278,7 +287,9 @@ def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_pa
         action.undo(document_light)
     document_light.currently_edited_page, is_(same_instance(removed_page))
     assert_that(document_light.pages, contains_exactly(same_instance(removed_page)))
-
+    assert_that(action.removed_pages, is_(empty()))
+    assert_that(action.currently_edited_page, is_(None))
+    assert_that(action.removed_all_pages, is_(False))
 
 
 def test_undo_without_initial_position_raises_exception(document_light):
