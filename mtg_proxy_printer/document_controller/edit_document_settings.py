@@ -78,8 +78,8 @@ class ActionEditDocumentSettings(DocumentAction):
                 if target_index is None or excess_cards >= page_capacity:
                     # There is no fitting page or there are enough cards to fill at least an entire page.
                     # In both cases, insert a blank page to take these cards
-                    self.reflow_actions.append(ActionNewPage().apply(document))
                     target_index = current_index + 1
+                    self.reflow_actions.append(ActionNewPage(target_index).apply(document))
 
                 action = ActionMoveCards(current_index, range(page_capacity, cards_on_page), target_index)
                 self.reflow_actions.append(action.apply(document))

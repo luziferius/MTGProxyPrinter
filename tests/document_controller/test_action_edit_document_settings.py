@@ -148,6 +148,31 @@ def test_reflow_appends_new_page_if_required(qtbot, document_light):
     )
 
 
+def test_reflow_does_not_append_empty_pages(qtbot, document_light):
+    """The issue of trailing empty pages was discovered on a document with at least four full pages"""
+    ActionAddCard((card_inserted := card("Card")), 4*9).apply(document_light)
+    assert_that(
+        document_light.pages,
+        contains_exactly(
+            *[contains_exactly(*[card_container_with(card_inserted)]*9)]*4
+        )
+    )
+
+    new_layout = copy.copy(document_light.page_layout)
+    new_layout.image_spacing_horizontal = 30
+
+    action = ActionEditDocumentSettings(new_layout)
+    action.apply(document_light)
+
+    assert_that(document_light.pages, has_length(6), f"Unexpected length: {len(document_light.pages)}")
+    assert_that(
+        document_light.pages,
+        contains_exactly(
+            *[contains_exactly(*[card_container_with(card_inserted)]*6)]*6
+        )
+    )
+
+
 def test_undo_restores_old_page_layout(qtbot, document_light):
     # Alter the settings and store that in the action as the new settings, while keeping a backup in the old_settings
     # undo() should then restore the old values
