@@ -21,8 +21,10 @@ import itertools
 import math
 import pathlib
 import random
+import sys
 import textwrap
 import typing
+import warnings
 
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
     QPersistentModelIndex
@@ -157,10 +159,12 @@ class Document(QAbstractItemModel):
     @Slot()
     def apply_settings(self):
         """Applies the current, relevant application settings to this document."""
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         self.update_page_layout(PageLayoutSettings.create_from_settings())
 
     @Slot(PageLayoutSettings)
     def update_page_layout(self, new_layout: PageLayoutSettings):
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         if new_layout == self.page_layout:
             return
         old_capacities = self.page_layout.compute_page_card_capacity(PageType.REGULAR), \
@@ -181,6 +185,7 @@ class Document(QAbstractItemModel):
         Inserts an empty page at the given position. Positions are clamped into the range [0, page_count].
         Appends the new page to the document, if the position is None.
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
         self.beginInsertRows(INVALID_INDEX, position, position)
         new_page = Page()
@@ -200,6 +205,7 @@ class Document(QAbstractItemModel):
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
         If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         page_capacity_for_card = self.page_layout.compute_page_card_capacity(card.requested_page_type())
         current_page_position = self.find_page_list_index(self.currently_edited_page)
         if len(self.currently_edited_page) < page_capacity_for_card \
@@ -227,6 +233,7 @@ class Document(QAbstractItemModel):
         Adds the given card up to count times to the given page. Returns the number of cards actually added.
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         page_index = self.index(page_number, 0)
         page = self.pages[page_number]
         page_card_count = len(page)
@@ -255,6 +262,7 @@ class Document(QAbstractItemModel):
 
     @Slot(list)
     def remove_pages(self, indices: typing.List[QModelIndex]):
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         if not indices:
             return
         if any(index.parent().isValid() for index in indices):
@@ -277,6 +285,7 @@ class Document(QAbstractItemModel):
 
         :return: Number of cards removed
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         if not indices:
             return 0
         first_index, last_index = indices[0].row(), indices[-1].row()
@@ -370,6 +379,7 @@ class Document(QAbstractItemModel):
 
     @Slot(Card, QPersistentModelIndex)
     def _on_replacement_image_received(self, card: Card, index: typing.Union[QModelIndex, QPersistentModelIndex]):
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         if index.isValid():
             logger.debug(f'Received image for replaced card printing of "{card.name}".')
             top_left = index.sibling(index.row(), index.column())
@@ -482,6 +492,7 @@ class Document(QAbstractItemModel):
         moves cards from the last page with items to it.
         This fills all (but the last) pages up to the capacity limit to help reduce possible waste during printing.
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return
         logger.info("Compacting document.")
@@ -498,6 +509,7 @@ class Document(QAbstractItemModel):
         logger.info("Compacting done.")
 
     def _compact_pages_of_type(self, page_type: PageType):
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         maximum_cards_per_page = self.page_layout.compute_page_card_capacity(page_type)
         to_skip_type = PageType.OVERSIZED if page_type is PageType.REGULAR else PageType.REGULAR
         last_index = self.rowCount() - 1
@@ -542,6 +554,7 @@ class Document(QAbstractItemModel):
         Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
         If maximum_card_count is None, move as many cards as possible.
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         source_card_count = len(source)
         target_card_count = len(page_to_fill)
         target_card_capacity = self.page_layout.compute_page_card_capacity(page_to_fill.page_type())
@@ -580,10 +593,12 @@ class Document(QAbstractItemModel):
 
         :return: Number of moved images
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         return self._move_excess_cards_of_type_to_free_pages(PageType.REGULAR) \
             + self._move_excess_cards_of_type_to_free_pages(PageType.OVERSIZED)
 
     def _move_excess_cards_of_type_to_free_pages(self, page_type: PageType) -> int:
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         if not (page_capacity := self.page_layout.compute_page_card_capacity(page_type)):
             raise RuntimeError("Page capacity is zero!")
         overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages(page_type)
@@ -620,6 +635,7 @@ class Document(QAbstractItemModel):
         :param page_type: Page type to look for. Should be one of PageType.REGULAR or PageType.OVERSIZED
         :param page_layout: If given, base computation on the given layout, instead of the current one
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         layout = page_layout or self.page_layout
         total_cards_per_page = layout.compute_page_card_capacity(page_type)
         overflowing_pages = []
@@ -641,6 +657,7 @@ class Document(QAbstractItemModel):
         This method is called when the document loading finishes and moves cards away from these mixed pages so that
         all pages only contain a single image size.
         """
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         mixed_pages = [page for page in self.pages if page.page_type() == PageType.MIXED]
         logger.info(f"Fixing {len(mixed_pages)} mixed pages by moving cards away")
         for page in mixed_pages:
@@ -663,6 +680,7 @@ class Document(QAbstractItemModel):
 
     @Slot()
     def clear(self):
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         logger.info("Clearing current document")
         self.remove_pages(list(map(
             self.index,
@@ -672,6 +690,7 @@ class Document(QAbstractItemModel):
 
     @Slot()  # Avoid connecting both triggered() and triggered(bool)
     def clear_all_data(self):
+        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         self.clear()
         self.update_page_layout(PageLayoutSettings.create_from_settings())
         self.save_file_path = None
