@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import unittest.mock
-
 import pytest
 from hamcrest import *
 
@@ -159,6 +157,7 @@ def test_undo_restores_two_1_card_ranges(qtbot, document_light):
             }),
         )
     )
+    assert_that(action.removed_cards, is_(empty()))
 
 
 def test_undo_restores_one_2_card_range(qtbot, document_light):
@@ -187,6 +186,7 @@ def test_undo_restores_one_2_card_range(qtbot, document_light):
             }),
         )
     )
+    assert_that(action.removed_cards, is_(empty()))
 
 
 def test_undo_without_page_index_raises_exception(qtbot, document_light):

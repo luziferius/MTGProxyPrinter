@@ -123,6 +123,9 @@ class ActionAddCard(DocumentAction):
                 range(cards_on_page-count, cards_on_page),
                 page_number
             ).apply(document)
+
+        self.added_new_pages = 0
+        self.added_cards_to_existing_pages.clear()
         return self
 
     def __eq__(self, other):
@@ -170,6 +173,8 @@ class ActionRemoveCards(DocumentAction):
             for card in reversed(cards):
                 page.insert(begin, card)
             document.endInsertRows()
+
+        self.removed_cards.clear()
         return self
 
     @staticmethod

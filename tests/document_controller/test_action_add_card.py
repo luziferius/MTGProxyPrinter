@@ -142,6 +142,8 @@ def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
             )
         )
     )
+    assert_that(action.added_new_pages, is_(0))
+    assert_that(action.added_cards_to_existing_pages, is_(empty()))
 
 
 @pytest.mark.parametrize("oversized_first", [True, False])
