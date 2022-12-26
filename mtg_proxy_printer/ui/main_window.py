@@ -87,7 +87,6 @@ class MainWindow(QMainWindow):
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
         self.should_update_languages.connect(self.ui.central_widget.ui.add_card_widget.update_selected_language)
-        self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.ui.central_widget.settings_changed)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
