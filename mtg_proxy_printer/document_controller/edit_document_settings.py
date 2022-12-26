@@ -73,9 +73,11 @@ class ActionEditDocumentSettings(DocumentAction):
             if not current_page.accepts_card(page_type):
                 continue
             cards_on_page = len(current_page)
-            if cards_on_page > page_capacity:
+            if (excess_cards := cards_on_page - page_capacity) > 0:
                 target_index = self._find_next_page_accepting(document, page_type, current_index)
-                if target_index is None:
+                if target_index is None or excess_cards >= page_capacity:
+                    # There is no fitting page or there are enough cards to fill at least an entire page.
+                    # In both cases, insert a blank page to take these cards
                     self.reflow_actions.append(ActionNewPage().apply(document))
                     target_index = current_index + 1
 
