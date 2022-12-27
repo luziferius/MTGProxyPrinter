@@ -45,6 +45,7 @@ from mtg_proxy_printer.model.imagedb import ImageKey
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 
 class DummyAction(DocumentAction):
@@ -325,7 +326,7 @@ def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(doc
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(300, 200, 20, 19, 18, 17, 3, 2, True)
-    document.update_page_layout(custom_layout)
+    document.apply(ActionEditDocumentSettings(custom_layout))
     yield document
 
 
@@ -580,10 +581,10 @@ def _validate_saved_document_settings(document: Document):
 def test_get_missing_image_cards(qtbot: QtBot, document: Document):
     blank_image = document.image_db.blank_image
     expected = Card(
-        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        "Placeholder Image", MTGSet("A", "a"), "1", "en", "0", True, "1", "", True, False, 0,
         blank_image)
     unexpected = Card(
-        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
+        "Other Image", MTGSet("A", "a"), "1", "en", "0", True, "1", "", True, False, 0,
         QPixmap(blank_image)
     )
     document.apply(ActionAddCard(expected, 2))
@@ -643,7 +644,7 @@ def test_compute_pages_saved_by_compacting(
 def test_update_page_layout_copies_the_passed_in_instance(document: Document):
     layout = copy.copy(document.page_layout)
     layout.image_spacing_horizontal = 1
-    document.update_page_layout(layout)
+    document.apply(ActionEditDocumentSettings(layout))
     layout.image_spacing_horizontal = 2
     assert_that(document.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
 
