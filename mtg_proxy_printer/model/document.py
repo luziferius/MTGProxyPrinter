@@ -635,7 +635,6 @@ class Document(QAbstractItemModel):
         :param page_type: Page type to look for. Should be one of PageType.REGULAR or PageType.OVERSIZED
         :param page_layout: If given, base computation on the given layout, instead of the current one
         """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
         layout = page_layout or self.page_layout
         total_cards_per_page = layout.compute_page_card_capacity(page_type)
         overflowing_pages = []

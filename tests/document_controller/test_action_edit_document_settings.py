@@ -22,7 +22,6 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.document import CardContainer
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard

@@ -27,6 +27,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
+from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -132,6 +133,7 @@ class MainWindow(QMainWindow):
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
         self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
+        self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
         self.ui.action_compact_document.triggered.connect(document.compact_pages)
         self.ui.action_shuffle_document.triggered.connect(document.shuffle_document)
 
@@ -336,15 +338,6 @@ class MainWindow(QMainWindow):
     def on_action_download_missing_card_images_triggered(self):
         logger.info("User wants to download missing card images")
         self.missing_images_manager.obtain_missing_images()
-
-    @Slot()
-    def on_action_new_document_triggered(self):
-        logger.info("User clicked on the New Document button, asking for confirmation")
-        if QMessageBox.question(
-                self, "Current document will be lost",
-                "Create a new document? All unsaved changes will be lost.",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
-            self.document.clear_all_data()
 
     @Slot()
     def on_action_save_as_triggered(self):
