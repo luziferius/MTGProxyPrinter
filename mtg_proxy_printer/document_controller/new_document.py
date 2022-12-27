@@ -35,6 +35,8 @@ __all__ = [
 class ActionNewDocument(DocumentAction):
     """Create a new document"""
 
+    COMPARISON_ATTRIBUTES = ["old_save_path", "remove_pages_action", "reset_settings_action"]
+
     def __init__(self):
         super().__init__()
         self.old_save_path: typing.Optional[pathlib.Path] = None
@@ -61,9 +63,3 @@ class ActionNewDocument(DocumentAction):
         self.reset_settings_action.undo(document)
         self.old_save_path = self.remove_pages_action = self.reset_settings_action = None
         return self
-
-    def __eq__(self, other):
-        return isinstance(other, ActionNewDocument) \
-            and other.old_save_path == self.old_save_path \
-            and other.remove_pages_action == self.remove_pages_action \
-            and other.reset_settings_action == self.reset_settings_action

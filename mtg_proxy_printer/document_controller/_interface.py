@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
 from abc import abstractmethod
+from functools import partial
+import operator
+import typing
 
 from PyQt5.QtCore import QObject
 
@@ -25,6 +27,8 @@ try:
     from typing import Self
 except ImportError:  # Compatibility with Python < 3.11
     Self = typing.TypeVar("Self", bound="DocumentAction")
+
+StringList = typing.List[str]
 
 __all__ = [
     "DocumentAction",
@@ -39,6 +43,8 @@ class IllegalStateError(RuntimeError):
 
 class DocumentAction(QObject):
 
+    COMPARISON_ATTRIBUTES: StringList = []
+
     @abstractmethod
     def apply(self, document: "Document") -> Self:
         pass
@@ -47,6 +53,11 @@ class DocumentAction(QObject):
     def undo(self, document: "Document") -> Self:
         pass
 
-    @abstractmethod
     def __eq__(self, other) -> bool:
-        pass
+        return isinstance(other, self.__class__) and all(
+            map(
+                operator.eq,
+                map((partial(getattr, self)), self.COMPARISON_ATTRIBUTES),
+                map((partial(getattr, other)), self.COMPARISON_ATTRIBUTES)
+            )
+        )

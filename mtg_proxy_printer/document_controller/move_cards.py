@@ -35,6 +35,8 @@ class ActionMoveCards(DocumentAction):
     Values of consecutive card ranges are inclusive.
     """
 
+    COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move"]
+
     def __init__(self, source: int, cards_to_move: typing.Sequence[int], target: int):
         super().__init__()
         self.source_page = source
@@ -106,9 +108,3 @@ class ActionMoveCards(DocumentAction):
 
     def _total_moved_cards(self) -> int:
         return sum(last-first+1 for first, last in self.card_ranges_to_move)
-
-    def __eq__(self, other):
-        return isinstance(other, ActionMoveCards) \
-            and other.source_page == self.source_page \
-            and other.target_page == self.target_page \
-            and other.card_ranges_to_move == self.card_ranges_to_move

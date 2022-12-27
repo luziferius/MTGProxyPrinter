@@ -33,6 +33,9 @@ class ActionNewPage(DocumentAction):
     Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
     If given None for the position, append the page to the document end instead. Page count defaults to 1.
     """
+
+    COMPARISON_ATTRIBUTES = ["position", "count"]
+
     def __init__(self, position: int = None, *, count: int = 1):
         super().__init__()
         self.position = position
@@ -60,17 +63,14 @@ class ActionNewPage(DocumentAction):
         ActionRemovePage(self.position, self.count).apply(document)
         return self
 
-    def __eq__(self, other):
-        return isinstance(other, ActionNewPage) \
-            and other.position == self.position \
-            and other.count == self.count
-
 
 class ActionRemovePage(DocumentAction):
     """
     Delete count pages starting at the given index.
     If position is None, start deleting at the current page instead.
     """
+
+    COMPARISON_ATTRIBUTES = ["position", "count", "removed_all_pages", "currently_edited_page", "removed_pages"]
 
     def __init__(self, position: int = None, count: int = 1):
         super().__init__()
@@ -145,11 +145,3 @@ class ActionRemovePage(DocumentAction):
         for index, page in enumerate(self.removed_pages, start=start):
             document.pages.insert(index, page)
         document.recreate_page_index_cache()
-
-    def __eq__(self, other):
-        return isinstance(other, ActionRemovePage) \
-            and other.position == self.position \
-            and other.count == self.count \
-            and other.removed_all_pages == self.removed_all_pages \
-            and other.currently_edited_page == self.currently_edited_page \
-            and other.removed_all_pages == self.removed_all_pages

@@ -38,6 +38,8 @@ class ActionAddCard(DocumentAction):
     distribute the remainder across free spots on later pages or append new pages to the document end.
     """
 
+    COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
+
     def __init__(self, card: Card, count: int = 1):
         super().__init__()
         self.card = card
@@ -128,16 +130,11 @@ class ActionAddCard(DocumentAction):
         self.added_cards_to_existing_pages.clear()
         return self
 
-    def __eq__(self, other):
-        return isinstance(other, ActionAddCard) \
-            and other.card == self.card \
-            and other.count == self.card \
-            and other.added_new_pages == self.added_new_pages \
-            and other.added_cards_to_existing_pages == self.added_cards_to_existing_pages
-
 
 class ActionRemoveCards(DocumentAction):
     """Deletes one or more cards from a page. The cards are given as an ascendingly sorted sequence of array indices."""
+
+    COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         super().__init__()
@@ -189,9 +186,3 @@ class ActionRemoveCards(DocumentAction):
             else:
                 upper = item
         return ranges
-
-    def __eq__(self, other):
-        return isinstance(other, ActionRemoveCards) \
-            and other.card_ranges_to_remove == self.card_ranges_to_remove \
-            and other.page_number == self.page_number \
-            and other.removed_cards == self.removed_cards

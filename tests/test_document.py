@@ -51,15 +51,13 @@ class DummyAction(DocumentAction):
     """A dummy DocumentAction that does nothing. apply() and undo() are replaced with MagicMock instances."""
     apply: unittest.mock.MagicMock
     undo: unittest.mock.MagicMock
+    COMPARISON_ATTRIBUTES = ["value"]
 
     def __init__(self, value: int = 0):
         super().__init__()
         self.value = value
         self.apply = unittest.mock.MagicMock(return_value=self)
         self.undo = unittest.mock.MagicMock(return_value=self)
-
-    def __eq__(self, other):
-        return isinstance(other, DummyAction) and other.value == self.value
 
 
 @pytest.mark.parametrize("first, second, matcher", [

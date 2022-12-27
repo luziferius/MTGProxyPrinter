@@ -36,6 +36,8 @@ __all__ = [
 class ActionEditDocumentSettings(DocumentAction):
     """Modify the document settings."""
 
+    COMPARISON_ATTRIBUTES = ["new_settings", "old_settings", "reflow_actions"]
+
     def __init__(self, new_settings: PageLayoutSettings):
         super().__init__()
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
@@ -101,9 +103,3 @@ class ActionEditDocumentSettings(DocumentAction):
         self.old_settings = None
         self.reflow_actions.clear()
         return self
-
-    def __eq__(self, other):
-        return isinstance(other, ActionEditDocumentSettings) \
-            and other.new_settings == self.new_settings \
-            and other.old_settings == self.old_settings \
-            and other.reflow_actions == self.reflow_actions
