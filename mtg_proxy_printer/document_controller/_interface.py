@@ -34,6 +34,7 @@ __all__ = [
     "DocumentAction",
     "IllegalStateError",
     "Self",
+    "ActionList"
 ]
 
 
@@ -61,3 +62,5 @@ class DocumentAction(QObject):
                 map((partial(getattr, other)), self.COMPARISON_ATTRIBUTES)
             )
         )
+
+ActionList = typing.List[DocumentAction]

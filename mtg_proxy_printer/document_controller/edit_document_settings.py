@@ -15,7 +15,7 @@
 
 import typing
 
-from ._interface import DocumentAction
+from ._interface import DocumentAction, ActionList
 from .move_cards import ActionMoveCards
 from .page_actions import ActionNewPage
 from mtg_proxy_printer.logger import get_logger
@@ -44,7 +44,7 @@ class ActionEditDocumentSettings(DocumentAction):
             raise ValueError("New document settings must allow at least one card per page")
         self.new_settings = new_settings
         self.old_settings: typing.Optional[PageLayoutSettings] = None
-        self.reflow_actions: typing.List[DocumentAction] = []
+        self.reflow_actions: ActionList = []
 
     def apply(self, document: "Document"):
         self.old_settings = document.page_layout
