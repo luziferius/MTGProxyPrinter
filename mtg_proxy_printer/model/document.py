@@ -90,10 +90,11 @@ class Document(QAbstractItemModel):
         self.image_db.replacement_obtained.connect(self._on_replacement_image_received)
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
-        self.pages: PageList = []
-        self.page_index_cache: typing.Dict[int, int] = {}  # Mapping from page id() to list index in the page list
-        self.add_page()
-        self.currently_edited_page = self.pages[0]
+        self.loader.load_requested.connect(self.apply)
+        self.pages: PageList = [first_page := Page()]
+        # Mapping from page id() to list index in the page list
+        self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
+        self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
         self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
 
@@ -647,35 +648,6 @@ class Document(QAbstractItemModel):
             elif len(page) < total_cards_per_page:
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
-
-    @Slot()
-    def fix_mixed_pages(self):
-        """
-        Documents saved with older versions (or specifically crafted save files) can contain images with mixed
-        sizes on the same page.
-        This method is called when the document loading finishes and moves cards away from these mixed pages so that
-        all pages only contain a single image size.
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        mixed_pages = [page for page in self.pages if page.page_type() == PageType.MIXED]
-        logger.info(f"Fixing {len(mixed_pages)} mixed pages by moving cards away")
-        for page in mixed_pages:
-            regular_rows = []
-            oversized_rows = []
-            for row, container in enumerate(page):
-                if container.card.requested_page_type() == PageType.REGULAR:
-                    regular_rows.append(row)
-                else:
-                    oversized_rows.append(row)
-            card_rows_to_move = regular_rows if len(regular_rows) < len(oversized_rows) else oversized_rows
-            cards = [page[row].card for row in card_rows_to_move]
-            cards.reverse()  # Iterate from the end of the list to not shift indices
-            page_index = self.index(self.find_page_list_index(page), 0)
-            logger.info(f"Moving {len(cards)} cards from page {page_index.row()} to other pages.")
-            for card in card_rows_to_move:
-                self.remove_cards([self.index(card, 0, page_index)])
-            for card in cards:
-                self.add_card(card, 1)
 
     @Slot()
     def clear(self):

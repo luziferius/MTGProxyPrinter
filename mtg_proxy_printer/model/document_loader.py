@@ -15,6 +15,7 @@
 
 import collections
 import dataclasses
+import itertools
 import math
 import pathlib
 import socket
@@ -23,7 +24,7 @@ import textwrap
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, pyqtSlot as Slot
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, QMutex, QWaitCondition
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
 
@@ -35,11 +36,12 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData, CardList
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
+from mtg_proxy_printer.document_controller import DocumentAction
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -55,6 +57,15 @@ __all__ = [
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
 DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
+load_applied_wait_condition = QWaitCondition()
+load_applied_mutex = QMutex()
+T = typing.TypeVar("T")
+
+
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[typing.Tuple[T, ...]]:
+    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
+    iterable = iter(iterable)
+    return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
 
 
 @dataclasses.dataclass
@@ -150,6 +161,7 @@ class DocumentLoader(QObject):
     loading_file_failed = Signal(pathlib.Path, str)
     # Emitted when downloading required images during the loading process failed due to network issues.
     network_error_occurred = Signal(str)
+    load_requested = Signal(DocumentAction)
 
     class Worker(QObject):
         """
@@ -166,16 +178,12 @@ class DocumentLoader(QObject):
         """
 
         # These signals are used to enqueue a stream of commands across thread boundaries.
-        new_page = Signal()
-        add_card = Signal(Card)
         finished = Signal()
         loading_file_failed = Signal(pathlib.Path, str)
-        document_clear_requested = Signal()
         unknown_scryfall_ids_found = Signal(int, int)
         loading_file_successful = Signal(pathlib.Path)
         network_error_occurred = Signal(str)
-        request_blank_pixmap = Signal(Card)
-        document_settings_loaded = Signal(PageLayoutSettings)
+        load_requested = Signal(DocumentAction)
 
         def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
             super(DocumentLoader.Worker, self).__init__(None)
@@ -194,6 +202,7 @@ class DocumentLoader(QObject):
             self.document = document
             self.save_path = pathlib.Path()
             self.should_run: bool = True
+            self.document.action_applied.connect(load_applied_wait_condition.wakeAll)
 
         def propagate_errors_during_load(self):
             if error_count := sum(self.network_errors_during_load.values()):
@@ -220,25 +229,41 @@ class DocumentLoader(QObject):
                     self.unknown_scryfall_ids_found.emit(unknown_ids, migrated_ids)
                 self.loading_file_successful.emit(self.save_path)
             finally:
+                logger.info("Loading document finished, releasing GUI lock")
                 self.finished.emit()
 
         def _load_document(self) -> (int, int):
+            # Imported here to break a circular import. TODO: Investigate a better fix
+            from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
             card_data, page_settings = self._read_data_from_save_path(self.save_path)
-            self.document_clear_requested.emit()
-            self.document_settings_loaded.emit(page_settings)
-            logger.info("Start filling pages with cards from loaded data")
+            pages, migrated_ids, unknown_ids = self._parse_into_cards(card_data)
+            self._fix_mixed_pages(pages, page_settings)
+            action = ActionLoadDocument(self.save_path, pages, page_settings)
+            # Applying the action in the main thread takes some time. The loader has to wait for the document to
+            # finish applying, before it can continue without causing a SegmentationFault
+            self.load_requested.emit(action)
+            load_applied_mutex.lock()
+            load_applied_wait_condition.wait(load_applied_mutex)
+            load_applied_mutex.unlock()
+            return unknown_ids, migrated_ids
+
+        def _parse_into_cards(self, card_data: DocumentSaveFormat) -> (typing.List[CardList], int, int):
             prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
                 "prefer-already-downloaded-images")
-            current_page = 1
+
+            current_page_index = 1
             unknown_ids = 0
             migrated_ids = 0
+            pages: typing.List[CardList] = [[]]
+            current_page = pages[-1]
             for page_number, slot, scryfall_id, is_front in card_data:
                 if not self.should_run:
                     logger.info("Cancel request received, stop processing the card list.")
-                    return unknown_ids
-                if current_page != page_number:
-                    current_page = page_number
-                    self.new_page.emit()
+                    return unknown_ids, migrated_ids
+                if current_page_index != page_number:
+                    current_page_index = page_number
+                    current_page: CardList = []
+                    pages.append(current_page)
                 card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
                 if card is None:
                     card = self._find_replacement_card(scryfall_id, is_front, prefer_already_downloaded)
@@ -256,8 +281,8 @@ class DocumentLoader(QObject):
                     self.on_network_error_occurred(card, str(e.reason))
                 except socket.timeout as e:
                     self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
-                self.add_card.emit(card)
-            return unknown_ids, migrated_ids
+                current_page.append(card)
+            return pages, migrated_ids, unknown_ids
 
         def _find_replacement_card(self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
             logger.info(f"Unknown card scryfall ID found in document:  {scryfall_id=}, {is_front=}")
@@ -272,6 +297,46 @@ class DocumentLoader(QObject):
                 card = filtered_choices[0] if filtered_choices else choices[0]
                 logger.info(f"Found suitable replacement card: {card}")
             return card
+
+        def _fix_mixed_pages(self, pages: typing.List[CardList], page_settings: PageLayoutSettings):
+            """
+            Documents saved with older versions (or specifically crafted save files) can contain images with mixed
+            sizes on the same page.
+            This method is called when the document loading finishes and moves cards away from these mixed pages so that
+            all pages only contain a single image size.
+            """
+            mixed_pages = list(filter(self._is_mixed_page, pages))
+            logger.info(f"Fixing {len(mixed_pages)} mixed pages by moving cards away")
+            regular_cards_to_distribute: CardList = []
+            oversized_cards_to_distribute: CardList = []
+            for page in mixed_pages:
+                regular_rows = []
+                oversized_rows = []
+                for row, card in enumerate(page):
+                    if card.requested_page_type() == PageType.REGULAR:
+                        regular_rows.append(row)
+                    else:
+                        oversized_rows.append(row)
+                card_rows_to_move, target_list = (regular_rows, regular_cards_to_distribute) \
+                    if len(regular_rows) < len(oversized_rows) \
+                    else (oversized_rows, oversized_cards_to_distribute)
+                card_rows_to_move.reverse()
+                for row in card_rows_to_move:
+                    target_list.append(page[row])
+                    del page[row]
+            if regular_cards_to_distribute:
+                logger.debug(f"Moving {len(regular_cards_to_distribute)} regular cards from mixed pages")
+                pages += split_iterable(
+                    regular_cards_to_distribute, page_settings.compute_page_card_capacity(PageType.REGULAR))
+            if oversized_cards_to_distribute:
+                logger.debug(f"Moving {len(oversized_cards_to_distribute)} oversized cards from mixed pages")
+                pages += split_iterable(
+                    oversized_cards_to_distribute, page_settings.compute_page_card_capacity(PageType.OVERSIZED)
+                )
+
+        @staticmethod
+        def _is_mixed_page(page: CardList) -> bool:
+            return len(set(card.requested_page_type() for card in page)) > 1
 
         @staticmethod
         def _read_data_from_save_path(save_file_path: pathlib.Path):
@@ -425,26 +490,18 @@ class DocumentLoader(QObject):
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.worker = self.Worker(card_db, image_db, document)
         self.worker.moveToThread(self.worker_thread)
-        self.worker.document_clear_requested.connect(self.document.clear)
-        self.worker.new_page.connect(self.document.add_page)
-        self.worker.add_card.connect(self._on_add_card)
-        self.worker.document_settings_loaded.connect(self.document.update_page_layout)
+        self.worker.load_requested.connect(self.load_requested)
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
         self.worker.loading_file_failed.connect(self.loading_file_failed)
         self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
         self.worker.loading_file_successful.connect(self.on_loading_file_successful)
         self.worker.network_error_occurred.connect(self.network_error_occurred)
         self.worker.finished.connect(self.worker_thread.quit)
-        self.worker.finished.connect(self.document.fix_mixed_pages)
         self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
         self.worker_thread.started.connect(self.worker.load_document)
 
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()
-
-    @Slot(Card)
-    def _on_add_card(self, card: Card):
-        self.document.add_card_to_page(len(self.document.pages) - 1, card)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")

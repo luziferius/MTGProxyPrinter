@@ -165,11 +165,7 @@ def test_invalid_data_in_card_columns_raises_exception(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+                qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
@@ -196,11 +192,7 @@ def test_protects_against_infinite_save_data(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+                qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
@@ -234,11 +226,7 @@ def test_protects_against_infinite_settings_data(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+                qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
