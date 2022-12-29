@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import typing
 
 from ._interface import DocumentAction, ActionList
@@ -42,7 +43,7 @@ class ActionEditDocumentSettings(DocumentAction):
         super().__init__()
         if new_settings.compute_page_card_capacity(PageType.OVERSIZED) < 1:
             raise ValueError("New document settings must allow at least one card per page")
-        self.new_settings = new_settings
+        self.new_settings = copy.copy(new_settings)
         self.old_settings: typing.Optional[PageLayoutSettings] = None
         self.reflow_actions: ActionList = []
 
