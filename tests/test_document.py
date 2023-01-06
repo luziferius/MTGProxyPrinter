@@ -38,7 +38,7 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document import Document, Page, CardContainer
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageKey
 
@@ -59,6 +59,15 @@ class DummyAction(DocumentAction):
         self.value = value
         self.apply = unittest.mock.MagicMock(return_value=self)
         self.undo = unittest.mock.MagicMock(return_value=self)
+
+
+def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
+    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)
+    page.append(CardContainer(
+        page,
+        card
+    ))
+    return card
 
 
 @pytest.mark.parametrize("first, second, matcher", [
@@ -321,6 +330,24 @@ def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(doc
             is_(equal_to(page)),
             f"Wrong rowCount() returned for page {page}"
         )
+
+
+@pytest.mark.parametrize("page_type, parent_row, child_rows", [
+    (PageType.REGULAR, 0, [0]),
+    (PageType.OVERSIZED, 2, [0, 1]),
+])
+def test_get_card_indices_of_type(document_light, page_type: PageType, parent_row: int, child_rows: typing.List[int]):
+    ActionNewPage(count=2).apply(document_light)
+    append_new_card_in_page(document_light.pages[0], "Normal", False)
+    append_new_card_in_page(document_light.pages[2], "Oversized", True)
+    append_new_card_in_page(document_light.pages[2], "Oversized", True)
+    indices = list(document_light.get_card_indices_of_type(page_type))
+    assert_that(indices, has_length(len(child_rows)))
+    for index, expected_row in zip(indices, child_rows):
+        assert_that(index.row(), is_(expected_row))
+        assert_that(index.parent().row(), is_(parent_row))
+        card: Card = index.internalPointer().card
+        assert_that(card.requested_page_type(), is_(page_type))
 
 
 @pytest.fixture
