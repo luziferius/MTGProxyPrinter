@@ -16,11 +16,13 @@
 import itertools
 import typing
 
+from PyQt5.QtCore import QModelIndex
+
 from ._interface import DocumentAction, IllegalStateError
 from mtg_proxy_printer.logger import get_logger
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document import Document
+    from mtg_proxy_printer.model.document import Document, Page
 
 logger = get_logger(__name__)
 del get_logger
@@ -58,16 +60,27 @@ class ActionMoveCards(DocumentAction):
 
         destination_row = len(target_page)
         for source_row_first, source_row_last in reversed(self.card_ranges_to_move):
-            document.beginMoveRows(source_index, source_row_first, source_row_last, target_index, destination_row)
-            target_page[destination_row:destination_row] = source_page[source_row_first:source_row_last+1]
-            del source_page[source_row_first:source_row_last+1]
-            document.endMoveRows()
-
+            self._move_cards_to_target_page(
+                document, source_index, source_page, source_row_first, source_row_last, target_index,
+                target_page, destination_row
+            )
         if source_page.page_type() != source_page_type:
             document.page_type_changed.emit(source_index)
         if target_page.page_type() != target_page_type:
             document.page_type_changed.emit(target_index)
         return self
+
+    @staticmethod
+    def _move_cards_to_target_page(
+            document: "Document",
+            source_index: QModelIndex, source_page: "Page", source_row_first: int, source_row_last: int,
+            target_index: QModelIndex, target_page: "Page", destination_row: int):
+        document.beginMoveRows(source_index, source_row_first, source_row_last, target_index, destination_row)
+        target_page[destination_row:destination_row] = source_page[source_row_first:source_row_last + 1]
+        for item in source_page[source_row_first:source_row_last + 1]:
+            item.parent = target_page
+        del source_page[source_row_first:source_row_last + 1]
+        document.endMoveRows()
 
     def undo(self, document: "Document"):
         source_page = document.pages[self.target_page]  # Swap source and target page for undo
@@ -82,10 +95,10 @@ class ActionMoveCards(DocumentAction):
         source_row_first = len(source_page) - self._total_moved_cards()
         for target_row_first, target_row_last in self.card_ranges_to_move:
             source_row_last = source_row_first + target_row_last - target_row_first
-            document.beginMoveRows(source_index, source_row_first, source_row_last, target_index, target_row_first)
-            target_page[target_row_first:target_row_first] = source_page[source_row_first:source_row_last+1]
-            del source_page[source_row_first:source_row_last+1]
-            document.endMoveRows()
+            self._move_cards_to_target_page(
+                document, source_index, source_page, source_row_first, source_row_last, target_index,
+                target_page, target_row_first
+            )
 
         if source_page.page_type() != source_page_type:
             document.page_type_changed.emit(source_index)
