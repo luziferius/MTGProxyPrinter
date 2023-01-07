@@ -205,6 +205,7 @@ def test_undo_restores_old_page_content(qtbot, document_light):
         new_page,
         ActionMoveCards(0, range(7, 10), 1)
     ]
+    action.new_settings = document_light.page_layout
 
     with qtbot.wait_signals([document_light.page_layout_changed]):
         action.undo(document_light)
