@@ -3,16 +3,19 @@ import itertools
 import random
 import typing
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QModelIndex
 
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.document import Document, Page, PageColumns
+from mtg_proxy_printer.model.document import Document, Page, PageColumns, CardContainer
 from mtg_proxy_printer.units_and_sizes import PageType
 
 __all__ = [
     "ActionShuffleDocument",
 ]
+
+IndexedCards = typing.List[typing.Tuple[int, Card]]
+ModelIndexList = typing.List[QModelIndex]
 
 
 class ActionShuffleDocument(DocumentAction):
@@ -23,6 +26,8 @@ class ActionShuffleDocument(DocumentAction):
 
     def __init__(self):
         super().__init__()
+        # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
+        # order. This ensures that redoing the same action always returns the same result
         self.random_seed = random.randbytes(64)
         self.shuffle_order: typing.Dict[PageType, typing.List[int]] = {}
 
@@ -36,22 +41,35 @@ class ActionShuffleDocument(DocumentAction):
 
     def _shuffle_pages_of_type(self, document: Document, shuffler: random.Random, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))
-        cards: typing.List[typing.Tuple[int, Card]] = list(
+        cards: IndexedCards = list(
             enumerate(index.internalPointer().card for index in model_indices)  # The index holds the card container
         )
         shuffler.shuffle(cards)
-        for (_, card), model_index in zip(cards, model_indices):
-            bottom_right = model_index.siblingAtColumn(PageColumns.Image)
-            page: Page = model_index.parent().internalPointer()
-            page[model_index.row()].card = card
-            document.dataChanged.emit(model_index, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+        self._swap_cards(document, model_indices, cards)
         self.shuffle_order[page_type] = [old_position for old_position, _ in cards]
 
     def undo(self, document: Document) -> Self:
         for page_type in (PageType.REGULAR, PageType.OVERSIZED):
-            self._undo_shuffle_of_type(document, page_type)
+            if page_type in self.shuffle_order:
+                self._undo_shuffle_of_type(document, page_type)
         self.shuffle_order.clear()
         return self
 
     def _undo_shuffle_of_type(self, document: Document, page_type: PageType):
-        model_indices = list(zip(self.shuffle_order[page_type], document.get_card_indices_of_type(page_type)))
+        model_indices = list(document.get_card_indices_of_type(page_type))
+        cards: IndexedCards = list(zip(
+            self.shuffle_order[page_type],
+            (index.internalPointer().card for index in model_indices)  # The index holds the card container
+        ))
+        cards.sort()
+        self._swap_cards(document, model_indices, cards)
+
+    @staticmethod
+    def _swap_cards(document: Document, model_indices: ModelIndexList, cards: IndexedCards):
+        rightmost_column = len(PageColumns)-1
+        for (_, card), model_index in zip(cards, model_indices):
+            bottom_right = model_index.siblingAtColumn(rightmost_column)
+            container: CardContainer = model_index.internalPointer()
+            container.card = card
+            document.dataChanged.emit(model_index, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+
