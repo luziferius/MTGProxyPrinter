@@ -27,6 +27,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
+from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
@@ -135,7 +136,7 @@ class MainWindow(QMainWindow):
         self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
         self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
         self.ui.action_compact_document.triggered.connect(document.compact_pages)
-        self.ui.action_shuffle_document.triggered.connect(document.shuffle_document)
+        self.ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         # Do not connect the card_info_downloader.working_state_changed

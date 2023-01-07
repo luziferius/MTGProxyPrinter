@@ -666,20 +666,6 @@ class Document(QAbstractItemModel):
         self.update_page_layout(PageLayoutSettings.create_from_settings())
         self.save_file_path = None
 
-    @Slot()
-    def shuffle_document(self):
-        cards = list(container.card for container in itertools.chain.from_iterable(self.pages))
-        random.shuffle(cards)
-        for card, index in zip(cards, self._get_all_card_indices()):
-            self._on_replacement_image_received(card, index)
-
-    def _get_all_card_indices(self):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        for page_number, page in enumerate(self.pages):
-            page_index = self.index(page_number, 0)
-            for card_number in range(len(page)):
-                yield self.index(card_number, 0, page_index)
-
     def get_card_indices_of_type(self, page_type: PageType):
         for page_number, page in enumerate(self.pages):
             if page.page_type() is not page_type:
@@ -687,7 +673,6 @@ class Document(QAbstractItemModel):
             page_index = self.index(page_number, 0)
             for card_number in range(len(page)):
                 yield self.index(card_number, 0, page_index)
-
 
     def store_image_usage(self):
         """
