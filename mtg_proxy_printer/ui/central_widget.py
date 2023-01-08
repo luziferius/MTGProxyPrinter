@@ -91,7 +91,7 @@ class CentralWidget(QWidget):
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_card_database(card_db)
-        self.ui.add_card_widget.card_added.connect(image_db.get_new_card_image_asynchronous)
+        self.ui.add_card_widget.request_action.connect(image_db.download_worker.fill_document_action_image)
         self.settings_changed.connect(self.ui.add_card_widget.update_selected_language)
 
     def _setup_document_view(self, document: Document):

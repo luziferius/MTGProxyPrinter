@@ -28,6 +28,8 @@ import urllib.error
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QPersistentModelIndex
 from PyQt5.QtGui import QPixmap, QColor
 
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
@@ -95,8 +97,7 @@ class ImageDatabase(QObject):
     card_download_finished = Signal()
     card_download_progress = Signal(int)
 
-    # Emitted when image retrieval for a to-be-added card completes
-    card_image_obtained = Signal(Card, int)
+    request_action = Signal(DocumentAction)
     # Emitted when an image retrieval for a to-be-replaced card completes
     replacement_obtained = Signal(Card, QPersistentModelIndex)
     """
@@ -126,6 +127,7 @@ class ImageDatabase(QObject):
         self.download_worker.moveToThread(self.download_thread)
 
         self.request_batch_state_change.connect(self.download_worker.request_batch_processing_state_change)
+
         self.request_image.connect(self.download_worker.request_image)
         self.request_replacement.connect(self.download_worker.request_replacement)
 
@@ -134,7 +136,7 @@ class ImageDatabase(QObject):
         self.download_worker.download_progress.connect(self.card_download_progress)
 
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
-        self.download_worker.card_image_obtained.connect(self.card_image_obtained)
+        self.download_worker.request_action.connect(self.request_action)
         self.download_worker.replacement_obtained.connect(self.replacement_obtained)
 
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
@@ -171,15 +173,6 @@ class ImageDatabase(QObject):
             card for card in possible_matches
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
-
-    @Slot(Card)
-    @Slot(Card, int)
-    def get_new_card_image_asynchronous(self, card: Card, count: int = 1):
-        """
-        Asynchronously fetches the image for the given card and stores it in the card instance.
-        Emits add_card(card, count) signal when completed.
-        """
-        self.request_image.emit(card, count)
 
     def get_replacement_card_image_asynchronous(self, card: Card, index: QPersistentModelIndex):
         """
@@ -256,6 +249,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
+    request_action = Signal(DocumentAction)
     request_image = Signal(Card, int)
     card_image_obtained = Signal(Card, int)
 
@@ -293,6 +287,13 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.image_database.images_on_disk.update(
             image.as_key() for image in self.image_database.read_disk_cache_content()
         )
+
+    @Slot(ActionAddCard)
+    def fill_document_action_image(self, action: ActionAddCard):
+        logger.info("Got DocumentAction, filling card")
+        self.get_image_synchronous(action.card)
+        logger.info("Obtained image, requesting apply()")
+        self.request_action.emit(action)
 
     @Slot(Card, int)
     def get_image_for_new_card(self, card: Card, count: int):
