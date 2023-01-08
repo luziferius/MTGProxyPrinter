@@ -18,8 +18,6 @@ from functools import partial
 import operator
 import typing
 
-from PyQt5.QtCore import QObject
-
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
@@ -42,7 +40,7 @@ class IllegalStateError(RuntimeError):
     pass
 
 
-class DocumentAction(QObject):
+class DocumentAction:
 
     COMPARISON_ATTRIBUTES: StringList = []
 
@@ -62,5 +60,6 @@ class DocumentAction(QObject):
                 map((partial(getattr, other)), self.COMPARISON_ATTRIBUTES)
             )
         )
+
 
 ActionList = typing.List[DocumentAction]

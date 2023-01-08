@@ -60,6 +60,8 @@ class Document(QAbstractItemModel):
     This holds a multi-page document that contains any number of same-size pages.
     The pages hold the individual proxy images
     """
+    INVALID_INDEX = INVALID_INDEX
+
     loading_state_changed = Signal(bool)
     current_page_changed = Signal(QPersistentModelIndex)
     page_layout_changed = Signal()

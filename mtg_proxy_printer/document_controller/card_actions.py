@@ -18,7 +18,8 @@ import math
 import typing
 
 from mtg_proxy_printer.model.carddb import Card
-from mtg_proxy_printer.model.document import Document
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer
 from ._interface import DocumentAction, IllegalStateError
 from .page_actions import ActionNewPage, ActionRemovePage
@@ -41,13 +42,12 @@ class ActionAddCard(DocumentAction):
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
     def __init__(self, card: Card, count: int = 1):
-        super().__init__()
         self.card = card
         self.count = count
         self.added_new_pages: int = 0
         self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
 
-    def apply(self, document: Document):
+    def apply(self, document: "Document"):
         """
         Adds the given card count times to the currently edited page. If count is greater than the number of
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
@@ -82,7 +82,7 @@ class ActionAddCard(DocumentAction):
         return self
 
     @staticmethod
-    def add_card_to_page(document: Document, page_number: int, card: Card, count: int = 1) -> int:
+    def add_card_to_page(document: "Document", page_number: int, card: Card, count: int = 1) -> int:
         """
         Adds the given card up to count times to the given page. Returns the number of cards actually added.
         Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
@@ -112,7 +112,7 @@ class ActionAddCard(DocumentAction):
         logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
 
-    def undo(self, document: Document):
+    def undo(self, document: "Document"):
         if not self.added_new_pages and not self.added_cards_to_existing_pages:
             raise IllegalStateError("No cards added to undo")
         if self.added_new_pages:  # Drop all appended pages, implicitly removing all cards on them
@@ -137,14 +137,13 @@ class ActionRemoveCards(DocumentAction):
     COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
-        super().__init__()
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
         self.card_ranges_to_remove = self._to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
         self.removed_cards: typing.List[typing.List[CardContainer]] = []
 
-    def apply(self, document: Document):
+    def apply(self, document: "Document"):
         if self.page_number is None:
             self.page_number = document.find_page_list_index(document.currently_edited_page)
         page_index = document.index(self.page_number, 0)
@@ -160,7 +159,7 @@ class ActionRemoveCards(DocumentAction):
             document.page_type_changed.emit(document.index(self.page_number, 0))
         return self
 
-    def undo(self, document: Document):
+    def undo(self, document: "Document"):
         if self.page_number is None:
             raise IllegalStateError("page_number is None")
         page = document.pages[self.page_number]

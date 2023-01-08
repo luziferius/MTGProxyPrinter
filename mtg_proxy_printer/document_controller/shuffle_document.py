@@ -38,7 +38,6 @@ class ActionShuffleDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["random_seed"]
 
     def __init__(self):
-        super().__init__()
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
         self.random_seed = random.randbytes(64)

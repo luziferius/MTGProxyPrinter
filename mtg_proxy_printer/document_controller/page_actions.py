@@ -15,7 +15,8 @@
 
 import typing
 
-from mtg_proxy_printer.model.document import Document, INVALID_INDEX
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
 from ._interface import DocumentAction, IllegalStateError
 from mtg_proxy_printer.logger import get_logger
@@ -37,14 +38,13 @@ class ActionNewPage(DocumentAction):
     COMPARISON_ATTRIBUTES = ["position", "count"]
 
     def __init__(self, position: int = None, *, count: int = 1):
-        super().__init__()
         self.position = position
         self.count = count
 
-    def apply(self, document: Document):
+    def apply(self, document: "Document"):
         self.position = document.rowCount() if self.position is None \
             else max(0, min(self.position, document.rowCount()))
-        document.beginInsertRows(INVALID_INDEX, self.position, self.position+self.count-1)
+        document.beginInsertRows(document.INVALID_INDEX, self.position, self.position+self.count-1)
         if self.position == document.rowCount():
             for _ in range(self.count):
                 new_page = Page()
@@ -57,7 +57,7 @@ class ActionNewPage(DocumentAction):
         document.endInsertRows()
         return self
 
-    def undo(self, document: Document):
+    def undo(self, document: "Document"):
         if self.position is None:
             raise IllegalStateError("Page position not set")
         ActionRemovePage(self.position, self.count).apply(document)
@@ -73,14 +73,13 @@ class ActionRemovePage(DocumentAction):
     COMPARISON_ATTRIBUTES = ["position", "count", "removed_all_pages", "currently_edited_page", "removed_pages"]
 
     def __init__(self, position: int = None, count: int = 1):
-        super().__init__()
         self.position = position
         self.count = count
         self.removed_pages: typing.List[Page] = []
         self.currently_edited_page = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 
-    def apply(self, document: Document):
+    def apply(self, document: "Document"):
         self.position = first_index = self.position if self.position is not None \
             else document.find_page_list_index(document.currently_edited_page)
         last_index = first_index + self.count - 1
@@ -92,7 +91,7 @@ class ActionRemovePage(DocumentAction):
             first_index <= document.find_page_list_index(document.currently_edited_page) <= last_index
         if currently_edited_page_removed:
             self.currently_edited_page = document.currently_edited_page
-        document.beginRemoveRows(INVALID_INDEX, first_index, last_index)
+        document.beginRemoveRows(document.INVALID_INDEX, first_index, last_index)
         del document.pages[first_index:last_index+1]
         document.recreate_page_index_cache()
         document.endRemoveRows()
@@ -108,12 +107,12 @@ class ActionRemovePage(DocumentAction):
             document._set_currently_edited_page(document.pages[newly_selected_page])
         return self
 
-    def undo(self, document: Document):
+    def undo(self, document: "Document"):
         start = self.position
         if start is None:
             raise IllegalStateError("Cannot undo page removal without location to restore")
         end = start + len(self.removed_pages) - 1
-        document.beginInsertRows(INVALID_INDEX, start, end)
+        document.beginInsertRows(document.INVALID_INDEX, start, end)
         if start == document.rowCount():
             self._append_pages(document, start)
         else:
@@ -125,7 +124,7 @@ class ActionRemovePage(DocumentAction):
             # The Action replaced the whole document with an empty page during apply().
             # To undo the creation of the empty replacement page, delete the now obsolete page
             page_to_remove = end + 1
-            document.beginRemoveRows(INVALID_INDEX, page_to_remove, page_to_remove)
+            document.beginRemoveRows(document.INVALID_INDEX, page_to_remove, page_to_remove)
             del document.page_index_cache[id(document.pages[page_to_remove])]
             del document.pages[page_to_remove]
             document.endRemoveRows()
@@ -135,13 +134,13 @@ class ActionRemovePage(DocumentAction):
         self.removed_all_pages = False
         return self
 
-    def _append_pages(self, document: Document, start: int):
+    def _append_pages(self, document: "Document", start: int):
         document.pages += self.removed_pages
         document.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.removed_pages, start=start)
         )
 
-    def _insert_pages(self, document: Document, start: int):
+    def _insert_pages(self, document: "Document", start: int):
         for index, page in enumerate(self.removed_pages, start=start):
             document.pages.insert(index, page)
         document.recreate_page_index_cache()

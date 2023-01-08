@@ -37,9 +37,9 @@ class ActionCompactDocument(DocumentAction):
     moves cards from the last page with items to it.
     This fills all (but the last) pages up to the capacity limit to help reduce possible waste during printing.
     """
+    COMPARISON_ATTRIBUTES = ["actions"]
 
     def __init__(self):
-        super().__init__()
         self.actions: ActionList = []
 
     def apply(self, document: Document):

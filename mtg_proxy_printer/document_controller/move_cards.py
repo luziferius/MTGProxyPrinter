@@ -40,7 +40,6 @@ class ActionMoveCards(DocumentAction):
     COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move"]
 
     def __init__(self, source: int, cards_to_move: typing.Sequence[int], target: int):
-        super().__init__()
         self.source_page = source
         self.target_page = target
         self.card_ranges_to_move = self._to_list_of_ranges(cards_to_move)

@@ -38,7 +38,6 @@ class ActionNewDocument(DocumentAction):
     COMPARISON_ATTRIBUTES = ["old_save_path", "remove_pages_action", "reset_settings_action"]
 
     def __init__(self):
-        super().__init__()
         self.old_save_path: typing.Optional[pathlib.Path] = None
         self.remove_pages_action: typing.Optional[ActionRemovePage] = None
         self.reset_settings_action: typing.Optional[ActionEditDocumentSettings] = None
