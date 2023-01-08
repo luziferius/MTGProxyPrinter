@@ -20,7 +20,6 @@ import enum
 import itertools
 import math
 import pathlib
-import random
 import sys
 import textwrap
 import typing
@@ -483,58 +482,6 @@ class Document(QAbstractItemModel):
             db.commit()
             db.execute("VACUUM")
         logger.debug("Database saved and closed.")
-
-    @Slot()
-    def compact_pages(self):
-        """
-        Compacts a document by filling as many empty slots as possible on pages that are not at the end of the document.
-
-        Scans the document for pages that are not completely filled and for each such page,
-        moves cards from the last page with items to it.
-        This fills all (but the last) pages up to the capacity limit to help reduce possible waste during printing.
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        if self.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
-            return
-        logger.info("Compacting document.")
-        self._compact_pages_of_type(PageType.REGULAR)
-        self._compact_pages_of_type(PageType.OVERSIZED)
-        if not self.pages[-1]:
-            logger.debug("Determining empty pages")
-            first = last = self.rowCount()-1
-            for page in reversed(self.pages[1:-1]):
-                if not page:
-                    first -= 1
-            logger.debug(f"Removing empty pages {first} - {last}")
-            self.remove_pages([self.index(first, 0), self.index(last, 0)])
-        logger.info("Compacting done.")
-
-    def _compact_pages_of_type(self, page_type: PageType):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        maximum_cards_per_page = self.page_layout.compute_page_card_capacity(page_type)
-        to_skip_type = PageType.OVERSIZED if page_type is PageType.REGULAR else PageType.REGULAR
-        last_index = self.rowCount() - 1
-        for current_index, current_page in enumerate(self.pages[:-1]):  # Can never add images to the last page
-            if current_page.page_type() is to_skip_type:
-                continue
-            if cards_to_add := maximum_cards_per_page - len(current_page):
-                logger.debug(f"Found {cards_to_add} empty slots on page {current_index}")
-                while cards_to_add and current_index < last_index:
-                    page_to_draw_from = self.pages[last_index]
-                    if page_to_draw_from.page_type() is to_skip_type:
-                        last_index -= 1
-                        continue
-                    cards_to_add -= (moved_cards := self._move_cards(current_page, page_to_draw_from))
-                    logger.debug(f"Moved {moved_cards} from page {last_index} to page {current_index}. "
-                                 f"Free slots in target: {maximum_cards_per_page-len(current_page)}")
-                    if not page_to_draw_from:
-                        logger.debug(f"Last page {last_index} now empty.")
-                        last_index -= 1
-                    else:
-                        logger.debug(f"Last page contains {len(self.pages[last_index])} cards.")
-                if current_index == last_index:  # No more pages available to take cards from
-                    logger.debug("No more pages available to take cards from. Finished.")
-                    break
 
     def compute_pages_saved_by_compacting(self) -> int:
         """

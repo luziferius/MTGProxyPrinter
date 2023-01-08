@@ -26,6 +26,7 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
@@ -135,7 +136,7 @@ class MainWindow(QMainWindow):
         self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
         self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
         self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
-        self.ui.action_compact_document.triggered.connect(document.compact_pages)
+        self.ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
         self.ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
@@ -285,7 +286,7 @@ class MainWindow(QMainWindow):
                 f"Do you want to compact the document now to minimize the page count prior to {action}?",
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )) == QMessageBox.Yes:
-                self.document.compact_pages()
+                self.document.apply(ActionCompactDocument())
             return result
         return QMessageBox.No  # No pages can be saved, assume "No" for this case
 

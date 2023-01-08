@@ -27,7 +27,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
 
-def card_container_with(card, parent):
+def card_container_with(card: Card, parent: Page):
     return has_properties({
         "card": same_instance(card),
         "parent": same_instance(parent)
@@ -357,6 +357,6 @@ def test_undo_separates_two_source_ranges(qtbot, document_light):
                 card_container_with(on_page_1_0, pages[1])),
         ),
         "Incorrect card move" +
-        f": {[c.card.name for c in document_light.pages[0]]} + {[c.card.name for c in document_light.pages[1]]}"
+        f": {[c.card.name for c in pages[0]]} + {[c.card.name for c in pages[1]]}"
     )
 

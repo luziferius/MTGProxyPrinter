@@ -406,49 +406,6 @@ def test_document_is_created_empty(document: Document):
     )
 
 
-@pytest.mark.timeout(0.5)
-def test_compacting_document(document: Document):
-    pages_to_fill = 5
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.apply(ActionAddCard(card, pages_to_fill * document.total_cards_per_page))
-    cards_to_remove = 6
-    for page_index in range(1, 4):
-        document.remove_cards(
-            list(map(document.index(page_index, 0).child, range(cards_to_remove), itertools.repeat(0)))
-        )
-        assert_that(document.pages[page_index], has_length(document.total_cards_per_page - cards_to_remove))
-    for page_index in (0, 4):
-        assert_that(document.pages[page_index], has_length(document.total_cards_per_page))
-    document.compact_pages()
-    assert_that(document.pages, has_length(3), "Unexpected page count after compacting")
-    for index, page in enumerate(document.pages):
-        assert_that(page, has_length(document.total_cards_per_page), "Unexpected card count found on a page")
-        for card_container in page:
-            assert_that(
-                card_container.parent,
-                same_instance(page),
-                f"Parent relationship incorrect on page {index}"
-            )
-
-
-def test_compacting_document_with_regular_and_oversized_pages(document: Document):
-    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.apply(ActionNewPage(count=3))
-    assert_that(document.rowCount(), is_(4))
-    document.add_card_to_page(0, regular)
-    document.add_card_to_page(1, oversized)
-    document.add_card_to_page(2, regular)
-    document.add_card_to_page(3, oversized)
-    document.compact_pages()
-    assert_that(document.rowCount(), is_(2))
-    assert_that(
-        [document.pages[0].page_type(), document.pages[1].page_type()],
-        contains_inanyorder(PageType.REGULAR, PageType.OVERSIZED),
-        "Unexpectedly created a mixed-sizes page or left an empty page"
-    )
-
-
 def test_page_types_correctly_returned(document: Document):
     regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
