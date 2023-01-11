@@ -3,7 +3,9 @@
 name = "MTGProxyPrinter"
 description = "MTGProxyPrinter allows efficient printing of Magic: The Gathering cards for playtesting purposes."
 readme = "README.md"
-requires-python = ">= 3.8, < 4"
+# Incompatible with 3.11.1, because of bug https://github.com/python/cpython/issues/100098,
+# causing an instant crash on start. According to the linked issue, a fix will be in 3.11.2
+requires-python = ">= 3.8, != 3.11.1, < 4"
 authors = [
     {name = "Thomas Hess", email = "thomas.hess@udo.edu"},
 ]
@@ -19,14 +21,18 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
+# ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
+# Older Python works fine with ijson >= 3.1
 dependencies = [
     "appdirs >= 1.4.3",
     "PyQt5",
     "ijson >= 3.1.0",
+    "ijson >= 3.2.0; python_version >= '3.11'",
     "pint",
     "delegateto == 1.5",
     "PyHamcrest >= 1.8.1",
@@ -95,6 +101,7 @@ deps =
     build
     PyQt5
     ijson >= 3.1.0
+    ijson >= 3.2.0; python_version >= '3.11'
     pint
     delegateto == 1.5
     PyHamcrest >= 1.8.1
