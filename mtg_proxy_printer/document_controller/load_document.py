@@ -48,9 +48,6 @@ class ActionLoadDocument(DocumentAction):
         self.loaded_cards = loaded_cards
 
     def apply(self, document: "Document"):
-        # The instance is created by the DocumentLoader worker in a different thread.
-        # So move it to the main thread as the first action.
-        self.moveToThread(document.thread())
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         self.actions.append(ActionNewPage(count=len(self.loaded_cards)-1).apply(document))
