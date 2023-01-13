@@ -38,6 +38,7 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
 from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 
 logger = get_logger(__name__)
 del get_logger
@@ -71,6 +72,7 @@ class Document(QAbstractItemModel):
     action_undone = Signal(DocumentAction)
     undo_available_changed = Signal(bool)
     redo_available_changed = Signal(bool)
+    request_fill_image_for_action = Signal(DocumentAction)
 
     page_header = {
         PageColumns.CardName: "Card name",
@@ -88,7 +90,6 @@ class Document(QAbstractItemModel):
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
-        self.image_db.replacement_obtained.connect(self._on_replacement_image_received)
         self.loader = DocumentLoader(card_db, image_db, self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
@@ -157,12 +158,6 @@ class Document(QAbstractItemModel):
             elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
-
-    @Slot()
-    def apply_settings(self):
-        """Applies the current, relevant application settings to this document."""
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        self.update_page_layout(PageLayoutSettings.create_from_settings())
 
     @Slot(PageLayoutSettings)
     def update_page_layout(self, new_layout: PageLayoutSettings):
@@ -375,31 +370,9 @@ class Document(QAbstractItemModel):
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
-            self.image_db.get_replacement_card_image_asynchronous(new_card, QPersistentModelIndex(index))
+            self.request_fill_image_for_action.emit(ActionReplaceCard(new_card, index.parent().row(), index.row()))
             return True
         return False
-
-    @Slot(Card, QPersistentModelIndex)
-    def _on_replacement_image_received(self, card: Card, index: typing.Union[QModelIndex, QPersistentModelIndex]):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        if index.isValid():
-            logger.debug(f'Received image for replaced card printing of "{card.name}".')
-            top_left = index.sibling(index.row(), index.column())
-            bottom_right = top_left.siblingAtColumn(PageColumns.Image)
-            card_container: CardContainer = top_left.internalPointer()
-            page = card_container.parent
-            # When page length is one, the switch works because the only card present
-            # that may be blocking the switch will be removed
-            if page.accepts_card(card) or len(page) == 1:
-                card_container.card = card
-                self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
-            else:
-                # The user replaced a card with one of different size. This can only happen with the oversized
-                # commander cards that were included in older, pre-constructed commander decks.
-                # In this case, simply remove it from the page and add the new one. The logic in add_card() will
-                # find a suitable target page or create one, if necessary
-                self.remove_cards([index])
-                self.add_card(card,1)
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""

@@ -150,6 +150,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
+        document.request_fill_image_for_action.connect(image_db.download_worker.fill_document_action_image)
         image_db.request_action.connect(document.apply)
         return document
 

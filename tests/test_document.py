@@ -719,30 +719,3 @@ def test_page_layout_compute_page_card_capacity(page_type:PageType, v_spacing: i
     layout.image_spacing_horizontal = h_spacing
     layout.image_spacing_vertical = v_spacing
     assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
-
-
-def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversized_away(document: Document):
-    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.apply(ActionAddCard(regular, 2))
-    page_index = document.index(0, 0)
-    document._on_replacement_image_received(oversized, document.index(0, 0, page_index))
-    assert_that(document.rowCount(), is_(2))
-    assert_that(document.rowCount(page_index), is_(1))
-    assert_that(document.rowCount(document.index(1, 0)), is_(1))
-    assert_that(document.pages[0][0].card, is_(equal_to(regular)))
-    assert_that(document.pages[1][0].card, is_(equal_to(oversized)))
-    assert_that(document.pages[0].page_type(), is_(PageType.REGULAR))
-    assert_that(document.pages[1].page_type(), is_(PageType.OVERSIZED))
-
-
-def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_same_page(document: Document):
-    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    document.apply(ActionAddCard(regular, 1))
-    page_index = document.index(0, 0)
-    document._on_replacement_image_received(oversized, document.index(0, 0, page_index))
-    assert_that(document.rowCount(), is_(1))
-    assert_that(document.rowCount(page_index), is_(1))
-    assert_that(document.pages[0][0].card, is_(equal_to(oversized)))
-    assert_that(document.pages[0].page_type(), is_(PageType.OVERSIZED))

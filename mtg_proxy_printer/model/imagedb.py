@@ -29,6 +29,7 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThrea
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
@@ -174,13 +175,6 @@ class ImageDatabase(QObject):
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
 
-    def get_replacement_card_image_asynchronous(self, card: Card, index: QPersistentModelIndex):
-        """
-        Asynchronously fetches the image for the given card and stores it in the card instance.
-        Emits replacement_obtained(card, index) signal when completed.
-        """
-        self.request_replacement.emit(card, index)
-
     def get_deck_asynchronous(self, deck: typing.Counter[Card]):
         self.request_batch_state_change.emit(True)
         for card, count in deck.items():
@@ -266,7 +260,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
         self.request_image.connect(self.get_image_for_new_card)
-        self.request_replacement.connect(self.get_image_for_replacement_card)
         self.request_batch_processing_state_change.connect(self.update_batch_processing_state)
         self.image_database = image_db
         self.should_run = True
@@ -288,8 +281,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             image.as_key() for image in self.image_database.read_disk_cache_content()
         )
 
+    @Slot(ActionReplaceCard)
     @Slot(ActionAddCard)
-    def fill_document_action_image(self, action: ActionAddCard):
+    def fill_document_action_image(self, action: typing.Union[ActionAddCard, ActionReplaceCard]):
         logger.info("Got DocumentAction, filling card")
         self.get_image_synchronous(action.card)
         logger.info("Obtained image, requesting apply()")
@@ -299,11 +293,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def get_image_for_new_card(self, card: Card, count: int):
         self.get_image_synchronous(card)
         self.card_image_obtained.emit(card, count)
-
-    @Slot(Card, QPersistentModelIndex)
-    def get_image_for_replacement_card(self, card: Card, index: QPersistentModelIndex):
-        self.get_image_synchronous(card)
-        self.replacement_obtained.emit(card, index)
 
     @Slot(bool)
     def update_batch_processing_state(self, value: bool):
