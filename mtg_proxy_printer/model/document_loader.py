@@ -24,7 +24,7 @@ import textwrap
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, QMutex, QWaitCondition
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
 
@@ -57,8 +57,6 @@ __all__ = [
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
 DocumentSaveFormat = typing.Iterable[typing.Tuple[int, int, str, bool]]
-load_applied_wait_condition = QWaitCondition()
-load_applied_mutex = QMutex()
 T = typing.TypeVar("T")
 
 
@@ -190,9 +188,8 @@ class DocumentLoader(QObject):
             self.card_db = card_db
             self.image_db = image_db
             # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
-            # That one lives in its own thread and runs asynchronously and is connected in a way that it adds loaded
-            # images to the document on its own, interfering with the loading process, in particular with emitting page
-            # breaks. Thus create a separate instance and use it synchronously inside this worker thread.
+            # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
+            # So create a separate instance and use it synchronously inside this worker thread.
             self.image_loader = ImageDownloader(image_db, self)
             self.image_loader.download_begins.connect(image_db.card_download_starting)
             self.image_loader.download_finished.connect(image_db.card_download_finished)
@@ -202,7 +199,9 @@ class DocumentLoader(QObject):
             self.document = document
             self.save_path = pathlib.Path()
             self.should_run: bool = True
-            self.document.action_applied.connect(load_applied_wait_condition.wakeAll)
+            self.unknown_ids = 0
+            self.migrated_ids = 0
+            document.action_applied.connect(self.on_document_action_applied)
 
         def propagate_errors_during_load(self):
             if error_count := sum(self.network_errors_during_load.values()):
@@ -219,33 +218,31 @@ class DocumentLoader(QObject):
         def load_document(self):
             self.should_run = True
             try:
-                unknown_ids, migrated_ids = self._load_document()
+                self._load_document()
             except AssertionError as e:
                 logger.exception(
                     "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
                 self.loading_file_failed.emit(self.save_path, str(e))
-            else:
-                if unknown_ids or migrated_ids:
-                    self.unknown_scryfall_ids_found.emit(unknown_ids, migrated_ids)
-                self.loading_file_successful.emit(self.save_path)
-            finally:
-                logger.info("Loading document finished, releasing GUI lock")
                 self.finished.emit()
 
-        def _load_document(self) -> (int, int):
+        def on_document_action_applied(self, action: DocumentAction):
+            # Imported here to break a circular import. TODO: Investigate a better fix
+            from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
+            if isinstance(action, ActionLoadDocument):
+                if self.unknown_ids or self.migrated_ids:
+                    self.unknown_scryfall_ids_found.emit(self.unknown_ids, self.migrated_ids)
+                    self.unknown_ids = self.migrated_ids = 0
+                self.loading_file_successful.emit(self.save_path)
+                self.finished.emit()
+
+        def _load_document(self):
             # Imported here to break a circular import. TODO: Investigate a better fix
             from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
             card_data, page_settings = self._read_data_from_save_path(self.save_path)
-            pages, migrated_ids, unknown_ids = self._parse_into_cards(card_data)
+            pages, self.migrated_ids, self.unknown_ids = self._parse_into_cards(card_data)
             self._fix_mixed_pages(pages, page_settings)
             action = ActionLoadDocument(self.save_path, pages, page_settings)
-            # Applying the action in the main thread takes some time. The loader has to wait for the document to
-            # finish applying, before it can continue without causing a SegmentationFault
             self.load_requested.emit(action)
-            load_applied_mutex.lock()
-            load_applied_wait_condition.wait(load_applied_mutex)
-            load_applied_mutex.unlock()
-            return unknown_ids, migrated_ids
 
         def _parse_into_cards(self, card_data: DocumentSaveFormat) -> (typing.List[CardList], int, int):
             prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
@@ -510,6 +507,7 @@ class DocumentLoader(QObject):
         self.worker_thread.start()
 
     def on_loading_file_successful(self, file_path: pathlib.Path):
+        logger.info(f"Loading document from {file_path} successful.")
         self.document.save_file_path = file_path
 
     def cancel_running_operations(self):

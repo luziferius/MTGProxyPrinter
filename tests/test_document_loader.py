@@ -88,11 +88,11 @@ def test_valid_data_loads_correctly(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value), \
-                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000), \
-                qtbot.waitSignal(document.page_layout_changed, timeout=1000):
+        with qtbot.waitSignals([loader.loading_state_changed]*2,
+                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
+                qtbot.waitSignals([loader.load_requested, document.page_layout_changed]):
             loader.load_document(save_path)
-        mock.assert_called_once()
+    mock.assert_called_once()
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
@@ -131,8 +131,9 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value), \
-                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000):
+        with qtbot.waitSignals([loader.loading_state_changed] * 2, timeout=1000,
+                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
+                qtbot.waitSignals([loader.load_requested], timeout=1000):
             loader.load_document(save_path)
         mock.assert_called_once()
     assert_that(document.rowCount(), is_(2))

@@ -111,9 +111,9 @@ class Document(QAbstractItemModel):
         emit_undo_available_signal = not self.undo_stack
         logger.debug(f"Applying {action.__class__.__name__}")
         self.undo_stack.append(action.apply(self))
-        self.action_applied.emit(action)
         if emit_undo_available_signal:
             self.undo_available_changed.emit(True)
+        self.action_applied.emit(action)
 
     @Slot()
     def undo(self):

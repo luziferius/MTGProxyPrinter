@@ -477,7 +477,8 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         with qtbot.waitSignal(document_custom_layout.page_layout_changed):
             document_custom_layout.update_page_layout(layout)
         document_custom_layout.save_to_disk()
-        with qtbot.waitSignal(document_custom_layout.loading_state_changed, check_params_cb=lambda value: not value):
+        with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
+                               check_params_cbs=[lambda value: value, lambda value: not value]):
             document_custom_layout.loader.load_document(save_dir)
         assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
 
