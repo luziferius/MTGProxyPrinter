@@ -13,37 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 from hamcrest import *
 
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
-from mtg_proxy_printer.model.document import Document, Page, CardContainer
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.document import Document, CardContainer
 from mtg_proxy_printer.units_and_sizes import PageType
 
-from .test_action_new_page import append_new_pages
-
-
-def card_container_with(card: Card, parent: Page):
-    return has_properties({
-        "card": same_instance(card),
-        "parent": same_instance(parent)
-    })
-
-
-def create_card(name: str, oversized: bool) -> Card:
-    return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)
-
-
-def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
-    card = create_card(name, oversized)
-    page.append(CardContainer(
-        page,
-        card
-    ))
-    return card
+from .helpers import card_container_with, create_card, append_new_card_in_page, append_new_pages
 
 
 def test_replacing_regular_with_oversized_on_otherwise_filled_card_moves_oversized_away(

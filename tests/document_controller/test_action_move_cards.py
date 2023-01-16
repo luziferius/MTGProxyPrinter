@@ -20,27 +20,12 @@ import pytest
 from hamcrest import *
 from PyQt5.QtCore import QModelIndex
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document_page import CardContainer, Page, PageType
+from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
-
-def card_container_with(card: Card, parent: Page):
-    return has_properties({
-        "card": same_instance(card),
-        "parent": same_instance(parent)
-    })
-
-
-def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
-    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)
-    page.append(CardContainer(
-        page,
-        card
-    ))
-    return card
+from .helpers import card_container_with, append_new_card_in_page
 
 
 def validate_qt_model_move_signal_parameter(
@@ -118,10 +103,8 @@ def test_apply_move_all_cards_onto_partially_filled_page(qtbot, document_light):
         contains_exactly(
             empty(),
             contains_exactly(
-                card_container_with(
-                    on_page_1, pages[1]),
-                card_container_with(
-                    to_move, pages[1])
+                card_container_with(on_page_1, pages[1]),
+                card_container_with(to_move, pages[1])
             )
         ),
         "Incorrect card move"

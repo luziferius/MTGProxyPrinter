@@ -19,19 +19,12 @@ import pytest
 from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document_page import CardContainer, Page, PageType
+from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 from .test_action_new_page import append_new_pages
-
-
-def insert_card_in_page(page: Page, card, count: int = 1):
-    """
-    Inserts the given amount of mock cards into the given page to make it distinguishable from other pages.
-    """
-    for _ in range(count):
-        page.append(CardContainer(page, card))
+from .helpers import insert_card_in_page, card_container_with
 
 
 @pytest.fixture()
@@ -51,13 +44,7 @@ def test_apply_without_count_adds_single_card(qtbot, card, document_light):
     assert_that(
         page,
         contains_exactly(
-            all_of(
-                instance_of(CardContainer),
-                has_properties({
-                    "parent": same_instance(page),
-                    "card": same_instance(card)
-                })
-            )
+            card_container_with(card, page)
         )
     )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, 1)))
@@ -72,13 +59,7 @@ def test_apply_with_count_adds_single_card(qtbot, card, document_light, count: i
     assert_that(
         page,
         contains_exactly(
-            *[all_of(
-                instance_of(CardContainer),
-                has_properties({
-                    "parent": same_instance(page),
-                    "card": same_instance(card)
-                })
-            )]*count
+            *[card_container_with(card, page)]*count
         )
     )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, count)))
@@ -94,13 +75,7 @@ def test_apply_with_count_overflowing_page_adds_new_page(qtbot, card, document_l
         assert_that(
             page,
             contains_exactly(
-                *[all_of(
-                    instance_of(CardContainer),
-                    has_properties({
-                        "parent": same_instance(page),
-                        "card": same_instance(card)
-                    })
-                )]*capacity
+                *[card_container_with(card, page)]*capacity
             )
         )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, capacity)))
@@ -120,10 +95,11 @@ def test_undo_without_internal_saved_state_raises_exception(card):
 
 
 def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
+    pages = document_light.pages
     capacity = document_light.page_layout.compute_page_card_capacity()
     append_new_pages(document_light, 2)
     for page in range(3):
-        insert_card_in_page(document_light.pages[page], card, capacity)
+        insert_card_in_page(pages[page], card, capacity)
     count = capacity * 3 - 1
     action = ActionAddCard(card, count)
     action.added_new_pages = 2
@@ -131,14 +107,9 @@ def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
 
     assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
-        document_light.pages,
+        pages,
         contains_exactly(
-            contains_exactly(all_of(
-                instance_of(CardContainer),
-                has_properties({
-                    "parent": same_instance(document_light.pages[0]),
-                    "card": same_instance(card)
-                }))
+            contains_exactly(card_container_with(card, pages[0])
             )
         )
     )

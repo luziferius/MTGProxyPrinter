@@ -23,6 +23,8 @@ from mtg_proxy_printer.model.document_page import CardContainer, Page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
+from .helpers import append_new_card_in_page, card_container_with, append_new_pages, verify_page_index_cache_is_valid
+
 
 def insert_mock_in_page(page: Page, count: int = 1):
     """
@@ -30,32 +32,18 @@ def insert_mock_in_page(page: Page, count: int = 1):
     """
     for _ in range(count):
         page.append(CardContainer(page, MagicMock(spec=Card)))
-
-
-def verify_page_index_cache_is_valid(document_light):
-    expected_index = {id(page): index for index, page in enumerate(document_light.pages)}
-    assert_that(
-        document_light.page_index_cache,
-        is_(equal_to(expected_index)),
-        "Index of page id to page number not updated properly"
-    )
-
-
-def append_new_pages(document, count: int):
-    for _ in range(count):
-        document.pages.append(Page())
-    document.recreate_page_index_cache()
         
 
 def test_apply_without_position_appends_new_page(qtbot, document_light):
-    insert_mock_in_page(document_light.pages[0])
+    pages = document_light.pages
+    card = append_new_card_in_page(pages[0], "Card")
     action = ActionNewPage()
     with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
-        document_light.pages,
+        pages,
         contains_exactly(
-            all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
+            all_of(instance_of(Page), contains_exactly(card_container_with(card, pages[0]))),
             all_of(instance_of(Page), is_(empty())),
         ),
         "Page not appended correctly"
@@ -65,14 +53,15 @@ def test_apply_without_position_appends_new_page(qtbot, document_light):
 
 @pytest.mark.parametrize("count", [1, 3])
 def test_apply_without_position_appends_count_new_pages(qtbot, document_light, count):
-    insert_mock_in_page(document_light.pages[0])
+    pages = document_light.pages
+    card = append_new_card_in_page(pages[0], "Card")
     action = ActionNewPage(count=count)
     with qtbot.wait_signal(document_light.rowsAboutToBeInserted), qtbot.wait_signal(document_light.rowsInserted):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
-        document_light.pages,
+        pages,
         contains_exactly(
-            all_of(instance_of(Page), contains_exactly(instance_of(CardContainer))),
+            all_of(instance_of(Page), contains_exactly(card_container_with(card, pages[0]))),
             *[all_of(instance_of(Page), is_(empty()))]*count,
         ),
         "Page not appended correctly"

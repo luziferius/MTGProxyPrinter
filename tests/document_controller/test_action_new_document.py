@@ -16,10 +16,8 @@
 import pathlib
 from unittest.mock import patch
 
-import pytest
 from hamcrest import *
 
-import mtg_proxy_printer.document_controller.new_document
 from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument

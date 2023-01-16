@@ -16,17 +16,11 @@
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document_page import CardContainer, Page, PageType
+from mtg_proxy_printer.model.document_page import CardContainer, PageType
 from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
 
-
-def create_card_in_container(page: Page, name: str):
-    return CardContainer(
-        page,
-        Card(name, MTGSet("", ""), "", "", "", True, "", "", True, False, 0, None)
-    )
+from .helpers import append_new_card_in_page, card_container_with, create_card
 
 
 def test___init___raises_exception_with_epty_cards_to_remove_parameter():
@@ -47,35 +41,26 @@ def test___init___correctly_converts_index_list_to_ranges_list(sequence, expecte
 
 def test_apply_removes_two_1_card_ranges(qtbot, document_light):
     page = document_light.pages[0]
-    page.append(create_card_in_container(page, "Removed 1"))
-    page.append(create_card_in_container(page, "Remaining"))
-    page.append(create_card_in_container(page, "Removed 2"))
+    removed_1 = append_new_card_in_page(page, "Removed 1")
+    remaining = append_new_card_in_page(page, "Remaining")
+    removed_2 = append_new_card_in_page(page, "Removed 2")
     action = ActionRemoveCards([0, 2])
     with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=100):
         assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
         contains_exactly(
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Remaining")),
-            })
+            card_container_with(remaining, page)
         )
     )
     assert_that(
         action.removed_cards,
         contains_exactly(
             contains_exactly(
-                has_properties({
-                    "parent": equal_to(page),
-                    "card": has_property("name", equal_to("Removed 1")),
-                })
+                card_container_with(removed_1, page)
             ),
             contains_exactly(
-                has_properties({
-                    "parent": equal_to(page),
-                    "card": has_property("name", equal_to("Removed 2")),
-                })
+                card_container_with(removed_2, page)
             ),
         )
     )
@@ -83,33 +68,24 @@ def test_apply_removes_two_1_card_ranges(qtbot, document_light):
 
 def test_apply_removes_one_2_card_range(qtbot, document_light):
     page = document_light.pages[0]
-    page.append(create_card_in_container(page, "Removed 1"))
-    page.append(create_card_in_container(page, "Removed 2"))
-    page.append(create_card_in_container(page, "Remaining"))
+    removed_1 = append_new_card_in_page(page, "Removed 1")
+    removed_2 = append_new_card_in_page(page, "Removed 2")
+    remaining = append_new_card_in_page(page, "Remaining")
     action = ActionRemoveCards([0, 1])
     with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=100):
         assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
         contains_exactly(
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Remaining")),
-            })
+            card_container_with(remaining, page)
         )
     )
     assert_that(
         action.removed_cards,
         contains_exactly(
             contains_exactly(
-                has_properties({
-                    "parent": equal_to(page),
-                    "card": has_property("name", equal_to("Removed 1")),
-                }),
-                has_properties({
-                    "parent": equal_to(page),
-                    "card": has_property("name", equal_to("Removed 2")),
-                })
+                card_container_with(removed_1, page),
+                card_container_with(removed_2, page),
             ),
         )
     )
@@ -118,9 +94,15 @@ def test_apply_removes_one_2_card_range(qtbot, document_light):
 def test_apply_emits_page_type_changed_signal_if_changed(qtbot, document_light):
     """Removes the first card on the page. The second one (if present) determines the new page type."""
     page = document_light.currently_edited_page
-    page.append(create_card_in_container(page, "Removed 1"))
-    page.append(create_card_in_container(page, "Removed 2"))
-    assert_that(page, has_length(2), "Test setup failed")
+    removed_1 = append_new_card_in_page(page, "Removed 1")
+    removed_2 = append_new_card_in_page(page, "Removed 2")
+    assert_that(
+        page,
+        contains_exactly(
+            card_container_with(removed_1, page),
+            card_container_with(removed_2, page),
+        ), "Test setup failed"
+    )
     assert_that(page.page_type(), is_(PageType.REGULAR), "Test setup failed")
 
     with qtbot.assert_not_emitted(document_light.page_type_changed):
@@ -133,28 +115,21 @@ def test_apply_emits_page_type_changed_signal_if_changed(qtbot, document_light):
 
 def test_undo_restores_two_1_card_ranges(qtbot, document_light):
     page = document_light.pages[0]
-    page.append(create_card_in_container(page, "Remaining"))
+    remaining = append_new_card_in_page(page, "Remaining")
     action = ActionRemoveCards([0, 2], page_number=0)
-    action.removed_cards.append([create_card_in_container(page, "Removed 1")])
-    action.removed_cards.append([create_card_in_container(page, "Removed 2")])
+    removed_1 = create_card("Removed 1")
+    removed_2 = create_card("Removed 2")
+    action.removed_cards.append([CardContainer(page, removed_1)])  # Range [0, 0]
+    action.removed_cards.append([CardContainer(page, removed_2)])  # Range [2, 2]
 
     with qtbot.wait_signals([document_light.rowsAboutToBeInserted, document_light.rowsInserted], timeout=100):
         assert_that(action.undo(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
         contains_exactly(
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Removed 1")),
-            }),
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Remaining")),
-            }),
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Removed 2")),
-            }),
+            card_container_with(removed_1, page),
+            card_container_with(remaining, page),
+            card_container_with(removed_2, page),
         )
     )
     assert_that(action.removed_cards, is_(empty()))
@@ -162,28 +137,21 @@ def test_undo_restores_two_1_card_ranges(qtbot, document_light):
 
 def test_undo_restores_one_2_card_range(qtbot, document_light):
     page = document_light.pages[0]
-    page.append(create_card_in_container(page, "Remaining"))
+    remaining = append_new_card_in_page(page, "Remaining")
+    removed_1 = create_card("Removed 1")
+    removed_2 = create_card("Removed 2")
     action = ActionRemoveCards([0, 1], page_number=0)
     action.removed_cards.append(
-        [create_card_in_container(page, "Removed 1"), create_card_in_container(page, "Removed 2")]
+        [CardContainer(page, removed_1), CardContainer(page, removed_2)]
     )
     with qtbot.wait_signals([document_light.rowsAboutToBeInserted, document_light.rowsInserted], timeout=100):
         assert_that(action.undo(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
         contains_exactly(
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Removed 1")),
-            }),
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Removed 2")),
-            }),
-            has_properties({
-                "parent": equal_to(page),
-                "card": has_property("name", equal_to("Remaining")),
-            }),
+            card_container_with(removed_1, page),
+            card_container_with(removed_2, page),
+            card_container_with(remaining, page),
         )
     )
     assert_that(action.removed_cards, is_(empty()))

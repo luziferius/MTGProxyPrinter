@@ -20,9 +20,9 @@ from PyQt5.QtCore import QModelIndex
 
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 from mtg_proxy_printer.document_controller import IllegalStateError
-from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage, ActionNewPage
+from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 
-from .test_action_new_page import insert_mock_in_page, verify_page_index_cache_is_valid, append_new_pages
+from .helpers import append_new_pages, append_new_card_in_page, card_container_with, verify_page_index_cache_is_valid
 
 
 def validate_qt_model_signal_parameter(
@@ -35,7 +35,7 @@ def test_apply_with_position_deletes_given_page_1(qtbot, document_light):
     append_new_pages(document_light, 1)
     remaining_page = document_light.pages[0]
     removed_page = document_light.pages[1]
-    insert_mock_in_page(removed_page)
+    removed_card = append_new_card_in_page(removed_page, "Removed")
     action = ActionRemovePage(1)
     validator = partial(validate_qt_model_signal_parameter, 1, 1)
     with qtbot.wait_signals(
@@ -56,7 +56,7 @@ def test_apply_with_position_deletes_given_page_1(qtbot, document_light):
             "count": 1,
             "removed_pages": contains_exactly(all_of(
                 same_instance(removed_page),
-                contains_exactly(instance_of(CardContainer)))),
+                contains_exactly(card_container_with(removed_card, removed_page)))),
             "currently_edited_page": none(),
         })
     )
@@ -66,7 +66,7 @@ def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[0]
     remaining_page = document_light.pages[1]
-    insert_mock_in_page(remaining_page)
+    remaining_card = append_new_card_in_page(remaining_page, "Card")
     document_light._set_currently_edited_page(remaining_page)
     action = ActionRemovePage(0)
     validator = partial(validate_qt_model_signal_parameter, 0, 0)
@@ -77,7 +77,7 @@ def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     assert_that(
         document_light.pages,
         contains_exactly(
-            all_of(same_instance(remaining_page), contains_exactly(instance_of(CardContainer)))
+            all_of(same_instance(remaining_page), contains_exactly(card_container_with(remaining_card, remaining_page)))
         )
     )
     verify_page_index_cache_is_valid(document_light)
@@ -165,7 +165,7 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot, document_li
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[1]
     document_light._set_currently_edited_page(removed_page)
-    insert_mock_in_page(removed_page)
+    append_new_card_in_page(removed_page, "Removed")
     action = ActionRemovePage()
     validator = partial(validate_qt_model_signal_parameter, 1, 1)
 
