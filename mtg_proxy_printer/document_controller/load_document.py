@@ -38,7 +38,7 @@ __all__ = [
 
 
 class ActionLoadDocument(DocumentAction):
-    COMPARISON_ATTRIBUTES = ["save_path", "loaded_cards"]
+    COMPARISON_ATTRIBUTES = ["save_path", "loaded_cards", "page_layout"]
 
     def __init__(self, save_path: pathlib.Path, loaded_cards: typing.List[CardList], page_layout: "PageLayoutSettings"):
         self.save_path = save_path

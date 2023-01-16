@@ -304,3 +304,17 @@ def test_removing_last_page_while_selected_works_without_raising_exception(main_
     ui.central_widget.ui.document_view.setCurrentIndex(main_window.document.index(1, 0))
     ui.action_discard_page.trigger()
     assert_that(main_window.document.rowCount(), is_(1))
+
+
+def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(qtbot, main_window: MainWindow):
+    from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
+    document = main_window.document
+    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    action = ActionLoadDocument(pathlib.Path(), [
+        [card], [card], [card]
+    ], document.page_layout)
+    document.apply(action)
+    document_view = main_window.ui.central_widget.ui.document_view
+    document_view.setCurrentIndex(document.index(1, 0))
+    main_window.ui.action_undo.trigger()
+
