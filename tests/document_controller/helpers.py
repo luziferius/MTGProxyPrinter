@@ -74,7 +74,7 @@ def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> C
     return new_card
 
 
-def insert_card_in_page(page: Page, card, count: int = 1):
+def insert_card_in_page(page: Page, card: Card, count: int = 1):
     """
     Inserts the given amount of mock cards into the given page to make it distinguishable from other pages.
     """

@@ -150,3 +150,45 @@ def test_apply_only_emits_page_type_changed_signal_if_changed(
     with qtbot.assertNotEmitted(document_light.page_type_changed):
         ActionAddCard(added_card).apply(document_light)
     assert_that(document_light.pages[0].page_type(), is_(page_type))
+
+
+def test_undo_works_when_apply_searched_over_multiple_full_pages_for_free_slot(document_light, card):
+    """
+    A ValueError (including a SegmentationFault) occurred in undo() when
+    - apply() had to search over multiple full pages,
+    - then appended a new page
+    - placed the card on that page
+    - And then the action was undone.
+    """
+    pages = document_light.pages
+    page_capactiy = document_light.page_layout.compute_page_card_capacity(card.requested_page_type())
+    ActionAddCard(card, 2*page_capactiy).apply(document_light)
+    assert_that(document_light.currently_edited_page, is_(same_instance(pages[0])))
+    failing_action = ActionAddCard(card, 1).apply(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                *[card_container_with(card, pages[0])]*page_capactiy
+            ),
+            contains_exactly(
+                *[card_container_with(card, pages[1])]*page_capactiy
+            ),
+            contains_exactly(
+                card_container_with(card, pages[2])
+            )
+        )
+    )
+    # Crash occurs in undo()
+    failing_action.undo(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                *[card_container_with(card, pages[0])]*page_capactiy
+            ),
+            contains_exactly(
+                *[card_container_with(card, pages[1])]*page_capactiy
+            )
+        )
+    )
