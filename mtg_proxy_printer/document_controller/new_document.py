@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
 import pathlib
+import typing
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -54,7 +54,7 @@ class ActionNewDocument(DocumentAction):
         self.remove_pages_action = ActionRemovePage(0, document.rowCount()).apply(document)
         self.reset_settings_action = ActionEditDocumentSettings(self.new_page_layout).apply(
             document)
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         document.save_file_path = self.old_save_path
@@ -62,3 +62,7 @@ class ActionNewDocument(DocumentAction):
         self.reset_settings_action.undo(document)
         self.old_save_path = self.remove_pages_action = self.reset_settings_action = None
         return self
+
+    @property
+    def as_str(self):
+        return "Create new document"

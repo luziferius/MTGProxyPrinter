@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import itertools
 import typing
 
@@ -67,7 +68,7 @@ class ActionMoveCards(DocumentAction):
             document.page_type_changed.emit(source_index)
         if target_page.page_type() != target_page_type:
             document.page_type_changed.emit(target_index)
-        return self
+        return super().apply(document)
 
     @staticmethod
     def _move_cards_to_target_page(
@@ -120,3 +121,8 @@ class ActionMoveCards(DocumentAction):
 
     def _total_moved_cards(self) -> int:
         return sum(last-first+1 for first, last in self.card_ranges_to_move)
+
+    @functools.cached_property
+    def as_str(self):
+        return f"Move {sum(upper-lower+1 for lower, upper in self.card_ranges_to_move)} cards " \
+               f"from page {self.source_page+1} to page {self.target_page+1}"

@@ -57,7 +57,7 @@ class ActionEditDocumentSettings(DocumentAction):
             self.new_settings.compute_page_card_capacity(PageType.OVERSIZED)
         if new_capacities < old_capacities:
             self._reflow_document(document)
-        return self
+        return super().apply(document)
 
     def _reflow_document(self, document: "Document"):
         self._reflow_pages_of_type(document, PageType.REGULAR)
@@ -103,3 +103,7 @@ class ActionEditDocumentSettings(DocumentAction):
         self.old_settings = None
         self.reflow_actions.clear()
         return self
+
+    @property
+    def as_str(self):
+        return "Update document settings"

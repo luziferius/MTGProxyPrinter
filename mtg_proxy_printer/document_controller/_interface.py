@@ -46,7 +46,8 @@ class DocumentAction:
 
     @abstractmethod
     def apply(self, document: "Document") -> Self:
-        pass
+        str(self)  # Populate the as_str cache
+        return self
 
     @abstractmethod
     def undo(self, document: "Document") -> Self:
@@ -60,6 +61,20 @@ class DocumentAction:
                 map((partial(getattr, other)), self.COMPARISON_ATTRIBUTES)
             )
         )
+
+    @property
+    @abstractmethod
+    def as_str(self):
+        # Note: Why this abstract property?
+        # Some string representations require data that is deleted in undo(), so in order
+        # to keep the representation, the value has to be saved. But @functools.lru_cache() can’t be used on
+        # DocumentAction methods, like __str__(), because instances aren’t hashable.
+        # Other caches, like @functools.cache() aren’t available in Py 3.8, require third-party dependencies or
+        # require some boilerplate code. Using @functools.cached_property is a reasonably elegant workaround.
+        pass
+
+    def __str__(self):
+        return self.as_str
 
 
 ActionList = typing.List[DocumentAction]

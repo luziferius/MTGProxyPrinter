@@ -49,7 +49,7 @@ class ActionShuffleDocument(DocumentAction):
         shuffler = random.Random(self.random_seed)
         for page_type in (PageType.REGULAR, PageType.OVERSIZED):
             self._shuffle_pages_of_type(document, shuffler, page_type)
-        return self
+        return super().apply(document)
 
     def _shuffle_pages_of_type(self, document: Document, shuffler: random.Random, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))
@@ -85,3 +85,6 @@ class ActionShuffleDocument(DocumentAction):
             container.card = card
             document.dataChanged.emit(model_index, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
 
+    @property
+    def as_str(self):
+        return "Shuffle document"

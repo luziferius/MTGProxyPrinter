@@ -150,6 +150,9 @@ class Card:
         average_color = sample_area.scaled(1, 1, transformMode=Qt.SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
+    def display_string(self):
+        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]

@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import typing
 
 if typing.TYPE_CHECKING:
@@ -44,7 +45,7 @@ class ActionImportDeckList(DocumentAction):
             self.actions.append(ActionRemovePage(0, document.rowCount()).apply(document))
         for action in map(ActionAddCard, self.cards):
             self.actions.append(action.apply(document))
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         for action in reversed(self.actions):
@@ -55,3 +56,8 @@ class ActionImportDeckList(DocumentAction):
     def card_count(self) -> int:
         """Returns the number of cards added by this action"""
         return len(self.cards)
+
+    @functools.cached_property
+    def as_str(self):
+        action = "Wipe document and import" if self.clear_document else "Import"
+        return f"{action} a deck list containing {len(self.cards)} cards"

@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import typing
 
 from PyQt5.QtCore import Qt
@@ -55,7 +56,7 @@ class ActionReplaceCard(DocumentAction):
     def apply(self, document: "Document") -> Self:
         self.old_card = document.pages[self.page][self.slot].card
         self._replace_card_in_document_with(document, self.card)
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         if self.size_change_actions:
@@ -86,3 +87,7 @@ class ActionReplaceCard(DocumentAction):
             if previous_card_page_type != new_card_page_type:
                 logger.info("New card has different size, but page is otherwise empty, changing page type…")
                 document.page_type_changed.emit(page_index)
+
+    @functools.cached_property
+    def as_str(self):
+        return f"Replace card {self.old_card.display_string()} on page {self.page+1} with {self.card.display_string()}"

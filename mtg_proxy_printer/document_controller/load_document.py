@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
+import functools
 import pathlib
 import typing
 
@@ -42,7 +42,6 @@ class ActionLoadDocument(DocumentAction):
 
     def __init__(self, save_path: pathlib.Path, loaded_cards: typing.List[CardList], page_layout: "PageLayoutSettings"):
         self.save_path = save_path
-        self.loaded_card_data = []
         self.page_layout = page_layout
         self.actions: ActionList = []
         self.loaded_cards = loaded_cards
@@ -58,10 +57,15 @@ class ActionLoadDocument(DocumentAction):
             for card in cards_on_page:
                 self.actions.append(ActionAddCard(card).apply(document))
         document.set_currently_edited_page(document.pages[0])
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         for action in reversed(self.actions):
             action.undo(document)
         self.actions.clear()
         return self
+
+    @functools.cached_property
+    def as_str(self):
+        return f"Load document from '{self.save_path}',\n" \
+               f"containing {len(self.loaded_cards)} pages with {sum(map(len, self.loaded_cards))} cards total"

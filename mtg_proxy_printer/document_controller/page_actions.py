@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import typing
 
 if typing.TYPE_CHECKING:
@@ -55,13 +56,19 @@ class ActionNewPage(DocumentAction):
                 document.pages.insert(self.position, Page())
             document.recreate_page_index_cache()
         document.endInsertRows()
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         if self.position is None:
             raise IllegalStateError("Page position not set")
         ActionRemovePage(self.position, self.count).apply(document)
         return self
+
+    @functools.cached_property
+    def as_str(self):
+        if self.count == 1:
+            return f"Add page {self.position+1}"
+        return f"Add pages {self.position+1}-{self.position+self.count}"
 
 
 class ActionRemovePage(DocumentAction):
@@ -144,3 +151,10 @@ class ActionRemovePage(DocumentAction):
         for index, page in enumerate(self.removed_pages, start=start):
             document.pages.insert(index, page)
         document.recreate_page_index_cache()
+
+    @functools.cached_property
+    def as_str(self):
+        cards_removed = sum(map(len, self.removed_pages))
+        if self.count == 1:
+            return f"Remove page {self.position+1} containing {cards_removed} cards"
+        return f"Remove pages {self.position+1}-{self.position+self.count} containing {cards_removed} cards total"

@@ -26,6 +26,7 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
@@ -70,6 +71,8 @@ class MainWindow(QMainWindow):
         self.is_running = True
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.default_undo_tooltip = self.ui.action_undo.toolTip()
+        self.default_redo_tooltip = self.ui.action_redo.toolTip()
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.request_obtaining_images.connect(image_db.download_worker.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
@@ -126,6 +129,8 @@ class MainWindow(QMainWindow):
     def _setup_undo_redo_actions(self, document: Document):
         self.ui.action_undo.triggered.connect(document.undo)
         self.ui.action_redo.triggered.connect(document.redo)
+        document.action_applied.connect(self.on_document_action_applied_or_undone)
+        document.action_undone.connect(self.on_document_action_applied_or_undone)
         document.undo_available_changed.connect(self.ui.action_undo.setEnabled)
         document.redo_available_changed.connect(self.ui.action_redo.setEnabled)
 
@@ -195,6 +200,15 @@ class MainWindow(QMainWindow):
         progress_bar.hide()
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
+
+    @Slot()
+    def on_document_action_applied_or_undone(self):
+        undo_tooltip = f"Undo:\n{self.document.undo_stack[-1]}" \
+            if self.document.undo_stack else self.default_undo_tooltip
+        redo_tooltip = f"Redo:\n{self.document.redo_stack[-1]}" \
+            if self.document.redo_stack else self.default_redo_tooltip
+        self.ui.action_undo.setToolTip(undo_tooltip)
+        self.ui.action_redo.setToolTip(redo_tooltip)
 
     def closeEvent(self, event: QCloseEvent):
         """

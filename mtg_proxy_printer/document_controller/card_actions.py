@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import itertools
 import math
 import typing
@@ -45,6 +46,7 @@ class ActionAddCard(DocumentAction):
         self.card = card
         self.count = count
         self.added_new_pages: int = 0
+        self.first_added_page: int = 0
         self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
 
     def apply(self, document: "Document") -> Self:
@@ -76,12 +78,14 @@ class ActionAddCard(DocumentAction):
                 f"No further empty slots found. Appending {self.added_new_pages} new pages to the document, "
                 f"to fit the remaining {copies} copies.")
             ActionNewPage(count=self.added_new_pages).apply(document)
+        if copies > 0:
+            self.first_added_page = current_page_position
         while copies > 0:
             # Here, the individual cards don’t need to be tracked, as the whole pages get deleted on undo.
             copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
             current_page_position += 1
-        return self
+        return super().apply(document)
 
     @staticmethod
     def add_card_to_page(document: "Document", page_number: int, card: Card, count: int = 1) -> int:
@@ -128,9 +132,31 @@ class ActionAddCard(DocumentAction):
                 page_number
             ).apply(document)
 
-        self.added_new_pages = 0
+        self.added_new_pages = self.first_added_page = 0
         self.added_cards_to_existing_pages.clear()
         return self
+
+    @functools.cached_property
+    def as_str(self):
+        if len(self.added_cards_to_existing_pages) == 1:
+            # Cards added to a single existing page
+            target = f"to page {self.added_cards_to_existing_pages[0][0]+1}"
+        elif self.first_added_page:
+            # Cards added to a single new page
+            target = f"to page {self.first_added_page+1}"
+        else:
+            # Cards added to multiple existing and/or new pages
+            pages = itertools.chain(
+                ((page + 1) for page, _ in self.added_cards_to_existing_pages),  # Existing pages, can be empty
+                range(self.first_added_page, self.first_added_page+self.added_new_pages)  # New pages, can be empty
+            )
+            page_ranges = ActionRemoveCards.to_list_of_ranges(pages)
+            # Human-readable representation: pages are comma-separated,
+            # with consecutive values collapsed into hyphen-separated ranges like lower-upper
+            formatted_pages = ", ".join(
+                (f"{lower}-{upper}" if lower < upper else f"{lower}") for lower, upper in page_ranges)
+            target = f"across pages {formatted_pages}"
+        return f'Add {self.count} × {self.card.display_string()} {target}'
 
 
 class ActionRemoveCards(DocumentAction):
@@ -141,7 +167,7 @@ class ActionRemoveCards(DocumentAction):
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
-        self.card_ranges_to_remove = self._to_list_of_ranges(cards_to_remove)
+        self.card_ranges_to_remove = self.to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
         self.removed_cards: typing.List[typing.List[CardContainer]] = []
 
@@ -159,7 +185,7 @@ class ActionRemoveCards(DocumentAction):
         self.removed_cards.reverse()
         if page.page_type() != old_page_type:
             document.page_type_changed.emit(document.index(self.page_number, 0))
-        return self
+        return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
         if self.page_number is None:
@@ -171,12 +197,11 @@ class ActionRemoveCards(DocumentAction):
             for card in reversed(cards):
                 page.insert(begin, card)
             document.endInsertRows()
-
         self.removed_cards.clear()
         return self
 
     @staticmethod
-    def _to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
+    def to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
         ranges: typing.List[typing.Tuple[int, int]] = []
         sequence = itertools.chain(sequence, (sentinel := object(),))
         lower = upper = next(sequence)
@@ -187,3 +212,8 @@ class ActionRemoveCards(DocumentAction):
             else:
                 upper = item
         return ranges
+
+    @functools.cached_property
+    def as_str(self):
+        return f"Remove {sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)} " \
+               f"from page {self.page_number+1}"

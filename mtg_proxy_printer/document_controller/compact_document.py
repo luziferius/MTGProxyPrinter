@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
 from ._interface import DocumentAction, IllegalStateError, ActionList, Self
@@ -60,7 +62,7 @@ class ActionCompactDocument(DocumentAction):
             if count := last-first+1:
                 self.actions.append(ActionRemovePage(first, count).apply(document))
         logger.info("Compacting done.")
-        return self
+        return super().apply(document)
 
     def _compact_pages_of_type(self, document, page_type: PageType):
         maximum_cards_per_page = document.page_layout.compute_page_card_capacity(page_type)
@@ -98,3 +100,9 @@ class ActionCompactDocument(DocumentAction):
             action.undo(document)
         self.actions.clear()
         return self
+
+    @functools.cached_property
+    def as_str(self):
+        last_action = self.actions[-1] if self.actions else None
+        saved_pages = last_action.count if isinstance(last_action, ActionRemovePage) else 0
+        return f"Compact document, removing {saved_pages} pages"
