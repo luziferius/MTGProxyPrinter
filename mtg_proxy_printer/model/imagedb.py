@@ -30,6 +30,7 @@ from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
@@ -175,12 +176,6 @@ class ImageDatabase(QObject):
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
 
-    def get_deck_asynchronous(self, deck: typing.Counter[Card]):
-        self.request_batch_state_change.emit(True)
-        for card, count in deck.items():
-            self.request_image.emit(card, count)
-        self.request_batch_state_change.emit(False)
-
     def get_card_list_asynchronous(self, cards: typing.List[typing.Tuple[Card, QPersistentModelIndex]]):
         self.request_batch_state_change.emit(True)
         for card, index in cards:
@@ -288,6 +283,16 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.get_image_synchronous(action.card)
         logger.info("Obtained image, requesting apply()")
         self.request_action.emit(action)
+
+    @Slot(ActionImportDeckList)
+    def fill_batch_document_action_images(self, action: ActionImportDeckList):
+        logger.info("Got batch DocumentAction, filling cards")
+        self.update_batch_processing_state(True)
+        for card in action.cards:
+            self.get_image_synchronous(card)
+        logger.info(f"Obtained images for {len(action.cards)} cards.")
+        self.request_action.emit(action)
+        self.update_batch_processing_state(False)
 
     @Slot(Card, int)
     def get_image_for_new_card(self, card: Card, count: int):

@@ -47,7 +47,7 @@ class MissingImagesManager(QObject):
     def obtain_missing_images(self, callback: typing.Callable[[], typing.Any] = None):
         self.callback = callback
         images_to_fetch = [
-            (index.parent().data(Qt.EditRole)[index.row()].card, index)
+            (index.parent().data(Qt.EditRole)[index.row()].card, index)  # TODO: Why is this indirection here?
             for index in self.document.get_missing_image_cards()
         ]
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")

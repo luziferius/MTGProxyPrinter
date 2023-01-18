@@ -234,8 +234,7 @@ class MainWindow(QMainWindow):
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
-        wizard.clear_document.connect(self.document.clear_all_data)
-        wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
+        wizard.request_action.connect(self.image_db.download_worker.fill_batch_document_action_images)
         wizard.show()
 
     @Slot()

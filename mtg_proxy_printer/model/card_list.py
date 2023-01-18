@@ -223,13 +223,15 @@ class CardListModel(QAbstractTableModel):
             self.oversized_card_count = 0
             self.oversized_card_count_changed.emit(self.oversized_card_count)
 
-    def as_deck(self, row_order: typing.List[int] = None):
-        """Returns the card list as a deck. If a custom row order is given, create the counter in that order."""
+    def as_cards(self, row_order: typing.List[int] = None) -> CardList:
+        """
+        Returns the internal card list. If a custom row order is given, return the cards in that order.
+        The row_order is used when the user sorted the table by any column. The imported cards then inherit the order
+        as shown in the table.
+        """
         if row_order is None:
-            return Counter(self.cards)
-        return Counter(
-            self.cards[row] for row in row_order
-        )
+            return self.cards
+        return [self.cards[row] for row in row_order]
 
     def has_basic_lands(self, include_wastes: bool = False, include_snow_basics: bool = False) -> bool:
         basic_land_oracle_ids = self.card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics)

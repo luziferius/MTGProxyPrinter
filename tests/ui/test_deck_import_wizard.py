@@ -28,11 +28,12 @@ from PyQt5.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
 from PyQt5.QtTest import QTest
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
 from mtg_proxy_printer.model.card_list import PageColumns
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
 
@@ -213,13 +214,13 @@ def _validate_model_content(list_model):
     }))
 
 
-class DeckReceiver(QObject):
+class CardListReceiver(QObject):
     def __init__(self, parent: QObject = None):
-        super(DeckReceiver, self).__init__(parent)
-        self.deck: typing.Counter[Card] = collections.Counter()
+        super(CardListReceiver, self).__init__(parent)
+        self.deck: CardList = []
 
-    def on_deck_received(self, deck: typing.Counter[Card]):
-        self.deck = deck
+    def on_import_action_received(self, action: ActionImportDeckList):
+        self.deck = action.cards
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
@@ -247,15 +248,15 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
         # Wait until the editor saved the data in the model
         QTest.keyClick(editor, Qt.Key_Enter)
     # Now accept the dialog and capture the emitted deck
-    deck_receiver = DeckReceiver()
-    wizard.deck_added.connect(deck_receiver.on_deck_received)
-    with qtbot.wait_signal(wizard.deck_added, timeout=100):
+    deck_receiver = CardListReceiver()
+    wizard.request_action.connect(deck_receiver.on_import_action_received)
+    with qtbot.wait_signal(wizard.request_action, timeout=100):
         QTest.keyClick(wizard, Qt.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),
         has_length(2),
     ))
-    assert_that(deck_receiver.deck.keys(), contains_inanyorder(
+    assert_that(deck_receiver.deck, contains_inanyorder(
         has_properties({
             "name": equal_to("Fury Sliver"),
             "set": has_properties({
