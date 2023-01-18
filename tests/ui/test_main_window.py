@@ -306,7 +306,7 @@ def test_removing_last_page_while_selected_works_without_raising_exception(main_
     assert_that(main_window.document.rowCount(), is_(1))
 
 
-def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(qtbot, main_window: MainWindow):
+def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(main_window: MainWindow):
     from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
     document = main_window.document
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -317,4 +317,21 @@ def test_undo_load_document_with_middle_page_selected_works_without_raising_exce
     document_view = main_window.ui.central_widget.ui.document_view
     document_view.setCurrentIndex(document.index(1, 0))
     main_window.ui.action_undo.trigger()
+    assert_that(main_window.document.rowCount(), is_(1))
 
+
+def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exception(main_window):
+    from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
+    document = main_window.document
+    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
+    card.image_file = main_window.image_db.blank_image
+    action = ActionImportDeckList(
+        [card]*page_capacity*2,
+        False
+    )
+    document.apply(action)
+    document_view = main_window.ui.central_widget.ui.document_view
+    document_view.setCurrentIndex(document.index(1, 0))
+    main_window.ui.action_undo.trigger()
+    assert_that(main_window.document.rowCount(), is_(1))

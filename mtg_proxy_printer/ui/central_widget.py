@@ -121,14 +121,14 @@ class CentralWidget(QWidget):
             new_size = math.floor(default_column_width * scaling_factor)
             self.ui.page_card_table_view.setColumnWidth(column, new_size)
 
-    def on_document_rows_about_to_be_removed(self, index: QModelIndex, first: int, last: int):
-        current_row = self.ui.document_view.currentIndex().row()
-        removed_pages = last-first+1
-        is_page_index = not index.parent().isValid()
+    def on_document_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
+        currently_selected_page = self.ui.document_view.currentIndex().row()
+        is_page_index = not parent.isValid()
         if not is_page_index:
             # Not interested in removed cards here, so return if cards are about to be removed.
             return
-        if is_page_index and current_row < self.document.rowCount()-removed_pages:
+        removed_pages = last - first + 1
+        if currently_selected_page < self.document.rowCount()-removed_pages:
             # After removal, the current page remains within the document and stays valid. Nothing to do.
             return
         # Selecting a different page is required if the current page is going to be deleted.
@@ -136,7 +136,7 @@ class CentralWidget(QWidget):
         # model indices.
         new_page_to_select = max(0, first-1)
         logger.debug(
-            f"Currently selected last page {current_row} about to be removed. New page to select: {new_page_to_select}")
+            f"Currently selected last page {currently_selected_page} about to be removed. New page to select: {new_page_to_select}")
         self.ui.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
 
     def _setup_page_renderer(self, document: Document):
