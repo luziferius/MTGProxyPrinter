@@ -48,6 +48,8 @@ class ActionLoadDocument(DocumentAction):
         self.loaded_cards = loaded_cards
 
     def apply(self, document: "Document") -> Self:
+        if self.actions:
+            raise IllegalStateError("Cannot apply action twice")
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         self.actions.append(ActionNewPage(count=len(self.loaded_cards)-1).apply(document))

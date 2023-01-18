@@ -43,6 +43,8 @@ class ActionCompactDocument(DocumentAction):
         self.actions: ActionList = []
 
     def apply(self, document: Document) -> Self:
+        if self.actions:
+            raise IllegalStateError("Cannot apply action twice")
         if document.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return self
         logger.info("Compacting document.")
