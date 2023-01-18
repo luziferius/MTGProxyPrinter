@@ -75,8 +75,6 @@ def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> C
 
 
 def insert_card_in_page(page: Page, card: Card, count: int = 1):
-    """
-    Inserts the given amount of mock cards into the given page to make it distinguishable from other pages.
-    """
+    """Inserts the given card count times into the given page."""
     for _ in range(count):
         page.append(CardContainer(page, card))

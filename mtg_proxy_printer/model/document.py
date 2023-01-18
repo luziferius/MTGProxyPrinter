@@ -14,16 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import copy
 import dataclasses
 import enum
 import itertools
 import math
 import pathlib
-import sys
 import textwrap
 import typing
-import warnings
 
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
     QPersistentModelIndex
@@ -158,144 +155,6 @@ class Document(QAbstractItemModel):
             elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
-
-    @Slot(PageLayoutSettings)
-    def update_page_layout(self, new_layout: PageLayoutSettings):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        if new_layout == self.page_layout:
-            return
-        old_capacities = self.page_layout.compute_page_card_capacity(PageType.REGULAR), \
-            self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
-        new_capacities = new_layout.compute_page_card_capacity(PageType.REGULAR), \
-            new_layout.compute_page_card_capacity(PageType.OVERSIZED)
-        # Copy the values to cut all ties to the passed-in instance. This ensures that the instances used by settings
-        # widgets will stay separated.
-        self.page_layout = copy.copy(new_layout)
-        if new_capacities < old_capacities:
-            self.move_excess_cards_to_free_pages()
-        self.page_layout_changed.emit()
-
-    @Slot()
-    @Slot(int)
-    def add_page(self, position: int = None) -> Page:
-        """
-        Inserts an empty page at the given position. Positions are clamped into the range [0, page_count].
-        Appends the new page to the document, if the position is None.
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        position = self.rowCount() if position is None else max(0, min(position, self.rowCount()))
-        self.beginInsertRows(INVALID_INDEX, position, position)
-        new_page = Page()
-        if position == self.rowCount():
-            self.pages.append(new_page)
-            self.page_index_cache[id(new_page)] = len(self.pages) - 1
-        else:
-            self.pages.insert(position, new_page)
-            self.recreate_page_index_cache()
-        self.endInsertRows()
-        return new_page
-
-    @Slot(Card, int)
-    def add_card(self, card: Card, copies: int):
-        """
-        Adds the given card copies times to the currently edited page. If copies is greater than the number of
-        free slots on that page, add the remaining card copies to free slots in subsequent pages.
-        If that is insufficient, add and fill new pages at the document end to fulfil the required copies.
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        page_capacity_for_card = self.page_layout.compute_page_card_capacity(card.requested_page_type())
-        current_page_position = self.find_page_list_index(self.currently_edited_page)
-        if len(self.currently_edited_page) < page_capacity_for_card \
-                and self.currently_edited_page.accepts_card(card):
-            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
-        current_page_position += 1
-        while copies > 0 and current_page_position < self.rowCount():
-            if self.pages[current_page_position].accepts_card(card):
-                copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
-                logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
-            current_page_position += 1
-        if copies > 0:
-            logger.debug("No empty slots found, appending new pages to the document, until all copies are added.")
-        while copies > 0:
-            # Append each new page to the end. If the added amount is not divisible by the page_capacity, this causes
-            # the last-added page to be non-full, instead of the first one in document page order.
-            self.add_page()
-            copies -= (added_cards := self.add_card_to_page(current_page_position, card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
-            current_page_position += 1
-
-    def add_card_to_page(self, page_number: int, card: Card, count: int = 1) -> int:
-        """
-        Adds the given card up to count times to the given page. Returns the number of cards actually added.
-        Only adds cards up to the page capacity, so may add less than count cards, if that would overflow the page.
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        page_index = self.index(page_number, 0)
-        page = self.pages[page_number]
-        page_card_count = len(page)
-        # Not using the current page’s page type, because UNDETERMINED pages overestimate the capacity when adding
-        # oversized pages. Using the requested page type from the Card object is fine, because this method is only
-        # called, if the given card fits on the given page.
-        page_capacity = self.page_layout.compute_page_card_capacity(card.requested_page_type())
-        first_index, last_index = page_card_count, page_card_count + count - 1
-        if last_index >= page_capacity:
-            last_index = page_capacity - 1
-        cards_inserted = last_index - first_index + 1
-        if not cards_inserted:
-            logger.debug(f"Trying to add {count} cards into full page {page_number}. Doing nothing")
-            return 0
-        self.beginInsertRows(page_index, first_index, last_index)
-
-        old_page_type = page.page_type()
-        page += (CardContainer(page, card) for _ in range(cards_inserted))
-        logger.debug(f"After insert, page contains {len(page)} images.")
-        self.endInsertRows()
-        if old_page_type != (new_page_type := page.page_type()):
-            logger.debug(f"Page type of page {page_number} changed from {old_page_type} to {new_page_type}")
-            self.page_type_changed.emit(page_index)
-        logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
-        return cards_inserted
-
-    @Slot(list)
-    def remove_pages(self, indices: typing.List[QModelIndex]):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        if not indices:
-            return
-        if any(index.parent().isValid() for index in indices):
-            raise RuntimeError("Tried to remove a Card in remove_pages()!")
-        first_index, last_index = indices[0].row(), indices[-1].row()
-        logger.debug(f"Removing pages {first_index} to {last_index}. {self.rowCount()=}")
-        self.beginRemoveRows(INVALID_INDEX, first_index, last_index)
-        logger.debug("BeginRemoveRows() called")
-        del self.pages[first_index:last_index+1]
-        self.recreate_page_index_cache()
-        self.endRemoveRows()
-        if not self.pages:
-            self.currently_edited_page = self.add_page()
-            self.current_page_changed.emit(QPersistentModelIndex(self.index(0, 0)))
-
-    @Slot(list)
-    def remove_cards(self, indices: typing.List[QModelIndex]) -> int:
-        """
-        Remove all cards in the given list of consecutive model indices
-
-        :return: Number of cards removed
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        if not indices:
-            return 0
-        first_index, last_index = indices[0].row(), indices[-1].row()
-        parent = indices[0].parent()
-        self.beginRemoveRows(parent, first_index, last_index)
-        page: Page = parent.internalPointer()
-        old_page_type = page.page_type()
-        del page[first_index:last_index+1]
-        self.endRemoveRows()
-        if old_page_type != (new_page_type := page.page_type()):
-            logger.debug(f"Page type of page {parent.row()} changed from {old_page_type} to {new_page_type}")
-            self.page_type_changed.emit(parent)
-        return last_index - first_index
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         """
@@ -472,79 +331,12 @@ class Document(QAbstractItemModel):
         result = self.rowCount() - required_pages
         return result
 
-    def _move_cards(self, page_to_fill: Page, source: Page, maximum_card_count: int = None) -> int:
-        """
-        Moves min(free_slots_in_target, maximum_card_count) cards from source to page_to_fill.
-        If maximum_card_count is None, move as many cards as possible.
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        source_card_count = len(source)
-        target_card_count = len(page_to_fill)
-        target_card_capacity = self.page_layout.compute_page_card_capacity(page_to_fill.page_type())
-        if maximum_card_count is None:
-            maximum_card_count = source_card_count
-        card_count_to_move = min(maximum_card_count, target_card_capacity - target_card_count)
-        if not card_count_to_move:
-            return 0
-        source_page_index = self.index(self.find_page_list_index(source), 0)
-        target_page_index = self.index(self.find_page_list_index(page_to_fill), 0)
-        self.beginMoveRows(
-            source_page_index,
-            source_card_count - card_count_to_move, source_card_count,
-            target_page_index,
-            target_card_count
-        )
-        cards_to_move = source[-card_count_to_move:]  # Move the last card_count_to_move cards
-        source[:] = source[:source_card_count-card_count_to_move]  # Keep the remaining cards
-        for container in cards_to_move:  # Re-parent containers before moving them to their new list
-            container.parent = page_to_fill
-        page_to_fill += cards_to_move
-        self.endMoveRows()
-        return card_count_to_move
-
     def find_page_list_index(self, other: Page):
         """Finds the 0-indexed location of the given Page in the pages list"""
         try:
             return self.page_index_cache[id(other)]
         except KeyError as k:
             raise ValueError("List not found in the page list.") from k
-
-    def move_excess_cards_to_free_pages(self) -> int:
-        """
-        If the page capacity is reduced due to increased margins, spacing or reduced page size, images beyond the
-        page capacity should be moved from overflowing pages to free slots and potentially new pages at the end.
-
-        :return: Number of moved images
-        """
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        return self._move_excess_cards_of_type_to_free_pages(PageType.REGULAR) \
-            + self._move_excess_cards_of_type_to_free_pages(PageType.OVERSIZED)
-
-    def _move_excess_cards_of_type_to_free_pages(self, page_type: PageType) -> int:
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        if not (page_capacity := self.page_layout.compute_page_card_capacity(page_type)):
-            raise RuntimeError("Page capacity is zero!")
-        overflowing_pages, pages_with_free_slots = self.find_overflowing_and_non_full_pages(page_type)
-        logger.info(
-            f"Found {len(overflowing_pages)} overflowing pages and {len(pages_with_free_slots)} pages with free slots.")
-        moved_cards = 0
-        for page in overflowing_pages:
-            # Fill free slots on other pages first
-            while (current_page_length := len(page)) > page_capacity and pages_with_free_slots:
-                page_to_fill = pages_with_free_slots.pop(0)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - page_capacity)
-            # After filling all remaining free slots, it may still contain images for multiple new pages,
-            # so add new pages until all excess images are moved.
-            while (current_page_length := len(page)) > page_capacity:
-                page_to_fill = self.add_page()
-                self._set_currently_edited_page(page_to_fill)
-                moved_cards += self._move_cards(page_to_fill, page, current_page_length - page_capacity)
-                if len(page_to_fill) < page_capacity:
-                    pages_with_free_slots.append(page_to_fill)
-        logger.info(
-            f"Moved {moved_cards} {'regular' if page_type == PageType.REGULAR else 'oversized'} "
-            f"cards away from overflowing pages.")
-        return moved_cards
 
     def _set_currently_edited_page(self, page: Page):
         self.currently_edited_page = page
@@ -570,23 +362,6 @@ class Document(QAbstractItemModel):
             elif len(page) < total_cards_per_page:
                 pages_with_free_slots.append(page)
         return overflowing_pages, pages_with_free_slots
-
-    @Slot()
-    def clear(self):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        logger.info("Clearing current document")
-        self.remove_pages(list(map(
-            self.index,
-            range(self.rowCount()),
-            itertools.repeat(0)
-        )))
-
-    @Slot()  # Avoid connecting both triggered() and triggered(bool)
-    def clear_all_data(self):
-        warnings.warn(f"Called Document.{sys._getframe().f_code.co_name}()", DeprecationWarning)
-        self.clear()
-        self.update_page_layout(PageLayoutSettings.create_from_settings())
-        self.save_file_path = None
 
     def get_card_indices_of_type(self, page_type: PageType):
         for page_number, page in enumerate(self.pages):

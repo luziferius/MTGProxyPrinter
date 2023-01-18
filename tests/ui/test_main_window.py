@@ -19,8 +19,8 @@ import socket
 import urllib.error
 
 
-from PyQt5.QtCore import QStringListModel, QItemSelectionModel
-from PyQt5.QtWidgets import QMessageBox, QListView
+from PyQt5.QtCore import QStringListModel
+from PyQt5.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -39,6 +39,7 @@ from mtg_proxy_printer.ui.central_widget import Ui_Columnar, Ui_Grouped, Ui_Tabb
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
 from tests.helpers import fill_card_database_with_json_cards
+from tests.document_controller.helpers import insert_card_in_page
 
 
 @pytest.fixture(params=[Ui_Columnar, Ui_Grouped, Ui_TabbedVertical])
@@ -290,9 +291,10 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
         main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True),
         main_window.card_database.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
     ]*2
-    for page, card in enumerate(cards):
-        document.add_card_to_page(page, card, 1)
-        document.apply(ActionNewPage())
+    pages = main_window.document.pages
+    document.apply(ActionNewPage(count=len(cards)))
+    for _ in map(insert_card_in_page, pages, cards):
+        pass
     ui.central_widget.ui.document_view.setCurrentIndex(document.index(4, 0))
     ui.action_compact_document.trigger()
     assert_that(document.rowCount(), is_(2))

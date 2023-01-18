@@ -43,10 +43,12 @@ from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSe
 from mtg_proxy_printer.model.imagedb import ImageKey
 
 from mtg_proxy_printer.document_controller import DocumentAction
-from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
+from .document_controller.helpers import insert_card_in_page
 
 class DummyAction(DocumentAction):
     """A dummy DocumentAction that does nothing. apply() and undo() are replaced with MagicMock instances."""
@@ -369,7 +371,7 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
         "Test setup failed."
     )
     with qtbot.waitSignal(document_custom_layout.page_layout_changed, timeout=1000):
-        document_custom_layout.clear_all_data()
+        document_custom_layout.apply(ActionNewDocument())
 
     assert_that(
         document_custom_layout,
@@ -404,28 +406,6 @@ def test_document_is_created_empty(document: Document):
     assert_that(
         document.pages[0].page_type(), is_(PageType.UNDETERMINED), "Empty page should have an undetermined page type"
     )
-
-
-def test_page_types_correctly_returned(document: Document):
-    regular = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    oversized = document.card_db.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
-    assert_that(regular, is_(not_none()), "Test setup failed")
-    assert_that(oversized, is_(not_none()), "Test setup failed")
-    document.apply(ActionNewPage(count=5))
-    assert_that(document.rowCount(), is_(6))
-    document.add_card_to_page(0, regular)
-    document.add_card_to_page(1, oversized)
-    document.add_card_to_page(2, regular)
-    document.add_card_to_page(3, oversized)
-    document.add_card_to_page(4, regular)
-    document.add_card_to_page(4, oversized)
-    assert_that(document.pages[0].page_type(), is_(PageType.REGULAR))
-    assert_that(document.pages[1].page_type(), is_(PageType.OVERSIZED))
-    assert_that(document.pages[2].page_type(), is_(PageType.REGULAR))
-    assert_that(document.pages[3].page_type(), is_(PageType.OVERSIZED))
-    assert_that(document.pages[4].page_type(), is_(PageType.MIXED))
-    assert_that(document.pages[5].page_type(), is_(PageType.UNDETERMINED))
-
 
 @pytest.mark.parametrize("source_version", [2, 3, 4])
 def test_save_migration(document: Document, source_version: int):
@@ -475,7 +455,7 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         _validate_database_schema(save_dir)
         _validate_saved_document_settings(document_custom_layout)
         with qtbot.waitSignal(document_custom_layout.page_layout_changed):
-            document_custom_layout.update_page_layout(layout)
+            document_custom_layout.apply(ActionEditDocumentSettings(layout))
         document_custom_layout.save_to_disk()
         with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
                                check_params_cbs=[lambda value: value, lambda value: not value]):
@@ -613,13 +593,12 @@ def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
 ])
 def test_compute_pages_saved_by_compacting(
         document: Document, pages_content: typing.List[typing.Optional[str]], expected: int):
+    if len(pages_content) > 1:
+        document.apply(ActionNewPage(count=len(pages_content)-1))
     for page_number, scryfall_id in enumerate(pages_content):
         if scryfall_id:
             card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
-            document.add_card_to_page(page_number, card)
-        document.apply(ActionNewPage())
-    # Each iteration above keeps a trailing empty page. Remove that here.
-    document.remove_pages([document.index(document.rowCount()-1, 0)]*2)
+            insert_card_in_page(document.pages[page_number], card)
     assert_that(
         document.compute_pages_saved_by_compacting(),
         is_(equal_to(expected))
@@ -632,79 +611,6 @@ def test_update_page_layout_copies_the_passed_in_instance(document: Document):
     document.apply(ActionEditDocumentSettings(layout))
     layout.image_spacing_horizontal = 2
     assert_that(document.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
-
-
-@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
-    (0, 10),  # Regular cards overflow, oversized do not
-    (10, 25),  # Oversized cards overflow, regular do not
-    (0, 30),  # Both sizes overflow
-
-])
-def test_creating_potential_overflow_calls_method_move_excess_cards_to_free_pages(
-        qtbot: QtBot, document: Document, initial_h_spacing: int, new_h_spacing: int):
-    """
-    Tests if increasing the horizontal spacing from a given value to another calls the logic to move excess cards
-    to new pages.
-    Regular and oversized cards overflow at different thresholds, so perform multiple tests to see that each
-    card type can individually trigger this
-    """
-    layout = copy.copy(document.page_layout)
-    layout.image_spacing_horizontal = initial_h_spacing
-    document.update_page_layout(layout)
-    initial_capacities = document.page_layout.compute_page_card_capacity(PageType.REGULAR),\
-                         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
-    for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
-        card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
-        document.apply(ActionAddCard(card, document.page_layout.compute_page_card_capacity(card.requested_page_type())))
-    with unittest.mock.patch.object(Document, "move_excess_cards_to_free_pages") as expected_call_mock, \
-            qtbot.waitSignal(document.page_layout_changed, timeout=1000):
-        layout.image_spacing_horizontal = new_h_spacing
-        document.update_page_layout(layout)
-        expected_call_mock.assert_called_once()
-    assert_that(
-        (document.page_layout.compute_page_card_capacity(PageType.REGULAR),
-         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
-        less_than(initial_capacities)
-    )
-
-
-@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
-    (0, 10),  # Regular cards overflow, oversized do not
-    (10, 25),  # Oversized cards overflow, regular do not
-    (0, 30),  # Both sizes overflow
-
-])
-def test_method_move_excess_cards_to_free_pages_does_not_create_mixed_size_pages(
-        document: Document, initial_h_spacing: int, new_h_spacing: int):
-    """
-    Tests move_excess_cards_to_free_pages() does not create pages with mixed-size cards.
-    Regular and oversized cards overflow at different thresholds, so perform multiple tests to see that each
-    combination works
-    """
-    layout = copy.copy(document.page_layout)
-    layout.image_spacing_horizontal = initial_h_spacing
-    document.update_page_layout(layout)
-    initial_capacities = document.page_layout.compute_page_card_capacity(PageType.REGULAR),\
-                         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
-    for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]:
-        card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
-        capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
-        document.apply(ActionAddCard(card, capacity-1))
-
-    layout.image_spacing_horizontal = new_h_spacing
-    document.update_page_layout(layout)
-
-    assert_that(
-        (document.page_layout.compute_page_card_capacity(PageType.REGULAR),
-         document.page_layout.compute_page_card_capacity(PageType.OVERSIZED)),
-        less_than(initial_capacities)
-    )
-    assert_that(
-        document.rowCount(),
-        is_(greater_than(2))
-    )
-    for page in document.pages:
-        assert_that(page.page_type(), is_in([PageType.REGULAR, PageType.OVERSIZED]))
 
 
 @pytest.mark.parametrize("page_type, v_spacing, h_spacing, expected", [
