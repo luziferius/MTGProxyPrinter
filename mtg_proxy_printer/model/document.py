@@ -275,6 +275,11 @@ class Document(QAbstractItemModel):
             f"{count}× {name}" for name, count in names.items()
         )
 
+    @Slot(QModelIndex)
+    def on_missing_image_obtained(self, index: QModelIndex):
+        column_index = index.siblingAtColumn(PageColumns.Image)
+        self.dataChanged.emit(column_index, column_index, [Qt.DisplayRole])
+
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
         self.save_file_path = path
@@ -383,12 +388,14 @@ class Document(QAbstractItemModel):
     def missing_image_count(self) -> int:
         return sum(1 for _ in self.get_missing_image_cards())
 
-    def get_missing_image_cards(self) -> typing.Generator[Card, None, None]:
-        """Returns an iterable with all cards that have missing images"""
+    def get_missing_image_cards(self) -> typing.Generator[QModelIndex, None, None]:
+        """Returns an iterable with indices to all cards that have missing images"""
         blank = self.image_db.blank_image
-        for card in (container.card for container in itertools.chain.from_iterable(self.pages)):
-            if card.image_file is blank:
-                yield card
+        for page_number, page in enumerate(self.pages):
+            page_index = self.index(page_number, 0)
+            for card_number, container in enumerate(page):
+                if container.card.image_file is blank:
+                    yield self.index(card_number, 0, page_index)
 
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:

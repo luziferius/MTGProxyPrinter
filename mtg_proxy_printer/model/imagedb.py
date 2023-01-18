@@ -25,7 +25,7 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -221,6 +221,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
+    missing_image_obtained = Signal(QModelIndex)
 
     """
     Messages if the instance performs a batch operation when it processes image requests for
@@ -271,11 +272,15 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.update_batch_processing_state(False)
 
     @Slot(list)
-    def obtain_missing_images(self, cards: CardList):
-        logger.debug(f"Requesting {len(cards)} missing images")
+    def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
+        logger.debug(f"Requesting {len(card_indices)} missing images")
+        blank = self.image_database.blank_image
         self.update_batch_processing_state(True)
-        for _ in map(self.get_image_synchronous, cards):
-            pass
+        for index in card_indices:
+            card = index.internalPointer().card
+            self.get_image_synchronous(index.internalPointer().card)
+            if card.image_file is not blank:
+                self.missing_image_obtained.emit(index)
         self.update_batch_processing_state(False)
         logger.debug("Done fetching missing images.")
         self.missing_images_obtained.emit()

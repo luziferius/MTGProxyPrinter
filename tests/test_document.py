@@ -48,7 +48,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .document_controller.helpers import insert_card_in_page, create_card
+from .document_controller.helpers import insert_card_in_page, create_card, card_container_with
 
 
 class DummyAction(DocumentAction):
@@ -563,7 +563,8 @@ def test_get_missing_image_cards(document_light: Document):
         result := list(document_light.get_missing_image_cards()),
         has_length(2)
     )
-    assert_that(result, only_contains(expected))
+    cards = [i.internalPointer().card for i in result]
+    assert_that(cards, only_contains(expected))
 
 
 @pytest.mark.parametrize("result", [True, False])
