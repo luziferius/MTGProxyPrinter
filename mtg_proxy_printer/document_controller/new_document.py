@@ -20,7 +20,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from ._interface import DocumentAction
+from ._interface import DocumentAction, Self
 from .page_actions import ActionRemovePage
 from .edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.logger import get_logger
@@ -48,7 +48,7 @@ class ActionNewDocument(DocumentAction):
         # the page layout settings here keeps the redo stack consistent across settings changes.
         self.new_page_layout = PageLayoutSettings.create_from_settings()
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         self.old_save_path = document.save_file_path
         document.save_file_path = None
         self.remove_pages_action = ActionRemovePage(0, document.rowCount()).apply(document)
@@ -56,7 +56,7 @@ class ActionNewDocument(DocumentAction):
             document)
         return self
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         document.save_file_path = self.old_save_path
         self.remove_pages_action.undo(document)
         self.reset_settings_action.undo(document)

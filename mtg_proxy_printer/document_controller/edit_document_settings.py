@@ -16,7 +16,7 @@
 import copy
 import typing
 
-from ._interface import DocumentAction, ActionList
+from ._interface import DocumentAction, ActionList, Self
 from .move_cards import ActionMoveCards
 from .page_actions import ActionNewPage
 from mtg_proxy_printer.logger import get_logger
@@ -46,7 +46,7 @@ class ActionEditDocumentSettings(DocumentAction):
         self.old_settings: typing.Optional[PageLayoutSettings] = None
         self.reflow_actions: ActionList = []
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         self.old_settings = document.page_layout
         document.page_layout = self.new_settings
         if self.old_settings != self.new_settings:
@@ -94,7 +94,7 @@ class ActionEditDocumentSettings(DocumentAction):
                 return found_index
         return None
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         document.page_layout = self.old_settings
         if self.old_settings != self.new_settings:
             document.page_layout_changed.emit()

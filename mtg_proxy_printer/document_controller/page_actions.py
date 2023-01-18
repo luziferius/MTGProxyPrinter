@@ -18,7 +18,7 @@ import typing
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
-from ._interface import DocumentAction, IllegalStateError
+from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -41,7 +41,7 @@ class ActionNewPage(DocumentAction):
         self.position = position
         self.count = count
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         self.position = document.rowCount() if self.position is None \
             else max(0, min(self.position, document.rowCount()))
         document.beginInsertRows(document.INVALID_INDEX, self.position, self.position+self.count-1)
@@ -57,7 +57,7 @@ class ActionNewPage(DocumentAction):
         document.endInsertRows()
         return self
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         if self.position is None:
             raise IllegalStateError("Page position not set")
         ActionRemovePage(self.position, self.count).apply(document)
@@ -79,7 +79,7 @@ class ActionRemovePage(DocumentAction):
         self.currently_edited_page = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         self.position = first_index = self.position if self.position is not None \
             else document.find_page_list_index(document.currently_edited_page)
         last_index = first_index + self.count - 1
@@ -98,16 +98,16 @@ class ActionRemovePage(DocumentAction):
         if not document.pages:
             self.removed_all_pages = True
             ActionNewPage().apply(document)
-            document._set_currently_edited_page(document.pages[0])
+            document.set_currently_edited_page(document.pages[0])
         elif currently_edited_page_removed:
             newly_selected_page = min(first_index, document.rowCount()-1)
             logger.debug(f"Currently edited page is removed, switching to page {newly_selected_page}")
             # Since the page list is non-empty, there is always a page to select.
             # Choose the first after the removed range or the last, whichever comes first.
-            document._set_currently_edited_page(document.pages[newly_selected_page])
+            document.set_currently_edited_page(document.pages[newly_selected_page])
         return self
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         start = self.position
         if start is None:
             raise IllegalStateError("Cannot undo page removal without location to restore")
@@ -119,7 +119,7 @@ class ActionRemovePage(DocumentAction):
             self._insert_pages(document, start)
         document.endInsertRows()
         if self.currently_edited_page is not None:
-            document._set_currently_edited_page(self.currently_edited_page)
+            document.set_currently_edited_page(self.currently_edited_page)
         if self.removed_all_pages:
             # The Action replaced the whole document with an empty page during apply().
             # To undo the creation of the empty replacement page, delete the now obsolete page

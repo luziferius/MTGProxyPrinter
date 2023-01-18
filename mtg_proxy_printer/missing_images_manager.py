@@ -41,7 +41,6 @@ class MissingImagesManager(QObject):
         super().__init__(parent)
         self.document = document
         self.document.image_db.missing_images_obtained.connect(self.on_missing_images_obtained)
-        self.document.image_db.network_error_occurred.connect(lambda: setattr(self, "network_error_occurred", True))
         self.callback = None
         logger.info(f"Created {self.__class__.__name__} instance")
 

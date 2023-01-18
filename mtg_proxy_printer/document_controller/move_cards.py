@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import QModelIndex
 
-from ._interface import DocumentAction, IllegalStateError
+from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
 if typing.TYPE_CHECKING:
@@ -44,7 +44,7 @@ class ActionMoveCards(DocumentAction):
         self.target_page = target
         self.card_ranges_to_move = self._to_list_of_ranges(cards_to_move)
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         source_page = document.pages[self.source_page]
         target_page = document.pages[self.target_page]
         if not target_page.accepts_card(source_page[0].card.requested_page_type()):
@@ -81,7 +81,7 @@ class ActionMoveCards(DocumentAction):
         del source_page[source_row_first:source_row_last + 1]
         document.endMoveRows()
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         source_page = document.pages[self.target_page]  # Swap source and target page for undo
         target_page = document.pages[self.source_page]
         source_index = document.index(self.target_page, 0)  # Same for the model index

@@ -67,7 +67,7 @@ def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     removed_page = document_light.pages[0]
     remaining_page = document_light.pages[1]
     remaining_card = append_new_card_in_page(remaining_page, "Card")
-    document_light._set_currently_edited_page(remaining_page)
+    document_light.set_currently_edited_page(remaining_page)
     action = ActionRemovePage(0)
     validator = partial(validate_qt_model_signal_parameter, 0, 0)
     with qtbot.wait_signals(
@@ -106,7 +106,7 @@ def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot, docu
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
     removed_pages = document_light.pages[1:3]
-    document_light._set_currently_edited_page(remaining_page)
+    document_light.set_currently_edited_page(remaining_page)
     action = ActionRemovePage(1, 2)
     validator = partial(validate_qt_model_signal_parameter, 1, 2)
     with qtbot.wait_signals(
@@ -136,7 +136,7 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
     append_new_pages(document_light, 2)
     remaining_page = document_light.pages[0]
     removed_pages = document_light.pages[1:3]
-    document_light._set_currently_edited_page(document_light.pages[2])
+    document_light.set_currently_edited_page(document_light.pages[2])
     action = ActionRemovePage(1, 2)
     validator = partial(validate_qt_model_signal_parameter, 1, 2)
     with qtbot.wait_signals(
@@ -164,7 +164,7 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
 def test_apply_without_position_deletes_currently_edited_page(qtbot, document_light):
     append_new_pages(document_light, 1)
     removed_page = document_light.pages[1]
-    document_light._set_currently_edited_page(removed_page)
+    document_light.set_currently_edited_page(removed_page)
     append_new_card_in_page(removed_page, "Removed")
     action = ActionRemovePage()
     validator = partial(validate_qt_model_signal_parameter, 1, 1)
@@ -294,7 +294,7 @@ def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_pa
 
 def test_undo_without_initial_position_raises_exception(document_light):
     append_new_pages(document_light, 2)
-    document_light._set_currently_edited_page(document_light.pages[1])
+    document_light.set_currently_edited_page(document_light.pages[1])
     action = ActionRemovePage()
     assert_that(calling(action.undo).with_args(document_light), raises(IllegalStateError))
 

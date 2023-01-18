@@ -22,7 +22,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
 from mtg_proxy_printer.model.carddb import CardList
-from ._interface import DocumentAction, IllegalStateError, ActionList
+from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionNewPage
 from .card_actions import ActionAddCard
 from .new_document import ActionNewDocument
@@ -47,18 +47,18 @@ class ActionLoadDocument(DocumentAction):
         self.actions: ActionList = []
         self.loaded_cards = loaded_cards
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         self.actions.append(ActionNewPage(count=len(self.loaded_cards)-1).apply(document))
         for page, cards_on_page in zip(document.pages, self.loaded_cards):
-            document._set_currently_edited_page(page)
+            document.set_currently_edited_page(page)
             for card in cards_on_page:
                 self.actions.append(ActionAddCard(card).apply(document))
-        document._set_currently_edited_page(document.pages[0])
+        document.set_currently_edited_page(document.pages[0])
         return self
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         for action in reversed(self.actions):
             action.undo(document)
         self.actions.clear()

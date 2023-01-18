@@ -21,7 +21,7 @@ from mtg_proxy_printer.model.carddb import Card
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer
-from ._interface import DocumentAction, IllegalStateError
+from ._interface import DocumentAction, IllegalStateError, Self
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
 
@@ -47,7 +47,7 @@ class ActionAddCard(DocumentAction):
         self.added_new_pages: int = 0
         self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         """
         Adds the given card count times to the currently edited page. If count is greater than the number of
         free slots on that page, add the remaining card copies to free slots in subsequent pages.
@@ -114,7 +114,7 @@ class ActionAddCard(DocumentAction):
         logger.debug(f'Added {cards_inserted} × "{card.name}" to page {page_number}')
         return cards_inserted
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         if not self.added_new_pages and not self.added_cards_to_existing_pages:
             raise IllegalStateError("No cards added to undo")
         if self.added_new_pages:  # Drop all appended pages, implicitly removing all cards on them
@@ -145,7 +145,7 @@ class ActionRemoveCards(DocumentAction):
         self.page_number = page_number
         self.removed_cards: typing.List[typing.List[CardContainer]] = []
 
-    def apply(self, document: "Document"):
+    def apply(self, document: "Document") -> Self:
         if self.page_number is None:
             self.page_number = document.find_page_list_index(document.currently_edited_page)
         page_index = document.index(self.page_number, 0)
@@ -161,7 +161,7 @@ class ActionRemoveCards(DocumentAction):
             document.page_type_changed.emit(document.index(self.page_number, 0))
         return self
 
-    def undo(self, document: "Document"):
+    def undo(self, document: "Document") -> Self:
         if self.page_number is None:
             raise IllegalStateError("page_number is None")
         page = document.pages[self.page_number]

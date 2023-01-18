@@ -98,7 +98,7 @@ def test_reflow_moves_card_on_later_page_stepping_over_different_card_size_page(
     ActionNewPage(count=2).apply(document_light)
     ActionAddCard(create_card("Stays on 0"), 6).apply(document_light)
     ActionAddCard(create_card("Moves to 2"), 3).apply(document_light)
-    document_light._set_currently_edited_page(document_light.pages[1])
+    document_light.set_currently_edited_page(document_light.pages[1])
     ActionAddCard(create_card("Stays on 1", oversized=True)).apply(document_light)
 
     stay_on_0 = document_light.pages[0][:6]
@@ -200,7 +200,7 @@ def test_undo_restores_old_page_content(qtbot, document_light):
     pages = document_light.pages
     new_page = ActionNewPage(1).apply(document_light)
     ActionAddCard((card_1 := create_card("Stays on 0")), 6).apply(document_light)
-    document_light._set_currently_edited_page(pages[1])
+    document_light.set_currently_edited_page(pages[1])
     ActionAddCard((card_2 := create_card("Moves to 0")), 3).apply(document_light)
 
     action = ActionEditDocumentSettings(document_light.page_layout)

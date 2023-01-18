@@ -76,7 +76,7 @@ def test_compacting_document(document_light):
     cards_per_page = 7
     ActionNewPage(count=pages_to_fill-1).apply(document_light)
     for page in pages:
-        document_light._set_currently_edited_page(page)
+        document_light.set_currently_edited_page(page)
         ActionAddCard(card, count=cards_per_page).apply(document_light)
     assert_that(
         pages,

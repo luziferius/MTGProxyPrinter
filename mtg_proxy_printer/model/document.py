@@ -338,7 +338,7 @@ class Document(QAbstractItemModel):
         except KeyError as k:
             raise ValueError("List not found in the page list.") from k
 
-    def _set_currently_edited_page(self, page: Page):
+    def set_currently_edited_page(self, page: Page):
         self.currently_edited_page = page
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))

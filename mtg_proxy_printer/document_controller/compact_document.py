@@ -15,7 +15,7 @@
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
-from ._interface import DocumentAction, IllegalStateError, ActionList
+from ._interface import DocumentAction, IllegalStateError, ActionList, Self
 from .page_actions import ActionRemovePage
 from .move_cards import ActionMoveCards
 
@@ -42,7 +42,7 @@ class ActionCompactDocument(DocumentAction):
     def __init__(self):
         self.actions: ActionList = []
 
-    def apply(self, document: Document):
+    def apply(self, document: Document) -> Self:
         if document.rowCount() <= 1:  # Can not compact an empty document or a document with a single empty page.
             return self
         logger.info("Compacting document.")
@@ -90,7 +90,7 @@ class ActionCompactDocument(DocumentAction):
                     logger.debug("No more pages available to take cards from. Finished.")
                     break
 
-    def undo(self, document: Document):
+    def undo(self, document: Document) -> Self:
         logger.info("Undo compacting document.")
         for action in reversed(self.actions):
             action.undo(document)

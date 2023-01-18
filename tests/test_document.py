@@ -322,7 +322,7 @@ def test_rowCount_without_index_parameter_return_page_count(document_light, addi
 def test_rowCount_with_valid_index_returns_card_count_on_page_given_by_index(document_light):
     document_light.apply(ActionNewPage(count=3))
     for count in range(1, 4):
-        document_light._set_currently_edited_page(document_light.pages[count])
+        document_light.set_currently_edited_page(document_light.pages[count])
         document_light.apply(
             ActionAddCard(Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, None), count=count)
         )
