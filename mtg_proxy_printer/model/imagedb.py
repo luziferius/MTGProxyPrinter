@@ -25,7 +25,7 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QPersistentModelIndex
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -81,13 +81,6 @@ class CacheContent(ImageKey):
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 IMAGE_SIZE = QSize(745, 1040)
-
-QueueContentTypes = typing.Union[
-    typing.Tuple[Card, QPersistentModelIndex],
-    typing.Tuple[Card, int],
-    typing.Tuple[None, bool],
-]
-
 
 class ImageDatabase(QObject):
     """
