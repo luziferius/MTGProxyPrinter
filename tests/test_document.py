@@ -44,11 +44,12 @@ from mtg_proxy_printer.model.imagedb import ImageKey
 
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
-from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .document_controller.helpers import insert_card_in_page
+from .document_controller.helpers import insert_card_in_page, create_card
+
 
 class DummyAction(DocumentAction):
     """A dummy DocumentAction that does nothing. apply() and undo() are replaced with MagicMock instances."""
@@ -395,17 +396,24 @@ def test_clear_database_not_clearing_last_image_use_timestamps(document: Documen
     )
 
 
-def test_document_is_created_empty(document: Document):
-    capacity = document.page_layout.compute_page_card_capacity()
+def test_document_is_created_empty(document_light: Document):
+    capacity = document_light.page_layout.compute_page_card_capacity()
     assert_that(capacity, is_(greater_than_or_equal_to(1)))
-    assert_that(document.total_cards_per_page, is_(equal_to(capacity)))
-    assert_that(document.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
-    assert_that(document.pages, has_length(1), "Expected creation of a single, empty page.")
-    assert_that(document.rowCount(document.index(0, 0)), is_(equal_to(0)), "Expected empty page, but it is not empty")
-    assert_that(document.pages[0], is_(empty()), "Expected empty page, but it is not empty")
+    assert_that(document_light.total_cards_per_page, is_(equal_to(capacity)))
+    assert_that(document_light.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
     assert_that(
-        document.pages[0].page_type(), is_(PageType.UNDETERMINED), "Empty page should have an undetermined page type"
+        document_light.pages,
+        contains_exactly(empty()),
+        "Expected creation of a single, empty page."
     )
+    assert_that(
+        document_light.rowCount(document_light.index(0, 0)), is_(equal_to(0)),
+        "Expected empty page, but it is not empty")
+    assert_that(
+        document_light.pages[0].page_type(), is_(PageType.UNDETERMINED),
+        "Empty page should have an undetermined page type"
+    )
+
 
 @pytest.mark.parametrize("source_version", [2, 3, 4])
 def test_save_migration(document: Document, source_version: int):
@@ -543,19 +551,16 @@ def _validate_saved_document_settings(document: Document):
         ))
 
 
-def test_get_missing_image_cards(qtbot: QtBot, document: Document):
-    blank_image = document.image_db.blank_image
-    expected = Card(
-        "Placeholder Image", MTGSet("A", "a"), "1", "en", "0", True, "1", "", True, False, 0,
-        blank_image)
-    unexpected = Card(
-        "Other Image", MTGSet("A", "a"), "1", "en", "0", True, "1", "", True, False, 0,
-        QPixmap(blank_image)
-    )
-    document.apply(ActionAddCard(expected, 2))
-    document.apply(ActionAddCard(unexpected, 2))
+def test_get_missing_image_cards(document_light: Document):
+    blank_image = document_light.image_db.blank_image
+    expected = create_card("Placeholder Image")
+    expected.image_file = blank_image
+    unexpected = create_card("Other Image")
+    unexpected.image_file = QPixmap(blank_image)  # Create a new, distinct image by copying the blank image
+    document_light.apply(ActionAddCard(expected, 2))
+    document_light.apply(ActionAddCard(unexpected, 2))
     assert_that(
-        result := list(document.get_missing_image_cards()),
+        result := list(document_light.get_missing_image_cards()),
         has_length(2)
     )
     for item in result:
@@ -564,20 +569,17 @@ def test_get_missing_image_cards(qtbot: QtBot, document: Document):
 
 
 @pytest.mark.parametrize("result", [True, False])
-def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
-    blank_image = document.image_db.blank_image
-    blank_image_card = Card(
-        "Placeholder Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
-        blank_image)
-    other_card = Card(
-        "Other Image", MTGSet("A", "a"), "1","en", "0", True, "1", "", True, False, 0,
-        QPixmap(blank_image)
-    )
+def test_has_missing_images(document_light: Document, result: bool):
+    blank_image = document_light.image_db.blank_image
+    blank_image_card = create_card("Placeholder Image")
+    blank_image_card.image_file = blank_image
+    other_card = create_card("Other Image")
+    other_card.image_file = QPixmap(blank_image)  # Create a new, distinct image by copying the blank image
     if result:
-        document.apply(ActionAddCard(blank_image_card, 2))
-    document.apply(ActionAddCard(other_card, 2))
+        document_light.apply(ActionAddCard(blank_image_card, 2))
+    document_light.apply(ActionAddCard(other_card, 2))
     assert_that(
-        document.has_missing_images(),
+        document_light.has_missing_images(),
         is_(result)
     )
 
@@ -585,32 +587,31 @@ def test_has_missing_images(qtbot: QtBot, document: Document, result: bool):
 @pytest.mark.parametrize("pages_content, expected", [
     ([], 0),
     ([None, None], 1),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe"], 0),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe"]*2, 1),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"], 0),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b"]*2, 2),
-    (["0000579f-7b35-4ed3-b44c-db2a538066fe", "650722b4-d72b-4745-a1a5-00a34836282b", None]*2, 4),
+    ([create_card("Regular", False)], 0),
+    ([create_card("Regular", False)]*2, 1),
+    ([create_card("Regular", False), create_card("Oversized", True)], 0),
+    ([create_card("Regular", False), create_card("Oversized", True)]*2, 2),
+    ([create_card("Regular", False), create_card("Oversized", True), None]*2, 4),
 ])
 def test_compute_pages_saved_by_compacting(
-        document: Document, pages_content: typing.List[typing.Optional[str]], expected: int):
+        document_light: Document, pages_content: typing.List[typing.Optional[Card]], expected: int):
     if len(pages_content) > 1:
-        document.apply(ActionNewPage(count=len(pages_content)-1))
-    for page_number, scryfall_id in enumerate(pages_content):
-        if scryfall_id:
-            card = document.card_db.get_card_with_scryfall_id(scryfall_id, True)
-            insert_card_in_page(document.pages[page_number], card)
+        document_light.apply(ActionNewPage(count=len(pages_content)-1))
+    for page, card in zip(document_light.pages, pages_content):
+        if card is not None:
+            insert_card_in_page(page, card)
     assert_that(
-        document.compute_pages_saved_by_compacting(),
+        document_light.compute_pages_saved_by_compacting(),
         is_(equal_to(expected))
     )
 
 
-def test_update_page_layout_copies_the_passed_in_instance(document: Document):
-    layout = copy.copy(document.page_layout)
+def test_update_page_layout_copies_the_passed_in_instance(document_light: Document):
+    layout = copy.copy(document_light.page_layout)
     layout.image_spacing_horizontal = 1
-    document.apply(ActionEditDocumentSettings(layout))
+    document_light.apply(ActionEditDocumentSettings(layout))
     layout.image_spacing_horizontal = 2
-    assert_that(document.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
+    assert_that(document_light.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
 
 
 @pytest.mark.parametrize("page_type, v_spacing, h_spacing, expected", [

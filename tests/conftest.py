@@ -22,6 +22,7 @@ import unittest.mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from PyQt5.QtGui import QColor, QPixmap
 import pytest
 from hamcrest import assert_that, is_
 
@@ -30,7 +31,7 @@ import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, IMAGE_SIZE
 from tests.helpers import fill_card_database_with_json_cards
 
 
@@ -91,5 +92,7 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
 @pytest.fixture
 def document_light() -> Document:
     document = Document(unittest.mock.MagicMock(), unittest.mock.MagicMock())
+    document.image_db.blank_image = QPixmap(IMAGE_SIZE)
+    document.image_db.blank_image.fill(QColor("white"))
     yield document
     stop_thread(document.loader.worker_thread)
