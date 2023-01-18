@@ -563,9 +563,7 @@ def test_get_missing_image_cards(document_light: Document):
         result := list(document_light.get_missing_image_cards()),
         has_length(2)
     )
-    for item in result:
-        card = item.parent().data(Qt.EditRole)[item.row()].card
-        assert_that(card, is_(expected))
+    assert_that(result, only_contains(expected))
 
 
 @pytest.mark.parametrize("result", [True, False])

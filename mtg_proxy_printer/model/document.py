@@ -343,26 +343,6 @@ class Document(QAbstractItemModel):
         page_position = self.find_page_list_index(page)
         self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
 
-    def find_overflowing_and_non_full_pages(self, page_type: PageType, page_layout: PageLayoutSettings = None):
-        """
-        Returns two lists of pages: The first contains all pages that are currently overflowing,
-        and the second contains that currently have free slots and therefore can fit additional cards.
-        :param page_type: Page type to look for. Should be one of PageType.REGULAR or PageType.OVERSIZED
-        :param page_layout: If given, base computation on the given layout, instead of the current one
-        """
-        layout = page_layout or self.page_layout
-        total_cards_per_page = layout.compute_page_card_capacity(page_type)
-        overflowing_pages = []
-        pages_with_free_slots: PageList = []
-        for page_number, page in enumerate(self.pages):
-            if not page.accepts_card(page_type):
-                continue
-            if len(page) > total_cards_per_page:
-                overflowing_pages.append(page)
-            elif len(page) < total_cards_per_page:
-                pages_with_free_slots.append(page)
-        return overflowing_pages, pages_with_free_slots
-
     def get_card_indices_of_type(self, page_type: PageType):
         for page_number, page in enumerate(self.pages):
             if page.page_type() is not page_type:
@@ -403,14 +383,12 @@ class Document(QAbstractItemModel):
     def missing_image_count(self) -> int:
         return sum(1 for _ in self.get_missing_image_cards())
 
-    def get_missing_image_cards(self):
+    def get_missing_image_cards(self) -> typing.Generator[Card, None, None]:
         """Returns an iterable with all cards that have missing images"""
         blank = self.image_db.blank_image
-        for page_row, page in enumerate(self.pages):
-            page_index = self.index(page_row, 0)
-            for card_row, card_container in enumerate(page):
-                if card_container.card.image_file is blank:
-                    yield QPersistentModelIndex(self.index(card_row, 0, page_index))
+        for card in (container.card for container in itertools.chain.from_iterable(self.pages)):
+            if card.image_file is blank:
+                yield card
 
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:

@@ -35,7 +35,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, CardList
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -100,16 +100,13 @@ class ImageDatabase(QObject):
     card_download_progress = Signal(int)
 
     request_action = Signal(DocumentAction)
-    # Emitted when an image retrieval for a to-be-replaced card completes
-    replacement_obtained = Signal(Card, QPersistentModelIndex)
+    missing_images_obtained = Signal()
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
     """
     batch_processing_state_changed = Signal(bool)
     request_batch_state_change = Signal(bool)
-    request_image = Signal(Card, int)
-    request_replacement = Signal(Card, QPersistentModelIndex)
 
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
@@ -130,16 +127,13 @@ class ImageDatabase(QObject):
 
         self.request_batch_state_change.connect(self.download_worker.request_batch_processing_state_change)
 
-        self.request_image.connect(self.download_worker.request_image)
-        self.request_replacement.connect(self.download_worker.request_replacement)
-
         self.download_worker.download_begins.connect(self.card_download_starting)
         self.download_worker.download_finished.connect(self.card_download_finished)
         self.download_worker.download_progress.connect(self.card_download_progress)
 
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
         self.download_worker.request_action.connect(self.request_action)
-        self.download_worker.replacement_obtained.connect(self.replacement_obtained)
+        self.download_worker.missing_images_obtained.connect(self.missing_images_obtained)
 
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.download_thread.started.connect(self.download_worker.scan_disk_image_cache)
@@ -175,12 +169,6 @@ class ImageDatabase(QObject):
             card for card in possible_matches
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
-
-    def get_card_list_asynchronous(self, cards: typing.List[typing.Tuple[Card, QPersistentModelIndex]]):
-        self.request_batch_state_change.emit(True)
-        for card, index in cards:
-            self.request_replacement.emit(card, index)
-        self.request_batch_state_change.emit(False)
 
     def read_disk_cache_content(self) -> typing.List[CacheContent]:
         """
@@ -239,11 +227,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
     request_action = Signal(DocumentAction)
-    request_image = Signal(Card, int)
-    card_image_obtained = Signal(Card, int)
-
-    request_replacement = Signal(Card, QPersistentModelIndex)
-    replacement_obtained = Signal(Card, QPersistentModelIndex)
+    missing_images_obtained = Signal()
 
     """
     Messages if the instance performs a batch operation when it processes image requests for
@@ -254,7 +238,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
-        self.request_image.connect(self.get_image_for_new_card)
         self.request_batch_processing_state_change.connect(self.update_batch_processing_state)
         self.image_database = image_db
         self.should_run = True
@@ -294,10 +277,15 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.request_action.emit(action)
         self.update_batch_processing_state(False)
 
-    @Slot(Card, int)
-    def get_image_for_new_card(self, card: Card, count: int):
-        self.get_image_synchronous(card)
-        self.card_image_obtained.emit(card, count)
+    @Slot(list)
+    def obtain_missing_images(self, cards: CardList):
+        logger.debug(f"Requesting {len(cards)} missing images")
+        self.update_batch_processing_state(True)
+        for _ in map(self.get_image_synchronous, cards):
+            pass
+        self.update_batch_processing_state(False)
+        logger.debug("Done fetching missing images.")
+        self.missing_images_obtained.emit()
 
     @Slot(bool)
     def update_batch_processing_state(self, value: bool):
