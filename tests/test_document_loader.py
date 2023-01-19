@@ -298,3 +298,26 @@ def test_page_layout_compute_page_column_count_default_value(
         document.page_layout.compute_page_column_count(),
         is_(equal_to(3))
     )
+
+
+def test_page_layout_gt_raises_type_error_on_incompatible_types():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(calling(layout.__gt__).with_args(1), raises(TypeError))
+
+
+def test_page_layout_lt_raises_type_error_on_incompatible_types():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(calling(layout.__lt__).with_args(1), raises(TypeError))
+
+
+def test_page_layout_gt():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
+    layout.page_height = 300
+    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
+    assert_that(layout, is_not(greater_than(layout)))
+
+
+def test_page_layout_lt():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
+    assert_that(layout, is_not(less_than(layout)))

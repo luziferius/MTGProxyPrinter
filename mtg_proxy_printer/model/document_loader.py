@@ -100,15 +100,19 @@ class PageLayoutSettings:
         if not isinstance(other, self.__class__):
             raise TypeError(
                 f"'<' not supported between instances of '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-        return self.compute_page_row_count(PageType.REGULAR) < other.compute_page_card_capacity(PageType.REGULAR) or \
-            self.compute_page_row_count(PageType.OVERSIZED) < other.compute_page_card_capacity(PageType.OVERSIZED)
+        return self.compute_page_card_capacity(PageType.REGULAR) \
+            < other.compute_page_card_capacity(PageType.REGULAR) \
+            or self.compute_page_card_capacity(PageType.OVERSIZED) \
+            < other.compute_page_card_capacity(PageType.OVERSIZED)
 
     def __gt__(self, other):
         if not isinstance(other, self.__class__):
             raise TypeError(
                 f"'>' not supported between instances of '{self.__class__.__name__}' and '{other.__class__.__name__}'")
-        return self.compute_page_row_count(PageType.REGULAR) > other.compute_page_card_capacity(PageType.REGULAR) or \
-            self.compute_page_row_count(PageType.OVERSIZED) > other.compute_page_card_capacity(PageType.OVERSIZED)
+        return self.compute_page_card_capacity(PageType.REGULAR) \
+            > other.compute_page_card_capacity(PageType.REGULAR) \
+            or self.compute_page_card_capacity(PageType.OVERSIZED) \
+            > other.compute_page_card_capacity(PageType.OVERSIZED)
 
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
