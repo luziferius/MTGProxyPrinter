@@ -65,22 +65,24 @@ class SavePDFDialog(QFileDialog):
         if default_path := read_path("pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.setAcceptMode(QFileDialog.AcceptSave)
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setDefaultSuffix("pdf")
-        self.setFileMode(QFileDialog.AnyFile)
+        self.setFileMode(QFileDialog.FileMode.AnyFile)
+        self.accepted.connect(self.on_accept)
+        self.rejected.connect(self.on_reject)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def exec(self) -> int:
-        logger.debug(f"About to run the {self.__class__.__name__} event loop.")
-        result = super(SavePDFDialog, self).exec()
-        if result == QFileDialog.Accepted:
-            logger.debug("User chose a file name, about to generate the PDF document")
-            path = self.selectedFiles()[0]
-            mtg_proxy_printer.print.export_pdf(self.document, path, self)
-            logger.info(f"Saved document to {path}")
-        else:
-            logger.debug("User aborted saving to PDF. Doing nothing.")
-        return result
+    @Slot()
+    def on_accept(self):
+        logger.debug("User chose a file name, about to generate the PDF document")
+        path = self.selectedFiles()[0]
+        mtg_proxy_printer.print.export_pdf(self.document, path, self)
+        logger.info(f"Saved document to {path}")
+
+    @Slot()
+    def on_reject(self):
+        logger.debug("User aborted saving to PDF. Doing nothing.")
+
 
 
 class SaveDocumentAsDialog(QFileDialog):
@@ -91,22 +93,23 @@ class SaveDocumentAsDialog(QFileDialog):
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.setAcceptMode(QFileDialog.AcceptSave)
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setDefaultSuffix("mtgproxies")
-        self.setFileMode(QFileDialog.AnyFile)
+        self.setFileMode(QFileDialog.FileMode.AnyFile)
+        self.accepted.connect(self.on_accept)
+        self.rejected.connect(self.on_reject)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def exec(self) -> int:
-        logger.debug(f"About to run the {self.__class__.__name__} event loop.")
-        result = super(SaveDocumentAsDialog, self).exec()
-        if result == QFileDialog.Accepted:
-            logger.debug("User chose a file name, about to save the document to disk")
-            path = pathlib.Path(self.selectedFiles()[0])
-            self.document.save_as(path)
-            logger.info(f"Saved document to {path}")
-        else:
-            logger.debug("User aborted saving. Doing nothing.")
-        return result
+    @Slot()
+    def on_accept(self):
+        logger.debug("User chose a file name, about to save the document to disk")
+        path = pathlib.Path(self.selectedFiles()[0])
+        self.document.save_as(path)
+        logger.info(f"Saved document to {path}")
+
+    @Slot()
+    def on_reject(self):
+        logger.debug("User aborted saving. Doing nothing.")
 
 
 class LoadDocumentDialog(QFileDialog):
@@ -119,22 +122,23 @@ class LoadDocumentDialog(QFileDialog):
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.setAcceptMode(QFileDialog.AcceptOpen)
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         self.setDefaultSuffix("mtgproxies")
-        self.setFileMode(QFileDialog.ExistingFile)
+        self.setFileMode(QFileDialog.FileMode.ExistingFile)
+        self.accepted.connect(self.on_accept)
+        self.rejected.connect(self.on_reject)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def exec(self) -> int:
-        logger.debug(f"About to run the {self.__class__.__name__} event loop.")
-        result = super(LoadDocumentDialog, self).exec()
-        if result == QFileDialog.Accepted:
-            logger.debug("User chose a file name, about to load the document from disk")
-            path = pathlib.Path(self.selectedFiles()[0])
-            self.document.loader.load_document(path)
-            logger.info(f"Requested loading document from {path}")
-        else:
-            logger.debug("User aborted loading. Doing nothing.")
-        return result
+    @Slot()
+    def on_accept(self):
+        logger.debug("User chose a file name, about to load the document from disk")
+        path = pathlib.Path(self.selectedFiles()[0])
+        self.document.loader.load_document(path)
+        logger.info(f"Requested loading document from {path}")
+
+    @Slot()
+    def on_reject(self):
+        logger.debug("User aborted loading. Doing nothing.")
 
 
 class AboutMTGProxyPrinterDialog(QDialog):
@@ -230,36 +234,38 @@ class DocumentSettingsDialog(QDialog):
         self.ui.page_config_groupbox.load_from_page_layout(document.page_layout)
         self.ui.page_config_groupbox.setTitle("These settings only affect the current document")
         self._setup_button_box()
+        self.accepted.connect(self.on_accept)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
+        button_roles = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
+        button_box.button(button_roles.RestoreDefaults).clicked.connect(
             lambda: logger.info("User reverts the document settings to the values from the global configuration")
         )
-        button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
+        button_box.button(button_roles.RestoreDefaults).clicked.connect(
             lambda: self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
         )
-        button_box.button(QDialogButtonBox.Reset).clicked.connect(
+        button_box.button(button_roles.Reset).clicked.connect(
             lambda: logger.info("User resets made changes")
         )
-        button_box.button(QDialogButtonBox.Reset).clicked.connect(
+        button_box.button(button_roles.Reset).clicked.connect(
             lambda: self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
         )
         buttons_with_icons = [
-            (QDialogButtonBox.Reset, "edit-undo"),
-            (QDialogButtonBox.Save, "document-save"),
-            (QDialogButtonBox.Cancel, "dialog-cancel"),
-            (QDialogButtonBox.RestoreDefaults, "document-revert"),
+            (button_roles.Reset, "edit-undo"),
+            (button_roles.Save, "document-save"),
+            (button_roles.Cancel, "dialog-cancel"),
+            (button_roles.RestoreDefaults, "document-revert"),
         ]
         for role, icon in buttons_with_icons:
             button = button_box.button(role)
             if button.icon().isNull():
                 button.setIcon(QIcon.fromTheme(icon))
 
-    def accept(self):
+    @Slot()
+    def on_accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
         action = ActionEditDocumentSettings(self.ui.page_config_groupbox.page_layout)
         self.document.apply(action)
-        super(DocumentSettingsDialog, self).accept()
         logger.debug("Saving settings in the document done.")
