@@ -65,7 +65,7 @@ class Application(QApplication):
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
-        self.document = self._create_document_instance(args, self.card_db, self.image_db)
+        self.document = self._create_document_instance(self.card_db, self.image_db)
         self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
@@ -135,6 +135,7 @@ class Application(QApplication):
             card_info_downloader: mtg_proxy_printer.card_info_downloader.CardInfoDownloader):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
+        settings_window.document_settings_updated.connect(document.apply)
         settings_window.saved.connect(main_window.settings_changed)
         settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
         settings_window.long_running_process_begins.connect(main_window.show_progress_bar)
@@ -146,11 +147,12 @@ class Application(QApplication):
 
     def _create_document_instance(
             self,
-            args: Namespace,
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        image_db.card_image_obtained.connect(document.add_card)
+        document.request_fill_image_for_action.connect(image_db.download_worker.fill_document_action_image)
+        image_db.request_action.connect(document.apply)
+        image_db.download_worker.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
 
     def _create_language_model(self):

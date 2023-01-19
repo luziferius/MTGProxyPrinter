@@ -19,8 +19,8 @@ import socket
 import urllib.error
 
 
-from PyQt5.QtCore import QStringListModel, QItemSelectionModel
-from PyQt5.QtWidgets import QMessageBox, QListView
+from PyQt5.QtCore import QStringListModel
+from PyQt5.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -36,7 +36,10 @@ from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_Columnar, Ui_Grouped, Ui_TabbedVertical
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+
 from tests.helpers import fill_card_database_with_json_cards
+from tests.document_controller.helpers import insert_card_in_page
 
 
 @pytest.fixture(params=[Ui_Columnar, Ui_Grouped, Ui_TabbedVertical])
@@ -288,9 +291,10 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
         main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True),
         main_window.card_database.get_card_with_scryfall_id("650722b4-d72b-4745-a1a5-00a34836282b", True)
     ]*2
-    for page, card in enumerate(cards):
-        document.add_card_to_page(page, card, 1)
-        document.add_page()
+    pages = main_window.document.pages
+    document.apply(ActionNewPage(count=len(cards)))
+    for _ in map(insert_card_in_page, pages, cards):
+        pass
     ui.central_widget.ui.document_view.setCurrentIndex(document.index(4, 0))
     ui.action_compact_document.trigger()
     assert_that(document.rowCount(), is_(2))
@@ -298,7 +302,38 @@ def test_compacting_document_while_last_page_is_selected_works_without_raising_e
 
 def test_removing_last_page_while_selected_works_without_raising_exception(main_window: MainWindow):
     ui = main_window.ui
-    main_window.document.add_page()
+    main_window.document.apply(ActionNewPage())
     ui.central_widget.ui.document_view.setCurrentIndex(main_window.document.index(1, 0))
     ui.action_discard_page.trigger()
+    assert_that(main_window.document.rowCount(), is_(1))
+
+
+def test_undo_load_document_with_middle_page_selected_works_without_raising_exception(main_window: MainWindow):
+    from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
+    document = main_window.document
+    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    action = ActionLoadDocument(pathlib.Path(), [
+        [card], [card], [card]
+    ], document.page_layout)
+    document.apply(action)
+    document_view = main_window.ui.central_widget.ui.document_view
+    document_view.setCurrentIndex(document.index(1, 0))
+    main_window.ui.action_undo.trigger()
+    assert_that(main_window.document.rowCount(), is_(1))
+
+
+def test_undo_import_deck_list_with_last_page_selected_works_without_raising_exception(main_window):
+    from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
+    document = main_window.document
+    card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
+    page_capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
+    card.image_file = main_window.image_db.blank_image
+    action = ActionImportDeckList(
+        [card]*page_capacity*2,
+        False
+    )
+    document.apply(action)
+    document_view = main_window.ui.central_widget.ui.document_view
+    document_view.setCurrentIndex(document.index(1, 0))
+    main_window.ui.action_undo.trigger()
     assert_that(main_window.document.rowCount(), is_(1))

@@ -26,6 +26,10 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
+from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
+from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -66,7 +70,10 @@ class MainWindow(QMainWindow):
         self.is_running = True
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.default_undo_tooltip = self.ui.action_undo.toolTip()
+        self.default_redo_tooltip = self.ui.action_redo.toolTip()
         self.missing_images_manager = MissingImagesManager(document, self)
+        self.missing_images_manager.request_obtaining_images.connect(image_db.download_worker.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
         self.about_dialog = self._create_about_dialog()
         self.progress_label = self._create_progress_label()
@@ -81,11 +88,11 @@ class MainWindow(QMainWindow):
         self._connect_card_info_downloader_signals(card_info_downloader)
         self._setup_central_widget()
         self._setup_loading_state_connections()
+        self._setup_undo_redo_actions(document)
         self.should_update_languages.connect(
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
         self.should_update_languages.connect(self.ui.central_widget.ui.add_card_widget.update_selected_language)
-        self.settings_changed.connect(document.apply_settings)
         self.settings_changed.connect(self.ui.central_widget.settings_changed)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
@@ -113,20 +120,29 @@ class MainWindow(QMainWindow):
     def _setup_central_widget(self):
         self.setCentralWidget(self.ui.central_widget)
         self.ui.central_widget.set_data(self.document, self.card_database, self.image_db)
-        self.ui.action_discard_page.triggered.connect(self.ui.central_widget.action_discard_page_triggered)
 
     def _setup_loading_state_connections(self):
         for widget_or_action in self._get_widgets_and_actions_disabled_in_loading_state():
             self.loading_state_changed.connect(widget_or_action.setDisabled)
+
+    def _setup_undo_redo_actions(self, document: Document):
+        self.ui.action_undo.triggered.connect(document.undo)
+        self.ui.action_redo.triggered.connect(document.redo)
+        document.action_applied.connect(self.on_document_action_applied_or_undone)
+        document.action_undone.connect(self.on_document_action_applied_or_undone)
+        document.undo_available_changed.connect(self.ui.action_undo.setEnabled)
+        document.redo_available_changed.connect(self.ui.action_redo.setEnabled)
 
     def _connect_document_signals(self, document: Document):
         document.loading_state_changed.connect(self.loading_state_changed)
         document.loader.loading_file_failed.connect(self.on_document_loading_failed)
         document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         document.loader.network_error_occurred.connect(self.on_network_error_occurred)
-        self.ui.action_new_page.triggered.connect(document.add_page)
-        self.ui.action_compact_document.triggered.connect(document.compact_pages)
-        self.ui.action_shuffle_document.triggered.connect(document.shuffle_document)
+        self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
+        self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
+        self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
+        self.ui.action_compact_document.triggered.connect(lambda: document.apply(ActionCompactDocument()))
+        self.ui.action_shuffle_document.triggered.connect(lambda: document.apply(ActionShuffleDocument()))
 
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         # Do not connect the card_info_downloader.working_state_changed
@@ -184,6 +200,15 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
 
+    @Slot()
+    def on_document_action_applied_or_undone(self):
+        undo_tooltip = f"Undo:\n{self.document.undo_stack[-1]}" \
+            if self.document.undo_stack else self.default_undo_tooltip
+        redo_tooltip = f"Redo:\n{self.document.redo_stack[-1]}" \
+            if self.document.redo_stack else self.default_redo_tooltip
+        self.ui.action_undo.setToolTip(undo_tooltip)
+        self.ui.action_redo.setToolTip(redo_tooltip)
+
     def closeEvent(self, event: QCloseEvent):
         """
         This function is automatically called when the window is closed using the close [X] button in the window
@@ -223,8 +248,7 @@ class MainWindow(QMainWindow):
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
-        wizard.clear_document.connect(self.document.clear_all_data)
-        wizard.deck_added.connect(self.image_db.get_deck_asynchronous)
+        wizard.request_action.connect(self.image_db.download_worker.fill_batch_document_action_images)
         wizard.show()
 
     @Slot()
@@ -275,7 +299,7 @@ class MainWindow(QMainWindow):
                 f"Do you want to compact the document now to minimize the page count prior to {action}?",
                 QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
             )) == QMessageBox.Yes:
-                self.document.compact_pages()
+                self.document.apply(ActionCompactDocument())
             return result
         return QMessageBox.No  # No pages can be saved, assume "No" for this case
 
@@ -329,15 +353,6 @@ class MainWindow(QMainWindow):
     def on_action_download_missing_card_images_triggered(self):
         logger.info("User wants to download missing card images")
         self.missing_images_manager.obtain_missing_images()
-
-    @Slot()
-    def on_action_new_document_triggered(self):
-        logger.info("User clicked on the New Document button, asking for confirmation")
-        if QMessageBox.question(
-                self, "Current document will be lost",
-                "Create a new document? All unsaved changes will be lost.",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
-            self.document.clear_all_data()
 
     @Slot()
     def on_action_save_as_triggered(self):

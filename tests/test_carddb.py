@@ -26,6 +26,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
     MTGSet
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation
@@ -288,9 +289,9 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
         ],
     )
     document = Document(card_db, MagicMock())
-    document.add_card(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
+    document.apply(ActionAddCard(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
     document.store_image_usage()
-    document.add_card(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1)
+    document.apply(ActionAddCard(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
     document.store_image_usage()
     # Test
     assert_that(

@@ -2,10 +2,17 @@
 
 # Next version (in development)
 
+## New features
+
+- Added Undo and Redo actions. It is now possible to undo changes to the document, and also redo undone changes.
+  - The undo and redo button tooltip shows a short description
+    of the change that is performed when the button is clicked.  
+
 ## Fixed issues
 
 - Fixed crash in the settings validation logic, introduced in version 0.19.0.
   Triggering this crash required manually fiddling with the app configuration file
+- Fixed crash when shuffling a document that contains both regular-sized and over-sized cards.
 
 # Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
 
