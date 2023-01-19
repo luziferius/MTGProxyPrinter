@@ -399,7 +399,6 @@ def test_clear_database_not_clearing_last_image_use_timestamps(document: Documen
 def test_document_is_created_empty(document_light: Document):
     capacity = document_light.page_layout.compute_page_card_capacity()
     assert_that(capacity, is_(greater_than_or_equal_to(1)))
-    assert_that(document_light.total_cards_per_page, is_(equal_to(capacity)))
     assert_that(document_light.rowCount(), is_(equal_to(1)), "Expected creation of a single, empty page.")
     assert_that(
         document_light.pages,
@@ -419,7 +418,8 @@ def test_document_is_created_empty(document_light: Document):
 def test_save_migration(document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document.apply(ActionAddCard(card, document.total_cards_per_page))
+    capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
+    document.apply(ActionAddCard(card, capacity))
     with TemporaryDirectory() as temp_dir:
         document.save_file_path = _create_save_file(pathlib.Path(temp_dir), source_version)
         document.save_to_disk()
@@ -435,7 +435,8 @@ def test_create_save(document_custom_layout: Document):
         "Setup failed. Duplicate values in page layout settings"
     )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    document_custom_layout.apply(ActionAddCard(card, document_custom_layout.total_cards_per_page))
+    capacity = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
+    document_custom_layout.apply(ActionAddCard(card, capacity))
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
         document_custom_layout.save_as(save_dir)
@@ -456,7 +457,8 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
     # Prevent network access when re-loading the document
     document_custom_layout.image_db.loaded_images[
         ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
-    document_custom_layout.apply(ActionAddCard(card, document_custom_layout.total_cards_per_page))
+    cards_per_page = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
+    document_custom_layout.apply(ActionAddCard(card, cards_per_page))
     with TemporaryDirectory() as temp_dir:
         save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
         document_custom_layout.save_as(save_dir)

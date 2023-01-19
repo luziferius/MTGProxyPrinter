@@ -95,7 +95,6 @@ class Document(QAbstractItemModel):
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
-        self.total_cards_per_page = self.page_layout.compute_page_card_capacity()
 
     @Slot(DocumentAction)
     def apply(self, action: DocumentAction):
