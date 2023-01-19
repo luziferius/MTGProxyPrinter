@@ -63,6 +63,9 @@ __all__ = [
     "CardCorner",
     "CardDatabase",
     "cached_dedent",
+    "CardList",
+    "OLD_DATABASE_LOCATION",
+    "DEFAULT_DATABASE_LOCATION",
 ]
 
 
@@ -564,7 +567,7 @@ class CardDatabase:
             (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:

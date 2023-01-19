@@ -201,7 +201,7 @@ class ActionRemoveCards(DocumentAction):
         return self
 
     @staticmethod
-    def to_list_of_ranges(sequence: typing.Sequence[int]) -> typing.List[typing.Tuple[int, int]]:
+    def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
         ranges: typing.List[typing.Tuple[int, int]] = []
         sequence = itertools.chain(sequence, (sentinel := object(),))
         lower = upper = next(sequence)

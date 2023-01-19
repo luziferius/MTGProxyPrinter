@@ -18,11 +18,9 @@ import dataclasses
 import itertools
 import math
 import pathlib
-import socket
 import sqlite3
 import textwrap
 import typing
-import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
@@ -36,7 +34,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData, CardList
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger

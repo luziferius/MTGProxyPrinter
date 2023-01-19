@@ -23,7 +23,8 @@ from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document import Document, Page
+    from mtg_proxy_printer.model.document_page import Page
+    from mtg_proxy_printer.model.document import Document
 
 logger = get_logger(__name__)
 del get_logger

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 import itertools
 import math
 import pathlib
@@ -363,7 +362,9 @@ class SelectDeckParserPage(QWizardPage):
 
     def validatePage(self) -> bool:
         self.parser_creator()
-        # TODO: Why is this connect() call here?
+        # The call to connect() is here, because the  parser_creator callback created the selected parser.
+        # If that later determines an incompatibility, it has to signal that to the user, so connect the error signal
+        # here.
         self.selected_parser.incompatible_file_format.connect(self.wizard().on_incompatible_deck_file_selected)
         logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
         return self.isComplete()

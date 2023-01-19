@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, Qt
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger

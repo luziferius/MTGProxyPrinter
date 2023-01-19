@@ -35,7 +35,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
-from mtg_proxy_printer.model.carddb import Card, CardList
+from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -81,6 +81,7 @@ class CacheContent(ImageKey):
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 IMAGE_SIZE = QSize(745, 1040)
+
 
 class ImageDatabase(QObject):
     """

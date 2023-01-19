@@ -21,7 +21,8 @@ from PyQt5.QtCore import Qt
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.model.card_list import PageColumns
 if typing.TYPE_CHECKING:
-    from mtg_proxy_printer.model.document import Document, CardContainer
+    from mtg_proxy_printer.model.document_page import CardContainer
+    from mtg_proxy_printer.model.document import Document
 
 from ._interface import DocumentAction, Self, ActionList
 from .card_actions import ActionRemoveCards, ActionAddCard
