@@ -15,7 +15,6 @@
 
 import copy
 import dataclasses
-import itertools
 import pathlib
 import typing
 import unittest.mock
@@ -23,9 +22,9 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
+
 
 try:
     from hamcrest import contains_exactly
@@ -35,6 +34,7 @@ except ImportError:
 import pytest
 from pytestqt.qtbot import QtBot
 
+from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, MTGSet
@@ -626,3 +626,29 @@ def test_page_layout_compute_page_card_capacity(page_type:PageType, v_spacing: i
     layout.image_spacing_horizontal = h_spacing
     layout.image_spacing_vertical = v_spacing
     assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
+
+
+@pytest.mark.parametrize("invalid_page_row", [2])
+def test_document__data_page_logs_error_on_invalid_index(document_light, invalid_page_row: int):
+    index = document_light.createIndex(invalid_page_row, 0, None)
+    with unittest.mock.patch("mtg_proxy_printer.model.document.logger.error") as logger_mock:
+        assert_that(document_light._data_page(index), is_(None))
+        logger_mock.assert_called_once()
+
+
+@pytest.mark.parametrize("invalid_card_row", [2])
+def test_document__data_card_logs_error_on_invalid_index_row(document_light, invalid_card_row: int):
+    append_new_card_in_page(document_light.pages[0], "Card")
+    index = document_light.createIndex(invalid_card_row, 0, document_light.pages[0][0])
+    with unittest.mock.patch("mtg_proxy_printer.model.document.logger.error") as logger_mock:
+        assert_that(document_light._data_card(index), is_(None))
+        logger_mock.assert_called_once()
+
+
+@pytest.mark.parametrize("invalid_card_column", [len(PageColumns)])
+def test_document__data_card_logs_error_on_invalid_index_column(document_light, invalid_card_column: int):
+    append_new_card_in_page(document_light.pages[0], "Card")
+    index = document_light.createIndex(0, invalid_card_column, document_light.pages[0][0])
+    with unittest.mock.patch("mtg_proxy_printer.model.document.logger.error") as logger_mock:
+        assert_that(document_light._data_card(index), is_(None))
+        logger_mock.assert_called_once()

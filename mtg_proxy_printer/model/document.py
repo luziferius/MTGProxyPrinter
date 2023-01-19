@@ -106,8 +106,9 @@ class Document(QAbstractItemModel):
             if not self.redo_stack:
                 self.redo_available_changed.emit(False)
         emit_undo_available_signal = not self.undo_stack
-        logger.debug(f"Applying {action.__class__.__name__}")
+        logger.info(f"Applying {action.__class__.__name__}")
         self.undo_stack.append(action.apply(self))
+        logger.debug("Action applied")
         if emit_undo_available_signal:
             self.undo_available_changed.emit(True)
         self.action_applied.emit(action)
@@ -117,8 +118,9 @@ class Document(QAbstractItemModel):
         """Undo the last action on the undo stack and push it onto the redo stack."""
         emit_redo_available_signal = not self.redo_stack
         action = self.undo_stack.pop()
-        logger.debug(f"Undo {action.__class__.__name__}")
+        logger.info(f"Undo {action.__class__.__name__}")
         self.redo_stack.append(action.undo(self))
+        logger.debug("Action undone")
         self.action_undone.emit(action)
         if not self.undo_stack:
             self.undo_available_changed.emit(False)
@@ -130,8 +132,9 @@ class Document(QAbstractItemModel):
         """Apply the last action on the redo stack and push it onto the undo stack."""
         emit_undo_available_signal = not self.undo_stack
         action = self.redo_stack.pop()
-        logger.debug(f"Redo {action.__class__.__name__}")
+        logger.info(f"Redo {action.__class__.__name__}")
         self.undo_stack.append(action.apply(self))
+        logger.debug("Action redone")
         self.action_applied.emit(action)
         if not self.redo_stack:
             self.redo_available_changed.emit(False)
@@ -235,7 +238,7 @@ class Document(QAbstractItemModel):
 
     def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
-        if 0 > index.row() >= self.rowCount() or not index.isValid():
+        if index.row() >= self.rowCount():
             logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
         item = self.pages[index.row()]
@@ -248,9 +251,8 @@ class Document(QAbstractItemModel):
 
     def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
-        if 0 > index.row() >= self.rowCount(index) \
-                or 0 > index.column() >= self.columnCount(index) \
-                or not index.isValid():
+        parent = index.parent()
+        if index.row() >= self.rowCount(parent) or index.column() >= self.columnCount(parent):
             logger.error(
                 f"Invalid index: {index.row()=}, {index.column()=}, "
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
