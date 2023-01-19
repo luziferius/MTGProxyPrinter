@@ -2,6 +2,12 @@
 
 # Next version (in development)
 
+## New features
+
+- Added Undo and Redo actions. It is now possible to undo changes to the document, and also redo undone changes.
+  - The undo and redo button tooltip shows a short description
+    of the change that is performed when the button is clicked.  
+
 ## Fixed issues
 
 - Fixed crash in the settings validation logic, introduced in version 0.19.0.
