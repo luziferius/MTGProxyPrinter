@@ -198,6 +198,7 @@ class DocumentLoader(QObject):
             self.image_loader.download_begins.connect(image_db.card_download_starting)
             self.image_loader.download_finished.connect(image_db.card_download_finished)
             self.image_loader.download_progress.connect(image_db.card_download_progress)
+            self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
             self.network_errors_during_load: typing.Counter[str] = collections.Counter()
             self.finished.connect(self.propagate_errors_during_load)
             self.document = document
@@ -209,14 +210,17 @@ class DocumentLoader(QObject):
 
         def propagate_errors_during_load(self):
             if error_count := sum(self.network_errors_during_load.values()):
+                logger.warning(f"{error_count} errors occurred during document load, reporting to the user")
                 self.network_error_occurred.emit(
+                    f"Some cards may be missing images, proceeed with caution.\n"
                     f"Error count: {error_count}. Most common error message:\n"
                     f"{self.network_errors_during_load.most_common(1)[0][0]}"
                 )
                 self.network_errors_during_load.clear()
+            else:
+                logger.info("No errors occurred during document load")
 
-        def on_network_error_occurred(self, card: Card, error: str):
-            card.set_image_file(self.image_db.blank_image)
+        def on_network_error_occurred(self, error: str):
             self.network_errors_during_load[error] += 1
 
         def load_document(self):
@@ -276,12 +280,7 @@ class DocumentLoader(QObject):
                         unknown_ids += 1
                         logger.info("Unable to find suitable replacement card. Skipping it.")
                         continue
-                try:
-                    self.image_loader.get_image_synchronous(card)
-                except urllib.error.URLError as e:
-                    self.on_network_error_occurred(card, str(e.reason))
-                except socket.timeout as e:
-                    self.on_network_error_occurred(card, f"Reading from socket failed: {e}")
+                self.image_loader.get_image_synchronous(card)
                 current_page.append(card)
             return pages, migrated_ids, unknown_ids
 
