@@ -169,9 +169,13 @@ class PageScene(QGraphicsScene):
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
-            logger.debug(f"{last-first+1} cards inserted to the currently shown page, drawing them.")
-            for new in range(first, last+1):
-                self.draw_card(new)
+            if first == self.document.rowCount(parent):
+                logger.debug(f"{last-first+1} cards appended to the currently shown page, drawing them.")
+                for new in range(first, last+1):
+                    self.draw_card(new)
+            else:
+                logger.debug("Cards inserted into the currently shown page, redrawing.")
+                self.redraw()
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and self.selected_page.isValid() and first <= self.selected_page.row() <= last:

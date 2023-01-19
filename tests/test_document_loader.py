@@ -88,11 +88,11 @@ def test_valid_data_loads_correctly(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value), \
-                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000), \
-                qtbot.waitSignal(document.page_layout_changed, timeout=1000):
+        with qtbot.waitSignals([loader.loading_state_changed]*2,
+                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
+                qtbot.waitSignals([loader.load_requested, document.page_layout_changed]):
             loader.load_document(save_path)
-        mock.assert_called_once()
+    mock.assert_called_once()
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
@@ -134,8 +134,9 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_state_changed, timeout=1000, check_params_cb=lambda value: not value), \
-                qtbot.waitSignal(loader.worker.loading_file_successful, timeout=1000):
+        with qtbot.waitSignals([loader.loading_state_changed] * 2, timeout=1000,
+                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
+                qtbot.waitSignals([loader.load_requested], timeout=1000):
             loader.load_document(save_path)
         mock.assert_called_once()
     assert_that(document.rowCount(), is_(2))
@@ -168,11 +169,7 @@ def test_invalid_data_in_card_columns_raises_exception(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+                qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
@@ -199,11 +196,7 @@ def test_protects_against_infinite_save_data(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+                qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
@@ -237,11 +230,7 @@ def test_protects_against_infinite_settings_data(
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
-                qtbot.assertNotEmitted(loader.worker.loading_file_successful), \
-                qtbot.assertNotEmitted(loader.unknown_scryfall_ids_found), \
-                qtbot.assertNotEmitted(loader.worker.new_page), \
-                qtbot.assertNotEmitted(loader.worker.add_card), \
-                qtbot.assertNotEmitted(loader.worker.request_blank_pixmap):
+                qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
     assert_document_is_empty(document)
@@ -312,3 +301,26 @@ def test_page_layout_compute_page_column_count_default_value(
         document.page_layout.compute_page_column_count(),
         is_(equal_to(3))
     )
+
+
+def test_page_layout_gt_raises_type_error_on_incompatible_types():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(calling(layout.__gt__).with_args(1), raises(TypeError))
+
+
+def test_page_layout_lt_raises_type_error_on_incompatible_types():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(calling(layout.__lt__).with_args(1), raises(TypeError))
+
+
+def test_page_layout_gt():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
+    layout.page_height = 300
+    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
+    assert_that(layout, is_not(greater_than(layout)))
+
+
+def test_page_layout_lt():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
+    assert_that(layout, is_not(less_than(layout)))

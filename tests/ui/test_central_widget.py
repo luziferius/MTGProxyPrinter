@@ -19,7 +19,7 @@ from PySide6.QtCore import Qt
 from hamcrest import *
 
 from mtg_proxy_printer.model.document import Page
-from mtg_proxy_printer.ui.central_widget import CentralWidget
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
 from .test_main_window import main_window  # noqa
@@ -29,11 +29,7 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = main_window.document
     central_widget = main_window.ui.central_widget
-    assert_that(
-        document.pages,
-        only_contains(instance_of(Page))
-    )
-    main_window.document.add_card(card, 9)
+    main_window.document.apply(ActionAddCard(card, 9))
     assert_that(
         document.pages,
         only_contains(instance_of(Page))

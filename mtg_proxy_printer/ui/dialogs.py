@@ -28,6 +28,7 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -258,6 +259,7 @@ class DocumentSettingsDialog(QDialog):
 
     def accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
-        self.document.update_page_layout(self.ui.page_config_groupbox.page_layout)
+        action = ActionEditDocumentSettings(self.ui.page_config_groupbox.page_layout)
+        self.document.apply(action)
         super(DocumentSettingsDialog, self).accept()
         logger.debug("Saving settings in the document done.")

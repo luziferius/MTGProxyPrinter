@@ -15,7 +15,7 @@
 
 import typing
 
-from PySide6.QtCore import QObject, Signal, Slot, Qt
+from PySide6.QtCore import QObject, Signal, Slot
 
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
@@ -35,34 +35,31 @@ class MissingImagesManager(QObject):
     or printer.
     """
     obtaining_missing_images_failed = Signal(str)
+    request_obtaining_images = Signal(list)
 
     def __init__(self, document: Document, parent: QObject = None):
         super().__init__(parent)
         self.document = document
-        self.document.image_db.batch_processing_state_changed.connect(self.on_batch_processing_runs)
-        self.document.image_db.network_error_occurred.connect(lambda: setattr(self, "network_error_occurred", True))
+        self.document.image_db.missing_images_obtained.connect(self.on_missing_images_obtained)
         self.callback = None
         logger.info(f"Created {self.__class__.__name__} instance")
 
     def obtain_missing_images(self, callback: typing.Callable[[], typing.Any] = None):
         self.callback = callback
-        images_to_fetch = [
-            (index.parent().data(Qt.EditRole)[index.row()].card, index)
-            for index in self.document.get_missing_image_cards()
-        ]
+        images_to_fetch = list(self.document.get_missing_image_cards())
         logger.debug(f"About to fetch {len(images_to_fetch)} missing images")
-        self.document.image_db.get_card_list_asynchronous(images_to_fetch)
+        self.request_obtaining_images.emit(images_to_fetch)
 
-    @Slot(bool)
-    def on_batch_processing_runs(self, state: bool):
-        if not state:
-            missing_count = self.document.missing_image_count()
-            if missing_count:
-                logger.warning(f"Failed to download all missing images. Still missing: {missing_count}.")
-                plural = 's' if missing_count > 1 else ''
-                self.obtaining_missing_images_failed.emit(
-                    f"Unable to obtain missing image{plural} for {missing_count} card{plural}.\n"
-                    f"These will be missing in exported or printed documents.")
-            if self.callback is not None:
-                self.callback()
-                self.callback = None
+    @Slot()
+    def on_missing_images_obtained(self):
+        logger.info("Obtained missing images")
+        missing_count = self.document.missing_image_count()
+        if missing_count:
+            logger.warning(f"Failed to download all missing images. Still missing: {missing_count}.")
+            plural = 's' if missing_count > 1 else ''
+            self.obtaining_missing_images_failed.emit(
+                f"Unable to obtain missing image{plural} for {missing_count} card{plural}.\n"
+                f"These will be missing in exported or printed documents.")
+        if self.callback is not None:
+            self.callback()
+            self.callback = None

@@ -31,7 +31,7 @@ def test_main_window_action_discard_page(qtbot: QtBot, main_window: MainWindow):
     with qtbot.wait_signal(ui.action_new_page.triggered, timeout=100):
         ui.action_new_page.trigger()
     assert_that(selection_model.selectedRows(0), has_length(1))
-    assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(1)))
+    assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(2)))
     with qtbot.wait_signal(ui.action_discard_page.triggered, timeout=100), \
             qtbot.wait_signal(selection_model.selectionChanged, timeout=100):

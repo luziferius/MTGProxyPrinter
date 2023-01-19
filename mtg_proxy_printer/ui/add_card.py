@@ -19,6 +19,7 @@ from PySide6.QtCore import QStringListModel, Slot, Signal, Qt, QItemSelectionMod
 from PySide6.QtWidgets import QWidget, QDialogButtonBox
 from PySide6.QtGui import QIcon
 
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
@@ -48,7 +49,7 @@ UiTypes = typing.Union[typing.Type[Ui_horizontal], typing.Type[Ui_horizontal]]
 
 class AddCardWidget(QWidget):
 
-    card_added = Signal(mtg_proxy_printer.model.carddb.Card, int)
+    request_action = Signal(ActionAddCard)
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
@@ -218,7 +219,7 @@ class AddCardWidget(QWidget):
         card = self.card_database.get_cards_from_data(card_data)[0]
         copies = self.ui.copies_input.value()
         self._log_added_card(card, copies)
-        self.card_added.emit(card, copies)
+        self.request_action.emit(ActionAddCard(card, copies))
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
         )
@@ -226,7 +227,7 @@ class AddCardWidget(QWidget):
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
             self._log_added_card(opposing_face, copies)
-            self.card_added.emit(opposing_face, copies)
+            self.request_action.emit(ActionAddCard(opposing_face, copies))
 
     @staticmethod
     def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):

@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PySide6.QtCore import QObject, QThread, Signal, QTimer
+from PySide6.QtCore import QObject, QThread, Signal
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data

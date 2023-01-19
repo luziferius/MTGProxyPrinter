@@ -63,6 +63,9 @@ __all__ = [
     "CardCorner",
     "CardDatabase",
     "cached_dedent",
+    "CardList",
+    "OLD_DATABASE_LOCATION",
+    "DEFAULT_DATABASE_LOCATION",
 ]
 
 
@@ -150,6 +153,9 @@ class Card:
         average_color = sample_area.scaled(
             1, 1, mode=Qt.TransformationMode.SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
+
+    def display_string(self):
+        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
 OptionalCard = typing.Optional[Card]
@@ -562,7 +568,7 @@ class CardDatabase:
             (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
