@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices
-from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QLabel, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QLabel, QMainWindow, QDialog
 
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
         self.settings_changed.connect(self.ui.central_widget.settings_changed)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
+        self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_about_dialog(self) -> AboutMTGProxyPrinterDialog:
@@ -201,6 +202,10 @@ class MainWindow(QMainWindow):
         return progress_bar
 
     @Slot()
+    def on_dialog_finished(self):
+        self.current_dialog = None
+
+    @Slot()
     def on_document_action_applied_or_undone(self):
         undo_tooltip = f"Undo:\n{self.document.undo_stack[-1]}" \
             if self.document.undo_stack else self.default_undo_tooltip
@@ -256,24 +261,27 @@ class MainWindow(QMainWindow):
         logger.info(f"User prints the current document.")
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
             return
-        print_dialog = PrintDialog(self.document, self)
-        self.missing_images_manager.obtain_missing_images(print_dialog.exec_)
+        self.current_dialog = PrintDialog(self.document, self)
+        self.current_dialog.finished.connect(self.on_dialog_finished)
+        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
 
     @Slot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
         if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
             return
-        print_preview_dialog = PrintPreviewDialog(self.document, self)
-        self.missing_images_manager.obtain_missing_images(print_preview_dialog.exec_)
+        self.current_dialog = PrintPreviewDialog(self.document, self)
+        self.current_dialog.finished.connect(self.on_dialog_finished)
+        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
 
     @Slot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
         if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
             return
-        dialog = SavePDFDialog(self, self.document)
-        self.missing_images_manager.obtain_missing_images(dialog.exec_)
+        self.current_dialog = SavePDFDialog(self, self.document)
+        self.current_dialog.finished.connect(self.on_dialog_finished)
+        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
 
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
@@ -346,8 +354,9 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_edit_document_settings_triggered(self):
         logger.info("User wants to edit the document settings. Showing the editor dialog")
-        dialog = DocumentSettingsDialog(self.document, self)
-        dialog.exec_()
+        self.current_dialog = DocumentSettingsDialog(self.document, self)
+        self.current_dialog.finished.connect(self.on_dialog_finished)
+        self.current_dialog.open()
 
     @Slot()
     def on_action_download_missing_card_images_triggered(self):
@@ -356,14 +365,16 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_action_save_as_triggered(self):
-        dialog = SaveDocumentAsDialog(self.document, self)
-        dialog.exec_()
+        self.current_dialog = SaveDocumentAsDialog(self.document, self)
+        self.current_dialog.finished.connect(self.on_dialog_finished)
+        self.current_dialog.open()
 
     @Slot()
     def on_action_load_document_triggered(self):
-        dialog = LoadDocumentDialog(self, self.document)
-        if dialog.exec_() == LoadDocumentDialog.Accepted:
-            self.ui.central_widget.select_first_page()
+        self.current_dialog = LoadDocumentDialog(self, self.document)
+        self.current_dialog.accepted.connect(self.ui.central_widget.select_first_page)
+        self.current_dialog.finished.connect(self.on_dialog_finished)
+        self.current_dialog.open()
 
     def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
         QMessageBox.critical(
