@@ -18,7 +18,8 @@ import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
     pyqtSignal as Signal, QEvent
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
+    QGraphicsLineItem
 from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
 import pint
 
@@ -81,6 +82,7 @@ class PageScene(QGraphicsScene):
         self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
         self.background = None
         self.render_mode = render_mode
+        self.cut_lines: typing.List[QGraphicsLineItem] = []
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @Slot(QPersistentModelIndex)
@@ -236,21 +238,22 @@ class PageScene(QGraphicsScene):
 
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
+        self.cut_lines.clear()
         page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
         if page_type == PageType.MIXED:
             logger.warning("Not drawing cut markers for page with mixed image sizes")
             return
-        card_size: CardSize = CardSizes.for_page_type(page_type).value
         line_color = QColor("black") if self.render_mode == RenderMode.ON_PAPER \
             else self.palette().color(QPalette.Active, QPalette.WindowText)
         logger.info(f"Drawing cut markers")
-        self._draw_vertical_markers(line_color, card_size)
-        self._draw_horizontal_markers(line_color, card_size)
+        self._draw_vertical_markers(line_color, page_type)
+        self._draw_horizontal_markers(line_color, page_type)
 
-    def _draw_vertical_markers(self, line_color: QColor, card_size: CardSize):
+    def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
         page_layout = self.document.page_layout
         scaling_horizontal = self.width() / page_layout.page_width
-        column_count = page_layout.compute_page_column_count(page_layout)
+        column_count = page_layout.compute_page_column_count(page_type)
         if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
@@ -264,10 +267,11 @@ class PageScene(QGraphicsScene):
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
-    def _draw_horizontal_markers(self, line_color: QColor, card_size: CardSize):
+    def _draw_horizontal_markers(self, line_color: QColor, page_type: PageType):
+        card_size: CardSize = CardSizes.for_page_type(page_type).value
         page_layout = self.document.page_layout
         scaling_vertical = self.height() / page_layout.page_height
-        row_count = page_layout.compute_page_row_count(page_layout)
+        row_count = page_layout.compute_page_row_count(page_type)
         if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
@@ -282,10 +286,10 @@ class PageScene(QGraphicsScene):
         logger.debug(f"Horizontal cut markers drawn")
 
     def _draw_vertical_line(self, column_px: int, line_color: QColor):
-        self.addLine(column_px, 0, column_px, self.height(), line_color)
+        self.cut_lines.append(self.addLine(column_px, 0, column_px, self.height(), line_color))
 
     def _draw_horizontal_line(self, row_px: int, line_color: QColor):
-        self.addLine(0, row_px, self.width(), row_px, line_color)
+        self.cut_lines.append(self.addLine(0, row_px, self.width(), row_px, line_color))
 
 
 class PageRenderer(QGraphicsView):
