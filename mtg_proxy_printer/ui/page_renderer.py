@@ -76,7 +76,7 @@ class PageScene(QGraphicsScene):
         self.document.current_page_changed.connect(self.on_current_page_changed)
         self.document.dataChanged.connect(self.on_data_changed)
         self.document.page_type_changed.connect(self.on_page_type_changed)
-        self.selected_page: QPersistentModelIndex = QPersistentModelIndex()
+        self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
         self.background = None
         self.render_mode = render_mode
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
@@ -119,9 +119,6 @@ class PageScene(QGraphicsScene):
         return page_size
 
     def _draw_cards(self):
-        if not self.selected_page.isValid():
-            logger.warning("Got invalid persistent model index. Not drawing cards.")
-            return
         index = self.selected_page.sibling(self.selected_page.row(), 0)
         images_to_draw = self.selected_page.model().rowCount(index)
         logger.info(f"Drawing {images_to_draw} cards")
@@ -168,7 +165,7 @@ class PageScene(QGraphicsScene):
             self.redraw()
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
-        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
+        if parent.isValid() and parent.row() == self.selected_page.row():
             if first == self.document.rowCount(parent):
                 logger.debug(f"{last-first+1} cards appended to the currently shown page, drawing them.")
                 for new in range(first, last+1):
@@ -178,18 +175,18 @@ class PageScene(QGraphicsScene):
                 self.redraw()
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
-        if not parent.isValid() and self.selected_page.isValid() and first <= self.selected_page.row() <= last:
+        if not parent.isValid() and first <= self.selected_page.row() <= last:
             logger.debug("About to delete the currently shown page. Removing the held index and clearing the view.")
             self.selected_page = QPersistentModelIndex()
             self.clear()
 
     def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
-        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
+        if parent.isValid() and parent.row() == self.selected_page.row():
             logger.debug(f"Cards {first} to {last} removed from the currently shown page, re-drawing the page.")
             self.redraw()
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
-        if parent.isValid() and self.selected_page.isValid() and parent.row() == self.selected_page.row():
+        if parent.isValid() and parent.row() == self.selected_page.row():
             # Cards moved away are treated as if they were deleted
             logger.debug("Cards moved away from the currently shown page, calling card removal handler.")
             self.on_rows_removed(parent, start, end)
@@ -198,11 +195,8 @@ class PageScene(QGraphicsScene):
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row+end-start-1)
 
-    @Slot()
     def redraw(self):
         """Wipes the scene and re-draws everything"""
-        if not self.selected_page.isValid():
-            logger.warning("Redraw requested, but current page is invalid!")
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
         if self.render_mode == RenderMode.ON_SCREEN:
