@@ -154,6 +154,9 @@ class PageScene(QGraphicsScene):
             QRectF(position + image.rect().bottomRight() - QPointF(49.5, 49.5), corner_size),
             card.corner_color(CardCorner.BOTTOM_RIGHT), card.corner_color(CardCorner.BOTTOM_RIGHT))
 
+    def _is_valid_page_index(self, index: QModelIndex):
+        return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
+
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):
         if page.row() == self.selected_page.row():
@@ -165,13 +168,14 @@ class PageScene(QGraphicsScene):
             self.redraw()
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
-        if parent.isValid() and parent.row() == self.selected_page.row():
-            if first == self.document.rowCount(parent):
-                logger.debug(f"{last-first+1} cards appended to the currently shown page, drawing them.")
+        if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
+            inserted_cards = last-first+1
+            if first+inserted_cards == self.document.rowCount(parent):
+                logger.debug(f"{inserted_cards} cards appended to the currently shown page, drawing them.")
                 for new in range(first, last+1):
                     self.draw_card(new)
             else:
-                logger.debug("Cards inserted into the currently shown page, redrawing.")
+                logger.debug(f"{inserted_cards} cards inserted into the currently shown page, redrawing.")
                 self.redraw()
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
