@@ -192,10 +192,13 @@ class AddCardWidget(QWidget):
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         logger.info("Card database set.")
         self.card_database = card_db
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         languages = self.card_database.get_all_languages()
         if not languages:
-            languages = [mtg_proxy_printer.settings.settings["images"]["preferred-language"]]
+            languages = [preferred_language]
         self.language_model.setStringList(languages)
+        self.ui.language_combo_box.setCurrentText(preferred_language)
+
 
     def _read_card_data_from_ui(self) -> mtg_proxy_printer.model.carddb.CardIdentificationData:
         card = mtg_proxy_printer.model.carddb.CardIdentificationData(
@@ -203,14 +206,13 @@ class AddCardWidget(QWidget):
         )
         return card
 
-    @Slot()
-    def update_selected_language(self):
+    @Slot(str)
+    def on_settings_preferred_language_changed(self, new_preferred_language: str):
         if self.language_model.stringList():
             self.ui.language_combo_box.setCurrentIndex(
-                self.language_model.stringList().index(
-                    mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+                self.language_model.stringList().index(new_preferred_language)
             )
-        self.language_combo_box_changed(self.ui.language_combo_box.currentText())
+        self.language_combo_box_changed(new_preferred_language)
 
     def ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")

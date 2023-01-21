@@ -23,6 +23,7 @@ from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QB
 import pint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, DPI
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -67,7 +68,7 @@ class PageScene(QGraphicsScene):
           On Screen, a background is drawn using the theme’s background color and a high-contrast color for cut markers.
         :param parent: Optional Qt parent object
         """
-        super(PageScene, self).__init__(self.get_document_page_size(document), parent)
+        super(PageScene, self).__init__(self.get_document_page_size(document.page_layout), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)
@@ -76,6 +77,7 @@ class PageScene(QGraphicsScene):
         self.document.current_page_changed.connect(self.on_current_page_changed)
         self.document.dataChanged.connect(self.on_data_changed)
         self.document.page_type_changed.connect(self.on_page_type_changed)
+        self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
         self.background = None
         self.render_mode = render_mode
@@ -91,9 +93,9 @@ class PageScene(QGraphicsScene):
         else:
             self.clear()
 
-    @Slot()
-    def on_settings_changed(self):
-        new_page_size = self.get_document_page_size(self.document)
+    @Slot(PageLayoutSettings)
+    def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
+        new_page_size = self.get_document_page_size(new_page_layout)
         old_size = self.sceneRect()
         size_changed = old_size != new_page_size
         if size_changed:
@@ -106,9 +108,9 @@ class PageScene(QGraphicsScene):
             self.scene_size_changed.emit()
 
     @staticmethod
-    def get_document_page_size(document: Document) -> QRectF:
-        height: pint.Quantity = document.page_layout.page_height * unit_registry.millimeter
-        width: pint.Quantity = document.page_layout.page_width * unit_registry.millimeter
+    def get_document_page_size(page_layout: PageLayoutSettings) -> QRectF:
+        height: pint.Quantity = page_layout.page_height * unit_registry.millimeter
+        width: pint.Quantity = page_layout.page_width * unit_registry.millimeter
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
@@ -332,8 +334,8 @@ class PageRenderer(QGraphicsView):
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")
         self.document = document
-        self.setScene(PageScene(document, RenderMode.ON_SCREEN, self))
-        self.scene().scene_size_changed.connect(self.resizeEvent)
+        self.setScene(scene := PageScene(document, RenderMode.ON_SCREEN, self))
+        scene.scene_size_changed.connect(self.resizeEvent)
 
     def _perform_zoom_step(self, direction: ZoomDirection):
         scaling_factor = 1.1 if direction is ZoomDirection.IN else 0.9

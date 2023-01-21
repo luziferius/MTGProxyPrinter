@@ -54,6 +54,7 @@ check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v i
 class SettingsWindow(QDialog):
     """Implements the Settings window."""
     saved = Signal()
+    preferred_language_changed = Signal(str)
     document_settings_updated = Signal(DocumentAction)
     error_occurred = Signal(str)
     requested_card_download = Signal(pathlib.Path)
@@ -204,6 +205,10 @@ class SettingsWindow(QDialog):
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
         logger.info("User wants to save the settings.")
+        old_preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        new_preferred_language = self.ui.preferred_language_combo_box.currentText()
+        if old_preferred_language != new_preferred_language:
+            self.preferred_language_changed.emit(new_preferred_language)
         old_layout = self.document.page_layout
         new_layout = self.ui.page_configuration_group_box.page_layout
         if old_layout != new_layout and QMessageBox.question(

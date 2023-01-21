@@ -62,7 +62,7 @@ class Document(QAbstractItemModel):
 
     loading_state_changed = Signal(bool)
     current_page_changed = Signal(QPersistentModelIndex)
-    page_layout_changed = Signal()
+    page_layout_changed = Signal(PageLayoutSettings)
     page_type_changed = Signal(QModelIndex)
 
     action_applied = Signal(DocumentAction)
