@@ -87,6 +87,8 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
 @pytest.mark.parametrize("oversized, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
     (False, 0, 0, [82.18, 826.77, 1571.37, 2315.96], [117.61, 1157.48, 2197.35, 3237.22]),
     (True, 0, 0, [82.18, 1122.05, 2161.92], [117.61, 1606.3, 3094.99]),
+    (False, 1, 1, [82.18, 827.27, 838.58, 1583.68, 1594.99, 2340.08], [117.61, 1157.48, 1169.29, 2209.16, 2220.97, 3260.84]),
+    (True, 1, 1, [82.18, 1122.55, 1133.86, 2174.23], [117.61, 1606.3, 1618.11, 3106.8]),
 ])
 def test_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
@@ -111,15 +113,15 @@ def test_cut_line_locations_when_enabled(
     matcher = [
         has_getters(
             # Horizontal lines, have meaningful Y coordinates (top) and width equal to page width + 1
-            left=close_to(-0.5, d), top=close_to(x, d),
+            left=close_to(-0.5, d), top=close_to(y, d),
             width=close_to(page_width+1, d), height=close_to(1, d)
-        ) for x in expected_horizontals
+        ) for y in expected_horizontals
     ] + [
         has_getters(
             # Vertical lines, have meaningful X coordinates (left) and height equal to page height + 1
-            left=close_to(y, d), top=close_to(-0.5, d),
+            left=close_to(x, d), top=close_to(-0.5, d),
             width=close_to(1, d), height=close_to(page_height+1, d)
-        ) for y in expected_verticals]
+        ) for x in expected_verticals]
     assert_that(
         bounding_boxes,
         contains_inanyorder(*matcher)
