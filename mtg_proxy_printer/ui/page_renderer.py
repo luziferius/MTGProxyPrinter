@@ -257,13 +257,13 @@ class PageScene(QGraphicsScene):
         if not page_layout.image_spacing_horizontal:
             column_count += 1
         for column in range(column_count):
-            column_px = 0.5 * column + scaling_horizontal * (
+            column_px: float = 0.5 * column + scaling_horizontal * (
                     page_layout.margin_left +
                     column * (card_size.width + page_layout.image_spacing_horizontal)
             )
             self._draw_vertical_line(column_px, line_color)
             if page_layout.image_spacing_horizontal:
-                offset = 1 + card_size.width * scaling_horizontal
+                offset: float = 1 + card_size.width * scaling_horizontal
                 self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
@@ -275,21 +275,25 @@ class PageScene(QGraphicsScene):
         if not page_layout.image_spacing_vertical:
             row_count += 1
         for row in range(row_count):
-            row_px = 0.5 * row + scaling_vertical * (
+            row_px: float = 0.5 * row + scaling_vertical * (
                     page_layout.margin_top +
                     row * (card_size.height + page_layout.image_spacing_vertical)
             )
             self._draw_horizontal_line(row_px, line_color)
             if page_layout.image_spacing_vertical:
-                offset = 0.5 + card_size.height * scaling_vertical
+                offset: float = 0.5 + card_size.height * scaling_vertical
                 self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
 
-    def _draw_vertical_line(self, column_px: int, line_color: QColor):
-        self.cut_lines.append(self.addLine(column_px, 0, column_px, self.height(), line_color))
+    def _draw_vertical_line(self, column_px: float, line_color: QColor):
+        line = self.addLine(0, 0, 0, self.height(), line_color)
+        line.setX(column_px)
+        self.cut_lines.append(line)
 
-    def _draw_horizontal_line(self, row_px: int, line_color: QColor):
-        self.cut_lines.append(self.addLine(0, row_px, self.width(), row_px, line_color))
+    def _draw_horizontal_line(self, row_px: float, line_color: QColor):
+        line = self.addLine(0, 0, self.width(), 0, line_color)
+        line.setY(row_px)
+        self.cut_lines.append(line)
 
 
 class PageRenderer(QGraphicsView):

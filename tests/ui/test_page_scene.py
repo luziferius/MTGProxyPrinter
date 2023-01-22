@@ -22,6 +22,7 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
 from mtg_proxy_printer.ui.page_renderer import RenderMode, PageScene
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
@@ -85,10 +86,10 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
 
 
 @pytest.mark.parametrize("oversized, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
-    (False, 0, 0, [82.18, 826.77, 1571.37, 2315.96], [117.61, 1157.48, 2197.35, 3237.22]),
-    (True, 0, 0, [82.18, 1122.05, 2161.92], [117.61, 1606.3, 3094.99]),
-    (False, 1, 1, [82.18, 827.27, 838.58, 1583.68, 1594.99, 2340.08], [117.61, 1157.48, 1169.29, 2209.16, 2220.97, 3260.84]),
-    (True, 1, 1, [82.18, 1122.55, 1133.86, 2174.23], [117.61, 1606.3, 1618.11, 3106.8]),
+    (False, 0, 0, [82.68, 827.27, 1571.87, 2316.46], [118.11, 1157.98, 2197.85, 3237.72]),
+    (True, 0, 0, [82.68, 1122.55, 2162.42], [118.11, 1606.8, 3095.49]),
+    (False, 1, 1, [82.68, 827.77, 839.08, 1584.18, 1595.49, 2340.58], [118.11, 1157.98, 1169.79, 2209.66, 2221.47, 3261.34]),
+    (True, 1, 1, [82.68, 1123.05, 1134.36, 2174.73], [118.11, 1606.8, 1618.61, 3107.3]),
 ])
 def test_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
@@ -102,30 +103,36 @@ def test_cut_line_locations_when_enabled(
     with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document)))
 
-    assert_that(page_scene.cut_lines, only_contains(instance_of(QGraphicsLineItem)))
-    line_items = [item for item in page_scene.items() if isinstance(item, QGraphicsLineItem)]
-    assert_that(page_scene.cut_lines, contains_inanyorder(*line_items))
-    assert_that(line_items, has_length(len(expected_horizontals)+len(expected_verticals)))
-    page_width, page_height = page_scene.width(), page_scene.height()
-
-    d = 0.005
-    bounding_boxes = [item.boundingRect() for item in line_items]
-    matcher = [
-        has_getters(
-            # Horizontal lines, have meaningful Y coordinates (top) and width equal to page width + 1
-            left=close_to(-0.5, d), top=close_to(y, d),
-            width=close_to(page_width+1, d), height=close_to(1, d)
-        ) for y in expected_horizontals
-    ] + [
-        has_getters(
-            # Vertical lines, have meaningful X coordinates (left) and height equal to page height + 1
-            left=close_to(x, d), top=close_to(-0.5, d),
-            width=close_to(1, d), height=close_to(page_height+1, d)
-        ) for x in expected_verticals]
     assert_that(
-        bounding_boxes,
-        contains_inanyorder(*matcher)
+        page_scene.cut_lines,
+        has_length(len(expected_horizontals)+len(expected_verticals)),
+        "Unexpected line count"
+    )
+    assert_that(
+        page_scene.cut_lines,
+        only_contains(instance_of(QGraphicsLineItem)),
+        "cut_lines must only contain QGraphicsLineItem instances"
+    )
+    assert_that(
+        page_scene.cut_lines,
+        only_contains(*page_scene.items()),
+        "cut_lines mut not contain lines not present in the PageScene"
     )
 
-
-
+    page_width, page_height = page_scene.width(), page_scene.height()
+    d = 0.005
+    assert_that(
+        page_scene.cut_lines,
+        contains_inanyorder(
+            *[has_getters(
+                x=close_to(x, d), y=0,
+                boundingRect=has_getters(
+                    width=1, height=close_to(page_height+1, d))
+            ) for x in expected_verticals],
+            *[has_getters(
+                x=0, y=close_to(y, d),
+                boundingRect=has_getters(
+                    width=close_to(page_width+1, d), height=1)
+            ) for y in expected_horizontals]
+        )
+    )
