@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import enum
 import typing
 
@@ -38,6 +39,7 @@ __all__ = [
     "PageScene",
     "PageRenderer",
 ]
+PixelCache = typing.DefaultDict[PageType, typing.List[float]]
 
 
 @enum.unique
@@ -54,6 +56,15 @@ class ZoomDirection(enum.Enum):
 class RenderMode(enum.Enum):
     ON_SCREEN = enum.auto()
     ON_PAPER = enum.auto()
+
+
+class CutMarkerParameters(typing.NamedTuple):
+    page_type: PageType
+    card_size: int
+    scaling_factor: float
+    item_count: int
+    margin: int
+    image_spacing: int
 
 
 class PageScene(QGraphicsScene):
@@ -83,6 +94,9 @@ class PageScene(QGraphicsScene):
         self.background = None
         self.render_mode = render_mode
         self.cut_lines: typing.List[QGraphicsLineItem] = []
+        self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
+        self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
+        self._update_cut_marker_positions()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @Slot(QPersistentModelIndex)
@@ -103,6 +117,7 @@ class PageScene(QGraphicsScene):
         if size_changed:
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.setSceneRect(new_page_size)
+        self._update_cut_marker_positions()
         self.redraw()
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
@@ -249,40 +264,59 @@ class PageScene(QGraphicsScene):
         self._draw_vertical_markers(line_color, page_type)
         self._draw_horizontal_markers(line_color, page_type)
 
-    def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
-        card_size: CardSize = CardSizes.for_page_type(page_type).value
+    def _update_cut_marker_positions(self):
+        logger.debug("Updating cut marker positions")
+        self.vertical_cut_line_locations.clear()
+        self.horizontal_cut_line_locations.clear()
         page_layout = self.document.page_layout
-        scaling_horizontal = self.width() / page_layout.page_width
-        column_count = page_layout.compute_page_column_count(page_type)
-        if not page_layout.image_spacing_horizontal:
-            column_count += 1
-        for column in range(column_count):
-            column_px: float = 0.5 * column + scaling_horizontal * (
-                    page_layout.margin_left +
-                    column * (card_size.width + page_layout.image_spacing_horizontal)
+        for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
+            card_size: CardSize = CardSizes.for_page_type(page_type).value
+            self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
+                page_type,
+                card_size.height, self.height() / page_layout.page_height,
+                page_layout.compute_page_row_count(page_type),
+                page_layout.margin_top, page_layout.image_spacing_horizontal),
+                1 if page_type is PageType.OVERSIZED else 0
             )
+            self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
+                page_type,
+                card_size.width, self.width() / page_layout.page_width,
+                page_layout.compute_page_column_count(page_type),
+                page_layout.margin_left, page_layout.image_spacing_vertical
+            ))
+
+    @staticmethod
+    def _compute_cut_marker_positions(parameters: CutMarkerParameters, image_size_delta_px: float = 0) \
+            -> typing.Generator[float, None, None]:
+        """
+        Computes the cut marker positions using the given parameters. Oversized cards are one pixel too tall.
+        To handle that, the image_size_delta can be used to move the bottom (or right) cut marker by that many 
+        pixels.
+        :param parameters:
+        :param image_size_delta_px: Card size adjustment, defaults to zero pixels
+        :return:
+        """
+        item_count = parameters.item_count
+        if not parameters.image_spacing:
+            item_count += 1
+        for item in range(item_count):
+            pixel_position: float = 0.5 * item + parameters.scaling_factor * (
+                    parameters.margin +
+                    item * (parameters.card_size + parameters.image_spacing)
+            )
+            yield pixel_position
+            if parameters.image_spacing:
+                offset: float = 0.75 + parameters.card_size * parameters.scaling_factor + image_size_delta_px
+                yield pixel_position + offset
+
+    def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
+        for column_px in self.vertical_cut_line_locations[page_type]:
             self._draw_vertical_line(column_px, line_color)
-            if page_layout.image_spacing_horizontal:
-                offset: float = 1 + card_size.width * scaling_horizontal
-                self._draw_vertical_line(column_px + offset, line_color)
         logger.debug(f"Vertical cut markers drawn")
 
     def _draw_horizontal_markers(self, line_color: QColor, page_type: PageType):
-        card_size: CardSize = CardSizes.for_page_type(page_type).value
-        page_layout = self.document.page_layout
-        scaling_vertical = self.height() / page_layout.page_height
-        row_count = page_layout.compute_page_row_count(page_type)
-        if not page_layout.image_spacing_vertical:
-            row_count += 1
-        for row in range(row_count):
-            row_px: float = 0.5 * row + scaling_vertical * (
-                    page_layout.margin_top +
-                    row * (card_size.height + page_layout.image_spacing_vertical)
-            )
+        for row_px in self.horizontal_cut_line_locations[page_type]:
             self._draw_horizontal_line(row_px, line_color)
-            if page_layout.image_spacing_vertical:
-                offset: float = 0.5 + card_size.height * scaling_vertical
-                self._draw_horizontal_line(row_px + offset, line_color)
         logger.debug(f"Horizontal cut markers drawn")
 
     def _draw_vertical_line(self, column_px: float, line_color: QColor):

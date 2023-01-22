@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from functools import partial
 import typing
 from unittest.mock import patch
 
@@ -85,23 +86,27 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
     )
 
 
-@pytest.mark.parametrize("oversized, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
-    (False, 0, 0, [82.68, 827.27, 1571.87, 2316.46], [118.11, 1157.98, 2197.85, 3237.72]),
-    (True, 0, 0, [82.68, 1122.55, 2162.42], [118.11, 1606.8, 3095.49]),
-    (False, 1, 1, [82.68, 827.77, 839.08, 1584.18, 1595.49, 2340.58], [118.11, 1157.98, 1169.79, 2209.66, 2221.47, 3261.34]),
-    (True, 1, 1, [82.68, 1123.05, 1134.36, 2174.73], [118.11, 1606.8, 1618.61, 3107.3]),
+@pytest.mark.parametrize("page_type, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
+    (PageType.UNDETERMINED, 0, 0, [82.68, 827.27, 1571.87, 2316.46], [118.11, 1157.98, 2197.85, 3237.72]),
+    (PageType.REGULAR, 0, 0, [82.68, 827.27, 1571.87, 2316.46], [118.11, 1157.98, 2197.85, 3237.72]),
+    (PageType.OVERSIZED, 0, 0, [82.68, 1122.55, 2162.42], [118.11, 1606.8, 3095.49]),
+
+    (PageType.UNDETERMINED, 1, 1, [82.68, 827.52, 839.08, 1583.93, 1595.49, 2340.33], [118.11, 1158.23, 1169.79, 2209.91, 2221.47, 3261.59]),
+    (PageType.REGULAR, 1, 1, [82.68, 827.52, 839.08, 1583.93, 1595.49, 2340.33], [118.11, 1158.23, 1169.79, 2209.91, 2221.47, 3261.59]),
+    (PageType.OVERSIZED, 1, 1, [82.68, 1122.8, 1134.36, 2174.48], [118.11, 1608.05, 1618.61, 3108.55]),
 ])
 def test_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
-        oversized: bool, horizontal_spacing: int, vertical_spacing: int,
+        page_type: PageType, horizontal_spacing: int, vertical_spacing: int,
         expected_verticals: typing.List[float], expected_horizontals: typing.List[float]):
     document = page_scene.document
     document.page_layout.image_spacing_horizontal = horizontal_spacing
     document.page_layout.image_spacing_vertical = vertical_spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
-    with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document)))
+    if page_type is not PageType.UNDETERMINED:
+        with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
+            document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
 
     assert_that(
         page_scene.cut_lines,
@@ -120,19 +125,29 @@ def test_cut_line_locations_when_enabled(
     )
 
     page_width, page_height = page_scene.width(), page_scene.height()
-    d = 0.005
+
+    close_to_ = partial(close_to, delta=0.005)
+    assert_that(
+        page_scene.vertical_cut_line_locations[page_type],
+        contains_inanyorder(
+            *map(close_to_, expected_verticals))
+    )
+    assert_that(
+        page_scene.horizontal_cut_line_locations[page_type],
+        contains_inanyorder(*map(close_to_, expected_horizontals))
+    )
     assert_that(
         page_scene.cut_lines,
         contains_inanyorder(
             *[has_getters(
-                x=close_to(x, d), y=0,
+                x=close_to_(x), y=0,
                 boundingRect=has_getters(
-                    width=1, height=close_to(page_height+1, d))
+                    width=1, height=close_to_(page_height+1))
             ) for x in expected_verticals],
             *[has_getters(
-                x=0, y=close_to(y, d),
+                x=0, y=close_to_(y),
                 boundingRect=has_getters(
-                    width=close_to(page_width+1, d), height=1)
+                    width=close_to_(page_width+1), height=1)
             ) for y in expected_horizontals]
         )
     )
