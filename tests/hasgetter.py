@@ -194,7 +194,7 @@ def has_getters(*keys_valuematchers, **kv_args):
         description = StringDescription().append_text("an object with getters ")
         for i, (property_name, property_value_matcher) in enumerate(sorted(base_dict.items())):
             description.append_description_of(property_name).append_text(
-                " and return values matching "
+                " returning "
             ).append_description_of(property_value_matcher)
             if i < len(base_dict) - 1:
                 description.append_text(" and ")
