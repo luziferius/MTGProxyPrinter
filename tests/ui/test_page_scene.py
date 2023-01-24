@@ -87,13 +87,13 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
 
 
 @pytest.mark.parametrize("page_type, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
-    (PageType.UNDETERMINED, 0, 0, [82.68, 827.27, 1571.87, 2316.46], [118.11, 1157.98, 2197.85, 3237.72]),
-    (PageType.REGULAR, 0, 0, [82.68, 827.27, 1571.87, 2316.46], [118.11, 1157.98, 2197.85, 3237.72]),
-    (PageType.OVERSIZED, 0, 0, [82.68, 1122.55, 2162.42], [118.11, 1606.8, 3095.49]),
+    (PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238]),
+    (PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238]),
+    (PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098]),
 
-    (PageType.UNDETERMINED, 1, 1, [82.68, 827.52, 839.08, 1583.93, 1595.49, 2340.33], [118.11, 1158.23, 1169.79, 2209.91, 2221.47, 3261.59]),
-    (PageType.REGULAR, 1, 1, [82.68, 827.52, 839.08, 1583.93, 1595.49, 2340.33], [118.11, 1158.23, 1169.79, 2209.91, 2221.47, 3261.59]),
-    (PageType.OVERSIZED, 1, 1, [82.68, 1122.8, 1134.36, 2174.48], [118.11, 1608.05, 1618.61, 3108.55]),
+    (PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262]),
+    (PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262]),
+    (PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110]),
 ])
 def test_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,

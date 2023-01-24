@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
 from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
 import pint
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, DPI
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import Card, CardCorner
@@ -60,8 +60,7 @@ class RenderMode(enum.Enum):
 
 class CutMarkerParameters(typing.NamedTuple):
     page_type: PageType
-    card_size: int
-    scaling_factor: float
+    card_size: pint.Quantity
     item_count: int
     margin: int
     image_spacing: int
@@ -131,8 +130,8 @@ class PageScene(QGraphicsScene):
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
-                (DPI*width).to_reduced_units().magnitude,
-                (DPI*height).to_reduced_units().magnitude
+                (RESOLUTION * width).to("pixel").magnitude,
+                (RESOLUTION * height).to("pixel").magnitude
             )
         )
         return page_size
@@ -235,21 +234,29 @@ class PageScene(QGraphicsScene):
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
         card_size: CardSize = CardSizes.for_page_type(page_type).value
+        card_height: int = card_size.height.magnitude
+        card_width: int = card_size.width.magnitude
         page_layout = self.document.page_layout
-        cards_per_row = page_layout.compute_page_column_count(page_type)
-        column = index.row() % cards_per_row
-        row = index.row() // cards_per_row
-        spacing_vertical = page_layout.image_spacing_vertical
-        spacing_horizontal = page_layout.image_spacing_horizontal
 
-        x_pos = page_layout.margin_left + column * (card_size.width + spacing_horizontal)
-        y_pos = page_layout.margin_top + row * (card_size.height + spacing_vertical)
-        scaling_horizontal = self.width() / page_layout.page_width
-        scaling_vertical = self.height() / page_layout.page_height
+        margin_left = self._mm_to_rounded_px(page_layout.margin_left)
+        margin_top = self._mm_to_rounded_px(page_layout.margin_top)
+
+        cards_per_row = page_layout.compute_page_column_count(page_type)
+        row, column = divmod(index.row(), cards_per_row)
+
+        spacing_vertical = self._mm_to_rounded_px(page_layout.image_spacing_vertical)
+        spacing_horizontal = self._mm_to_rounded_px(page_layout.image_spacing_horizontal)
+
+        x_pos = margin_left + column * (card_width + spacing_horizontal)
+        y_pos = margin_top + row * (card_height + spacing_vertical)
         return QPointF(
-            x_pos * scaling_horizontal + 0.5*column,
-            y_pos * scaling_vertical + 0.5*row,
+            x_pos,
+            y_pos,
         )
+
+    @staticmethod
+    def _mm_to_rounded_px(value: int) -> int:
+        return round((value*unit_registry.mm*RESOLUTION).to("pixel").magnitude)
 
     def _draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
@@ -272,42 +279,32 @@ class PageScene(QGraphicsScene):
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type).value
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_type,
-                card_size.height, self.height() / page_layout.page_height,
+                page_type, card_size.height,
                 page_layout.compute_page_row_count(page_type),
-                page_layout.margin_top, page_layout.image_spacing_horizontal),
-                1 if page_type is PageType.OVERSIZED else 0
+                page_layout.margin_top, page_layout.image_spacing_horizontal)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_type,
-                card_size.width, self.width() / page_layout.page_width,
+                page_type, card_size.width,
                 page_layout.compute_page_column_count(page_type),
                 page_layout.margin_left, page_layout.image_spacing_vertical
             ))
 
-    @staticmethod
-    def _compute_cut_marker_positions(parameters: CutMarkerParameters, image_size_delta_px: float = 0) \
+    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
             -> typing.Generator[float, None, None]:
-        """
-        Computes the cut marker positions using the given parameters. Oversized cards are one pixel too tall.
-        To handle that, the image_size_delta can be used to move the bottom (or right) cut marker by that many 
-        pixels.
-        :param parameters:
-        :param image_size_delta_px: Card size adjustment, defaults to zero pixels
-        :return:
-        """
+        margin = self._mm_to_rounded_px(parameters.margin)
+        spacing = self._mm_to_rounded_px(parameters.image_spacing)
         item_count = parameters.item_count
+        card_size: int = parameters.card_size.magnitude
+        # Without spacing, draw a line top/left of each row/column.
+        # To also draw a line below/left of the last row/column, add a virtual row/column.
+        # With spacing, draw a line left/right/above/below *each* row/column.
         if not parameters.image_spacing:
             item_count += 1
         for item in range(item_count):
-            pixel_position: float = 0.5 * item + parameters.scaling_factor * (
-                    parameters.margin +
-                    item * (parameters.card_size + parameters.image_spacing)
-            )
+            pixel_position: float = margin + item*(spacing+card_size)
             yield pixel_position
             if parameters.image_spacing:
-                offset: float = 0.75 + parameters.card_size * parameters.scaling_factor + image_size_delta_px
-                yield pixel_position + offset
+                yield pixel_position + card_size
 
     def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
         for column_px in self.vertical_cut_line_locations[page_type]:
