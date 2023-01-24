@@ -215,9 +215,9 @@ def _validate_images_section(settings: configparser.ConfigParser, section_name: 
 
 
 def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
-    sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
-    card_height = sizes.as_mm(sizes.height)
-    card_width = sizes.as_mm(sizes.width)
+    card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
+    card_height = card_size.as_mm(card_size.height)
+    card_width = card_size.as_mm(card_size.width)
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners"}

@@ -15,6 +15,7 @@
 
 import collections
 import enum
+import functools
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
@@ -116,6 +117,7 @@ class PageScene(QGraphicsScene):
         if size_changed:
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.setSceneRect(new_page_size)
+        self._compute_position_for_image.cache_clear()
         self._update_cut_marker_positions()
         self.redraw()
         if size_changed:
@@ -138,14 +140,15 @@ class PageScene(QGraphicsScene):
 
     def _draw_cards(self):
         index = self.selected_page.sibling(self.selected_page.row(), 0)
+        page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
         images_to_draw = self.selected_page.model().rowCount(index)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
-            self.draw_card(row)
+            self.draw_card(row, page_type)
 
-    def draw_card(self, row: int):
+    def draw_card(self, row: int, page_type: PageType):
         index = self.selected_page.child(row, PageColumns.Image)
-        position = self._compute_position_for_image(index)
+        position = self._compute_position_for_image(row, page_type)
         image: QPixmap = index.data(Qt.DisplayRole)
         if image is not None:
             if self.document.page_layout.draw_sharp_corners:
@@ -189,9 +192,10 @@ class PageScene(QGraphicsScene):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
             inserted_cards = last-first+1
             if first+inserted_cards == self.document.rowCount(parent):
+                page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
                 logger.debug(f"{inserted_cards} cards appended to the currently shown page, drawing them.")
                 for new in range(first, last+1):
-                    self.draw_card(new)
+                    self.draw_card(new, page_type)
             else:
                 logger.debug(f"{inserted_cards} cards inserted into the currently shown page, redrawing.")
                 self.redraw()
@@ -230,10 +234,10 @@ class PageScene(QGraphicsScene):
             self._draw_cut_markers()
         self._draw_cards()
 
-    def _compute_position_for_image(self, index: QModelIndex) -> QPointF:
+    @functools.lru_cache
+    def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
-        page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
-        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        card_size = CardSizes.for_page_type(page_type)
         card_height: int = card_size.height.magnitude
         card_width: int = card_size.width.magnitude
         page_layout = self.document.page_layout
@@ -242,7 +246,7 @@ class PageScene(QGraphicsScene):
         margin_top = self._mm_to_rounded_px(page_layout.margin_top)
 
         cards_per_row = page_layout.compute_page_column_count(page_type)
-        row, column = divmod(index.row(), cards_per_row)
+        row, column = divmod(index_row, cards_per_row)
 
         spacing_vertical = self._mm_to_rounded_px(page_layout.image_spacing_vertical)
         spacing_horizontal = self._mm_to_rounded_px(page_layout.image_spacing_horizontal)
@@ -277,7 +281,7 @@ class PageScene(QGraphicsScene):
         self.horizontal_cut_line_locations.clear()
         page_layout = self.document.page_layout
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
-            card_size: CardSize = CardSizes.for_page_type(page_type).value
+            card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 page_type, card_size.height,
                 page_layout.compute_page_row_count(page_type),

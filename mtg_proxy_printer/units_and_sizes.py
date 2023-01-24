@@ -34,12 +34,12 @@ class CardSize(NamedTuple):
 
 
 @enum.unique
-class CardSizes(enum.Enum):
+class CardSizes(CardSize, enum.Enum):
     REGULAR = CardSize(unit_registry("745 pixel"), unit_registry("1040 pixel"))
     OVERSIZED = CardSize(unit_registry("1040 pixel"), unit_registry("1490 pixel"))
 
     @classmethod
-    def for_page_type(cls, page_type: "PageType"):
+    def for_page_type(cls, page_type: "PageType") -> CardSize:
         return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
 
 

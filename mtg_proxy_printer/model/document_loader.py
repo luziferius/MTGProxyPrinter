@@ -114,7 +114,7 @@ class PageLayoutSettings:
 
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
-        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        card_size: CardSize = CardSizes.for_page_type(page_type)
         card_width = card_size.as_mm(card_size.width)
         total_width = self.page_width
         margins = self.margin_left + self.margin_right
@@ -129,7 +129,7 @@ class PageLayoutSettings:
 
     def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
-        card_size: CardSize = CardSizes.for_page_type(page_type).value
+        card_size: CardSize = CardSizes.for_page_type(page_type)
         card_height = card_size.as_mm(card_size.height)
         total_height = self.page_height
         margins = self.margin_top + self.margin_bottom
