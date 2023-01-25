@@ -15,14 +15,15 @@
 
 import collections
 import enum
+import itertools
 import functools
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
     pyqtSignal as Signal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
-    QGraphicsLineItem
-from PyQt5.QtGui import QColor, QPixmap, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent
+    QGraphicsLineItem, QGraphicsItemGroup, QGraphicsItem, QGraphicsRectItem, QGraphicsPixmapItem
+from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
 import pint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
@@ -65,6 +66,57 @@ class CutMarkerParameters(typing.NamedTuple):
     item_count: int
     margin: int
     image_spacing: int
+
+
+class CardItem(QGraphicsItemGroup):
+
+    def __init__(self, card: Card, draw_corners: bool, parent: QGraphicsItem = None):
+        super().__init__(parent)
+        self.corner_area = QSizeF(0, 0, 50, 50)
+        self.card = card
+        self.card_item = QGraphicsPixmapItem(card.image_file, self)
+        self.card_item.setTransformationMode(Qt.SmoothTransformation)
+        self.addToGroup(self.card_item)
+        # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
+        self.corner_pen = QPen(QColorConstants.Transparent)
+        self.corners: typing.List[QGraphicsRectItem] = list(self.create_corners())
+
+        if draw_corners:
+            self.draw_corners()
+
+    def create_corners(self):
+        image = self.card.image_file
+        card_height, card_width = image.height(), image.width()
+        corner_height, corner_width = self.corner_area.height(), self.corner_area.width()
+        card_width = image.width()
+        return itertools.starmap(
+            self._create_corner, (
+                (CardCorner.TOP_LEFT, QPointF(0, 0)),
+                (CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0)),
+                (CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height)),
+                (CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height)),
+            )
+        )
+
+    def _create_corner(self, corner: CardCorner, position: QPointF) -> QGraphicsRectItem:
+        rect = QGraphicsRectItem(self.corner_area)
+        color = self.card.corner_color(corner)
+        rect.setPos(position)
+        rect.setPen(self.corner_pen)
+        rect.setBrush(color)
+        return rect
+
+    def draw_corners(self):
+        for item in self.childItems():
+            self.removeFromGroup(item)
+        for item in self.corners:
+            self.addToGroup(item)
+        self.addToGroup(self.card_item)
+
+    def remove_corners(self):
+        for item in self.childItems():
+            if isinstance(item, QGraphicsRectItem):
+                self.removeFromGroup(item)
 
 
 class PageScene(QGraphicsScene):
@@ -149,31 +201,11 @@ class PageScene(QGraphicsScene):
     def draw_card(self, row: int, page_type: PageType):
         index = self.selected_page.child(row, PageColumns.Image)
         position = self._compute_position_for_image(row, page_type)
-        image: QPixmap = index.data(Qt.DisplayRole)
-        if image is not None:
-            if self.document.page_layout.draw_sharp_corners:
-                self._draw_corners(index, position)
-            pixmap = self.addPixmap(image)
-            pixmap.setTransformationMode(Qt.SmoothTransformation)
-            pixmap.setPos(position)
-
-    def _draw_corners(self, index: QModelIndex, position: QPointF):
-        card: Card = index.internalPointer().card
-        image = card.image_file
-        corner_size = QSizeF(50, 50)
-        # Needs to offset the corner position by some half pixels to not overlap
-        self.addRect(
-            QRectF(position + QPointF(0.5, 0.5), corner_size),
-            card.corner_color(CardCorner.TOP_LEFT), card.corner_color(CardCorner.TOP_LEFT))
-        self.addRect(
-            QRectF(position + image.rect().topRight() - QPointF(49.5, -0.5), corner_size),
-            card.corner_color(CardCorner.TOP_RIGHT), card.corner_color(CardCorner.TOP_RIGHT))
-        self.addRect(
-            QRectF(position + image.rect().bottomLeft() - QPointF(-0.5, 49.5), corner_size),
-            card.corner_color(CardCorner.BOTTOM_LEFT), card.corner_color(CardCorner.BOTTOM_LEFT))
-        self.addRect(
-            QRectF(position + image.rect().bottomRight() - QPointF(49.5, 49.5), corner_size),
-            card.corner_color(CardCorner.BOTTOM_RIGHT), card.corner_color(CardCorner.BOTTOM_RIGHT))
+        page_layout = self.document.page_layout
+        if index.data(Qt.DisplayRole) is not None:  # Card has a QPixmap set
+            card: Card = index.internalPointer().card
+            self.addItem(card_item := CardItem(card, page_layout.draw_sharp_corners))
+            card_item.setPos(position)
 
     def _is_valid_page_index(self, index: QModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
