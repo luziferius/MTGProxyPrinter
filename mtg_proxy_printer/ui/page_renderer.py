@@ -61,7 +61,6 @@ class RenderMode(enum.Enum):
 
 
 class CutMarkerParameters(typing.NamedTuple):
-    page_type: PageType
     card_size: pint.Quantity
     item_count: int
     margin: int
@@ -70,53 +69,53 @@ class CutMarkerParameters(typing.NamedTuple):
 
 class CardItem(QGraphicsItemGroup):
 
-    def __init__(self, card: Card, draw_corners: bool, parent: QGraphicsItem = None):
+    def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
-        self.corner_area = QSizeF(0, 0, 50, 50)
+        document.page_layout_changed.connect(self.on_page_layout_changed)
+        self.corner_area = QSizeF(50, 50)
         self.card = card
-        self.card_item = QGraphicsPixmapItem(card.image_file, self)
-        self.card_item.setTransformationMode(Qt.SmoothTransformation)
-        self.addToGroup(self.card_item)
+        self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
+        self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
-        self.corners: typing.List[QGraphicsRectItem] = list(self.create_corners())
+        self.corners: typing.List[QGraphicsRectItem] = list(
+            self.create_corners(document.page_layout.draw_sharp_corners))
+        self._draw_content()
 
-        if draw_corners:
-            self.draw_corners()
-
-    def create_corners(self):
+    def create_corners(self, draw_corners: bool):
         image = self.card.image_file
         card_height, card_width = image.height(), image.width()
         corner_height, corner_width = self.corner_area.height(), self.corner_area.width()
         card_width = image.width()
+        opacity = 255 if draw_corners else 0
         return itertools.starmap(
             self._create_corner, (
-                (CardCorner.TOP_LEFT, QPointF(0, 0)),
-                (CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0)),
-                (CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height)),
-                (CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height)),
+                (CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
+                (CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0), opacity),
+                (CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height), opacity),
+                (CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height), opacity),
             )
         )
 
-    def _create_corner(self, corner: CardCorner, position: QPointF) -> QGraphicsRectItem:
-        rect = QGraphicsRectItem(self.corner_area)
+    def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
+        rect = QGraphicsRectItem(QRectF(QPointF(0, 0), self.corner_area))
         color = self.card.corner_color(corner)
         rect.setPos(position)
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
+        rect.setOpacity(opacity)
         return rect
 
-    def draw_corners(self):
-        for item in self.childItems():
-            self.removeFromGroup(item)
+    #@Slot(PageLayoutSettings)
+    def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
+        value = 255 if new_page_layout.draw_sharp_corners else 0
+        for corner in self.corners:
+            corner.setOpacity(value)
+
+    def _draw_content(self):
         for item in self.corners:
             self.addToGroup(item)
-        self.addToGroup(self.card_item)
-
-    def remove_corners(self):
-        for item in self.childItems():
-            if isinstance(item, QGraphicsRectItem):
-                self.removeFromGroup(item)
+        self.addToGroup(self.card_pixmap_item)
 
 
 class PageScene(QGraphicsScene):
@@ -204,7 +203,7 @@ class PageScene(QGraphicsScene):
         page_layout = self.document.page_layout
         if index.data(Qt.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.internalPointer().card
-            self.addItem(card_item := CardItem(card, page_layout.draw_sharp_corners))
+            self.addItem(card_item := CardItem(card, self.document))
             card_item.setPos(position)
 
     def _is_valid_page_index(self, index: QModelIndex):
@@ -315,13 +314,11 @@ class PageScene(QGraphicsScene):
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_type, card_size.height,
-                page_layout.compute_page_row_count(page_type),
+                card_size.height, page_layout.compute_page_row_count(page_type),
                 page_layout.margin_top, page_layout.image_spacing_horizontal)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                page_type, card_size.width,
-                page_layout.compute_page_column_count(page_type),
+                card_size.width, page_layout.compute_page_column_count(page_type),
                 page_layout.margin_left, page_layout.image_spacing_vertical
             ))
 
