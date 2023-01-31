@@ -326,14 +326,11 @@ class PageScene(QGraphicsScene):
             -> typing.Generator[float, None, None]:
         margin = self._mm_to_rounded_px(parameters.margin)
         spacing = self._mm_to_rounded_px(parameters.image_spacing)
-        item_count = parameters.item_count
         card_size: int = parameters.card_size.magnitude
         # Without spacing, draw a line top/left of each row/column.
-        # To also draw a line below/left of the last row/column, add a virtual row/column.
-        # With spacing, draw a line left/right/above/below *each* row/column.
-        if not parameters.image_spacing:
-            item_count += 1
-        for item in range(item_count):
+        # To also draw a line below/right of the last row/column, add a virtual row/column if spacing is zero.
+        # With positive spacing, draw a line left/right/above/below *each* row/column.
+        for item in range(parameters.item_count + (0 if spacing else 1)):
             pixel_position: float = margin + item*(spacing+card_size)
             yield pixel_position
             if parameters.image_spacing:
