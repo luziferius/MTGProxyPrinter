@@ -236,8 +236,12 @@ class PageScene(QGraphicsScene):
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
         if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:
-            logger.info("A card on the current page was replaced, redrawing.")
-            self.redraw()
+            page_type: PageType = top_left.parent().data(Qt.UserRole)
+            row = top_left.row()
+            logger.debug(f"Card {row} on the current page was replaced, replacing image.")
+            current_item = self.card_items[row]
+            self.draw_card(row, page_type, current_item)
+            self.removeItem(current_item)
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
