@@ -88,6 +88,7 @@ class CardItem(QGraphicsItemGroup):
         self.corners: typing.List[QGraphicsRectItem] = list(
             self.create_corners(document.page_layout.draw_sharp_corners))
         self._draw_content()
+        self.setZValue(RenderLayers.CARDS.value)
 
     def create_corners(self, draw_corners: bool):
         image = self.card.image_file
