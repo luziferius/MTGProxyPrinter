@@ -205,14 +205,21 @@ class PageScene(QGraphicsScene):
         for row in range(images_to_draw):
             self.draw_card(row, page_type)
 
-    def draw_card(self, row: int, page_type: PageType):
+    def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
         index = self.selected_page.child(row, PageColumns.Image)
         position = self._compute_position_for_image(row, page_type)
-        page_layout = self.document.page_layout
         if index.data(Qt.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.internalPointer().card
             self.addItem(card_item := CardItem(card, self.document))
             card_item.setPos(position)
+            if next_item is not None:
+                # See https://doc.qt.io/qt-6/qgraphicsitem.html#sorting
+                # "You can call stackBefore() to reorder the list of children.
+                # This will directly modify the insertion order."
+                # This is required to keep the card order consistent with the model when inserting cards in the
+                # middle of the page. This can happen when undoing a card removal. The caller has to supply the
+                # item which’s position the new item takes.
+                card_item.stackBefore(next_item)
 
     def update_card_positions(self):
         page_type: PageType = self.selected_page.data(Qt.UserRole)
@@ -235,14 +242,15 @@ class PageScene(QGraphicsScene):
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
             inserted_cards = last-first+1
-            if first+inserted_cards == self.document.rowCount(parent):
-                page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
-                logger.debug(f"{inserted_cards} cards appended to the currently shown page, drawing them.")
-                for new in range(first, last+1):
-                    self.draw_card(new, page_type)
-            else:
-                logger.debug(f"{inserted_cards} cards inserted into the currently shown page, redrawing.")
-                self.redraw()
+            needs_reorder = first + inserted_cards < self.document.rowCount(parent)
+            next_item = self.card_items[first] if needs_reorder else None
+            page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
+            logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
+            for new in range(first, last+1):
+                self.draw_card(new, page_type, next_item)
+            if needs_reorder:
+                logger.debug("Cards added in the middle of the page, re-order existing cards.")
+                self.update_card_positions()
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
