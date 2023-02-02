@@ -118,6 +118,10 @@ class CardItem(QGraphicsItemGroup):
         self.addToGroup(self.card_pixmap_item)
 
 
+def is_card_item(item: QGraphicsItem) -> bool:
+    return isinstance(item, CardItem)
+
+
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
 
@@ -149,6 +153,10 @@ class PageScene(QGraphicsScene):
         self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
         self._update_cut_marker_positions()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
+
+    @property
+    def card_items(self) -> typing.List[CardItem]:
+        return list(filter(is_card_item, self.items(Qt.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -191,7 +199,7 @@ class PageScene(QGraphicsScene):
 
     def _draw_cards(self):
         index = self.selected_page.sibling(self.selected_page.row(), 0)
-        page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
+        page_type: PageType = self.selected_page.data(Qt.UserRole)
         images_to_draw = self.selected_page.model().rowCount(index)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
@@ -205,6 +213,11 @@ class PageScene(QGraphicsScene):
             card: Card = index.internalPointer().card
             self.addItem(card_item := CardItem(card, self.document))
             card_item.setPos(position)
+
+    def update_card_positions(self):
+        page_type: PageType = self.selected_page.data(Qt.UserRole)
+        for index, card in enumerate(self.card_items):
+            card.setPos(self._compute_position_for_image(index, page_type))
 
     def _is_valid_page_index(self, index: QModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
@@ -239,8 +252,10 @@ class PageScene(QGraphicsScene):
 
     def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid() and parent.row() == self.selected_page.row():
-            logger.debug(f"Cards {first} to {last} removed from the currently shown page, re-drawing the page.")
-            self.redraw()
+            logger.debug(f"Removing cards {first} to {last} from the current page.")
+            for item in self.card_items[first:last+1]:
+                self.removeItem(item)
+            self.update_card_positions()
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
         if parent.isValid() and parent.row() == self.selected_page.row():
