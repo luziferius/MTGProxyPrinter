@@ -202,12 +202,22 @@ class PageScene(QGraphicsScene):
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
-        logger.debug(f"Current page changed to page {selected_page.row()}, redrawing")
+        logger.debug(f"Current page changed to page {selected_page.row()}")
+        page_types: typing.Set[PageType] = {
+            self.selected_page.data(Qt.UserRole),
+            selected_page.data(Qt.UserRole)
+        }
         self.selected_page = selected_page
-        if selected_page.isValid():
-            self.redraw()
-        else:
-            self.clear()
+
+        if PageType.OVERSIZED in page_types and len(page_types) > 1:  # Switching to or from an oversized page
+            logger.debug("New page contains cards of different size, re-drawing cut markers")
+            self.remove_cut_markers()
+            self.draw_cut_markers()
+
+        for item in self.card_items:
+            self.removeItem(item)
+        if self._is_valid_page_index(selected_page):
+            self._draw_cards()
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
@@ -307,9 +317,8 @@ class PageScene(QGraphicsScene):
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
-            logger.debug("About to delete the currently shown page. Removing the held index and clearing the view.")
+            logger.debug("About to delete the currently shown page. Removing the held index.")
             self.selected_page = QPersistentModelIndex()
-            self.clear()
 
     def on_rows_removed(self, parent: QModelIndex, first: int, last: int):
         if parent.isValid() and parent.row() == self.selected_page.row():
@@ -327,20 +336,6 @@ class PageScene(QGraphicsScene):
             # Moved in cards are treated as if they were added
             logger.debug("Cards moved onto the currently shown page, calling card insertion handler.")
             self.on_rows_inserted(destination, row, row+end-start-1)
-
-    def redraw(self):
-        """Wipes the scene and re-draws everything"""
-        logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
-        self.clear()
-        if self.render_mode == RenderMode.ON_SCREEN:
-            color = self.get_background_color(self.render_mode)
-            logger.debug(f"Drawing background rectangle")
-            self.background = self.addRect(0, 0, self.width(), self.height(), color, color)
-            self.background.setZValue(RenderLayers.BACKGROUND.value)
-        self.setBackgroundBrush(QBrush(QColor("white"), Qt.SolidPattern))
-        if self.document.page_layout.draw_cut_markers:
-            self.draw_cut_markers()
-        self._draw_cards()
 
     @functools.lru_cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:

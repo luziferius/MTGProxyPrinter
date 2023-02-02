@@ -54,10 +54,9 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
     document = page_scene.document
     with qtbot.wait_signal(document.action_applied):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document)))
-    with patch(PATH_PREFIX+"redraw") as redraw_mock, patch(PATH_PREFIX+"draw_cut_markers") as cut_markes_mock,\
+    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markes_mock,\
             qtbot.wait_signals([document.action_applied, document.rowsInserted]):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document), count))
-    redraw_mock.assert_not_called()
     cut_markes_mock.assert_not_called()
     assert_that(
         page_scene.items(),

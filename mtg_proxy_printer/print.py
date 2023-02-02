@@ -112,8 +112,7 @@ class PDFPrinter(QPdfWriter):
 
         for index in range(first_index, last_index):
             logger.debug(f"Rendering page {index+1}/{self.document.rowCount()}")
-            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            self.scene.redraw()
+            self.scene.on_current_page_changed(QPersistentModelIndex(self.document.index(index, 0)))
             self.scene.render(self.painter)
             if index + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
@@ -136,8 +135,7 @@ class Renderer(QObject):
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")
-            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            self.scene.redraw()
+            self.scene.on_current_page_changed(QPersistentModelIndex(self.document.index(index, 0)))
             self.scene.render(painter)
             if index+1 < page_count:
                 printer.newPage()
