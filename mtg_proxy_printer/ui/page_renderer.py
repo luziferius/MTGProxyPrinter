@@ -45,6 +45,13 @@ PixelCache = typing.DefaultDict[PageType, typing.List[float]]
 
 
 @enum.unique
+class RenderLayers(enum.Enum):
+    BACKGROUND = -3
+    CUT_LINES = -2
+    CARDS = 0
+
+
+@enum.unique
 class ZoomDirection(enum.Enum):
     IN = enum.auto()
     OUT = enum.auto()
@@ -121,6 +128,10 @@ def is_card_item(item: QGraphicsItem) -> bool:
     return isinstance(item, CardItem)
 
 
+def is_cut_line_item(item: QGraphicsItem) -> bool:
+    return isinstance(item, QGraphicsLineItem)
+
+
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
 
@@ -131,7 +142,7 @@ class PageScene(QGraphicsScene):
         :param document: The document instance
         :param render_mode: Specifies the render mode.
           On paper, no background is drawn and cut markers use black.
-          On Screen, a background is drawn using the theme’s background color and a high-contrast color for cut markers.
+          On Screen, the background uses the theme’s background color and cut markers use a high-contrast color.
         :param parent: Optional Qt parent object
         """
         super(PageScene, self).__init__(self.get_document_page_size(document.page_layout), parent)
@@ -145,17 +156,47 @@ class PageScene(QGraphicsScene):
         self.document.page_type_changed.connect(self.on_page_type_changed)
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
-        self.background = None
+        self.setBackgroundBrush(QBrush(QColor("white"), Qt.SolidPattern))
         self.render_mode = render_mode
-        self.cut_lines: typing.List[QGraphicsLineItem] = []
+        background_color = self.get_background_color(render_mode)
+        logger.debug(f"Drawing background rectangle")
+        self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
+        self.background.setZValue(RenderLayers.BACKGROUND.value)
         self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
         self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
         self._update_cut_marker_positions()
+        if document.page_layout.draw_cut_markers:
+            self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
+
+    def get_background_color(self, render_mode: RenderMode) -> QColor:
+        if render_mode is RenderMode.ON_PAPER:
+            return QColorConstants.Transparent
+        return self.palette().color(QPalette.Active, QPalette.Base)
+
+    def get_cut_marker_color(self, render_mode: RenderMode) -> QColor:
+        if render_mode is RenderMode.ON_PAPER:
+            return QColorConstants.Black
+        return self.palette().color(QPalette.Active, QPalette.WindowText)
+
+    def setPalette(self, palette: QPalette) -> None:
+        logger.info("Color palette changed, updating PageScene background and cut line colors.")
+        super().setPalette(palette)
+        background_color = self.get_background_color(self.render_mode)
+        self.background.setPen(background_color)
+        self.background.setBrush(background_color)
+        cut_line_color = self.get_cut_marker_color(self.render_mode)
+        logger.info(f"Number of cut lines: {len(self.cut_lines)}")
+        for line in self.cut_lines:
+            line.setPen(cut_line_color)
 
     @property
     def card_items(self) -> typing.List[CardItem]:
         return list(filter(is_card_item, self.items(Qt.AscendingOrder)))
+
+    @property
+    def cut_lines(self) -> typing.List[QGraphicsLineItem]:
+        return list(filter(is_cut_line_item, self.items(Qt.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -175,9 +216,13 @@ class PageScene(QGraphicsScene):
         if size_changed:
             logger.debug("Page size changed. Adjusting PageScene dimensions")
             self.setSceneRect(new_page_size)
-        self._compute_position_for_image.cache_clear()
+            self.background.setRect(new_page_size)
         self._update_cut_marker_positions()
-        self.redraw()
+        self.remove_cut_markers()
+        if new_page_layout.draw_cut_markers:
+            self.draw_cut_markers()
+        self._compute_position_for_image.cache_clear()
+        self.update_card_positions()
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
@@ -231,7 +276,10 @@ class PageScene(QGraphicsScene):
     @Slot(QModelIndex)
     def on_page_type_changed(self, page: QModelIndex):
         if page.row() == self.selected_page.row():
-            self.redraw()
+            self.update_card_positions()
+            if self.document.page_layout.draw_cut_markers:
+                self.remove_cut_markers()
+                self.draw_cut_markers()
 
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
         if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:
@@ -284,12 +332,13 @@ class PageScene(QGraphicsScene):
         logger.info(f"Redraw triggered. Clearing the {self.__class__.__name__}.")
         self.clear()
         if self.render_mode == RenderMode.ON_SCREEN:
-            color = self.palette().color(QPalette.Active, QPalette.Base)
+            color = self.get_background_color(self.render_mode)
             logger.debug(f"Drawing background rectangle")
             self.background = self.addRect(0, 0, self.width(), self.height(), color, color)
+            self.background.setZValue(RenderLayers.BACKGROUND.value)
         self.setBackgroundBrush(QBrush(QColor("white"), Qt.SolidPattern))
         if self.document.page_layout.draw_cut_markers:
-            self._draw_cut_markers()
+            self.draw_cut_markers()
         self._draw_cards()
 
     @functools.lru_cache
@@ -320,15 +369,17 @@ class PageScene(QGraphicsScene):
     def _mm_to_rounded_px(value: int) -> int:
         return round((value*unit_registry.mm*RESOLUTION).to("pixel").magnitude)
 
-    def _draw_cut_markers(self):
+    def remove_cut_markers(self):
+        for line in self.cut_lines:
+            self.removeItem(line)
+
+    def draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
-        self.cut_lines.clear()
         page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
         if page_type == PageType.MIXED:
             logger.warning("Not drawing cut markers for page with mixed image sizes")
             return
-        line_color = QColor("black") if self.render_mode == RenderMode.ON_PAPER \
-            else self.palette().color(QPalette.Active, QPalette.WindowText)
+        line_color = self.get_cut_marker_color(self.render_mode)
         logger.info(f"Drawing cut markers")
         self._draw_vertical_markers(line_color, page_type)
         self._draw_horizontal_markers(line_color, page_type)
@@ -376,12 +427,12 @@ class PageScene(QGraphicsScene):
     def _draw_vertical_line(self, column_px: float, line_color: QColor):
         line = self.addLine(0, 0, 0, self.height(), line_color)
         line.setX(column_px)
-        self.cut_lines.append(line)
+        line.setZValue(RenderLayers.CUT_LINES.value)
 
     def _draw_horizontal_line(self, row_px: float, line_color: QColor):
         line = self.addLine(0, 0, self.width(), 0, line_color)
         line.setY(row_px)
-        self.cut_lines.append(line)
+        line.setZValue(RenderLayers.CUT_LINES.value)
 
 
 class PageRenderer(QGraphicsView):
@@ -419,7 +470,6 @@ class PageRenderer(QGraphicsView):
         if event.type() in {QEvent.ApplicationPaletteChange, QEvent.PaletteChange}:
             self._update_background_brush()
             self.scene().setPalette(self.palette())
-            self.scene().redraw()
             event.accept()
         else:
             super().changeEvent(event)

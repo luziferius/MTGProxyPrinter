@@ -42,11 +42,9 @@ def palette_change_event(request):
 
 
 def test_renderer_redraws_scene_on_palette_change(renderer: PageRenderer, palette_change_event: QEvent):
-    with patch(PATH_PREFIX+"PageScene.setPalette") as set_palette_mock, \
-            patch(PATH_PREFIX+"PageScene.redraw") as redraw_mock:
+    with patch(PATH_PREFIX+"PageScene.setPalette") as set_palette_mock:
         renderer.changeEvent(palette_change_event)
     set_palette_mock.assert_called_once_with(renderer.palette())
-    redraw_mock.assert_called_once()
     assert_that(palette_change_event.isAccepted())
 
 
