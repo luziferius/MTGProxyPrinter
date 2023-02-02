@@ -163,7 +163,6 @@ class KnownCardImageModel(QAbstractTableModel):
         self.endInsertRows()
 
     def clear(self):
-        self.modelAboutToBeReset.emit()
         self.beginResetModel()
         self._data.clear()
         self.endResetModel()
@@ -263,7 +262,6 @@ class UnknownCardImageModel(QAbstractTableModel):
         self.endInsertRows()
 
     def clear(self):
-        self.modelAboutToBeReset.emit()
         self.beginResetModel()
         self._data.clear()
         self.endResetModel()
