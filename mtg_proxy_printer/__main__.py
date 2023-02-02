@@ -35,8 +35,8 @@ def main():
     arguments = mtg_proxy_printer.argument_parser.parse_args()
     mtg_proxy_printer.logger.configure_root_logger()
     # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
-    # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+    # Qt.ApplicationAttribute.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     _app = mtg_proxy_printer.application.Application(arguments)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")

@@ -84,7 +84,6 @@ class SavePDFDialog(QFileDialog):
         logger.debug("User aborted saving to PDF. Doing nothing.")
 
 
-
 class SaveDocumentAsDialog(QFileDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):

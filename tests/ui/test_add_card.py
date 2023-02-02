@@ -45,9 +45,9 @@ def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase
     add_card_widget.set_card_database(card_db)
     add_card_widget.ui.copies_input.setValue(1)
     add_card_widget.ui.card_name_list.setSelection(QRect(1, 1, 1, 1), QItemSelectionModel.ClearAndSelect)
-    qtbot.mouseClick(add_card_widget.ui.card_name_list, Qt.LeftButton, pos=QPoint(10, 10))
+    qtbot.mouseClick(add_card_widget.ui.card_name_list, Qt.MouseButton.LeftButton, pos=QPoint(10, 10))
     qtbot.wait(10)
     qtbot.mouseClick(
-        add_card_widget.ui.button_box.button(QDialogButtonBox.StandardButton.Ok), Qt.LeftButton
+        add_card_widget.ui.button_box.button(QDialogButtonBox.StandardButton.Ok), Qt.MouseButton.LeftButton
     )
     assert_that(add_card_widget._read_card_data_from_ui(), is_(equal_to(expected_card_identification_data)))

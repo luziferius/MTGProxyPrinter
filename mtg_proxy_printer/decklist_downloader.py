@@ -46,8 +46,8 @@ class IsIdentifyingDeckUrlValidator(QValidator):
         for downloader_class in AVAILABLE_DOWNLOADERS.values():
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
                 logger.debug(f"Input is valid URL for {downloader_class.APPLICABLE_WEBSITES}")
-                return QValidator.Acceptable, input_string, pos
-        return QValidator.Intermediate, input_string, pos
+                return QValidator.State.Acceptable, input_string, pos
+        return QValidator.State.Intermediate, input_string, pos
 
 
 class DecklistDownloader(DownloaderBase):

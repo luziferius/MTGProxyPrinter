@@ -29,7 +29,7 @@ class CardSize(NamedTuple):
 
     @staticmethod
     def as_mm(value: pint.Quantity) -> int:
-        size:pint.Quantity = (value/RESOLUTION).to("mm")
+        size: pint.Quantity = (value/RESOLUTION).to("mm")
         return round(size.magnitude)
 
 

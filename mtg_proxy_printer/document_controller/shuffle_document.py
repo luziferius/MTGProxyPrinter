@@ -31,6 +31,7 @@ __all__ = [
 
 IndexedCards = typing.List[typing.Tuple[int, Card]]
 ModelIndexList = typing.List[QModelIndex]
+ItemDataRole = Qt.ItemDataRole
 
 
 class ActionShuffleDocument(DocumentAction):
@@ -85,7 +86,8 @@ class ActionShuffleDocument(DocumentAction):
             bottom_right = model_index.siblingAtColumn(rightmost_column)
             container: CardContainer = model_index.internalPointer()
             container.card = card
-            document.dataChanged.emit(model_index, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            document.dataChanged.emit(
+                model_index, bottom_right, (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole))
 
     @property
     def as_str(self):

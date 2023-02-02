@@ -44,6 +44,7 @@ __all__ = [
     "PageRenderer",
 ]
 PixelCache = typing.DefaultDict[PageType, typing.List[float]]
+ItemDataRole = Qt.ItemDataRole
 
 
 @enum.unique
@@ -84,7 +85,7 @@ class CardItem(QGraphicsItemGroup):
         self.corner_area = QSizeF(50, 50)
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
-        self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
+        self.card_pixmap_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
         self.corners: typing.List[QGraphicsRectItem] = list(
@@ -159,7 +160,7 @@ class PageScene(QGraphicsScene):
         self.document.page_type_changed.connect(self.on_page_type_changed)
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
-        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
+        self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.BrushStyle.SolidPattern))
         self.render_mode = render_mode
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
@@ -195,19 +196,19 @@ class PageScene(QGraphicsScene):
 
     @property
     def card_items(self) -> typing.List[CardItem]:
-        return list(filter(is_card_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_card_item, self.items(Qt.SortOrder.AscendingOrder)))
 
     @property
     def cut_lines(self) -> typing.List[QGraphicsLineItem]:
-        return list(filter(is_cut_line_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_cut_line_item, self.items(Qt.SortOrder.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}")
         page_types: typing.Set[PageType] = {
-            self.selected_page.data(Qt.ItemDataRole.UserRole),
-            selected_page.data(Qt.ItemDataRole.UserRole)
+            self.selected_page.data(ItemDataRole.UserRole),
+            selected_page.data(ItemDataRole.UserRole)
         }
         self.selected_page = selected_page
 
@@ -256,7 +257,7 @@ class PageScene(QGraphicsScene):
 
     def _draw_cards(self):
         index = self.selected_page.sibling(self.selected_page.row(), 0)
-        page_type: PageType = self.selected_page.data(Qt.ItemDataRole.UserRole)
+        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
         images_to_draw = self.selected_page.model().rowCount(index)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
@@ -265,7 +266,7 @@ class PageScene(QGraphicsScene):
     def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
         index = self.selected_page.model().index(row, PageColumns.Image, self.selected_page)
         position = self._compute_position_for_image(row, page_type)
-        if index.data(Qt.ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
+        if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.internalPointer().card
             self.addItem(card_item := CardItem(card, self.document))
             card_item.setPos(position)
@@ -279,7 +280,7 @@ class PageScene(QGraphicsScene):
                 card_item.stackBefore(next_item)
 
     def update_card_positions(self):
-        page_type: PageType = self.selected_page.data(Qt.ItemDataRole.UserRole)
+        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
         for index, card in enumerate(self.card_items):
             card.setPos(self._compute_position_for_image(index, page_type))
 
@@ -294,9 +295,9 @@ class PageScene(QGraphicsScene):
                 self.remove_cut_markers()
                 self.draw_cut_markers()
 
-    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
-        if top_left.parent().row() == self.selected_page.row() and Qt.ItemDataRole.DisplayRole in roles:
-            page_type: PageType = top_left.parent().data(Qt.ItemDataRole.UserRole)
+    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[ItemDataRole]):
+        if top_left.parent().row() == self.selected_page.row() and ItemDataRole.DisplayRole in roles:
+            page_type: PageType = top_left.parent().data(ItemDataRole.UserRole)
             card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):
                 logger.debug(f"Card {row} on the current page was replaced, replacing image.")
@@ -309,7 +310,7 @@ class PageScene(QGraphicsScene):
             inserted_cards = last-first+1
             needs_reorder = first + inserted_cards < self.document.rowCount(parent)
             next_item = self.card_items[first] if needs_reorder else None
-            page_type: PageType = self.selected_page.data(Qt.ItemDataRole.UserRole)
+            page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
             for new in range(first, last+1):
                 self.draw_card(new, page_type, next_item)
@@ -443,7 +444,7 @@ class PageRenderer(QGraphicsView):
         super(PageRenderer, self).__init__(parent=parent)
         self.document: Document = None
         self.automatic_scaling = True
-        self.setCursor(Qt.SizeAllCursor)
+        self.setCursor(Qt.CursorShape.SizeAllCursor)
         self.zoom_in_action = QAction(self)
         self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
         self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
@@ -489,7 +490,7 @@ class PageRenderer(QGraphicsView):
         drag_mode = QGraphicsView.DragMode.NoDrag if self.automatic_scaling else QGraphicsView.DragMode.ScrollHandDrag
         self.setDragMode(drag_mode)
         if self.automatic_scaling:
-            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         else:
             # The initial tooltip text showing the zoom options is rather large, so clear it once the user triggered a
             # zoom action for the first time. This is done to un-clutter the area around the mouse cursor.
@@ -500,7 +501,7 @@ class PageRenderer(QGraphicsView):
             self.setTransformationAnchor(old_anchor)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
-        if event.modifiers() & Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             direction = ZoomDirection.from_bool(event.angleDelta().y() > 0)
             self._perform_zoom_step(direction)
             event.accept()
@@ -511,7 +512,7 @@ class PageRenderer(QGraphicsView):
         if self.automatic_scaling or self.scene_fully_visible():
             self.automatic_scaling = True
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
-            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         if event is not None:
             super().resizeEvent(event)
 

@@ -68,6 +68,6 @@ def test_add_row_identifies_low_resolution_images(environment: Environment, is_f
     image_under_test = disk_cache[0] if disk_cache[0].is_front == is_front else disk_cache[1]
     model.add_row(card, image_under_test)
     assert_that(
-        model.index(0, KnownCardColumns.HasHighResolution).data(Qt.EditRole),
+        model.index(0, KnownCardColumns.HasHighResolution).data(Qt.ItemDataRole.EditRole),
         is_(False)
     )

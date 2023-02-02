@@ -24,7 +24,7 @@ import pathlib
 import textwrap
 import typing
 
-from PySide6.QtGui import QPixmap, QColor
+from PySide6.QtGui import QPixmap, QColor, QColorConstants
 from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, Signal
 import delegateto
 
@@ -50,6 +50,7 @@ DEFAULT_DATABASE_LOCATION = pathlib.Path(
     mtg_proxy_printer.app_dirs.data_directories.user_data_dir,
     "CardDatabase.sqlite3"
 )
+ItemDataRole = Qt.ItemDataRole
 
 
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
@@ -85,13 +86,13 @@ class MTGSet:
     code: str
     name: str
 
-    def data(self, role: int):
+    def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""
-        if role == Qt.EditRole:
+        if role == ItemDataRole.EditRole:
             return self.code
-        elif role == Qt.DisplayRole:
+        elif role == ItemDataRole.DisplayRole:
             return f"{self.name} ({self.code.upper()})"
-        elif role == Qt.ToolTipRole:
+        elif role == ItemDataRole.ToolTipRole:
             return self.name
         else:
             return None
@@ -143,7 +144,7 @@ class Card:
     def corner_color(self, corner: CardCorner) -> QColor:
         """Returns the color of the card at the given corner. """
         if self.image_file is None:
-            return QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
+            return QColorConstants.White
         sample_area = self.image_file.copy(QRect(
             QPoint(
                 round(self.image_file.width() * corner.value[0]),

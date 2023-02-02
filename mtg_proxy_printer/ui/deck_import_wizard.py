@@ -393,7 +393,7 @@ class SummaryPage(QWizardPage):
     def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
         proxy_model = NaturallySortedSortFilterProxyModel(self)
         proxy_model.setSourceModel(source_model)
-        proxy_model.setSortRole(Qt.EditRole)
+        proxy_model.setSortRole(Qt.ItemDataRole.EditRole)
         return proxy_model
 
     @Slot(int)
