@@ -106,7 +106,6 @@ class CardItem(QGraphicsItemGroup):
         rect.setOpacity(opacity)
         return rect
 
-    #@Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         value = 255 if new_page_layout.draw_sharp_corners else 0
         for corner in self.corners:
@@ -237,11 +236,12 @@ class PageScene(QGraphicsScene):
     def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
         if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:
             page_type: PageType = top_left.parent().data(Qt.UserRole)
-            row = top_left.row()
-            logger.debug(f"Card {row} on the current page was replaced, replacing image.")
-            current_item = self.card_items[row]
-            self.draw_card(row, page_type, current_item)
-            self.removeItem(current_item)
+            card_items = self.card_items
+            for row in range(top_left.row(), bottom_right.row()+1):
+                logger.debug(f"Card {row} on the current page was replaced, replacing image.")
+                current_item = card_items[row]
+                self.draw_card(row, page_type, current_item)
+                self.removeItem(current_item)
 
     def on_rows_inserted(self, parent: QModelIndex, first: int, last: int):
         if self._is_valid_page_index(parent) and parent.row() == self.selected_page.row():
