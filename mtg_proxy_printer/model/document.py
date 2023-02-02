@@ -247,6 +247,8 @@ class Document(QAbstractItemModel):
             return f"Page {index.row()+1}/{self.rowCount()}"
         elif role == Qt.EditRole:
             return item
+        elif role == Qt.UserRole:
+            return item.page_type()
 
     def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
