@@ -32,7 +32,7 @@ def test_quit_background_thread(image_db: ImageDatabase):
 
 def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:
     buffer = QBuffer()
-    buffer.open(QIODevice.WriteOnly)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
     image = bytes(buffer.data())
     return io.BytesIO(image)

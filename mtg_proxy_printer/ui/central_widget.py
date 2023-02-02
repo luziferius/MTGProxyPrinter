@@ -151,7 +151,7 @@ class CentralWidget(QWidget):
         if not loading_in_progress:
             logger.info("Loading finished. Selecting first page.")
             new_selection = self.document.index(0, 0)
-            self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.SelectionFlag.Select)
             self.document.on_ui_selects_new_page(new_selection)
 
 

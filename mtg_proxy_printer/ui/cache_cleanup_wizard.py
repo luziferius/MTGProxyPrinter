@@ -58,7 +58,7 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
         source.width() // scaling_factor, source.height() // scaling_factor,
         Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
     buffer = QBuffer()
-    buffer.open(QIODevice.WriteOnly)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
     image = buffer.data().toBase64().toStdString()
     tooltip_text = f'<img src="data:image/png;base64,{image}">'
@@ -354,7 +354,7 @@ class CardFilterPage(QWizardPage):
             for row in range(self.unknown_image_model.rowCount()):
                 self.ui.unknown_image_view.selectionModel().select(
                     self.unknown_image_model.createIndex(row, UnknownCardColumns.ScryfallId),
-                    QItemSelectionModel.Select | QItemSelectionModel.Rows
+                    QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
                 )
 
     def _select_indices(self, indices: typing.Iterable[int]):
@@ -362,7 +362,7 @@ class CardFilterPage(QWizardPage):
         for index in indices:
             selection_model.select(
                 self.card_image_model.createIndex(index, KnownCardColumns.Name),
-                QItemSelectionModel.Select | QItemSelectionModel.Rows
+                QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
             )
 
     def cleanupPage(self) -> None:
