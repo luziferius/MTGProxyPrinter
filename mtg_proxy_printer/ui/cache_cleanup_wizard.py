@@ -60,7 +60,7 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
     buffer = QBuffer()
     buffer.open(QIODevice.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
-    image = bytes(buffer.data().toBase64()).decode()
+    image = buffer.data().toBase64().toStdString()
     tooltip_text = f'<img src="data:image/png;base64,{image}">'
     return tooltip_text
 
