@@ -22,7 +22,6 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
 from hamcrest import *
@@ -40,7 +39,8 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, Page, CardContainer
+from mtg_proxy_printer.model.document_page import Page, CardContainer
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.model.imagedb import ImageKey
 
@@ -50,7 +50,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .document_controller.helpers import insert_card_in_page, create_card, card_container_with
+from .document_controller.helpers import insert_card_in_page, create_card
 
 
 class DummyAction(DocumentAction):
@@ -65,6 +65,9 @@ class DummyAction(DocumentAction):
         self.apply = unittest.mock.MagicMock(return_value=self)
         self.undo = unittest.mock.MagicMock(return_value=self)
 
+    @property
+    def as_str(self):
+        return f"Value: {self.value}"
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
     card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)

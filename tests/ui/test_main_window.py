@@ -264,13 +264,13 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     document = main_window.document
     # Condition 1
     document.page_layout.draw_cut_markers = True
-    document.page_layout_changed.emit()
+    document.page_layout_changed.emit(document.page_layout)
     ui.action_new_page.trigger()  # Condition 2
     assert_that(document.pages, has_length(2))
     with qtbot.waitSignal(document.current_page_changed):
         ui.central_widget.ui.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes), \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes), \
             qtbot.waitSignal(document.current_page_changed):
         # Condition 4. This triggered the exception
         ui.action_new_document.trigger()

@@ -18,7 +18,7 @@ from PySide6.QtCore import Qt
 
 from hamcrest import *
 
-from mtg_proxy_printer.model.document import Page
+from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
@@ -35,4 +35,4 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
         only_contains(instance_of(Page))
     )
     central_widget.ui.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
-    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.LeftButton)
+    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.MouseButton.LeftButton)

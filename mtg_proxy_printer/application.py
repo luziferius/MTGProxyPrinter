@@ -136,7 +136,8 @@ class Application(QApplication):
         settings_window = mtg_proxy_printer.ui.settings_window.SettingsWindow(
             language_model, document, main_window)
         settings_window.document_settings_updated.connect(document.apply)
-        settings_window.saved.connect(main_window.settings_changed)
+        settings_window.preferred_language_changed.connect(
+            main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
         settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
         settings_window.long_running_process_begins.connect(main_window.show_progress_bar)
         settings_window.process_updated.connect(main_window.progress_bar.setValue)

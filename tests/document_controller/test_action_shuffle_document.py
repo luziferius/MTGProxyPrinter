@@ -18,7 +18,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import CardList
-from mtg_proxy_printer.model.document import Page
+from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument

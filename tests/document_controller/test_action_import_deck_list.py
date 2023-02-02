@@ -26,7 +26,7 @@ from mtg_proxy_printer.document_controller.import_deck_list import ActionImportD
 import pytest
 from hamcrest import *
 
-from .helpers import append_new_card_in_page, create_card, card_container_with, append_new_pages, insert_card_in_page
+from .helpers import append_new_card_in_page, create_card, card_container_with
 
 T = typing.TypeVar("T")
 

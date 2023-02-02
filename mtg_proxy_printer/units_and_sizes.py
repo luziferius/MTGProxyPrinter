@@ -20,21 +20,26 @@ from typing import NamedTuple
 import pint
 
 unit_registry = pint.UnitRegistry()
-DPI: pint.Quantity = 300 / unit_registry.inch
+RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
 
 
 class CardSize(NamedTuple):
-    width: int
-    height: int
+    width: pint.Quantity
+    height: pint.Quantity
+
+    @staticmethod
+    def as_mm(value: pint.Quantity) -> int:
+        size:pint.Quantity = (value/RESOLUTION).to("mm")
+        return round(size.magnitude)
 
 
 @enum.unique
-class CardSizes(enum.Enum):
-    REGULAR = CardSize(63, 88)
-    OVERSIZED = CardSize(88, 126)
+class CardSizes(CardSize, enum.Enum):
+    REGULAR = CardSize(unit_registry("745 pixel"), unit_registry("1040 pixel"))
+    OVERSIZED = CardSize(unit_registry("1040 pixel"), unit_registry("1490 pixel"))
 
     @classmethod
-    def for_page_type(cls, page_type: "PageType"):
+    def for_page_type(cls, page_type: "PageType") -> CardSize:
         return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
 
 

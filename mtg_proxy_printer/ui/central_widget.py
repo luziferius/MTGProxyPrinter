@@ -51,7 +51,6 @@ UiType = typing.Union[typing.Type[Ui_Grouped], typing.Type[Ui_Columnar], typing.
 
 class CentralWidget(QWidget):
 
-    settings_changed = Signal()
     request_action = Signal(ActionRemoveCards)
 
     def __init__(self, parent: QWidget = None):
@@ -85,14 +84,13 @@ class CentralWidget(QWidget):
         # Signal has to be connected here, because setModel() implicitly creates the QItemSelectionModel
         self.ui.page_card_table_view.selectionModel().selectionChanged.connect(
             self.parsed_cards_table_selection_changed)
-        self._setup_page_renderer(document)
+        self.ui.page_renderer.set_document(document)
         self._setup_add_card_widget(card_db, image_db)
         self._setup_document_view(document)
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_card_database(card_db)
         self.ui.add_card_widget.request_action.connect(image_db.download_worker.fill_document_action_image)
-        self.settings_changed.connect(self.ui.add_card_widget.update_selected_language)
 
     def _setup_document_view(self, document: Document):
         self.ui.document_view.setModel(document)
@@ -138,11 +136,6 @@ class CentralWidget(QWidget):
         logger.debug(
             f"Currently selected last page {currently_selected_page} about to be removed. New page to select: {new_page_to_select}")
         self.ui.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
-
-    def _setup_page_renderer(self, document: Document):
-        self.ui.page_renderer.set_document(document)
-        self.settings_changed.connect(self.ui.page_renderer.scene().on_settings_changed)
-        document.page_layout_changed.connect(self.ui.page_renderer.scene().on_settings_changed)
 
     @Slot()
     def on_delete_selected_images_button_clicked(self):

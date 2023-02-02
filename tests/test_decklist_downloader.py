@@ -98,7 +98,7 @@ def test_IsIdentifyingDeckUrlValidator_validate(url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),
-        contains_exactly(IsIdentifyingDeckUrlValidator.Acceptable, url, 0),
+        contains_exactly(IsIdentifyingDeckUrlValidator.State.Acceptable, url, 0),
     )
 
 
