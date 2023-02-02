@@ -55,7 +55,6 @@ __all__ = [
 class MainWindow(QMainWindow):
 
     should_update_languages = Signal()
-    settings_changed = Signal()
     loading_state_changed = Signal(bool)
 
     def __init__(self,
@@ -92,8 +91,6 @@ class MainWindow(QMainWindow):
         self.should_update_languages.connect(
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
-        self.should_update_languages.connect(self.ui.central_widget.ui.add_card_widget.update_selected_language)
-        self.settings_changed.connect(self.ui.central_widget.settings_changed)
         self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         self.current_dialog: typing.Optional[QDialog] = None

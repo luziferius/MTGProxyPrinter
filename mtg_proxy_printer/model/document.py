@@ -62,7 +62,7 @@ class Document(QAbstractItemModel):
 
     loading_state_changed = Signal(bool)
     current_page_changed = Signal(QPersistentModelIndex)
-    page_layout_changed = Signal()
+    page_layout_changed = Signal(PageLayoutSettings)
     page_type_changed = Signal(QModelIndex)
 
     action_applied = Signal(DocumentAction)
@@ -247,6 +247,8 @@ class Document(QAbstractItemModel):
             return f"Page {index.row()+1}/{self.rowCount()}"
         elif role == Qt.EditRole:
             return item
+        elif role == Qt.UserRole:
+            return item.page_type()
 
     def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
@@ -346,8 +348,11 @@ class Document(QAbstractItemModel):
 
     def set_currently_edited_page(self, page: Page):
         self.currently_edited_page = page
-        page_position = self.find_page_list_index(page)
-        self.current_page_changed.emit(QPersistentModelIndex(self.index(page_position, 0)))
+        self.current_page_changed.emit(self.get_current_page_index())
+
+    def get_current_page_index(self) -> QPersistentModelIndex:
+        position = self.find_page_list_index(self.currently_edited_page)
+        return QPersistentModelIndex(self.index(position, 0))
 
     def get_card_indices_of_type(self, page_type: PageType):
         for page_number, page in enumerate(self.pages):

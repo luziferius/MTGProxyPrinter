@@ -80,10 +80,10 @@ class PageConfigWidget(QGroupBox):
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
-        oversized: CardSize = CardSizes.OVERSIZED.value
+        oversized = CardSizes.OVERSIZED
         pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + oversized.height
-        min_page_width = pl.margin_left + pl.margin_right + oversized.width
+        min_page_height = pl.margin_bottom + pl.margin_top + oversized.as_mm(oversized.height)
+        min_page_width = pl.margin_left + pl.margin_right + oversized.as_mm(oversized.width)
         self.ui.page_height.setMinimum(min_page_height)
         self.ui.page_width.setMinimum(min_page_width)
 
