@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 import itertools
 import math
 import pathlib
@@ -35,6 +34,7 @@ from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 try:
     from mtg_proxy_printer.ui.generated.deck_import_wizard.load_list_page import Ui_WizardPage as Ui_LoadListPage
@@ -362,7 +362,9 @@ class SelectDeckParserPage(QWizardPage):
 
     def validatePage(self) -> bool:
         self.parser_creator()
-        # TODO: Why is this connect() call here?
+        # The call to connect() is here, because the  parser_creator callback created the selected parser.
+        # If that later determines an incompatibility, it has to signal that to the user, so connect the error signal
+        # here.
         self.selected_parser.incompatible_file_format.connect(self.wizard().on_incompatible_deck_file_selected)
         logger.info(f"Created parser: {self.selected_parser.__class__.__name__}")
         return self.isComplete()
@@ -519,8 +521,7 @@ class SummaryPage(QWizardPage):
 
 
 class DeckImportWizard(QWizard):
-    deck_added = Signal(collections.Counter)
-    clear_document = Signal()
+    request_action = Signal(ActionImportDeckList)
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, *args, **kwargs):
@@ -567,13 +568,14 @@ class DeckImportWizard(QWizard):
             return
         super(DeckImportWizard, self).accept()
         logger.info("User finished the import wizard, performing the requested actions")
-        if self.field("should_replace_document"):
+        if replace_document := self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")
-            self.clear_document.emit()
-        deck = self.summary_page.card_list.as_deck(self.summary_page.card_list_sort_model.row_sort_order())
-        # len(deck) only counts keys, so use sum(deck.values()) to count duplicates
-        logger.info(f"User loaded a deck list with {sum(deck.values())} cards, adding these to the document")
-        self.deck_added.emit(deck)
+        action = ActionImportDeckList(
+            self.summary_page.card_list.as_cards(self.summary_page.card_list_sort_model.row_sort_order()),
+            replace_document
+        )
+        logger.info(f"User loaded a deck list with {action.card_count()} cards, adding these to the document")
+        self.request_action.emit(action)
 
     def _ask_about_oversized_cards(self) -> bool:
         oversized_count = self.summary_page.card_list.oversized_card_count

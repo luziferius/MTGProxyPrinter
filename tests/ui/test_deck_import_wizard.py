@@ -16,6 +16,7 @@
 import collections
 import itertools
 import typing
+import unittest.mock
 from unittest.mock import MagicMock
 
 from hamcrest import *
@@ -26,11 +27,13 @@ from PyQt5.QtCore import QStringListModel, Qt, QPoint, QObject
 from PyQt5.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
 from PyQt5.QtTest import QTest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
 from mtg_proxy_printer.model.card_list import PageColumns
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
 
@@ -62,6 +65,65 @@ def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot,
     _move_wizard_forward(qtbot, wizard)
     assert_that(wizard.summary_page.card_list, is_(same_instance(list_model)))
     _validate_model_content(list_model)
+
+
+@pytest.mark.parametrize("removal_settings, expected_cards", [
+    ({"remove-snow-basics": "False", "remove-basic-wastes": "False"}, ["Snow-Covered Forest", "Wastes"]),
+    ({"remove-snow-basics": "True", "remove-basic-wastes": "False"}, ["Wastes"]),
+    ({"remove-snow-basics": "False", "remove-basic-wastes": "True"}, ["Snow-Covered Forest"]),
+    ({"remove-snow-basics": "True", "remove-basic-wastes": "True"}, []),
+
+])
+def test_remove_basic_lands_button_works(
+        qtbot: QtBot, card_db: CardDatabase,
+        removal_settings: typing.Dict[str, str], expected_cards: StringList):
+    deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
+    wizard = create_and_show_wizard(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]
+    )
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    list_model = wizard.summary_page.card_list
+    assert_that(list_model.rowCount(), is_(3))
+    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["decklist-import"], removal_settings):
+        wizard.button(wizard.WizardButton.CustomButton1).click()
+    assert_that(
+        wizard.button(wizard.WizardButton.CustomButton1).isEnabled(),
+        is_(False)
+    )
+    card_names_in_model: StringList = [
+        list_model.data(list_model.index(row, PageColumns.CardName))
+        for row in range(list_model.rowCount())
+    ]
+    assert_that(card_names_in_model, contains_exactly(*expected_cards))
+
+
+def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
+    deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
+    wizard = create_and_show_wizard(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]
+    )
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    list_model = wizard.summary_page.card_list
+    assert_that(list_model.rowCount(), is_(3))
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
+    # Select the Forest for removal
+    wizard.summary_page.ui.parsed_cards_table.selectRow(0)
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(True))
+    # Remove it
+    wizard.button(wizard.WizardButton.CustomButton2).click()
+    # Verify effects: Button is disabled and the Forest is no longer present in the parsed cards
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
+    card_names_in_model: StringList = [
+        list_model.data(list_model.index(row, PageColumns.CardName))
+        for row in range(list_model.rowCount())
+    ]
+    assert_that(card_names_in_model, contains_exactly("Snow-Covered Forest", "Wastes"))
 
 
 def _move_wizard_forward(qtbot: QtBot, wizard: QWizard):
@@ -152,13 +214,13 @@ def _validate_model_content(list_model):
     }))
 
 
-class DeckReceiver(QObject):
+class CardListReceiver(QObject):
     def __init__(self, parent: QObject = None):
-        super(DeckReceiver, self).__init__(parent)
-        self.deck: typing.Counter[Card] = collections.Counter()
+        super(CardListReceiver, self).__init__(parent)
+        self.deck: CardList = []
 
-    def on_deck_received(self, deck: typing.Counter[Card]):
-        self.deck = deck
+    def on_import_action_received(self, action: ActionImportDeckList):
+        self.deck = action.cards
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
@@ -186,15 +248,15 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
         # Wait until the editor saved the data in the model
         QTest.keyClick(editor, Qt.Key_Enter)
     # Now accept the dialog and capture the emitted deck
-    deck_receiver = DeckReceiver()
-    wizard.deck_added.connect(deck_receiver.on_deck_received)
-    with qtbot.wait_signal(wizard.deck_added, timeout=100):
+    deck_receiver = CardListReceiver()
+    wizard.request_action.connect(deck_receiver.on_import_action_received)
+    with qtbot.wait_signal(wizard.request_action, timeout=100):
         QTest.keyClick(wizard, Qt.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),
         has_length(2),
     ))
-    assert_that(deck_receiver.deck.keys(), contains_inanyorder(
+    assert_that(deck_receiver.deck, contains_inanyorder(
         has_properties({
             "name": equal_to("Fury Sliver"),
             "set": has_properties({

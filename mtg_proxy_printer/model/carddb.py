@@ -25,7 +25,7 @@ import textwrap
 import typing
 
 from PyQt5.QtGui import QPixmap, QColor
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QObject, pyqtSignal as Signal
 import delegateto
 
 import mtg_proxy_printer.app_dirs
@@ -63,6 +63,9 @@ __all__ = [
     "CardCorner",
     "CardDatabase",
     "cached_dedent",
+    "CardList",
+    "OLD_DATABASE_LOCATION",
+    "DEFAULT_DATABASE_LOCATION",
 ]
 
 
@@ -150,6 +153,9 @@ class Card:
         average_color = sample_area.scaled(1, 1, transformMode=Qt.SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
+    def display_string(self):
+        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
@@ -162,18 +168,20 @@ def cached_dedent(text: str):
 
 
 @delegateto.delegate("db", "commit", "rollback")
-class CardDatabase:
+class CardDatabase(QObject):
     """
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
     MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
+    card_filter_updated = Signal()
 
-    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION):
+    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
             purposes.
         """
+        super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(
             db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
@@ -561,7 +569,7 @@ class CardDatabase:
             (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Iterable[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
@@ -708,6 +716,7 @@ class CardDatabase:
             progress_signal(1)
         if filters_need_update or old_filter_removed or force_update_hidden_column:
             self._update_cached_data(progress_signal)
+            self.card_filter_updated.emit()
         if use_transaction:
             self.db.commit()
 

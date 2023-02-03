@@ -26,10 +26,11 @@ from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_Dialog as Ui_SettingsWindow
@@ -53,6 +54,8 @@ check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v i
 class SettingsWindow(QDialog):
     """Implements the Settings window."""
     saved = Signal()
+    preferred_language_changed = Signal(str)
+    document_settings_updated = Signal(DocumentAction)
     error_occurred = Signal(str)
     requested_card_download = Signal(pathlib.Path)
     long_running_process_begins = Signal(int, str)
@@ -202,29 +205,19 @@ class SettingsWindow(QDialog):
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
         logger.info("User wants to save the settings.")
+        old_preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        new_preferred_language = self.ui.preferred_language_combo_box.currentText()
+        if old_preferred_language != new_preferred_language:
+            self.preferred_language_changed.emit(new_preferred_language)
         old_layout = self.document.page_layout
         new_layout = self.ui.page_configuration_group_box.page_layout
-        old_regular_page_capacity = old_layout.compute_page_card_capacity(PageType.REGULAR)
-        new_regular_page_capacity = new_layout.compute_page_card_capacity(PageType.REGULAR)
-        old_oversized_page_capacity = old_layout.compute_page_card_capacity(PageType.OVERSIZED)
-        new_oversized_page_capacity = new_layout.compute_page_card_capacity(PageType.OVERSIZED)
-        if new_layout < old_layout:
-            overflowing_pages = len(self.document.find_overflowing_and_non_full_pages(PageType.REGULAR, new_layout)[0])\
-                + len(self.document.find_overflowing_and_non_full_pages(PageType.OVERSIZED, new_layout)[0])
-            logger.info(
-                f"The page layout was changed, causing {overflowing_pages} pages to overflow.")
-            if overflowing_pages and QMessageBox.question(
-                    self, "Overflowing pages found",
-                    f"The new settings decrease the page capacity from {old_regular_page_capacity} "
-                    f"to {new_regular_page_capacity} regular cards\nand from {old_oversized_page_capacity} "
-                    f"to {new_oversized_page_capacity} oversized cards."
-                    f"This causes {overflowing_pages} pages to overflow.\n"
-                    f"The overflowing cards from these pages will be moved automatically to free spaces on "
-                    f"other pages, or new pages at the document end.\nNo cards will be lost, but the "
-                    f"moved away cards will be shuffled around.\n\nContinue to save and apply the new settings?",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.No:
-                logger.info("User canceled saving page layout saving due to overflowing images notification.")
-                return
+        if old_layout != new_layout and QMessageBox.question(
+                self, "Apply settings to the current document?",
+                "The new default settings differ from the settings used by the current document.\n"
+                "Apply the new settings to the current document?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
+            logger.info("User applies changed document settings to the current document")
+            self.document_settings_updated.emit(ActionEditDocumentSettings(new_layout))
         self.save()
         super(SettingsWindow, self).accept()
 

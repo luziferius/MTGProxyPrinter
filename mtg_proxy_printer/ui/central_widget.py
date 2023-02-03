@@ -16,13 +16,14 @@ import math
 import typing
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex
-from PyQt5.QtWidgets import QTableView, QWidget
+from PyQt5.QtWidgets import QWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
+from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
 try:
@@ -50,7 +51,7 @@ UiType = typing.Union[typing.Type[Ui_Grouped], typing.Type[Ui_Columnar], typing.
 
 class CentralWidget(QWidget):
 
-    settings_changed = Signal()
+    request_action = Signal(ActionRemoveCards)
 
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
@@ -78,18 +79,18 @@ class CentralWidget(QWidget):
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
+        self.request_action.connect(document.apply)
         self.ui.page_card_table_view.setModel(document)
         # Signal has to be connected here, because setModel() implicitly creates the QItemSelectionModel
         self.ui.page_card_table_view.selectionModel().selectionChanged.connect(
             self.parsed_cards_table_selection_changed)
-        self._setup_page_renderer(document)
+        self.ui.page_renderer.set_document(document)
         self._setup_add_card_widget(card_db, image_db)
         self._setup_document_view(document)
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_card_database(card_db)
-        self.ui.add_card_widget.card_added.connect(image_db.get_new_card_image_asynchronous)
-        self.settings_changed.connect(self.ui.add_card_widget.update_selected_language)
+        self.ui.add_card_widget.request_action.connect(image_db.download_worker.fill_document_action_image)
 
     def _setup_document_view(self, document: Document):
         self.ui.document_view.setModel(document)
@@ -118,32 +119,32 @@ class CentralWidget(QWidget):
             new_size = math.floor(default_column_width * scaling_factor)
             self.ui.page_card_table_view.setColumnWidth(column, new_size)
 
-    def on_document_rows_about_to_be_removed(self, index: QModelIndex, first: int, last: int):
-        current_row = self.ui.document_view.currentIndex().row()
-        if index.parent().isValid():
+    def on_document_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
+        currently_selected_page = self.ui.document_view.currentIndex().row()
+        is_page_index = not parent.isValid()
+        if not is_page_index:
             # Not interested in removed cards here, so return if cards are about to be removed.
             return
-        if not index.parent().isValid() and not (last == current_row == (self.document.rowCount()-1)):
+        removed_pages = last - first + 1
+        if currently_selected_page < self.document.rowCount()-removed_pages:
+            # After removal, the current page remains within the document and stays valid. Nothing to do.
             return
-        # Selecting a different page is required if the current page is the last page and is going to be deleted.
+        # Selecting a different page is required if the current page is going to be deleted.
         # So re-selecting the page is required to prevent exceptions. Without this, the document view creates invalid
         # model indices.
         new_page_to_select = max(0, first-1)
         logger.debug(
-            f"Currently selected last page {current_row} about to be removed. New page to select: {new_page_to_select}")
+            f"Currently selected last page {currently_selected_page} about to be removed. New page to select: {new_page_to_select}")
         self.ui.document_view.setCurrentIndex(self.document.index(new_page_to_select, 0))
-
-    def _setup_page_renderer(self, document: Document):
-        self.ui.page_renderer.set_document(document)
-        self.settings_changed.connect(self.ui.page_renderer.scene().on_settings_changed)
-        document.page_layout_changed.connect(self.ui.page_renderer.scene().on_settings_changed)
 
     @Slot()
     def on_delete_selected_images_button_clicked(self):
-        self.page_card_table_view: QTableView
         multi_selection = self.ui.page_card_table_view.selectionModel().selectedRows()
-        logger.debug(f"User removes {len(multi_selection)} items from the current page.")
-        self.ui.page_card_table_view.model().remove_card_multi_selection(multi_selection)
+        if multi_selection:
+            rows = [index.row() for index in multi_selection]
+            logger.debug(f"User removes {len(multi_selection)} items from the current page.")
+            action = ActionRemoveCards(rows)
+            self.request_action.emit(action)
 
     @Slot()
     def select_first_page(self, loading_in_progress: bool = False):
@@ -152,16 +153,6 @@ class CentralWidget(QWidget):
             new_selection = self.document.index(0, 0)
             self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
             self.document.on_ui_selects_new_page(new_selection)
-
-    @Slot()
-    def action_discard_page_triggered(self):
-        if self.document.rowCount() == 1:
-            logger.info(f"User selects to delete the only page, so clearing it.")
-            self.document.clear_page(self.document.index(0, 0))
-            return
-        to_be_deleted: int = self.ui.document_view.selectedIndexes()[0].row()
-        logger.info(f"User selects to delete the currently selected page {to_be_deleted}. Deleting it")
-        self.document.remove_pages([self.document.index(to_be_deleted, 0)])
 
 
 def get_configured_central_widget_layout_class() -> UiType:

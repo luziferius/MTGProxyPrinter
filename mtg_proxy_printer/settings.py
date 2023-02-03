@@ -224,7 +224,9 @@ def _validate_images_section(settings: configparser.ConfigParser, section_name: 
 
 
 def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
-    sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
+    card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
+    card_height = card_size.as_mm(card_size.height)
+    card_width = card_size.as_mm(card_size.width)
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners"}
@@ -240,12 +242,12 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if available_height < sizes.height:
+    if available_height < card_height:
         # Can not fit a single card on a page
         section["paper-height-mm"] = defaults["paper-height-mm"]
         section["margin-top-mm"] = defaults["margin-top-mm"]
         section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
-    if available_width < sizes.width:
+    if available_width < card_width:
         # Can not fit a single card on a page
         section["paper-width-mm"] = defaults["paper-width-mm"]
         section["margin-left-mm"] = defaults["margin-left-mm"]
@@ -257,10 +259,10 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - sizes.height):
+    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - card_height):
         # Prevent vertical spacing from overlapping with bottom margin
         section["image-spacing-vertical-mm"] = str(available_spacing_vertical)
-    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - sizes.width):
+    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - card_width):
         # Prevent horizontal spacing from overlapping with right margin
         section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
 

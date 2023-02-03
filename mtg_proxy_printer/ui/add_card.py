@@ -19,6 +19,7 @@ from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signa
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
 from PyQt5.QtGui import QIcon
 
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 import mtg_proxy_printer.model.string_list
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.document
@@ -48,7 +49,7 @@ UiTypes = typing.Union[typing.Type[Ui_horizontal], typing.Type[Ui_horizontal]]
 
 class AddCardWidget(QWidget):
 
-    card_added = Signal(mtg_proxy_printer.model.carddb.Card, int)
+    request_action = Signal(ActionAddCard)
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
         super(AddCardWidget, self).__init__(parent)
@@ -189,12 +190,16 @@ class AddCardWidget(QWidget):
         self.ui.set_name_box.setEnabled(False)
 
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
-        logger.info("Card database set.")
+        logger.debug("About to set the card database")
         self.card_database = card_db
+        card_db.card_filter_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
+        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         languages = self.card_database.get_all_languages()
         if not languages:
-            languages = [mtg_proxy_printer.settings.settings["images"]["preferred-language"]]
+            languages = [preferred_language]
         self.language_model.setStringList(languages)
+        self.ui.language_combo_box.setCurrentText(preferred_language)
+        logger.info("Card database set.")
 
     def _read_card_data_from_ui(self) -> mtg_proxy_printer.model.carddb.CardIdentificationData:
         card = mtg_proxy_printer.model.carddb.CardIdentificationData(
@@ -202,14 +207,13 @@ class AddCardWidget(QWidget):
         )
         return card
 
-    @Slot()
-    def update_selected_language(self):
+    @Slot(str)
+    def on_settings_preferred_language_changed(self, new_preferred_language: str):
         if self.language_model.stringList():
             self.ui.language_combo_box.setCurrentIndex(
-                self.language_model.stringList().index(
-                    mtg_proxy_printer.settings.settings["images"]["preferred-language"])
+                self.language_model.stringList().index(new_preferred_language)
             )
-        self.language_combo_box_changed(self.ui.language_combo_box.currentText())
+        self.language_combo_box_changed(new_preferred_language)
 
     def ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
@@ -217,7 +221,7 @@ class AddCardWidget(QWidget):
         card = self.card_database.get_cards_from_data(card_data)[0]
         copies = self.ui.copies_input.value()
         self._log_added_card(card, copies)
-        self.card_added.emit(card, copies)
+        self.request_action.emit(ActionAddCard(card, copies))
         add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
             "automatically-add-opposing-faces"
         )
@@ -225,7 +229,7 @@ class AddCardWidget(QWidget):
             logger.info(
                 "Card is double faced and adding opposing faces is enabled, automatically adding the other face.")
             self._log_added_card(opposing_face, copies)
-            self.card_added.emit(opposing_face, copies)
+            self.request_action.emit(ActionAddCard(opposing_face, copies))
 
     @staticmethod
     def _log_added_card(card: mtg_proxy_printer.model.carddb.Card, copies: int):

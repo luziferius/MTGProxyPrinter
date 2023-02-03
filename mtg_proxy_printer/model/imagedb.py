@@ -25,9 +25,13 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QPersistentModelIndex
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex
 from PyQt5.QtGui import QPixmap, QColor
 
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
+from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
@@ -78,12 +82,6 @@ class CacheContent(ImageKey):
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 IMAGE_SIZE = QSize(745, 1040)
 
-QueueContentTypes = typing.Union[
-    typing.Tuple[Card, QPersistentModelIndex],
-    typing.Tuple[Card, int],
-    typing.Tuple[None, bool],
-]
-
 
 class ImageDatabase(QObject):
     """
@@ -95,18 +93,14 @@ class ImageDatabase(QObject):
     card_download_finished = Signal()
     card_download_progress = Signal(int)
 
-    # Emitted when image retrieval for a to-be-added card completes
-    card_image_obtained = Signal(Card, int)
-    # Emitted when an image retrieval for a to-be-replaced card completes
-    replacement_obtained = Signal(Card, QPersistentModelIndex)
+    request_action = Signal(DocumentAction)
+    missing_images_obtained = Signal()
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
     a deck list. It signals if such a long-running process starts or finishes.
     """
     batch_processing_state_changed = Signal(bool)
     request_batch_state_change = Signal(bool)
-    request_image = Signal(Card, int)
-    request_replacement = Signal(Card, QPersistentModelIndex)
 
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
@@ -126,16 +120,14 @@ class ImageDatabase(QObject):
         self.download_worker.moveToThread(self.download_thread)
 
         self.request_batch_state_change.connect(self.download_worker.request_batch_processing_state_change)
-        self.request_image.connect(self.download_worker.request_image)
-        self.request_replacement.connect(self.download_worker.request_replacement)
 
         self.download_worker.download_begins.connect(self.card_download_starting)
         self.download_worker.download_finished.connect(self.card_download_finished)
         self.download_worker.download_progress.connect(self.card_download_progress)
 
         self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
-        self.download_worker.card_image_obtained.connect(self.card_image_obtained)
-        self.download_worker.replacement_obtained.connect(self.replacement_obtained)
+        self.download_worker.request_action.connect(self.request_action)
+        self.download_worker.missing_images_obtained.connect(self.missing_images_obtained)
 
         self.download_worker.network_error_occurred.connect(self.network_error_occurred)
         self.download_thread.started.connect(self.download_worker.scan_disk_image_cache)
@@ -171,34 +163,6 @@ class ImageDatabase(QObject):
             card for card in possible_matches
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
-
-    @Slot(Card)
-    @Slot(Card, int)
-    def get_new_card_image_asynchronous(self, card: Card, count: int = 1):
-        """
-        Asynchronously fetches the image for the given card and stores it in the card instance.
-        Emits add_card(card, count) signal when completed.
-        """
-        self.request_image.emit(card, count)
-
-    def get_replacement_card_image_asynchronous(self, card: Card, index: QPersistentModelIndex):
-        """
-        Asynchronously fetches the image for the given card and stores it in the card instance.
-        Emits replacement_obtained(card, index) signal when completed.
-        """
-        self.request_replacement.emit(card, index)
-
-    def get_deck_asynchronous(self, deck: typing.Counter[Card]):
-        self.request_batch_state_change.emit(True)
-        for card, count in deck.items():
-            self.request_image.emit(card, count)
-        self.request_batch_state_change.emit(False)
-
-    def get_card_list_asynchronous(self, cards: typing.List[typing.Tuple[Card, QPersistentModelIndex]]):
-        self.request_batch_state_change.emit(True)
-        for card, index in cards:
-            self.request_replacement.emit(card, index)
-        self.request_batch_state_change.emit(False)
 
     def read_disk_cache_content(self) -> typing.List[CacheContent]:
         """
@@ -256,11 +220,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     It can be used synchronously, if precise, synchronous sequencing of small operations is required.
     """
-    request_image = Signal(Card, int)
-    card_image_obtained = Signal(Card, int)
-
-    request_replacement = Signal(Card, QPersistentModelIndex)
-    replacement_obtained = Signal(Card, QPersistentModelIndex)
+    request_action = Signal(DocumentAction)
+    missing_images_obtained = Signal()
+    missing_image_obtained = Signal(QModelIndex)
 
     """
     Messages if the instance performs a batch operation when it processes image requests for
@@ -271,8 +233,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
-        self.request_image.connect(self.get_image_for_new_card)
-        self.request_replacement.connect(self.get_image_for_replacement_card)
         self.request_batch_processing_state_change.connect(self.update_batch_processing_state)
         self.image_database = image_db
         self.should_run = True
@@ -294,15 +254,37 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             image.as_key() for image in self.image_database.read_disk_cache_content()
         )
 
-    @Slot(Card, int)
-    def get_image_for_new_card(self, card: Card, count: int):
-        self.get_image_synchronous(card)
-        self.card_image_obtained.emit(card, count)
+    @Slot(ActionReplaceCard)
+    @Slot(ActionAddCard)
+    def fill_document_action_image(self, action: typing.Union[ActionAddCard, ActionReplaceCard]):
+        logger.info("Got DocumentAction, filling card")
+        self.get_image_synchronous(action.card)
+        logger.info("Obtained image, requesting apply()")
+        self.request_action.emit(action)
 
-    @Slot(Card, QPersistentModelIndex)
-    def get_image_for_replacement_card(self, card: Card, index: QPersistentModelIndex):
-        self.get_image_synchronous(card)
-        self.replacement_obtained.emit(card, index)
+    @Slot(ActionImportDeckList)
+    def fill_batch_document_action_images(self, action: ActionImportDeckList):
+        logger.info("Got batch DocumentAction, filling cards")
+        self.update_batch_processing_state(True)
+        for card in action.cards:
+            self.get_image_synchronous(card)
+        logger.info(f"Obtained images for {len(action.cards)} cards.")
+        self.request_action.emit(action)
+        self.update_batch_processing_state(False)
+
+    @Slot(list)
+    def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
+        logger.debug(f"Requesting {len(card_indices)} missing images")
+        blank = self.image_database.blank_image
+        self.update_batch_processing_state(True)
+        for index in card_indices:
+            card = index.internalPointer().card
+            self.get_image_synchronous(index.internalPointer().card)
+            if card.image_file is not blank:
+                self.missing_image_obtained.emit(index)
+        self.update_batch_processing_state(False)
+        logger.debug("Done fetching missing images.")
+        self.missing_images_obtained.emit()
 
     @Slot(bool)
     def update_batch_processing_state(self, value: bool):

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 from abc import abstractmethod
 import typing
 
@@ -77,7 +76,7 @@ class ParserBase(QObject):
         logger.info("About to parse deck")
         # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
         # Because it would operate on the cards in the source language. The card choice gets overwritten by the
-        # translation step, so performs unnecessary work that gets thrown away anyways.
+        # translation step, so performs unnecessary work that gets thrown away anyway.
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
         parsed_deck, unmatched_lines = self.parse_deck_internal(deck, print_guessing, language_override)
