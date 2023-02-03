@@ -164,7 +164,7 @@ class TappedOutCSVParser(BaseCSVParser):
         lineterminator = "\r\n"
         quoting = csv.QUOTE_MINIMAL
 
-    DIALECT_NAME = "tappedout_com"
+    DIALECT_NAME = "tappedout_net"
     USED_COLUMNS = {
         # Does not include the Language column,
         # because there is the fallback to the old "Languange" column.

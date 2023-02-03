@@ -16,7 +16,7 @@
 from pytestqt.qtbot import QtBot
 from PyQt5.QtCore import Qt
 
-from mtg_proxy_printer.ui.central_widget import CentralWidget
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
 from .test_main_window import main_window  # noqa
@@ -25,9 +25,9 @@ from .test_main_window import main_window  # noqa
 def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBot, main_window):
     card = main_window.card_database.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     document = main_window.document
-    central_widget: CentralWidget = main_window.central_widget
-    main_window.document.add_card(card, 9)
-    central_widget.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
-    qtbot.mouseClick(central_widget.delete_selected_images_button, Qt.LeftButton)
+    central_widget = main_window.ui.central_widget
+    main_window.document.apply(ActionAddCard(card, 9))
+    central_widget.ui.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
+    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.LeftButton)
 
 

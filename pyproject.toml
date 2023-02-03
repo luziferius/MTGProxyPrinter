@@ -1,6 +1,76 @@
+[project]
+
+name = "MTGProxyPrinter"
+description = "MTGProxyPrinter allows efficient printing of Magic: The Gathering cards for playtesting purposes."
+readme = "README.md"
+# Incompatible with 3.11.1, because of bug https://github.com/python/cpython/issues/100098,
+# causing an instant crash on start. According to the linked issue, a fix will be in 3.11.2
+requires-python = ">= 3.8, != 3.11.1, < 4"
+authors = [
+    {name = "Thomas Hess", email = "thomas.hess@udo.edu"},
+]
+license = {text = "GNU GPLv3+, see LICENSE.md or https://www.gnu.org/licenses/gpl-3.0.html for details"}
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Environment :: X11 Applications :: Qt",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Games/Entertainment :: Board Games",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+]
+# ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
+# Older Python works fine with ijson >= 3.1
+dependencies = [
+    "appdirs >= 1.4.3",
+    "PyQt5",
+    "ijson >= 3.1.0",
+    "ijson >= 3.2.0; python_version >= '3.11'",
+    "pint",
+    "delegateto == 1.5",
+    "PyHamcrest >= 1.8.1",
+]
+dynamic = [
+    "version",
+]
+
+[project.urls]
+Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
+"Bug tracker" = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/ticket"
+Changelog = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/doc/trunk/doc/changelog.md"
+
+[project.gui-scripts]
+mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
+
+
+[tool.setuptools]
+exclude-package-data = {"mtg_proxy_printer" = ["resources*",]}
+
+
+[tool.setuptools.packages.find]
+include = [
+   "mtg_proxy_printer*",
+]
+exclude = [
+    "mtg_proxy_printer.resources*",
+    "tests*",
+]
+
+[tool.setuptools.dynamic]
+version = {attr= "mtg_proxy_printer.meta_data.__version__"}
+
+
+
 [build-system]
 requires = [
-    "setuptools>=51, !=60.7.*, != 60.8.0",
+    "setuptools >=61",
     "wheel",
     "PyQt5",
     "build",
@@ -31,12 +101,13 @@ deps =
     build
     PyQt5
     ijson >= 3.1.0
+    ijson >= 3.2.0; python_version >= '3.11'
     pint
     delegateto == 1.5
     PyHamcrest >= 1.8.1
 
 build_deps =
-    setuptools>=51, !=60.7.*, != 60.8.0
+    setuptools>=61
 
 test_deps =
     pytest

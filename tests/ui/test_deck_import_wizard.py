@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import collections
 import itertools
 import typing
+import unittest.mock
 from unittest.mock import MagicMock
 
 from hamcrest import *
@@ -25,11 +27,13 @@ from PyQt5.QtCore import QStringListModel, Qt, QPoint, QObject
 from PyQt5.QtWidgets import QCheckBox, QWizard, QTableView, QComboBox, QLineEdit
 from PyQt5.QtTest import QTest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGOnlineParser, MTGArenaParser, \
     GenericRegularExpressionDeckParser
 from mtg_proxy_printer.model.card_list import PageColumns
+from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 from tests.helpers import fill_card_database_with_json_cards
 
@@ -50,16 +54,76 @@ def create_and_show_wizard(qtbot: QtBot, card_db: CardDatabase, cards: StringLis
 def test_going_back_to_textual_deck_list_resets_parsed_cards_model(qtbot: QtBot, card_db: CardDatabase):
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
     deck_list = "1 Fury Sliver"
-    _select_magic_online_parser(qtbot, wizard)
-    _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_online_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
     list_model = wizard.summary_page.card_list
     _validate_model_content(list_model)
+    list_model.clear()
     _move_wizard_backward(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
     assert_that(wizard.summary_page.card_list, is_(same_instance(list_model)))
     _validate_model_content(list_model)
+
+
+@pytest.mark.parametrize("removal_settings, expected_cards", [
+    ({"remove-snow-basics": "False", "remove-basic-wastes": "False"}, ["Snow-Covered Forest", "Wastes"]),
+    ({"remove-snow-basics": "True", "remove-basic-wastes": "False"}, ["Wastes"]),
+    ({"remove-snow-basics": "False", "remove-basic-wastes": "True"}, ["Snow-Covered Forest"]),
+    ({"remove-snow-basics": "True", "remove-basic-wastes": "True"}, []),
+
+])
+def test_remove_basic_lands_button_works(
+        qtbot: QtBot, card_db: CardDatabase,
+        removal_settings: typing.Dict[str, str], expected_cards: StringList):
+    deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
+    wizard = create_and_show_wizard(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]
+    )
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    list_model = wizard.summary_page.card_list
+    assert_that(list_model.rowCount(), is_(3))
+    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["decklist-import"], removal_settings):
+        wizard.button(wizard.WizardButton.CustomButton1).click()
+    assert_that(
+        wizard.button(wizard.WizardButton.CustomButton1).isEnabled(),
+        is_(False)
+    )
+    card_names_in_model: StringList = [
+        list_model.data(list_model.index(row, PageColumns.CardName))
+        for row in range(list_model.rowCount())
+    ]
+    assert_that(card_names_in_model, contains_exactly(*expected_cards))
+
+
+def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
+    deck_list = "\n".join(("1 Forest", "1 Snow-Covered Forest", "1 Wastes"))
+    wizard = create_and_show_wizard(
+        qtbot, card_db, ["english_basic_Forest", "english_basic_Snow_Forest", "english_basic_Wastes"]
+    )
+    _input_deck_list(qtbot, wizard, deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    list_model = wizard.summary_page.card_list
+    assert_that(list_model.rowCount(), is_(3))
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
+    # Select the Forest for removal
+    wizard.summary_page.ui.parsed_cards_table.selectRow(0)
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(True))
+    # Remove it
+    wizard.button(wizard.WizardButton.CustomButton2).click()
+    # Verify effects: Button is disabled and the Forest is no longer present in the parsed cards
+    assert_that(wizard.button(wizard.WizardButton.CustomButton2).isEnabled(), is_(False))
+    card_names_in_model: StringList = [
+        list_model.data(list_model.index(row, PageColumns.CardName))
+        for row in range(list_model.rowCount())
+    ]
+    assert_that(card_names_in_model, contains_exactly("Snow-Covered Forest", "Wastes"))
 
 
 def _move_wizard_forward(qtbot: QtBot, wizard: QWizard):
@@ -75,9 +139,9 @@ def _move_wizard_backward(qtbot: QtBot, wizard: QWizard):
 def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
     with qtbot.wait_signal(page.completeChanged, timeout=100):
-        cb: QCheckBox = page.select_parser_mtg_online
+        cb: QCheckBox = page.ui.select_parser_mtg_online
         cb.click()
-    assert_that(page.select_parser_mtg_online.isChecked())
+    assert_that(page.ui.select_parser_mtg_online.isChecked())
     assert_that(page.complete, is_(True))
     assert_that(page.isComplete())
     assert_that(page.parser_creator, is_(page._create_mtg_online_parser))
@@ -87,10 +151,10 @@ def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
 
 def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
-    with qtbot.wait_signal(page.completeChanged, timeout=100):
-        cb: QCheckBox = page.select_parser_mtg_arena
+    cb: QCheckBox = page.ui.select_parser_mtg_arena
+    with qtbot.wait_signal(cb.clicked, timeout=100):
         cb.click()
-    assert_that(page.select_parser_mtg_arena.isChecked())
+    assert_that(page.ui.select_parser_mtg_arena.isChecked())
     assert_that(page.complete, is_(True))
     assert_that(page.isComplete())
     assert_that(page.parser_creator, is_(page._create_mtg_arena_parser))
@@ -100,12 +164,12 @@ def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
 
 def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, is_identifying_re: bool):
     page = wizard.select_deck_parser_page
-    cb: QCheckBox = page.select_parser_custom_re
-    le: QLineEdit = page.custom_re_input
+    cb: QCheckBox = page.ui.select_parser_custom_re
+    le: QLineEdit = page.ui.custom_re_input
     with qtbot.wait_signal(le.textChanged, timeout=5000):
         cb.click()
         le.setText(re)
-    assert_that(page.select_parser_custom_re.isChecked())
+    assert_that(page.ui.select_parser_custom_re.isChecked())
     assert_that(le.text(), is_(equal_to(re)))
     assert_that(page.complete, is_(is_identifying_re))
     assert_that(page.isComplete(), is_(is_identifying_re))
@@ -119,13 +183,12 @@ def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, i
 
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, enable_print_guessing: bool = False):
     page = wizard.load_list_page
-    with qtbot.wait_signal(page.deck_list.textChanged, timeout=100):
-        page.deck_list.setPlainText(deck_list)
+    with qtbot.wait_signal(page.ui.deck_list.textChanged, timeout=100):
+        page.ui.deck_list.setPlainText(deck_list)
     assert_that(wizard.field("deck_list"), is_(equal_to(deck_list)))
     assert_that(page.isComplete())
-    cb: QCheckBox = page.print_guessing_enable
+    cb: QCheckBox = page.ui.print_guessing_enable
     if enable_print_guessing and not cb.isChecked():
-        cb: QCheckBox = page.print_guessing_enable
         with qtbot.wait_signal(cb.stateChanged, timeout=100):
             cb.click()
         assert_that(cb.isChecked())
@@ -151,23 +214,23 @@ def _validate_model_content(list_model):
     }))
 
 
-class DeckReceiver(QObject):
+class CardListReceiver(QObject):
     def __init__(self, parent: QObject = None):
-        super(DeckReceiver, self).__init__(parent)
-        self.deck: typing.Counter[Card] = None
+        super(CardListReceiver, self).__init__(parent)
+        self.deck: CardList = []
 
-    def on_deck_received(self, deck: typing.Counter[Card]):
-        self.deck = deck
+    def on_import_action_received(self, action: ActionImportDeckList):
+        self.deck = action.cards
 
 
 def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase):
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
     deck_list = "2 Fury Sliver (TSP) 157"
-    _select_magic_arena_parser(qtbot, wizard)
-    _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     cell_position = QPoint(
         table_view.columnViewportPosition(PageColumns.Set) + 5,
         table_view.rowViewportPosition(0) + 5
@@ -185,15 +248,15 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
         # Wait until the editor saved the data in the model
         QTest.keyClick(editor, Qt.Key_Enter)
     # Now accept the dialog and capture the emitted deck
-    deck_receiver = DeckReceiver()
-    wizard.deck_added.connect(deck_receiver.on_deck_received)
-    with qtbot.wait_signal(wizard.deck_added, timeout=100):
+    deck_receiver = CardListReceiver()
+    wizard.request_action.connect(deck_receiver.on_import_action_received)
+    with qtbot.wait_signal(wizard.request_action, timeout=100):
         QTest.keyClick(wizard, Qt.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),
         has_length(2),
     ))
-    assert_that(deck_receiver.deck.keys(), contains_inanyorder(
+    assert_that(deck_receiver.deck, contains_inanyorder(
         has_properties({
             "name": equal_to("Fury Sliver"),
             "set": has_properties({
@@ -233,11 +296,11 @@ def test_complete_button_disabled_if_zero_cards_identified(qtbot: QtBot, card_db
     """
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
     deck_list = "Invalid deck list"
-    _select_magic_arena_parser(qtbot, wizard)
-    _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
@@ -249,11 +312,11 @@ def test_complete_button_enabled_if_one_card_identified(qtbot: QtBot, card_db: C
     """
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
     deck_list = "1 Fury Sliver (TSP) 157"
-    _select_magic_arena_parser(qtbot, wizard)
-    _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
@@ -267,18 +330,21 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card"])
     invalid_deck_list = "Invalid deck list"
     valid_deck_list = "1 Fury Sliver (TSP) 157"
-    _select_magic_arena_parser(qtbot, wizard)
-    _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, invalid_deck_list)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    _select_magic_arena_parser(qtbot, wizard)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
 
     # Transition from invalid to valid state
     _move_wizard_backward(qtbot, wizard)
+    _move_wizard_backward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, valid_deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
@@ -286,7 +352,10 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
 
     # Transition from valid to invalid state
     _move_wizard_backward(qtbot, wizard)
+    _move_wizard_backward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, invalid_deck_list)
+    _move_wizard_forward(qtbot, wizard)
+    _select_magic_arena_parser(qtbot, wizard)
     _move_wizard_forward(qtbot, wizard)
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
@@ -299,11 +368,11 @@ def test_custom_re_parser_works(qtbot: QtBot, card_db: CardDatabase):
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
     cards = card_db.get_cards_from_data(CardIdentificationData("en", "Fury Sliver"))
     wizard.select_deck_parser_page.image_db.filter_already_downloaded.return_value = cards
-    _select_generic_re_parser(qtbot, wizard, valid_re, True)
-    _move_wizard_forward(qtbot, wizard)
     _input_deck_list(qtbot, wizard, deck_list, enable_print_guessing=True)
     _move_wizard_forward(qtbot, wizard)
-    table_view: QTableView = wizard.summary_page.parsed_cards_table
+    _select_generic_re_parser(qtbot, wizard, valid_re, True)
+    _move_wizard_forward(qtbot, wizard)
+    table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
     assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
@@ -327,6 +396,9 @@ def generate_test_cases_for_test_custom_re_parser_accepts_valid_re():
 @pytest.mark.parametrize("valid_re", generate_test_cases_for_test_custom_re_parser_accepts_valid_re())
 def test_custom_re_parser_accepts_valid_re(qtbot, card_db, valid_re: str):
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
+    deck_list = "Fury Sliver"
+    _input_deck_list(qtbot, wizard, deck_list, enable_print_guessing=True)
+    _move_wizard_forward(qtbot, wizard)
     _select_generic_re_parser(qtbot, wizard, valid_re, True)
 
 
@@ -340,4 +412,7 @@ def test_custom_re_parser_accepts_valid_re(qtbot, card_db, valid_re: str):
 ])
 def test_custom_re_parser_declines_non_identifying_re(qtbot: QtBot, card_db: CardDatabase, invalid_re: str):
     wizard = create_and_show_wizard(qtbot, card_db, ["regular_english_card", "regular_english_card_reprint"])
+    deck_list = "Fury Sliver"
+    _input_deck_list(qtbot, wizard, deck_list, enable_print_guessing=True)
+    _move_wizard_forward(qtbot, wizard)
     _select_generic_re_parser(qtbot, wizard, invalid_re, False)

@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, QThread, pyqtSignal as Signal, QTimer
+from PyQt5.QtCore import QObject, QThread, pyqtSignal as Signal
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
@@ -165,10 +165,6 @@ class UpdateChecker(QObject):
         self.worker = self._create_background_worker(card_db, self.background_thread)
         self.running_background_jobs: int = 0
         self.background_thread.start()
-        if args.test_exit_on_launch:
-            logger.info("Update check will not run, because immediate application exit is requested.")
-        else:
-            QTimer.singleShot(100, self.check_for_updates)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _create_background_worker(self, card_db: CardDatabase, thread_to_use: QThread) -> BackgroundWorker:

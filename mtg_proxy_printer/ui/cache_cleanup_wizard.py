@@ -23,15 +23,24 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QLabel
+from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import inherits_from_ui_file_with_name, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
+
+try:
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.card_filter_page import Ui_WizardPage as Ui_CardFilterPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_WizardPage as Ui_FilterSetupPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_WizardPage as Ui_SummaryPage
+except ModuleNotFoundError:
+    Ui_CardFilterPage = load_ui_from_file("cache_cleanup_wizard/card_filter_page")
+    Ui_FilterSetupPage = load_ui_from_file("cache_cleanup_wizard/filter_setup_page")
+    Ui_SummaryPage = load_ui_from_file("cache_cleanup_wizard/summary_page")
 
 __all__ = [
     "CacheCleanupWizard",
@@ -154,7 +163,6 @@ class KnownCardImageModel(QAbstractTableModel):
         self.endInsertRows()
 
     def clear(self):
-        self.modelAboutToBeReset.emit()
         self.beginResetModel()
         self._data.clear()
         self.endResetModel()
@@ -254,39 +262,39 @@ class UnknownCardImageModel(QAbstractTableModel):
         self.endInsertRows()
 
     def clear(self):
-        self.modelAboutToBeReset.emit()
         self.beginResetModel()
         self._data.clear()
         self.endResetModel()
 
 
-class FilterSetupPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/filter_setup_page")):
+class FilterSetupPage(QWizardPage):
 
     def __init__(self, parent: QWidget = None):
         super(FilterSetupPage, self).__init__(parent)
-        self.setupUi(self)
-        self.registerField("remove-everything-enabled", self.delete_everything_checkbox)
-        self.registerField("time-filter-enabled", self.time_filter_enabled_checkbox)
-        self.registerField("time-filter-value", self.time_filter_value_spinbox)
-        self.registerField("count-filter-enabled", self.count_filter_enabled_checkbox)
-        self.registerField("count-filter-value", self.count_filter_value_spinbox)
-        self.registerField("remove-unknown-cards-enabled", self.remove_unknown_cards_checkbox)
+        self.ui = Ui_FilterSetupPage()
+        self.ui.setupUi(self)
+        self.registerField("remove-everything-enabled", self.ui.delete_everything_checkbox)
+        self.registerField("time-filter-enabled", self.ui.time_filter_enabled_checkbox)
+        self.registerField("time-filter-value", self.ui.time_filter_value_spinbox)
+        self.registerField("count-filter-enabled", self.ui.count_filter_enabled_checkbox)
+        self.registerField("count-filter-value", self.ui.count_filter_value_spinbox)
+        self.registerField("remove-unknown-cards-enabled", self.ui.remove_unknown_cards_checkbox)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card_filter_page")):
+class CardFilterPage(QWizardPage):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QWidget = None):
         super(CardFilterPage, self).__init__(parent)
-        self.setupUi(self)
+        self.ui = Ui_CardFilterPage()
+        self.ui.setupUi(self)
         self.card_db = card_db
         self.image_db = image_db
-        self.unknown_image_view: QTableView
         self.card_image_model = KnownCardImageModel(parent=self)
         self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
         self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
-        self.unknown_image_view.setModel(self.unknown_image_model)
+        self.ui.unknown_image_view.setModel(self.unknown_image_model)
         self.registerField("selected-images", self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -299,7 +307,7 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
-        view: QTableView = self.card_image_view
+        view: QTableView = self.ui.card_image_view
         view: QTableView
         view.setModel(model)
         view.setSortingEnabled(True)
@@ -325,7 +333,6 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
 
     def _apply_filter(self):
         self._select_unknown_cards_if_enabled()
-        self.card_image_view: QTableView
         if self.field("remove-everything-enabled"):
             self._select_indices(range(self.card_image_model.rowCount()))
         else:
@@ -341,17 +348,15 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
                 self._select_indices(indices)
 
     def _select_unknown_cards_if_enabled(self):
-        self.unknown_image_view: QTableView
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
             for row in range(self.unknown_image_model.rowCount()):
-                self.unknown_image_view.selectionModel().select(
+                self.ui.unknown_image_view.selectionModel().select(
                     self.unknown_image_model.createIndex(row, UnknownCardColumns.ScryfallId),
                     QItemSelectionModel.Select | QItemSelectionModel.Rows
                 )
 
     def _select_indices(self, indices: typing.Iterable[int]):
-        self.card_image_view: QTableView
-        selection_model = self.card_image_view.selectionModel()
+        selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
                 self.card_image_model.createIndex(index, KnownCardColumns.Name),
@@ -365,39 +370,36 @@ class CardFilterPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/card
 
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
-        self.unknown_image_view: QTableView
-        self.card_image_view: QTableView
         selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
             (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.IsFront).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(Qt.EditRole),
              index.siblingAtColumn(UnknownCardColumns.Size).data(Qt.EditRole))
-            for index in self.unknown_image_view.selectedIndexes() if not index.column()
+            for index in self.ui.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
             (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.IsFront).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(Qt.EditRole),
              index.siblingAtColumn(KnownCardColumns.Size).data(Qt.EditRole))
-            for index in self.card_image_view.selectedIndexes() if not index.column()
+            for index in self.ui.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
         return super(CardFilterPage, self).validatePage()
 
 
-class SummaryPage(*inherits_from_ui_file_with_name("cache_cleanup_wizard/summary_page")):
+class SummaryPage(QWizardPage):
 
     def __init__(self, parent: QWidget = None):
         super(SummaryPage, self).__init__(parent)
-        self.setupUi(self)
+        self.ui = Ui_SummaryPage()
+        self.ui.setupUi(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def initializePage(self) -> None:
-        self.image_count_summary: QLabel
-        self.filesize_summary: QLabel
         indices = self.field("selected-images")
         disk_space_freed = format_size(sum(size_bytes for _, _, _, size_bytes in indices))
-        self.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
-        self.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
+        self.ui.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
+        self.ui.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
         logger.debug(f"{self.__class__.__name__} populated.")
 
 

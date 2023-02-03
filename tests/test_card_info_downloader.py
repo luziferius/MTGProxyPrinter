@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
-import sqlite3
 import typing
 import unittest.mock
 
@@ -396,12 +395,18 @@ def test_download_filters(
         assert_visible_import(card_db, test_case)
 
 
-def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: CardDatabase):
-    fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
-    assert_model_is_empty(
-        card_db, TestCaseData(
-            "", False, tuple(), DatabaseSetData("", "", "", ""), "en", "",
-            "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
+@pytest.mark.parametrize("test_case", [
+    TestCaseData(
+        "missing_image_double_faced_card", False, tuple(), DatabaseSetData("", "", "", ""), "en", "",
+        "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False),
+    TestCaseData(  # Crash discovered Oct 27th, 2022. The back face of this double faced card has no image_uris key
+        "double_faced_card_with_missing_back_images", False, tuple(),  DatabaseSetData("", "", "", ""), "en", "",
+        "003b8c93-54d2-4f23-961e-a52d63d0a54b", "9d9b52b2-2edc-4f7f-a8d9-e024b1398847", False),
+
+])
+def test_import_card_skips_import_of_card_with_missing_image(qtbot, card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
+    assert_model_is_empty(card_db, test_case)
 
 
 def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: CardDatabase):

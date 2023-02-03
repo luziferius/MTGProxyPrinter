@@ -22,17 +22,18 @@ from ..test_main_window import main_window  # noqa
 
 
 def test_main_window_action_discard_page(qtbot: QtBot, main_window: MainWindow):
+    ui = main_window.ui
     document = main_window.document
-    selection_model = main_window.central_widget.document_view.selectionModel()
+    selection_model = ui.central_widget.ui.document_view.selectionModel()
     assert_that(selection_model.selectedRows(0), has_length(1))
     assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(1)))
-    with qtbot.wait_signal(main_window.action_new_page.triggered, timeout=100):
-        main_window.action_new_page.trigger()
+    with qtbot.wait_signal(ui.action_new_page.triggered, timeout=100):
+        ui.action_new_page.trigger()
     assert_that(selection_model.selectedRows(0), has_length(1))
     assert_that(selection_model.selectedRows(0)[0].row(), is_(equal_to(0)))
     assert_that(document.rowCount(), is_(equal_to(2)))
-    with qtbot.wait_signal(main_window.action_discard_page.triggered, timeout=100), \
+    with qtbot.wait_signal(ui.action_discard_page.triggered, timeout=100), \
             qtbot.wait_signal(selection_model.selectionChanged, timeout=100):
-        main_window.action_discard_page.trigger()
+        ui.action_discard_page.trigger()
     assert_that(document.rowCount(), is_(equal_to(1)))
