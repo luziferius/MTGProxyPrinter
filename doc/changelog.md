@@ -10,9 +10,15 @@
 
 ## Fixed issues
 
-- Fixed crash in the settings validation logic, introduced in version 0.19.0.
-  Triggering this crash required manually fiddling with the app configuration file
+- Fixed crash in the settings validation logic, introduced in version 0.19.0 that may occur when
+  manually fiddling with the app configuration file creates an invalid document page size.
 - Fixed crash when shuffling a document that contains both regular-sized and over-sized cards.
+- After completing a card data update, properly hide cards which got banned in a format
+  for which hiding banned cards is enabled in the settings. This prevents potential crashes when trying to add
+  these cards to the document. (Cards already added to the document are unaffected by this)
+- Optimized the document renderer and improved rendering quality
+  - Fixed location of horizontal cut helper lines for over-sized cards, which were off by one pixel
+  - Fixed a sub-pixel overlap of card images when image spacing is set to zero (the default).
 
 # Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
 
