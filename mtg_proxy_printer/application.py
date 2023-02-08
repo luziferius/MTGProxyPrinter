@@ -59,7 +59,7 @@ class Application(QApplication):
             # The explicit set platform and parameters overwrite the environment, so set these options iff neither
             # present as parameters nor environment variables.
             argv.append("-platform")
-            argv.append("windows:darkmode=2")
+            argv.append("windows:darkmode=1")
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
