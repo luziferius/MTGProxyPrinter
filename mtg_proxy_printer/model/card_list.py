@@ -244,5 +244,5 @@ class CardListModel(QAbstractTableModel):
             if card.oracle_id in basic_land_oracle_ids
         )
         merged = reversed(self._merge_ranges(to_remove_rows))
-        for top, bottom in merged:
-            self.remove_cards(top, bottom)
+        removed_cards = sum(itertools.starmap(self.remove_cards, merged))
+        logger.info(f"User requested removal of basic lands, removed {removed_cards} cards")
