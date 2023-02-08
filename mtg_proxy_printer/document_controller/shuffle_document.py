@@ -16,7 +16,7 @@
 from random import Random
 try:
     from random import randbytes
-except AttributeError:
+except ImportError:
     # Compatibility with Py 3.8
     from secrets import token_bytes as randbytes
 
