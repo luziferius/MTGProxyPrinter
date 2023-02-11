@@ -1,18 +1,34 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 
 ## New features
 
 - Added Undo and Redo actions. It is now possible to undo changes to the document, and also redo undone changes.
   - The undo and redo button tooltip shows a short description
-    of the change that is performed when the button is clicked.  
+    of the change that is performed when the button is clicked.
+
+## Changed features
+
+- Temporarily disable automatic dark mode rendering on Windows 10, if dark mode rendering for applications is active,
+  because of rendering issues in the deck import wizard and card image cleanup wizard.
+  The feature will return with better rendering at some point in the future.
+  - Linux is unaffected by this change, as following the system color scheme generally just works there.
 
 ## Fixed issues
 
-- Fixed crash in the settings validation logic, introduced in version 0.19.0.
-  Triggering this crash required manually fiddling with the app configuration file
+- Fixed crash in the settings validation logic, introduced in version 0.19.0, that may occur when
+  manually fiddling with the app configuration file creates an invalid document page size.
 - Fixed crash when shuffling a document that contains both regular-sized and over-sized cards.
+  Individual cards of the same size will be shuffled around across pages, but regular and over-sized card pages
+  will stay in their relative order and position.
+- After completing a card data update, properly hide cards which got banned in a format
+  for which hiding banned cards is enabled in the settings. This prevents potential crashes when trying to add
+  these cards to the document. (Cards already added to the document are unaffected by such a card data update)
+- Optimized the document renderer and improved rendering quality
+  - Fixed location of horizontal cut helper lines for over-sized cards, which were off by one pixel
+  - Fixed a sub-pixel overlap of card images when image spacing is set to zero (the default).
+  - Images are now always placed on full pixels, avoiding aliasing artifacts.
 
 # Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
 

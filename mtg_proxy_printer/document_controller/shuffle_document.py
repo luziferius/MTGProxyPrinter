@@ -1,4 +1,4 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import random
+from random import Random
+try:
+    from random import randbytes
+except ImportError:
+    # Compatibility with Py 3.8
+    from secrets import token_bytes as randbytes
+
 import typing
 
 from PySide6.QtCore import Qt, QModelIndex
@@ -43,18 +49,18 @@ class ActionShuffleDocument(DocumentAction):
     def __init__(self):
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
-        self.random_seed = random.randbytes(64)
+        self.random_seed = randbytes(64)
         self.shuffle_order: typing.Dict[PageType, typing.List[int]] = {}
 
     def apply(self, document: Document) -> Self:
         if self.shuffle_order:
             raise IllegalStateError("Cannot apply(). A previous shuffle order is already set")
-        shuffler = random.Random(self.random_seed)
+        shuffler = Random(self.random_seed)
         for page_type in (PageType.REGULAR, PageType.OVERSIZED):
             self._shuffle_pages_of_type(document, shuffler, page_type)
         return super().apply(document)
 
-    def _shuffle_pages_of_type(self, document: Document, shuffler: random.Random, page_type: PageType):
+    def _shuffle_pages_of_type(self, document: Document, shuffler: Random, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(
             enumerate(index.internalPointer().card for index in model_indices)  # The index holds the card container

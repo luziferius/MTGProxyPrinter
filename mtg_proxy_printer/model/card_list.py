@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -245,5 +245,5 @@ class CardListModel(QAbstractTableModel):
             if card.oracle_id in basic_land_oracle_ids
         )
         merged = reversed(self._merge_ranges(to_remove_rows))
-        for top, bottom in merged:
-            self.remove_cards(top, bottom)
+        removed_cards = sum(itertools.starmap(self.remove_cards, merged))
+        logger.info(f"User requested removal of basic lands, removed {removed_cards} cards")
