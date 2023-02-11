@@ -15,14 +15,17 @@
 
 import itertools
 import typing
+from unittest.mock import MagicMock, patch
 
 import pytest
 from hamcrest import *
 
+import mtg_proxy_printer.decklist_downloader
 from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
-    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader
+    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
+    MtgDecksNetDownloader
 
 
 ACCEPTABLE_MTGGOLDFISH_URLS = [
@@ -91,6 +94,20 @@ def test_mtg_wtf_url_re(url: str):
     )
 
 
+ACCEPTABLE_MTGDECKS_NET_URLS = [
+    "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582",
+    "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/",
+]
+
+
+@pytest.mark.parametrize("url", ACCEPTABLE_MTGDECKS_NET_URLS)
+def test_mtgdeck_net_url_re(url: str):
+    assert_that(
+        MtgDecksNetDownloader.DECKLIST_PATH_RE.match(url),
+        is_(not_none())
+    )
+
+
 @pytest.mark.parametrize("url", itertools.chain(
     ACCEPTABLE_MTGGOLDFISH_URLS,
     ACCEPTABLE_SCRYFALL_URLS,
@@ -118,6 +135,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/", "Island"
     yield MoxfieldDownloader, "https://www.moxfield.com/decks/g1i2wHXC3kW0lanwY4Llkw", '"Zamriel, Seraph of Steel"'
     yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", "2 Blighted Fen"
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582", "4 Cabal Therapy"
 
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
@@ -130,3 +148,20 @@ def test_deck_list_download(downloader_class: typing.Type[DecklistDownloader], u
         result,
         contains_string(expected),
     )
+
+
+@pytest.mark.parametrize("deck_list, expected", [
+    (b"4 Fire/Ice\r\n", "4 Fire // Ice\n"),
+])
+def test_decklists_net_post_process(deck_list: bytes, expected: str):
+    """
+    The MTGO exports of split cards contain entries in the form of "Front/Back", instead of
+    the more common "Front // Back". Verify that the downloader normalizes the entries.
+    """
+    downloader = MtgDecksNetDownloader()
+    stream = MagicMock()
+    stream.read.return_value=deck_list
+    with patch("mtg_proxy_printer.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
+        reader.return_value = stream, MagicMock()
+        result = downloader.download("")
+    assert_that(result, is_(equal_to(expected)))

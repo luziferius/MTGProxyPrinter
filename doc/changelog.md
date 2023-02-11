@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Support for additional card list database websites
+  - MTGDecks (mtgdecks.net)
+
 # Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 
 ## New features

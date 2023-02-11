@@ -203,6 +203,22 @@ class DeckstatsDownloader(DecklistDownloader):
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
 
 
+class MtgDecksNetDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://mtgdecks.net/[A-Za-z]+/[-A-Za-z]+/?"
+    )
+    PARSER_CLASS = MTGArenaParser
+    APPLICABLE_WEBSITES = "MTGDecks (mtgdecks.net)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return f"{decklist_url}/txt"
+
+    def post_process(self, data: bytes) -> str:
+        deck_list = super().post_process(data)
+        deck_list = deck_list.replace("/", " // ")
+        return deck_list
+
+
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ScryfallDownloader,
@@ -211,6 +227,7 @@ AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
         TappedOutDownloader,
         MoxfieldDownloader,
         DeckstatsDownloader,
+        MtgDecksNetDownloader,
     ]
 }
 
