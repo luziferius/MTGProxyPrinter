@@ -19,6 +19,8 @@ import typing
 import pytest
 from hamcrest import *
 
+from .helpers import SHOULD_SKIP_NETWORK_TESTS
+
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader
 
@@ -118,7 +120,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", "2 Blighted Fen"
 
 
-@pytest.mark.skip("Skipping network-hitting tests")
+@pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
 @pytest.mark.parametrize("downloader_class, url, expected", generate_test_cases_for_test_deck_list_download())
 def test_deck_list_download(downloader_class: typing.Type[DecklistDownloader], url: str, expected: str):
     downloader = downloader_class()
