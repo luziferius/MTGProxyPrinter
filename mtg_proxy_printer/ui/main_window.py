@@ -323,7 +323,7 @@ class MainWindow(QMainWindow):
                 "Or accept and use the current settings.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.Yes) == QMessageBox.StandardButton.Yes:
-            self.ui.action_download_card_data.trigger()
+            self.card_data_downloader.request_import_from_url.emit()
 
     @Slot(int)
     @Slot(int, str)
@@ -422,7 +422,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 ) == QMessageBox.StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.ui.action_download_card_data.trigger()
+            self.card_data_downloader.request_import_from_url.emit()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)
