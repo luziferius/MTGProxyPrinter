@@ -319,8 +319,6 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
         self.model.begin_transaction()
         progress_report_step = total_count // 100
-        # Look up the printing filter ids only once per import
-        printing_filter_ids = self._read_printing_filters_from_db()
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
@@ -351,7 +349,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                     ;"""), (card["id"], card["lang"], self._get_oracle_id(card)))
                 continue
             try:
-                face_ids += self._parse_single_printing(card, printing_filter_ids)
+                face_ids += self._parse_single_printing(card)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -378,14 +376,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         db.commit()
         return index
 
+    @functools.lru_cache(maxsize=1)
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
-        return {
-            filter_name: filter_id
-            for filter_name, filter_id
-            in self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters").fetchall()
-        }
+        return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
-    def _parse_single_printing(self, card: JSONType, printing_filter_ids):
+    def _parse_single_printing(self, card: JSONType):
         language_id = self._insert_language(card["lang"])
         oracle_id = self._get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
@@ -394,7 +389,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
         printing_id = self._insert_printing(card, card_id, set_id)
         filter_data = self._get_card_filter_data(card)
-        self._insert_card_filters(printing_id, filter_data, printing_filter_ids)
+        self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
 
@@ -404,7 +399,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         the import. This will lead to assignment of wrong data via invalid foreign key relations.
         To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
         """
-        for cache in (self._insert_language, self._insert_card):
+        for cache in (self._insert_language, self._insert_card, self._read_printing_filters_from_db):
             logger.debug(str(cache.cache_info()))
             cache.cache_clear()
         self.set_code_cache.clear()
@@ -607,8 +602,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return result
 
     def _insert_card_filters(
-            self, printing_id: int, filter_data: typing.Dict[str, bool],
-            printing_filter_ids: typing.Dict[str, int]):
+            self, printing_id: int, filter_data: typing.Dict[str, bool]):
+        printing_filter_ids = self._read_printing_filters_from_db()
         self.model.db.executemany(
             "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
             ((printing_id, printing_filter_ids[filter_name])
