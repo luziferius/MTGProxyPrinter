@@ -13,12 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import pathlib
 import typing
 
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices
 from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QLabel, QMainWindow, QDialog
+from PySide6.QtPrintSupport import QPrintDialog
 
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
@@ -259,7 +261,7 @@ class MainWindow(QMainWindow):
             return
         self.current_dialog = PrintDialog(self.document, self)
         self.current_dialog.finished.connect(self.on_dialog_finished)
-        self.missing_images_manager.obtain_missing_images(self.current_dialog.open)
+        self.missing_images_manager.obtain_missing_images(super(QPrintDialog, self.current_dialog).open)
 
     @Slot()
     def on_action_print_preview_triggered(self):
