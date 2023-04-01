@@ -23,9 +23,10 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.ui.page_renderer import RenderMode, PageScene
-from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
+from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 
 from ..document_controller.helpers import create_card
 from tests.hasgetter import has_getter, has_getters
@@ -149,4 +150,24 @@ def test_cut_line_locations_when_enabled(
                     width=close_to_(page_width+1), height=1)
             ) for y in expected_horizontals]
         )
+    )
+
+
+@pytest.mark.parametrize("removed_range", [range(1), range(2), range(1, 3), range(9)])
+def test_compacting_document_moves_cards_onto_currently_shown_page(qtbot, page_scene, removed_range: range):
+    # Test for issue [b33546aa1cbd62f3e1e7852bfc89a206fed89501]. PageScene crashes when compacting a document
+    # moves cards onto the currently shown page.
+
+    # Setup
+    document = page_scene.document
+    page_capacity = document.page_layout.compute_page_card_capacity(PageType.REGULAR)
+    card = create_card_with_pixmap("Something", False, document)
+    ActionAddCard(card, page_capacity*2).apply(document)
+    ActionRemoveCards(removed_range, 0).apply(document)
+    # Verify no IndexError is raised when handling signals during:
+    ActionCompactDocument().apply(document)
+
+    assert_that(
+        page_scene.card_items,
+        has_length(page_capacity)
     )
