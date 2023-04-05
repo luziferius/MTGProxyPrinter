@@ -23,7 +23,7 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
-    MtgDecksNetDownloader, ArchidektDownloader
+    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -94,6 +94,10 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # Archidekt
     yield ArchidektDownloader, "https://archidekt.com/decks/8"
     yield ArchidektDownloader, "https://archidekt.com/decks/4296325"
+
+    # TCGPlayer Infinite
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532"
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
@@ -169,6 +173,9 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield ArchidektDownloader, "https://archidekt.com/"
     yield ArchidektDownloader, "https://archidekt.com"
 
+    # TCGPlayer Infinite
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer"
+
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
 def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
@@ -205,6 +212,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", "2 Blighted Fen"
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582", "4 Cabal Therapy"
     yield ArchidektDownloader, "https://archidekt.com/decks/8", "Mirror Entity"
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/", "4,en,Esper Sentinel"
 
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")

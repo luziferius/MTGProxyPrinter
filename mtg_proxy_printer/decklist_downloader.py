@@ -17,6 +17,7 @@
 This module is responsible for downloading deck lists from a known list of deckbuilder websites.
 """
 import abc
+import collections
 import csv
 import html.parser
 from io import StringIO
@@ -34,6 +35,8 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.card_info_downloader import JSONType
 logger = get_logger(__name__)
 del get_logger
+
+JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 
 
 class IsIdentifyingDeckUrlValidator(QValidator):
@@ -258,7 +261,7 @@ class ArchidektDownloader(DecklistDownloader):
         # The cards are stored in a map, which looks like it uses some base64 keys of unknown origin/meaning
         # (e.g. "7ToxQpQbV") and card dicts as values.
         # We are interested in the map values, so access the map items via ijson.kvitems() and throw the keys away
-        deck_items: typing.Iterable[typing.Tuple[str, JSONType]] = ijson.kvitems(
+        deck_items: JSONKeyValueType = ijson.kvitems(
             encoded, "props.pageProps.redux.deck.cardMap", use_float=True)
         writer.writerows(
             # The data does not contain a card language, so hard-code English
@@ -284,6 +287,47 @@ class MtgDecksNetDownloader(DecklistDownloader):
         return deck_list
 
 
+class TCGPlayerDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://infinite.tcgplayer.com/magic-the-gathering/deck/[^/]+/(?P<deck_id>\d+).*?"
+    )
+    PARSER_CLASS = ScryfallCSVParser
+    APPLICABLE_WEBSITES = "TCGPlayer ∞ (infinite.tcgplayer.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        deck_id = match.group("deck_id")
+        # cards enables inclusion of card data (in the form of a mapping from internal card id to card data),
+        # subDecks enables inclusion of mainboard/sideboard as a tuple stream (internal card id, quantity)
+        # stats enables irrelevant, additional card meta-data, like pricing and such, and is disabled.
+        return f"https://infinite-api.tcgplayer.com/deck/magic/{deck_id}/?subDecks=true&cards=true&stats=false"
+
+    def post_process(self, data: bytes) -> str:
+        card_counts = self._gather_card_counts(data)
+        buffer = StringIO()
+        scryfall_id_re = re.compile(r"(?P<scryfall_id>[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})")
+        writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
+        writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
+        items: JSONKeyValueType = ijson.kvitems(data, "result.cards")
+        # The data contains a URL to an image hosted on scryfall that contains the scryfall id
+        writer.writerows(
+            (scryfall_id_re.search(card_data["scryfallImageURL"])["scryfall_id"], card_counts[card_id],
+             "en", card_data["name"], card_data["set"].lower(), "")
+            for card_id, card_data in items
+        )
+        return buffer.getvalue()
+
+    @staticmethod
+    def _gather_card_counts(data: bytes) -> collections.Counter[str]:
+        items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
+        result = collections.Counter()
+        for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
+            for card in counts:  # type: typing.Dict[str, int]
+                # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
+                result[str(card["cardID"])] += card["quantity"]
+        return result
+
+
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ScryfallDownloader,
@@ -294,6 +338,7 @@ AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
         DeckstatsDownloader,
         ArchidektDownloader,
         MtgDecksNetDownloader,
+        TCGPlayerDownloader,
     ]
 }
 
