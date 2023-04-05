@@ -30,6 +30,8 @@ UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
 
 
 def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Generator[UrlTestData, None, None]:
+    # MTGGoldfish
+    # Deck links
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#paper"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#arena"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#online"
@@ -67,6 +69,26 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # mtgdecks.net
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582"
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/"
+
+    # Moxfield
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg"
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg/"
+
+    # TappedOut
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/?cat=subtype&sort=name&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/?cat=custom&sort=rarity&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck?cat=subtype&sort=name&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck?cat=custom&sort=rarity&cb=1665072266"
+
+    # Deckstats
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland/de"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland/"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__stats"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__spoiler"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827-"  # An untitled deck
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
