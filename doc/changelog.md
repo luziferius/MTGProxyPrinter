@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Fixed crash that occurred when compacting the document moved cards onto the currently shown page.
+
 # Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 
 ## New features
