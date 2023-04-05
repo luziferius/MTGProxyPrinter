@@ -382,12 +382,13 @@ class DocumentLoader(QObject):
 
         @staticmethod
         def _read_page_layout_data_from_database(db, user_version):
+            default_settings = PageLayoutSettings.create_from_settings()
             if user_version >= 4:
                 document_settings_query = textwrap.dedent(f"""\
                     SELECT page_height, page_width,
                            margin_top, margin_bottom, margin_left, margin_right,
                            image_spacing_horizontal, image_spacing_vertical, draw_cut_markers,
-                           {'1' if user_version == 4 else 'draw_sharp_corners'}
+                           {int(default_settings.draw_sharp_corners) if user_version == 4 else 'draw_sharp_corners'}
                         FROM DocumentSettings
                         WHERE rowid == 1
                     """)
@@ -420,7 +421,7 @@ class DocumentLoader(QObject):
                 settings.draw_cut_markers = bool(settings.draw_cut_markers)
                 settings.draw_sharp_corners = bool(settings.draw_sharp_corners)
             else:
-                settings = PageLayoutSettings.create_from_settings()
+                settings = default_settings
             return settings
 
         @staticmethod
