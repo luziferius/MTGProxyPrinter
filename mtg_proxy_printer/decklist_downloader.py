@@ -18,6 +18,7 @@ This module is responsible for downloading deck lists from a known list of deckb
 """
 import abc
 import csv
+import html.parser
 from io import StringIO
 import re
 import typing
@@ -30,6 +31,7 @@ from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.card_info_downloader import JSONType
 logger = get_logger(__name__)
 del get_logger
 
@@ -206,6 +208,66 @@ class DeckstatsDownloader(DecklistDownloader):
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
 
 
+class ArchidektHTMLParser(html.parser.HTMLParser):
+
+    def __init__(self, *, convert_charrefs: bool = True):
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.decklist_json = ""
+        self.found_deck_tag = False
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "script" and dict(attrs) == {"id": "__NEXT_DATA__", "type": "application/json"}:
+            self.found_deck_tag = True
+
+    def handle_data(self, data: str) -> None:
+        if self.found_deck_tag:
+            self.decklist_json = data
+            self.found_deck_tag = False
+
+
+class ArchidektDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://archidekt.com/decks/(?P<deck_id>\d+).*?"
+    )
+    PARSER_CLASS = ScryfallCSVParser
+    APPLICABLE_WEBSITES = "Archidekt (archidekt.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return decklist_url
+
+    def post_process(self, data: bytes) -> str:
+        decoded = super().post_process(data)
+        json_str = self._get_raw_deck_list_json(decoded)
+        result = self._parse_json_deck_list(json_str)
+        logger.debug(f"Obtained list list containing {len(result)-1} entries")
+        return result
+
+    @staticmethod
+    def _get_raw_deck_list_json(data: str) -> str:
+        parser = ArchidektHTMLParser()
+        parser.feed(data)
+        parser.close()
+        return parser.decklist_json
+
+    @staticmethod
+    def _parse_json_deck_list(json_str: str) -> str:
+        buffer = StringIO()
+        writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
+        writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
+        encoded = json_str.encode("utf-8")
+        # The cards are stored in a map, which looks like it uses some base64 keys of unknown origin/meaning
+        # (e.g. "7ToxQpQbV") and card dicts as values.
+        # We are interested in the map values, so access the map items via ijson.kvitems() and throw the keys away
+        deck_items: typing.Iterable[typing.Tuple[str, JSONType]] = ijson.kvitems(
+            encoded, "props.pageProps.redux.deck.cardMap", use_float=True)
+        writer.writerows(
+            # The data does not contain a card language, so hard-code English
+            (card["uid"], card["qty"], "en", card["name"], card["setCode"], card["collectorNumber"])
+            for _, card in deck_items
+        )
+        return buffer.getvalue()
+
+
 class MtgDecksNetDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://mtgdecks.net/[A-Za-z]+/[-A-Za-z]+/?"
@@ -230,6 +292,7 @@ AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
         TappedOutDownloader,
         MoxfieldDownloader,
         DeckstatsDownloader,
+        ArchidektDownloader,
         MtgDecksNetDownloader,
     ]
 }

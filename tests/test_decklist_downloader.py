@@ -23,7 +23,7 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
-    MtgDecksNetDownloader
+    MtgDecksNetDownloader, ArchidektDownloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -90,6 +90,10 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__spoiler"
     yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827-"  # An untitled deck
     yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827"  # Missing required hyphen, added internally
+
+    # Archidekt
+    yield ArchidektDownloader, "https://archidekt.com/decks/8"
+    yield ArchidektDownloader, "https://archidekt.com/decks/4296325"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
@@ -159,6 +163,12 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield DeckstatsDownloader, "https://deckstats.net/decks/"
     yield DeckstatsDownloader, "https://deckstats.net/decks/57872"
 
+    # Archidekt
+    yield ArchidektDownloader, "https://archidekt.com/decks/"
+    yield ArchidektDownloader, "https://archidekt.com/decks"
+    yield ArchidektDownloader, "https://archidekt.com/"
+    yield ArchidektDownloader, "https://archidekt.com"
+
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
 def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
@@ -193,6 +203,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield MoxfieldDownloader, "https://www.moxfield.com/decks/g1i2wHXC3kW0lanwY4Llkw", '"Zamriel, Seraph of Steel"'
     yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", "2 Blighted Fen"
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582", "4 Cabal Therapy"
+    yield ArchidektDownloader, "https://archidekt.com/decks/8", "Mirror Entity"
 
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
