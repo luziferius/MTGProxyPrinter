@@ -5,9 +5,9 @@
 ## New features
 
 - Support for additional card list database websites
-  - MTGDecks (mtgdecks.net)
-  - Archidekt (archidekt.com)
-  - TCGPlayer Infinite (infinite.tcgplayer.com)
+  - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
+  - Archidekt ([archidekt.com](https://archidekt.com/))
+  - TCGPlayer Infinite ([infinite.tcgplayer.com](https://infinite.tcgplayer.com/magic-the-gathering))
 
 # Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 
