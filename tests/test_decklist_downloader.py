@@ -179,7 +179,8 @@ def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
-def test_IsIdentifyingDeckUrlValidator_validate_returns_(downloader, url: str):
+def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_on_unacceptable_urls(
+        downloader, url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),
