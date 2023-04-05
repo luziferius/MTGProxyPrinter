@@ -56,7 +56,7 @@
    <item row="2" column="0" colspan="3">
     <widget class="QPushButton" name="deck_list_browse_button">
      <property name="toolTip">
-      <string>Opens a file picker and let’s you load a deck file from disk.</string>
+      <string>Opens a file picker and lets you load a deck file from disk.</string>
      </property>
      <property name="text">
       <string>Select deck list file</string>
