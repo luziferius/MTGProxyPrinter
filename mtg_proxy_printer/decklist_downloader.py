@@ -190,7 +190,7 @@ class MoxfieldDownloader(DecklistDownloader):
 
 class DeckstatsDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://deckstats.net/decks/(?P<user>\d+)/(?P<name>[-\w_]+)-*/?.*"
+        r"https://deckstats.net/decks/(?P<user>\d+)/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "Deckstats (deckstats.net)"
@@ -198,8 +198,11 @@ class DeckstatsDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         user = match.group("user")
-        name = match.group("name")
-        return f"https://deckstats.net/decks/{user}/{name}?" \
+        deck_id = match.group("deck_id")
+        # The deck is identified by a numerical deck id, followed by a hyphen and a deck name that can be anything.
+        # It defaults to the set deck name, but everything after the hyphen is ignored by the server
+        # The hyphen itself is required. Without it, the server returns the user's deck list directory.
+        return f"https://deckstats.net/decks/{user}/{deck_id}-?" \
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
 
 

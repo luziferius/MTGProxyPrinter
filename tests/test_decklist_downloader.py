@@ -89,6 +89,7 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__stats"
     yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__spoiler"
     yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827-"  # An untitled deck
+    yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827"  # Missing required hyphen, added internally
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
@@ -105,6 +106,75 @@ def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
     assert_that(
         validator.validate(url),
         contains_exactly(IsIdentifyingDeckUrlValidator.Acceptable, url, 0),
+    )
+
+
+def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Generator[UrlTestData, None, None]:
+    # MTGGoldfish
+    # Deck links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/#online"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/"
+    # Download links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/?output=mtggoldfish&type=tabletop"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download?output=mtggoldfish&type=arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download"
+    # Deck archetype links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/#paper"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype#arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype"
+
+    # Scryfall
+    yield ScryfallDownloader, "https://scryfall.com/@user/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/"  # missing /deck
+    # Invalid/missing UUIDS
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e-8-bfdea0951ce3/?with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-xyza-83e8-bfdea0951ce3/?with=tix"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/?with=arena"
+
+    # mtg.wtf
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21"
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/"
+
+    # mtgdecks.net
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/"
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern"
+
+    # Moxfield
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks"
+    yield MoxfieldDownloader, "https://www.moxfield.com/"
+
+    # TappedOut
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/?cat=subtype&sort=name&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks?cat=custom&sort=rarity&cb=1665072266"
+
+    # Deckstats
+    yield DeckstatsDownloader, "https://deckstats.net"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872"
+
+
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
+def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
+    assert_that(
+        downloader.DECKLIST_PATH_RE.match(url),
+        is_(none())
+    )
+
+
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
+def test_IsIdentifyingDeckUrlValidator_validate_returns_(downloader, url: str):
+    validator = IsIdentifyingDeckUrlValidator()
+    assert_that(
+        validator.validate(url),
+        contains_exactly(
+            any_of(IsIdentifyingDeckUrlValidator.Intermediate, IsIdentifyingDeckUrlValidator.Invalid), url, 0),
     )
 
 
