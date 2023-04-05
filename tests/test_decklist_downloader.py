@@ -13,14 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import itertools
 import typing
 from unittest.mock import MagicMock, patch
 
 import pytest
 from hamcrest import *
 
-import mtg_proxy_printer.decklist_downloader
 from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
@@ -28,92 +26,59 @@ from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfis
     MtgDecksNetDownloader
 
 
-ACCEPTABLE_MTGGOLDFISH_URLS = [
-    # Plain deck links
-    "https://www.mtggoldfish.com/deck/5077398#paper",
-    "https://www.mtggoldfish.com/deck/5077398#arena",
-    "https://www.mtggoldfish.com/deck/5077398#online",
+UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
+
+
+def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Generator[UrlTestData, None, None]:
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#paper"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#online"
     # Download links
-    "https://www.mtggoldfish.com/deck/download/5077398",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=tabletop",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=arena",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=online",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=dek&type=online",
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=tabletop"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=online"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=dek&type=online"
     # Deck archetype links
-    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#paper",
-    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#arena",
-    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#online",
-]
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#paper"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#online"
+
+    # Scryfall
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=tix"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=arena"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=cah"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual&with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=tix"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=arena"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=cah"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual&with=eur"
+
+    # mtg.wtf
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance"
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/"
+
+    # mtgdecks.net
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582"
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/"
 
 
-@pytest.mark.parametrize("url", ACCEPTABLE_MTGGOLDFISH_URLS)
-def test_mtggoldfish_url_re(url: str):
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
+def test_re_matcher_matches_acceptable_url(downloader, url: str):
     assert_that(
-        MTGGoldfishDownloader.DECKLIST_PATH_RE.match(url),
+        downloader.DECKLIST_PATH_RE.match(url),
         is_(not_none())
     )
 
 
-ACCEPTABLE_SCRYFALL_URLS = [
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=eur",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=tix",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=arena",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=cah",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual&with=eur",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=eur",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=tix",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=arena",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=cah",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual&with=eur",
-]
-
-
-@pytest.mark.parametrize("url", ACCEPTABLE_SCRYFALL_URLS)
-def test_scryfall_url_re(url: str):
-    assert_that(
-        ScryfallDownloader.DECKLIST_PATH_RE.match(url),
-        is_(not_none())
-    )
-
-
-ACCEPTABLE_MTG_WTF_URLS = [
-    "https://mtg.wtf/deck/c21/prismari-performance",
-    "https://mtg.wtf/deck/c21/prismari-performance/",
-]
-
-
-@pytest.mark.parametrize("url", ACCEPTABLE_MTG_WTF_URLS)
-def test_mtg_wtf_url_re(url: str):
-    assert_that(
-        MTGWTFDownloader.DECKLIST_PATH_RE.match(url),
-        is_(not_none())
-    )
-
-
-ACCEPTABLE_MTGDECKS_NET_URLS = [
-    "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582",
-    "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/",
-]
-
-
-@pytest.mark.parametrize("url", ACCEPTABLE_MTGDECKS_NET_URLS)
-def test_mtgdeck_net_url_re(url: str):
-    assert_that(
-        MtgDecksNetDownloader.DECKLIST_PATH_RE.match(url),
-        is_(not_none())
-    )
-
-
-@pytest.mark.parametrize("url", itertools.chain(
-    ACCEPTABLE_MTGGOLDFISH_URLS,
-    ACCEPTABLE_SCRYFALL_URLS,
-    ACCEPTABLE_MTG_WTF_URLS,
-))
-def test_IsIdentifyingDeckUrlValidator_validate(url: str):
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
+def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),

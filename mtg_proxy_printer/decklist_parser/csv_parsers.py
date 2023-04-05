@@ -85,6 +85,14 @@ class BaseCSVParser(ParserBase):
 
 
 class ScryfallCSVParser(BaseCSVParser):
+    """
+    This parser handles CSV-based exports from Scryfall.com. It expects a header
+
+    Primary columns used:
+        scryfall_id, count
+    Secondary columns used (in case scryfall_id is unknown or refers to a hidden printing):
+        lang, name, set_code, collector_number
+    """
 
     class Dialect(csv.Dialect):
         '''
