@@ -330,14 +330,14 @@ class TCGPlayerDownloader(DecklistDownloader):
 
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
-        ScryfallDownloader,
+        ArchidektDownloader,
+        DeckstatsDownloader,
+        MoxfieldDownloader,
+        MtgDecksNetDownloader,
         MTGGoldfishDownloader,
         MTGWTFDownloader,
+        ScryfallDownloader,
         TappedOutDownloader,
-        MoxfieldDownloader,
-        DeckstatsDownloader,
-        ArchidektDownloader,
-        MtgDecksNetDownloader,
         TCGPlayerDownloader,
     ]
 }
