@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2022 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,7 +59,7 @@ class Application(QApplication):
             # The explicit set platform and parameters overwrite the environment, so set these options iff neither
             # present as parameters nor environment variables.
             argv.append("-platform")
-            argv.append("windows:darkmode=2")
+            argv.append("windows:darkmode=1")
         super(Application, self).__init__(argv)
         self._setup_icons()
         self.args: Namespace = args
