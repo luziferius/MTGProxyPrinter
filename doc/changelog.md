@@ -1,5 +1,17 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Drawing sharp card corners is no longer always enabled,
+  when loading documents created with MTGProxyPrinter version 0.18.0 or older.
+  The option now follows the global application settings.
+
+## Fixed issues
+
+- Fixed crash that occurred when compacting the document moved cards onto the currently shown page.
+
 # Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 
 ## New features
