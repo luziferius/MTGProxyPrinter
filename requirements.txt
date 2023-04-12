@@ -3,9 +3,12 @@
 PyQt5
 pint
 appdirs >= 1.4.3
-ijson >= 3.1.0
+ijson >= 3.1.0; python_version < '3.11'
+ijson >= 3.2.0; python_version >= '3.11'
 delegateto == 1.5
 #PyHamcrest >= 1.8.1
+truststore; python_version >= '3.10'
+certifi; python_version < '3.10'
 
 # Development, testing and build dependencies
 cx_Freeze >= 6.11.1
