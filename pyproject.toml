@@ -86,6 +86,7 @@ minversion = 3.18
 envlist = 
     py3-{unit_tests, test_create_bundle}-{windows, linux}
 
+
 [testenv]
 skip_install = True
 
@@ -94,6 +95,10 @@ platform =
     linux: linux
 #    macos: darwin
     windows: win32
+
+
+allowlist_externals =
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
 
 
 deps =
