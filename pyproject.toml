@@ -31,12 +31,15 @@ classifiers = [
 dependencies = [
     "appdirs >= 1.4.3",
     "PySide6-Essentials >= 6.4.0",
-    "ijson >= 3.1.0",
+    "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
     "pint",
     "delegateto == 1.5",
     "PyHamcrest >= 1.8.1",
-    ]
+    "truststore; python_version >= '3.10'",
+    "certifi; python_version < '3.10'",
+]
+
 dynamic = [
     "version",
 ]
@@ -86,6 +89,7 @@ minversion = 3.18
 envlist = 
     py3-{unit_tests, test_create_bundle}-{windows, linux}
 
+
 [testenv]
 skip_install = True
 
@@ -96,15 +100,21 @@ platform =
     windows: win32
 
 
+allowlist_externals =
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
+
+
 deps =
     appdirs >= 1.4.3
     build
     PySide6-Essentials >= 6.4.0
-    ijson >= 3.1.0
+    ijson >= 3.1.0; python_version < '3.11'
     ijson >= 3.2.0; python_version >= '3.11'
     pint
     delegateto == 1.5
     PyHamcrest >= 1.8.1
+    truststore; python_version >= '3.10'
+    certifi; python_version < '3.10'
 
 build_deps =
     setuptools>=61
@@ -172,7 +182,7 @@ setenv =
 
 commands =
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
-    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
+#    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
 
 
@@ -185,6 +195,6 @@ deps =
 commands =
     python -m build
     python setup_cx_freeze.py build_exe
-    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
+#    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
     windows: python setup_cx_freeze.py bdist_msi --skip-build
 """
