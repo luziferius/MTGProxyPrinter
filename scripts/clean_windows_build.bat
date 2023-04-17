@@ -18,8 +18,6 @@ pushd PySide6
 
 :: Don't need the executables, like Qt Designer, etc
 del *.exe
-:: Remove unused QML modules
-rmdir /S /Q qml
 
 :: Remove unused QML-related DLLs and bindings
 del Qt*Qml* Qt*Quick* Qt*Labs*
@@ -48,7 +46,7 @@ popd
 
 
 del shiboken6\shiboken6*.lib
-
+del email\architecture.rst
 
 :: leave lib
 popd
