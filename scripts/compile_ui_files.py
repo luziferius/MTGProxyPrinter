@@ -187,6 +187,6 @@ def get_function_stub(function_body: ast.FunctionDef):
 if __name__ == "__main__":
     args = parse_args()
     if args.full:
-        compile_ui_files()
+        compile_ui_files(args)
     else:
-        create_ui_type_stubs()
+        create_ui_type_stubs(args)
