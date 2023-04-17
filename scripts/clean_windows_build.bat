@@ -18,14 +18,8 @@ pushd PySide6
 
 :: Don't need the executables, like Qt Designer, etc
 del *.exe
-:: Remove C++ code and headers
-rmdir /S /Q glue include
 :: Remove unused QML modules
 rmdir /S /Q qml
-:: Remove other unused stuff
-rmdir /S /Q scripts support metatypes typesystems
-:: Remove Javascript/Typescript runtime used for QML
-rmdir /S /Q resources
 
 :: Remove unused QML-related DLLs and bindings
 del Qt*Qml* Qt*Quick* Qt*Labs*
@@ -43,14 +37,10 @@ del assistant* designer* linguist* qtdeclarative*
 :: leave translations
 popd
 
-pushd plugins
-:: The app uses Python's sqlite3 module, thus Qt's sqldrivers aren't used
-rmdir /S /Q sqldrivers qmltooling designer assetimporters
-pushd imageformats
+pushd plugins\imageformats
 :: Unused image format libraries, around 1.3 MiB
 del qwebp.dll qtiff.dll qjpeg.dll
-popd
-::leave plugins
+::leave plugins\imageformats
 popd
 
 :: leave PySide6
