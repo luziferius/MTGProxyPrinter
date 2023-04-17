@@ -1,85 +1,54 @@
+:: Cleanup various items that bloat the application bundle. Mostly related to unused PySide6 and Qt6 components
 
-
-:: Cleanup various items that bloat the application bundle. Mostly related to unused PyQt5 and Qt5 components
 if "%1%"=="" (
   pushd build\exe*
 ) else (
   pushd "%1"
 )
 
-rmdir /S /Q PyQt5.uic.widget-plugins
 
 pushd lib
+
+:: Some versions of cx_Freeze copy the python DLL here
+:: So remove duplicates, if present
 del ijson\backends\python*.dll
 
 
-pushd PyQt5
-:: All DLLs here are also in Qt\bin\
-del *.dll
+pushd PySide6
 
-:: The sip bindings aren't used at runtime
-rmdir /S /Q bindings
-
-pushd Qt5
-
-:: Unused Qsci
-rmdir /S /Q qsci
-
-:: Unused Qml bindings
+:: Don't need the executables, like Qt Designer, etc
+del *.exe
+:: Remove C++ code and headers
+rmdir /S /Q glue include
+:: Remove unused QML modules
 rmdir /S /Q qml
+:: Remove other unused stuff
+rmdir /S /Q scripts support metatypes typesystems
+:: Remove Javascript/Typescript runtime used for QML
+rmdir /S /Q resources
 
+:: Remove unused QML-related DLLs and bindings
+del Qt*Qml* Qt*Quick* Qt*Labs*
+del Qt6Designer.dll QtDesigner.pyi QtDesigner.pyd
+del Qt*Test*
+:: Unused OpenGL bindings. The Qt6OpenGL DLLs are required and thus not removed
+del QtOpenGL.* QtOpenGLWidgets.*
+del Qt*DBus*
+del Qt*JsonRpc*
 
-::  Unused DLLs
-pushd bin
-del d3dcompiler_47.dll libEGL.dll libGLESv2.dll opengl32sw.dll Qt5Bluetooth.dll Qt5DBus.dll Qt5Designer.dll Qt5Help.dll
-del Qt5Location.dll Qt5Multimedia.dll Qt5MultimediaWidgets.dll Qt5Network.dll Qt5Nfc.dll Qt5OpenGL.dll Qt5Positioning.dll
-del Qt5PositioningQuick.dll Qt5Qml.dll Qt5QmlModels.dll Qt5QmlWorkerScript.dll Qt5Quick.dll Qt5Quick3D.dll
-del Qt5Quick3DAssetImport.dll Qt5Quick3DRender.dll Qt5Quick3DRuntimeRender.dll Qt5Quick3DUtils.dll Qt5QuickControls2.dll
-del Qt5QuickParticles.dll Qt5QuickShapes.dll Qt5QuickTemplates2.dll Qt5QuickTest.dll Qt5QuickWidgets.dll Qt5RemoteObjects.dll
-del Qt5Sensors.dll Qt5SerialPort.dll Qt5Sql.dll Qt5Test.dll Qt5WebChannel.dll Qt5WebSockets.dll Qt5WebView.dll Qt5XmlPatterns.dll
-del libcrypto-1_1-x64.dll libssl-1_1-x64.dll
-popd
-
-
-:: Unused plugins
-pushd plugins
-
-:: Remove duplicated Qt5 base DLLs
-FOR %%G IN ( printsupport platforms imageformats styles
-) DO del %%G\Qt5*.dll
-
-
-FOR %%G IN (
-  assetimporters audio geometryloaders geoservices mediaservice playlistformats
-  position renderers sceneparsers sensorgestures sensors sqldrivers texttospeech webview
-) DO rmdir /S /Q %%G
-popd
-
-
-:: Unused translations (of unused modules)
 pushd translations
-del qtxmlpatterns_*.qm
-del qtconnectivity_*.qm
-del qtdeclarative_*.qm
-del qtlocation_*.qm
-del qtmultimedia_*.qm
-del qtquickcontrols_*.qm
-del qtquickcontrols2_*.qm
-del qtserialport_*.qm
-del qtwebsockets_*.qm
+:: Remove translations for unused/removed components
+del assistant* designer* linguist* qtdeclarative*
+:: leave translations
 popd
 
-:: leave Qt5
+pushd plugins
+:: The app uses Python's sqlite3 module, thus Qt's sqldrivers aren't used
+rmdir /S /Q sqldrivers qmltooling designer
+::leave plugins
 popd
 
-:: Unused extension modules
-del *.pyi
-del QAxContainer.pyd QtBluetooth.pyd QtDBus.pyd QtDesigner.pyd QtHelp.pyd QtLocation.pyd QtMultimedia.pyd QtMultimediaWidgets.pyd
-del QtOpenGL.pyd QtNfc.pyd QtPositioning.pyd QtQml.pyd QtQuick.pyd QtQuick3D.pyd QtQuickWidgets.pyd
-del QtRemoteObjects.pydQtSensors.pydQtSerialPort.pyd QtSql.pyd QtTest.pyd QtTextToSpeech.pyd QtWebChannel.pyd
-del QtWebSockets.pyd _QOpenGLFunctions_2_0.pyd _QOpenGLFunctions_2_1.pyd _QOpenGLFunctions_4_1_Core.pyd
-
-:: leave PyQt5
+:: leave PySide6
 popd
 :: leave lib
 popd
