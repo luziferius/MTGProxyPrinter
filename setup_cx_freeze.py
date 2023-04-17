@@ -103,6 +103,8 @@ setup_py.setup_parameters["options"] = {
             "PySide6.QtQuick",
             "PySide6.QtQuickControls2",
             "PySide6.QtQuickWidgets",
+            "PySide6.QtNetwork",
+            "PySide6.QtLanguageServer",
         ],
         "optimize": 2,
     },

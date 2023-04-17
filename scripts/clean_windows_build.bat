@@ -28,6 +28,8 @@ del QtOpenGL.* QtOpenGLWidgets.*
 del Qt*DBus*
 del Qt*JsonRpc*
 del Qt*Sql*
+del Qt*Network*
+del Qt*LanguageServer*
 
 pushd translations
 :: Remove translations for unused/removed components
