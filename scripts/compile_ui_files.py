@@ -17,9 +17,11 @@
 This script generates Python stubs for the UI types
 """
 
+import argparse
 import ast
 import textwrap
 from pathlib import Path
+import shutil
 import subprocess
 from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any
 
@@ -35,6 +37,28 @@ class Assignment(NamedTuple):
 T = TypeVar("T")
 
 
+class Namespace(NamedTuple):
+    full: bool
+    purge_existing: bool
+
+
+def parse_args() -> Namespace:
+    parser = argparse.ArgumentParser(
+        description="Compiles the Qt designer UI files into importable Python modules "
+        "or type hinting stubs. Generates type hinting stubs by default."
+    )
+    parser.add_argument(
+        "-f", "--full", action="store_true",
+        help="Compile UI into importable Python modules."
+    )
+    parser.add_argument(
+        "-p", "--purge-existing", action="store_true",
+        help="Remove any already existing compiled or generated files."
+    )
+    args = parser.parse_args()
+    return args
+
+
 def type_filter(any_: Iterable[Any], types: [Union[Type[T], Tuple[Type[T], ...]]]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
@@ -46,7 +70,8 @@ def create_python_package(location: Path, /):
 
 
 def compile_ui_files(
-        target_path: Path,
+        args: Namespace,
+        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
         source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
@@ -54,6 +79,8 @@ def compile_ui_files(
     Recursively finds UI files under source_path, replicates the found directory tree as a Python package hierarchy and
     populates it with the compiled Ui types.
     """
+    if args.purge_existing and target_path.is_dir():
+        shutil.rmtree(target_path)
     create_python_package(target_path)
     for ui_file in source_path.rglob("*.ui"):
         compiled = compile_ui_file(ui_file)
@@ -63,6 +90,7 @@ def compile_ui_files(
 
 
 def create_ui_type_stubs(
+        args: Namespace,
         target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
         source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
     """
@@ -71,7 +99,8 @@ def create_ui_type_stubs(
     Recursively finds UI files under source_path, replicates the found directory tree as a Python package hierarchy and
     populates it with the created type hints.
     """
-
+    if args.purge_existing and target_path.is_dir():
+        shutil.rmtree(target_path)
     create_python_package(target_path)
     for ui_file in source_path.rglob("*.ui"):
         compiled = compile_ui_file(ui_file)
@@ -156,4 +185,8 @@ def get_function_stub(function_body: ast.FunctionDef):
 
 
 if __name__ == "__main__":
-    create_ui_type_stubs()
+    args = parse_args()
+    if args.full:
+        compile_ui_files()
+    else:
+        create_ui_type_stubs()
