@@ -17,8 +17,44 @@
    <string>Select which kind of deck list you want to import.</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="5" column="1">
-    <spacer name="tapped_out_board_spacer">
+   <item row="3" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_xmage">
+     <property name="toolTip">
+      <string>Decklist files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</string>
+     </property>
+     <property name="text">
+      <string>XMage</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="3">
+    <widget class="QCheckBox" name="tappedout_include_acquire_board">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>This is a Tappedout-specific section of the deck.
+It may contain the decklist author’s buylist or anything else.</string>
+     </property>
+     <property name="text">
+      <string>Include “Acquire-Board”</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_mtg_online">
+     <property name="toolTip">
+      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
+     </property>
+     <property name="text">
+      <string>Magic Online</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <spacer name="sample_buttons_spacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -33,7 +69,73 @@
      </property>
     </spacer>
    </item>
-   <item row="10" column="2" colspan="3">
+   <item row="9" column="1">
+    <spacer name="custom_re_input_spacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="6" column="2">
+    <widget class="QCheckBox" name="tappedout_include_maybe_board">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>This is a Tappedout-specific section of the deck.
+It may contain cards that the decklist creator considers for inclusion, based on the meta
+or any other preference, like card price.</string>
+     </property>
+     <property name="text">
+      <string>Include “Maybe-Board”</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_scryfall_csv">
+     <property name="toolTip">
+      <string>CSV exports from Scryfall’s own deck builder.
+Gives very accurate results, unless the imported deck list contains ignored items
+matching a configured download filter.</string>
+     </property>
+     <property name="text">
+      <string>Scryfall.com deck lists (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="1" colspan="4">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="5" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_tappedout_csv">
+     <property name="toolTip">
+      <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
+     </property>
+     <property name="text">
+      <string>tappedout.net deck list (CSV export)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="2" colspan="3">
     <layout class="QGridLayout" name="sample_buttons_layout">
      <item row="0" column="1">
       <widget class="QPushButton" name="insert_set_code_matcher_sample_button">
@@ -119,15 +221,46 @@ If a language field is not present in the deck list, the card language is guesse
      </item>
     </layout>
    </item>
-   <item row="1" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_mtg_online">
+   <item row="8" column="1" colspan="4">
+    <widget class="QRadioButton" name="select_parser_custom_re">
      <property name="toolTip">
-      <string>The simplistic format used by Magic Online. It does not specify exact printings, so may not give the best results.</string>
+      <string>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
+You can use the buttons below to insert basic building blocks.
+You have to separate them with the “control structures”, like spaces, as used in your deck list.</string>
      </property>
      <property name="text">
-      <string>Magic Online</string>
+      <string>Custom regular expression based parser:</string>
      </property>
     </widget>
+   </item>
+   <item row="6" column="1">
+    <spacer name="tapped_out_board_spacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="6" column="4">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item row="0" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_mtg_arena">
@@ -141,7 +274,7 @@ as the format works for any card.</string>
      </property>
     </widget>
    </item>
-   <item row="8" column="2" colspan="3">
+   <item row="9" column="2" colspan="3">
     <widget class="QLineEdit" name="custom_re_input">
      <property name="enabled">
       <bool>false</bool>
@@ -174,138 +307,12 @@ p, li { white-space: pre-wrap; }
      </property>
     </widget>
    </item>
-   <item row="13" column="1" colspan="4">
-    <spacer name="verticalSpacer">
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>40</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="4" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_tappedout_csv">
-     <property name="toolTip">
-      <string>CSV exports can be downloaded from Tappedout by choosing the appropriate deck export option.</string>
-     </property>
-     <property name="text">
-      <string>tappedout.net deck list (CSV export)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_scryfall_csv">
-     <property name="toolTip">
-      <string>CSV exports from Scryfall’s own deck builder.
-Gives very accurate results, unless the imported deck list contains ignored items
-matching a configured download filter.</string>
-     </property>
-     <property name="text">
-      <string>Scryfall.com deck lists (CSV export)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_custom_re">
-     <property name="toolTip">
-      <string>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
-You can use the buttons below to insert basic building blocks.
-You have to separate them with the “control structures”, like spaces, as used in your deck list.</string>
-     </property>
-     <property name="text">
-      <string>Custom regular expression based parser:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="1">
-    <spacer name="sample_buttons_spacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="8" column="1">
-    <spacer name="custom_re_input_spacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeType">
-      <enum>QSizePolicy::Fixed</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>20</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
    <item row="2" column="1" colspan="4">
-    <widget class="QRadioButton" name="select_parser_xmage">
-     <property name="toolTip">
-      <string>Decklist files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</string>
-     </property>
+    <widget class="QRadioButton" name="select_parser_magic_workstation">
      <property name="text">
-      <string>XMage</string>
+      <string>Magic Workstation Deck Data (mwDeck)</string>
      </property>
     </widget>
-   </item>
-   <item row="5" column="2">
-    <widget class="QCheckBox" name="tappedout_include_maybe_board">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="toolTip">
-      <string>This is a Tappedout-specific section of the deck.
-It may contain cards that the decklist creator considers for inclusion, based on the meta
-or any other preference, like card price.</string>
-     </property>
-     <property name="text">
-      <string>Include “Maybe-Board”</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="3">
-    <widget class="QCheckBox" name="tappedout_include_acquire_board">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="toolTip">
-      <string>This is a Tappedout-specific section of the deck.
-It may contain the decklist author’s buylist or anything else.</string>
-     </property>
-     <property name="text">
-      <string>Include “Acquire-Board”</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="4">
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
    </item>
   </layout>
  </widget>
@@ -318,12 +325,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>120</x>
-     <y>188</y>
+     <x>126</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>176</x>
-     <y>225</y>
+     <x>208</x>
+     <y>261</y>
     </hint>
    </hints>
   </connection>
@@ -366,8 +373,8 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>26</x>
-     <y>103</y>
+     <x>32</x>
+     <y>139</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -382,8 +389,8 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>38</x>
-     <y>188</y>
+     <x>44</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -398,8 +405,8 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>26</x>
-     <y>77</y>
+     <x>32</x>
+     <y>111</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -414,8 +421,8 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>215</x>
-     <y>225</y>
+     <x>247</x>
+     <y>261</y>
     </hint>
     <hint type="destinationlabel">
      <x>145</x>
@@ -430,8 +437,8 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>139</x>
-     <y>119</y>
+     <x>145</x>
+     <y>167</y>
     </hint>
     <hint type="destinationlabel">
      <x>139</x>
@@ -446,12 +453,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>92</x>
-     <y>134</y>
+     <x>98</x>
+     <y>167</y>
     </hint>
     <hint type="destinationlabel">
-     <x>88</x>
-     <y>154</y>
+     <x>120</x>
+     <y>195</y>
     </hint>
    </hints>
   </connection>
@@ -462,12 +469,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>277</x>
-     <y>134</y>
+     <x>283</x>
+     <y>167</y>
     </hint>
     <hint type="destinationlabel">
-     <x>369</x>
-     <y>157</y>
+     <x>378</x>
+     <y>195</y>
     </hint>
    </hints>
   </connection>
@@ -478,12 +485,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>256</x>
-     <y>187</y>
+     <x>262</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>173</x>
-     <y>240</y>
+     <x>206</x>
+     <y>302</y>
     </hint>
    </hints>
   </connection>
@@ -494,12 +501,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>390</x>
-     <y>173</y>
+     <x>396</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>750</x>
-     <y>265</y>
+     <x>759</x>
+     <y>302</y>
     </hint>
    </hints>
   </connection>
@@ -510,12 +517,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>336</x>
-     <y>180</y>
+     <x>342</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>750</x>
-     <y>304</y>
+     <x>759</x>
+     <y>342</y>
     </hint>
    </hints>
   </connection>
@@ -526,12 +533,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>390</x>
-     <y>181</y>
+     <x>396</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>392</x>
-     <y>257</y>
+     <x>515</x>
+     <y>302</y>
     </hint>
    </hints>
   </connection>
@@ -542,12 +549,12 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>390</x>
-     <y>181</y>
+     <x>396</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>173</x>
-     <y>283</y>
+     <x>206</x>
+     <y>342</y>
     </hint>
    </hints>
   </connection>
@@ -558,12 +565,28 @@ It may contain the decklist author’s buylist or anything else.</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>446</x>
-     <y>181</y>
+     <x>452</x>
+     <y>223</y>
     </hint>
     <hint type="destinationlabel">
-     <x>448</x>
-     <y>296</y>
+     <x>515</x>
+     <y>342</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>select_parser_magic_workstation</sender>
+   <signal>clicked()</signal>
+   <receiver>WizardPage</receiver>
+   <slot>isComplete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>383</x>
+     <y>72</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>383</x>
+     <y>297</y>
     </hint>
    </hints>
   </connection>

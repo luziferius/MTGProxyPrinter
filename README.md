@@ -55,6 +55,7 @@ MTGProxyPrinter can directly fetch public deck lists from these websites.
 - [TappedOut](https://tappedout.net/)
 - [Moxfield](https://www.moxfield.com/)
 - [Deckstats](https://deckstats.net/)
+- [MTGDecks](https://mtgdecks.net)
 
 Except for Scryfall, these websites do not offer a stable, public Web API. Support is offered on a
 “best effort” base and may break at any time, if a website decides to re-design their code.

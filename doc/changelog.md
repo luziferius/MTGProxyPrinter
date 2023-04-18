@@ -2,6 +2,16 @@
 
 # Next version (in development)
 
+## New features
+
+- Added support for importing Magic Workstation Deck Data (`.mwDeck`) deck lists
+- Support for direct downloads from additional card list database websites:
+  - MTG Arena Zone ([mtgazone.com](https://mtgazone.com))
+  - MTGTop8 ([mtgtop8.com](http://mtgtop8.com))
+  - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
+  - Archidekt ([archidekt.com](https://archidekt.com/))
+  - TCGPlayer Infinite ([infinite.tcgplayer.com](https://infinite.tcgplayer.com/magic-the-gathering))
+
 ## Changed features
 
 - Drawing sharp card corners is no longer always enabled,
@@ -10,7 +20,7 @@
 
 ## Fixed issues
 
-- Fixed crash that occurred when compacting the document moved cards onto the currently shown page.
+- Fixed crash that occurred when compacting the document moved cards from other pages onto the currently shown page.
 
 # Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 
