@@ -4,6 +4,7 @@
 
 ## New features
 
+- Added support for importing Magic Workstation Deck Data (`.mwDeck`) deck lists
 - Support for additional card list database websites
   - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
   - Archidekt ([archidekt.com](https://archidekt.com/))
