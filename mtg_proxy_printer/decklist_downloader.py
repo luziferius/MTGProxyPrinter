@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 del get_logger
 
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
-
+HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
 
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
@@ -104,7 +104,7 @@ class MTGAZoneHTMLParser(html.parser.HTMLParser):
         super().__init__(convert_charrefs=convert_charrefs)
         self.deck: typing.List[str] = []
 
-    def handle_starttag(self, tag: str, attrs) -> None:
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
         attrs = dict(attrs)
         if tag == "div" and attrs.get("class", "").strip().lower() == "card":
             self.deck.append(f"{attrs['data-quantity']} {attrs['data-name']}")
@@ -266,7 +266,7 @@ class ArchidektHTMLParser(html.parser.HTMLParser):
         self.decklist_json = ""
         self.found_deck_tag = False
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
         if tag == "script" and dict(attrs) == {"id": "__NEXT_DATA__", "type": "application/json"}:
             self.found_deck_tag = True
 
