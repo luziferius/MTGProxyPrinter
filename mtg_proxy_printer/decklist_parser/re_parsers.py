@@ -30,6 +30,7 @@ MatchType = typing.Dict[str, str]
 
 __all__ = [
     "GenericRegularExpressionDeckParser",
+    "MagicWorkstationDeckDataFormatParser",
     "MTGArenaParser",
     "MTGOnlineParser",
     "XMageParser",
@@ -62,6 +63,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
     ))
 
     LINES_TO_SKIP = frozenset()
+    PREFIXES_TO_SKIP = frozenset()
 
     def __init__(
             self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
@@ -158,12 +160,27 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
         """
-        Split the input deck list into individual lines, omitting empty lines.
+        Split the input deck list into individual lines, omitting empty lines,
+        lines that only contain
         Subclasses can overwrite this method to provide custom filtering for unrelated meta-data.
         """
         for line in deck_list.splitlines():
-            if line and line not in self.LINES_TO_SKIP:
+            if line and line not in self.LINES_TO_SKIP and not any(map(line.startswith, self.PREFIXES_TO_SKIP)):
                 yield line
+
+
+class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
+
+    SUPPORTED_FILE_TYPES = {
+        "Magic Workstation Deck Data Format": ["mwDeck"],
+    }
+    PREFIXES_TO_SKIP = frozenset({"//"})
+
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super().__init__(
+            card_db, image_db,
+            re.compile(r"(SB: {2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
+        )
 
 
 class MTGArenaParser(GenericRegularExpressionDeckParser):
