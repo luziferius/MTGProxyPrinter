@@ -16,6 +16,7 @@
 import dataclasses
 import functools
 import json
+import os
 import typing
 from unittest.mock import patch, MagicMock
 import pkg_resources
@@ -30,6 +31,20 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
+
+
+def _should_skip_network_tests() -> bool:
+    result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
+    try:
+        result = int(result)
+    except ValueError:
+        result = True
+    else:
+        result = bool(result)
+    return not result
+
+
+SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
 
 
 def setup_logging_for_testing():

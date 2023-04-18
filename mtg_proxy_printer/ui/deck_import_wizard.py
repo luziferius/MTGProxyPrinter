@@ -167,7 +167,9 @@ class LoadListPage(QWizardPage):
     def get_file_extension_filter() -> str:
         parsers = [
             re_parsers.MTGOnlineParser, re_parsers.MTGArenaParser, re_parsers.XMageParser,
-            csv_parsers.ScryfallCSVParser, csv_parsers.TappedOutCSVParser]
+            re_parsers.MagicWorkstationDeckDataFormatParser,
+            csv_parsers.ScryfallCSVParser, csv_parsers.TappedOutCSVParser,
+        ]
         everything = "All files (*)"
         individual_file_types = list(
             itertools.chain.from_iterable(parser.SUPPORTED_FILE_TYPES.items() for parser in parsers)
@@ -288,6 +290,9 @@ class SelectDeckParserPage(QWizardPage):
         self.complete = False
         self.registerField("custom_re", self.ui.custom_re_input)
         self.registerField("selected_parser", self)
+        self.ui.select_parser_magic_workstation.clicked.connect(
+            lambda: setattr(self, "parser_creator", self._create_magic_workstation_parser)
+        )
         self.ui.select_parser_mtg_arena.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_mtg_arena_parser)
         )
@@ -314,6 +319,7 @@ class SelectDeckParserPage(QWizardPage):
         if used_downloader:
             parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
             {
+                re_parsers.MagicWorkstationDeckDataFormatParser: self.ui.select_parser_magic_workstation,
                 re_parsers.MTGArenaParser: self.ui.select_parser_mtg_arena,
                 re_parsers.MTGOnlineParser: self.ui.select_parser_mtg_online,
                 re_parsers.XMageParser: self.ui.select_parser_xmage,
@@ -323,6 +329,9 @@ class SelectDeckParserPage(QWizardPage):
 
     def append_group_to_custom_re_input(self, value: str):
         self.ui.custom_re_input.setText(self.ui.custom_re_input.text()+value)
+
+    def _create_magic_workstation_parser(self):
+        self.selected_parser = re_parsers.MagicWorkstationDeckDataFormatParser(self.card_db, self.image_db, self)
 
     def _create_mtg_arena_parser(self):
         self.selected_parser = re_parsers.MTGArenaParser(self.card_db, self.image_db, self)
@@ -350,6 +359,7 @@ class SelectDeckParserPage(QWizardPage):
     @Slot()
     def isComplete(self) -> bool:
         acceptable = any((
+            self.ui.select_parser_magic_workstation.isChecked(),
             self.ui.select_parser_mtg_arena.isChecked(),
             self.ui.select_parser_mtg_online.isChecked(),
             self.ui.select_parser_xmage.isChecked(),
