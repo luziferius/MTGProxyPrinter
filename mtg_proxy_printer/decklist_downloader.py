@@ -20,8 +20,8 @@ import abc
 import collections
 import csv
 import html.parser
-import io
 from io import StringIO
+import platform
 import re
 import typing
 
@@ -37,8 +37,11 @@ from mtg_proxy_printer.card_info_downloader import JSONType
 logger = get_logger(__name__)
 del get_logger
 
-JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
+Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else typing.Counter
 
+
+JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
+HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
 
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
@@ -104,7 +107,7 @@ class MTGAZoneHTMLParser(html.parser.HTMLParser):
         super().__init__(convert_charrefs=convert_charrefs)
         self.deck: typing.List[str] = []
 
-    def handle_starttag(self, tag: str, attrs) -> None:
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
         attrs = dict(attrs)
         if tag == "div" and attrs.get("class", "").strip().lower() == "card":
             self.deck.append(f"{attrs['data-quantity']} {attrs['data-name']}")
@@ -266,7 +269,7 @@ class ArchidektHTMLParser(html.parser.HTMLParser):
         self.decklist_json = ""
         self.found_deck_tag = False
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
         if tag == "script" and dict(attrs) == {"id": "__NEXT_DATA__", "type": "application/json"}:
             self.found_deck_tag = True
 
@@ -366,9 +369,9 @@ class TCGPlayerDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _gather_card_counts(data: bytes) -> collections.Counter[str]:
+    def _gather_card_counts(data: bytes) -> Counter[str]:
         items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
-        result = collections.Counter()
+        result = Counter()
         for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
             for card in counts:  # type: typing.Dict[str, int]
                 # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
