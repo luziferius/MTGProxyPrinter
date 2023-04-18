@@ -244,15 +244,10 @@ class XMageParser(GenericRegularExpressionDeckParser):
     SUPPORTED_FILE_TYPES = {
         "XMage Deck file": ["dck"],
     }
+    PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
         )
-
-    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
-        # Skip the deck name, if set, and the deck/sideboard layout
-        for line in super().line_splitter(deck_list):
-            if not line.startswith("NAME") and not line.startswith("LAYOUT"):
-                yield line
