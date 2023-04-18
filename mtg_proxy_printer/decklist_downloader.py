@@ -30,7 +30,7 @@ from PyQt5.QtGui import QValidator
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
-from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
+from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.card_info_downloader import JSONType
 logger = get_logger(__name__)
@@ -124,6 +124,23 @@ class MTGGoldfishDownloader(DecklistDownloader):
         decoded_site = raw_data.decode(encoding)
         deck_id = re.search(r"/deck/download/(?P<deck_id>\d+)", decoded_site).group("deck_id")
         return deck_id
+
+
+class MTGTop8Downloader(DecklistDownloader):
+    """
+    Downloader for https://mtgtop8.com. They host deck lists of tournaments
+    """
+
+    DECKLIST_PATH_RE = re.compile(
+        r"https?://mtgtop8.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
+    )
+    PARSER_CLASS = MagicWorkstationDeckDataFormatParser
+    APPLICABLE_WEBSITES = "MTGTop8 (mtgtop8.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        deck_id = match["deck_id"]
+        return f"http://mtgtop8.com/dec?d={deck_id}"
 
 
 class MTGWTFDownloader(DecklistDownloader):
@@ -332,6 +349,7 @@ AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ArchidektDownloader,
         DeckstatsDownloader,
+        MTGTop8Downloader,
         MoxfieldDownloader,
         MtgDecksNetDownloader,
         MTGGoldfishDownloader,

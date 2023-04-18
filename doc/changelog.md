@@ -6,6 +6,7 @@
 
 - Added support for importing Magic Workstation Deck Data (`.mwDeck`) deck lists
 - Support for additional card list database websites
+  - MTGTop8 ([mtgtop8.com](http://mtgtop8.com)) 
   - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
   - Archidekt ([archidekt.com](https://archidekt.com/))
   - TCGPlayer Infinite ([infinite.tcgplayer.com](https://infinite.tcgplayer.com/magic-the-gathering))

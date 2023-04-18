@@ -23,7 +23,7 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
-    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader
+    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -65,6 +65,10 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # mtg.wtf
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance"
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/"
+
+    #MTGTop8
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
 
     # mtgdecks.net
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582"
@@ -147,6 +151,14 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21"
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/"
 
+    #MTGTop8
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&f=BL"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&f=BL"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event"
+    yield MTGTop8Downloader, "http://mtgtop8.com/"
+
     # mtgdecks.net
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/"
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern"
@@ -205,6 +217,7 @@ def generate_test_cases_for_test_deck_list_download() \
     """
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/", "1 Jaya Ballard"
     yield ScryfallDownloader, "https://scryfall.com/@luziferius/decks/e1a9af19-cfff-48c4-ae74-ed2dd78cb736", "Island"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL", "4 [KTK] Abzan Charm"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5136573", "1 Ancestral Recall"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge", "4 Lion's Eye Diamond"
     yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/", "Island"
