@@ -184,7 +184,7 @@ commands =
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
-    python scripts{/}compile_ui_files.py --purge-existing
+    -python scripts{/}compile_ui_files.py --purge-existing
 
 
 [testenv:py3-package-{windows,linux}]
@@ -199,5 +199,5 @@ commands =
     python setup_cx_freeze.py build_exe
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
     windows: python setup_cx_freeze.py bdist_msi --skip-build
-    python scripts{/}compile_ui_files.py --purge-existing
+    -python scripts{/}compile_ui_files.py --purge-existing
 """
