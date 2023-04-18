@@ -20,8 +20,8 @@ import abc
 import collections
 import csv
 import html.parser
-import io
 from io import StringIO
+import platform
 import re
 import typing
 
@@ -36,6 +36,9 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.card_info_downloader import JSONType
 logger = get_logger(__name__)
 del get_logger
+
+Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else typing.Counter
+
 
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
@@ -366,9 +369,9 @@ class TCGPlayerDownloader(DecklistDownloader):
         return buffer.getvalue()
 
     @staticmethod
-    def _gather_card_counts(data: bytes) -> collections.Counter[str]:
+    def _gather_card_counts(data: bytes) -> Counter[str]:
         items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
-        result = collections.Counter()
+        result = Counter()
         for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
             for card in counts:  # type: typing.Dict[str, int]
                 # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
