@@ -112,7 +112,7 @@ class MTGAZoneHTMLParser(html.parser.HTMLParser):
 
 class MTGAZoneDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://mtgazone.com/deck/.+"
+        r"https://mtgazone\.com/deck/.+"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "MTG Arena Zone (mtgazone.com)"
@@ -163,7 +163,7 @@ class MTGTop8Downloader(DecklistDownloader):
     """
 
     DECKLIST_PATH_RE = re.compile(
-        r"https?://mtgtop8.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
+        r"https?://mtgtop8\.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = MagicWorkstationDeckDataFormatParser
     APPLICABLE_WEBSITES = "MTGTop8 (mtgtop8.com)"
@@ -197,7 +197,7 @@ class MTGWTFDownloader(DecklistDownloader):
 
 class TappedOutDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://tappedout.net/mtg-decks/(?P<name>[-\w_%]+)/?"
+        r"https://tappedout\.net/mtg-decks/(?P<name>[-\w_%]+)/?"
     )
     PARSER_CLASS = TappedOutCSVParser
     APPLICABLE_WEBSITES = "TappedOut (tappedout.net)"
@@ -210,7 +210,7 @@ class TappedOutDownloader(DecklistDownloader):
 
 class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://www.moxfield.com/decks/(?P<moxfield_id>[-\w_]+)/?"
+        r"https://www\.moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Moxfield (moxfield.com)"
@@ -243,7 +243,7 @@ class MoxfieldDownloader(DecklistDownloader):
 
 class DeckstatsDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://deckstats.net/decks/(?P<user>\d+)/(?P<deck_id>\d+).*?"
+        r"https://deckstats\.net/decks/(?P<user>\d+)/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "Deckstats (deckstats.net)"
@@ -278,7 +278,7 @@ class ArchidektHTMLParser(html.parser.HTMLParser):
 
 class ArchidektDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://archidekt.com/decks/(?P<deck_id>\d+).*?"
+        r"https://archidekt\.com/decks/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Archidekt (archidekt.com)"
@@ -321,7 +321,7 @@ class ArchidektDownloader(DecklistDownloader):
 
 class MtgDecksNetDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://mtgdecks.net/[A-Za-z]+/[-A-Za-z]+/?"
+        r"https://mtgdecks\.net/[A-Za-z]+/[-A-Za-z]+/?"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "MTGDecks (mtgdecks.net)"
@@ -337,7 +337,7 @@ class MtgDecksNetDownloader(DecklistDownloader):
 
 class TCGPlayerDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://infinite.tcgplayer.com/magic-the-gathering/deck/[^/]+/(?P<deck_id>\d+).*?"
+        r"https://infinite\.tcgplayer\.com/magic-the-gathering/deck/[^/]+/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "TCGPlayer ∞ (infinite.tcgplayer.com)"
