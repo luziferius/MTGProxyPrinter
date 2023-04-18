@@ -23,7 +23,7 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
-    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader
+    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -65,6 +65,10 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # mtg.wtf
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance"
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/"
+
+    # MTG Arena Zone (mtgazone.com)
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/"
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
     #MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
@@ -151,6 +155,11 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21"
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/"
 
+    # MTG Arena Zone (mtgazone.com)
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck"
+    yield MTGAZoneDownloader, "https://mtgazone.com/"
+    yield MTGAZoneDownloader, "https://mtgazone.com/orzhov-phyrexians-march-of-the-machine-theorycraft"
+
     #MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011"
@@ -217,6 +226,7 @@ def generate_test_cases_for_test_deck_list_download() \
     """
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/", "1 Jaya Ballard"
     yield ScryfallDownloader, "https://scryfall.com/@luziferius/decks/e1a9af19-cfff-48c4-ae74-ed2dd78cb736", "Island"
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/", "3 Cut Down"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL", "4 [KTK] Abzan Charm"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5136573", "1 Ancestral Recall"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge", "4 Lion's Eye Diamond"

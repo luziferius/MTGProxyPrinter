@@ -20,6 +20,7 @@ import abc
 import collections
 import csv
 import html.parser
+import io
 from io import StringIO
 import re
 import typing
@@ -96,6 +97,36 @@ class ScryfallDownloader(DecklistDownloader):
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         uuid = match.group("uuid")
         return f"https://api.scryfall.com/decks/{uuid}/export/csv"
+
+
+class MTGAZoneHTMLParser(html.parser.HTMLParser):
+    def __init__(self, *, convert_charrefs: bool = True):
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.deck: typing.List[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        attrs = dict(attrs)
+        if tag == "div" and attrs.get("class", "").strip().lower() == "card":
+            self.deck.append(f"{attrs['data-quantity']} {attrs['data-name']}")
+
+
+class MTGAZoneDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://mtgazone.com/deck/.+"
+    )
+    PARSER_CLASS = MTGArenaParser
+    APPLICABLE_WEBSITES = "MTG Arena Zone (mtgazone.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return decklist_url
+
+    def post_process(self, data: bytes) -> str:
+        decoded = super().post_process(data)
+        parser = MTGAZoneHTMLParser()
+        parser.feed(decoded)
+        parser.close()
+        deck = "\n".join(parser.deck)
+        return deck
 
 
 class MTGGoldfishDownloader(DecklistDownloader):
@@ -351,6 +382,7 @@ AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
         DeckstatsDownloader,
         MTGTop8Downloader,
         MoxfieldDownloader,
+        MTGAZoneDownloader,
         MtgDecksNetDownloader,
         MTGGoldfishDownloader,
         MTGWTFDownloader,
