@@ -1,0 +1,123 @@
+{
+  "object": "card",
+  "id": "1a2f4abd-089e-4015-a207-8a62616668b1",
+  "oracle_id": "20046568-b067-49fb-93b4-2ee86421f14b",
+  "multiverse_ids": [
+    580617
+  ],
+  "tcgplayer_id": 287947,
+  "cardmarket_id": 677298,
+  "name": "Aerialephant",
+  "lang": "en",
+  "released_at": "2022-10-07",
+  "uri": "https://api.scryfall.com/cards/1a2f4abd-089e-4015-a207-8a62616668b1",
+  "scryfall_uri": "https://scryfall.com/card/unf/2/aerialephant?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.jpg?1673912986",
+    "normal": "https://cards.scryfall.io/normal/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.jpg?1673912986",
+    "large": "https://cards.scryfall.io/large/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.jpg?1673912986",
+    "png": "https://cards.scryfall.io/png/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.png?1673912986",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.jpg?1673912986",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.jpg?1673912986"
+  },
+  "mana_cost": "{3}{W}",
+  "cmc": 4,
+  "type_line": "Creature — Elephant Performer",
+  "oracle_text": "Flying\nWhen Aerialephant enters the battlefield, you get {TK}, then you may put a sticker on a nonland permanent you own.",
+  "power": "3",
+  "toughness": "2",
+  "colors": [
+    "W"
+  ],
+  "color_identity": [
+    "W"
+  ],
+  "keywords": [
+    "Flying"
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "b314f553-8f07-4ba9-96c8-16be7784eff3",
+  "set": "unf",
+  "set_name": "Unfinity",
+  "set_type": "funny",
+  "set_uri": "https://api.scryfall.com/sets/b314f553-8f07-4ba9-96c8-16be7784eff3",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aunf&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/unf?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/1a2f4abd-089e-4015-a207-8a62616668b1/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A20046568-b067-49fb-93b4-2ee86421f14b&unique=prints",
+  "collector_number": "2",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "Everyone wants to talk about the elephant in this room.",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Yangtian Li",
+  "artist_ids": [
+    "a212599d-0efe-4f3c-b3e1-336611145615"
+  ],
+  "illustration_id": "e99f7e32-95c2-4ea4-b9f1-d8dc25acec8e",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 22204,
+  "prices": {
+    "usd": "0.01",
+    "usd_foil": "0.03",
+    "usd_etched": null,
+    "eur": "0.02",
+    "eur_foil": "0.08",
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=580617",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Aerialephant&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Aerialephant&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Aerialephant"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/287947?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Aerialephant&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Aerialephant&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

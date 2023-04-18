@@ -17,6 +17,7 @@
 - Drawing sharp card corners is no longer always enabled,
   when loading documents created with MTGProxyPrinter version 0.18.0 or older.
   The option now follows the global application settings.
+- The "funny cards" card filter no longer hides tournament-legal cards from Un-sets like Unfinity.
 
 ## Fixed issues
 
