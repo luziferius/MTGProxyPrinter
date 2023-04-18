@@ -293,10 +293,16 @@ def generate_test_cases_for_test_download_filters():
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
     ), "hide-oversized-cards"
     yield TestCaseData(  # Silver-bordered "Aesthetic Consultation" from Unhinged
-        "funny_card", True, (
+        "funny_card_with_silver_border", True, (
             FaceData("Aesthetic Consultation", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441", True),
         ), DatabaseSetData("unh", "Unhinged", "https://scryfall.com/sets/unh?utm_source=api", "2004-11-19"),
         "en", "48", "0464a507-20e5-42d5-8aca-12504a869f21", "8789d5fa-101c-457a-90ec-5cf067f5289b", False,
+    ), "hide-funny-cards"
+    yield TestCaseData(  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+        "funny_card_with_acorn_security_stamp", True, (
+            FaceData("Form of the Approach of the Second Sun", "https://cards.scryfall.io/png/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.png?1673913099", True),
+        ), DatabaseSetData("unf", "Unfinity", "https://scryfall.com/sets/unf?utm_source=api", "2022-10-07"),
+        "en", "9", "2149da9d-35ad-4f32-8072-fb515100b2fd", "6e3a97ee-472f-49a8-908a-8e71f815edab", False,
     ), "hide-funny-cards"
     yield TestCaseData(
         "gold_bordered_card", True, (
@@ -393,6 +399,24 @@ def test_download_filters(
         assert_hidden_import(card_db, test_case)
     else:
         assert_visible_import(card_db, test_case)
+
+
+def generate_test_cases_for_test_download_filters_does_not_affect_unexpected_cards():
+    yield TestCaseData(  # Black-bordered "Aerialephant" from Unfinity
+        "funny_legal_card", True, (
+            FaceData("Aerialephant", "https://cards.scryfall.io/png/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.png?1673912986", True),
+        ), DatabaseSetData("unf", "Unfinity", "https://scryfall.com/sets/unf?utm_source=api", "2022-10-07"),
+        "en", "2", "1a2f4abd-089e-4015-a207-8a62616668b1", "20046568-b067-49fb-93b4-2ee86421f14b", False,
+    ), "hide-funny-cards"
+
+
+@pytest.mark.parametrize("filter_setting", [True, False])
+@pytest.mark.parametrize(
+    "test_case, filter_name", generate_test_cases_for_test_download_filters_does_not_affect_unexpected_cards())
+def test_download_filters_does_not_affect_unexpected_cards(
+        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: str(filter_setting)})
+    assert_visible_import(card_db, test_case)
 
 
 @pytest.mark.parametrize("test_case", [
@@ -637,7 +661,7 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
     ("german_basic_Forest", SetWackinessScore.REGULAR),
     ("prerelease_promo_card", SetWackinessScore.PROMOTIONAL),
     ("white_bordered_card", SetWackinessScore.WHITE_BORDERED),
-    ("funny_card", SetWackinessScore.FUNNY),
+    ("funny_card_with_silver_border", SetWackinessScore.FUNNY),
     ("gold_bordered_card", SetWackinessScore.GOLD_BORDERED),
     ("digital_only_card", SetWackinessScore.DIGITAL),
     ("english_double_faced_art_series_card", SetWackinessScore.ART_SERIES),
