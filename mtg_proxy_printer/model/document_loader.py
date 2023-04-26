@@ -56,7 +56,7 @@ __all__ = [
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
 
-class CardType(enum.Enum):
+class CardType(str, enum.Enum):
     REGULAR = "r"
 
 
@@ -73,31 +73,31 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    page_height: int = 0
-    page_width: int = 0
-    margin_top: int = 0
+    draw_cut_markers: bool = False
+    draw_sharp_corners: bool = False
+    image_spacing_horizontal: int = 0
+    image_spacing_vertical: int = 0
     margin_bottom: int = 0
     margin_left: int = 0
     margin_right: int = 0
-    image_spacing_horizontal: int = 0
-    image_spacing_vertical: int = 0
-    draw_cut_markers: bool = False
-    draw_sharp_corners: bool = False
+    margin_top: int = 0
+    page_height: int = 0
+    page_width: int = 0
 
     @classmethod
     def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
         return cls(
-            document_settings.getint("paper-height-mm"),
-            document_settings.getint("paper-width-mm"),
-            document_settings.getint("margin-top-mm"),
+            document_settings.getboolean("print-cut-marker"),
+            document_settings.getboolean("print-sharp-corners"),
+            document_settings.getint("image-spacing-horizontal-mm"),
+            document_settings.getint("image-spacing-vertical-mm"),
             document_settings.getint("margin-bottom-mm"),
             document_settings.getint("margin-left-mm"),
             document_settings.getint("margin-right-mm"),
-            document_settings.getint("image-spacing-horizontal-mm"),
-            document_settings.getint("image-spacing-vertical-mm"),
-            document_settings.getboolean("print-cut-marker"),
-            document_settings.getboolean("print-sharp-corners")
+            document_settings.getint("margin-top-mm"),
+            document_settings.getint("paper-height-mm"),
+            document_settings.getint("paper-width-mm"),
         )
 
     def __lt__(self, other):
@@ -117,6 +117,12 @@ class PageLayoutSettings:
             > other.compute_page_card_capacity(PageType.REGULAR) \
             or self.compute_page_card_capacity(PageType.OVERSIZED) \
             > other.compute_page_card_capacity(PageType.OVERSIZED)
+
+    def update(self, other: typing.Iterable[typing.Tuple[str, typing.Any]]):
+        known_keys = set(self.__annotations__.keys())
+        for key, value in other:
+            if key in known_keys:
+                setattr(self, key, value)
 
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
@@ -390,7 +396,7 @@ class Worker(QObject):
         logger.info(f"Reading data from save file {save_file_path}")
 
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                save_file_path, "document-v4", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             user_version = Worker._validate_database_schema(db)
             card_data = Worker._read_card_data_from_database(db, user_version)
             settings = Worker._read_page_layout_data_from_database(db, user_version)
@@ -401,12 +407,12 @@ class Worker(QObject):
         card_data: DocumentSaveFormat = []
         if user_version == 2:
             query = textwrap.dedent("""\
-                SELECT page, slot, scryfall_id, 1 AS is_front, 'c' AS type
+                SELECT page, slot, scryfall_id, 1 AS is_front, 'r' AS type
                     FROM Card
                     ORDER BY page ASC, slot ASC""")
         elif user_version in {3, 4, 5}:
             query = textwrap.dedent("""\
-                SELECT page, slot, scryfall_id, is_front, 'c' AS type
+                SELECT page, slot, scryfall_id, is_front, 'r' AS type
                     FROM Card
                     ORDER BY page ASC, slot ASC""")
         elif user_version == 6:
@@ -434,7 +440,7 @@ class Worker(QObject):
         if user_version in {4, 5}:
             settings = Worker._read_document_settings_version_4_5(db, default_settings, user_version)
         elif user_version == 6:
-            pass
+            settings = Worker._read_document_settings_version_6(db, default_settings)
         else:
             settings = default_settings
         return settings
@@ -443,10 +449,12 @@ class Worker(QObject):
     def _read_document_settings_version_4_5(
             db: sqlite3.Connection, default_settings: PageLayoutSettings, user_version: int) -> PageLayoutSettings:
         document_settings_query = textwrap.dedent(f"""\
-            SELECT page_height, page_width,
-                   margin_top, margin_bottom, margin_left, margin_right,
-                   image_spacing_horizontal, image_spacing_vertical, draw_cut_markers,
-                   {int(default_settings.draw_sharp_corners) if user_version == 4 else 'draw_sharp_corners'}
+            SELECT
+                draw_cut_markers, 
+                {int(default_settings.draw_sharp_corners) if user_version == 4 else 'draw_sharp_corners'},
+                image_spacing_horizontal, image_spacing_vertical, 
+                margin_bottom, margin_left, margin_right, margin_top,
+                page_height, page_width
                 FROM DocumentSettings
                 WHERE rowid == 1
             """)
@@ -479,6 +487,42 @@ class Worker(QObject):
         settings.draw_cut_markers = bool(settings.draw_cut_markers)
         settings.draw_sharp_corners = bool(settings.draw_sharp_corners)
         return settings
+
+    @staticmethod
+    def _read_document_settings_version_6(
+            db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+        keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
+        document_settings_query = textwrap.dedent(f"""\
+            SELECT key, value
+                FROM DocumentSettings
+                WHERE key in ({keys})
+                ORDER BY key ASC
+            """)
+        default_settings.update(db.execute(document_settings_query))
+        assert_that(
+            default_settings,
+            has_properties(
+                page_height=all_of(instance_of(int), greater_than(0)),
+                page_width=all_of(instance_of(int), greater_than(0)),
+                margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                draw_cut_markers=is_in((0, 1)),
+                draw_sharp_corners=is_in((0, 1)),
+            ),
+            "Document settings contain invalid data or data types"
+        )
+        assert_that(
+            default_settings.compute_page_card_capacity(),
+            is_(greater_than_or_equal_to(1)),
+            "Document settings invalid: At least one card has to fit on a page."
+        )
+        default_settings.draw_cut_markers = bool(default_settings.draw_cut_markers)
+        default_settings.draw_sharp_corners = bool(default_settings.draw_sharp_corners)
+        return default_settings
 
     @staticmethod
     def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
