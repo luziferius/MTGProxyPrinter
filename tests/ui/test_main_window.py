@@ -78,7 +78,8 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
             unittest.mock.patch.object(
                 mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
                 "seekable", return_value=True), \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning"):
+            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as mb1, \
+            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.critical") as mb2:
         temp_path = main_window.image_db.db_path
         mock_image_path = _create_mock_image(main_window.image_db, temp_path)
         cl_mock.return_value = mock_image_path.stat().st_size
@@ -88,6 +89,8 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         with qtbot.wait_signal(main_window.document.loader.worker_thread.finished, timeout=1000):
             main_window.document.loader.load_document(save_file_path)
         assert_that(main_window.progress_bar.isVisible(), is_(False))
+    mb1.assert_not_called()
+    mb2.assert_not_called()
 
 
 def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:

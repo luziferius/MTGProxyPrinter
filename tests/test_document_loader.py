@@ -38,7 +38,7 @@ def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Conn
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
-            calling(mtg_proxy_printer.model.document_loader.DocumentLoader.Worker._read_data_from_save_path).with_args(
+            calling(mtg_proxy_printer.model.document_loader.Worker._read_data_from_save_path).with_args(
                 "Value ignored by mock"),
             raises(AssertionError)
         )
