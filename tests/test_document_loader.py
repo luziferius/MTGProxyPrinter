@@ -31,14 +31,14 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 
 
-@pytest.mark.parametrize("version", [-1, 0, 1, 6, 7])
+@pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
     empty_save_database.execute(f"PRAGMA user_version = {version};")
     assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
-            calling(mtg_proxy_printer.model.document_loader.DocumentLoader.Worker._read_data_from_save_path).with_args(
+            calling(mtg_proxy_printer.model.document_loader.Worker._read_data_from_save_path).with_args(
                 "Value ignored by mock"),
             raises(AssertionError)
         )
@@ -66,24 +66,21 @@ def test_valid_data_loads_correctly(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
         empty_save_database: sqlite3.Connection):
     empty_save_database.execute(
-        'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)',
-        (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe")
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
+        (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
     )
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
         page_height=300, page_width=200,
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2, draw_cut_markers=True,
+        image_spacing_horizontal=3, image_spacing_vertical=2,
+        draw_cut_markers=True, draw_sharp_corners=False,
     )
-
+    page_layout_items = dataclasses.asdict(page_layout).items()
     assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
-    empty_save_database.execute(
-        textwrap.dedent("""\
-            INSERT INTO DocumentSettings (rowid, page_height, page_width,
-                  margin_top, margin_bottom, margin_left, margin_right,
-                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners)
-              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """),
-        dataclasses.astuple(page_layout))
+    empty_save_database.executemany(
+        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
+        page_layout_items
+    )
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
@@ -114,19 +111,17 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
         empty_save_database: sqlite3.Connection):
     empty_save_database.executemany(
-        'INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)', [
-            (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe"),
-            (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b"),
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
+            (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r"),
+            (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b", "r"),
          ]
     )
-    empty_save_database.execute(
-        textwrap.dedent("""\
-            INSERT INTO DocumentSettings (rowid, page_height, page_width,
-                  margin_top, margin_bottom, margin_left, margin_right,
-                  image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners)
-              VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """),
-        dataclasses.astuple(mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()))
+    page_layout = mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()
+    page_layout_items = dataclasses.asdict(page_layout).items()
+    empty_save_database.executemany(
+        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
+        page_layout_items
+    )
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
@@ -145,20 +140,21 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
 
 
 @pytest.mark.parametrize("data", itertools.chain(
-    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe")),
-    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe")),
-    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe")),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"]),
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat("r")),
+    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat("r")),
+    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat("r")),
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("r")),
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary"]),
 ))
 def test_invalid_data_in_card_columns_raises_exception(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
         empty_save_database: sqlite3.Connection, data):
     # Replace the Card table with one that has no implicit type casting
     empty_save_database.execute("DROP TABLE Card")
-    empty_save_database.execute("CREATE TABLE Card (page BLOB, slot BLOB, is_front BLOB, scryfall_id BLOB)")
-    empty_save_database.execute('INSERT INTO "Card" (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)', data)
+    empty_save_database.execute("CREATE TABLE Card (page BLOB, slot BLOB, is_front BLOB, scryfall_id BLOB, type BLOB)")
+    empty_save_database.execute('INSERT INTO Card (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', data)
     assert_that(
-        empty_save_database.execute("SELECT page, slot, is_front, scryfall_id FROM Card").fetchall(),
+        empty_save_database.execute("SELECT page, slot, is_front, scryfall_id, type FROM Card").fetchall(),
         contains_exactly(equal_to(data)),
         "Setup failed: Data mismatch"
     )
@@ -200,12 +196,26 @@ def test_protects_against_infinite_save_data(
     assert_that(document.save_file_path, is_(none()))
 
 
-def test_protects_against_infinite_settings_data(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection):
-    empty_save_database.execute("DROP TABLE DocumentSettings")
-    # LIMIT clause in the definition below is a safety measure.
-    empty_save_database.execute(textwrap.dedent("""\
+def generate_test_cases_for_test_protects_against_infinite_settings_data():
+    yield 4, textwrap.dedent("""\
+        CREATE VIEW DocumentSettings (
+          rowid, page_height, page_width,
+          margin_top, margin_bottom, margin_left, margin_right,
+          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers) AS 
+        WITH RECURSIVE settings_gen (
+          rowid, page_height, page_width,
+          margin_top, margin_bottom, margin_left, margin_right,
+          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
+        ) AS (
+            SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1
+            UNION ALL 
+            SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1
+            FROM settings_gen
+            LIMIT 100000
+            )
+        SELECT * FROM settings_gen
+        """)
+    yield 5, textwrap.dedent("""\
         CREATE VIEW DocumentSettings (
           rowid, page_height, page_width,
           margin_top, margin_bottom, margin_left, margin_right,
@@ -215,14 +225,37 @@ def test_protects_against_infinite_settings_data(
           margin_top, margin_bottom, margin_left, margin_right,
           image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners
         ) AS (
-                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1
-                UNION ALL 
-                SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1
-                FROM settings_gen
-                LIMIT 100000
+            SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1
+            UNION ALL 
+            SELECT 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 1
+            FROM settings_gen
+            LIMIT 100000
             )
         SELECT * FROM settings_gen
-        """))
+        """)
+    yield 6, textwrap.dedent("""\
+        CREATE VIEW DocumentSettings (key, value) AS 
+        WITH RECURSIVE settings_gen (
+          key, value
+        ) AS (
+            SELECT 'key', 'something'
+            UNION ALL 
+            SELECT 'key', 'something'
+            FROM settings_gen
+            LIMIT 100000
+            )
+        SELECT * FROM settings_gen
+        """)
+
+
+@pytest.mark.parametrize("user_version, script", generate_test_cases_for_test_protects_against_infinite_settings_data())
+def test_protects_against_infinite_settings_data(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        empty_save_database: sqlite3.Connection, user_version: int, script: str):
+    empty_save_database.execute(f"PRAGMA user_version = {user_version}")
+    empty_save_database.execute("DROP TABLE DocumentSettings")
+    # LIMIT clause in the definition below is a safety measure.
+    empty_save_database.execute(script)
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database

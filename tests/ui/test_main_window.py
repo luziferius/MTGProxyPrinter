@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import dataclasses
 import pathlib
 import unittest.mock
 import socket
@@ -33,7 +34,7 @@ from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_loader import DocumentLoader
+from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.ui.central_widget import Ui_Columnar, Ui_Grouped, Ui_TabbedVertical
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
@@ -78,7 +79,8 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
             unittest.mock.patch.object(
                 mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
                 "seekable", return_value=True), \
-            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning"):
+            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.warning") as mb1, \
+            unittest.mock.patch("mtg_proxy_printer.ui.main_window.QMessageBox.critical") as mb2:
         temp_path = main_window.image_db.db_path
         mock_image_path = _create_mock_image(main_window.image_db, temp_path)
         cl_mock.return_value = mock_image_path.stat().st_size
@@ -88,6 +90,8 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         with qtbot.wait_signal(main_window.document.loader.worker_thread.finished, timeout=1000):
             main_window.document.loader.load_document(save_file_path)
         assert_that(main_window.progress_bar.isVisible(), is_(False))
+    mb1.assert_not_called()
+    mb2.assert_not_called()
 
 
 def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> pathlib.Path:
@@ -100,10 +104,15 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    with open_database(save_file_path, "document-v3", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
+    settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
+    with open_database(save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
         save_file.execute(
-            "INSERT INTO Card (page, slot, is_front, scryfall_id) VALUES (?, ?, ?, ?)",
-            (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe")
+            "INSERT INTO Card (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)",
+            (1, 1, True, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
+        )
+        save_file.executemany(
+            "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
+            settings
         )
     return save_file_path
 
