@@ -29,7 +29,8 @@ from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
-from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings
+from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
+    CardType
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
@@ -301,29 +302,28 @@ class Document(QAbstractItemModel):
                 (container.card.scryfall_id, container.card.is_front) for container in page), start=1))
             for page_index, page in enumerate(self.pages, start=1)
         )
+        regular_card = CardType("r")
         flattened_data: DocumentSaveFormat = (
-            (page, slot, scryfall_id, is_front)
+            (page, slot, scryfall_id, is_front, regular_card)
             for (page, (slot, (scryfall_id, is_front)))
             in itertools.chain.from_iterable(cards)
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
-                self.save_file_path, "document-v5", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
+                self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
             _migrate_database(db)
             db.execute("DELETE FROM Card")
             db.executemany(
-                "INSERT INTO Card (page, slot, scryfall_id, is_front) VALUES (?, ?, ?, ?)",
+                "INSERT INTO Card (page, slot, scryfall_id, is_front, type) VALUES (?, ?, ?, ?, ?)",
                 flattened_data
             )
             logger.debug(f"Written {db.execute('SELECT count() FROM Card').fetchone()[0]} cards.")
-            db.execute(
+            db.executemany(
                 textwrap.dedent("""\
-                    INSERT OR REPLACE INTO DocumentSettings (rowid, page_height, page_width,
-                          margin_top, margin_bottom, margin_left, margin_right,
-                          image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners)
-                      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT OR REPLACE INTO DocumentSettings (key, value)
+                      VALUES (?, ?)
                     """),
-                dataclasses.astuple(self.page_layout))
+                dataclasses.asdict(self.page_layout).items())
             logger.debug("Written document settings")
             db.commit()
             db.execute("VACUUM")
@@ -474,4 +474,42 @@ def _migrate_database(db):
             "DROP TABLE DocumentSettings_Old",
             "PRAGMA user_version = 5",
         ]:
+            db.execute(f"{statement}\n")
+    if db.execute("PRAGMA user_version").fetchone()[0] == 5:
+        for statement in [
+                "ALTER TABLE Card RENAME TO Card_old",
+                textwrap.dedent("""\
+                CREATE TABLE Card (
+                  page INTEGER NOT NULL CHECK (page > 0),
+                  slot INTEGER NOT NULL CHECK (slot > 0),
+                  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+                  scryfall_id TEXT NOT NULL,
+                  type TEXT NOT NULL CHECK (type <> ''),
+                  PRIMARY KEY(page, slot)
+                ) WITHOUT ROWID;"""),
+                textwrap.dedent("""\
+                INSERT INTO Card (page, slot, scryfall_id, is_front, type)
+                    SELECT page, slot, scryfall_id, 1 AS is_front, 'r' AS type
+                    FROM Card_old"""),
+                "DROP TABLE Card_old",
+                "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
+                textwrap.dedent("""\
+                CREATE TABLE DocumentSettings (
+                  key TEXT NOT NULL UNIQUE CHECK (key <> ''),
+                  value INTEGER NOT NULL CHECK (value >= 0)
+                )"""),
+                textwrap.dedent("""INSERT INTO DocumentSettings (key, value) 
+                  SELECT 'page_height', "page_height" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'page_width', "page_width" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'margin_top', "margin_top" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'margin_bottom', "margin_bottom" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'margin_left', "margin_left" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'margin_right', "margin_right" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'image_spacing_horizontal', "image_spacing_horizontal" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'image_spacing_vertical', "image_spacing_vertical" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'draw_cut_markers', "draw_cut_markers" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
+                  """),
+                "DROP TABLE DocumentSettings_Old",
+                "PRAGMA user_version = 6",]:
             db.execute(f"{statement}\n")
