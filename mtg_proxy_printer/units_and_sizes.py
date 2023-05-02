@@ -105,3 +105,20 @@ class CardDataType(typing.TypedDict):
     set: str
     set_name: str
     set_type: str
+
+
+class BulkDataType(typing.TypedDict):
+    """
+    The data returned by the bulk data API end point.
+    See https://scryfall.com/docs/api/bulk-data
+    """
+    id: UUID
+    uri: str
+    type: str
+    name: str
+    description: str
+    download_uri: str
+    updated_at: str
+    size: int
+    content_type: str
+    content_encoding: str

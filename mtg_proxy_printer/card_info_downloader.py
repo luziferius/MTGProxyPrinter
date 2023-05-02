@@ -16,6 +16,7 @@
 import enum
 import functools
 import gzip
+import math
 import shutil
 from pathlib import Path
 import re
@@ -34,7 +35,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
 logger = get_logger(__name__)
 del get_logger
 
@@ -155,15 +156,16 @@ class CardInfoDownloader(QObject):
 
 class CardInfoWorkerBase(DownloaderBase):
 
-    def get_scryfall_bulk_card_data_url(self) -> str:
+    def get_scryfall_bulk_card_data_url(self) -> typing.Tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            item = next(ijson.items(data, "", use_float=True))
-        result = item["download_uri"]
-        logger.debug(f"Bulk data located at: {result}")
-        return result
+            item: BulkDataType = next(ijson.items(data, "", use_float=True))
+        uri = item["download_uri"]
+        size = item["size"]
+        logger.debug(f"Bulk data with uncompressed size {size} bytes located at: {uri}")
+        return uri, size
 
 
 class CardInfoFileDownloadWorker(CardInfoWorkerBase):
@@ -178,13 +180,20 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         """
         logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
         logger.debug("Request bulk data URL from the Scryfall API.")
-        url = self.get_scryfall_bulk_card_data_url()
+        url, size = self.get_scryfall_bulk_card_data_url()
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
         monitor = self._open_url(url, "Downloading card data:")
-        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
+        # Hack: As of writing this, the CDN does not offer the size of the gzip-compressed data.
+        # The API also only offers the uncompressed size. So divide the API-provided size by an empirically
+        # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
+            size = math.floor(size / 6.54)
+            logger.info(f"Content length estimated as {size} bytes")
+        if monitor.content_length <= 0:
+            monitor.content_length = size
+        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
         download_file_path = download_path/file_name
         logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
         with download_file_path.open("wb") as download_file, monitor:
@@ -264,7 +273,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """
         if url is None:
             logger.debug("Request bulk data URL from the Scryfall API.")
-            url = self.get_scryfall_bulk_card_data_url()
+            url, _ = self.get_scryfall_bulk_card_data_url()
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")
