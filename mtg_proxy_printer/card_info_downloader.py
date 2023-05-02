@@ -34,6 +34,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType
 logger = get_logger(__name__)
 del get_logger
 
@@ -46,15 +47,14 @@ __all__ = [
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
-
-JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
-CardStream = typing.Generator[JSONType, None, None]
-IntTuples = typing.List[typing.Tuple[int]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
-
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
+
+IntTuples = typing.List[typing.Tuple[int]]
+CardStream = typing.Generator[CardDataType, None, None]
+CardOrFace = typing.Union[CardDataType, FaceDataType]
 
 
 class CardFaceData(typing.NamedTuple):
@@ -370,7 +370,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
         return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
-    def _parse_single_printing(self, card: JSONType):
+    def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
         oracle_id = self._get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
@@ -441,7 +441,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
         return card_id
 
-    def _insert_set(self, card: JSONType) -> int:
+    def _insert_set(self, card: CardDataType) -> int:
         db = self.model.db
         set_abbr = card["set"]
         wackiness_score = self._get_set_wackiness_score(card)
@@ -482,7 +482,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
         return face_name_id
 
-    def _insert_printing(self, card: JSONType, card_id: int, set_id: int) -> int:
+    def _insert_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.model.db
         data = PrintingData(
             card_id,
@@ -518,7 +518,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         ).fetchone()
         return printing_id
 
-    def _insert_card_faces(self, card: JSONType, language_id: int, printing_id: int) -> IntTuples:
+    def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.model.db
         face_ids: IntTuples = []
@@ -540,8 +540,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return face_ids
 
     @staticmethod
-    def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
-        legalities: typing.Dict[str, str] = card["legalities"]
+    def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
+        legalities = card["legalities"]
         return {
             # Racism filter
             "hide-cards-depicting-racism": card.get("content_warning", False),
@@ -572,7 +572,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         }
 
     @staticmethod
-    def _get_set_wackiness_score(card: JSONType) -> SetWackinessScore:
+    def _get_set_wackiness_score(card: CardDataType) -> SetWackinessScore:
         if card["oversized"]:
             result = SetWackinessScore.OVERSIZED
         elif card["layout"] == "art_series":
@@ -601,7 +601,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         )
 
     @staticmethod
-    def _should_skip_card(card: JSONType) -> bool:
+    def _should_skip_card(card: CardDataType) -> bool:
         # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
         # Also skip double faced cards that have at least one face without images
         return card["image_status"] == "missing" or (
@@ -610,7 +610,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 and any("image_uris" not in face for face in card["card_faces"])
         )
 
-    def _get_card_faces(self, card: JSONType) -> typing.Generator[CardFaceData, None, None]:
+    def _get_card_faces(self, card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
         """
         Yields a CardFaceData object for each face found in the card object.
         The printed name falls back to the English name, if the card has no printed_name key.
@@ -618,11 +618,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
         this function builds a "card_face" object providing only the required information from the card object itself.
         """
-        faces: typing.List[JSONType] = card.get("card_faces") or [
-            {
-                "printed_name": self._get_card_name(card),
-                "image_uris": card["image_uris"],
-            }
+        faces = card.get("card_faces") or [
+            FaceDataType(
+                printed_name = self._get_card_name(card),
+                image_uris = card["image_uris"],
+                name = card["name"],
+            )
         ]
         return (
             CardFaceData(
@@ -638,7 +639,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         )
 
     @staticmethod
-    def _get_oracle_id(card: JSONType) -> str:
+    def _get_oracle_id(card: CardDataType) -> str:
         """
         Reads the oracle_id property of the given card.
 
@@ -648,11 +649,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             return card["oracle_id"]
         except KeyError:
-            first_face: JSONType = card["card_faces"][0]
+            first_face = card["card_faces"][0]
             return first_face["oracle_id"]
 
     @staticmethod
-    def _get_card_name(card_or_face: JSONType) -> str:
+    def _get_card_name(card_or_face: CardOrFace) -> str:
         """
         Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
         English cards only have the “name” attribute, so use that as a fallback.
