@@ -6,6 +6,7 @@ Print Magic: The Gathering cards for play-testing purposes.
 ## Feature overview
 
 - Create, save and load documents
+- Multi-level undo & redo
 - Export documents as PDFs
   - Optional, automatic splitting into configurable chunks to accommodate file size limits present in various printers.
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
@@ -42,6 +43,7 @@ Print Magic: The Gathering cards for play-testing purposes.
 - [XMage](http://xmage.de)
 - [Tappedout.net](https://tappedout.net) deck lists (choose CSV export)
 - [Scryfall.com](https://scryfall.com) deck lists (choose CSV export)
+- Magic Workstation Deck Data (`.mwDeck` files)
 - Any other deck list format containing one card per line, by supplying a matching regular expression to parse the file (this is an advanced feature).
 
 
@@ -49,13 +51,17 @@ Print Magic: The Gathering cards for play-testing purposes.
 
 MTGProxyPrinter can directly fetch public deck lists from these websites.
 
-- [Scryfall](https://scryfall.com)
-- [MTGGoldfish](https://www.mtggoldfish.com/)
-- [mtg.wtf](https://mtg.wtf/)
-- [TappedOut](https://tappedout.net/)
-- [Moxfield](https://www.moxfield.com/)
+- [Archidekt](https://archidekt.com/)
 - [Deckstats](https://deckstats.net/)
-- [MTGDecks](https://mtgdecks.net)
+- [MTG Arena Zone](https://mtgazone.com)
+- [MTGDecks](https://mtgdecks.net/)
+- [MTGGoldfish](https://www.mtggoldfish.com/)
+- [MTGTop8](http://mtgtop8.com)
+- [Moxfield](https://www.moxfield.com/)
+- [Scryfall](https://scryfall.com)
+- [TCGPlayer Infinite](https://infinite.tcgplayer.com/magic-the-gathering)
+- [TappedOut](https://tappedout.net/)
+- [mtg.wtf](https://mtg.wtf/)
 
 Except for Scryfall, these websites do not offer a stable, public Web API. Support is offered on a
 “best effort” base and may break at any time, if a website decides to re-design their code.
