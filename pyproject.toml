@@ -76,7 +76,9 @@ requires = [
     "wheel",
     "PyQt5",
     "build",
-    "tox >= 3.8",
+    "tox >= 3.18",
+    "pyenv-win; sys.platform=='win32'",
+    "tox-pynev >= 1.1.0"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -86,8 +88,10 @@ legacy_tox_ini = """
 minversion = 3.18
 
 envlist = 
-    py3-{unit_tests, test_create_bundle}-{windows, linux}
+    {py3, py38, py311}-{unit_tests, test_create_bundle}-{windows, linux}
+    {py39, py310}-unit_tests-{windows, linux}
 
+skip_missing_interpreters = True
 
 [testenv]
 skip_install = True
