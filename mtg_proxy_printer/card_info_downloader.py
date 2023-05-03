@@ -246,7 +246,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
         try:
-            url = self.get_scryfall_bulk_card_data_url()
+            url, _ = self.get_scryfall_bulk_card_data_url()
             data = self.read_json_card_data_from_url(url)
             estimated_total_card_count = self.get_available_card_count()
             self.download_begins.emit(estimated_total_card_count, "Updating card data from Scryfall:")
