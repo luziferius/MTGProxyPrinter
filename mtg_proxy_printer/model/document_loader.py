@@ -494,8 +494,7 @@ class Worker(QObject):
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        settings.draw_cut_markers = bool(settings.draw_cut_markers)
-        settings.draw_sharp_corners = bool(settings.draw_sharp_corners)
+        Worker._read_document_settings_cast_types(default_settings)
         return settings
 
     @staticmethod
@@ -531,10 +530,21 @@ class Worker(QObject):
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        default_settings.draw_cut_markers = bool(default_settings.draw_cut_markers)
-        default_settings.draw_sharp_corners = bool(default_settings.draw_sharp_corners)
-        default_settings.duplex_mode = DuplexMode(default_settings.duplex_mode)
+        Worker._read_document_settings_cast_types(default_settings)
         return default_settings
+
+    @staticmethod
+    def _read_document_settings_cast_types(settings: PageLayoutSettings):
+        """
+        Cast types of attributes of a PageLayoutSettings instance created from the loaded data to the annotated,
+        expected data types.
+        """
+        correctly_loaded_types = {str, int}
+        for attribute, expected_type in PageLayoutSettings.__annotations__.items():
+            if expected_type in correctly_loaded_types:
+                continue
+            cast_value = expected_type(getattr(settings, attribute))
+            setattr(settings, attribute, cast_value)
 
     @staticmethod
     def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
