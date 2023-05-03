@@ -23,7 +23,7 @@ import sqlite3
 import textwrap
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, QSizeF
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_
 
@@ -163,6 +163,9 @@ class PageLayoutSettings:
     def compute_page_card_capacity(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card images that fit on a single page."""
         return self.compute_page_row_count(page_type) * self.compute_page_column_count(page_type)
+
+    def paper_size(self) -> QSizeF:
+        return QSizeF(self.page_width, self.page_height)
 
 
 class DocumentLoader(QObject):

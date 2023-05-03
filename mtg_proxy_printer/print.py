@@ -16,7 +16,7 @@
 import math
 from pathlib import Path
 
-from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
+from PyQt5.QtCore import QObject, QMarginsF, pyqtSlot as Slot, QPersistentModelIndex
 from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
 from PyQt5.QtPrintSupport import QPrinter
 
@@ -52,16 +52,14 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    page_width = document.page_layout.page_width
-    page_height = document.page_layout.page_height
-    if page_width > page_height:
-        logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
+    page_size = document.page_layout.paper_size()
+    if page_size.width() > page_size.height():
+        logger.debug(
+            f"Document width ({page_size.width()}mm) > height ({page_size.height()}mm): Printing in landscape mode.")
         printer.setPageOrientation(QPageLayout.Landscape)
         # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
         # resulting in correct values.
-        page_size = QSizeF(page_height, page_width)
-    else:
-        page_size = QSizeF(page_width, page_height)
+        page_size.transpose()
     printer.setPageSizeMM(page_size)
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
@@ -92,7 +90,7 @@ class PDFPrinter(QPdfWriter):
         self.painter = QPainter()
         # magnitude returns a float by default, so round to int to avoid a TypeError
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-        self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
+        self.setPageSizeMM(document.page_layout.paper_size())
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
