@@ -56,6 +56,7 @@ VERSION_CHECK_RE = re.compile(
     r"(?:\+(?P<buildmetadata>[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$"
 )
 
+
 @enum.unique
 class DuplexMode(str, enum.Enum):
     """
@@ -115,7 +116,7 @@ DEFAULT_SETTINGS["documents"] = {
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
     "print-sharp-corners": "False",
-    "duplex-mode": DuplexMode.OFF,
+    "duplex-mode": DuplexMode.OFF.value,
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -339,6 +340,7 @@ def _validate_three_valued_boolean(section: configparser.SectionProxy, defaults:
     except ValueError:
         _restore_default(section, defaults, key)
 
+
 def _validate_enum(
         section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str,
         enum_class: typing.Callable[[str], typing.Any]):
@@ -346,6 +348,7 @@ def _validate_enum(
         enum_class(section.get(key))
     except ValueError:
         _restore_default(section, defaults, key)
+
 
 def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
