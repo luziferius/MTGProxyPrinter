@@ -554,6 +554,7 @@ def _validate_saved_document_settings(document: Document):
             contains_exactly(
                 int(page_layout.draw_cut_markers),
                 int(page_layout.draw_sharp_corners),
+                page_layout.duplex_mode.value,
                 page_layout.image_spacing_horizontal,
                 page_layout.image_spacing_vertical,
                 page_layout.margin_bottom,

@@ -51,7 +51,8 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
             return_value=request.param), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
-                mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "get_scryfall_bulk_card_data_url"), \
+                mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker,
+                "get_scryfall_bulk_card_data_url", return_value=([], 1)), \
             unittest.mock.patch.object(
                 mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "read_json_card_data_from_url",
                 return_value=iter([10])):

@@ -22,6 +22,28 @@ import pytest
 from hamcrest import *
 
 
+def test_default_constructor_instantiates_with_correct_types():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
+    assert_that(
+        layout,
+        has_properties(
+            {key: instance_of(value)
+             for key, value in mtg_proxy_printer.model.document_loader.PageLayoutSettings.__annotations__.items()
+             })
+    )
+
+
+def test_create_from_settings_instantiates_with_correct_types():
+    layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(
+        layout,
+        has_properties(
+            {key: instance_of(value)
+             for key, value in mtg_proxy_printer.model.document_loader.PageLayoutSettings.__annotations__.items()
+             })
+    )
+
+
 @pytest.mark.parametrize("page_type, expected", [
     (PageType.OVERSIZED, 4),
     (PageType.REGULAR, 9),
@@ -50,7 +72,7 @@ def test_page_layout_compute_page_card_capacity_default_value(
     (PageType.MIXED, 3),
     (PageType.UNDETERMINED, 3),
 ])
-def test_page_layout_ccompute_page_row_count(
+def test_page_layout_compute_page_row_count(
         document: mtg_proxy_printer.model.document.Document, page_type: PageType, expected: int):
     assert_that(
         document.page_layout.compute_page_row_count(page_type),

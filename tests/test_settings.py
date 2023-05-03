@@ -47,3 +47,12 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(default_s
         "margin-top-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-top-mm"]),
         "margin-bottom-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-bottom-mm"]),
     }))
+
+
+def test__validate_document_section_restores_duplex_mode(default_settings):
+    documents_section = default_settings["documents"]
+    documents_section["duplex-mode"] = "invalid"
+    mtg_proxy_printer.settings.validate_settings(default_settings)
+    assert_that(documents_section, has_entries({
+        "duplex-mode": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["duplex-mode"]),
+    }))
