@@ -14,216 +14,7 @@
    <string>Default settings for new documents</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="10" column="1">
-    <widget class="QLabel" name="page_height_label">
-     <property name="text">
-      <string>Page height</string>
-     </property>
-     <property name="buddy">
-      <cstring>page_height</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="17" column="3">
-    <widget class="QSpinBox" name="margin_right">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="12" column="3">
-    <widget class="QSpinBox" name="page_width">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Default paper width in millimeters</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="3">
-    <widget class="QCheckBox" name="draw_cut_markers">
-     <property name="toolTip">
-      <string>Enable printing additional lines to aid cutting the printed sheets.</string>
-     </property>
-     <property name="text">
-      <string>Print cut markers</string>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="3">
-    <widget class="QSpinBox" name="page_height">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Default paper height in millimeters</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="13" column="1">
-    <widget class="QLabel" name="margin_top_label">
-     <property name="text">
-      <string>Top margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_top</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="14" column="3">
-    <widget class="QSpinBox" name="margin_bottom">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="14" column="1">
-    <widget class="QLabel" name="margin_bottom_label">
-     <property name="text">
-      <string>Bottom Margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_bottom</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="8" column="1" colspan="3">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="20" column="3">
-    <widget class="QLabel" name="page_capacity">
-     <property name="toolTip">
-      <string>Number of regular-size cards fitting on each page,
-based on the page size and spacings configured</string>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="17" column="1">
-    <widget class="QLabel" name="margin_right_label">
-     <property name="text">
-      <string>Right margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_right</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="19" column="1">
-    <widget class="QLabel" name="image_spacing_vertical_label">
-     <property name="text">
-      <string>Vertical image spacing</string>
-     </property>
-     <property name="buddy">
-      <cstring>image_spacing_vertical</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="16" column="3">
-    <widget class="QSpinBox" name="margin_left">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="18" column="1">
-    <widget class="QLabel" name="image_spacing_horizontal_label">
-     <property name="text">
-      <string>Horizontal image spacing</string>
-     </property>
-     <property name="buddy">
-      <cstring>image_spacing_horizontal</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="20" column="1">
-    <widget class="QLabel" name="page_capacity_label">
-     <property name="text">
-      <string>Resulting page capacity:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="13" column="3">
-    <widget class="QSpinBox" name="margin_top">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="19" column="3">
+   <item row="21" column="3">
     <widget class="QSpinBox" name="image_spacing_vertical">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -243,6 +34,35 @@ based on the page size and spacings configured</string>
     </widget>
    </item>
    <item row="16" column="1">
+    <widget class="QLabel" name="margin_bottom_label">
+     <property name="text">
+      <string>Bottom Margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_bottom</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="3">
+    <widget class="QSpinBox" name="margin_right">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="18" column="1">
     <widget class="QLabel" name="margin_left_label">
      <property name="text">
       <string>Left margin</string>
@@ -252,7 +72,194 @@ based on the page size and spacings configured</string>
      </property>
     </widget>
    </item>
+   <item row="12" column="3">
+    <widget class="QSpinBox" name="page_height">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Default paper height in millimeters</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="1">
+    <widget class="QLabel" name="page_width_label">
+     <property name="text">
+      <string>Page width</string>
+     </property>
+     <property name="buddy">
+      <cstring>page_width</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="20" column="1">
+    <widget class="QLabel" name="image_spacing_horizontal_label">
+     <property name="text">
+      <string>Horizontal image spacing</string>
+     </property>
+     <property name="buddy">
+      <cstring>image_spacing_horizontal</cstring>
+     </property>
+    </widget>
+   </item>
    <item row="18" column="3">
+    <widget class="QSpinBox" name="margin_left">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="3">
+    <widget class="QSpinBox" name="margin_bottom">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QCheckBox" name="draw_sharp_corners">
+     <property name="text">
+      <string>Draw 90° card corners, instead of round ones</string>
+     </property>
+    </widget>
+   </item>
+   <item row="22" column="1">
+    <widget class="QLabel" name="page_capacity_label">
+     <property name="text">
+      <string>Resulting page capacity:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="3">
+    <widget class="QSpinBox" name="page_width">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Default paper width in millimeters</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="1">
+    <widget class="QLabel" name="margin_top_label">
+     <property name="text">
+      <string>Top margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_top</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="1" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="1">
+    <widget class="QLabel" name="image_spacing_vertical_label">
+     <property name="text">
+      <string>Vertical image spacing</string>
+     </property>
+     <property name="buddy">
+      <cstring>image_spacing_vertical</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="1">
+    <widget class="QLabel" name="page_height_label">
+     <property name="text">
+      <string>Page height</string>
+     </property>
+     <property name="buddy">
+      <cstring>page_height</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="3">
+    <widget class="QSpinBox" name="margin_top">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="1">
+    <widget class="QLabel" name="margin_right_label">
+     <property name="text">
+      <string>Right margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_right</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="22" column="3">
+    <widget class="QLabel" name="page_capacity">
+     <property name="toolTip">
+      <string>Number of regular-size cards fitting on each page,
+based on the page size and spacings configured</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="20" column="3">
     <widget class="QSpinBox" name="image_spacing_horizontal">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -271,20 +278,26 @@ based on the page size and spacings configured</string>
      </property>
     </widget>
    </item>
-   <item row="12" column="1">
-    <widget class="QLabel" name="page_width_label">
-     <property name="text">
-      <string>Page width</string>
+   <item row="0" column="3">
+    <widget class="QCheckBox" name="draw_cut_markers">
+     <property name="toolTip">
+      <string>Enable printing additional lines to aid cutting the printed sheets.</string>
      </property>
-     <property name="buddy">
-      <cstring>page_width</cstring>
+     <property name="text">
+      <string>Print cut markers</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="3">
-    <widget class="QCheckBox" name="draw_sharp_corners">
+   <item row="3" column="3">
+    <widget class="QComboBox" name="duplex_mode"/>
+   </item>
+   <item row="3" column="1">
+    <widget class="QLabel" name="duplex_mode_label">
      <property name="text">
-      <string>Draw 90° card corners, instead of round ones</string>
+      <string>Duplex mode</string>
+     </property>
+     <property name="buddy">
+      <cstring>duplex_mode</cstring>
      </property>
     </widget>
    </item>
@@ -310,8 +323,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>89</y>
+     <x>367</x>
+     <y>160</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -326,8 +339,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>89</y>
+     <x>367</x>
+     <y>160</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -342,8 +355,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>126</y>
+     <x>367</x>
+     <y>196</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -358,8 +371,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>126</y>
+     <x>367</x>
+     <y>196</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -374,8 +387,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>163</y>
+     <x>367</x>
+     <y>232</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -390,8 +403,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>163</y>
+     <x>367</x>
+     <y>232</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -406,8 +419,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>200</y>
+     <x>367</x>
+     <y>268</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -422,8 +435,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>200</y>
+     <x>367</x>
+     <y>268</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -438,8 +451,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>237</y>
+     <x>367</x>
+     <y>304</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -454,8 +467,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>237</y>
+     <x>367</x>
+     <y>304</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -470,8 +483,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>274</y>
+     <x>367</x>
+     <y>340</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -486,8 +499,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>274</y>
+     <x>367</x>
+     <y>340</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -502,8 +515,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>311</y>
+     <x>367</x>
+     <y>376</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -518,8 +531,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>311</y>
+     <x>367</x>
+     <y>376</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -534,8 +547,8 @@ based on the page size and spacings configured</string>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>348</y>
+     <x>367</x>
+     <y>412</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -550,8 +563,8 @@ based on the page size and spacings configured</string>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>200</x>
-     <y>348</y>
+     <x>367</x>
+     <y>412</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>

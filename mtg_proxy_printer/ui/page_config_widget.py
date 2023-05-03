@@ -18,7 +18,7 @@ from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QComboBox
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
@@ -34,6 +34,7 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+DuplexMode = mtg_proxy_printer.settings.DuplexMode
 
 
 class PageConfigWidget(QGroupBox):
@@ -50,18 +51,24 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        self.ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
-        self.ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
-        self.ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
-        self.ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
-        self.ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
-        self.ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        self.ui.image_spacing_horizontal.valueChanged[int].connect(
+        ui = self.ui
+        ui.duplex_mode.addItem("Disabled", DuplexMode.OFF)
+        ui.duplex_mode.addItem("Double-faced cards only", DuplexMode.DFC_ONLY)
+        ui.duplex_mode.addItem("Full", DuplexMode.FULL)
+        ui.duplex_mode.currentIndexChanged.connect(
+            lambda index: setattr(page_layout, "duplex_mode", tuple(DuplexMode)[index]))
+        ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
+        ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
+        ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
+        ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
+        ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
+        ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
+        ui.image_spacing_horizontal.valueChanged[int].connect(
             partial(setattr, page_layout, "image_spacing_horizontal"))
-        self.ui.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
-        self.ui.draw_cut_markers.stateChanged.connect(
+        ui.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
+        ui.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
-        self.ui.draw_sharp_corners.stateChanged.connect(
+        ui.draw_sharp_corners.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
         return page_layout
 
@@ -94,6 +101,7 @@ class PageConfigWidget(QGroupBox):
             spinbox.setValue(document_section.getint(setting))
         for checkbox, setting in self._get_boolean_settings_widgets():
             checkbox.setChecked(document_section.getboolean(setting))
+        self.ui.duplex_mode.setCurrentIndex(tuple(DuplexMode).index(document_section["duplex-mode"]))
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -108,6 +116,8 @@ class PageConfigWidget(QGroupBox):
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QSpinBox):
                     widget.setValue(value)
+                elif isinstance(widget, QComboBox):
+                    widget.setCurrentIndex(tuple(DuplexMode).index(value))
                 else:
                     widget.setChecked(value)
         self.validate_paper_size_settings()
@@ -121,6 +131,7 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
+        documents_section["duplex-mode"] = self.ui.duplex_mode.currentData(Qt.ItemDataRole.UserRole)
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
@@ -142,3 +153,4 @@ class PageConfigWidget(QGroupBox):
             (self.ui.draw_sharp_corners, "print-sharp-corners"),
         ]
         return widgets_with_settings
+
