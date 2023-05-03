@@ -53,6 +53,8 @@ __all__ = [
     "PageLayoutSettings"
 ]
 
+
+DuplexMode = mtg_proxy_printer.settings.DuplexMode
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
 
@@ -72,9 +74,13 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 
 @dataclasses.dataclass
 class PageLayoutSettings:
-    """Stores all page layout attributes, like paper size, margins and spacings"""
+    """
+    Stores all page layout attributes, like paper size, margins and spacings.
+    Members must be sorted alphabetically
+    """
     draw_cut_markers: bool = False
     draw_sharp_corners: bool = False
+    duplex_mode: DuplexMode = DuplexMode.OFF
     image_spacing_horizontal: int = 0
     image_spacing_vertical: int = 0
     margin_bottom: int = 0
@@ -90,6 +96,7 @@ class PageLayoutSettings:
         return cls(
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-sharp-corners"),
+            DuplexMode(document_settings.get("duplex-mode")),
             document_settings.getint("image-spacing-horizontal-mm"),
             document_settings.getint("image-spacing-vertical-mm"),
             document_settings.getint("margin-bottom-mm"),
@@ -221,6 +228,7 @@ class DocumentLoader(QObject):
         if self.worker_thread.isRunning():
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
             stop_thread(self.worker_thread, logger)
+
 
 class Worker(QObject):
     """
@@ -452,6 +460,7 @@ class Worker(QObject):
             SELECT
                 draw_cut_markers, 
                 {int(default_settings.draw_sharp_corners) if user_version == 4 else 'draw_sharp_corners'},
+                'off' AS duplex_mode,
                 image_spacing_horizontal, image_spacing_vertical, 
                 margin_bottom, margin_left, margin_right, margin_top,
                 page_height, page_width
@@ -476,6 +485,7 @@ class Worker(QObject):
                 image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
+                duplex_mode=is_in(list(DuplexMode)),
             ),
             "Document settings contain invalid data or data types"
         )
@@ -512,6 +522,7 @@ class Worker(QObject):
                 image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
+                duplex_mode=is_in(list(DuplexMode)),
             ),
             "Document settings contain invalid data or data types"
         )
@@ -522,6 +533,7 @@ class Worker(QObject):
         )
         default_settings.draw_cut_markers = bool(default_settings.draw_cut_markers)
         default_settings.draw_sharp_corners = bool(default_settings.draw_sharp_corners)
+        default_settings.duplex_mode = DuplexMode(default_settings.duplex_mode)
         return default_settings
 
     @staticmethod
