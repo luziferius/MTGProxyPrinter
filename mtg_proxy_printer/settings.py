@@ -66,9 +66,12 @@ class DuplexMode(str, enum.Enum):
     DFC_ONLY = "dfc-only"
     FULL = "full"
 
-    def qt_duplex_mode(self):
+    def qt_duplex_mode(self) -> QPrinter.DuplexMode:
         """Maps the document duplex mode to the Qt QPrinter.DuplexMode setting."""
         return QPrinter.DuplexMode.DuplexNone if self == DuplexMode.OFF else QPrinter.DuplexMode.DuplexShortSide
+
+    def is_duplex(self) -> bool:
+        return self != DuplexMode.OFF
 
 
 # Below are the default application settings. How to define new ones:

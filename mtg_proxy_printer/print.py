@@ -66,8 +66,8 @@ def create_qprinter(document: Document) -> QPrinter:
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     # Disable duplex printing by default
-    printer.setDoubleSidedPrinting(False)
-    printer.setDuplex(QPrinter.DuplexNone)
+    printer.setDoubleSidedPrinting(document.page_layout.duplex_mode.is_duplex())
+    printer.setDuplex(document.page_layout.duplex_mode.qt_duplex_mode())
     printer.setOutputFormat(QPrinter.NativeFormat)
     # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
     printer.setFullPage(True)
