@@ -14,12 +14,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import enum
 import logging
 import pathlib
 import re
 import typing
 
 from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
@@ -53,6 +55,20 @@ VERSION_CHECK_RE = re.compile(
     r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*))*))?"
     r"(?:\+(?P<buildmetadata>[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$"
 )
+
+@enum.unique
+class DuplexMode(str, enum.Enum):
+    """
+    Document duplex mode
+    """
+    OFF = "off"
+    DFC_ONLY = "dfc-only"
+    FULL = "full"
+
+    def qt_duplex_mode(self):
+        """Maps the document duplex mode to the Qt QPrinter.DuplexMode setting."""
+        return QPrinter.DuplexMode.DuplexNone if self == DuplexMode.OFF else QPrinter.DuplexMode.DuplexShortSide
+
 
 # Below are the default application settings. How to define new ones:
 # - Add a key-value pair (String keys and values only) to a section or add a new section
@@ -99,6 +115,7 @@ DEFAULT_SETTINGS["documents"] = {
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
     "print-sharp-corners": "False",
+    "duplex-mode": DuplexMode.OFF,
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -221,10 +238,13 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners"}
+    enum_settings = {"duplex-mode": DuplexMode}
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
+        elif key in enum_settings:
+            _validate_enum(section, defaults, key, enum_settings[key])
         else:
             _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties
@@ -319,6 +339,13 @@ def _validate_three_valued_boolean(section: configparser.SectionProxy, defaults:
     except ValueError:
         _restore_default(section, defaults, key)
 
+def _validate_enum(
+        section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str,
+        enum_class: typing.Callable[[str], typing.Any]):
+    try:
+        enum_class(section.get(key))
+    except ValueError:
+        _restore_default(section, defaults, key)
 
 def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
