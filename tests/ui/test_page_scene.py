@@ -19,17 +19,17 @@ from unittest.mock import patch
 
 from hamcrest import *
 import pytest
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 
+from mtg_proxy_printer.settings import DuplexMode
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.ui.page_renderer import RenderMode, PageScene
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 
 from ..document_controller.helpers import create_card
-from tests.hasgetter import has_getter, has_getters
+from tests.hasgetter import has_getters
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 
@@ -45,6 +45,7 @@ def create_card_with_pixmap(name: str, oversized: bool, document):
 @pytest.fixture(params=RenderMode)
 def page_scene(request, qtbot, document_light):
     """Creates a PageScene in each available rendering mode"""
+    ActionNewPage().apply(document_light)
     yield PageScene(document_light, request.param)
 
 
@@ -86,31 +87,49 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
     )
 
 
-@pytest.mark.parametrize("page_type, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
-    (PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238]),
-    (PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238]),
-    (PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098]),
+class CutLineLocationTestData(typing.NamedTuple):
+    page_index: int
+    page_type: PageType
+    h_spacing: int
+    v_spacing: int
+    expected_verticals: typing.List[int]
+    expected_horizontals: typing.List[int]
 
-    (PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262]),
-    (PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262]),
-    (PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110]),
-])
-def test_cut_line_locations_when_enabled(
-        qtbot, page_scene: PageScene,
-        page_type: PageType, horizontal_spacing: int, vertical_spacing: int,
-        expected_verticals: typing.List[float], expected_horizontals: typing.List[float]):
+
+def generate_test_cases_for_test_cut_line_locations_when_enabled() \
+        -> typing.Generator[CutLineLocationTestData, None, None]:
+    yield CutLineLocationTestData(0, PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
+    yield CutLineLocationTestData(0, PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
+    yield CutLineLocationTestData(0, PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098])
+
+    yield CutLineLocationTestData(0, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+
+    yield CutLineLocationTestData(1, PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
+    yield CutLineLocationTestData(1, PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
+    yield CutLineLocationTestData(1, PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098])
+
+    yield CutLineLocationTestData(1, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+
+
+@pytest.mark.parametrize("data", generate_test_cases_for_test_cut_line_locations_when_enabled())
+def test_cut_line_locations_when_enabled(qtbot, page_scene: PageScene, data: CutLineLocationTestData):
     document = page_scene.document
-    document.page_layout.image_spacing_horizontal = horizontal_spacing
-    document.page_layout.image_spacing_vertical = vertical_spacing
+    document.set_currently_edited_page(document.pages[data.page_index])
+    document.page_layout.image_spacing_horizontal = data.h_spacing
+    document.page_layout.image_spacing_vertical = data.v_spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
-    if page_type is not PageType.UNDETERMINED:
+    if data.page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
+            document.apply(ActionAddCard(create_card_with_pixmap("Card", data.page_type is PageType.OVERSIZED, document)))
 
     assert_that(
         page_scene.cut_lines,
-        has_length(len(expected_horizontals)+len(expected_verticals)),
+        has_length(len(data.expected_horizontals)+len(data.expected_verticals)),
         "Unexpected line count"
     )
     assert_that(
@@ -128,13 +147,13 @@ def test_cut_line_locations_when_enabled(
 
     close_to_ = partial(close_to, delta=0.005)
     assert_that(
-        page_scene.vertical_cut_line_locations[page_type],
+        page_scene.vertical_cut_line_locations[data.page_type],
         contains_inanyorder(
-            *map(close_to_, expected_verticals))
+            *map(close_to_, data.expected_verticals))
     )
     assert_that(
-        page_scene.horizontal_cut_line_locations[page_type],
-        contains_inanyorder(*map(close_to_, expected_horizontals))
+        page_scene.horizontal_cut_line_locations[data.page_type],
+        contains_inanyorder(*map(close_to_, data.expected_horizontals))
     )
     assert_that(
         page_scene.cut_lines,
@@ -143,12 +162,12 @@ def test_cut_line_locations_when_enabled(
                 x=close_to_(x), y=0,
                 boundingRect=has_getters(
                     width=1, height=close_to_(page_height+1))
-            ) for x in expected_verticals],
+            ) for x in data.expected_verticals],
             *[has_getters(
                 x=0, y=close_to_(y),
                 boundingRect=has_getters(
                     width=close_to_(page_width+1), height=1)
-            ) for y in expected_horizontals]
+            ) for y in data.expected_horizontals]
         )
     )
 
