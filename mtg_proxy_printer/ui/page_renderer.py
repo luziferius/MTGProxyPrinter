@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
 from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
 import pint
 
+from mtg_proxy_printer.settings import DuplexMode
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.model.document import Document
@@ -65,6 +66,12 @@ class ZoomDirection(enum.Enum):
 class RenderMode(enum.Enum):
     ON_SCREEN = enum.auto()
     ON_PAPER = enum.auto()
+
+
+@enum.unique
+class DuplexType(enum.Enum):
+    ODD = enum.auto()
+    EVEN = enum.auto()
 
 
 class CutMarkerParameters(typing.NamedTuple):
@@ -164,11 +171,19 @@ class PageScene(QGraphicsScene):
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
         self.background.setZValue(RenderLayers.BACKGROUND.value)
         self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
-        self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
+        self.vertical_cut_line_locations: typing.Dict[DuplexType, PixelCache] = {
+            DuplexType.ODD: collections.defaultdict(list),
+            DuplexType.EVEN: collections.defaultdict(list)
+        }
         self._update_cut_marker_positions()
         if document.page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
+
+    def duplex_type(self) -> DuplexType:
+        if self.document.page_layout.duplex_mode.is_duplex() and self.document.get_current_page_index().row() % 2:
+            return DuplexType.EVEN
+        return DuplexType.ODD
 
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if render_mode is RenderMode.ON_PAPER:
@@ -246,8 +261,8 @@ class PageScene(QGraphicsScene):
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
-                (RESOLUTION * width).to("pixel").magnitude,
-                (RESOLUTION * height).to("pixel").magnitude
+                round((RESOLUTION * width).to("pixel").magnitude),
+                round((RESOLUTION * height).to("pixel").magnitude)
             )
         )
         return page_size
@@ -382,19 +397,25 @@ class PageScene(QGraphicsScene):
 
     def _update_cut_marker_positions(self):
         logger.debug("Updating cut marker positions")
-        self.vertical_cut_line_locations.clear()
+        self.vertical_cut_line_locations[DuplexType.ODD].clear()
+        self.vertical_cut_line_locations[DuplexType.EVEN].clear()
         self.horizontal_cut_line_locations.clear()
         page_layout = self.document.page_layout
+        scene_width = self.width()
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 card_size.height, page_layout.compute_page_row_count(page_type),
                 page_layout.margin_top, page_layout.image_spacing_horizontal)
             )
-            self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                card_size.width, page_layout.compute_page_column_count(page_type),
-                page_layout.margin_left, page_layout.image_spacing_vertical
-            ))
+            self.vertical_cut_line_locations[DuplexType.ODD][page_type] += self._compute_cut_marker_positions(
+                CutMarkerParameters(
+                    card_size.width, page_layout.compute_page_column_count(page_type),
+                    page_layout.margin_left, page_layout.image_spacing_vertical
+                ))
+            self.vertical_cut_line_locations[DuplexType.EVEN][page_type] += [
+                scene_width-item for item in reversed(self.vertical_cut_line_locations[DuplexType.ODD][page_type])
+            ]
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
             -> typing.Generator[float, None, None]:
@@ -411,7 +432,8 @@ class PageScene(QGraphicsScene):
                 yield pixel_position + card_size
 
     def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
-        for column_px in self.vertical_cut_line_locations[page_type]:
+        locations = self.vertical_cut_line_locations[self.duplex_type()][page_type]
+        for column_px in locations:
             self._draw_vertical_line(column_px, line_color)
         logger.debug(f"Vertical cut markers drawn")
 

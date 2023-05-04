@@ -89,6 +89,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
 
 class CutLineLocationTestData(typing.NamedTuple):
     page_index: int
+    duplex_mode: DuplexMode
     page_type: PageType
     h_spacing: int
     v_spacing: int
@@ -98,27 +99,63 @@ class CutLineLocationTestData(typing.NamedTuple):
 
 def generate_test_cases_for_test_cut_line_locations_when_enabled() \
         -> typing.Generator[CutLineLocationTestData, None, None]:
-    yield CutLineLocationTestData(0, PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
-    yield CutLineLocationTestData(0, PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
-    yield CutLineLocationTestData(0, PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098])
+    # Default A4 Page size in pixels: width=2480, height=3508
 
-    yield CutLineLocationTestData(0, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+    def arange(offset: int, size: int, count: int):
+        return [offset+size*item for item in range(count+1)]
 
-    yield CutLineLocationTestData(1, PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
-    yield CutLineLocationTestData(1, PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238])
-    yield CutLineLocationTestData(1, PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098])
+    # Odd page (0, the first page), same values regardless of duplex mode
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
 
-    yield CutLineLocationTestData(1, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
+    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+
+    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
+    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+    
+    # Even page (0, second page). Duplex mode other than OFF mirrors the page layout
+    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
+    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
+
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 0, 0, [317, 1357, 2397], arange(118, 1490, 2))
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 1, 1, [305, 1345, 1357, 2397], [118, 1608, 1620, 3110])
+
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 0, 0, [317, 1357, 2397], arange(118, 1490, 2))
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
+    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 1, 1, [305, 1345, 1357, 2397], [118, 1608, 1620, 3110])
 
 
 @pytest.mark.parametrize("data", generate_test_cases_for_test_cut_line_locations_when_enabled())
 def test_cut_line_locations_when_enabled(qtbot, page_scene: PageScene, data: CutLineLocationTestData):
+
     document = page_scene.document
     document.set_currently_edited_page(document.pages[data.page_index])
+    document.page_layout.duplex_mode = data.duplex_mode
+    document.page_layout_changed.emit(document.page_layout)
     document.page_layout.image_spacing_horizontal = data.h_spacing
     document.page_layout.image_spacing_vertical = data.v_spacing
     document.page_layout.draw_cut_markers = True
@@ -147,7 +184,7 @@ def test_cut_line_locations_when_enabled(qtbot, page_scene: PageScene, data: Cut
 
     close_to_ = partial(close_to, delta=0.005)
     assert_that(
-        page_scene.vertical_cut_line_locations[data.page_type],
+        page_scene.vertical_cut_line_locations[page_scene.duplex_type()][data.page_type],
         contains_inanyorder(
             *map(close_to_, data.expected_verticals))
     )

@@ -31,6 +31,7 @@ from mtg_proxy_printer.units_and_sizes import CardSizes
 __all__ = [
     "settings",
     "DEFAULT_SETTINGS",
+    "DuplexMode",
     "read_settings_from_file",
     "write_settings_to_file",
     "validate_settings",
