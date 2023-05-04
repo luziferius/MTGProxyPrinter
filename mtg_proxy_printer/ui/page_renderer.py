@@ -217,15 +217,19 @@ class PageScene(QGraphicsScene):
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
         """Draws the canvas, when the currently selected page changes."""
-        logger.debug(f"Current page changed to page {selected_page.row()}")
+        previous_page_row = self.selected_page.row()
+        current_page_row = selected_page.row()
+        logger.debug(f"Current page changed from page {previous_page_row} to {current_page_row}")
         page_types: typing.Set[PageType] = {
             self.selected_page.data(Qt.UserRole),
             selected_page.data(Qt.UserRole)
         }
         self.selected_page = selected_page
-
-        if PageType.OVERSIZED in page_types and len(page_types) > 1:  # Switching to or from an oversized page
-            logger.debug("New page contains cards of different size, re-drawing cut markers")
+        # Switching to or from an oversized page
+        # Or switching from odd to even or even to odd while duplex printing is active
+        if (PageType.OVERSIZED in page_types and len(page_types) > 1) or \
+                (self.document.page_layout.duplex_mode.is_duplex() and previous_page_row % 2 != current_page_row % 2):
+            logger.debug("Redrawing cut markers")
             self.remove_cut_markers()
             self.draw_cut_markers()
 
