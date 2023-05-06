@@ -281,7 +281,7 @@ class PageScene(QGraphicsScene):
 
     def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
         index = self.selected_page.child(row, PageColumns.Image)
-        position = self._compute_position_for_image(row, page_type)
+        position = self._compute_position_for_image(row, page_type, self.duplex_type())
         if index.data(Qt.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.internalPointer().card
             self.addItem(card_item := CardItem(card, self.document))
@@ -298,7 +298,7 @@ class PageScene(QGraphicsScene):
     def update_card_positions(self):
         page_type: PageType = self.selected_page.data(Qt.UserRole)
         for index, card in enumerate(self.card_items):
-            card.setPos(self._compute_position_for_image(index, page_type))
+            card.setPos(self._compute_position_for_image(index, page_type, self.duplex_type()))
 
     def _is_valid_page_index(self, index: QModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
@@ -357,7 +357,7 @@ class PageScene(QGraphicsScene):
             self.on_rows_inserted(destination, row, row+end-start)
 
     @functools.lru_cache
-    def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
+    def _compute_position_for_image(self, index_row: int, page_type: PageType, duplex_type: DuplexType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         card_size = CardSizes.for_page_type(page_type)
         card_height: int = card_size.height.magnitude
@@ -375,6 +375,8 @@ class PageScene(QGraphicsScene):
 
         x_pos = margin_left + column * (card_width + spacing_horizontal)
         y_pos = margin_top + row * (card_height + spacing_vertical)
+        if duplex_type == DuplexType.EVEN:
+            x_pos = self.width() - x_pos - card_width
         return QPointF(
             x_pos,
             y_pos,
