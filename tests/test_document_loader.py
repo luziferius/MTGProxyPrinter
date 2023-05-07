@@ -18,6 +18,7 @@ import dataclasses
 import itertools
 import pathlib
 import sqlite3
+import typing
 import unittest.mock
 import textwrap
 
@@ -29,8 +30,93 @@ import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import PageType
 import mtg_proxy_printer.model.document
-from mtg_proxy_printer.settings import DuplexMode
 import mtg_proxy_printer.sqlite_helpers
+
+
+document_scripts: typing.List[typing.Tuple[int, str]] = [
+    (2, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, scryfall_id) VALUES 
+      (1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe'),
+      (1, 2, '0000579f-7b35-4ed3-b44c-db2a538066fe');
+    """)),
+    (3, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe');
+    """)),
+    (4, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe');
+    INSERT INTO DocumentSettings (
+        rowid, page_height, page_width, margin_top, margin_bottom, margin_left, margin_right, 
+        image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
+    ) VALUES (
+      1, 297, 210, 7, 7, 7, 7, 
+      1, 1, 0
+    );
+    """)),
+    (5, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe');
+    INSERT INTO DocumentSettings (
+        rowid, page_height, page_width, margin_top, margin_bottom, margin_left, margin_right, 
+        image_spacing_horizontal, image_spacing_vertical, draw_cut_markers, draw_sharp_corners
+    ) VALUES (
+      1, 297, 210, 7, 7, 7, 7, 
+      1, 1, 0, 0);
+    """)),
+    (6, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id, type) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r');
+    INSERT INTO DocumentSettings (key, value) VALUES
+      ('page_height', 297),
+      ('page_width', 210),
+      ('margin_top', 7),
+      ('margin_bottom', 7),
+      ('margin_left', 7),
+      ('margin_right', 7),
+      ('image_spacing_horizontal', 1),
+      ('image_spacing_vertical', 1),
+      ('daw_cut_markers', 0),
+      ('draw_sharp_corners', 0),
+      ('duplex_mode', 'off')
+    ;
+    """)),
+    (6, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id, type) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r');
+    INSERT INTO DocumentSettings (key, value) VALUES 
+      ('page_height', 297),
+      ('page_width', 210),
+      ('margin_top', 7),
+      ('margin_bottom', 7),
+      ('margin_left', 7),
+      ('margin_right', 7),
+      ('image_spacing_horizontal', 1),
+      ('image_spacing_vertical', 1),
+      ('daw_cut_markers', 0),
+      ('draw_sharp_corners', 0),
+      ('duplex_mode', 'dfc-only')
+    ;
+    """)),
+]
+
+
+@pytest.fixture(params=itertools.product([False, True], document_scripts))
+def saved_document(request) -> sqlite3.Connection:
+    reverse, (document_version, script) = request.param
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+            ":memory:", f"document-v{document_version}",
+            mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION,
+            check_same_thread=False)
+    db.executescript(script)
+    if reverse:
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
+    return db
 
 
 @pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
@@ -64,64 +150,28 @@ def disabled_check_constraints(db: sqlite3.Connection):
     db.execute("PRAGMA ignore_check_constraints = FALSE;")
 
 
-@pytest.mark.parametrize("page_layout", [
-    PageLayoutSettings(
-        page_height=300, page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2,
-        draw_cut_markers=True, draw_sharp_corners=False,
-    ),
-    PageLayoutSettings(
-        page_height=300, page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2,
-        draw_cut_markers=True, draw_sharp_corners=False,
-        duplex_mode=DuplexMode.DFC_ONLY,
-    ),
-])
 def test_valid_data_loads_correctly(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection, page_layout: PageLayoutSettings):
-    empty_save_database.execute(
-        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
-        (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
-    )
-    page_layout = PageLayoutSettings(
-        page_height=300, page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2,
-        draw_cut_markers=True, draw_sharp_corners=False,
-    )
-    page_layout_items = dataclasses.asdict(page_layout).items()
-    assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
-    empty_save_database.executemany(
-        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        page_layout_items
-    )
+        saved_document: sqlite3.Connection):
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch(
             "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
-            return_value=empty_save_database) as mock:
+            return_value=saved_document) as mock:
         with qtbot.waitSignals([loader.loading_state_changed]*2,
-                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
-                qtbot.waitSignals([loader.load_requested, document.page_layout_changed]):
+                               check_params_cbs=[(lambda value: value), (lambda value: not value)]):
             loader.load_document(save_path)
     mock.assert_called_once()
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
-    assert_that(document.rowCount(page_index), is_(1))
+    assert_that(document.rowCount(page_index), is_(2))
     assert_that(page_index.child(0, mtg_proxy_printer.model.document.PageColumns.CardName).data(), is_("Fury Sliver"))
     assert_that(document.save_file_path, is_(equal_to(save_path)))
-    assert_that(document.page_layout, is_(equal_to(page_layout)))
     assert_that(
-        document.page_layout.compute_page_card_capacity(PageType.REGULAR),
-        is_(equal_to(page_layout.compute_page_card_capacity(PageType.REGULAR)))
-    )
-    assert_that(
-        document.page_layout.compute_page_card_capacity(PageType.OVERSIZED),
-        is_(equal_to(page_layout.compute_page_card_capacity(PageType.OVERSIZED)))
+        document.page_layout, has_properties({
+            key: instance_of(value) for key, value in PageLayoutSettings.__annotations__.items()
+        })
     )
 
 

@@ -58,6 +58,7 @@ DuplexMode = mtg_proxy_printer.settings.DuplexMode
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
 
+
 class CardType(str, enum.Enum):
     REGULAR = "r"
 
@@ -497,7 +498,7 @@ class Worker(QObject):
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        Worker._read_document_settings_cast_types(default_settings)
+        Worker._read_document_settings_cast_types(settings)
         return settings
 
     @staticmethod
