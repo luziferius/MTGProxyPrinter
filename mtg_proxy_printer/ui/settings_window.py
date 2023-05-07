@@ -266,7 +266,7 @@ class SettingsWindow(QDialog):
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
         try:
-            self.long_running_process_begins.emit(5, "Processing updated card filters:")
+            self.long_running_process_begins.emit(6, "Processing updated card filters:")
             self.card_db.store_current_printing_filters(progress_signal=self.filter_update_progress_monitor)
         except sqlite3.Error as e:
             self.error_occurred.emit(e.sqlite_errorname)

@@ -359,7 +359,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
         self._clean_unused_data(face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
-        self.download_begins.emit(5, "Processing card filters")
+        self.download_begins.emit(6, "Processing card filters")
         self.model.store_current_printing_filters(
             False, force_update_hidden_column=True, progress_signal=self.download_progress.emit)
         # Store the timestamp of this import.
