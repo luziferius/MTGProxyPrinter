@@ -74,7 +74,7 @@ class PrintingData(typing.NamedTuple):
     scryfall_id: str
     is_oversized: bool
     highres_image: bool
-    card_back_id: int
+    back_face_id: int
 
 @enum.unique
 class SetWackinessScore(int, enum.Enum):
@@ -386,8 +386,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         set_id = self.set_code_cache.get(card["set"])
         if not set_id:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
-        card_back_id = self._insert_card_back_id(card.get("card_back_id"))
-        printing_id = self._insert_printing(card, card_id, set_id, card_back_id)
+        back_face_id = self._insert_card_back_id(card.get("card_back_id"))
+        printing_id = self._insert_printing(card, card_id, set_id, back_face_id)
         filter_data = self._get_card_filter_data(card)
         self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
@@ -418,6 +418,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         db.execute("DELETE FROM Printing WHERE printing_id NOT IN (SELECT CardFace.printing_id FROM CardFace)\n")
         db.execute('DELETE FROM MTGSet WHERE set_id NOT IN (SELECT Printing.set_id FROM Printing)\n')
         db.execute("DELETE FROM Card WHERE card_id NOT IN (SELECT Printing.card_id FROM Printing)\n")
+        db.execute("DELETE FROM BackFace WHERE back_face_id NOT IN (SELECT Printing.back_face_id FROM Printing)\n")
         db.execute(cached_dedent("""\
         DELETE FROM PrintLanguage
             WHERE language_id NOT IN (
@@ -539,7 +540,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                    OR collector_number <> excluded.collector_number
                    OR is_oversized <> excluded.is_oversized
                    OR highres_image <> excluded.highres_image
-                   OR back_face_id <> excluded.back_face_id
+                   -- Use IS NOT to update on different non-NULL values or if exactly one is NULL.
+                   -- In this case, NULL should be treated as equal to NULL to indicate "no change".
+                   OR back_face_id IS NOT excluded.back_face_id
             """), data,
         )
         printing_id, = db.execute(cached_dedent(
@@ -653,9 +656,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """
         faces = card.get("card_faces") or [
             FaceDataType(
-                printed_name = self._get_card_name(card),
-                image_uris = card["image_uris"],
-                name = card["name"],
+                printed_name=self._get_card_name(card),
+                image_uris=card["image_uris"],
+                name=card["name"],
             )
         ]
         return (
