@@ -70,8 +70,8 @@ class RenderMode(enum.Enum):
 
 @enum.unique
 class DuplexType(enum.Enum):
-    ODD = enum.auto()
-    EVEN = enum.auto()
+    FRONT = enum.auto()
+    BACK = enum.auto()
 
 
 class CutMarkerParameters(typing.NamedTuple):
@@ -165,6 +165,7 @@ class PageScene(QGraphicsScene):
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
         self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
+        self.duplex_type = DuplexType.FRONT
         self.render_mode = render_mode
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
@@ -172,18 +173,13 @@ class PageScene(QGraphicsScene):
         self.background.setZValue(RenderLayers.BACKGROUND.value)
         self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
         self.vertical_cut_line_locations: typing.Dict[DuplexType, PixelCache] = {
-            DuplexType.ODD: collections.defaultdict(list),
-            DuplexType.EVEN: collections.defaultdict(list)
+            DuplexType.FRONT: collections.defaultdict(list),
+            DuplexType.BACK: collections.defaultdict(list)
         }
         self._update_cut_marker_positions()
         if document.page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
-
-    def duplex_type(self) -> DuplexType:
-        if self.document.page_layout.duplex_mode.is_duplex() and self.document.get_current_page_index().row() % 2:
-            return DuplexType.EVEN
-        return DuplexType.ODD
 
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if render_mode is RenderMode.ON_PAPER:
@@ -225,10 +221,11 @@ class PageScene(QGraphicsScene):
             selected_page.data(Qt.UserRole)
         }
         self.selected_page = selected_page
+        self.duplex_type = self._get_duplex_type()
         # Switching to or from an oversized page
-        # Or switching from odd to even or even to odd while duplex printing is active
+        # Or switching from front to back or back to front while duplex printing is active
         if (PageType.OVERSIZED in page_types and len(page_types) > 1) or \
-                (self.document.page_layout.duplex_mode.is_duplex()):
+                (self.document.page_layout.duplex_mode.is_duplex() and previous_page_row % 2 != current_page_row % 2):
             logger.debug("Redrawing cut markers")
             self.remove_cut_markers()
             self.draw_cut_markers()
@@ -241,6 +238,7 @@ class PageScene(QGraphicsScene):
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         new_page_size = self.get_document_page_size(new_page_layout)
+        self.duplex_type = self._get_duplex_type()
         old_size = self.sceneRect()
         size_changed = old_size != new_page_size
         if size_changed:
@@ -257,6 +255,12 @@ class PageScene(QGraphicsScene):
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
             self.scene_size_changed.emit()
+
+    def _get_duplex_type(self):
+        return DuplexType.BACK \
+            if self.document.page_layout.duplex_mode.is_duplex() \
+            and self.selected_page.row() % 2 \
+            else DuplexType.FRONT
 
     @staticmethod
     def get_document_page_size(page_layout: PageLayoutSettings) -> QRectF:
@@ -281,7 +285,7 @@ class PageScene(QGraphicsScene):
 
     def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
         index = self.selected_page.child(row, PageColumns.Image)
-        position = self._compute_position_for_image(row, page_type, self.duplex_type())
+        position = self._compute_position_for_image(row, page_type, self.duplex_type)
         card: Card = index.internalPointer().card
         if card.image_file is not None:
             self.addItem(card_item := CardItem(card, self.document))
@@ -298,7 +302,7 @@ class PageScene(QGraphicsScene):
     def update_card_positions(self):
         page_type: PageType = self.selected_page.data(Qt.UserRole)
         for index, card in enumerate(self.card_items):
-            card.setPos(self._compute_position_for_image(index, page_type, self.duplex_type()))
+            card.setPos(self._compute_position_for_image(index, page_type, self.duplex_type))
 
     def _is_valid_page_index(self, index: QModelIndex):
         return index.isValid() and not index.parent().isValid() and index.row() < self.document.rowCount()
@@ -375,7 +379,7 @@ class PageScene(QGraphicsScene):
 
         x_pos = margin_left + column * (card_width + spacing_horizontal)
         y_pos = margin_top + row * (card_height + spacing_vertical)
-        if duplex_type == DuplexType.EVEN:
+        if duplex_type == DuplexType.BACK:
             x_pos = self.width() - x_pos - card_width
         return QPointF(
             x_pos,
@@ -403,8 +407,8 @@ class PageScene(QGraphicsScene):
 
     def _update_cut_marker_positions(self):
         logger.debug("Updating cut marker positions")
-        self.vertical_cut_line_locations[DuplexType.ODD].clear()
-        self.vertical_cut_line_locations[DuplexType.EVEN].clear()
+        self.vertical_cut_line_locations[DuplexType.FRONT].clear()
+        self.vertical_cut_line_locations[DuplexType.BACK].clear()
         self.horizontal_cut_line_locations.clear()
         page_layout = self.document.page_layout
         scene_width = self.width()
@@ -414,13 +418,13 @@ class PageScene(QGraphicsScene):
                 card_size.height, page_layout.compute_page_row_count(page_type),
                 page_layout.margin_top, page_layout.image_spacing_horizontal)
             )
-            self.vertical_cut_line_locations[DuplexType.ODD][page_type] += self._compute_cut_marker_positions(
+            self.vertical_cut_line_locations[DuplexType.FRONT][page_type] += self._compute_cut_marker_positions(
                 CutMarkerParameters(
                     card_size.width, page_layout.compute_page_column_count(page_type),
                     page_layout.margin_left, page_layout.image_spacing_vertical
                 ))
-            self.vertical_cut_line_locations[DuplexType.EVEN][page_type] += [
-                scene_width-item for item in reversed(self.vertical_cut_line_locations[DuplexType.ODD][page_type])
+            self.vertical_cut_line_locations[DuplexType.BACK][page_type] += [
+                scene_width-item for item in reversed(self.vertical_cut_line_locations[DuplexType.FRONT][page_type])
             ]
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
@@ -438,15 +442,15 @@ class PageScene(QGraphicsScene):
                 yield pixel_position + card_size
 
     def _draw_vertical_markers(self, line_color: QColor, page_type: PageType):
-        locations = self.vertical_cut_line_locations[self.duplex_type()][page_type]
+        locations = self.vertical_cut_line_locations[self.duplex_type][page_type]
         for column_px in locations:
             self._draw_vertical_line(column_px, line_color)
-        logger.debug(f"Vertical cut markers drawn")
+        logger.debug(f"Vertical cut markers drawn for layout {self.duplex_type}")
 
     def _draw_horizontal_markers(self, line_color: QColor, page_type: PageType):
         for row_px in self.horizontal_cut_line_locations[page_type]:
             self._draw_horizontal_line(row_px, line_color)
-        logger.debug(f"Horizontal cut markers drawn")
+        logger.debug(f"Horizontal cut markers drawn for layout {self.duplex_type}")
 
     def _draw_vertical_line(self, column_px: float, line_color: QColor):
         line = self.addLine(0, 0, 0, self.height(), line_color)
