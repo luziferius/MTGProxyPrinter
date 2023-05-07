@@ -26,8 +26,10 @@ import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import PageType
 import mtg_proxy_printer.model.document
+from mtg_proxy_printer.settings import DuplexMode
 import mtg_proxy_printer.sqlite_helpers
 
 
@@ -62,14 +64,29 @@ def disabled_check_constraints(db: sqlite3.Connection):
     db.execute("PRAGMA ignore_check_constraints = FALSE;")
 
 
+@pytest.mark.parametrize("page_layout", [
+    PageLayoutSettings(
+        page_height=300, page_width=200,
+        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
+        image_spacing_horizontal=3, image_spacing_vertical=2,
+        draw_cut_markers=True, draw_sharp_corners=False,
+    ),
+    PageLayoutSettings(
+        page_height=300, page_width=200,
+        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
+        image_spacing_horizontal=3, image_spacing_vertical=2,
+        draw_cut_markers=True, draw_sharp_corners=False,
+        duplex_mode=DuplexMode.DFC_ONLY,
+    ),
+])
 def test_valid_data_loads_correctly(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
-        empty_save_database: sqlite3.Connection):
+        empty_save_database: sqlite3.Connection, page_layout: PageLayoutSettings):
     empty_save_database.execute(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
     )
-    page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
+    page_layout = PageLayoutSettings(
         page_height=300, page_width=200,
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
         image_spacing_horizontal=3, image_spacing_vertical=2,
@@ -83,8 +100,9 @@ def test_valid_data_loads_correctly(
     )
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
-    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
-        mock.return_value = empty_save_database
+    with unittest.mock.patch(
+            "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
+            return_value=empty_save_database) as mock:
         with qtbot.waitSignals([loader.loading_state_changed]*2,
                                check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
                 qtbot.waitSignals([loader.load_requested, document.page_layout_changed]):
@@ -116,7 +134,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
             (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b", "r"),
          ]
     )
-    page_layout = mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()
+    page_layout = PageLayoutSettings.create_from_settings()
     page_layout_items = dataclasses.asdict(page_layout).items()
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
