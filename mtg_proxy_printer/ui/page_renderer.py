@@ -228,7 +228,7 @@ class PageScene(QGraphicsScene):
         # Switching to or from an oversized page
         # Or switching from odd to even or even to odd while duplex printing is active
         if (PageType.OVERSIZED in page_types and len(page_types) > 1) or \
-                (self.document.page_layout.duplex_mode.is_duplex() and previous_page_row % 2 != current_page_row % 2):
+                (self.document.page_layout.duplex_mode.is_duplex()):
             logger.debug("Redrawing cut markers")
             self.remove_cut_markers()
             self.draw_cut_markers()
@@ -282,8 +282,8 @@ class PageScene(QGraphicsScene):
     def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
         index = self.selected_page.child(row, PageColumns.Image)
         position = self._compute_position_for_image(row, page_type, self.duplex_type())
-        if index.data(Qt.DisplayRole) is not None:  # Card has a QPixmap set
-            card: Card = index.internalPointer().card
+        card: Card = index.internalPointer().card
+        if card.image_file is not None:
             self.addItem(card_item := CardItem(card, self.document))
             card_item.setPos(position)
             if next_item is not None:
