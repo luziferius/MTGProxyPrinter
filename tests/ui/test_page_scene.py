@@ -184,7 +184,7 @@ def test_cut_line_locations_when_enabled(qtbot, page_scene: PageScene, data: Cut
 
     close_to_ = partial(close_to, delta=0.005)
     assert_that(
-        page_scene.vertical_cut_line_locations[page_scene.duplex_type()][data.page_type],
+        page_scene.vertical_cut_line_locations[page_scene.duplex_type][data.page_type],
         contains_inanyorder(
             *map(close_to_, data.expected_verticals))
     )
