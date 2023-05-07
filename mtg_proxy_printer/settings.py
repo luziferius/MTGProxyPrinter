@@ -69,7 +69,7 @@ class DuplexMode(str, enum.Enum):
 
     def qt_duplex_mode(self) -> QPrinter.DuplexMode:
         """Maps the document duplex mode to the Qt QPrinter.DuplexMode setting."""
-        return QPrinter.DuplexMode.DuplexNone if self == DuplexMode.OFF else QPrinter.DuplexMode.DuplexShortSide
+        return QPrinter.DuplexMode.DuplexNone if self == DuplexMode.OFF else QPrinter.DuplexMode.DuplexLongSide
 
     def is_duplex(self) -> bool:
         return self != DuplexMode.OFF
