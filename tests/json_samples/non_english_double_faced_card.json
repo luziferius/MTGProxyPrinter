@@ -42,17 +42,18 @@
       "artist_id": "b5f49d0d-8056-48e3-b614-090e656b4f9c",
       "illustration_id": "807e1577-8345-4866-81ae-648e1610f828",
       "image_uris": {
-        "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619",
-        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619"
+        "small": "https://cards.scryfall.io/small/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "normal": "https://cards.scryfall.io/normal/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "large": "https://cards.scryfall.io/large/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "png": "https://cards.scryfall.io/png/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1646170618",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618"
       }
     },
     {
       "object": "card_face",
       "name": "Itlimoc, Cradle of the Sun",
+      "flavor_name": "",
       "printed_name": "烈阳育所伊替莫",
       "mana_cost": "",
       "type_line": "Legendary Land",
@@ -67,12 +68,12 @@
       "artist_id": "b5f49d0d-8056-48e3-b614-090e656b4f9c",
       "illustration_id": "fe41f4ca-3344-4a68-9f78-4b274498dcc4",
       "image_uris": {
-        "small": "https://c1.scryfall.com/file/scryfall-cards/small/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "large": "https://c1.scryfall.com/file/scryfall-cards/large/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "png": "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1562549619",
-        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619",
-        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1562549619"
+        "small": "https://cards.scryfall.io/small/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "normal": "https://cards.scryfall.io/normal/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "large": "https://cards.scryfall.io/large/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "png": "https://cards.scryfall.io/png/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.png?1646170618",
+        "art_crop": "https://cards.scryfall.io/art_crop/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618",
+        "border_crop": "https://cards.scryfall.io/border_crop/back/0/0/000847d3-ebde-4580-a00e-61d501e99485.jpg?1646170618"
       }
     }
   ],
@@ -82,16 +83,22 @@
     "historic": "legal",
     "gladiator": "legal",
     "pioneer": "legal",
+    "explorer": "legal",
     "modern": "legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
-    "penny": "not_legal",
+    "penny": "legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "arena",
@@ -101,10 +108,15 @@
   "reserved": false,
   "foil": true,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
   "oversized": false,
   "promo": false,
   "reprint": false,
   "variation": false,
+  "set_id": "fe0dad85-54bc-4151-9200-d68da84dd0f2",
   "set": "xln",
   "set_name": "Ixalan",
   "set_type": "expansion",
@@ -116,7 +128,6 @@
   "collector_number": "191",
   "digital": false,
   "rarity": "rare",
-  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
   "artist": "Grzegorz Rutkowski",
   "artist_ids": [
     "b5f49d0d-8056-48e3-b614-090e656b4f9c"
@@ -126,14 +137,17 @@
   "frame_effects": [
     "compasslanddfc"
   ],
+  "security_stamp": "oval",
   "full_art": false,
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 290,
+  "edhrec_rank": 619,
+  "penny_rank": 3260,
   "prices": {
     "usd": null,
     "usd_foil": null,
+    "usd_etched": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
@@ -142,11 +156,10 @@
     "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=438037&printed=true",
     "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
     "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Growing+Rites+of+Itlimoc",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Growing+Rites+of+Itlimoc"
+    "edhrec": "https://edhrec.com/route/?cc=Growing+Rites+of+Itlimoc"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Growing+Rites+of+Itlimoc&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Growing+Rites+of+Itlimoc&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Growing+Rites+of+Itlimoc&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Growing+Rites+of+Itlimoc&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

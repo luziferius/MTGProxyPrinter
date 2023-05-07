@@ -74,7 +74,7 @@ class PrintingData(typing.NamedTuple):
     scryfall_id: str
     is_oversized: bool
     highres_image: bool
-
+    card_back_id: int
 
 @enum.unique
 class SetWackinessScore(int, enum.Enum):
@@ -386,7 +386,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         set_id = self.set_code_cache.get(card["set"])
         if not set_id:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
-        printing_id = self._insert_printing(card, card_id, set_id)
+        card_back_id = self._insert_card_back_id(card.get("card_back_id"))
+        printing_id = self._insert_printing(card, card_id, set_id, card_back_id)
         filter_data = self._get_card_filter_data(card)
         self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
@@ -398,8 +399,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         the import. This will lead to assignment of wrong data via invalid foreign key relations.
         To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
         """
-        for cache in (self._insert_language, self._insert_card, self._read_printing_filters_from_db):
-            logger.debug(str(cache.cache_info()))
+        for cache in (
+            self._insert_language, self._insert_card, self._read_printing_filters_from_db,
+            self._insert_card_back_id
+        ):
+            logger.debug(f"Cache efficiency for {cache.__name__}: {cache.cache_info()}")
             cache.cache_clear()
         self.set_code_cache.clear()
 
@@ -450,6 +454,21 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
         return card_id
 
+    @functools.lru_cache(None)
+    def _insert_card_back_id(self, card_back_id: typing.Optional[str]) -> typing.Optional[int]:
+        if card_back_id is None:
+            return None
+        db = self.model.db
+        parameters = card_back_id,
+        if result := db.execute(
+                "SELECT back_face_id FROM BackFace WHERE scryfall_card_back_id = ?\n",
+                parameters).fetchone():
+            back_face_id, = result
+        else:
+            back_face_id = db.execute(
+                "INSERT INTO BackFace (scryfall_card_back_id) VALUES (?)\n", parameters).lastrowid
+        return back_face_id
+
     def _insert_set(self, card: CardDataType) -> int:
         db = self.model.db
         set_abbr = card["set"]
@@ -491,7 +510,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
         return face_name_id
 
-    def _insert_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
+    def _insert_printing(
+            self, card: CardDataType, card_id: int, set_id: int, back_face_id: typing.Optional[int]) -> int:
         db = self.model.db
         data = PrintingData(
             card_id,
@@ -500,22 +520,26 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card["id"],
             card["oversized"],
             card["highres_image"],
+            back_face_id,
         )
         db.execute(cached_dedent(
             """\
-            INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
-                VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO Printing 
+                (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image, back_face_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (scryfall_id) DO UPDATE
                     SET card_id = excluded.card_id,
                         set_id = excluded.set_id,
                         collector_number = excluded.collector_number,
                         is_oversized = excluded.is_oversized,
-                        highres_image = excluded.highres_image
+                        highres_image = excluded.highres_image,
+                        back_face_id = excluded.back_face_id
                 WHERE card_id <> excluded.card_id
                    OR set_id <> excluded.set_id
                    OR collector_number <> excluded.collector_number
                    OR is_oversized <> excluded.is_oversized
                    OR highres_image <> excluded.highres_image
+                   OR back_face_id <> excluded.back_face_id
             """), data,
         )
         printing_id, = db.execute(cached_dedent(

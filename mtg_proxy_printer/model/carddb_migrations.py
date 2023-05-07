@@ -609,6 +609,27 @@ def _migrate_28_to_29(db: sqlite3.Connection):
     """))
 
 
+def _migrate_29_to_30(db: sqlite3.Connection):
+    for statement in [
+        textwrap.dedent("""\
+        CREATE TABLE BackFace (
+          -- The back of non-dfc cards.
+          back_face_id INTEGER NOT NULL PRIMARY KEY,
+          scryfall_card_back_id TEXT NOT NULL,
+          -- Back sides have no official name. The one here is either generated automatically during import
+          name TEXT UNIQUE CHECK (name <> ''),
+          -- There seems to be no way to query the download url via the official API. So build it here.
+          -- The API documentation advises against this, but there seems to be no other way.
+          url GENERATED ALWAYS AS (printf(
+              'https://backs.scryfall.io/png/%s/%s/%s.png',
+              substr(scryfall_card_back_id, 1, 1), substr(scryfall_card_back_id, 2, 1), scryfall_card_back_id
+            )) VIRTUAL
+        );"""),
+        "ALTER TABLE Printing ADD COLUMN back_face_id INTEGER REFERENCES BackFace(back_face_id);",
+    ]:
+        db.execute(statement)
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -632,6 +653,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (26, _migrate_26_to_27),
     (27, _migrate_27_to_28),
     (28, _migrate_28_to_29),
+    (29, _migrate_29_to_30),
 )
 
 

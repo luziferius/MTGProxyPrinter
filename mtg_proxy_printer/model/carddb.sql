@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000029;
+PRAGMA user_version = 0000030;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -34,6 +34,20 @@ CREATE TABLE Card (
   oracle_id TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE BackFace (
+  -- The back of non-dfc cards.
+  back_face_id INTEGER NOT NULL PRIMARY KEY,
+  scryfall_card_back_id TEXT NOT NULL,
+  -- Back sides have no official name. The one here is either generated automatically during import
+  name TEXT UNIQUE CHECK (name <> ''),
+  -- There seems to be no way to query the download url via the official API. So build it here.
+  -- The API documentation advises against this, but there seems to be no other way.
+  url GENERATED ALWAYS AS (printf(
+      'https://backs.scryfall.io/png/%s/%s/%s.png',
+      substr(scryfall_card_back_id, 1, 1), substr(scryfall_card_back_id, 2, 1), scryfall_card_back_id
+    )) VIRTUAL
+);
+
 CREATE TABLE Printing (
   -- A specific printing of a card
   printing_id INTEGER PRIMARY KEY NOT NULL,
@@ -46,7 +60,8 @@ CREATE TABLE Printing (
   is_oversized INTEGER NOT NULL CHECK (is_oversized IN (TRUE, FALSE)),
   -- Indicates if the card has high resolution images.
   highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
-  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE
+  is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE,
+  back_face_id INTEGER REFERENCES BackFace(back_face_id)
 );
 
 CREATE INDEX Printing_Index_Find_Printing_From_Card_Data
@@ -133,8 +148,10 @@ CREATE TABLE LastImageUseTimestamps (
 );
 
 CREATE TABLE RemovedPrintings (
+  -- Contains scryfall ids of cards which were not imported, due to missing images.
+  -- Map those to tuples of language and oracle_id. Used to look up replacement cards, if such a removed printing
+  -- is requested via the scryfall_id. Storing the language is required, as the oracle_id is language-agnostic.
   scryfall_id TEXT NOT NULL PRIMARY KEY,
-  -- Required to keep the language when migrating a card to a known printing, because it is otherwise unknown.
   language TEXT NOT NULL,
   oracle_id TEXT NOT NULL
 );

@@ -420,9 +420,9 @@ def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
         Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, None),
     # Art series card
     yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, None),
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://cards.scryfall.io/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457', True, False, 0, None),
     yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, None),
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://cards.scryfall.io/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457', True, False, 1, None),
     # Digital card
     yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
         Card('Forest', MTGSet('anb', 'Arena Beginner Set'), '112', 'en', '7ef83f4c-d3ff-4905-a16d-f2bae673a5b2', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.png?1597375433', True, False, 0, None),
@@ -517,9 +517,9 @@ def generate_test_cases_for_test__translate_card():
         Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, None),
     # Art series card
     yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, None),
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://cards.scryfall.io/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457', True, False, 0, None),
     yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, None),
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://cards.scryfall.io/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457', True, False, 1, None),
 
 
 # Re-use the test cases for test_find_all_translated_printings. Both should return the same data
@@ -559,9 +559,9 @@ def generate_test_cases_for_test_get_opposing_face() -> \
         Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, None),
     # Art series card
     yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, None),
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://cards.scryfall.io/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457', True, False, 1, None),
     yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, None),
+        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://cards.scryfall.io/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457', True, False, 0, None),
 
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_opposing_face())
