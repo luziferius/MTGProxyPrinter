@@ -63,7 +63,6 @@ def create_qprinter(document: Document) -> QPrinter:
     printer.setPageSizeMM(page_size)
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-    # Disable duplex printing by default
     printer.setDoubleSidedPrinting(document.page_layout.duplex_mode.is_duplex())
     printer.setDuplex(document.page_layout.duplex_mode.qt_duplex_mode())
     printer.setOutputFormat(QPrinter.NativeFormat)
