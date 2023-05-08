@@ -400,6 +400,12 @@ CASE_DATA: typing.Dict[str, TestCaseData] = {
         ), DatabaseSetData("ha1", "Historic Anthology 1", "https://scryfall.com/sets/ha1?utm_source=api", "2019-11-21"),
         "en", "1", "b72e71c7-a65c-481d-8ad7-77bfb5d66d73", "27ad3e00-6ffb-48f7-8469-8868d066d1e2", False, "normal", Backs.REGULAR,
     ),
+    "meld_card": TestCaseData(
+        "meld_card", True, (
+            FaceData("Urza, Lord Protector", "https://cards.scryfall.io/png/front/8/a/8aefe8bd-216a-4ec1-9362-3f9dbf7fd083.png?1674421887", True),
+        ), DatabaseSetData("bro", "The Brothers' War", "https://scryfall.com/sets/bro?utm_source=api", "2022-11-18"),
+        "en", "225", "8aefe8bd-216a-4ec1-9362-3f9dbf7fd083", "df2af646-3e5b-43a3-8f3e-50565889f456", False, "meld",  "58a4215b-9f3d-40d4-bc05-d8d3cc2354d9",
+    )
 }
 
 
@@ -409,6 +415,7 @@ def generate_test_cases_for_test_card_import():
     yield CASE_DATA["english_double_faced_art_series_card"]
     yield CASE_DATA["regular_english_card"]
     yield CASE_DATA["double_faced_card_without_top_level_oracle_id"]
+    yield CASE_DATA["meld_card"]
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
