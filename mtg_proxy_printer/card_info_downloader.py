@@ -388,7 +388,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
         oracle_id = self._get_oracle_id(card)
-        layout = card["layout"] if "oracle_id" in card else card["card_faces"][0]["oracle_id"]
+        layout = card["layout"] if "oracle_id" in card else card["card_faces"][0]["layout"]
         card_id = self._insert_card(OracleData(oracle_id, layout))
         set_id = self.set_code_cache.get(card["set"])
         if not set_id:
