@@ -48,9 +48,10 @@ logger = get_logger(__name__)
 del get_logger
 
 __all__ = [
+    "CardType",
     "DocumentSaveFormat",
     "DocumentLoader",
-    "PageLayoutSettings"
+    "PageLayoutSettings",
 ]
 
 

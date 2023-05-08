@@ -79,10 +79,12 @@ class FaceData:
     image_uri: str
     is_front: bool
 
+
 class UnpackMixin:
 
     def __iter__(self):
         return ((field.name, getattr(self, field.name)) for field in dataclasses.fields(self))
+
 
 @dataclasses.dataclass(frozen=True)
 class TestCaseData(UnpackMixin):
@@ -637,7 +639,8 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
 
 
 def test_updates_card_layout(qtbot, card_db: CardDatabase):
-    test_case = patch_test_case(CASE_DATA["regular_english_card"], "layout", "other")
+    test_case = patch_test_case(
+        CASE_DATA["regular_english_card"], "layout", "other")
     json_data = load_json(test_case.json_name)
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"layout": test_case.layout}):

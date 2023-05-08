@@ -26,7 +26,6 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
 from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
 import pint
 
-from mtg_proxy_printer.settings import DuplexMode
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.model.document import Document

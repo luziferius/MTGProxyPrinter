@@ -610,7 +610,7 @@ def _migrate_28_to_29(db: sqlite3.Connection):
 
 
 def _migrate_29_to_30(db: sqlite3.Connection):
-    ((view1,),(view2,)) = db.execute(textwrap.dedent("""\
+    ((view1,), (view2,)) = db.execute(textwrap.dedent("""\
         SELECT sql
           FROM sqlite_schema
           WHERE name in ('AllPrintings', 'VisiblePrintings')

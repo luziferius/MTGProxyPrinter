@@ -42,6 +42,7 @@ JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
 
+
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
     Validator that checks, if the given string is a valid URL prefix pointing to a deck on a known deck
