@@ -605,6 +605,7 @@ def test_updates_release_date(qtbot, card_db: CardDatabase):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_visible_import(card_db, test_case)
 
+
 def test_updates_printing_collector_number(qtbot, card_db: CardDatabase):
     test_case = patch_test_case(
         CASE_DATA["regular_english_card"], "collector_number", "1234")
@@ -631,6 +632,15 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
     json_data = load_json(test_case.json_name)
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"highres_image": test_case.highres_image}):
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
+    assert_visible_import(card_db, test_case)
+
+
+def test_updates_card_layout(qtbot, card_db: CardDatabase):
+    test_case = patch_test_case(CASE_DATA["regular_english_card"], "layout", "other")
+    json_data = load_json(test_case.json_name)
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
+    with unittest.mock.patch.dict(json_data, {"layout": test_case.layout}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
     assert_visible_import(card_db, test_case)
 

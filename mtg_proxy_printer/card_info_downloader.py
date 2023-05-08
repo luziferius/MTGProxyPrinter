@@ -455,10 +455,18 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     @functools.lru_cache(None)
     def _insert_card(self, data: OracleData) -> int:
         db = self.model.db
-        if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", (data.oracle_id,)).fetchone():
-            card_id, = result
-        else:
-            card_id = db.execute("INSERT INTO Card (oracle_id, card_layout) VALUES (?, ?)\n", data).lastrowid
+        db.execute(cached_dedent(
+            """\
+            INSERT INTO Card(oracle_id, card_layout)
+              VALUES (?, ?)
+              ON CONFLICT (oracle_id) DO
+              UPDATE SET
+                card_layout = excluded.card_layout
+              WHERE
+                card_layout <> excluded.card_layout 
+            """),
+            data)
+        card_id, = db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", (data.oracle_id,)).fetchone()
         return card_id
 
     @functools.lru_cache(None)
