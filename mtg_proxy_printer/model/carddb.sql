@@ -31,7 +31,9 @@ CREATE TABLE Card (
   -- Uniquely identified by the oracle_id provided by Scryfall.
   -- Some cards from Un-Sets do not have unique English names,
   -- thus identification using an abstract ID value is required.
-  oracle_id TEXT NOT NULL UNIQUE
+  oracle_id TEXT NOT NULL UNIQUE,
+  card_layout TEXT NOT NULL,
+  is_meld_card GENERATED ALWAYS AS (card_layout == 'meld') VIRTUAL
 );
 
 CREATE TABLE BackFace (
@@ -61,7 +63,8 @@ CREATE TABLE Printing (
   -- Indicates if the card has high resolution images.
   highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
   is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE,
-  back_face_id INTEGER REFERENCES BackFace(back_face_id)
+  back_face_id INTEGER REFERENCES BackFace(back_face_id),
+  card_layout TEXT NULL
 );
 
 CREATE INDEX Printing_Index_Find_Printing_From_Card_Data
