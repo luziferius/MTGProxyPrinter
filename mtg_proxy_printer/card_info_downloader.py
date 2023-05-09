@@ -377,10 +377,32 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             """),
             (index,)
         )
+        self._update_back_face_names()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         db.commit()
         return index
+
+    def _update_back_face_names(self):
+        # TODO: This currently fails, because of 'UNIQUE constraint failed: BackFace.name' caused by meld back faces
+        # The code has to handle meld back faces. Needs better name generation and storing if a back is a meld back.
+        '''
+        self.db.execute(cached_dedent("""\
+        UPDATE BackFace
+          SET name = Computed.set_name
+          FROM (
+            SELECT back_face_id, set_name
+            FROM Printing
+            JOIN MTGSet USING (set_id)
+            WHERE back_face_id IS NOT NULL
+            GROUP BY back_face_id
+            HAVING min(release_date)
+        ) AS Computed
+          WHERE BackFace.name is NULL
+            AND BackFace.back_face_id == Computed.back_face_id
+        """))
+        '''
+        self.download_progress.emit(6)
 
     @functools.lru_cache(maxsize=1)
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
