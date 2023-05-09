@@ -15,6 +15,7 @@
 
 import dataclasses
 import enum
+import textwrap
 import typing
 import unittest.mock
 
@@ -40,6 +41,7 @@ class DatabasePrintingData(typing.NamedTuple):
     is_oversized: bool
     highres_image: bool
     back_face_id: typing.Optional[int]
+    layout: typing.Optional[str]
 
 
 class DatabaseCardFaceData(typing.NamedTuple):
@@ -105,6 +107,7 @@ class TestCaseData(UnpackMixin):
     is_oversized: bool
     layout: str
     card_back_id: typing.Optional[str]
+    layout_override: typing.Optional[str] = None
 
     __test__ = False  # Instruct PyTest to not collect this as a Test class, even if the name starts with "Test"
 
@@ -141,7 +144,8 @@ class TestCaseData(UnpackMixin):
         return [
             DatabasePrintingData(
                 self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image,
-                1 if self.card_back_id else None
+                1 if self.card_back_id else None,
+                self.layout_override,
             )
         ]
 
@@ -186,10 +190,12 @@ def _assert_printing_contains(card_db: CardDatabase, test_case: TestCaseData, *,
     """Checks collector_number, scryfall_id, is_oversized, highres_image"""
     assert_that(
         data := [
-            (collector_number, scryfall_id, bool(is_oversized), bool(highres_image), back_face_id)
-            for collector_number, scryfall_id, is_oversized, highres_image, back_face_id
-            in card_db.db.execute(
-                "SELECT collector_number, scryfall_id, is_oversized, highres_image, back_face_id FROM Printing")
+            (collector_number, scryfall_id, bool(is_oversized), bool(highres_image), back_face_id, card_layout)
+            for collector_number, scryfall_id, is_oversized, highres_image, back_face_id, card_layout,
+            in card_db.db.execute(textwrap.dedent("""\
+            SELECT collector_number, scryfall_id, is_oversized, highres_image, back_face_id, card_layout
+              FROM Printing
+            """))
          ],
         contains_inanyorder(*test_case.db_printing()),
         f"Printing relation contains unexpected data: {data}")
@@ -300,7 +306,7 @@ CASE_DATA: typing.Dict[str, TestCaseData] = {
             FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", True),
             FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", False),
         ), DatabaseSetData("sld", "Secret Lair Drop", "https://scryfall.com/sets/sld?utm_source=api", "2022-04-22"),
-        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-ac79dc2892a4", False, "normal", None
+        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-ac79dc2892a4", False, "normal", None, "reversible_card"
     ),
     "oversized_card": TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (

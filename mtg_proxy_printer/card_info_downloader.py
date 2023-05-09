@@ -75,6 +75,7 @@ class PrintingData(typing.NamedTuple):
     is_oversized: bool
     highres_image: bool
     back_face_id: int
+    layout_override: typing.Optional[str]
 
 
 class OracleData(typing.NamedTuple):
@@ -536,19 +537,23 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card["oversized"],
             card["highres_image"],
             back_face_id,
+            # Only add the card layout override,
+            # if it is a reversible card with multiple layouts in the individual faces
+            card["layout"] if "oracle_id" not in card else None,
         )
         db.execute(cached_dedent(
             """\
             INSERT INTO Printing 
-                (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image, back_face_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image, back_face_id, card_layout)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (scryfall_id) DO UPDATE
                     SET card_id = excluded.card_id,
                         set_id = excluded.set_id,
                         collector_number = excluded.collector_number,
                         is_oversized = excluded.is_oversized,
                         highres_image = excluded.highres_image,
-                        back_face_id = excluded.back_face_id
+                        back_face_id = excluded.back_face_id,
+                        card_layout = excluded.card_layout
                 WHERE card_id <> excluded.card_id
                    OR set_id <> excluded.set_id
                    OR collector_number <> excluded.collector_number
@@ -557,6 +562,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                    -- Use IS NOT to update on different non-NULL values or if exactly one is NULL.
                    -- In this case, NULL should be treated as equal to NULL to indicate "no change".
                    OR back_face_id IS NOT excluded.back_face_id
+                   OR card_layout IS NOT excluded.card_layout
             """), data,
         )
         printing_id, = db.execute(cached_dedent(
