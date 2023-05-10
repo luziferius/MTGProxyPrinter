@@ -377,35 +377,34 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             """),
             (index,)
         )
-        # self._update_back_face_names(db)
+        self._update_back_face_names(db)
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         db.commit()
         return index
 
     def _update_back_face_names(self, db: sqlite3.Connection):
-        # TODO: back name unique constraint failing because of 3 entries for "Media Inserts". Investigate.
+        """Computes human-readable names for back faces of single-face cards."""
         db.execute(cached_dedent("""\
+        WITH generated_back_face_names (back_face_id, back_name) AS (
+            SELECT back_face_id, iif(
+              count(distinct card_id) <= 5,
+              printf('%s (%s)', set_name, group_concat(DISTINCT collector_number)), 
+              set_name) AS back_name
+            FROM Printing
+            JOIN MTGSet USING (set_id)
+            WHERE back_face_id IS NOT NULL
+            GROUP BY back_face_id
+            HAVING min(release_date)
+        )
         UPDATE BackFace
           SET name = Computed.back_name
           FROM (
-            SELECT
-              back_face_id,
-              -- Use the earliest set name as a name for non-meld back sides,
-              -- use "card_name (SET_CODE)" for meld cards 
-              iif(is_meld_card, printf('%s (%s)', card_name, upper(set_code)), set_name) AS back_name
-            FROM Printing
-            JOIN MTGSet USING (set_id)
-            JOIN Card USING (card_id)
-            JOIN CardFace USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            WHERE back_face_id IS NOT NULL
-              AND is_front IS TRUE
-            GROUP BY back_face_id
-            HAVING min(release_date)
+            SELECT back_face_id, back_name
+            FROM generated_back_face_names
         ) AS Computed
           WHERE BackFace.name is NULL
-            AND BackFace.back_face_id == Computed.back_face_id
+            AND BackFace.back_face_id = Computed.back_face_id
         """))
         self.download_progress.emit(6)
 
