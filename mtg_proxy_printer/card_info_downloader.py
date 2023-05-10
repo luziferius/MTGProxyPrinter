@@ -75,6 +75,13 @@ class PrintingData(typing.NamedTuple):
     is_oversized: bool
     highres_image: bool
     back_face_id: int
+    layout_override: typing.Optional[str]
+
+
+class OracleData(typing.NamedTuple):
+    oracle_id: str
+    card_layout: str
+
 
 @enum.unique
 class SetWackinessScore(int, enum.Enum):
@@ -370,10 +377,36 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             """),
             (index,)
         )
+        self._update_back_face_names(db)
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         db.commit()
         return index
+
+    def _update_back_face_names(self, db: sqlite3.Connection):
+        """Computes human-readable names for back faces of single-face cards."""
+        db.execute(cached_dedent("""\
+        WITH generated_back_face_names (back_face_id, back_name) AS (
+            SELECT back_face_id, iif(
+              count(distinct card_id) <= 5,
+              printf('%s (%s)', set_name, group_concat(DISTINCT collector_number)), 
+              set_name) AS back_name
+            FROM Printing
+            JOIN MTGSet USING (set_id)
+            WHERE back_face_id IS NOT NULL
+            GROUP BY back_face_id
+            HAVING min(release_date)
+        )
+        UPDATE BackFace
+          SET name = Computed.back_name
+          FROM (
+            SELECT back_face_id, back_name
+            FROM generated_back_face_names
+        ) AS Computed
+          WHERE BackFace.name is NULL
+            AND BackFace.back_face_id = Computed.back_face_id
+        """))
+        self.download_progress.emit(6)
 
     @functools.lru_cache(maxsize=1)
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
@@ -382,7 +415,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
         oracle_id = self._get_oracle_id(card)
-        card_id = self._insert_card(oracle_id)
+        layout = card["layout"] if "oracle_id" in card else card["card_faces"][0]["layout"]
+        card_id = self._insert_card(OracleData(oracle_id, layout))
         set_id = self.set_code_cache.get(card["set"])
         if not set_id:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
@@ -446,13 +480,20 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return language_id
 
     @functools.lru_cache(None)
-    def _insert_card(self, oracle_id: str) -> int:
+    def _insert_card(self, data: OracleData) -> int:
         db = self.model.db
-        parameters = oracle_id,
-        if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
-            card_id, = result
-        else:
-            card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
+        db.execute(cached_dedent(
+            """\
+            INSERT INTO Card(oracle_id, card_layout)
+              VALUES (?, ?)
+              ON CONFLICT (oracle_id) DO
+              UPDATE SET
+                card_layout = excluded.card_layout
+              WHERE
+                card_layout <> excluded.card_layout 
+            """),
+            data)
+        card_id, = db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", (data.oracle_id,)).fetchone()
         return card_id
 
     @functools.lru_cache(None)
@@ -522,19 +563,23 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card["oversized"],
             card["highres_image"],
             back_face_id,
+            # Only add the card layout override,
+            # if it is a reversible card with multiple layouts in the individual faces
+            card["layout"] if "oracle_id" not in card else None,
         )
         db.execute(cached_dedent(
             """\
             INSERT INTO Printing 
-                (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image, back_face_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image, back_face_id, card_layout)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT (scryfall_id) DO UPDATE
                     SET card_id = excluded.card_id,
                         set_id = excluded.set_id,
                         collector_number = excluded.collector_number,
                         is_oversized = excluded.is_oversized,
                         highres_image = excluded.highres_image,
-                        back_face_id = excluded.back_face_id
+                        back_face_id = excluded.back_face_id,
+                        card_layout = excluded.card_layout
                 WHERE card_id <> excluded.card_id
                    OR set_id <> excluded.set_id
                    OR collector_number <> excluded.collector_number
@@ -543,6 +588,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                    -- Use IS NOT to update on different non-NULL values or if exactly one is NULL.
                    -- In this case, NULL should be treated as equal to NULL to indicate "no change".
                    OR back_face_id IS NOT excluded.back_face_id
+                   OR card_layout IS NOT excluded.card_layout
             """), data,
         )
         printing_id, = db.execute(cached_dedent(

@@ -507,5 +507,6 @@ def _migrate_database(db):
                   SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
                   """),
                 "DROP TABLE DocumentSettings_Old",
-                "PRAGMA user_version = 6",]:
+                "PRAGMA user_version = 6",
+        ]:
             db.execute(f"{statement}\n")

@@ -49,7 +49,7 @@ def handle_ssl_certificates():
     else:
         import certifi
         logger.info("Use certifi library as SSL trust store for HTTPS connections")
-        os.environ["SSL_CERT_FILE"] =  certifi.where()
+        os.environ["SSL_CERT_FILE"] = certifi.where()
 
 
 def main():

@@ -610,7 +610,34 @@ def _migrate_28_to_29(db: sqlite3.Connection):
 
 
 def _migrate_29_to_30(db: sqlite3.Connection):
+    ((view1,), (view2,)) = db.execute(textwrap.dedent("""\
+        SELECT sql
+          FROM sqlite_schema
+          WHERE name in ('AllPrintings', 'VisiblePrintings')
+          AND type = 'view'
+        """)).fetchall()
     for statement in [
+        "DROP VIEW AllPrintings\n",
+        "DROP VIEW VisiblePrintings\n",
+        textwrap.dedent("""\
+        CREATE TABLE Card2 (
+          -- An abstract card, all prints, variations and languages are
+          -- considered the same Card for ruling purposes.
+          card_id INTEGER PRIMARY KEY NOT NULL,
+          -- Uniquely identified by the oracle_id provided by Scryfall.
+          -- Some cards from Un-Sets do not have unique English names,
+          -- thus identification using an abstract ID value is required.
+          oracle_id TEXT NOT NULL UNIQUE,
+          card_layout TEXT NOT NULL,
+          is_meld_card GENERATED ALWAYS AS (card_layout == 'meld') VIRTUAL
+        );"""),
+        textwrap.dedent("""\
+        INSERT INTO Card2 (card_id, oracle_id, card_layout)
+          SELECT card_id, oracle_id, 'unknown' AS card_layout
+          FROM Card
+        """),
+        "DROP TABLE Card",
+        "ALTER TABLE Card2 RENAME TO Card\n",
         textwrap.dedent("""\
         CREATE TABLE BackFace (
           -- The back of non-dfc cards.
@@ -626,6 +653,9 @@ def _migrate_29_to_30(db: sqlite3.Connection):
             )) VIRTUAL
         );"""),
         "ALTER TABLE Printing ADD COLUMN back_face_id INTEGER REFERENCES BackFace(back_face_id);",
+        "ALTER TABLE Printing ADD COLUMN card_layout TEXT NULL;",
+        view1,
+        view2,
     ]:
         db.execute(statement)
 
