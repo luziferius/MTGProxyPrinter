@@ -388,7 +388,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         db.execute(cached_dedent("""\
         WITH generated_back_face_names (back_face_id, back_name) AS (
             SELECT back_face_id, iif(
-              count(distinct card_id) <= 5,
+              count(DISTINCT card_id) <= 5,
               printf('%s (%s)', set_name, group_concat(DISTINCT collector_number)), 
               set_name) AS back_name
             FROM Printing
@@ -410,7 +410,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     @functools.lru_cache(maxsize=1)
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
-        return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
+        return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters\n"))
 
     def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])

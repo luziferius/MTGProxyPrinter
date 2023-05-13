@@ -246,8 +246,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def scan_disk_image_cache(self):
         """
-        Performs two tasks in order: Scans the image cache on disk, then starts to process the download request queue.
-        This is done to perform both tasks asynchronously and not block the application GUI/startup.
+        Scans the image cache on disk, populating the images_on_disk set, which contains a listing of all already
+        downloaded images.
         """
         logger.info("Reading all image IDs of images stored on disk.")
         self.image_database.images_on_disk.update(
