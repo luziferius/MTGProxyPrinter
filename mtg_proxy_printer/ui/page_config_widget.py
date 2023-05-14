@@ -23,7 +23,7 @@ from PySide6.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_page_configuration_group_box as Ui_PageConfigWidget

@@ -57,6 +57,7 @@ __all__ = [
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
 
+
 class CardType(str, enum.Enum):
     REGULAR = "r"
 
@@ -222,6 +223,7 @@ class DocumentLoader(QObject):
         if self.worker_thread.isRunning():
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
             stop_thread(self.worker_thread, logger)
+
 
 class Worker(QObject):
     """

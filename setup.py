@@ -5,6 +5,7 @@
 from pathlib import Path
 import subprocess
 
+import PyQt5.uic
 from setuptools import setup
 import setuptools.command.build_py
 
@@ -56,6 +57,12 @@ class BuildWithQtResources(setuptools.command.build_py.build_py):
             )
             if result := subprocess.check_call(command):
                 raise RuntimeError(f"UI class generation failed with return value {result}. Command: {command}")
+
+    def create_proper_package(target_dir: Path):
+        (target_dir/"__init__.py").touch(exist_ok=True)
+        for entry in target_dir.rglob("*"):
+            if entry.is_dir():
+                (entry/"__init__.py").touch(exist_ok=True)
 
 
 setup_parameters = dict(

@@ -104,7 +104,6 @@ class LoadListPage(QWizardPage):
                 self.deck_list_url_validator.validate(text)[0] == QValidator.State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
         self.ui.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
-
         self.ui.translate_deck_list_target_language.setModel(language_model)
         self.registerField("deck_list*", self.ui.deck_list)
         self.registerField("print-guessing-enable", self.ui.print_guessing_enable)

@@ -29,6 +29,7 @@ from pytestqt.qtbot import QtBot
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.units_and_sizes import CardDataType
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 
@@ -78,12 +79,12 @@ def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.Card
 
 
 @functools.lru_cache()
-def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
+def load_json(name: str) -> CardDataType:
     return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
 
 
 def load_multiple_json_cards(
-        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]]):
+        json_files_or_names: typing.List[typing.Union[str, CardDataType]]):
     return [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
@@ -93,7 +94,7 @@ def load_multiple_json_cards(
 def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
+        json_files_or_names: typing.List[typing.Union[str, CardDataType]],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
@@ -108,7 +109,7 @@ def fill_card_database_with_json_cards(
 def fill_card_database_with_json_card(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
+        json_file_or_name: typing.Union[str, CardDataType],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 

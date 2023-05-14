@@ -16,6 +16,7 @@
 import enum
 import functools
 import gzip
+import math
 import shutil
 from pathlib import Path
 import re
@@ -34,6 +35,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
 logger = get_logger(__name__)
 del get_logger
 
@@ -46,15 +48,14 @@ __all__ = [
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
-
-JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
-CardStream = typing.Generator[JSONType, None, None]
-IntTuples = typing.List[typing.Tuple[int]]
-BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data"
-
+BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
+
+IntTuples = typing.List[typing.Tuple[int]]
+CardStream = typing.Generator[CardDataType, None, None]
+CardOrFace = typing.Union[CardDataType, FaceDataType]
 
 
 class CardFaceData(typing.NamedTuple):
@@ -107,18 +108,17 @@ class CardInfoDownloader(QObject):
     request_import_from_url = Signal()
     request_download_to_file = Signal(Path)
 
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 requested_item: str = "all_cards", parent: QObject = None):
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
-        self.database_import_worker = CardInfoDatabaseImportWorker(model, requested_item)  # No parent assignment
+        self.database_import_worker = CardInfoDatabaseImportWorker(model)  # No parent assignment
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.database_import_worker.moveToThread(self.worker_thread)
-        self.file_download_worker = self._create_file_download_worker(requested_item, self.worker_thread)
+        self.file_download_worker = self._create_file_download_worker(self.worker_thread)
         self.request_import_from_file.connect(self.database_import_worker.import_card_data_from_local_file)
         self.request_import_from_url.connect(self.database_import_worker.import_card_data_from_online_api)
         self.database_import_worker.download_begins.connect(self.download_begins)
@@ -131,9 +131,9 @@ class CardInfoDownloader(QObject):
         self.worker_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_file_download_worker(self, requested_item: str, thread: QThread) -> "CardInfoFileDownloadWorker":
+    def _create_file_download_worker(self, thread: QThread) -> "CardInfoFileDownloadWorker":
         # No Qt parent assignment, because cross-thread parent relationships are unsupported
-        worker = CardInfoFileDownloadWorker(requested_item)
+        worker = CardInfoFileDownloadWorker()
         worker.moveToThread(thread)  # Move to thread before connecting signals to create queued connections
         worker.download_begins.connect(self.download_begins)
         worker.download_progress.connect(self.download_progress)
@@ -156,24 +156,16 @@ class CardInfoDownloader(QObject):
 
 class CardInfoWorkerBase(DownloaderBase):
 
-    def __init__(self, requested_item: str = "all_cards", parent: QObject = None):
-        self.requested_item = requested_item
-        super().__init__(parent)
-
-    def get_scryfall_bulk_card_data_url(self, requested_item: str = "all_cards") -> str:
+    def get_scryfall_bulk_card_data_url(self) -> typing.Tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            for item in ijson.items(data, "data.item", use_float=True):
-                if item["type"] == requested_item:
-                    result = item["download_uri"]
-                    logger.debug(f"Bulk data located at: {result}")
-                    return result
-        raise RuntimeError(
-            "URL to the Scryfall bulk data export not found. "
-            "Expected a download of type 'all_cards' offered by the Scryfall bulk data end point, "
-            "but it wos not found. See here: https://scryfall.com/docs/api/bulk-data/all")
+            item: BulkDataType = next(ijson.items(data, "", use_float=True))
+        uri = item["download_uri"]
+        size = item["size"]
+        logger.debug(f"Bulk data with uncompressed size {size} bytes located at: {uri}")
+        return uri, size
 
 
 class CardInfoFileDownloadWorker(CardInfoWorkerBase):
@@ -188,13 +180,20 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         """
         logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
         logger.debug("Request bulk data URL from the Scryfall API.")
-        url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+        url, size = self.get_scryfall_bulk_card_data_url()
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
         monitor = self._open_url(url, "Downloading card data:")
-        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
+        # Hack: As of writing this, the CDN does not offer the size of the gzip-compressed data.
+        # The API also only offers the uncompressed size. So divide the API-provided size by an empirically
+        # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
+            size = math.floor(size / 6.54)
+            logger.info(f"Content length estimated as {size} bytes")
+        if monitor.content_length <= 0:
+            monitor.content_length = size
+        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
         download_file_path = download_path/file_name
         logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
         with download_file_path.open("wb") as download_file, monitor:
@@ -206,10 +205,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
-                 requested_item: str = "all_cards", parent: QObject = None):
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super(CardInfoDatabaseImportWorker, self).__init__(requested_item, parent)
+        super().__init__(parent)
         self.model = model
         self.should_run = True
         self.set_code_cache: typing.Dict[str, int] = {}
@@ -246,8 +244,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             self.download_finished.emit()
 
     def import_card_data_from_online_api(self):
+        logger.info("About to import card data from Scryfall")
         try:
-            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            url, _ = self.get_scryfall_bulk_card_data_url()
             data = self.read_json_card_data_from_url(url)
             estimated_total_card_count = self.get_available_card_count()
             self.download_begins.emit(estimated_total_card_count, "Updating card data from Scryfall:")
@@ -274,7 +273,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """
         if url is None:
             logger.debug("Request bulk data URL from the Scryfall API.")
-            url = self.get_scryfall_bulk_card_data_url(self.requested_item)
+            url, _ = self.get_scryfall_bulk_card_data_url()
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")
@@ -380,7 +379,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
         return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
-    def _parse_single_printing(self, card: JSONType):
+    def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
         oracle_id = self._get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
@@ -451,7 +450,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
         return card_id
 
-    def _insert_set(self, card: JSONType) -> int:
+    def _insert_set(self, card: CardDataType) -> int:
         db = self.model.db
         set_abbr = card["set"]
         wackiness_score = self._get_set_wackiness_score(card)
@@ -492,7 +491,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
         return face_name_id
 
-    def _insert_printing(self, card: JSONType, card_id: int, set_id: int) -> int:
+    def _insert_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.model.db
         data = PrintingData(
             card_id,
@@ -528,7 +527,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         ).fetchone()
         return printing_id
 
-    def _insert_card_faces(self, card: JSONType, language_id: int, printing_id: int) -> IntTuples:
+    def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.model.db
         face_ids: IntTuples = []
@@ -550,8 +549,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return face_ids
 
     @staticmethod
-    def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
-        legalities: typing.Dict[str, str] = card["legalities"]
+    def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
+        legalities = card["legalities"]
         return {
             # Racism filter
             "hide-cards-depicting-racism": card.get("content_warning", False),
@@ -582,7 +581,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         }
 
     @staticmethod
-    def _get_set_wackiness_score(card: JSONType) -> SetWackinessScore:
+    def _get_set_wackiness_score(card: CardDataType) -> SetWackinessScore:
         if card["oversized"]:
             result = SetWackinessScore.OVERSIZED
         elif card["layout"] == "art_series":
@@ -611,7 +610,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         )
 
     @staticmethod
-    def _should_skip_card(card: JSONType) -> bool:
+    def _should_skip_card(card: CardDataType) -> bool:
         # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
         # Also skip double faced cards that have at least one face without images
         return card["image_status"] == "missing" or (
@@ -620,7 +619,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 and any("image_uris" not in face for face in card["card_faces"])
         )
 
-    def _get_card_faces(self, card: JSONType) -> typing.Generator[CardFaceData, None, None]:
+    def _get_card_faces(self, card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
         """
         Yields a CardFaceData object for each face found in the card object.
         The printed name falls back to the English name, if the card has no printed_name key.
@@ -628,11 +627,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
         this function builds a "card_face" object providing only the required information from the card object itself.
         """
-        faces: typing.List[JSONType] = card.get("card_faces") or [
-            {
-                "printed_name": self._get_card_name(card),
-                "image_uris": card["image_uris"],
-            }
+        faces = card.get("card_faces") or [
+            FaceDataType(
+                printed_name=self._get_card_name(card),
+                image_uris=card["image_uris"],
+                name=card["name"],
+            )
         ]
         return (
             CardFaceData(
@@ -648,7 +648,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         )
 
     @staticmethod
-    def _get_oracle_id(card: JSONType) -> str:
+    def _get_oracle_id(card: CardDataType) -> str:
         """
         Reads the oracle_id property of the given card.
 
@@ -658,14 +658,13 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             return card["oracle_id"]
         except KeyError:
-            first_face: JSONType = card["card_faces"][0]
+            first_face = card["card_faces"][0]
             return first_face["oracle_id"]
 
     @staticmethod
-    def _get_card_name(card_or_face: JSONType) -> str:
+    def _get_card_name(card_or_face: CardOrFace) -> str:
         """
         Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
         English cards only have the “name” attribute, so use that as a fallback.
         """
         return card_or_face.get("printed_name") or card_or_face["name"]
-

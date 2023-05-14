@@ -52,16 +52,14 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.PrinterMode.HighResolution)
-    page_width = document.page_layout.page_width
-    page_height = document.page_layout.page_height
-    if page_width > page_height:
-        logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
+    size = QSizeF(document.page_layout.page_width, document.page_layout.page_height)
+    if size.width() > size.height():
+        logger.debug(f"Document width ({size.width()}mm) > height ({size.height()}mm): Printing in landscape mode.")
         printer.setPageOrientation(QPageLayout.Landscape)
         # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
         # resulting in correct values.
-        page_size = QPageSize(QSizeF(page_height, page_width), QPageSize.Millimeter)
-    else:
-        page_size = QPageSize(QSizeF(page_width, page_height), QPageSize.Millimeter)
+        size.transpose()
+    page_size = QPageSize(size, QPageSize.Millimeter)
     printer.setPageSize(page_size)
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))

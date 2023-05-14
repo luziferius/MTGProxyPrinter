@@ -49,7 +49,7 @@ def handle_ssl_certificates():
     else:
         import certifi
         logger.info("Use certifi library as SSL trust store for HTTPS connections")
-        os.environ["SSL_CERT_FILE"] =  certifi.where()
+        os.environ["SSL_CERT_FILE"] = certifi.where()
 
 
 def main():
@@ -57,9 +57,6 @@ def main():
     arguments = mtg_proxy_printer.argument_parser.parse_args()
     mtg_proxy_printer.logger.configure_root_logger()
     handle_ssl_certificates()
-    # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
-    # Qt.ApplicationAttribute.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling)
     _app = mtg_proxy_printer.application.Application(arguments)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")

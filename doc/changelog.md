@@ -8,6 +8,7 @@
   and it is not possible to save documents in the old format.
   - Loading older documents (format versions 2 to 5) is still supported.
     Older documents will be automatically converted to version 6 when saved over.
+- Restored displaying the download progress when using the “Download card data as file” option in the Debug settings.
 
 # Version 0.22.0 (2023-04-18)  <a name="v0_22_0"></a>
 

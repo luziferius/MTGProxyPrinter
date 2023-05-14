@@ -344,7 +344,7 @@ class Document(QAbstractItemModel):
         return result
 
     def find_page_list_index(self, other: Page):
-        """Finds the 0-indexed location of the given CardList in the pages list"""
+        """Finds the 0-indexed location of the given Page in the pages list"""
         try:
             return self.page_index_cache[id(other)]
         except KeyError as k:
@@ -511,5 +511,6 @@ def _migrate_database(db):
                   SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
                   """),
                 "DROP TABLE DocumentSettings_Old",
-                "PRAGMA user_version = 6",]:
+                "PRAGMA user_version = 6",
+        ]:
             db.execute(f"{statement}\n")

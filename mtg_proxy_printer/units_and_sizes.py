@@ -15,15 +15,20 @@
 
 """Contains some constants, like the card size"""
 import enum
-from typing import NamedTuple
+import typing
+try:
+    from typing import NotRequired
+except ImportError:  # Compatibility with Python < 3.11
+    from typing import Optional as NotRequired
 
 import pint
 
 unit_registry = pint.UnitRegistry()
 RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
+UUID = str
 
 
-class CardSize(NamedTuple):
+class CardSize(typing.NamedTuple):
     width: pint.Quantity
     height: pint.Quantity
 
@@ -55,3 +60,65 @@ class PageType(enum.Enum):
     REGULAR = enum.auto()
     OVERSIZED = enum.auto()
     MIXED = enum.auto()
+
+
+class ImageUriType(typing.TypedDict):
+    small: str
+    normal: str
+    large: str
+    png: str
+    art_crop: str
+    border_crop: str
+
+
+class FaceDataType(typing.TypedDict):
+    image_uris: NotRequired[ImageUriType]
+    layout: NotRequired[str]
+    name: str
+    oracle_id: NotRequired[UUID]
+    printed_name: NotRequired[str]
+
+
+class CardDataType(typing.TypedDict):
+    """Card data type modelled according to https://scryfall.com/docs/api/cards"""
+    border_color: str
+    card_back_id: UUID
+    card_faces: NotRequired[typing.List[FaceDataType]]
+    collector_number: str
+    content_warning: NotRequired[bool]
+    digital: bool
+    highres_image: bool
+    id: UUID
+    image_status: str
+    image_uris: NotRequired[ImageUriType]
+    lang: str
+    layout: str
+    legalities: typing.Dict[str, str]
+    name: str
+    object: str
+    oracle_id: NotRequired[UUID]  # Reversible cards hold the oracle_id in the card_faces elements instead.
+    oversized: bool
+    printed_name: NotRequired[str]
+    promo: bool
+    released_at: str
+    scryfall_set_uri: str
+    set: str
+    set_name: str
+    set_type: str
+
+
+class BulkDataType(typing.TypedDict):
+    """
+    The data returned by the bulk data API end point.
+    See https://scryfall.com/docs/api/bulk-data
+    """
+    id: UUID
+    uri: str
+    type: str
+    name: str
+    description: str
+    download_uri: str
+    updated_at: str
+    size: int
+    content_type: str
+    content_encoding: str

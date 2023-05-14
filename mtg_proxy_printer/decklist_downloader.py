@@ -33,15 +33,15 @@ from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.card_info_downloader import JSONType
 logger = get_logger(__name__)
 del get_logger
 
 Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else typing.Counter
 
-
+JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool]]
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
+
 
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
