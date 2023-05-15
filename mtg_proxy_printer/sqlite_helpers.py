@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import importlib.resources
 import pathlib
-import pkg_resources
 import re
 import sqlite3
+import sys
 import typing
 
 from mtg_proxy_printer.logger import get_logger
@@ -27,9 +28,19 @@ __all__ = [
     "open_database",
     "check_database_schema_version",
     "create_in_memory_database",
+    "read_resource_text",
 ]
 
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>\d+)\s*;", re.ASCII)
+
+
+def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:
+    """Reads the given package data resource and returns it as a string"""
+    if sys.version_info >= (3, 9):
+        # New and preferred way for Python 3.9+
+        return importlib.resources.files(package).joinpath(resource).read_text(encoding)
+    # Backwards compatibility with Python 3.8
+    return importlib.resources.read_text(package, resource, encoding)
 
 
 def create_in_memory_database(
@@ -87,7 +98,7 @@ def populate_database_schema(db: sqlite3.Connection, schema_name: str):
     if user_version := db.execute("PRAGMA user_version\n").fetchone()[0]:
         raise RuntimeError(f"Cannot perform this on a non-empty database: {user_version=}.")
     else:
-        schema = pkg_resources.resource_string("mtg_proxy_printer.model",  f"{schema_name}.sql").decode("utf-8")
+        schema = read_resource_text("mtg_proxy_printer.model",  f"{schema_name}.sql")
         db.executescript(schema)
     logger.debug("Created database schema.")
 
@@ -111,6 +122,6 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> i
 
 
 def _read_current_database_schema_version(schema_name: str) -> int:
-    schema = pkg_resources.resource_string("mtg_proxy_printer.model", f"{schema_name}.sql").decode("utf-8")
+    schema = read_resource_text("mtg_proxy_printer.model", f"{schema_name}.sql")
     latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
     return latest_user_version
