@@ -16,7 +16,6 @@
 import faulthandler
 import logging
 import logging.handlers
-import pathlib
 import sys
 
 from .meta_data import PROGRAMNAME
@@ -44,9 +43,8 @@ def configure_root_logger(output_stdout: bool = True):
     """
     Initialize the logging system.
     """
-    log_dir = pathlib.Path(data_directories.user_log_dir)
-    if not log_dir.exists():
-        log_dir.mkdir(parents=True)
+    log_dir = data_directories.user_log_path
+    log_dir.mkdir(parents=True, exist_ok=True)
     crash_log_path = log_dir / f"{PROGRAMNAME}-crashes.log"
     # Not closing the file at all to catch segmentation faults occurring at application exit.
     faulthandler.enable(crash_log_path.open("at", encoding="utf-8"))
