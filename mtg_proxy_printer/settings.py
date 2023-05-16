@@ -39,7 +39,7 @@ __all__ = [
 ]
 
 
-config_file_path = pathlib.Path(mtg_proxy_printer.app_dirs.data_directories.user_config_dir, "MTGProxyPrinter.ini")
+config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.

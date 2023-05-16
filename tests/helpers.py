@@ -19,7 +19,6 @@ import json
 import os
 import typing
 from unittest.mock import patch, MagicMock
-import pkg_resources
 
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of
@@ -32,6 +31,7 @@ import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.units_and_sizes import CardDataType
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.sqlite_helpers import read_resource_text
 
 
 def _should_skip_network_tests() -> bool:
@@ -80,7 +80,8 @@ def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.Card
 
 @functools.lru_cache()
 def load_json(name: str) -> CardDataType:
-    return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
+    data = read_resource_text("tests.json_samples", f"{name}.json")
+    return json.loads(data)
 
 
 def load_multiple_json_cards(

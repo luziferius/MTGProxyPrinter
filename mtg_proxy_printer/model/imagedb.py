@@ -41,10 +41,8 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-DEFAULT_DATABASE_LOCATION = pathlib.Path(
-    mtg_proxy_printer.app_dirs.data_directories.user_cache_dir,
-    "CardImages"
-)
+
+DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",
@@ -278,8 +276,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         blank = self.image_database.blank_image
         self.update_batch_processing_state(True)
         for index in card_indices:
-            card = index.internalPointer().card
-            self.get_image_synchronous(index.internalPointer().card)
+            card: Card = index.internalPointer().card
+            self.get_image_synchronous(card)
             if card.image_file is not blank:
                 self.missing_image_obtained.emit(index)
         self.update_batch_processing_state(False)
