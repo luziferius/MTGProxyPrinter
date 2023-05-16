@@ -302,6 +302,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         # Otherwise, it’ll be re-raised if a batch job starts right after a singular request failed.
         if not self.batch_processing_state:
             self.network_error_occurred.emit(reason_str)
+            return ''
         return reason_str
 
     def get_image_synchronous(self, card: Card):
