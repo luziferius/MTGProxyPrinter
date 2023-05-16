@@ -76,7 +76,8 @@ def test_fill_document_action_image_with_not_yet_fetched_image(qtbot: QtBot, ima
     blank = image_downloader.image_database.blank_image
     card = action.card
     image_key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
-    with qtbot.wait_signal(image_downloader.request_action), \
+    expected_signals = [image_downloader.request_action, image_downloader.download_finished]
+    with qtbot.wait_signals(expected_signals), \
             patch.object(image_downloader, "_fetch_image", return_value=blank) as _fetch_image_mock:
         image_downloader.fill_document_action_image(action)
     _fetch_image_mock.assert_called_once()
@@ -99,8 +100,9 @@ def test_fill_document_action_image_with_not_yet_fetched_image(qtbot: QtBot, ima
 ])
 def test_fill_batch_document_action_image_with_cached_image(qtbot: QtBot, image_downloader, action):
     blank = image_downloader.image_database.blank_image
-    with qtbot.wait_signal(image_downloader.request_action), \
-            qtbot.wait_signals([image_downloader.batch_processing_state_changed]*2), \
+    expected_signals = [image_downloader.batch_processing_state_changed] * 2 + [
+        image_downloader.download_finished, image_downloader.request_action]
+    with qtbot.wait_signals(expected_signals), \
             patch.object(image_downloader, "_fetch_image") as _fetch_image_mock:
         image_downloader.fill_batch_document_action_images(action)
     _fetch_image_mock.assert_not_called()
@@ -119,8 +121,9 @@ def test_fill_batch_document_action_image_with_not_yet_fetched_image(qtbot: QtBo
     card = action.cards[0]
     image_key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
     blank = image_downloader.image_database.blank_image
-    with qtbot.wait_signal(image_downloader.request_action), \
-            qtbot.wait_signals([image_downloader.batch_processing_state_changed]*2), \
+    expected_signals = [image_downloader.batch_processing_state_changed]*2 + [
+        image_downloader.download_finished, image_downloader.request_action]
+    with qtbot.wait_signals(expected_signals), \
             patch.object(image_downloader, "_fetch_image", return_value=blank) as _fetch_image_mock:
         image_downloader.fill_batch_document_action_images(action)
     _fetch_image_mock.assert_called_once()
@@ -148,7 +151,8 @@ def test_obtain_missing_images(qtbot, image_downloader, document_light):
     ActionAddCard(card2).apply(document_light)
     page_index = document_light.index(0, 0)
     card_indices = [document_light.index(0, 0, page_index), document_light.index(1, 0, page_index)]
-    with qtbot.wait_signals([image_downloader.batch_processing_state_changed]*2), \
+    expected_signals = [image_downloader.batch_processing_state_changed]*2 + [image_downloader.download_finished]
+    with qtbot.wait_signals(expected_signals), \
             patch.object(image_downloader, "_fetch_image", return_value=new_image) as _fetch_image_mock:
         image_downloader.obtain_missing_images(card_indices)
     assert_that(
@@ -172,7 +176,8 @@ def test_error_during_single_download_relays_error_message(qtbot, image_download
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
     with patch.object(image_downloader, "_fetch_image", side_effect=exception), \
-            qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param):
+            qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param), \
+            qtbot.wait_signal(image_downloader.download_finished):
         image_downloader.fill_document_action_image(action)
     assert_that(
         action.card.image_file,
@@ -192,7 +197,8 @@ def test_error_during_batch_process_relays_error_message(qtbot, image_downloader
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
     with patch.object(image_downloader, "_fetch_image", side_effect=exception), \
-            qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param):
+            qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param), \
+            qtbot.wait_signal(image_downloader.download_finished):
         image_downloader.fill_batch_document_action_images(action)
     assert_that(
         action.cards,
@@ -216,7 +222,8 @@ def test_obtain_missing_images_handles_network_error(qtbot, image_downloader, do
     page_index = document_light.index(0, 0)
     card_indices = [document_light.index(0, 0, page_index), document_light.index(1, 0, page_index)]
     expected_signals = [image_downloader.batch_processing_state_changed]*2 + [
-        image_downloader.network_error_occurred, image_downloader.missing_images_obtained]
+        image_downloader.network_error_occurred, image_downloader.missing_images_obtained,
+        image_downloader.download_finished]
     with qtbot.wait_signals(expected_signals), \
             patch.object(image_downloader, "_fetch_image", side_effect=exception) as _fetch_image_mock:
         image_downloader.obtain_missing_images(card_indices)
