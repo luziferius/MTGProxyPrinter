@@ -21,6 +21,7 @@ try:
 except ImportError:  # Compatibility with Python < 3.11
     from typing import Optional as NotRequired
 
+from PyQt5.QtCore import QSize
 import pint
 
 unit_registry = pint.UnitRegistry()
@@ -28,24 +29,26 @@ RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
 UUID = str
 
 
-class CardSize(typing.NamedTuple):
-    width: pint.Quantity
-    height: pint.Quantity
+@enum.unique
+class CardSize(enum.Enum):
+    def __init__(self, width: pint.Quantity, height: pint.Quantity):
+        self.width: pint.Quantity = width
+        self.height: pint.Quantity = height
+
+    REGULAR = unit_registry("745 pixel"), unit_registry("1040 pixel")
+    OVERSIZED = unit_registry("1040 pixel"), unit_registry("1490 pixel")
+
+    @classmethod
+    def for_page_type(cls, page_type: "PageType") -> "CardSize":
+        return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
 
     @staticmethod
     def as_mm(value: pint.Quantity) -> int:
         size: pint.Quantity = (value/RESOLUTION).to("mm")
         return round(size.magnitude)
 
-
-@enum.unique
-class CardSizes(CardSize, enum.Enum):
-    REGULAR = CardSize(unit_registry("745 pixel"), unit_registry("1040 pixel"))
-    OVERSIZED = CardSize(unit_registry("1040 pixel"), unit_registry("1490 pixel"))
-
-    @classmethod
-    def for_page_type(cls, page_type: "PageType") -> CardSize:
-        return cls.OVERSIZED if page_type == PageType.OVERSIZED else cls.REGULAR
+    def as_qsize_px(self) -> QSize:
+        return QSize(self.width.magnitude, self.height.magnitude)
 
 
 @enum.unique

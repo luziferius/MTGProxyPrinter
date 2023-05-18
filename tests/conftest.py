@@ -31,7 +31,8 @@ import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, IMAGE_SIZE
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
+import mtg_proxy_printer.units_and_sizes
 from tests.helpers import fill_card_database_with_json_cards
 
 
@@ -92,7 +93,8 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
 @pytest.fixture
 def document_light() -> Document:
     document = Document(unittest.mock.MagicMock(), unittest.mock.MagicMock())
-    document.image_db.blank_image = QPixmap(IMAGE_SIZE)
+    card_size = mtg_proxy_printer.units_and_sizes.CardSize.REGULAR.as_qsize_px()
+    document.image_db.blank_image = QPixmap(card_size)
     document.image_db.blank_image.fill(QColor("white"))
     yield document
     stop_thread(document.loader.worker_thread)

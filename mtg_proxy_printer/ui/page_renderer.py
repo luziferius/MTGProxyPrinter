@@ -26,7 +26,7 @@ from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
 from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
 import pint
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, unit_registry, RESOLUTION
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import Card, CardCorner
@@ -362,9 +362,7 @@ class PageScene(QGraphicsScene):
     @functools.lru_cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType, duplex_type: DuplexType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
-        card_size = CardSizes.for_page_type(page_type)
-        card_height: int = card_size.height.magnitude
-        card_width: int = card_size.width.magnitude
+        card_width, card_height = CardSize.for_page_type(page_type).value
         page_layout = self.document.page_layout
 
         margin_left = self._mm_to_rounded_px(page_layout.margin_left)
@@ -376,10 +374,10 @@ class PageScene(QGraphicsScene):
         spacing_vertical = self._mm_to_rounded_px(page_layout.image_spacing_vertical)
         spacing_horizontal = self._mm_to_rounded_px(page_layout.image_spacing_horizontal)
 
-        x_pos = margin_left + column * (card_width + spacing_horizontal)
-        y_pos = margin_top + row * (card_height + spacing_vertical)
+        x_pos = margin_left + column * (card_width.magnitude + spacing_horizontal)
+        y_pos = margin_top + row * (card_height.magnitude + spacing_vertical)
         if duplex_type == DuplexType.BACK:
-            x_pos = self.width() - x_pos - card_width
+            x_pos = self.width() - x_pos - card_width.magnitude
         return QPointF(
             x_pos,
             y_pos,
@@ -412,14 +410,14 @@ class PageScene(QGraphicsScene):
         page_layout = self.document.page_layout
         scene_width = self.width()
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
-            card_size: CardSize = CardSizes.for_page_type(page_type)
+            card_width, card_height = CardSize.for_page_type(page_type).value
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
-                card_size.height, page_layout.compute_page_row_count(page_type),
+                card_height, page_layout.compute_page_row_count(page_type),
                 page_layout.margin_top, page_layout.image_spacing_horizontal)
             )
             self.vertical_cut_line_locations[DuplexType.FRONT][page_type] += self._compute_cut_marker_positions(
                 CutMarkerParameters(
-                    card_size.width, page_layout.compute_page_column_count(page_type),
+                    card_width, page_layout.compute_page_column_count(page_type),
                     page_layout.margin_left, page_layout.image_spacing_vertical
                 ))
             self.vertical_cut_line_locations[DuplexType.BACK][page_type] += [

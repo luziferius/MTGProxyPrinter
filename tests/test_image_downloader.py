@@ -234,3 +234,4 @@ def test_obtain_missing_images_handles_network_error(qtbot, image_downloader, do
         )
     )
     assert_that(image_downloader.last_error_message, is_(empty()))
+

@@ -39,7 +39,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData,
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize
 from mtg_proxy_printer.document_controller import DocumentAction
 
 if typing.TYPE_CHECKING:
@@ -135,8 +135,7 @@ class PageLayoutSettings:
 
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
-        card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_width = card_size.as_mm(card_size.width)
+        card_width = CardSize.as_mm(CardSize.for_page_type(page_type).width)
         total_width = self.page_width
         margins = self.margin_left + self.margin_right
         spacing = self.image_spacing_horizontal
@@ -150,8 +149,7 @@ class PageLayoutSettings:
 
     def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
-        card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_height = card_size.as_mm(card_size.height)
+        card_height = CardSize.as_mm(CardSize.for_page_type(page_type).height)
         total_height = self.page_height
         margins = self.margin_top + self.margin_bottom
         spacing = self.image_spacing_vertical

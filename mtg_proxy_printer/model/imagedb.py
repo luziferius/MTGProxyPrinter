@@ -35,6 +35,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
+import mtg_proxy_printer.units_and_sizes
 from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -78,7 +79,6 @@ class CacheContent(ImageKey):
 
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
-IMAGE_SIZE = QSize(745, 1040)
 
 
 class ImageDatabase(QObject):
@@ -136,7 +136,7 @@ class ImageDatabase(QObject):
     @functools.lru_cache(maxsize=1)
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
-        pixmap = QPixmap(IMAGE_SIZE)
+        pixmap = QPixmap(mtg_proxy_printer.units_and_sizes.CardSize.REGULAR.as_qsize_px())
         pixmap.fill(QColor("white"))
         return pixmap
 
@@ -323,14 +323,13 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             pixmap = self.image_database.loaded_images[key]
         except KeyError:
             logger.debug("Image not in memory, requesting from disk")
-            pixmap = self._fetch_image(card)
+            pixmap = self._fetch_image(card, key)
             self.image_database.loaded_images[key] = pixmap
             self.image_database.images_on_disk.add(key)
             logger.debug("Image loaded")
         card.set_image_file(pixmap)
 
-    def _fetch_image(self, card: Card) -> QPixmap:
-        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
+    def _fetch_image(self, card: Card, key: ImageKey) -> QPixmap:
         cache_file_path = self.image_database.db_path / key.format_relative_path()
         cache_file_path.parent.mkdir(parents=True, exist_ok=True)
         pixmap = None
