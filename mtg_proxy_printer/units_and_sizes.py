@@ -56,7 +56,7 @@ class PageType(enum.Enum):
     """
     This enum can be used to indicate what kind of images are placed on a Page.
     A page that only contains regular-sized images is REGULAR, a page only containing oversized images is OVERSIZED.
-    An empty page has an UNDETERMINED image size and can be used for both oversized or regular sized cards
+    An empty page has an UNDETERMINED image size and can be used for both oversized or regular sized cards.
     A page containing both is MIXED. This should never happen. A page being MIXED indicates a bug in the code.
     """
     UNDETERMINED = enum.auto()

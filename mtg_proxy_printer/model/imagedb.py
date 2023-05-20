@@ -369,22 +369,18 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)
         except Exception as e:
             logger.exception(e)
-            # raise e
+            logger.info("Download aborted, not moving potentially incomplete download into the cache.")
+        else:
+            logger.debug(f"Moving downloaded image into the image cache at {target_path}")
+            shutil.move(download_path, target_path)
         finally:
-            if self.should_run:
-                logger.debug(f"Moving downloaded image into the image cache at {target_path}")
-                shutil.move(download_path, target_path)
-            else:
-                logger.info("Download aborted, not moving potentially incomplete download into the cache.")
             self.currently_opened_file = None
-            if download_path.is_file():
-                download_path.unlink()
+            download_path.unlink(missing_ok=True)
             self.download_finished.emit()
 
 
 def _migrate_database(db_path: pathlib.Path):
-    if not db_path.exists():
-        db_path.mkdir(parents=True)
+    db_path.mkdir(parents=True, exist_ok=True)
     version_file = db_path/"version.txt"
     if not version_file.exists():
         for possible_dir in map("".join, itertools.product(string.hexdigits, string.hexdigits)):
