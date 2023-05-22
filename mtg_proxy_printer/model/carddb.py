@@ -44,8 +44,7 @@ StringList = typing.List[str]
 OptionalString = typing.Optional[str]
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
-
-
+SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
@@ -178,8 +177,16 @@ class CardDatabase(QObject):
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(
-            db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
+            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, False)
         migrate_card_database(db)
+        logger.debug("Validating schema of the opened database")
+        try:
+            mtg_proxy_printer.sqlite_helpers.validate_database_schema(
+                db, 0, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, "Card database has unknown application id.")
+        except AssertionError:
+            logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
+        else:
+            logger.debug("Card database schema valid")
         self.db = db
         self._exit_hook = None
         if db_path != ":memory:":
