@@ -394,6 +394,13 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("dmr", "Dominaria Remastered", "https://scryfall.com/sets/dmr?utm_source=api", "2023-01-13"),
         "en", "443", "87a7ff06-32b7-48cd-99bb-a91f7f43538d", "132ca99a-a3c7-4ed6-b4d0-0edcd7140ca2", False,
     ), "hide-borderless"
+    TestCaseData(  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+        "double_faced_card_without_top_level_oracle_id", False, (
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", True),
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", False),
+        ), DatabaseSetData("sld", "Secret Lair Drop", "https://scryfall.com/sets/sld?utm_source=api", "2022-04-22"),
+        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-000000000000", False,
+    ), "hide-reversible-cards"
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])

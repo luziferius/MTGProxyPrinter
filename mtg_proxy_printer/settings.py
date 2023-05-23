@@ -87,6 +87,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-funny-cards": "False",
     "hide-token": "False",
     "hide-digital-cards": "True",
+    "hide-reversible-cards": "False",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",

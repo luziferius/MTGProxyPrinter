@@ -4,9 +4,13 @@
 
 ## New features
 
-- Added additional card filters to hide unwanted printings in the settings. They require re-downloading the card data 
-  once to become functional.
-  - Borderless cards. I.e. cards without a defined, solid border. [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
+- Added additional card filters to hide potentially unwanted printings in the settings.
+  They require re-downloading the card data once to become functional.
+  - Borderless cards, i.e. cards without a defined, solid border.
+    [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
+  - Reversible cards. Some Secret Lair double-sided printings of otherwise single-sided cards.
+    [Scryfall search](https://scryfall.com/search?q=is%3Areversible)
+
 
 ## Changed features
 

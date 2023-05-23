@@ -259,6 +259,34 @@ oversized commander creature or Planeswalker cards included in some pre-construc
      </property>
     </widget>
    </item>
+   <item row="3" column="2">
+    <widget class="QCheckBox" name="hide_reversible_cards">
+     <property name="toolTip">
+      <string>Some single-sided cards are re-printed as two-sided, reversible cards in some Secret Lair releases.
+This filter hides those.</string>
+     </property>
+     <property name="text">
+      <string>Hide reversible cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="3">
+    <widget class="QPushButton" name="view_reversible_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>

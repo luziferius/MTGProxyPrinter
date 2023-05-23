@@ -561,6 +561,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             "hide-white-bordered": card["border_color"] == "white",
             "hide-gold-bordered": card["border_color"] == "gold",
             "hide-borderless": card["border_color"] == "borderless",
+            # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
+            "hide-reversible-cards": card["layout"] == "reversible",
             # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
             # black-bordered promotional cards, in addition to silver-bordered cards.
             "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),

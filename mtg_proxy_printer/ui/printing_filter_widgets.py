@@ -73,6 +73,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         ui.view_funny_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:funny"))
         ui.view_token.clicked.connect(lambda: self.view_query_on_scryfall("is:token"))
         ui.view_digital_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:digital"))
+        ui.view_reversible_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:reversible"))
 
     def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
         ui = self.ui
@@ -86,6 +87,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_funny_cards, "hide-funny-cards"),
             (ui.hide_token, "hide-token"),
             (ui.hide_digital_cards, "hide-digital-cards"),
+            (ui.hide_reversible_cards, "hide-reversible-cards"),
         ]
         return widgets_with_settings
 
