@@ -388,6 +388,12 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("ha1", "Historic Anthology 1", "https://scryfall.com/sets/ha1?utm_source=api", "2019-11-21"),
         "en", "1", "b72e71c7-a65c-481d-8ad7-77bfb5d66d73", "27ad3e00-6ffb-48f7-8469-8868d066d1e2", False,
     ), "hide-digital-cards"
+    yield TestCaseData(
+        "borderless_card", True, (
+            FaceData("Absorb", "https://cards.scryfall.io/png/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.png?1682713062", True),
+        ), DatabaseSetData("dmr", "Dominaria Remastered", "https://scryfall.com/sets/dmr?utm_source=api", "2023-01-13"),
+        "en", "443", "87a7ff06-32b7-48cd-99bb-a91f7f43538d", "132ca99a-a3c7-4ed6-b4d0-0edcd7140ca2", False,
+    ), "hide-borderless"
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])

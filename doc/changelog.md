@@ -2,6 +2,12 @@
 
 # Next version (in development)
 
+## New features
+
+- Added additional card filters to hide unwanted printings in the settings. They require re-downloading the card data 
+  once to become functional.
+  - Borderless cards. I.e. cards without a defined, solid border. [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
+
 ## Changed features
 
 - Redesigned the document save file format. Older versions will not be able to load documents saved with this version,

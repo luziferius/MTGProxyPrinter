@@ -560,6 +560,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             # Border filter
             "hide-white-bordered": card["border_color"] == "white",
             "hide-gold-bordered": card["border_color"] == "gold",
+            "hide-borderless": card["border_color"] == "borderless",
             # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
             # black-bordered promotional cards, in addition to silver-bordered cards.
             "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),

@@ -83,6 +83,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-banned-in-vintage": "False",
     "hide-white-bordered": "False",
     "hide-gold-bordered": "False",
+    "hide-borderless": "False",
     "hide-funny-cards": "False",
     "hide-token": "False",
     "hide-digital-cards": "True",
