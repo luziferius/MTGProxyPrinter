@@ -694,9 +694,9 @@ class CardDatabase(QObject):
         )
 
     def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
-                                       progress_signal: typing.Callable[[int], None] = None):
+                                       progress_signal: typing.Callable[[], None] = None):
         if progress_signal is None:
-            progress_signal = (lambda _: None)
+            progress_signal = (lambda: None)
         section = mtg_proxy_printer.settings.settings["card-filter"]
         if use_transaction:
             self.db.execute("BEGIN TRANSACTION;\n")
@@ -714,7 +714,7 @@ class CardDatabase(QObject):
                     """),
                 ((key, section.getboolean(key)) for key in section.keys())
             )
-            progress_signal(1)
+            progress_signal()
         if filters_need_update or old_filter_removed or force_update_hidden_column:
             self._update_cached_data(progress_signal)
             self.card_filter_updated.emit()
@@ -743,7 +743,7 @@ class CardDatabase(QObject):
             )
         return bool(old_filters)
 
-    def _update_cached_data(self, progress_signal: typing.Callable[[int], None]):
+    def _update_cached_data(self, progress_signal: typing.Callable[[], None]):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
@@ -755,7 +755,7 @@ class CardDatabase(QObject):
             ))
         ;
         """))
-        progress_signal(2)
+        progress_signal()
         logger.debug("Update the FaceName.is_hidden column")
         self.db.execute(cached_dedent("""\
         WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (    -- _update_cached_data()
@@ -777,7 +777,7 @@ class CardDatabase(QObject):
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
         """))
-        progress_signal(3)
+        progress_signal()
         logger.debug("Update the RemovedPrintings table")
         self.db.execute(cached_dedent("""\
         DELETE FROM RemovedPrintings    -- _update_cached_data()
@@ -788,7 +788,7 @@ class CardDatabase(QObject):
           );
         """))
 
-        progress_signal(4)
+        progress_signal()
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
         # than the current method that only inserts missing rows.
@@ -806,5 +806,5 @@ class CardDatabase(QObject):
                 FROM RemovedPrintings AS rp
               );
         """))
-        progress_signal(5)
+        progress_signal()
         logger.debug("Finished maintenance tasks.")

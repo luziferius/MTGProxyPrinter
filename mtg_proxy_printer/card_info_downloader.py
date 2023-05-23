@@ -36,6 +36,7 @@ import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
+from mtg_proxy_printer.progress_meter import ProgressMeter
 logger = get_logger(__name__)
 del get_logger
 
@@ -356,12 +357,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 logger.debug(f"Imported {index} cards.")
             if progress_report_step and not index % progress_report_step:
                 self.download_progress.emit(index)
-
-        self._clean_unused_data(face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
-        self.download_begins.emit(5, "Processing card filters")
+        logger.info("Post-processing card data")
+        progress_meter = ProgressMeter(
+            7, "Post-processing card data:",
+            self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
+        self._clean_unused_data(face_ids)
+        progress_meter.advance()
+
         self.model.store_current_printing_filters(
-            False, force_update_hidden_column=True, progress_signal=self.download_progress.emit)
+            False, force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\
@@ -370,9 +375,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             """),
             (index,)
         )
+        progress_meter.advance()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         db.commit()
+        progress_meter.advance()
+        progress_meter.finish()
         return index
 
     @functools.lru_cache(maxsize=1)

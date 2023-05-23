@@ -30,6 +30,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -265,14 +266,19 @@ class SettingsWindow(QDialog):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
+        progress_meter = ProgressMeter(
+            5, "Processing updated card filters:",
+            self.long_running_process_begins.emit,
+            self.filter_update_progress_monitor,
+            self.process_finished.emit
+        )
         try:
-            self.long_running_process_begins.emit(5, "Processing updated card filters:")
-            self.card_db.store_current_printing_filters(progress_signal=self.filter_update_progress_monitor)
+            self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
         except sqlite3.Error as e:
             self.error_occurred.emit(e.sqlite_errorname)
             raise e
         finally:
-            self.process_finished.emit()
+            progress_meter.finish()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
