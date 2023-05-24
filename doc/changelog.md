@@ -4,6 +4,8 @@
 
 ## New features
 
+- Added context menu to the table showing the cards on the current page. You can now:
+  - Right-click a card to add additional copies of that card to the document 
 - Added additional card filters to hide potentially unwanted printings in the settings.
   They require re-downloading the card data once to become functional.
   - Borderless cards, i.e. cards without a defined, solid border.
