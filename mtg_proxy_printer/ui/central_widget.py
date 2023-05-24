@@ -12,19 +12,22 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import functools
 import math
 import typing
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QPoint
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
+    QModelIndex, QPoint
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QAction
+from PyQt5.QtWidgets import QWidget, QAction, QMenu
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
 try:
@@ -52,7 +55,7 @@ UiType = typing.Union[typing.Type[Ui_Grouped], typing.Type[Ui_Columnar], typing.
 
 class CentralWidget(QWidget):
 
-    request_action = Signal(ActionRemoveCards)
+    request_action = Signal(DocumentAction)
 
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
@@ -100,10 +103,22 @@ class CentralWidget(QWidget):
         self.select_first_page()
 
     def page_table_context_menu_requested(self, pos: QPoint):
-        if (index := self.ui.page_card_table_view.indexAt(pos)).isValid():
-            logger.info(f"Page card table requests context menu at x={pos.x()}, y={pos.y()}, row={index.row()}")
-        else:
+        view = self.ui.page_card_table_view
+        if not (index := view.indexAt(pos)).isValid():
             logger.debug("Right clicked empty space in the page card table view, ignoring event")
+            return
+        logger.info(f"Page card table requests context menu at x={pos.x()}, y={pos.y()}, row={index.row()}")
+        menu = QMenu(view)
+        menu.addAction(self._create_add_copies_action("Add 1 copy", 1, index))
+        menu.addAction(self._create_add_copies_action("Add 2 copies", 2, index))
+        menu.addAction(self._create_add_copies_action("Add 3 copies", 3, index))
+        menu.popup(view.viewport().mapToGlobal(pos))
+
+    def _create_add_copies_action(self, label: str, count: int, index: QModelIndex):
+        action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
+        document_action = ActionAddCard(index.internalPointer().card, count)
+        action.triggered.connect(functools.partial(self.request_action.emit, document_action))
+        return action
 
     @Slot()
     def parsed_cards_table_selection_changed(self):
