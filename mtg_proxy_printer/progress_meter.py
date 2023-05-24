@@ -1,5 +1,5 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-import typing
+
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -13,7 +13,7 @@ import typing
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from functools import partial
+import typing
 
 from mtg_proxy_printer.logger import get_logger
 
@@ -34,14 +34,20 @@ class ProgressMeter:
         self.progress_signal = progress_signal
         self.finish = end_signal
 
-    def advance(self):
-        self._progress += 1
-        self.progress_signal(self._progress)
+    def advance(self, step_size: int = 1):
+        """Advance the progress by the given step size, defaulting to 1."""
+        if (result := self._progress + step_size) < 0:
+            raise ValueError(f"Progress below 0%: {result}")
+        self._progress = result
+        if result > self._maximum:
+            logger.error(f"Overshot 100% progress! Maximum steps is {self._maximum}, reached {result}")
+        self.progress_signal(result)
 
     def __del__(self):
+        # This is present to emit a warning, if this object gets garbage collected without reaching 100% progress
         if self._progress != self._maximum:
             logger.warning(
                 f"Progress meter did not advance to 100%. Expected target {self._maximum}, advanced to {self._progress}"
             )
-        if hasattr(super(), "__del__"):
-            super().__del__()
+        # __del__ documentation says to call the super() implementation. Do so, if it exists.
+        getattr(super(), "__del__", lambda: None)()
