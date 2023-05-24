@@ -19,7 +19,7 @@ import typing
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
     QModelIndex, QPoint
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QAction, QMenu
+from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -112,13 +112,22 @@ class CentralWidget(QWidget):
         menu.addAction(self._create_add_copies_action("Add 1 copy", 1, index))
         menu.addAction(self._create_add_copies_action("Add 2 copies", 2, index))
         menu.addAction(self._create_add_copies_action("Add 3 copies", 3, index))
+        menu.addAction(self._create_add_copies_action("Add copies …", None, index))
         menu.popup(view.viewport().mapToGlobal(pos))
 
-    def _create_add_copies_action(self, label: str, count: int, index: QModelIndex):
+    def _create_add_copies_action(self, label: str, count: typing.Optional[int], index: QModelIndex):
         action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
-        document_action = ActionAddCard(index.internalPointer().card, count)
-        action.triggered.connect(functools.partial(self.request_action.emit, document_action))
+        action.triggered.connect(functools.partial(self._add_copies, index.internalPointer().card, count))
         return action
+
+    def _add_copies(self, card, count: typing.Optional[int]):
+        if count is None:
+            count, success = QInputDialog.getInt(self, "Add copies", f"Add copies of {card.name}", 1, 1, 100)
+            if not success:
+                logger.info("User cancelled adding card copies")
+                return
+        logger.info(f"Add {count} × {card.name} via the context menu action")
+        self.request_action.emit(ActionAddCard(card, count))
 
     @Slot()
     def parsed_cards_table_selection_changed(self):
