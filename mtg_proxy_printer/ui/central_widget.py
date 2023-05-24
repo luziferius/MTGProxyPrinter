@@ -15,8 +15,9 @@
 import math
 import typing
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QPoint
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QAction
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
@@ -67,6 +68,7 @@ class CentralWidget(QWidget):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_page_card_table_view(self) -> ComboBoxItemDelegate:
+        self.ui.page_card_table_view.customContextMenuRequested.connect(self.page_table_context_menu_requested)
         combo_box_delegate = ComboBoxItemDelegate(self.ui.page_card_table_view)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
@@ -96,6 +98,12 @@ class CentralWidget(QWidget):
         self.ui.document_view.setModel(document)
         self.ui.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
+
+    def page_table_context_menu_requested(self, pos: QPoint):
+        if (index := self.ui.page_card_table_view.indexAt(pos)).isValid():
+            logger.info(f"Page card table requests context menu at x={pos.x()}, y={pos.y()}, row={index.row()}")
+        else:
+            logger.debug("Right clicked empty space in the page card table view, ignoring event")
 
     @Slot()
     def parsed_cards_table_selection_changed(self):
