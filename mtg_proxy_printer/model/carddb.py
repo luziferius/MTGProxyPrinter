@@ -338,7 +338,7 @@ class CardDatabase(QObject):
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = ['WHERE Printing.is_hidden IS FALSE']
+        where_clause = ['    WHERE Printing.is_hidden IS FALSE']
         where_parameters = []
         if card.language:
             where_clause.append(f'AND "language" = ?')
