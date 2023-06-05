@@ -693,8 +693,9 @@ class CardDatabase(QObject):
             bool(highres_image), bool(is_oversized), face_number
         )
 
-    def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
-                                       progress_signal: typing.Callable[[], None] = None):
+    def store_current_printing_filters(
+            self, use_transaction: bool = True, *,
+            force_update_hidden_column: bool = False, progress_signal: typing.Callable[[], None] = None):
         if progress_signal is None:
             progress_signal = (lambda: None)
         section = mtg_proxy_printer.settings.settings["card-filter"]
@@ -787,7 +788,6 @@ class CardDatabase(QObject):
             WHERE Printing.is_hidden IS FALSE
           );
         """))
-
         progress_signal()
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)

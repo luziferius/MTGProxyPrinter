@@ -79,8 +79,18 @@ class FaceDataType(typing.TypedDict):
     printed_name: NotRequired[str]
 
 
+class RelatedCardType(typing.TypedDict):
+    object: str
+    id: UUID
+    component: str
+    name: str
+    type_line: str
+    uri: str
+
+
 class CardDataType(typing.TypedDict):
     """Card data type modelled according to https://scryfall.com/docs/api/cards"""
+    all_parts: NotRequired[typing.List[RelatedCardType]]
     border_color: str
     card_back_id: UUID
     card_faces: NotRequired[typing.List[FaceDataType]]
