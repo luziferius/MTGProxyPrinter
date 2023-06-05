@@ -118,13 +118,16 @@ class CentralWidget(QWidget):
             self._create_add_related_actions(menu, related_cards)
         menu.popup(view.viewport().mapToGlobal(pos))
 
-    def _create_add_copies_actions(self, card: typing.Union[Card, CardList]):
-        return [
+    def _create_add_copies_actions(self, card: typing.Union[Card, CardList], add_4th: bool = False):
+        actions = [
             self._create_add_copies_action("Add 1 copy", 1, card),
             self._create_add_copies_action("Add 2 copies", 2, card),
             self._create_add_copies_action("Add 3 copies", 3, card),
             self._create_add_copies_action("Add copies …", None, card)
         ]
+        if add_4th:
+            actions.insert(-1, self._create_add_copies_action("Add 4 copies", 4, card),)
+        return actions
 
     def _create_add_copies_action(self, label: str, count: typing.Optional[int], card: typing.Union[Card, CardList]):
         action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
@@ -133,9 +136,9 @@ class CentralWidget(QWidget):
 
     def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
         logger.debug(f"Found {len(related_cards)} related cards. Adding them to the context menu")
-        parent.addMenu("All related cards").addActions(self._create_add_copies_actions(related_cards))
+        parent.addMenu("All related cards").addActions(self._create_add_copies_actions(related_cards, True))
         for card in related_cards:
-            parent.addMenu(card.name).addActions(self._create_add_copies_actions(card))
+            parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
     def _add_copies(self, card: typing.Union[Card, CardList], count: typing.Optional[int]):
         nl = '\n'
