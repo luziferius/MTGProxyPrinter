@@ -411,6 +411,51 @@ class CardDatabase(QObject):
         ]
         return result
 
+    def find_related_cards(self, card: Card) -> CardList:
+        """
+        Recursively finds all cards related to the given card.
+        This may be cards referenced by name in either direction, or token cards created
+        """
+        query = cached_dedent("""\
+        WITH RECURSIVE 
+          source_oracle_id (card_id) AS (
+            SELECT card_id
+            FROM Card
+            WHERE oracle_id = ?),
+          related_oracle_ids(related_id) AS (
+            SELECT related_id
+              FROM RelatedPrintings
+              JOIN source_oracle_id USING (card_id)
+            UNION
+            SELECT RelatedPrintings.related_id
+              FROM RelatedPrintings
+              JOIN related_oracle_ids ON RelatedPrintings.card_id = related_oracle_ids.related_id
+              WHERE RelatedPrintings.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
+        )
+        SELECT oracle_id
+          FROM Card
+          JOIN related_oracle_ids ON Card.card_id = related_oracle_ids.related_id
+        """)
+        related_card_ids = self.db.execute(query, (card.oracle_id,)).fetchall()
+        cards = []
+        for related_oracle_id, in related_card_ids:
+            # Prefer same set over other sets, which is important for multi-component cards like Meld cards. If it
+            # isn't available, take from any other set. As a last-ditch fallback, resort to English printings.
+            # The last case is most likely hit with non-English token-producing cards,
+            # as long as Scryfall does not provide localized tokens.
+            related_cards = self.get_cards_from_data(
+                CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
+                order_by_print_count=True) or \
+            self.get_cards_from_data(
+                CardIdentificationData(card.language, oracle_id=related_oracle_id),
+                order_by_print_count=True) or \
+            self.get_cards_from_data(
+                CardIdentificationData("en", oracle_id=related_oracle_id),
+                order_by_print_count=True)
+            if related_cards:
+                cards.append(related_cards[0])
+        return cards
+
     def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
         """
         Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
