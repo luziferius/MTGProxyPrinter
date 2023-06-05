@@ -609,6 +609,17 @@ def _migrate_28_to_29(db: sqlite3.Connection):
     """))
 
 
+def _migrate_29_to_30(db: sqlite3.Connection):
+    db.execute(textwrap.dedent("""\
+    CREATE TABLE RelatedPrintings (
+      card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+      related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+      PRIMARY KEY (card_id, related_id),
+      CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+    ) WITHOUT ROWID;
+    """))
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -632,6 +643,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (26, _migrate_26_to_27),
     (27, _migrate_27_to_28),
     (28, _migrate_28_to_29),
+    (29, _migrate_29_to_30),
 )
 
 

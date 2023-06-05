@@ -5,14 +5,18 @@
 ## New features
 
 - Added context menu to the table showing the cards on the current page. You can now:
-  - Right-click a card to add additional copies of that card to the document 
+  - Right-click a card to add additional copies of that card to the document
+  - Right-click a card to add specific or all related cards, like cards referenced by name or created tokens.
+    I.e. right-click a Swan Song to add the 2/2 Bird token created by that spell.
 - Added additional card filters to hide potentially unwanted printings in the settings.
-  They require re-downloading the card data once to become functional.
   - Borderless cards, i.e. cards without a defined, solid border.
     [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
   - Reversible cards. Some Secret Lair double-sided printings of otherwise single-sided cards.
     [Scryfall search](https://scryfall.com/search?q=is%3Areversible)
 
+The new card filters and adding related cards via the new context menu require re-downloading the card data 
+from Scryfall once to start working, as previous versions did not store the required information in the local
+card database.
 
 ## Changed features
 
