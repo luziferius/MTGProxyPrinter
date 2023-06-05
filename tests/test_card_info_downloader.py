@@ -22,7 +22,8 @@ import pytest
 
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
+    fill_card_database_with_json_cards
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -686,5 +687,29 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
         card_db.db.execute('SELECT wackiness_score FROM MTGSet').fetchall(),
         contains_exactly(
             (expected_score,)
+        )
+    )
+
+def test_related_printings(qtbot, card_db: CardDatabase):
+    db = card_db.db
+    cards = [
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Asmoranomardicadaistinaculdacar",
+        "Bake_into_a_Pie",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Food_Token_2",
+    ]
+    # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
+    # and Back into a Pie both create a Food token, but are set to different printings of that token card.
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder(
+            # The Food token (card id 2) is never a source, as that would pull all cards creating that token
+            (3, 1),  # Asmoranomardicadaistinaculdacar references The Underworld Cookbook by name
+            (1, 3),  # Back relation
+            (1, 2),  # Card mentions Food token
+            (4, 2),  # Card mentions Food token
         )
     )

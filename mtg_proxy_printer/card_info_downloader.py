@@ -57,7 +57,7 @@ socket.setdefaulttimeout(5)
 IntTuples = typing.List[typing.Tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = typing.Union[CardDataType, FaceDataType]
-
+UUID = str
 
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
@@ -72,9 +72,14 @@ class PrintingData(typing.NamedTuple):
     card_id: int
     set_id: int
     collector_number: str
-    scryfall_id: str
+    scryfall_id: UUID
     is_oversized: bool
     highres_image: bool
+
+
+class RelatedPrintingData(typing.NamedTuple):
+    printing_id: UUID
+    related_id: UUID
 
 
 @enum.unique
@@ -322,6 +327,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
+        related_printings: typing.List[RelatedPrintingData] = []
         db: sqlite3.Connection = self.model.db
         # PrintingDisplayFilter will be re-populated while iterating over the card data.
         # Axing the previous data is far cheaper than trying
@@ -350,6 +356,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 continue
             try:
                 face_ids += self._parse_single_printing(card)
+                related_printings += self._get_related_cards(card)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -360,11 +367,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
         progress_meter = ProgressMeter(
-            7, "Post-processing card data:",
+            8, "Post-processing card data:",
             self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
+        self._insert_related_printings(related_printings)
+        progress_meter.advance()
         self._clean_unused_data(face_ids)
         progress_meter.advance()
-
         self.model.store_current_printing_filters(
             False, force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
@@ -400,6 +408,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
 
+    @staticmethod
+    def _get_related_cards(card: CardDataType):
+        if card["layout"] == "token":
+            # A token is never a source, as that would pull all cards creating that token
+            return
+        card_id = card["id"]
+        for related_card in card.get("all_parts", []):
+            if card_id != (related_id := related_card["id"]):
+                yield RelatedPrintingData(card_id, related_id)
+
     def _clear_lru_caches(self):
         """
         Clears the lru_cache instances. If the user re-downloads data, the old, cached keys become invalid and break
@@ -413,6 +431,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
         """Purges all excess data, like printings that are no longer in the import data."""
+        # Note: No cleanup for RelatedPrintings needed, as that is cleaned automatically by the database engine
         db = self.model.db
         db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
         excess_face_ids = db_face_ids.difference(new_face_ids)
@@ -429,6 +448,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
               FROM FaceName
             )
         """))
+
+    def _insert_related_printings(self, related_printings: typing.List[RelatedPrintingData]):
+        db = self.model.db
+        logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
+        db.executemany(cached_dedent("""\
+        INSERT OR IGNORE INTO RelatedPrintings (card_id, related_id)
+          SELECT card_id, related_id
+          FROM (SELECT card_id FROM Printing WHERE scryfall_id = ?),
+               (SELECT card_id AS related_id FROM Printing WHERE scryfall_id = ?)
+        """), related_printings)
 
     @functools.lru_cache(None)
     def _insert_language(self, language: str) -> int:
