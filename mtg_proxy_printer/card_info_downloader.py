@@ -323,7 +323,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
         logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
         self.model.begin_transaction()
-        progress_report_step = total_count // 100
+        progress_report_step = total_count // 1000
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
