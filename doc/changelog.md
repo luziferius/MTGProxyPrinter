@@ -29,6 +29,9 @@ card database.
 
 ## Fixed issues
 
+- Subsequent card data download attempts no longer always fail, if the first attempt 
+  failed due to receiving invalid data from the Scryfall API.
+  - This also prevents entering an invalid state with partially imported card data. 
 - Restored displaying the download progress when using the “Download card data as file” option in the Debug settings.
 
 # Version 0.22.0 (2023-04-18)  <a name="v0_22_0"></a>

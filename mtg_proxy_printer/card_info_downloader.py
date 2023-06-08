@@ -311,9 +311,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             card_count = self._populate_database(card_data, total_count=total_count)
         except sqlite3.Error as e:
+            self.model.db.rollback()
             logger.exception(f"Database error occurred: {e}")
             self.other_error_occurred.emit(str(e))
         except Exception as e:
+            self.model.db.rollback()
             logger.exception(f"Error in parsing step")
             self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
         finally:

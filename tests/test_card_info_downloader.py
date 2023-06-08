@@ -14,12 +14,15 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import sqlite3
 import typing
 import unittest.mock
 
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.card_info_downloader
+import tests.helpers
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
@@ -713,3 +716,12 @@ def test_related_printings(qtbot, card_db: CardDatabase):
             (4, 2),  # Card mentions Food token
         )
     )
+
+@pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
+def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
+    with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.logger.exception") as logger_mock:
+        dw.populate_database(data_raising_exception)
+    logger_mock.assert_called()
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
