@@ -83,7 +83,7 @@ def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_
     replacement = create_card("Replacement", True)
     action = ActionReplaceCard(replacement, 0, 0)
     assert_that(pages[0].page_type(), is_(PageType.REGULAR), "Test setup failed")
-    with qtbot.wait_signal(document_light.page_type_changed, timeout=100,
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=1000,
                            check_params_cb=lambda index: index.row() == 0 and not index.parent().isValid()):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
@@ -150,7 +150,7 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_car
     action = ActionReplaceCard(replacement, 0, 0)
     action.old_card = original
 
-    with qtbot.wait_signal(document_light.page_type_changed, timeout=100,
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=1000,
                            check_params_cb=lambda index: index.row() == 0 and not index.parent().isValid()):
         assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(

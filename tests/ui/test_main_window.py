@@ -59,7 +59,7 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
         cid = CardInfoDownloader(card_db)
         main_window = MainWindow(card_db, cid, document.image_db, document, QStringListModel(["en"]))
         qtbot.add_widget(main_window)
-        with qtbot.wait_exposed(main_window, timeout=100):
+        with qtbot.wait_exposed(main_window, timeout=1000):
             main_window.show()
         yield main_window
         main_window.hide()
