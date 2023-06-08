@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
 
 ## New features
 
