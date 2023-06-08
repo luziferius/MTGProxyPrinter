@@ -22,8 +22,13 @@ card database.
 
 - Redesigned the document save file format. Older versions will not be able to load documents saved with this version,
   and it is not possible to save documents in the old format.
-  - Loading older documents (format versions 2 to 5) is still supported.
+  - Loading older documents (internal format versions 2 to 5) is still supported.
     Older documents will be automatically converted to version 6 when saved over.
+- Improved display of hidden printings hidden in the downloaded image cleanup wizard.
+  - It now shows full information for hidden printings, instead of identifying them as "unknown garbage".
+
+## Fixed issues
+
 - Restored displaying the download progress when using the “Download card data as file” option in the Debug settings.
 
 # Version 0.22.0 (2023-04-18)  <a name="v0_22_0"></a>
