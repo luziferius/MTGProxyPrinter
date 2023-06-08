@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from pathlib import Path
 import textwrap
 import typing
 import unittest.mock
@@ -25,6 +26,7 @@ import pytest
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
     MTGSet
+from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
@@ -785,5 +787,27 @@ def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, ex
     assert_that(
         related, contains_inanyorder(
             *[has_property("name", equal_to(expected)) for expected in expected_cards_names]
+        )
+    )
+
+
+def test_get_all_cards_from_image_cache(qtbot, card_db):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["regular_english_card", "oversized_card"], {"hide-oversized-cards": str(True)})
+    cache_content = [
+        CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, True, Path()),  # Atraxa
+        CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, True, Path()),  # Fury Sliver
+        CacheContent("abcdeabc-abcd-abcd-abcd-efghijklmnop", True, True, Path()),  # Non-existing
+    ]
+    assert_that(
+        card_db.get_all_cards_from_image_cache(cache_content),
+        contains_exactly(
+            contains_exactly(contains_exactly(
+                has_property("name", equal_to("Fury Sliver")),
+                cache_content[1])),
+            contains_exactly(contains_exactly(
+                has_property("name", equal_to("Atraxa, Praetors' Voice")),
+                cache_content[0])),
+            contains_exactly(cache_content[-1]),
         )
     )
