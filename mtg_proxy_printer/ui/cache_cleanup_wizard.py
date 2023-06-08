@@ -346,32 +346,37 @@ class CardFilterPage(QWizardPage):
     def _apply_filter(self):
         self._select_unknown_cards_if_enabled()
         if self.field("remove-everything-enabled"):
-            self._select_indices(range(self.card_image_model.rowCount()))
+            self._select_rows(range(self.card_image_model.rowCount()))
         else:
             keys = self.card_image_model.all_keys()
             if self.field("time-filter-enabled"):
                 date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
                 logger.debug(f"Select for deletion all images not used since {date.isoformat()}")
                 indices = self.card_db.cards_not_used_since(keys, date)
-                self._select_indices(indices)
+                self._select_rows(indices)
             if self.field("count-filter-enabled"):
                 logger.debug(f"Select for deletion all images used less that {self.field('count-filter-value')} times")
                 indices = self.card_db.cards_used_less_often_then(keys, self.field("count-filter-value"))
-                self._select_indices(indices)
+                self._select_rows(indices)
+            if self.field("remove-unknown-cards-enabled"):
+                selection_model = self.ui.card_image_view.selectionModel()
+                for row in range(self.card_image_sort_model.rowCount()):
+                    index = self.card_image_sort_model.index(row, KnownCardColumns.IsHidden)
+                    if index.data(Qt.ItemDataRole.EditRole):
+                        selection_model.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def _select_unknown_cards_if_enabled(self):
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
+            selection_model = self.ui.unknown_image_view.selectionModel()
             for row in range(self.unknown_image_model.rowCount()):
-                self.ui.unknown_image_view.selectionModel().select(
-                    self.unknown_image_model.createIndex(row, UnknownCardColumns.ScryfallId),
-                    QItemSelectionModel.Select | QItemSelectionModel.Rows
-                )
+                index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
+                selection_model.select(index,QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
-    def _select_indices(self, indices: typing.Iterable[int]):
+    def _select_rows(self, indices: typing.Iterable[int]):
         selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
-                self.card_image_model.createIndex(index, KnownCardColumns.Name),
+                self.card_image_model.index(index, KnownCardColumns.Name),
                 QItemSelectionModel.Select | QItemSelectionModel.Rows
             )
 
