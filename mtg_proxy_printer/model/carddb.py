@@ -28,6 +28,8 @@ from PyQt5.QtGui import QPixmap, QColor
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QObject, pyqtSignal as Signal
 import delegateto
 
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.imagedb import CacheContent
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
@@ -533,6 +535,43 @@ class CardDatabase(QObject):
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 bool(highres_image), bool(is_oversized), face_number
             )
+
+    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]):
+        """
+        Partitions the content of the ImageDatabase disk cache into three lists:
+        - All visible card printings
+        - All hidden card printings
+        - All unknown images
+
+        Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
+        unknown images are returned as a list with plain CacheContent instances.
+        """
+        query = cached_dedent('''\
+        SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
+            highres_image, is_oversized, face_number, is_hidden -- get_all_cards_from_image_cache()
+            FROM AllPrintings
+            WHERE scryfall_id = ? AND is_front = ?
+        ''')
+        visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+        hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+        unknown: typing.List["CacheContent"] = []
+        for cache_item in cache_content:
+            result = self.db.execute(query, (cache_item.scryfall_id, cache_item.is_front)).fetchone()
+            if result is None:
+                unknown.append(cache_item)
+                continue
+            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
+                    is_oversized, face_number, is_hidden = result
+            card = Card(
+                name, MTGSet(set_abbr, set_name), collector_number,
+                language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
+                bool(highres_image), bool(is_oversized), face_number
+            )
+            if is_hidden:
+                hidden.append((card, cache_item))
+            else:
+                visible.append((card, cache_item))
+        return visible, hidden, unknown
 
     def get_opposing_face(self, card) -> OptionalCard:
         """

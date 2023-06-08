@@ -59,14 +59,15 @@ def environment(qtbot, card_db: CardDatabase):
         image_db.quit_background_thread()
 
 
+@pytest.mark.parametrize("is_hidden", [True, False])
 @pytest.mark.parametrize("is_front", [True, False])
-def test_add_row_identifies_low_resolution_images(environment: Environment, is_front: bool):
+def test_add_row_identifies_low_resolution_images(environment: Environment, is_front: bool, is_hidden: bool):
     model = KnownCardImageModel()
     card = environment.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
     disk_cache = environment.image_db.read_disk_cache_content()
     assert_that(disk_cache, has_length(2))
     image_under_test = disk_cache[0] if disk_cache[0].is_front == is_front else disk_cache[1]
-    model.add_row(card, image_under_test)
+    model.add_row(card, image_under_test, is_hidden)
     assert_that(
         model.index(0, KnownCardColumns.HasHighResolution).data(Qt.EditRole),
         is_(False)

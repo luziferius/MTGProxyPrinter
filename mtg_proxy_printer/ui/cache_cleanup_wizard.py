@@ -65,13 +65,14 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
 
 class KnownCardColumns(enum.IntEnum):
     Name = 0
-    Set = 1
-    CollectorNumber = 2
-    IsFront = 3
-    HasHighResolution = 4
-    Size = 5
-    ScryfallId = 6
-    FilesystemPath = 7
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    IsHidden = enum.auto()
+    IsFront = enum.auto()
+    HasHighResolution = enum.auto()
+    Size = enum.auto()
+    ScryfallId = enum.auto()
+    FilesystemPath = enum.auto()
 
 
 @dataclasses.dataclass()
@@ -79,6 +80,7 @@ class KnownCardRow:
     name: str
     set: MTGSet
     collector_number: str
+    is_hidden: bool
     is_front: bool
     has_high_resolution: bool
     size: int
@@ -94,6 +96,12 @@ class KnownCardRow:
             data = self.set.data(role)
         elif column == KnownCardColumns.CollectorNumber and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.collector_number
+        elif column == KnownCardColumns.IsHidden and role == Qt.DisplayRole:
+            data = "Yes" if self.is_hidden else "No"
+        elif column == KnownCardColumns.IsHidden and role == Qt.ToolTipRole and self.is_hidden:
+            data = "This printing is hidden by an enabled card filter\nand is thus unavailable for printing."
+        elif column == KnownCardColumns.IsHidden and role == Qt.EditRole:
+            data = self.is_hidden
         elif column == KnownCardColumns.IsFront and role == Qt.DisplayRole:
             data = "Front" if self.is_front else "Back"
         elif column == KnownCardColumns.IsFront and role == Qt.EditRole:
@@ -123,6 +131,7 @@ class KnownCardImageModel(QAbstractTableModel):
         KnownCardColumns.Name: "Name",
         KnownCardColumns.Set: "Set",
         KnownCardColumns.CollectorNumber: "Collector #",
+        KnownCardColumns.IsHidden: "Is Hidden",
         KnownCardColumns.IsFront: "Front/Back",
         KnownCardColumns.HasHighResolution: "High resolution?",
         KnownCardColumns.Size: "Size",
@@ -151,12 +160,12 @@ class KnownCardImageModel(QAbstractTableModel):
             return row.data(index.column(), role)
         return None
 
-    def add_row(self, card: Card, image: ImageCacheContent):
+    def add_row(self, card: Card, image: ImageCacheContent, is_hidden: bool):
         position = self.rowCount()
         self.beginInsertRows(INVALID_INDEX, position, position)
         size_bytes = image.absolute_path.stat().st_size
         row = KnownCardRow(
-            card.name, card.set, card.collector_number,
+            card.name, card.set, card.collector_number, is_hidden,
             image.is_front, image.is_high_resolution, size_bytes, card.scryfall_id, image.absolute_path,
         )
         self._data.append(row)
@@ -324,11 +333,14 @@ class CardFilterPage(QWizardPage):
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
-        for image in self.image_db.read_disk_cache_content():
-            if (card := self.card_db.get_card_with_scryfall_id(image.scryfall_id, image.is_front)) is not None:
-                self.card_image_model.add_row(card, image)
-            else:
-                self.unknown_image_model.add_row(image)
+        images = self.image_db.read_disk_cache_content()
+        visible, hidden, unknown = self.card_db.get_all_cards_from_image_cache(images)
+        for card, key in visible:
+            self.card_image_model.add_row(card, key, False)
+        for card, key in hidden:
+            self.card_image_model.add_row(card, key, True)
+        for key in unknown:
+             self.unknown_image_model.add_row(key)
         self._apply_filter()
 
     def _apply_filter(self):
