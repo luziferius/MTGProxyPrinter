@@ -4,10 +4,10 @@
 
 ## New features
 
-- Added context menu to the table showing the cards on the current page. You can now:
+- Added context menu to the table that shows the cards on the current page. You can now:
   - Right-click a card to add additional copies of that card to the document
   - Right-click a card to add specific or all related cards, like cards referenced by name or created tokens.
-    I.e. right-click a Swan Song to add the 2/2 Bird token created by that spell.
+    For example, right-click a Swan Song to add the 2/2 Bird token created by that spell.
 - Added additional card filters to hide potentially unwanted printings in the settings.
   - Borderless cards, i.e. cards without a defined, solid border.
     [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
@@ -29,6 +29,8 @@ card database.
 
 ## Fixed issues
 
+- Handle the back sides of Secret Lair reversible cards when switching card printings. The application no longer offers
+  alternative printings for the back sides of those cards and then silently fails to switch the printing. 
 - Subsequent card data download attempts no longer always fail, if the first attempt 
   failed due to receiving invalid data from the Scryfall API.
   - This also prevents entering an invalid state with partially imported card data. 

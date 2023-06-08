@@ -487,7 +487,8 @@ class CardDatabase(QObject):
         return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
 
     def find_sets_matching(
-            self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[MTGSet]:
+            self, card_name: str, language: str, set_name_filter: str = None,
+            *, is_front: bool = None) -> typing.List[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -495,6 +496,7 @@ class CardDatabase(QObject):
         :param language: card language, matched exactly
         :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
           Used as a LIKE pattern, supporting SQLite wildcards.
+        :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
         :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
@@ -508,8 +510,9 @@ class CardDatabase(QObject):
               AND FaceName.is_hidden IS FALSE
               AND "language" = ?
               AND card_name = ?
+              AND COALESCE(is_front = ?, TRUE)
         ''')
-        parameters = [language, card_name]
+        parameters = [language, card_name, is_front]
         if set_name_filter:
             query += '      AND (set_code LIKE ? OR set_name LIKE ?)\n'
             parameters += [f"{set_name_filter}%"] * 2
