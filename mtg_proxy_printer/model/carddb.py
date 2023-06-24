@@ -54,6 +54,7 @@ MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 __all__ = [
     "CardIdentificationData",
     "MTGSet",
+    "CheckCard",
     "Card",
     "CardCorner",
     "CardDatabase",
@@ -547,15 +548,16 @@ class CardDatabase(QObject):
             # isn't available, take from any other set. As a last-ditch fallback, resort to English printings.
             # The last case is most likely hit with non-English token-producing cards,
             # as long as Scryfall does not provide localized tokens.
-            related_cards = self.get_cards_from_data(
-                CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
-                order_by_print_count=True) or \
-            self.get_cards_from_data(
-                CardIdentificationData(card.language, oracle_id=related_oracle_id),
-                order_by_print_count=True) or \
-            self.get_cards_from_data(
-                CardIdentificationData("en", oracle_id=related_oracle_id),
-                order_by_print_count=True)
+            related_cards = \
+                self.get_cards_from_data(
+                    CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
+                    order_by_print_count=True) or \
+                self.get_cards_from_data(
+                    CardIdentificationData(card.language, oracle_id=related_oracle_id),
+                    order_by_print_count=True) or \
+                self.get_cards_from_data(
+                    CardIdentificationData("en", oracle_id=related_oracle_id),
+                    order_by_print_count=True)
             if related_cards:
                 cards.append(related_cards[0])
         return cards

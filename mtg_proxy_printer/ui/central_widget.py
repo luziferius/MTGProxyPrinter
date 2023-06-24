@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 import functools
 import math
+import operator
 import typing
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
@@ -24,7 +25,7 @@ from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
@@ -113,6 +114,9 @@ class CentralWidget(QWidget):
         menu = QMenu(view)
         card: Card = index.internalPointer().card
         menu.addActions(self._create_add_copies_actions(card))
+        if card.is_dfc:
+            menu.addSeparator()
+            self._create_add_check_card_actions(menu, card)
         if related_cards := self.card_db.find_related_cards(card):
             menu.addSeparator()
             self._create_add_related_actions(menu, related_cards)
@@ -129,10 +133,24 @@ class CentralWidget(QWidget):
             actions.insert(-1, self._create_add_copies_action("Add 4 copies", 4, card),)
         return actions
 
-    def _create_add_copies_action(self, label: str, count: typing.Optional[int], card: typing.Union[Card, CardList]):
+    def _create_add_copies_action(self, label: str, count: typing.Optional[int],
+                                  card: typing.Union[Card, CheckCard, CardList]):
         action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
         action.triggered.connect(functools.partial(self._add_copies, card, count))
         return action
+
+    def _create_add_check_card_actions(self, parent: QMenu, card: Card):
+        other_face = self.card_db.get_opposing_face(card)
+        front, back = sorted([card, other_face], key=operator.attrgetter("is_front"), reverse=True)
+        check_card = CheckCard(front, back)
+        actions = [
+            self._create_add_copies_action("Add 1 copy", 1, check_card),
+            self._create_add_copies_action("Add 2 copies", 2, check_card),
+            self._create_add_copies_action("Add 3 copies", 3, check_card),
+            self._create_add_copies_action("Add 4 copies", 4, check_card),
+            self._create_add_copies_action("Add copies …", None, check_card)
+        ]
+        parent.addMenu("Generate DFC check card").addActions(actions)
 
     def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
         logger.debug(f"Found {len(related_cards)} related cards. Adding them to the context menu")
@@ -140,9 +158,9 @@ class CentralWidget(QWidget):
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
-    def _add_copies(self, card: typing.Union[Card, CardList], count: typing.Optional[int]):
+    def _add_copies(self, card: typing.Union[Card, CheckCard, CardList], count: typing.Optional[int]):
         nl = '\n'
-        card_name = card.name if isinstance(card, Card) else nl + nl.join(item.name for item in card)
+        card_name = card.name if isinstance(card, (Card, CheckCard)) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(self, "Add copies", f"Add copies of {card_name}", 1, 1, 100)
             if not success:
@@ -150,7 +168,7 @@ class CentralWidget(QWidget):
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
         # Go through the image database to obtain the card images
-        if isinstance(card, Card):
+        if isinstance(card, (Card, CheckCard)):
             self.obtain_card_image.emit(ActionAddCard(card, count))
         else:
             for item in card:
