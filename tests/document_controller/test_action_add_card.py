@@ -13,12 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import copy
 import unittest.mock
 
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -29,12 +30,21 @@ from .helpers import insert_card_in_page, card_container_with
 
 @pytest.fixture()
 def card():
-    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, None)
+    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 0, False, None)
 
 
 @pytest.fixture()
 def oversized_card():
-    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, True, 0, None)
+    return Card("", MTGSet("", ""), "", "", "", True, "", "", True, True, 0, False, None)
+
+
+@pytest.fixture()
+def check_card(card, image_db):
+    card.image_file = image_db.blank_image
+    card.is_dfc = True
+    other = copy.copy(card)
+    other.is_front = False
+    return CheckCard(card, other)
 
 
 def test_apply_without_count_adds_single_card(qtbot, card, document_light):
@@ -49,6 +59,22 @@ def test_apply_without_count_adds_single_card(qtbot, card, document_light):
     )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, 1)))
     assert_that(action.added_new_pages, is_(0))
+
+
+def test_apply_with_check_card_adds_card_to_current_page(qtbot, card, check_card, document_light):
+    action1 = ActionAddCard(card)
+    action2 = ActionAddCard(check_card)
+    page = document_light.pages[0]
+    action1.apply(document_light)
+    action2.apply(document_light)
+    assert_that(document_light.rowCount(), is_(1))
+    assert_that(
+        page,
+        contains_exactly(
+            card_container_with(card, page),
+            card_container_with(check_card, page),
+        ),
+    )
 
 
 @pytest.mark.parametrize("count", [1, 3])
