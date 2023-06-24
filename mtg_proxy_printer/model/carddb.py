@@ -24,7 +24,7 @@ import pathlib
 import textwrap
 import typing
 
-from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter
+from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
 import delegateto
 
@@ -140,7 +140,7 @@ class Card:
     def corner_color(self, corner: CardCorner) -> QColor:
         """Returns the color of the card at the given corner. """
         if self.image_file is None:
-            return QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
+            return QColorConstants.Transparent
         sample_area = self.image_file.copy(QRect(
             QPoint(
                 round(self.image_file.width() * corner.value[0]),
@@ -241,9 +241,8 @@ class CheckCard:
     @functools.lru_cache(maxsize=len(CardCorner))
     def corner_color(self, corner: CardCorner) -> QColor:
         """Returns the color of the card at the given corner. """
-        transparent = QColor.fromRgb(255, 255, 255, 0)  # fully transparent white
         if self.front.image_file is None or self.back.image_file is None:
-            return transparent
+            return QColorConstants.Transparent
         if corner == CardCorner.TOP_LEFT:
             self.front.corner_color(CardCorner.BOTTOM_LEFT)
         elif corner == CardCorner.TOP_RIGHT:
@@ -252,7 +251,7 @@ class CheckCard:
             self.back.corner_color(CardCorner.BOTTOM_RIGHT)
         elif corner == CardCorner.BOTTOM_RIGHT:
             self.back.corner_color(CardCorner.TOP_RIGHT)
-        return transparent
+        return QColorConstants.Transparent
 
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
@@ -284,7 +283,7 @@ class CardDatabase(QObject):
         """
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        db = mtg_proxy_printer.sqlite_helpers.open_database(
+        self.db = db = mtg_proxy_printer.sqlite_helpers.open_database(
             db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, False)
         migrate_card_database(db)
         logger.debug("Validating schema of the opened database")
@@ -295,7 +294,6 @@ class CardDatabase(QObject):
             logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
         else:
             logger.debug("Card database schema valid")
-        self.db = db
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
