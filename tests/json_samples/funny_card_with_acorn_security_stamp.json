@@ -1,0 +1,121 @@
+{
+  "object": "card",
+  "id": "2149da9d-35ad-4f32-8072-fb515100b2fd",
+  "oracle_id": "6e3a97ee-472f-49a8-908a-8e71f815edab",
+  "multiverse_ids": [],
+  "tcgplayer_id": 287755,
+  "cardmarket_id": 677076,
+  "name": "Form of the Approach of the Second Sun",
+  "lang": "en",
+  "released_at": "2022-10-07",
+  "uri": "https://api.scryfall.com/cards/2149da9d-35ad-4f32-8072-fb515100b2fd",
+  "scryfall_uri": "https://scryfall.com/card/unf/9/form-of-the-approach-of-the-second-sun?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.jpg?1673913099",
+    "normal": "https://cards.scryfall.io/normal/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.jpg?1673913099",
+    "large": "https://cards.scryfall.io/large/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.jpg?1673913099",
+    "png": "https://cards.scryfall.io/png/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.png?1673913099",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.jpg?1673913099",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.jpg?1673913099"
+  },
+  "mana_cost": "{4}{W}",
+  "cmc": 5,
+  "type_line": "Enchantment",
+  "oracle_text": "When this enchantment enters the battlefield, you gain 7 life. You become a card until you leave your library or that library is shuffled. Put yourself seventh from the top, balancing the cards on top of you on your head.\nWhen you draw yourself, you win the game.\nWhen one or more cards fall off your head, exile them and all cards on your head, then sacrifice this enchantment.",
+  "colors": [
+    "W"
+  ],
+  "color_identity": [
+    "W"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "b314f553-8f07-4ba9-96c8-16be7784eff3",
+  "set": "unf",
+  "set_name": "Unfinity",
+  "set_type": "funny",
+  "set_uri": "https://api.scryfall.com/sets/b314f553-8f07-4ba9-96c8-16be7784eff3",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aunf&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/unf?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/2149da9d-35ad-4f32-8072-fb515100b2fd/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A6e3a97ee-472f-49a8-908a-8e71f815edab&unique=prints",
+  "collector_number": "9",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Aaron J. Riley",
+  "artist_ids": [
+    "f21b412c-aef5-4d15-88be-4f40615acde3"
+  ],
+  "illustration_id": "61b205fd-cdf6-4015-a474-0cfa72dd5e62",
+  "border_color": "black",
+  "frame": "2015",
+  "security_stamp": "acorn",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 24728,
+  "preview": {
+    "source": "Wizards of the Coast",
+    "source_uri": "https://magic.wizards.com/en/articles/archive/making-magic/making-space-part-2-2022-09-26",
+    "previewed_at": "2022-09-26"
+  },
+  "prices": {
+    "usd": "0.09",
+    "usd_foil": "0.12",
+    "usd_etched": null,
+    "eur": "0.08",
+    "eur_foil": "0.09",
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Form+of+the+Approach+of+the+Second+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Form+of+the+Approach+of+the+Second+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Form+of+the+Approach+of+the+Second+Sun"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/287755?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Form+of+the+Approach+of+the+Second+Sun&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Form+of+the+Approach+of+the+Second+Sun&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

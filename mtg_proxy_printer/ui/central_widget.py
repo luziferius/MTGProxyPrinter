@@ -12,18 +12,22 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+import functools
 import math
 import typing
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
+    QModelIndex, QPoint
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
+from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
 try:
@@ -51,7 +55,8 @@ UiType = typing.Union[typing.Type[Ui_Grouped], typing.Type[Ui_Columnar], typing.
 
 class CentralWidget(QWidget):
 
-    request_action = Signal(ActionRemoveCards)
+    request_action = Signal(DocumentAction)
+    obtain_card_image = Signal(ActionAddCard)
 
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
@@ -60,13 +65,14 @@ class CentralWidget(QWidget):
         logger.debug(f"Using central widget class {ui_class.__name__}")
         self.ui = ui_class()
         self.ui.setupUi(self)
-        self.document = None
-        self.card_db = None
-        self.image_db = None
+        self.document: Document = None
+        self.card_db: CardDatabase = None
+        self.image_db: ImageDatabase = None
         self.combo_box_delegate = self._setup_page_card_table_view()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_page_card_table_view(self) -> ComboBoxItemDelegate:
+        self.ui.page_card_table_view.customContextMenuRequested.connect(self.page_table_context_menu_requested)
         combo_box_delegate = ComboBoxItemDelegate(self.ui.page_card_table_view)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
@@ -76,6 +82,7 @@ class CentralWidget(QWidget):
         self.document = document
         self.card_db = card_db
         self.image_db = image_db
+        self.obtain_card_image.connect(image_db.download_worker.fill_document_action_image)
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
@@ -96,6 +103,58 @@ class CentralWidget(QWidget):
         self.ui.document_view.setModel(document)
         self.ui.document_view.selectionModel().currentChanged.connect(document.on_ui_selects_new_page)
         self.select_first_page()
+
+    def page_table_context_menu_requested(self, pos: QPoint):
+        view = self.ui.page_card_table_view
+        if not (index := view.indexAt(pos)).isValid():
+            logger.debug("Right clicked empty space in the page card table view, ignoring event")
+            return
+        logger.info(f"Page card table requests context menu at x={pos.x()}, y={pos.y()}, row={index.row()}")
+        menu = QMenu(view)
+        card: Card = index.internalPointer().card
+        menu.addActions(self._create_add_copies_actions(card))
+        if related_cards := self.card_db.find_related_cards(card):
+            menu.addSeparator()
+            self._create_add_related_actions(menu, related_cards)
+        menu.popup(view.viewport().mapToGlobal(pos))
+
+    def _create_add_copies_actions(self, card: typing.Union[Card, CardList], add_4th: bool = False):
+        actions = [
+            self._create_add_copies_action("Add 1 copy", 1, card),
+            self._create_add_copies_action("Add 2 copies", 2, card),
+            self._create_add_copies_action("Add 3 copies", 3, card),
+            self._create_add_copies_action("Add copies …", None, card)
+        ]
+        if add_4th:
+            actions.insert(-1, self._create_add_copies_action("Add 4 copies", 4, card),)
+        return actions
+
+    def _create_add_copies_action(self, label: str, count: typing.Optional[int], card: typing.Union[Card, CardList]):
+        action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
+        action.triggered.connect(functools.partial(self._add_copies, card, count))
+        return action
+
+    def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
+        logger.debug(f"Found {len(related_cards)} related cards. Adding them to the context menu")
+        parent.addMenu("All related cards").addActions(self._create_add_copies_actions(related_cards, True))
+        for card in related_cards:
+            parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
+
+    def _add_copies(self, card: typing.Union[Card, CardList], count: typing.Optional[int]):
+        nl = '\n'
+        card_name = card.name if isinstance(card, Card) else nl + nl.join(item.name for item in card)
+        if count is None:
+            count, success = QInputDialog.getInt(self, "Add copies", f"Add copies of {card_name}", 1, 1, 100)
+            if not success:
+                logger.info("User cancelled adding card copies")
+                return
+        logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
+        # Go through the image database to obtain the card images
+        if isinstance(card, Card):
+            self.obtain_card_image.emit(ActionAddCard(card, count))
+        else:
+            for item in card:
+                self.obtain_card_image.emit(ActionAddCard(item, count))
 
     @Slot()
     def parsed_cards_table_selection_changed(self):

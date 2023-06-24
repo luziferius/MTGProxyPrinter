@@ -14,15 +14,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import sqlite3
 import typing
 import unittest.mock
 
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.card_info_downloader
+import tests.helpers
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
+    fill_card_database_with_json_cards
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -293,10 +297,16 @@ def generate_test_cases_for_test_download_filters():
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
     ), "hide-oversized-cards"
     yield TestCaseData(  # Silver-bordered "Aesthetic Consultation" from Unhinged
-        "funny_card", True, (
+        "funny_card_with_silver_border", True, (
             FaceData("Aesthetic Consultation", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441", True),
         ), DatabaseSetData("unh", "Unhinged", "https://scryfall.com/sets/unh?utm_source=api", "2004-11-19"),
         "en", "48", "0464a507-20e5-42d5-8aca-12504a869f21", "8789d5fa-101c-457a-90ec-5cf067f5289b", False,
+    ), "hide-funny-cards"
+    yield TestCaseData(  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+        "funny_card_with_acorn_security_stamp", True, (
+            FaceData("Form of the Approach of the Second Sun", "https://cards.scryfall.io/png/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.png?1673913099", True),
+        ), DatabaseSetData("unf", "Unfinity", "https://scryfall.com/sets/unf?utm_source=api", "2022-10-07"),
+        "en", "9", "2149da9d-35ad-4f32-8072-fb515100b2fd", "6e3a97ee-472f-49a8-908a-8e71f815edab", False,
     ), "hide-funny-cards"
     yield TestCaseData(
         "gold_bordered_card", True, (
@@ -382,6 +392,19 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("ha1", "Historic Anthology 1", "https://scryfall.com/sets/ha1?utm_source=api", "2019-11-21"),
         "en", "1", "b72e71c7-a65c-481d-8ad7-77bfb5d66d73", "27ad3e00-6ffb-48f7-8469-8868d066d1e2", False,
     ), "hide-digital-cards"
+    yield TestCaseData(
+        "borderless_card", True, (
+            FaceData("Absorb", "https://cards.scryfall.io/png/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.png?1682713062", True),
+        ), DatabaseSetData("dmr", "Dominaria Remastered", "https://scryfall.com/sets/dmr?utm_source=api", "2023-01-13"),
+        "en", "443", "87a7ff06-32b7-48cd-99bb-a91f7f43538d", "132ca99a-a3c7-4ed6-b4d0-0edcd7140ca2", False,
+    ), "hide-borderless"
+    TestCaseData(  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+        "double_faced_card_without_top_level_oracle_id", False, (
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", True),
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", False),
+        ), DatabaseSetData("sld", "Secret Lair Drop", "https://scryfall.com/sets/sld?utm_source=api", "2022-04-22"),
+        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-000000000000", False,
+    ), "hide-reversible-cards"
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])
@@ -393,6 +416,24 @@ def test_download_filters(
         assert_hidden_import(card_db, test_case)
     else:
         assert_visible_import(card_db, test_case)
+
+
+def generate_test_cases_for_test_download_filters_does_not_affect_unexpected_cards():
+    yield TestCaseData(  # Black-bordered "Aerialephant" from Unfinity
+        "funny_legal_card", True, (
+            FaceData("Aerialephant", "https://cards.scryfall.io/png/front/1/a/1a2f4abd-089e-4015-a207-8a62616668b1.png?1673912986", True),
+        ), DatabaseSetData("unf", "Unfinity", "https://scryfall.com/sets/unf?utm_source=api", "2022-10-07"),
+        "en", "2", "1a2f4abd-089e-4015-a207-8a62616668b1", "20046568-b067-49fb-93b4-2ee86421f14b", False,
+    ), "hide-funny-cards"
+
+
+@pytest.mark.parametrize("filter_setting", [True, False])
+@pytest.mark.parametrize(
+    "test_case, filter_name", generate_test_cases_for_test_download_filters_does_not_affect_unexpected_cards())
+def test_download_filters_does_not_affect_unexpected_cards(
+        qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: str(filter_setting)})
+    assert_visible_import(card_db, test_case)
 
 
 @pytest.mark.parametrize("test_case", [
@@ -637,7 +678,7 @@ def test_updates_printing_highres_image(qtbot, card_db: CardDatabase):
     ("german_basic_Forest", SetWackinessScore.REGULAR),
     ("prerelease_promo_card", SetWackinessScore.PROMOTIONAL),
     ("white_bordered_card", SetWackinessScore.WHITE_BORDERED),
-    ("funny_card", SetWackinessScore.FUNNY),
+    ("funny_card_with_silver_border", SetWackinessScore.FUNNY),
     ("gold_bordered_card", SetWackinessScore.GOLD_BORDERED),
     ("digital_only_card", SetWackinessScore.DIGITAL),
     ("english_double_faced_art_series_card", SetWackinessScore.ART_SERIES),
@@ -651,3 +692,36 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
             (expected_score,)
         )
     )
+
+def test_related_printings(qtbot, card_db: CardDatabase):
+    db = card_db.db
+    cards = [
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Asmoranomardicadaistinaculdacar",
+        "Bake_into_a_Pie",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Food_Token_2",
+    ]
+    # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
+    # and Back into a Pie both create a Food token, but are set to different printings of that token card.
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder(
+            # The Food token (card id 2) is never a source, as that would pull all cards creating that token
+            (3, 1),  # Asmoranomardicadaistinaculdacar references The Underworld Cookbook by name
+            (1, 3),  # Back relation
+            (1, 2),  # Card mentions Food token
+            (4, 2),  # Card mentions Food token
+        )
+    )
+
+@pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
+def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
+    with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.logger.exception") as logger_mock:
+        dw.populate_database(data_raising_exception)
+    logger_mock.assert_called()
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")

@@ -16,6 +16,7 @@
 import enum
 import functools
 import gzip
+import math
 import shutil
 from pathlib import Path
 import re
@@ -34,6 +35,8 @@ from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
+from mtg_proxy_printer.progress_meter import ProgressMeter
 logger = get_logger(__name__)
 del get_logger
 
@@ -46,16 +49,15 @@ __all__ = [
 # Just check, if the string starts with a known protocol specifier. This should only distinguish url-like strings
 # from file system paths.
 looks_like_url_re = re.compile(r"^(http|ftp)s?://.*")
-
-JSONType = typing.Dict[str, typing.Union[str, int, list, dict, float, bool]]
-CardStream = typing.Generator[JSONType, None, None]
-IntTuples = typing.List[typing.Tuple[int]]
 BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
-
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
 
+IntTuples = typing.List[typing.Tuple[int]]
+CardStream = typing.Generator[CardDataType, None, None]
+CardOrFace = typing.Union[CardDataType, FaceDataType]
+UUID = str
 
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
@@ -70,9 +72,14 @@ class PrintingData(typing.NamedTuple):
     card_id: int
     set_id: int
     collector_number: str
-    scryfall_id: str
+    scryfall_id: UUID
     is_oversized: bool
     highres_image: bool
+
+
+class RelatedPrintingData(typing.NamedTuple):
+    printing_id: UUID
+    related_id: UUID
 
 
 @enum.unique
@@ -155,15 +162,16 @@ class CardInfoDownloader(QObject):
 
 class CardInfoWorkerBase(DownloaderBase):
 
-    def get_scryfall_bulk_card_data_url(self) -> str:
+    def get_scryfall_bulk_card_data_url(self) -> typing.Tuple[str, int]:
         """Returns the bulk data URL and item count"""
         logger.info("Obtaining the card data URL from the API bulk data end point")
         data, _ = self.read_from_url(BULK_DATA_API_END_POINT)
         with data:
-            item = next(ijson.items(data, "", use_float=True))
-        result = item["download_uri"]
-        logger.debug(f"Bulk data located at: {result}")
-        return result
+            item: BulkDataType = next(ijson.items(data, "", use_float=True))
+        uri = item["download_uri"]
+        size = item["size"]
+        logger.debug(f"Bulk data with uncompressed size {size} bytes located at: {uri}")
+        return uri, size
 
 
 class CardInfoFileDownloadWorker(CardInfoWorkerBase):
@@ -178,13 +186,20 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         """
         logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
         logger.debug("Request bulk data URL from the Scryfall API.")
-        url = self.get_scryfall_bulk_card_data_url()
+        url, size = self.get_scryfall_bulk_card_data_url()
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
         monitor = self._open_url(url, "Downloading card data:")
-        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
+        # Hack: As of writing this, the CDN does not offer the size of the gzip-compressed data.
+        # The API also only offers the uncompressed size. So divide the API-provided size by an empirically
+        # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
+            size = math.floor(size / 6.54)
+            logger.info(f"Content length estimated as {size} bytes")
+        if monitor.content_length <= 0:
+            monitor.content_length = size
+        monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
         download_file_path = download_path/file_name
         logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
         with download_file_path.open("wb") as download_file, monitor:
@@ -237,7 +252,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
         try:
-            url = self.get_scryfall_bulk_card_data_url()
+            url, _ = self.get_scryfall_bulk_card_data_url()
             data = self.read_json_card_data_from_url(url)
             estimated_total_card_count = self.get_available_card_count()
             self.download_begins.emit(estimated_total_card_count, "Updating card data from Scryfall:")
@@ -264,7 +279,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """
         if url is None:
             logger.debug("Request bulk data URL from the Scryfall API.")
-            url = self.get_scryfall_bulk_card_data_url()
+            url, _ = self.get_scryfall_bulk_card_data_url()
             logger.debug(f"Obtained url: {url}")
         else:
             logger.debug(f"Reading from given URL {url}")
@@ -296,9 +311,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             card_count = self._populate_database(card_data, total_count=total_count)
         except sqlite3.Error as e:
+            self.model.db.rollback()
             logger.exception(f"Database error occurred: {e}")
             self.other_error_occurred.emit(str(e))
         except Exception as e:
+            self.model.db.rollback()
             logger.exception(f"Error in parsing step")
             self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
         finally:
@@ -308,10 +325,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
         logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
         self.model.begin_transaction()
-        progress_report_step = total_count // 100
+        progress_report_step = total_count // 1000
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
+        related_printings: typing.List[RelatedPrintingData] = []
         db: sqlite3.Connection = self.model.db
         # PrintingDisplayFilter will be re-populated while iterating over the card data.
         # Axing the previous data is far cheaper than trying
@@ -340,6 +358,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 continue
             try:
                 face_ids += self._parse_single_printing(card)
+                related_printings += self._get_related_cards(card)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -347,12 +366,17 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 logger.debug(f"Imported {index} cards.")
             if progress_report_step and not index % progress_report_step:
                 self.download_progress.emit(index)
-
-        self._clean_unused_data(face_ids)
         logger.info(f"Skipped {skipped_cards} cards during the import")
-        self.download_begins.emit(5, "Processing card filters")
+        logger.info("Post-processing card data")
+        progress_meter = ProgressMeter(
+            8, "Post-processing card data:",
+            self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
+        self._insert_related_printings(related_printings)
+        progress_meter.advance()
+        self._clean_unused_data(face_ids)
+        progress_meter.advance()
         self.model.store_current_printing_filters(
-            False, force_update_hidden_column=True, progress_signal=self.download_progress.emit)
+            False, force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\
@@ -361,16 +385,19 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             """),
             (index,)
         )
+        progress_meter.advance()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
         db.commit()
+        progress_meter.advance()
+        progress_meter.finish()
         return index
 
     @functools.lru_cache(maxsize=1)
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
         return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
-    def _parse_single_printing(self, card: JSONType):
+    def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
         oracle_id = self._get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
@@ -382,6 +409,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
+
+    @staticmethod
+    def _get_related_cards(card: CardDataType):
+        if card["layout"] == "token":
+            # A token is never a source, as that would pull all cards creating that token
+            return
+        card_id = card["id"]
+        for related_card in card.get("all_parts", []):
+            if card_id != (related_id := related_card["id"]):
+                yield RelatedPrintingData(card_id, related_id)
 
     def _clear_lru_caches(self):
         """
@@ -396,6 +433,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
         """Purges all excess data, like printings that are no longer in the import data."""
+        # Note: No cleanup for RelatedPrintings needed, as that is cleaned automatically by the database engine
         db = self.model.db
         db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
         excess_face_ids = db_face_ids.difference(new_face_ids)
@@ -412,6 +450,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
               FROM FaceName
             )
         """))
+
+    def _insert_related_printings(self, related_printings: typing.List[RelatedPrintingData]):
+        db = self.model.db
+        logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
+        db.executemany(cached_dedent("""\
+        INSERT OR IGNORE INTO RelatedPrintings (card_id, related_id)
+          SELECT card_id, related_id
+          FROM (SELECT card_id FROM Printing WHERE scryfall_id = ?),
+               (SELECT card_id AS related_id FROM Printing WHERE scryfall_id = ?)
+        """), related_printings)
 
     @functools.lru_cache(None)
     def _insert_language(self, language: str) -> int:
@@ -441,7 +489,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card_id = db.execute("INSERT INTO Card (oracle_id) VALUES (?)\n", parameters).lastrowid
         return card_id
 
-    def _insert_set(self, card: JSONType) -> int:
+    def _insert_set(self, card: CardDataType) -> int:
         db = self.model.db
         set_abbr = card["set"]
         wackiness_score = self._get_set_wackiness_score(card)
@@ -482,7 +530,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
         return face_name_id
 
-    def _insert_printing(self, card: JSONType, card_id: int, set_id: int) -> int:
+    def _insert_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.model.db
         data = PrintingData(
             card_id,
@@ -518,7 +566,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         ).fetchone()
         return printing_id
 
-    def _insert_card_faces(self, card: JSONType, language_id: int, printing_id: int) -> IntTuples:
+    def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.model.db
         face_ids: IntTuples = []
@@ -540,8 +588,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return face_ids
 
     @staticmethod
-    def _get_card_filter_data(card: JSONType) -> typing.Dict[str, bool]:
-        legalities: typing.Dict[str, str] = card["legalities"]
+    def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
+        legalities = card["legalities"]
         return {
             # Racism filter
             "hide-cards-depicting-racism": card.get("content_warning", False),
@@ -551,9 +599,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             # Border filter
             "hide-white-bordered": card["border_color"] == "white",
             "hide-gold-bordered": card["border_color"] == "gold",
+            "hide-borderless": card["border_color"] == "borderless",
+            # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
+            "hide-reversible-cards": card["layout"] == "reversible",
             # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
             # black-bordered promotional cards, in addition to silver-bordered cards.
-            "hide-funny-cards": card["set_type"] == "funny",
+            "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
             # Token cards
             "hide-token": card["layout"] == "token",
             "hide-digital-cards": card["digital"],
@@ -572,7 +623,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         }
 
     @staticmethod
-    def _get_set_wackiness_score(card: JSONType) -> SetWackinessScore:
+    def _get_set_wackiness_score(card: CardDataType) -> SetWackinessScore:
         if card["oversized"]:
             result = SetWackinessScore.OVERSIZED
         elif card["layout"] == "art_series":
@@ -601,7 +652,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         )
 
     @staticmethod
-    def _should_skip_card(card: JSONType) -> bool:
+    def _should_skip_card(card: CardDataType) -> bool:
         # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
         # Also skip double faced cards that have at least one face without images
         return card["image_status"] == "missing" or (
@@ -610,7 +661,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 and any("image_uris" not in face for face in card["card_faces"])
         )
 
-    def _get_card_faces(self, card: JSONType) -> typing.Generator[CardFaceData, None, None]:
+    def _get_card_faces(self, card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
         """
         Yields a CardFaceData object for each face found in the card object.
         The printed name falls back to the English name, if the card has no printed_name key.
@@ -618,11 +669,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
         this function builds a "card_face" object providing only the required information from the card object itself.
         """
-        faces: typing.List[JSONType] = card.get("card_faces") or [
-            {
-                "printed_name": self._get_card_name(card),
-                "image_uris": card["image_uris"],
-            }
+        faces = card.get("card_faces") or [
+            FaceDataType(
+                printed_name = self._get_card_name(card),
+                image_uris = card["image_uris"],
+                name = card["name"],
+            )
         ]
         return (
             CardFaceData(
@@ -638,7 +690,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         )
 
     @staticmethod
-    def _get_oracle_id(card: JSONType) -> str:
+    def _get_oracle_id(card: CardDataType) -> str:
         """
         Reads the oracle_id property of the given card.
 
@@ -648,11 +700,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             return card["oracle_id"]
         except KeyError:
-            first_face: JSONType = card["card_faces"][0]
+            first_face = card["card_faces"][0]
             return first_face["oracle_id"]
 
     @staticmethod
-    def _get_card_name(card_or_face: JSONType) -> str:
+    def _get_card_name(card_or_face: CardOrFace) -> str:
         """
         Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
         English cards only have the “name” attribute, so use that as a fallback.

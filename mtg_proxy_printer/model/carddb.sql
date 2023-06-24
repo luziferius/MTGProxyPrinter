@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000030;
+PRAGMA user_version = 0000031;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -48,6 +48,13 @@ CREATE TABLE Printing (
   highres_image INTEGER NOT NULL CHECK (highres_image IN (TRUE, FALSE)),
   is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE
 );
+
+CREATE TABLE RelatedPrintings (
+  card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  PRIMARY KEY (card_id, related_id),
+  CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+) WITHOUT ROWID;
 
 CREATE INDEX Printing_Index_Find_Printing_From_Card_Data
   ON Printing(card_id, set_id, collector_number);

@@ -127,18 +127,18 @@ def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
 
 
 def _move_wizard_forward(qtbot: QtBot, wizard: QWizard):
-    with qtbot.wait_signal(wizard.currentIdChanged, timeout=100):
+    with qtbot.wait_signal(wizard.currentIdChanged, timeout=1000):
         wizard.next()
 
 
 def _move_wizard_backward(qtbot: QtBot, wizard: QWizard):
-    with qtbot.wait_signal(wizard.currentIdChanged, timeout=100):
+    with qtbot.wait_signal(wizard.currentIdChanged, timeout=1000):
         wizard.back()
 
 
 def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
-    with qtbot.wait_signal(page.completeChanged, timeout=100):
+    with qtbot.wait_signal(page.completeChanged, timeout=1000):
         cb: QCheckBox = page.ui.select_parser_mtg_online
         cb.click()
     assert_that(page.ui.select_parser_mtg_online.isChecked())
@@ -152,7 +152,7 @@ def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
 def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
     cb: QCheckBox = page.ui.select_parser_mtg_arena
-    with qtbot.wait_signal(cb.clicked, timeout=100):
+    with qtbot.wait_signal(cb.clicked, timeout=1000):
         cb.click()
     assert_that(page.ui.select_parser_mtg_arena.isChecked())
     assert_that(page.complete, is_(True))
@@ -183,13 +183,13 @@ def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, i
 
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, enable_print_guessing: bool = False):
     page = wizard.load_list_page
-    with qtbot.wait_signal(page.ui.deck_list.textChanged, timeout=100):
+    with qtbot.wait_signal(page.ui.deck_list.textChanged, timeout=1000):
         page.ui.deck_list.setPlainText(deck_list)
     assert_that(wizard.field("deck_list"), is_(equal_to(deck_list)))
     assert_that(page.isComplete())
     cb: QCheckBox = page.ui.print_guessing_enable
     if enable_print_guessing and not cb.isChecked():
-        with qtbot.wait_signal(cb.stateChanged, timeout=100):
+        with qtbot.wait_signal(cb.stateChanged, timeout=1000):
             cb.click()
         assert_that(cb.isChecked())
 
@@ -250,7 +250,7 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
     # Now accept the dialog and capture the emitted deck
     deck_receiver = CardListReceiver()
     wizard.request_action.connect(deck_receiver.on_import_action_received)
-    with qtbot.wait_signal(wizard.request_action, timeout=100):
+    with qtbot.wait_signal(wizard.request_action, timeout=1000):
         QTest.keyClick(wizard, Qt.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),

@@ -13,92 +13,207 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import itertools
 import typing
+from unittest.mock import MagicMock, patch
 
 import pytest
 from hamcrest import *
 
+from .helpers import SHOULD_SKIP_NETWORK_TESTS
+
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
-    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader
+    IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
+    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader
 
 
-ACCEPTABLE_MTGGOLDFISH_URLS = [
-    # Plain deck links
-    "https://www.mtggoldfish.com/deck/5077398#paper",
-    "https://www.mtggoldfish.com/deck/5077398#arena",
-    "https://www.mtggoldfish.com/deck/5077398#online",
+UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
+
+
+def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Generator[UrlTestData, None, None]:
+    # MTGGoldfish
+    # Deck links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#paper"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5077398#online"
     # Download links
-    "https://www.mtggoldfish.com/deck/download/5077398",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=tabletop",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=arena",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=online",
-    "https://www.mtggoldfish.com/deck/download/5077398?output=dek&type=online",
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=tabletop"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=mtggoldfish&type=online"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/5077398?output=dek&type=online"
     # Deck archetype links
-    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#paper",
-    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#arena",
-    "https://www.mtggoldfish.com/archetype/legacy-led-dredge#online",
-]
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#paper"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#online"
+
+    # Scryfall
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=tix"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=arena"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=cah"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual&with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=tix"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=arena"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=cah"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual&with=eur"
+
+    # mtg.wtf
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance"
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/"
+
+    # MTG Arena Zone (mtgazone.com)
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/"
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft"
+
+    #MTGTop8
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
+
+    # mtgdecks.net
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582"
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582/"
+
+    # Moxfield
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg"
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks/70auYSm75E-Iwf4Oc0g7Lg/"
+
+    # TappedOut
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/?cat=subtype&sort=name&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/?cat=custom&sort=rarity&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck?cat=subtype&sort=name&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck?cat=custom&sort=rarity&cb=1665072266"
+
+    # Deckstats
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland/de"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland/"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__stats"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/450232-tapland#show__spoiler"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827-"  # An untitled deck
+    yield DeckstatsDownloader, "https://deckstats.net/decks/51910/1430827"  # Missing required hyphen, added internally
+
+    # Archidekt
+    yield ArchidektDownloader, "https://archidekt.com/decks/8"
+    yield ArchidektDownloader, "https://archidekt.com/decks/4296325"
+
+    # TCGPlayer Infinite
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532"
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/"
 
 
-@pytest.mark.parametrize("url", ACCEPTABLE_MTGGOLDFISH_URLS)
-def test_mtggoldfish_url_re(url: str):
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
+def test_re_matcher_matches_acceptable_url(downloader, url: str):
     assert_that(
-        MTGGoldfishDownloader.DECKLIST_PATH_RE.match(url),
+        downloader.DECKLIST_PATH_RE.match(url),
         is_(not_none())
     )
 
 
-ACCEPTABLE_SCRYFALL_URLS = [
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=eur",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=tix",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=arena",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=cah",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?as=visual&with=eur",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=eur",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=tix",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=arena",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=cah",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual",
-    "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual&with=eur",
-]
-
-
-@pytest.mark.parametrize("url", ACCEPTABLE_SCRYFALL_URLS)
-def test_scryfall_url_re(url: str):
-    assert_that(
-        ScryfallDownloader.DECKLIST_PATH_RE.match(url),
-        is_(not_none())
-    )
-
-
-ACCEPTABLE_MTG_WTF_URLS = [
-    "https://mtg.wtf/deck/c21/prismari-performance",
-    "https://mtg.wtf/deck/c21/prismari-performance/",
-]
-
-
-@pytest.mark.parametrize("url", ACCEPTABLE_MTG_WTF_URLS)
-def test_mtg_wtf_url_re(url: str):
-    assert_that(
-        MTGWTFDownloader.DECKLIST_PATH_RE.match(url),
-        is_(not_none())
-    )
-
-
-@pytest.mark.parametrize("url", itertools.chain(
-    ACCEPTABLE_MTGGOLDFISH_URLS,
-    ACCEPTABLE_SCRYFALL_URLS,
-    ACCEPTABLE_MTG_WTF_URLS,
-))
-def test_IsIdentifyingDeckUrlValidator_validate(url: str):
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
+def test_IsIdentifyingDeckUrlValidator_validate(downloader, url: str):
     validator = IsIdentifyingDeckUrlValidator()
     assert_that(
         validator.validate(url),
         contains_exactly(IsIdentifyingDeckUrlValidator.Acceptable, url, 0),
+    )
+
+
+def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Generator[UrlTestData, None, None]:
+    # MTGGoldfish
+    # Deck links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/#online"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/"
+    # Download links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download/?output=mtggoldfish&type=tabletop"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download?output=mtggoldfish&type=arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/download"
+    # Deck archetype links
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/#paper"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype#arena"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/"
+    yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype"
+
+    # Scryfall
+    yield ScryfallDownloader, "https://scryfall.com/@user/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/"  # missing /deck
+    # Invalid/missing UUIDS
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e-8-bfdea0951ce3/?with=eur"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-xyza-83e8-bfdea0951ce3/?with=tix"
+    yield ScryfallDownloader, "https://scryfall.com/@user/decks/?with=arena"
+
+    # mtg.wtf
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21"
+    yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/"
+
+    # MTG Arena Zone (mtgazone.com)
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck"
+    yield MTGAZoneDownloader, "https://mtgazone.com/"
+    yield MTGAZoneDownloader, "https://mtgazone.com/orzhov-phyrexians-march-of-the-machine-theorycraft"
+
+    #MTGTop8
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&f=BL"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&f=BL"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event"
+    yield MTGTop8Downloader, "http://mtgtop8.com/"
+
+    # mtgdecks.net
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/"
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern"
+
+    # Moxfield
+    yield MoxfieldDownloader, "https://www.moxfield.com/decks"
+    yield MoxfieldDownloader, "https://www.moxfield.com/"
+
+    # TappedOut
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks/?cat=subtype&sort=name&cb=1665072266"
+    yield TappedOutDownloader, "https://tappedout.net/mtg-decks?cat=custom&sort=rarity&cb=1665072266"
+
+    # Deckstats
+    yield DeckstatsDownloader, "https://deckstats.net"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872/"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/"
+    yield DeckstatsDownloader, "https://deckstats.net/decks/57872"
+
+    # Archidekt
+    yield ArchidektDownloader, "https://archidekt.com/decks/"
+    yield ArchidektDownloader, "https://archidekt.com/decks"
+    yield ArchidektDownloader, "https://archidekt.com/"
+    yield ArchidektDownloader, "https://archidekt.com"
+
+    # TCGPlayer Infinite
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer"
+
+
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
+def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
+    assert_that(
+        downloader.DECKLIST_PATH_RE.match(url),
+        is_(none())
+    )
+
+
+@pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
+def test_IsIdentifyingDeckUrlValidator_validate_returns_Intermediate_or_Invalid_on_unacceptable_urls(
+        downloader, url: str):
+    validator = IsIdentifyingDeckUrlValidator()
+    assert_that(
+        validator.validate(url),
+        contains_exactly(
+            any_of(IsIdentifyingDeckUrlValidator.Intermediate, IsIdentifyingDeckUrlValidator.Invalid), url, 0),
     )
 
 
@@ -111,14 +226,19 @@ def generate_test_cases_for_test_deck_list_download() \
     """
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/", "1 Jaya Ballard"
     yield ScryfallDownloader, "https://scryfall.com/@luziferius/decks/e1a9af19-cfff-48c4-ae74-ed2dd78cb736", "Island"
+    yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/", "3 Cut Down"
+    yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL", "4 [KTK] Abzan Charm"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5136573", "1 Ancestral Recall"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge", "4 Lion's Eye Diamond"
     yield TappedOutDownloader, "https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/", "Island"
     yield MoxfieldDownloader, "https://www.moxfield.com/decks/g1i2wHXC3kW0lanwY4Llkw", '"Zamriel, Seraph of Steel"'
     yield DeckstatsDownloader, "https://deckstats.net/decks/44867/576160-br-control-kld", "2 Blighted Fen"
+    yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582", "4 Cabal Therapy"
+    yield ArchidektDownloader, "https://archidekt.com/decks/8", "Mirror Entity"
+    yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/", "4,en,Esper Sentinel"
 
 
-@pytest.mark.skip("Skipping network-hitting tests")
+@pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
 @pytest.mark.parametrize("downloader_class, url, expected", generate_test_cases_for_test_deck_list_download())
 def test_deck_list_download(downloader_class: typing.Type[DecklistDownloader], url: str, expected: str):
     downloader = downloader_class()
@@ -128,3 +248,20 @@ def test_deck_list_download(downloader_class: typing.Type[DecklistDownloader], u
         result,
         contains_string(expected),
     )
+
+
+@pytest.mark.parametrize("deck_list, expected", [
+    (b"4 Fire/Ice\r\n", "4 Fire // Ice\n"),
+])
+def test_decklists_net_post_process(deck_list: bytes, expected: str):
+    """
+    The MTGO exports of split cards contain entries in the form of "Front/Back", instead of
+    the more common "Front // Back". Verify that the downloader normalizes the entries.
+    """
+    downloader = MtgDecksNetDownloader()
+    stream = MagicMock()
+    stream.read.return_value=deck_list
+    with patch("mtg_proxy_printer.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
+        reader.return_value = stream, MagicMock()
+        result = downloader.download("")
+    assert_that(result, is_(equal_to(expected)))

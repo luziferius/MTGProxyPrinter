@@ -610,6 +610,17 @@ def _migrate_28_to_29(db: sqlite3.Connection):
 
 
 def _migrate_29_to_30(db: sqlite3.Connection):
+    db.execute(textwrap.dedent("""\
+    CREATE TABLE RelatedPrintings (
+      card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+      related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+      PRIMARY KEY (card_id, related_id),
+      CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+    ) WITHOUT ROWID;
+    """))
+    
+    
+def _migrate_30_to_31(db: sqlite3.Connection):
     for statement in [
         "DROP VIEW VisiblePrintings\n",
         "DROP VIEW AllPrintings\n",
@@ -677,6 +688,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (27, _migrate_27_to_28),
     (28, _migrate_28_to_29),
     (29, _migrate_29_to_30),
+    (30, _migrate_30_to_31),
 )
 
 

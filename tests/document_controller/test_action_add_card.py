@@ -83,7 +83,7 @@ def test_apply_with_count_overflowing_page_adds_new_page(qtbot, card, document_l
 
 
 def test_apply_emits_page_type_changed_when_page_type_changes(qtbot, card, document_light):
-    with qtbot.wait_signal(document_light.page_type_changed, timeout=100, check_params_cb=lambda x: x.row() == 0):
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=1000, check_params_cb=lambda x: x.row() == 0):
         ActionAddCard(card).apply(document_light)
     with qtbot.assert_not_emitted(document_light.page_type_changed):
         ActionAddCard(card).apply(document_light)

@@ -13,10 +13,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from appdirs import AppDirs
+import sys
+
+import platformdirs
 
 from mtg_proxy_printer.meta_data import PROGRAMNAME
 
-data_directories = AppDirs(PROGRAMNAME)
+data_directories = platformdirs.PlatformDirs(PROGRAMNAME)
 
-del AppDirs
+
+def migrate_from_old_appdirs():
+    # Skip migration, if not applicable
+    old_logs = data_directories.user_cache_path / "log"
+    if sys.platform != "linux" or platformdirs.version.__version_tuple__ < (2, 6, 0) or not old_logs.exists():
+        return
+    import shutil
+    data_directories.user_log_path.mkdir(parents=True, exist_ok=True)
+    new_log_path = data_directories.user_log_path
+    for item in old_logs.glob("*"):
+        if (new_log_path/item).exists():
+            item.unlink()  # New location already exists, cannot migrate. Simply prune the old log file
+        else:
+            shutil.move(item, new_log_path)
+    old_logs.rmdir()

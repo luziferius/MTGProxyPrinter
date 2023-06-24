@@ -17,8 +17,11 @@
 This module is responsible for downloading deck lists from a known list of deckbuilder websites.
 """
 import abc
+import collections
 import csv
+import html.parser
 from io import StringIO
+import platform
 import re
 import typing
 
@@ -28,11 +31,16 @@ from PyQt5.QtGui import QValidator
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
-from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser
+from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 else typing.Counter
+
+JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool]]
+JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
+HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
 
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
@@ -93,6 +101,36 @@ class ScryfallDownloader(DecklistDownloader):
         return f"https://api.scryfall.com/decks/{uuid}/export/csv"
 
 
+class MTGAZoneHTMLParser(html.parser.HTMLParser):
+    def __init__(self, *, convert_charrefs: bool = True):
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.deck: typing.List[str] = []
+
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
+        attrs = dict(attrs)
+        if tag == "div" and attrs.get("class", "").strip().lower() == "card":
+            self.deck.append(f"{attrs['data-quantity']} {attrs['data-name']}")
+
+
+class MTGAZoneDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://mtgazone\.com/deck/.+"
+    )
+    PARSER_CLASS = MTGArenaParser
+    APPLICABLE_WEBSITES = "MTG Arena Zone (mtgazone.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return decklist_url
+
+    def post_process(self, data: bytes) -> str:
+        decoded = super().post_process(data)
+        parser = MTGAZoneHTMLParser()
+        parser.feed(decoded)
+        parser.close()
+        deck = "\n".join(parser.deck)
+        return deck
+
+
 class MTGGoldfishDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
         r"https://(www\.)?mtggoldfish\.com/"
@@ -121,6 +159,23 @@ class MTGGoldfishDownloader(DecklistDownloader):
         return deck_id
 
 
+class MTGTop8Downloader(DecklistDownloader):
+    """
+    Downloader for https://mtgtop8.com. They host deck lists of tournaments
+    """
+
+    DECKLIST_PATH_RE = re.compile(
+        r"https?://mtgtop8\.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
+    )
+    PARSER_CLASS = MagicWorkstationDeckDataFormatParser
+    APPLICABLE_WEBSITES = "MTGTop8 (mtgtop8.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        deck_id = match["deck_id"]
+        return f"http://mtgtop8.com/dec?d={deck_id}"
+
+
 class MTGWTFDownloader(DecklistDownloader):
     """
     Downloader for https://mtg.wtf. They offer a list of all official pre-constructed decks in existence.
@@ -144,7 +199,7 @@ class MTGWTFDownloader(DecklistDownloader):
 
 class TappedOutDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://tappedout.net/mtg-decks/(?P<name>[-\w_%]+)/?"
+        r"https://tappedout\.net/mtg-decks/(?P<name>[-\w_%]+)/?"
     )
     PARSER_CLASS = TappedOutCSVParser
     APPLICABLE_WEBSITES = "TappedOut (tappedout.net)"
@@ -157,7 +212,7 @@ class TappedOutDownloader(DecklistDownloader):
 
 class MoxfieldDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://www.moxfield.com/decks/(?P<moxfield_id>[-\w_]+)/?"
+        r"https://www\.moxfield\.com/decks/(?P<moxfield_id>[-\w_]+)/?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Moxfield (moxfield.com)"
@@ -190,7 +245,7 @@ class MoxfieldDownloader(DecklistDownloader):
 
 class DeckstatsDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://deckstats.net/decks/(?P<user>\d+)/(?P<name>[-\w_]+)-*/?.*"
+        r"https://deckstats\.net/decks/(?P<user>\d+)/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = MTGArenaParser
     APPLICABLE_WEBSITES = "Deckstats (deckstats.net)"
@@ -198,19 +253,144 @@ class DeckstatsDownloader(DecklistDownloader):
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         user = match.group("user")
-        name = match.group("name")
-        return f"https://deckstats.net/decks/{user}/{name}?" \
+        deck_id = match.group("deck_id")
+        # The deck is identified by a numerical deck id, followed by a hyphen and a deck name that can be anything.
+        # It defaults to the set deck name, but everything after the hyphen is ignored by the server
+        # The hyphen itself is required. Without it, the server returns the user's deck list directory.
+        return f"https://deckstats.net/decks/{user}/{deck_id}-?" \
                f"include_comments=0&do_not_include_printings=0&export_mtgarena=1"
+
+
+class ArchidektHTMLParser(html.parser.HTMLParser):
+
+    def __init__(self, *, convert_charrefs: bool = True):
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.decklist_json = ""
+        self.found_deck_tag = False
+
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
+        if tag == "script" and dict(attrs) == {"id": "__NEXT_DATA__", "type": "application/json"}:
+            self.found_deck_tag = True
+
+    def handle_data(self, data: str) -> None:
+        if self.found_deck_tag:
+            self.decklist_json = data
+            self.found_deck_tag = False
+
+
+class ArchidektDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://archidekt\.com/decks/(?P<deck_id>\d+).*?"
+    )
+    PARSER_CLASS = ScryfallCSVParser
+    APPLICABLE_WEBSITES = "Archidekt (archidekt.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return decklist_url
+
+    def post_process(self, data: bytes) -> str:
+        decoded = super().post_process(data)
+        json_str = self._get_raw_deck_list_json(decoded)
+        result = self._parse_json_deck_list(json_str)
+        logger.debug(f"Obtained list list containing {len(result)-1} entries")
+        return result
+
+    @staticmethod
+    def _get_raw_deck_list_json(data: str) -> str:
+        parser = ArchidektHTMLParser()
+        parser.feed(data)
+        parser.close()
+        return parser.decklist_json
+
+    @staticmethod
+    def _parse_json_deck_list(json_str: str) -> str:
+        buffer = StringIO()
+        writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
+        writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
+        encoded = json_str.encode("utf-8")
+        # The cards are stored in a map, which looks like it uses some base64 keys of unknown origin/meaning
+        # (e.g. "7ToxQpQbV") and card dicts as values.
+        # We are interested in the map values, so access the map items via ijson.kvitems() and throw the keys away
+        deck_items: JSONKeyValueType = ijson.kvitems(
+            encoded, "props.pageProps.redux.deck.cardMap", use_float=True)
+        writer.writerows(
+            # The data does not contain a card language, so hard-code English
+            (card["uid"], card["qty"], "en", card["name"], card["setCode"], card["collectorNumber"])
+            for _, card in deck_items
+        )
+        return buffer.getvalue()
+
+
+class MtgDecksNetDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://mtgdecks\.net/[A-Za-z]+/[-A-Za-z]+/?"
+    )
+    PARSER_CLASS = MTGArenaParser
+    APPLICABLE_WEBSITES = "MTGDecks (mtgdecks.net)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return f"{decklist_url}/txt"
+
+    def post_process(self, data: bytes) -> str:
+        deck_list = super().post_process(data)
+        deck_list = deck_list.replace("/", " // ")
+        return deck_list
+
+
+class TCGPlayerDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://infinite\.tcgplayer\.com/magic-the-gathering/deck/[^/]+/(?P<deck_id>\d+).*?"
+    )
+    PARSER_CLASS = ScryfallCSVParser
+    APPLICABLE_WEBSITES = "TCGPlayer ∞ (infinite.tcgplayer.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        deck_id = match.group("deck_id")
+        # cards enables inclusion of card data (in the form of a mapping from internal card id to card data),
+        # subDecks enables inclusion of mainboard/sideboard as a tuple stream (internal card id, quantity)
+        # stats enables irrelevant, additional card meta-data, like pricing and such, and is disabled.
+        return f"https://infinite-api.tcgplayer.com/deck/magic/{deck_id}/?subDecks=true&cards=true&stats=false"
+
+    def post_process(self, data: bytes) -> str:
+        card_counts = self._gather_card_counts(data)
+        buffer = StringIO()
+        scryfall_id_re = re.compile(r"(?P<scryfall_id>[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})")
+        writer = csv.writer(buffer, ScryfallCSVParser.Dialect)
+        writer.writerow(["scryfall_id", "count", "lang", "name", "set_code", "collector_number"])
+        items: JSONKeyValueType = ijson.kvitems(data, "result.cards")
+        # The data contains a URL to an image hosted on scryfall that contains the scryfall id
+        writer.writerows(
+            (scryfall_id_re.search(card_data["scryfallImageURL"])["scryfall_id"], card_counts[card_id],
+             "en", card_data["name"], card_data["set"].lower(), "")
+            for card_id, card_data in items
+        )
+        return buffer.getvalue()
+
+    @staticmethod
+    def _gather_card_counts(data: bytes) -> Counter[str]:
+        items: JSONKeyValueType = ijson.kvitems(data, "result.deck.subDecks")
+        result = Counter()
+        for _, counts in items:  # Ignore the board type "maindeck"/"sideboard"
+            for card in counts:  # type: typing.Dict[str, int]
+                # card IDs are supplied as integers, but used elsewhere as strings. So convert them to strings
+                result[str(card["cardID"])] += card["quantity"]
+        return result
 
 
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
-        ScryfallDownloader,
+        ArchidektDownloader,
+        DeckstatsDownloader,
+        MTGTop8Downloader,
+        MoxfieldDownloader,
+        MTGAZoneDownloader,
+        MtgDecksNetDownloader,
         MTGGoldfishDownloader,
         MTGWTFDownloader,
+        ScryfallDownloader,
         TappedOutDownloader,
-        MoxfieldDownloader,
-        DeckstatsDownloader,
+        TCGPlayerDownloader,
     ]
 }
 

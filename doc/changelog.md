@@ -1,16 +1,63 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
+
+## New features
+
+- Added context menu to the table that shows the cards on the current page. You can now:
+  - Right-click a card to add additional copies of that card to the document
+  - Right-click a card to add specific or all related cards, like cards referenced by name or created tokens.
+    For example, right-click a Swan Song to add the 2/2 Bird token created by that spell.
+- Added additional card filters to hide potentially unwanted printings in the settings.
+  - Borderless cards, i.e. cards without a defined, solid border.
+    [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
+  - Reversible cards. Some Secret Lair double-sided printings of otherwise single-sided cards.
+    [Scryfall search](https://scryfall.com/search?q=is%3Areversible)
+
+The new card filters and adding related cards via the new context menu require re-downloading the card data 
+from Scryfall once to start working, as previous versions did not store the required information in the local
+card database.
+
+## Changed features
+
+- Redesigned the document save file format. Older versions will not be able to load documents saved with this version,
+  and it is not possible to save documents in the old format.
+  - Loading older documents (internal format versions 2 to 5) is still supported.
+    Older documents will be automatically converted to version 6 when saved over.
+- Improved display of hidden printings hidden in the downloaded image cleanup wizard.
+  - It now shows full information for hidden printings, instead of identifying them as "unknown garbage".
+
+## Fixed issues
+
+- Handle the back sides of Secret Lair reversible cards when switching card printings. The application no longer offers
+  alternative printings for the back sides of those cards and then silently fails to switch the printing. 
+- Subsequent card data download attempts no longer always fail, if the first attempt 
+  failed due to receiving invalid data from the Scryfall API.
+  - This also prevents entering an invalid state with partially imported card data. 
+- Restored displaying the download progress when using the “Download card data as file” option in the Debug settings.
+
+# Version 0.22.0 (2023-04-18)  <a name="v0_22_0"></a>
+
+## New features
+
+- Added support for importing Magic Workstation Deck Data (`.mwDeck`) deck lists
+- Support for direct downloads from additional card list database websites:
+  - MTG Arena Zone ([mtgazone.com](https://mtgazone.com))
+  - MTGTop8 ([mtgtop8.com](http://mtgtop8.com))
+  - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
+  - Archidekt ([archidekt.com](https://archidekt.com/))
+  - TCGPlayer Infinite ([infinite.tcgplayer.com](https://infinite.tcgplayer.com/magic-the-gathering))
 
 ## Changed features
 
 - Drawing sharp card corners is no longer always enabled,
   when loading documents created with MTGProxyPrinter version 0.18.0 or older.
   The option now follows the global application settings.
+- The "funny cards" card filter no longer hides tournament-legal cards from Un-sets like Unfinity.
 
 ## Fixed issues
 
-- Fixed crash that occurred when compacting the document moved cards onto the currently shown page.
+- Fixed crash that occurred when compacting the document moved cards from other pages onto the currently shown page.
 
 # Version 0.21.0 (2023-02-08)  <a name="v0_21_0"></a>
 

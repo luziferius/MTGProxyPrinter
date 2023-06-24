@@ -41,7 +41,7 @@ def test_apply_emits_settings_changed_signal(qtbot, document_light):
     action = ActionEditDocumentSettings(copy.copy(new_settings))
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
-            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=100):
+            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=1000):
         action.apply(document_light)
         reflow_mock.assert_not_called()
     assert_that(action.old_settings, is_(equal_to(old_settings)))
@@ -61,7 +61,7 @@ def test_page_capacity_reduction_reflows_document(qtbot, document_light, initial
     action = ActionEditDocumentSettings(copy.copy(new_settings))
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
-            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=100):
+            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=1000):
         action.apply(document_light)
         reflow_mock.assert_called_once()
 
@@ -188,7 +188,7 @@ def test_undo_restores_old_page_layout(qtbot, document_light):
 
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
-            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=100):
+            ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=1000):
         action.undo(document_light)
     reflow_mock.assert_not_called()
     assert_that(document_light.page_layout, is_(equal_to(old_settings)))

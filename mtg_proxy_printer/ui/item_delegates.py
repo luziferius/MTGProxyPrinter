@@ -46,6 +46,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             matching_sets = source_model.card_db.find_sets_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
                 index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
+                is_front=index.siblingAtColumn(PageColumns.IsFront).data(Qt.EditRole),
             )
             current_set_code = index.data(Qt.EditRole)
             current_set_position = 0

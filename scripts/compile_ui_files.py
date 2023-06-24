@@ -17,10 +17,12 @@
 This script generates Python stubs for the UI types
 """
 
+import argparse
 import ast
 import io
 import textwrap
 from pathlib import Path
+import shutil
 from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List
 
 import PyQt5.uic
@@ -37,12 +39,35 @@ class Assignment(NamedTuple):
 T = TypeVar("T")
 
 
+class Namespace(NamedTuple):
+    full: bool
+    purge_existing: bool
+
+
+def parse_args() -> Namespace:
+    parser = argparse.ArgumentParser(
+        description="Compiles the Qt designer UI files into importable Python modules "
+        "or type hinting stubs. Generates type hinting stubs by default."
+    )
+    parser.add_argument(
+        "-f", "--full", action="store_true",
+        help="Compile UI into importable Python modules."
+    )
+    parser.add_argument(
+        "-p", "--purge-existing", action="store_true",
+        help="Remove any already existing compiled or generated files."
+    )
+    args = parser.parse_args()
+    return args
+
+
 def type_filter(any_: Iterable[T], types: [Union[Type, Tuple[Type]]]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
 
 def compile_ui_files(
-        target_path: Path,
+        args: Namespace,
+        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
         source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
@@ -50,6 +75,9 @@ def compile_ui_files(
     Recursively finds UI files under source_path, replicates the found directory tree as a Python package hierarchy and
     populates it with the compiled Ui types.
     """
+    if args.purge_existing and target_path.is_dir():
+        shutil.rmtree(target_path)
+
     source_path = source_path.resolve()
     target_path.mkdir(exist_ok=True)
 
@@ -59,10 +87,10 @@ def compile_ui_files(
     import functools
     PyQt5.uic.open = functools.partial(open, encoding="utf-8")
     PyQt5.uic.compileUiDir(str(source_path), recurse=True, map=map_to_output)
-    create_proper_package(target_path)
+    create_python_package(target_path)
 
 
-def create_proper_package(target_dir: Path):
+def create_python_package(target_dir: Path):
     """
     Creates an empty __init__.py file in target_dir and each subdirectory, recursively.
     This marks these directories as proper Python packages.
@@ -74,6 +102,7 @@ def create_proper_package(target_dir: Path):
 
 
 def create_ui_type_stubs(
+        args: Namespace,
         target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
         source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
     """
@@ -82,14 +111,15 @@ def create_ui_type_stubs(
     Recursively finds UI files under source_path, replicates the found directory tree as a Python package hierarchy and
     populates it with the created type hints.
     """
-
+    if args.purge_existing and target_path.is_dir():
+        shutil.rmtree(target_path)
     for ui_file in source_path.rglob("*.ui"):
         compiled = compile_ui_file(ui_file)
         stub = generate_stub(compiled, ui_file)
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
         parent_dir.mkdir(exist_ok=True)
         (parent_dir/f"{ui_file.stem}.pyi").write_text(stub, "utf-8")
-    create_proper_package(target_path)
+    create_python_package(target_path)
 
 
 def compile_ui_file(path: Path) -> str:
@@ -177,4 +207,8 @@ def get_function_stub(function_body: ast.FunctionDef):
 
 
 if __name__ == "__main__":
-    create_ui_type_stubs()
+    args = parse_args()
+    if args.full:
+        compile_ui_files(args)
+    else:
+        create_ui_type_stubs(args)

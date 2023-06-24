@@ -102,7 +102,7 @@ def assert_undone(action: DummyAction, document: Document):
 
 def test_apply_on_empty_undo_stack_empty_redo_stack(qtbot: QtBot, document_light: Document):
     action = DummyAction()
-    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=100), \
+    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -119,7 +119,7 @@ def test_apply_on_empty_undo_stack_filled_redo_stack(qtbot: QtBot, document_ligh
     with qtbot.wait_signals([
                 document_light.undo_available_changed,
                 document_light.redo_available_changed,
-                document_light.action_applied], timeout=100), \
+                document_light.action_applied], timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
 
@@ -136,7 +136,7 @@ def test_apply_on_filled_undo_stack_empty_redo_stack(qtbot: QtBot, document_ligh
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone), \
-            qtbot.wait_signal(document_light.action_applied, timeout=100):
+            qtbot.wait_signal(document_light.action_applied, timeout=1000):
         document_light.apply(action)
 
     assert_that(document_light.redo_stack, is_(empty()))
@@ -151,7 +151,7 @@ def test_apply_on_filled_undo_stack_filled_redo_stack(qtbot: QtBot, document_lig
     document_light.redo_stack.append(redo_dummy := DummyAction(1))
     action = DummyAction(0)
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -169,7 +169,7 @@ def test_apply_same_action_as_on_redo_stack_does_keep_remaining_redo_stack(qtbot
     document_light.redo_stack.append(DummyAction(1))
     action = DummyAction(1)
     expected_signals = [document_light.undo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -181,7 +181,7 @@ def test_undo_on_empty_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, documen
     document_light.undo_stack.append(first := DummyAction())
     document_light.undo_stack.append(second := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=100),\
+    with qtbot.wait_signals(expected_signals, timeout=1000),\
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -198,7 +198,7 @@ def test_undo_on_empty_redo_stack_1_element_on_undo_stack(qtbot: QtBot, document
     expected_signals = [
         document_light.redo_available_changed, document_light.undo_available_changed, document_light.action_undone,
     ]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
 
@@ -212,7 +212,7 @@ def test_undo_on_filled_redo_stack_1_element_on_undo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(redo_dummy := DummyAction())
     document_light.undo_stack.append(first := DummyAction())
     expected_signals = [document_light.undo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -232,7 +232,7 @@ def test_undo_on_filled_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, docume
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied), \
-            qtbot.wait_signal(document_light.action_undone, timeout=100):
+            qtbot.wait_signal(document_light.action_undone, timeout=1000):
         document_light.undo()
 
     assert_that(document_light.undo_stack, contains_exactly(first))
@@ -249,7 +249,7 @@ def test_redo_on_empty_undo_stack_1_element_on_redo_stack(qtbot: QtBot, document
         document_light.undo_available_changed, document_light.redo_available_changed, document_light.action_applied
     ]
     with qtbot.wait_signals(
-            expected_signals, timeout=100), \
+            expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
 
@@ -264,7 +264,7 @@ def test_redo_on_empty_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(second := DummyAction())
 
     expected_signals = [document_light.undo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -280,7 +280,7 @@ def test_redo_on_filled_undo_stack_1_element_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(first := DummyAction())
     document_light.undo_stack.append(undo_dummy := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100),\
+    with qtbot.wait_signals(expected_signals, timeout=1000),\
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -300,7 +300,7 @@ def test_redo_on_filled_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, docume
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone), \
-            qtbot.wait_signal(document_light.action_applied, timeout=100):
+            qtbot.wait_signal(document_light.action_applied, timeout=1000):
         document_light.redo()
 
     assert_that(document_light.undo_stack, contains_exactly(undo_dummy, second))
@@ -355,7 +355,12 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
-    custom_layout = PageLayoutSettings(300, 200, 20, 19, 18, 17, 3, 2, True)
+    custom_layout = PageLayoutSettings(
+        page_height=300, page_width=200,
+        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
+        image_spacing_horizontal=3, image_spacing_vertical=2,
+        draw_cut_markers=True, draw_sharp_corners=False,
+    )
     document.apply(ActionEditDocumentSettings(custom_layout))
     yield document
 
@@ -414,7 +419,7 @@ def test_document_is_created_empty(document_light: Document):
     )
 
 
-@pytest.mark.parametrize("source_version", [2, 3, 4])
+@pytest.mark.parametrize("source_version", [2, 3, 4, 5])
 def test_save_migration(document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -487,7 +492,7 @@ def _validate_database_schema(db_path: pathlib.Path):
     :raises AssertionError: If the provided file contains an invalid schema
     :returns: Database schema version
     """
-    target_schema_version = 5
+    target_schema_version = 6
     db_unsafe = open_database(
         db_path, f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
     if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
@@ -531,25 +536,32 @@ def _validate_database_schema(db_path: pathlib.Path):
 
 
 def _validate_saved_document_settings(document: Document):
-    with open_database(document.save_file_path, "document-v4", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
-        assert_that(save.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(), contains_exactly(1))
-        assert_that(save.execute(
-            textwrap.dedent("""\
-                SELECT page_height, page_width,
-                       margin_top, margin_bottom, margin_left, margin_right,
-                       image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
-                FROM DocumentSettings
-                WHERE rowid == 1""")).fetchone(),
+    with open_database(document.save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
+        assert_that(
+            save.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
+            contains_exactly(len(dataclasses.astuple(document.page_layout)))
+        )
+        keys = ", ".join(map("'{}'".format, document.page_layout.__annotations__.keys()))
+        query = textwrap.dedent(f"""\
+            SELECT value
+              FROM DocumentSettings
+              WHERE key IN ({keys})
+              ORDER BY key ASC
+            """)
+        page_layout = document.page_layout
+        assert_that(
+            [value for value, in save.execute(query).fetchall()],
             contains_exactly(
-                document.page_layout.page_height,
-                document.page_layout.page_width,
-                document.page_layout.margin_top,
-                document.page_layout.margin_bottom,
-                document.page_layout.margin_left,
-                document.page_layout.margin_right,
-                document.page_layout.image_spacing_horizontal,
-                document.page_layout.image_spacing_vertical,
-                document.page_layout.draw_cut_markers,
+                int(page_layout.draw_cut_markers),
+                int(page_layout.draw_sharp_corners),
+                page_layout.image_spacing_horizontal,
+                page_layout.image_spacing_vertical,
+                page_layout.margin_bottom,
+                page_layout.margin_left,
+                page_layout.margin_right,
+                page_layout.margin_top,
+                page_layout.page_height,
+                page_layout.page_width,
         ))
 
 

@@ -41,10 +41,8 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-DEFAULT_DATABASE_LOCATION = pathlib.Path(
-    mtg_proxy_printer.app_dirs.data_directories.user_cache_dir,
-    "CardImages"
-)
+
+DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",

@@ -40,10 +40,6 @@ __all__ = [
 class BaseCSVParser(ParserBase):
 
     DIALECT_NAME = ""
-
-    SUPPORTED_FILE_TYPES = {
-        "CSV-Document": ["csv"]
-    }
     USED_COLUMNS: typing.Set[str] = {
 
     }
@@ -85,6 +81,14 @@ class BaseCSVParser(ParserBase):
 
 
 class ScryfallCSVParser(BaseCSVParser):
+    """
+    This parser handles CSV-based exports from Scryfall.com. It expects a header
+
+    Primary columns used:
+        scryfall_id, count
+    Secondary columns used (in case scryfall_id is unknown or refers to a hidden printing):
+        lang, name, set_code, collector_number
+    """
 
     class Dialect(csv.Dialect):
         '''
@@ -104,6 +108,10 @@ class ScryfallCSVParser(BaseCSVParser):
     DIALECT_NAME = "scryfall_com"
     USED_COLUMNS = {
         "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
+    }
+
+    SUPPORTED_FILE_TYPES = {
+        "Scryfall CSV export": ["csv"]
     }
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
@@ -169,6 +177,9 @@ class TappedOutCSVParser(BaseCSVParser):
         # Does not include the Language column,
         # because there is the fallback to the old "Languange" column.
         "Qty", "Name", "Board", "Printing",
+    }
+    SUPPORTED_FILE_TYPES = {
+        "Tappedout CSV export": ["csv"]
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,

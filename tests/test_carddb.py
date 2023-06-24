@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from pathlib import Path
 import textwrap
 import typing
 import unittest.mock
@@ -25,6 +26,7 @@ import pytest
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
     MTGSet
+from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
@@ -749,10 +751,63 @@ def test_is_removed_printing(
 ])
 def test_get_basic_land_oracle_ids(
         qtbot, card_db: CardDatabase,
-        include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: typing.List[str]):
+        include_wastes: bool, include_snow_basics: bool, expected_oracle_ids: StringList):
     fill_card_database_with_json_cards(
         qtbot, card_db, ["english_basic_Forest", "english_basic_Wastes", "english_basic_Snow_Forest"])
     assert_that(
         card_db.get_basic_land_oracle_ids(include_wastes, include_snow_basics),
         contains_inanyorder(*expected_oracle_ids)
+    )
+
+
+@pytest.mark.parametrize("source_id, expected_cards_names", [
+    ("2c6e5b25-b721-45ee-894a-697de1310b8c", ["Food"]),  # Bake into a Pie
+    ("37e32ba6-108a-421f-9dad-3d03f7ebe239", []),  # Food token
+    ("e4b7e3b5-2f3c-4eb7-abc9-322a049a9e1a", []),  # Food Token
+    # Both printings of Asmoranomardicadaistinaculdacar
+    ("d99a9a7d-d9ca-4c11-80ab-e39d5943a315", ["The Underworld Cookbook", "Food"]),
+    ("2879f780-e17f-4e68-931e-6e45f9df28e1", ["The Underworld Cookbook", "Food"]),
+    # The Underworld Cookbook
+    ("4f24504e-b397-4b98-b8e8-8166457f7a2e", ["Asmoranomardicadaistinaculdacar", "Food"]),
+
+])
+def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: StringList):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, [
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Asmoranomardicadaistinaculdacar",
+        "Bake_into_a_Pie",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Food_Token_2",
+    ])
+    source_card = card_db.get_card_with_scryfall_id(source_id, True)
+    assert_that(source_card, is_(not_none()))
+    related = card_db.find_related_cards(source_card)
+    assert_that(
+        related, contains_inanyorder(
+            *[has_property("name", equal_to(expected)) for expected in expected_cards_names]
+        )
+    )
+
+
+def test_get_all_cards_from_image_cache(qtbot, card_db):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["regular_english_card", "oversized_card"], {"hide-oversized-cards": str(True)})
+    cache_content = [
+        CacheContent("650722b4-d72b-4745-a1a5-00a34836282b", True, True, Path()),  # Atraxa
+        CacheContent("0000579f-7b35-4ed3-b44c-db2a538066fe", True, True, Path()),  # Fury Sliver
+        CacheContent("abcdeabc-abcd-abcd-abcd-efghijklmnop", True, True, Path()),  # Non-existing
+    ]
+    assert_that(
+        card_db.get_all_cards_from_image_cache(cache_content),
+        contains_exactly(
+            contains_exactly(contains_exactly(
+                has_property("name", equal_to("Fury Sliver")),
+                cache_content[1])),
+            contains_exactly(contains_exactly(
+                has_property("name", equal_to("Atraxa, Praetors' Voice")),
+                cache_content[0])),
+            contains_exactly(cache_content[-1]),
+        )
     )

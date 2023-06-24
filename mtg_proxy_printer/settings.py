@@ -36,7 +36,7 @@ __all__ = [
 ]
 
 
-config_file_path = pathlib.Path(mtg_proxy_printer.app_dirs.data_directories.user_config_dir, "MTGProxyPrinter.ini")
+config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.
@@ -83,9 +83,11 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-banned-in-vintage": "False",
     "hide-white-bordered": "False",
     "hide-gold-bordered": "False",
+    "hide-borderless": "False",
     "hide-funny-cards": "False",
     "hide-token": "False",
     "hide-digital-cards": "True",
+    "hide-reversible-cards": "False",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",

@@ -1,0 +1,157 @@
+{
+  "object": "card",
+  "id": "d99a9a7d-d9ca-4c11-80ab-e39d5943a315",
+  "oracle_id": "1f74e26f-5cf3-4b0e-bcc6-f858599474fc",
+  "multiverse_ids": [
+    522262
+  ],
+  "mtgo_id": 90749,
+  "tcgplayer_id": 239722,
+  "cardmarket_id": 566268,
+  "name": "Asmoranomardicadaistinaculdacar",
+  "lang": "en",
+  "released_at": "2021-06-18",
+  "uri": "https://api.scryfall.com/cards/d99a9a7d-d9ca-4c11-80ab-e39d5943a315",
+  "scryfall_uri": "https://scryfall.com/card/mh2/186/asmoranomardicadaistinaculdacar?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/d/9/d99a9a7d-d9ca-4c11-80ab-e39d5943a315.jpg?1632831210",
+    "normal": "https://cards.scryfall.io/normal/front/d/9/d99a9a7d-d9ca-4c11-80ab-e39d5943a315.jpg?1632831210",
+    "large": "https://cards.scryfall.io/large/front/d/9/d99a9a7d-d9ca-4c11-80ab-e39d5943a315.jpg?1632831210",
+    "png": "https://cards.scryfall.io/png/front/d/9/d99a9a7d-d9ca-4c11-80ab-e39d5943a315.png?1632831210",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/d/9/d99a9a7d-d9ca-4c11-80ab-e39d5943a315.jpg?1632831210",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/d/9/d99a9a7d-d9ca-4c11-80ab-e39d5943a315.jpg?1632831210"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Legendary Creature — Human Wizard",
+  "oracle_text": "As long as you've discarded a card this turn, you may pay {B/R} to cast this spell.\nWhen Asmoranomardicadaistinaculdacar enters the battlefield, you may search your library for a card named The Underworld Cookbook, reveal it, put it into your hand, then shuffle.\nSacrifice two Foods: Target creature deals 6 damage to itself.",
+  "power": "3",
+  "toughness": "3",
+  "colors": [
+    "B",
+    "R"
+  ],
+  "color_indicator": [
+    "B",
+    "R"
+  ],
+  "color_identity": [
+    "B",
+    "R"
+  ],
+  "keywords": [
+
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "2879f780-e17f-4e68-931e-6e45f9df28e1",
+      "component": "combo_piece",
+      "name": "Asmoranomardicadaistinaculdacar",
+      "type_line": "Legendary Creature — Human Wizard",
+      "uri": "https://api.scryfall.com/cards/2879f780-e17f-4e68-931e-6e45f9df28e1"
+    },
+    {
+      "object": "related_card",
+      "id": "4f24504e-b397-4b98-b8e8-8166457f7a2e",
+      "component": "combo_piece",
+      "name": "The Underworld Cookbook",
+      "type_line": "Artifact",
+      "uri": "https://api.scryfall.com/cards/4f24504e-b397-4b98-b8e8-8166457f7a2e"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "restricted",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "c1c7eb8c-f205-40ab-a609-767cb296544e",
+  "set": "mh2",
+  "set_name": "Modern Horizons 2",
+  "set_type": "draft_innovation",
+  "set_uri": "https://api.scryfall.com/sets/c1c7eb8c-f205-40ab-a609-767cb296544e",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Amh2&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/mh2?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/d99a9a7d-d9ca-4c11-80ab-e39d5943a315/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1f74e26f-5cf3-4b0e-bcc6-f858599474fc&unique=prints",
+  "collector_number": "186",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Ryan Pancoast",
+  "artist_ids": [
+    "89cc9475-dda2-4d13-bf88-54b92867a25c"
+  ],
+  "illustration_id": "109aa8fc-4587-4092-9a51-da3a81099ae5",
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "legendary"
+  ],
+  "security_stamp": "oval",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 7963,
+  "preview": {
+    "source": "Wizards of the Coast",
+    "source_uri": "https://magic.wizards.com/en/articles/archive/card-preview/challenge-accepted-2021-05-26",
+    "previewed_at": "2021-05-26"
+  },
+  "prices": {
+    "usd": "0.22",
+    "usd_foil": "2.33",
+    "usd_etched": null,
+    "eur": "0.40",
+    "eur_foil": "0.73",
+    "tix": "0.44"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=522262",
+    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Asmoranomardicadaistinaculdacar&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Asmoranomardicadaistinaculdacar&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "edhrec": "https://edhrec.com/route/?cc=Asmoranomardicadaistinaculdacar"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://www.tcgplayer.com/product/239722?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Asmoranomardicadaistinaculdacar&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/90749?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

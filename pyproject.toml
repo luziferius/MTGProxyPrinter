@@ -29,13 +29,15 @@ classifiers = [
 # ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
 # Older Python works fine with ijson >= 3.1
 dependencies = [
-    "appdirs >= 1.4.3",
+    "platformdirs >= 2.6.0",
     "PyQt5",
-    "ijson >= 3.1.0",
+    "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
     "pint",
     "delegateto == 1.5",
     "PyHamcrest >= 1.8.1",
+    "truststore; python_version >= '3.10'",
+    "certifi; python_version < '3.10'",
 ]
 dynamic = [
     "version",
@@ -86,6 +88,7 @@ minversion = 3.18
 envlist = 
     py3-{unit_tests, test_create_bundle}-{windows, linux}
 
+
 [testenv]
 skip_install = True
 
@@ -96,15 +99,21 @@ platform =
     windows: win32
 
 
+allowlist_externals =
+    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
+
+
 deps =
-    appdirs >= 1.4.3
+    platformdirs >= 2.6.0
     build
     PyQt5
-    ijson >= 3.1.0
+    ijson >= 3.1.0; python_version < '3.11'
     ijson >= 3.2.0; python_version >= '3.11'
     pint
     delegateto == 1.5
     PyHamcrest >= 1.8.1
+    truststore; python_version >= '3.10'
+    certifi; python_version < '3.10'
 
 build_deps =
     setuptools>=61
@@ -171,9 +180,11 @@ setenv =
     PYTHONDEVMODE = 1
 
 commands =
+    python scripts{/}compile_ui_files.py --full --purge-existing
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
+    -python scripts{/}compile_ui_files.py --purge-existing
 
 
 [testenv:py3-package-{windows,linux}]
@@ -183,9 +194,10 @@ deps =
     cx_Freeze >= 6.11.1
 
 commands =
+    python scripts{/}compile_ui_files.py --full --purge-existing
     python -m build
     python setup_cx_freeze.py build_exe
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
     windows: python setup_cx_freeze.py bdist_msi --skip-build
-
+    -python scripts{/}compile_ui_files.py --purge-existing
 """
