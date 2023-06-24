@@ -1,5 +1,14 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Generation of check cards for double faced cards. Check cards render both sides of a double-faced card next to each
+  other on a single card side, like a split card. They can be used to represent double-faced cards in the library or
+  hand, in case you prefer playing DFCs with fully transparent sleeves.
+  - Check cards can be added by right-clicking any side of a DFC card. Additional ways may be added in the future.
+
 # Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
 
 ## New features
