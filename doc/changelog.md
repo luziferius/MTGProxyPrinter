@@ -8,6 +8,8 @@
   other on a single card side, like a split card. They can be used to represent double-faced cards in the library or
   hand, in case you prefer playing DFCs with fully transparent sleeves.
   - Check cards can be added by right-clicking any side of a DFC card. Additional ways may be added in the future.
+- Export of individual card images as files, including generated check cards. Right-click a card and select the export
+  option to save the image file to a location of your choice.
 
 # Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
 
