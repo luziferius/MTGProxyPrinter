@@ -90,7 +90,7 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
 
 
 @pytest.fixture
-def document_light() -> Document:
+def document_light(qtbot) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock(spec=CardDatabase)
     mock_image_db = unittest.mock.NonCallableMagicMock(spec=ImageDatabase)
     mock_image_db.blank_image = QPixmap(IMAGE_SIZE)
