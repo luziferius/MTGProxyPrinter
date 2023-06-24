@@ -12,6 +12,7 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import functools
 import math
 import operator
@@ -20,8 +21,9 @@ import typing
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
     QModelIndex, QPoint
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog
+from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog, QFileDialog
 
+import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
@@ -120,6 +122,7 @@ class CentralWidget(QWidget):
         if related_cards := self.card_db.find_related_cards(card):
             menu.addSeparator()
             self._create_add_related_actions(menu, related_cards)
+        self._add_save_image_action(menu, card)
         menu.popup(view.viewport().mapToGlobal(pos))
 
     def _create_add_copies_actions(self, card: typing.Union[Card, CardList], add_4th: bool = False):
@@ -173,6 +176,37 @@ class CentralWidget(QWidget):
         else:
             for item in card:
                 self.obtain_card_image.emit(ActionAddCard(item, count))
+
+    def _add_save_image_action(self, parent: QMenu, card: typing.Union[Card, CheckCard]):
+        action = QAction(QIcon.fromTheme("document-save"), "Export image", parent)
+        action.setData(card)
+        action.triggered.connect(self._on_save_image_action_triggered)
+        parent.addSeparator()
+        parent.addAction(action)
+
+    @Slot()
+    def _on_save_image_action_triggered(self):
+        logger.info("User requests exporting card image.")
+        action: QAction = self.sender()
+        if action is None:
+            logger.error("Action triggering _on_save_image_action_triggered not obtained!")
+            return
+        card: Card = action.data()
+        file_name = self._sanitize_card_name(card.name)
+        logger.debug(f"Cleaned card name: '{file_name}'")
+        default_save_file = str(mtg_proxy_printer.app_dirs.data_directories.user_pictures_path/f"{file_name}.png")
+        result, _ = QFileDialog.getSaveFileName(
+            self, "Save card image", default_save_file, "Images (*.png *.bmp *.jpg)")  # type: str, str
+        if result:
+            card.image_file.save(result)
+            logger.info(f"Exported image of card {card.name} to {result}")
+        else:
+            logger.debug("User cancelled file name selection. Cancelling image export.")
+
+    @staticmethod
+    def _sanitize_card_name(card_name: str) -> str:
+        disallowed = str.maketrans('', '', '\\\n/:*?"<>|')
+        return card_name.replace(" // ", " ").translate(disallowed).lstrip().rstrip(" \t.")
 
     @Slot()
     def parsed_cards_table_selection_changed(self):

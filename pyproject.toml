@@ -29,7 +29,7 @@ classifiers = [
 # ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
 # Older Python works fine with ijson >= 3.1
 dependencies = [
-    "platformdirs >= 2.6.0",
+    "platformdirs >= 3.3.0",
     "PyQt5",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
@@ -104,7 +104,7 @@ allowlist_externals =
 
 
 deps =
-    platformdirs >= 2.6.0
+    platformdirs >= 3.3.0
     build
     PyQt5
     ijson >= 3.1.0; python_version < '3.11'

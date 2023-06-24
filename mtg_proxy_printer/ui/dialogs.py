@@ -21,7 +21,8 @@ from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
-import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.app_dirs
+from mtg_proxy_printer.model.carddb import Card
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
