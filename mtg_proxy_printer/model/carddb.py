@@ -257,6 +257,12 @@ class CheckCard:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
+class ImageDatabaseCards(typing.NamedTuple):
+    visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+    hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+    unknown: typing.List["CacheContent"] = []
+
+
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
 
@@ -641,7 +647,7 @@ class CardDatabase(QObject):
                 bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
             )
 
-    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]):
+    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]) -> ImageDatabaseCards:
         """
         Partitions the content of the ImageDatabase disk cache into three lists:
         - All visible card printings
@@ -657,13 +663,11 @@ class CardDatabase(QObject):
             FROM AllPrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
-        visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-        hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-        unknown: typing.List["CacheContent"] = []
+        cards = ImageDatabaseCards([], [], [])
         for cache_item in cache_content:
             result = self.db.execute(query, (cache_item.scryfall_id, cache_item.is_front)).fetchone()
             if result is None:
-                unknown.append(cache_item)
+                cards.unknown.append(cache_item)
                 continue
             name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
                     is_oversized, face_number, is_dfc, is_hidden = result
@@ -673,10 +677,10 @@ class CardDatabase(QObject):
                 bool(highres_image), bool(is_oversized), face_number, is_dfc
             )
             if is_hidden:
-                hidden.append((card, cache_item))
+                cards.hidden.append((card, cache_item))
             else:
-                visible.append((card, cache_item))
-        return visible, hidden, unknown
+                cards.visible.append((card, cache_item))
+        return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
         """
