@@ -90,9 +90,11 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
 
 
 @pytest.fixture
-def document_light() -> Document:
-    document = Document(unittest.mock.MagicMock(), unittest.mock.MagicMock())
-    document.image_db.blank_image = QPixmap(IMAGE_SIZE)
-    document.image_db.blank_image.fill(QColor("white"))
+def document_light(qtbot) -> Document:
+    mock_card_db = unittest.mock.NonCallableMagicMock(spec=CardDatabase)
+    mock_image_db = unittest.mock.NonCallableMagicMock(spec=ImageDatabase)
+    mock_image_db.blank_image = QPixmap(IMAGE_SIZE)
+    mock_image_db.blank_image.fill(QColor("white"))
+    document = Document(mock_card_db, mock_image_db)
     yield document
     stop_thread(document.loader.worker_thread)

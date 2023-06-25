@@ -25,7 +25,7 @@ data_directories = platformdirs.PlatformDirs(PROGRAMNAME)
 def migrate_from_old_appdirs():
     # Skip migration, if not applicable
     old_logs = data_directories.user_cache_path / "log"
-    if sys.platform != "linux" or platformdirs.version.__version_tuple__ < (2, 6, 0) or not old_logs.exists():
+    if sys.platform != "linux" or not old_logs.exists():
         return
     import shutil
     data_directories.user_log_path.mkdir(parents=True, exist_ok=True)

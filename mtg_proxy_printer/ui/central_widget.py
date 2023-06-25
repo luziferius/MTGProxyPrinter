@@ -12,19 +12,23 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 import functools
 import math
+import operator
+import pathlib
 import typing
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
     QModelIndex, QPoint
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog
+from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog, QFileDialog
 
+import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
@@ -113,9 +117,13 @@ class CentralWidget(QWidget):
         menu = QMenu(view)
         card: Card = index.internalPointer().card
         menu.addActions(self._create_add_copies_actions(card))
+        if card.is_dfc:
+            menu.addSeparator()
+            self._create_add_check_card_actions(menu, card)
         if related_cards := self.card_db.find_related_cards(card):
             menu.addSeparator()
             self._create_add_related_actions(menu, related_cards)
+        self._add_save_image_action(menu, card)
         menu.popup(view.viewport().mapToGlobal(pos))
 
     def _create_add_copies_actions(self, card: typing.Union[Card, CardList], add_4th: bool = False):
@@ -129,10 +137,24 @@ class CentralWidget(QWidget):
             actions.insert(-1, self._create_add_copies_action("Add 4 copies", 4, card),)
         return actions
 
-    def _create_add_copies_action(self, label: str, count: typing.Optional[int], card: typing.Union[Card, CardList]):
+    def _create_add_copies_action(self, label: str, count: typing.Optional[int],
+                                  card: typing.Union[Card, CheckCard, CardList]):
         action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
         action.triggered.connect(functools.partial(self._add_copies, card, count))
         return action
+
+    def _create_add_check_card_actions(self, parent: QMenu, card: Card):
+        other_face = self.card_db.get_opposing_face(card)
+        front, back = sorted([card, other_face], key=operator.attrgetter("is_front"), reverse=True)
+        check_card = CheckCard(front, back)
+        actions = [
+            self._create_add_copies_action("Add 1 copy", 1, check_card),
+            self._create_add_copies_action("Add 2 copies", 2, check_card),
+            self._create_add_copies_action("Add 3 copies", 3, check_card),
+            self._create_add_copies_action("Add 4 copies", 4, check_card),
+            self._create_add_copies_action("Add copies …", None, check_card)
+        ]
+        parent.addMenu("Generate DFC check card").addActions(actions)
 
     def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
         logger.debug(f"Found {len(related_cards)} related cards. Adding them to the context menu")
@@ -140,9 +162,9 @@ class CentralWidget(QWidget):
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
-    def _add_copies(self, card: typing.Union[Card, CardList], count: typing.Optional[int]):
+    def _add_copies(self, card: typing.Union[Card, CheckCard, CardList], count: typing.Optional[int]):
         nl = '\n'
-        card_name = card.name if isinstance(card, Card) else nl + nl.join(item.name for item in card)
+        card_name = card.name if isinstance(card, (Card, CheckCard)) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(self, "Add copies", f"Add copies of {card_name}", 1, 1, 100)
             if not success:
@@ -150,11 +172,46 @@ class CentralWidget(QWidget):
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
         # Go through the image database to obtain the card images
-        if isinstance(card, Card):
+        if isinstance(card, (Card, CheckCard)):
             self.obtain_card_image.emit(ActionAddCard(card, count))
         else:
             for item in card:
                 self.obtain_card_image.emit(ActionAddCard(item, count))
+
+    def _add_save_image_action(self, parent: QMenu, card: typing.Union[Card, CheckCard]):
+        action = QAction(QIcon.fromTheme("document-save"), "Export image", parent)
+        action.setData(card)
+        action.triggered.connect(self._on_save_image_action_triggered)
+        parent.addSeparator()
+        parent.addAction(action)
+
+    @Slot()
+    def _on_save_image_action_triggered(self):
+        logger.info("User requests exporting card image.")
+        action: QAction = self.sender()
+        if action is None:
+            logger.error("Action triggering _on_save_image_action_triggered not obtained!")
+            return
+        card: Card = action.data()
+        default_save_file = self._get_default_image_save_path(card)
+        result, _ = QFileDialog.getSaveFileName(
+            self, "Save card image", default_save_file, "Images (*.png *.bmp *.jpg)")  # type: str, str
+        if result:
+            card.image_file.save(result)
+            logger.info(f"Exported image of card {card.name} to {result}")
+        else:
+            logger.debug("User cancelled file name selection. Cancelling image export.")
+
+    @staticmethod
+    def _get_default_image_save_path(card: Card) -> str:
+        try:
+            parent = mtg_proxy_printer.app_dirs.data_directories.user_pictures_path
+        except AttributeError:
+            parent = pathlib.Path.home()
+        disallowed = str.maketrans('', '', '\\\n/:*?"<>|')  # Exclude newlines and characters restricted on Windows
+        file_name = card.name.replace(" // ", " ").translate(disallowed).lstrip().rstrip(" \t.")
+        logger.debug(f"Cleaned card name: '{file_name}'")
+        return str(parent/f"{file_name}.png")
 
     @Slot()
     def parsed_cards_table_selection_changed(self):
