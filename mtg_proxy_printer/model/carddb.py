@@ -521,9 +521,10 @@ class CardDatabase(QObject):
 
     def find_related_cards(self, card: Card) -> CardList:
         """
-        Recursively finds all cards related to the given card.
+        Recursively finds all cards related to the given non-token card.
         This may be cards referenced by name in either direction, or token cards created.
-        Tokens cannot have
+        Tokens cannot have outgoing related cards, as that would create potentially huge graphs
+        due to evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, etc.
         """
         query = cached_dedent("""\
         WITH RECURSIVE 
@@ -535,10 +536,11 @@ class CardDatabase(QObject):
             SELECT related_id
               FROM RelatedPrintings
               JOIN source_oracle_id USING (card_id)
-            UNION
+            UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
             SELECT RelatedPrintings.related_id
               FROM RelatedPrintings
               JOIN related_oracle_ids ON RelatedPrintings.card_id = related_oracle_ids.related_id
+              -- Do not include the initial input card in the output dataset
               WHERE RelatedPrintings.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
         )
         SELECT oracle_id
