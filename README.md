@@ -21,6 +21,7 @@ Print Magic: The Gathering cards for play-testing purposes.
 - Supports double-faced cards and split cards
   - Both front and back are searchable by all names printed on the card
   - Automatic handling of opposing card faces: MTGProxyPrinter automatically adds the same number of copies of the other face. (This feature can be disabled)
+  - Optional generation of check cards for double-faced cards. Those combine both sides on a single side
 - Hide cards using various card and printing filters. Hidden cards are treated as though they do not exist.
   - Bans in various formats supported by Scryfall
   - Border color (white-bordered, gold-bordered)
@@ -34,7 +35,7 @@ Print Magic: The Gathering cards for play-testing purposes.
 - Optional printing of cut helper lines to aid machine-cutting printed sheets
 - Full support for oversized cards, like Archenemy Scheme cards or Planechase Planes. 
   - Regular-size cards and oversized cards are kept on separate pages to ensure consistent image spacing and proper rendering of cut helper lines.
-
+- Ability to add “related cards” of cards added to the document. These are cards referenced by name or tokens created.
 
 ### Supported deck list formats
 
