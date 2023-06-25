@@ -163,6 +163,7 @@ commands =
 passenv =
     DISPLAY
     QT_*
+    XDG_RUNTIME_DIR
     
 setenv = 
    PYTHONDEVMODE = 1
@@ -183,6 +184,9 @@ deps =
 setenv =
     linux: QT_QPA_PLATFORM = offscreen
     PYTHONDEVMODE = 1
+
+passenv =
+    XDG_RUNTIME_DIR
 
 commands =
     python scripts{/}compile_ui_files.py --full --purge-existing
