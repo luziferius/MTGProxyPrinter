@@ -16,6 +16,7 @@
 import functools
 import math
 import operator
+import pathlib
 import typing
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
@@ -192,9 +193,7 @@ class CentralWidget(QWidget):
             logger.error("Action triggering _on_save_image_action_triggered not obtained!")
             return
         card: Card = action.data()
-        file_name = self._sanitize_card_name(card.name)
-        logger.debug(f"Cleaned card name: '{file_name}'")
-        default_save_file = str(mtg_proxy_printer.app_dirs.data_directories.user_pictures_path/f"{file_name}.png")
+        default_save_file = self._get_default_image_save_path(card)
         result, _ = QFileDialog.getSaveFileName(
             self, "Save card image", default_save_file, "Images (*.png *.bmp *.jpg)")  # type: str, str
         if result:
@@ -204,9 +203,15 @@ class CentralWidget(QWidget):
             logger.debug("User cancelled file name selection. Cancelling image export.")
 
     @staticmethod
-    def _sanitize_card_name(card_name: str) -> str:
-        disallowed = str.maketrans('', '', '\\\n/:*?"<>|')
-        return card_name.replace(" // ", " ").translate(disallowed).lstrip().rstrip(" \t.")
+    def _get_default_image_save_path(card: Card) -> str:
+        try:
+            parent = mtg_proxy_printer.app_dirs.data_directories.user_pictures_path
+        except AttributeError:
+            parent = pathlib.Path.home()
+        disallowed = str.maketrans('', '', '\\\n/:*?"<>|')  # Exclude newlines and characters restricted on Windows
+        file_name = card.name.replace(" // ", " ").translate(disallowed).lstrip().rstrip(" \t.")
+        logger.debug(f"Cleaned card name: '{file_name}'")
+        return str(parent/f"{file_name}.png")
 
     @Slot()
     def parsed_cards_table_selection_changed(self):

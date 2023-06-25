@@ -13,9 +13,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import PurePath
+from unittest.mock import NonCallableMagicMock
+
+import pytest
 from pytestqt.qtbot import QtBot
 from PyQt5.QtCore import Qt
+from hamcrest import *
 
+from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 # Import dynamically used by pytest. Without this, the main_window fixture won’t be found by pytest.
@@ -31,3 +37,21 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
     qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.LeftButton)
 
 
+@pytest.mark.parametrize("name, expected", [
+    ('"Quoted"', 'Quoted'),
+    ('New\nline', 'Newline'),
+    ('Ends with dot and space. ','Ends with dot and space'),
+    ('Ends with dot and space .','Ends with dot and space'),
+    ('\tTab\t', 'Tab')
+])
+def test__get_default_image_save_path(qtbot, main_window, name: str, expected: str):
+    card = NonCallableMagicMock(spec=Card)
+    card.name = name
+    result = PurePath(main_window.ui.central_widget._get_default_image_save_path(card))
+    assert_that(
+        result,
+        has_properties({
+            "stem": equal_to(expected),
+            "suffix": equal_to(".png"),
+        })
+    )
