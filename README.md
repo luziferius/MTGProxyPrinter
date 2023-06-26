@@ -12,6 +12,7 @@ Print Magic: The Gathering cards for play-testing purposes.
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
 - Obtains high-quality images from Scryfall (where available)
   - Images are cached locally for faster loading times when printing the same cards again
+- Basic support for printing custom cards. Drop images onto the main window to add them as custom regular-size cards.
 - Import deck lists in various formats, like Magic Arena deck lists and XMage deck files (see below for a list of supported formats)
   - Automatic download of deck lists from various deck list database websites (see below for a list)
   - One-click removal of basic lands (optionally also including Wastes and Snow-covered basic lands)
