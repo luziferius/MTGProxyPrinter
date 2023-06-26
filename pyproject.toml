@@ -100,6 +100,7 @@ platform =
 
 
 allowlist_externals =
+    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
 
 
@@ -170,9 +171,6 @@ setenv =
 
 
 [testenv:py3-test_create_bundle-{windows, linux}]
-
-allowlist_externals =
-    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter
 
 deps =
     {[testenv]deps}
