@@ -4,12 +4,23 @@
 
 ## New features
 
+- Added basic support for printing custom cards. You can drag & drop image files onto the application window,
+  which are then added to the document as regular-sized cards
+  - Importing most common image formats is supported
+  - For best results, use images with size 745px×1040px, others will be scaled to that size
+  - As of now, there are a few limitations, which may be lifted in future updates:
+    - Custom cards cannot be saved. They are removed from saved documents
+    - Only regular-sized cards are supported. You can not add custom over-sized cards, i.e. no custom Planes or Schemes
+    - You cannot set the card name
+    - They cannot be defined as being double-faced, thus you cannot generate check cards for them (see point below)
 - Generation of check cards for double faced cards. Check cards render both sides of a double-faced card next to each
   other on a single card side, like a split card. They can be used to represent double-faced cards in the library or
   hand, in case you prefer playing DFCs with fully transparent sleeves.
   - Check cards can be added by right-clicking any side of a DFC card. Additional ways may be added in the future.
 - Export of individual card images as files, including generated check cards. Right-click a card and select the export
   option to save the image file to a location of your choice.
+- Loading documents via drag & drop. The application now supports loading saved documents
+  (with `.mtgproxies` file extension) dropped onto the main window. 
 
 # Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
 
