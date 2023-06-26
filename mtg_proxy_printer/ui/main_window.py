@@ -16,20 +16,21 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl
-from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt
+from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
 from PyQt5.QtWidgets import QApplication, QMessageBox, QProgressBar, QAction, QWidget, QLabel, QMainWindow, QDialog
 
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
@@ -462,6 +463,9 @@ class MainWindow(QMainWindow):
         if self._to_save_file_path(event):
             logger.info("User drags a saved MTGProxyPrinter document onto the main window, accepting event")
             event.acceptProposedAction()
+        elif images := self._to_pixmaps(event):
+            logger.info(f"User drags {len(images)} images onto the main window, accepting event")
+            event.acceptProposedAction()
         else:
             logger.debug("Rejecting drag&drop action for unknown or invalid data")
 
@@ -469,6 +473,13 @@ class MainWindow(QMainWindow):
         if path := self._to_save_file_path(event):
             logger.info("User dropped save file onto the main window, loading the dropped document")
             self.document.loader.load_document(path)
+        elif images := self._to_pixmaps(event):
+            logger.info(f"User dropped {len(images)} images onto the main window, adding them as custom cards")
+            for image in images:
+                card = Card(
+                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True, False, 1, False, image)
+                action = ActionAddCard(card)
+                self.document.apply(action)
 
     @staticmethod
     def _to_save_file_path(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.Optional[pathlib.Path]:
@@ -486,3 +497,17 @@ class MainWindow(QMainWindow):
             if acceptable:
                 return path
         return None
+
+    @staticmethod
+    def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
+        result: typing.List[QPixmap] = []
+        mime_data = event.mimeData()
+        regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
+        width, height = regular.width.magnitude, regular.height.magnitude
+        for url in mime_data.urls():
+            pixmap = QPixmap(url.toLocalFile())
+            if not pixmap.isNull():
+                if pixmap.width() != width or pixmap.height() != height:
+                    pixmap = pixmap.scaled(width, height, transformMode=Qt.TransformationMode.SmoothTransformation)
+                result.append(pixmap)
+        return result
