@@ -10,6 +10,8 @@
   - Check cards can be added by right-clicking any side of a DFC card. Additional ways may be added in the future.
 - Export of individual card images as files, including generated check cards. Right-click a card and select the export
   option to save the image file to a location of your choice.
+- Loading documents via drag & drop. The application now supports loading saved documents
+  (with `.mtgproxies` file extension) dropped onto the main window. 
 
 # Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
 
