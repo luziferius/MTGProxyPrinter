@@ -171,12 +171,12 @@ class CentralWidget(QWidget):
                 logger.info("User cancelled adding card copies")
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
-        # Go through the image database to obtain the card images
+
         if isinstance(card, (Card, CheckCard)):
-            self.obtain_card_image.emit(ActionAddCard(card, count))
+            self.request_action.emit(ActionAddCard(card, count))
         else:
             for item in card:
-                self.obtain_card_image.emit(ActionAddCard(item, count))
+                self.request_action.emit(ActionAddCard(item, count))
 
     def _add_save_image_action(self, parent: QMenu, card: typing.Union[Card, CheckCard]):
         action = QAction(QIcon.fromTheme("document-save"), "Export image", parent)
