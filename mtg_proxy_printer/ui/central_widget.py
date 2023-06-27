@@ -237,10 +237,12 @@ class CentralWidget(QWidget):
         # because the width can only be set after the model root index to show has been set
         default_column_width = 102
         for column, scaling_factor in (
-                (PageColumns.CardName, 1.7),
-                (PageColumns.Set, 2),
-                (PageColumns.CollectorNumber, 0.95),
-                (PageColumns.Language, 0.8)):
+            (PageColumns.CardName, 1.7),
+            (PageColumns.Set, 2),
+            (PageColumns.CollectorNumber, 0.95),
+            (PageColumns.Language, 0.8),
+            (PageColumns.IsFront, 0.8),
+        ):
             new_size = math.floor(default_column_width * scaling_factor)
             self.ui.page_card_table_view.setColumnWidth(column, new_size)
 

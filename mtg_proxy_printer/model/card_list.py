@@ -53,7 +53,7 @@ class CardListModel(QAbstractTableModel):
         PageColumns.Set: "Set",
         PageColumns.CollectorNumber: "Collector #",
         PageColumns.Language: "Language",
-        PageColumns.IsFront: "Front/Back",
+        PageColumns.IsFront: "Side",
     }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
