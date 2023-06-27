@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.24.1 (2023-06-27)  <a name="v0_24_1"></a>
 
 ## Fixed issues
 
