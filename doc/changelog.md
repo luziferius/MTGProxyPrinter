@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+- Fixed broken check card generation and addition of related cards. Both features failed to fetch the required images,
+  rendering the cards as white rectangles, instead of the expected card images.
+
 # Version 0.24.0 (2023-06-26)  <a name="v0_24_0"></a>
 
 ## New features
