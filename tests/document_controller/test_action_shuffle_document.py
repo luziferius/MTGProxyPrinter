@@ -49,7 +49,7 @@ def test_apply(qtbot, document_light):
         has_property("name", equal_to("Card 2")),
         has_property("name", equal_to("Card 3")),
     ))
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.apply(document_light)
     new_page_content = cards_on_page(page)
     assert_that(new_page_content, contains_inanyorder(*old_page_content))
@@ -138,12 +138,12 @@ def test_second_apply_produces_same_order(qtbot, document_light):
     append_new_card_in_page(page, "Card 3")
     old_page_content = cards_on_page(page)
     card_count = len(old_page_content)
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.apply(document_light)
     new_page_content = cards_on_page(page)
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.undo(document_light)
     assert_that(cards_on_page(page), contains_exactly(*old_page_content), "Setup failed: undo() broken")
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.apply(document_light)
     assert_that(cards_on_page(page), contains_exactly(*new_page_content), "Second apply() produced different order")

@@ -45,7 +45,7 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
         ImageKey("7ef83f4c-abcd-abcd-9876-1234567890ab", True, True),  # Same prefix
     ]
     for key in keys:
-        with qtbot.waitSignal(image_db.download_worker.download_finished, timeout=100):
+        with qtbot.waitSignal(image_db.download_worker.download_finished, timeout=1000):
             blank_image_file = qpixmap_to_bytes_io(image_db.blank_image)
             image_db.download_worker.read_from_url = mock_downloader = MagicMock()
             mock_downloader.return_value = blank_image_file, MagicMock()

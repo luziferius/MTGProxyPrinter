@@ -529,56 +529,12 @@ class Worker(QObject):
 
     @staticmethod
     def _validate_database_schema(db_unsafe: sqlite3.Connection) -> int:
-        """
-        Validates the database schema of the user-provided file against a known-good schema.
-
-        :raises AssertionError: If the provided file contains an invalid schema
-        :returns: Database schema version
-        """
-        assert_that(
-            db_unsafe.execute("PRAGMA application_id").fetchone(),
-            contains_exactly(SAVE_FILE_MAGIC_NUMBER),
-            "Application ID mismatch. Not an MTGProxyPrinter save file!"
-        )
         user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
-        try:
-            db_known_good = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
-                f"document-v{user_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
-        except FileNotFoundError as e:
-            raise AssertionError(f"Unknown save file version: {user_schema_version}") from e
-        tables_and_views_query = textwrap.dedent("""\
-            SELECT   s.type, s.name,
-                     p.cid AS column_id, p.name AS column_name, p.type AS column_type,
-                     p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
-                     p.pk AS column_primary_key_component
-              FROM   sqlite_schema AS s
-              JOIN   pragma_table_info(s.name) AS p
-             WHERE   s.type IN ('table', 'view')
-               AND   s.name NOT LIKE 'sqlite_%'
-            ORDER BY s.name, column_id
-            ;""")
-        indices_query = textwrap.dedent("""\
-            -- Note: Also include the “sqlite_autoindex*” indices that are
-            -- automatically created for UNIQUE and PRIMARY KEY constraints.
-            SELECT   s.name AS index_name,
-                     p.seqno AS index_column_sequence_number,
-                     p.cid AS column_id,
-                     p.name AS column_name
-              FROM   sqlite_schema AS s
-              JOIN   pragma_index_info(s.name) AS p
-             WHERE   s.type = 'index'
-            ORDER BY index_name ASC, index_column_sequence_number ASC
-            ;""")
-        with db_known_good:
-            assert_that(
-                db_unsafe.execute(tables_and_views_query).fetchall(),
-                contains_exactly(*db_known_good.execute(tables_and_views_query).fetchall()),
-                "Given save file inconsistent: Unexpected tables or views")
-            assert_that(
-                db_unsafe.execute(indices_query).fetchall(),
-                contains_exactly(*db_known_good.execute(indices_query).fetchall()),
-                "Given save file inconsistent: Unexpected indices")
-        return user_schema_version
+        return mtg_proxy_printer.sqlite_helpers.validate_database_schema(
+            db_unsafe, SAVE_FILE_MAGIC_NUMBER, f"document-v{user_schema_version}",
+            DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION,
+            "Application ID mismatch. Not an MTGProxyPrinter save file!",
+        )
 
     def cancel_running_operations(self):
         self.should_run = False

@@ -37,10 +37,11 @@ INVALID_INDEX = QModelIndex()
 
 class PageColumns(enum.IntEnum):
     CardName = 0
-    Set = 1
-    CollectorNumber = 2
-    Language = 3
-    Image = 4
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    Language = enum.auto()
+    IsFront = enum.auto()
+    Image = enum.auto()
 
 
 class CardListModel(QAbstractTableModel):
@@ -53,6 +54,7 @@ class CardListModel(QAbstractTableModel):
         PageColumns.Set: "Set",
         PageColumns.CollectorNumber: "Collector #",
         PageColumns.Language: "Language",
+        PageColumns.IsFront: "Front/Back",
     }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
@@ -85,6 +87,10 @@ class CardListModel(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == PageColumns.Language:
                 return card.language
+            elif index.column() == PageColumns.IsFront:
+                if role == Qt.EditRole:
+                    return card.is_front
+                return "Front" if card.is_front else "Back"
         if card.is_oversized:
             if role == ItemDataRole.ToolTipRole:
                 return "Beware: Potentially oversized card!\nThis card may not fit in your deck."

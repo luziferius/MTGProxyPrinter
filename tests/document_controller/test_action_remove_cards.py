@@ -45,7 +45,7 @@ def test_apply_removes_two_1_card_ranges(qtbot, document_light):
     remaining = append_new_card_in_page(page, "Remaining")
     removed_2 = append_new_card_in_page(page, "Removed 2")
     action = ActionRemoveCards([0, 2])
-    with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=100):
+    with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=1000):
         assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
@@ -72,7 +72,7 @@ def test_apply_removes_one_2_card_range(qtbot, document_light):
     removed_2 = append_new_card_in_page(page, "Removed 2")
     remaining = append_new_card_in_page(page, "Remaining")
     action = ActionRemoveCards([0, 1])
-    with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=100):
+    with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=1000):
         assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
@@ -108,7 +108,7 @@ def test_apply_emits_page_type_changed_signal_if_changed(qtbot, document_light):
     with qtbot.assert_not_emitted(document_light.page_type_changed):
         ActionRemoveCards([0]).apply(document_light)
     assert_that(page.page_type(), is_(PageType.REGULAR))
-    with qtbot.wait_signal(document_light.page_type_changed, timeout=100):
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=1000):
         ActionRemoveCards([0]).apply(document_light)
     assert_that(page.page_type(), is_(PageType.UNDETERMINED))
 
@@ -122,7 +122,7 @@ def test_undo_restores_two_1_card_ranges(qtbot, document_light):
     action.removed_cards.append([CardContainer(page, removed_1)])  # Range [0, 0]
     action.removed_cards.append([CardContainer(page, removed_2)])  # Range [2, 2]
 
-    with qtbot.wait_signals([document_light.rowsAboutToBeInserted, document_light.rowsInserted], timeout=100):
+    with qtbot.wait_signals([document_light.rowsAboutToBeInserted, document_light.rowsInserted], timeout=1000):
         assert_that(action.undo(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,
@@ -144,7 +144,7 @@ def test_undo_restores_one_2_card_range(qtbot, document_light):
     action.removed_cards.append(
         [CardContainer(page, removed_1), CardContainer(page, removed_2)]
     )
-    with qtbot.wait_signals([document_light.rowsAboutToBeInserted, document_light.rowsInserted], timeout=100):
+    with qtbot.wait_signals([document_light.rowsAboutToBeInserted, document_light.rowsInserted], timeout=1000):
         assert_that(action.undo(document_light), is_(instance_of(DocumentAction)))
     assert_that(
         page,

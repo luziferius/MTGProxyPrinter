@@ -28,6 +28,8 @@ from PySide6.QtGui import QPixmap, QColor, QColorConstants
 from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, Signal
 import delegateto
 
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.imagedb import CacheContent
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
@@ -45,7 +47,7 @@ OptionalString = typing.Optional[str]
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
 ItemDataRole = Qt.ItemDataRole
-
+SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
 MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
@@ -179,8 +181,16 @@ class CardDatabase(QObject):
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         db = mtg_proxy_printer.sqlite_helpers.open_database(
-            db_path, "carddb", self.MIN_SUPPORTED_SQLITE_VERSION, False)
+            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, False)
         migrate_card_database(db)
+        logger.debug("Validating schema of the opened database")
+        try:
+            mtg_proxy_printer.sqlite_helpers.validate_database_schema(
+                db, 0, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, "Card database has unknown application id.")
+        except AssertionError:
+            logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
+        else:
+            logger.debug("Card database schema valid")
         self.db = db
         self._exit_hook = None
         if db_path != ":memory:":
@@ -332,7 +342,7 @@ class CardDatabase(QObject):
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = ['WHERE Printing.is_hidden IS FALSE']
+        where_clause = ['    WHERE Printing.is_hidden IS FALSE']
         where_parameters = []
         if card.language:
             where_clause.append(f'AND "language" = ?')
@@ -405,6 +415,51 @@ class CardDatabase(QObject):
         ]
         return result
 
+    def find_related_cards(self, card: Card) -> CardList:
+        """
+        Recursively finds all cards related to the given card.
+        This may be cards referenced by name in either direction, or token cards created
+        """
+        query = cached_dedent("""\
+        WITH RECURSIVE 
+          source_oracle_id (card_id) AS (
+            SELECT card_id
+            FROM Card
+            WHERE oracle_id = ?),
+          related_oracle_ids(related_id) AS (
+            SELECT related_id
+              FROM RelatedPrintings
+              JOIN source_oracle_id USING (card_id)
+            UNION
+            SELECT RelatedPrintings.related_id
+              FROM RelatedPrintings
+              JOIN related_oracle_ids ON RelatedPrintings.card_id = related_oracle_ids.related_id
+              WHERE RelatedPrintings.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
+        )
+        SELECT oracle_id
+          FROM Card
+          JOIN related_oracle_ids ON Card.card_id = related_oracle_ids.related_id
+        """)
+        related_card_ids = self.db.execute(query, (card.oracle_id,)).fetchall()
+        cards = []
+        for related_oracle_id, in related_card_ids:
+            # Prefer same set over other sets, which is important for multi-component cards like Meld cards. If it
+            # isn't available, take from any other set. As a last-ditch fallback, resort to English printings.
+            # The last case is most likely hit with non-English token-producing cards,
+            # as long as Scryfall does not provide localized tokens.
+            related_cards = self.get_cards_from_data(
+                CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
+                order_by_print_count=True) or \
+            self.get_cards_from_data(
+                CardIdentificationData(card.language, oracle_id=related_oracle_id),
+                order_by_print_count=True) or \
+            self.get_cards_from_data(
+                CardIdentificationData("en", oracle_id=related_oracle_id),
+                order_by_print_count=True)
+            if related_cards:
+                cards.append(related_cards[0])
+        return cards
+
     def find_collector_numbers_matching(self, card_name: str, set_abbr: str, language: str) -> StringList:
         """
         Finds all collector numbers matching the given filter. The result contains multiple elements, if the card
@@ -434,7 +489,8 @@ class CardDatabase(QObject):
         return natural_sorted(item for item, in self.db.execute(query, (language, set_abbr, card_name)))
 
     def find_sets_matching(
-            self, card_name: str, language: str, set_name_filter: str = None) -> typing.List[MTGSet]:
+            self, card_name: str, language: str, set_name_filter: str = None,
+            *, is_front: bool = None) -> typing.List[MTGSet]:
         """
         Finds all matching sets that the given card was printed in.
 
@@ -442,6 +498,7 @@ class CardDatabase(QObject):
         :param language: card language, matched exactly
         :param set_name_filter: If provided, only return sets with set code or full name beginning with this.
           Used as a LIKE pattern, supporting SQLite wildcards.
+        :param is_front: Match by front/back. Only relevant when switching printings of SLD reversible cards.
         :return: List of matching sets, as tuples (set_abbreviation, full_english_set_name)
         """
         query = cached_dedent('''\
@@ -455,8 +512,9 @@ class CardDatabase(QObject):
               AND FaceName.is_hidden IS FALSE
               AND "language" = ?
               AND card_name = ?
+              AND COALESCE(is_front = ?, TRUE)
         ''')
-        parameters = [language, card_name]
+        parameters = [language, card_name, is_front]
         if set_name_filter:
             query += '      AND (set_code LIKE ? OR set_name LIKE ?)\n'
             parameters += [f"{set_name_filter}%"] * 2
@@ -482,6 +540,43 @@ class CardDatabase(QObject):
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 bool(highres_image), bool(is_oversized), face_number
             )
+
+    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]):
+        """
+        Partitions the content of the ImageDatabase disk cache into three lists:
+        - All visible card printings
+        - All hidden card printings
+        - All unknown images
+
+        Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
+        unknown images are returned as a list with plain CacheContent instances.
+        """
+        query = cached_dedent('''\
+        SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
+            highres_image, is_oversized, face_number, is_hidden -- get_all_cards_from_image_cache()
+            FROM AllPrintings
+            WHERE scryfall_id = ? AND is_front = ?
+        ''')
+        visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+        hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+        unknown: typing.List["CacheContent"] = []
+        for cache_item in cache_content:
+            result = self.db.execute(query, (cache_item.scryfall_id, cache_item.is_front)).fetchone()
+            if result is None:
+                unknown.append(cache_item)
+                continue
+            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
+                    is_oversized, face_number, is_hidden = result
+            card = Card(
+                name, MTGSet(set_abbr, set_name), collector_number,
+                language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
+                bool(highres_image), bool(is_oversized), face_number
+            )
+            if is_hidden:
+                hidden.append((card, cache_item))
+            else:
+                visible.append((card, cache_item))
+        return visible, hidden, unknown
 
     def get_opposing_face(self, card) -> OptionalCard:
         """
@@ -687,10 +782,11 @@ class CardDatabase(QObject):
             bool(highres_image), bool(is_oversized), face_number
         )
 
-    def store_current_printing_filters(self, use_transaction: bool = True, *, force_update_hidden_column: bool = False,
-                                       progress_signal: typing.Callable[[int], None] = None):
+    def store_current_printing_filters(
+            self, use_transaction: bool = True, *,
+            force_update_hidden_column: bool = False, progress_signal: typing.Callable[[], None] = None):
         if progress_signal is None:
-            progress_signal = (lambda _: None)
+            progress_signal = (lambda: None)
         section = mtg_proxy_printer.settings.settings["card-filter"]
         if use_transaction:
             self.db.execute("BEGIN TRANSACTION;\n")
@@ -708,7 +804,7 @@ class CardDatabase(QObject):
                     """),
                 ((key, section.getboolean(key)) for key in section.keys())
             )
-            progress_signal(1)
+            progress_signal()
         if filters_need_update or old_filter_removed or force_update_hidden_column:
             self._update_cached_data(progress_signal)
             self.card_filter_updated.emit()
@@ -737,7 +833,7 @@ class CardDatabase(QObject):
             )
         return bool(old_filters)
 
-    def _update_cached_data(self, progress_signal: typing.Callable[[int], None]):
+    def _update_cached_data(self, progress_signal: typing.Callable[[], None]):
         logger.debug("Update the Printing.is_hidden column")
         self.db.execute(cached_dedent("""\
         UPDATE Printing    -- _update_cached_data()
@@ -749,7 +845,7 @@ class CardDatabase(QObject):
             ))
         ;
         """))
-        progress_signal(2)
+        progress_signal()
         logger.debug("Update the FaceName.is_hidden column")
         self.db.execute(cached_dedent("""\
         WITH FaceNameShouldBeHidden (face_name_id, should_be_hidden) AS (    -- _update_cached_data()
@@ -771,7 +867,7 @@ class CardDatabase(QObject):
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
         """))
-        progress_signal(3)
+        progress_signal()
         logger.debug("Update the RemovedPrintings table")
         self.db.execute(cached_dedent("""\
         DELETE FROM RemovedPrintings    -- _update_cached_data()
@@ -781,8 +877,7 @@ class CardDatabase(QObject):
             WHERE Printing.is_hidden IS FALSE
           );
         """))
-
-        progress_signal(4)
+        progress_signal()
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
         # than the current method that only inserts missing rows.
@@ -800,5 +895,5 @@ class CardDatabase(QObject):
                 FROM RemovedPrintings AS rp
               );
         """))
-        progress_signal(5)
+        progress_signal()
         logger.debug("Finished maintenance tasks.")

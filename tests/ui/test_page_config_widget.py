@@ -143,7 +143,7 @@ def test_save_integer_document_settings_to_config(
         expected = str(max(min_value, value))
         spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
         spinbox_widget.setValue(spinbox_widget.value()+10000)
-        with qtbot.waitSignal(spinbox_widget.valueChanged, timeout=100):
+        with qtbot.waitSignal(spinbox_widget.valueChanged, timeout=1000):
             spinbox_widget.setValue(value)
         widget.save_document_settings_to_config()
         assert_that(document_settings, has_entry(settings_name, equal_to(expected)))

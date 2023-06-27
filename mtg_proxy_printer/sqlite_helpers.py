@@ -18,7 +18,10 @@ import pathlib
 import re
 import sqlite3
 import sys
+import textwrap
 import typing
+
+from hamcrest import assert_that, contains_exactly
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -84,7 +87,7 @@ def open_database(
     db = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     logger.debug(f"Connected SQLite database {location}.")
     # These settings are volatile, thus have to be set for each opened connection
-    db.executescript("PRAGMA foreign_keys = ON; PRAGMA analysis_limit=1000; PRAGMA trusted_schema = OFF;")
+    db.executescript("PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF;")
     logger.debug("Enabled SQLite3 foreign keys support.")
     if should_create_schema:
         populate_database_schema(db, schema_name)
@@ -125,3 +128,59 @@ def _read_current_database_schema_version(schema_name: str) -> int:
     schema = read_resource_text("mtg_proxy_printer.model", f"{schema_name}.sql")
     latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
     return latest_user_version
+
+
+def validate_database_schema(
+        db_unsafe: sqlite3.Connection, file_magic: int, schema_name: str,
+        min_sqlite_version: typing.Tuple[int, int, int],
+        magic_mismatch_error_msg: str) -> int:
+    """
+    Validates the database schema of the user-provided file against a known-good schema.
+
+    :raises AssertionError: If the provided file contains an invalid schema
+    :returns: Database schema version
+    """
+    assert_that(
+        db_unsafe.execute("PRAGMA application_id").fetchone(),
+        contains_exactly(file_magic),
+        magic_mismatch_error_msg
+    )
+    user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
+    try:
+        db_known_good = create_in_memory_database(
+            schema_name, min_sqlite_version)
+    except FileNotFoundError as e:
+        raise AssertionError(f"Unknown database schema version: {user_schema_version}") from e
+    tables_and_views_query = textwrap.dedent("""\
+        SELECT   s.type, s.name,
+                 p.cid AS column_id, p.name AS column_name, p.type AS column_type,
+                 p."notnull" AS column_not_null_constraint_enabled, p.dflt_value AS column_default_value,
+                 p.pk AS column_primary_key_component
+          FROM   sqlite_schema AS s
+          JOIN   pragma_table_info(s.name) AS p
+         WHERE   s.type IN ('table', 'view')
+           AND   s.name NOT LIKE 'sqlite_%'
+        ORDER BY s.name, column_id
+        ;""")
+    indices_query = textwrap.dedent("""\
+        -- Note: Also include the “sqlite_autoindex*” indices that are
+        -- automatically created for UNIQUE and PRIMARY KEY constraints.
+        SELECT   s.name AS index_name,
+                 p.seqno AS index_column_sequence_number,
+                 p.cid AS column_id,
+                 p.name AS column_name
+          FROM   sqlite_schema AS s
+          JOIN   pragma_index_info(s.name) AS p
+         WHERE   s.type = 'index'
+        ORDER BY index_name ASC, index_column_sequence_number ASC
+        ;""")
+    with db_known_good:
+        assert_that(
+            db_unsafe.execute(tables_and_views_query).fetchall(),
+            contains_exactly(*db_known_good.execute(tables_and_views_query).fetchall()),
+            "Given file inconsistent: Unexpected tables or views")
+        assert_that(
+            db_unsafe.execute(indices_query).fetchall(),
+            contains_exactly(*db_known_good.execute(indices_query).fetchall()),
+            "Given file inconsistent: Unexpected indices")
+    return user_schema_version

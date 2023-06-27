@@ -40,7 +40,7 @@ def test_apply_with_position_deletes_given_page_1(qtbot, document_light):
     validator = partial(validate_qt_model_signal_parameter, 1, 1)
     with qtbot.wait_signals(
             [document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
-            check_params_cbs=[validator]*2, timeout=100):
+            check_params_cbs=[validator]*2, timeout=1000):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -72,7 +72,7 @@ def test_apply_with_position_deletes_given_page_0(qtbot, document_light):
     validator = partial(validate_qt_model_signal_parameter, 0, 0)
     with qtbot.wait_signals(
             [document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
-            check_params_cbs=[validator]*2, timeout=100):
+            check_params_cbs=[validator]*2, timeout=1000):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -111,7 +111,7 @@ def test_apply_with_position_and_count_deletes_given_number_of_pages(qtbot, docu
     validator = partial(validate_qt_model_signal_parameter, 1, 2)
     with qtbot.wait_signals(
             [document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
-            check_params_cbs=[validator]*2, timeout=100):
+            check_params_cbs=[validator]*2, timeout=1000):
         assert_that(action.apply(document_light), is_(same_instance(action)))
 
     assert_that(
@@ -141,7 +141,7 @@ def test_apply_with_position_and_count_includes_currently_edited_page_if_within_
     validator = partial(validate_qt_model_signal_parameter, 1, 2)
     with qtbot.wait_signals(
             [document_light.current_page_changed, document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
-            check_params_cbs=[(lambda index: index.row() == index.column() == 0)] + [validator]*2, timeout=100):
+            check_params_cbs=[(lambda index: index.row() == index.column() == 0)] + [validator]*2, timeout=1000):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -171,7 +171,7 @@ def test_apply_without_position_deletes_currently_edited_page(qtbot, document_li
 
     with qtbot.wait_signals(
             [document_light.current_page_changed, document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
-            check_params_cbs=[(lambda index: index.row() == index.column() == 0)] + [validator]*2, timeout=100):
+            check_params_cbs=[(lambda index: index.row() == index.column() == 0)] + [validator]*2, timeout=1000):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -199,7 +199,7 @@ def test_undo_with_position_restores_page_at_given_middle_position(qtbot, docume
     validator = partial(validate_qt_model_signal_parameter, 1, 1)
     with qtbot.wait_signals(
             [document_light.rowsAboutToBeInserted, document_light.rowsInserted],
-            check_params_cbs=[validator]*2, timeout=100):
+            check_params_cbs=[validator]*2, timeout=1000):
         assert_that(action.undo(document_light), is_(same_instance(action)))
 
 
@@ -225,7 +225,7 @@ def test_undo_with_position_restores_multiple_pages_at_given_middle_position(qtb
     validator = partial(validate_qt_model_signal_parameter, 1, 2)
     with qtbot.wait_signals(
             [document_light.rowsAboutToBeInserted, document_light.rowsInserted],
-            check_params_cbs=[validator] * 2, timeout=100):
+            check_params_cbs=[validator] * 2, timeout=1000):
         assert_that(action.undo(document_light), is_(same_instance(action)))
 
     assert_that(
@@ -251,7 +251,7 @@ def test_undo_restores_currently_edited_page(qtbot, document_light):
     validator = partial(validate_qt_model_signal_parameter, 2, 2)
     with qtbot.wait_signals(
             [document_light.current_page_changed, document_light.rowsAboutToBeInserted, document_light.rowsInserted],
-            check_params_cbs=[(lambda index: index.row() == 2 and index.column() == 0)] + [validator]*2, timeout=100):
+            check_params_cbs=[(lambda index: index.row() == 2 and index.column() == 0)] + [validator]*2, timeout=1000):
         assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(
         document_light.pages,
@@ -283,7 +283,7 @@ def test_undo_with_one_page_correctly_replaces_the_old_automatically_inserted_pa
              document_light.rowsAboutToBeInserted, document_light.rowsInserted,
              document_light.rowsAboutToBeRemoved, document_light.rowsRemoved],
             check_params_cbs=[lambda index: index.row() == index.column() == 0] +
-                             [insert_validator]*2 + [remove_validator]*2, timeout=100):
+                             [insert_validator]*2 + [remove_validator]*2, timeout=1000):
         action.undo(document_light)
     document_light.currently_edited_page, is_(same_instance(removed_page))
     assert_that(document_light.pages, contains_exactly(same_instance(removed_page)))

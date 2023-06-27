@@ -38,6 +38,9 @@
        <verstretch>1</verstretch>
       </sizepolicy>
      </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::CustomContextMenu</enum>
+     </property>
      <property name="lineWidth">
       <number>0</number>
      </property>

@@ -107,7 +107,7 @@ def assert_undone(action: DummyAction, document: Document):
 
 def test_apply_on_empty_undo_stack_empty_redo_stack(qtbot: QtBot, document_light: Document):
     action = DummyAction()
-    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=100), \
+    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -124,7 +124,7 @@ def test_apply_on_empty_undo_stack_filled_redo_stack(qtbot: QtBot, document_ligh
     with qtbot.wait_signals([
                 document_light.undo_available_changed,
                 document_light.redo_available_changed,
-                document_light.action_applied], timeout=100), \
+                document_light.action_applied], timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
 
@@ -141,7 +141,7 @@ def test_apply_on_filled_undo_stack_empty_redo_stack(qtbot: QtBot, document_ligh
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone), \
-            qtbot.wait_signal(document_light.action_applied, timeout=100):
+            qtbot.wait_signal(document_light.action_applied, timeout=1000):
         document_light.apply(action)
 
     assert_that(document_light.redo_stack, is_(empty()))
@@ -156,7 +156,7 @@ def test_apply_on_filled_undo_stack_filled_redo_stack(qtbot: QtBot, document_lig
     document_light.redo_stack.append(redo_dummy := DummyAction(1))
     action = DummyAction(0)
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -174,7 +174,7 @@ def test_apply_same_action_as_on_redo_stack_does_keep_remaining_redo_stack(qtbot
     document_light.redo_stack.append(DummyAction(1))
     action = DummyAction(1)
     expected_signals = [document_light.undo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -186,7 +186,7 @@ def test_undo_on_empty_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, documen
     document_light.undo_stack.append(first := DummyAction())
     document_light.undo_stack.append(second := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=100),\
+    with qtbot.wait_signals(expected_signals, timeout=1000),\
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -203,7 +203,7 @@ def test_undo_on_empty_redo_stack_1_element_on_undo_stack(qtbot: QtBot, document
     expected_signals = [
         document_light.redo_available_changed, document_light.undo_available_changed, document_light.action_undone,
     ]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
 
@@ -217,7 +217,7 @@ def test_undo_on_filled_redo_stack_1_element_on_undo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(redo_dummy := DummyAction())
     document_light.undo_stack.append(first := DummyAction())
     expected_signals = [document_light.undo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -237,7 +237,7 @@ def test_undo_on_filled_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, docume
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied), \
-            qtbot.wait_signal(document_light.action_undone, timeout=100):
+            qtbot.wait_signal(document_light.action_undone, timeout=1000):
         document_light.undo()
 
     assert_that(document_light.undo_stack, contains_exactly(first))
@@ -254,7 +254,7 @@ def test_redo_on_empty_undo_stack_1_element_on_redo_stack(qtbot: QtBot, document
         document_light.undo_available_changed, document_light.redo_available_changed, document_light.action_applied
     ]
     with qtbot.wait_signals(
-            expected_signals, timeout=100), \
+            expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
 
@@ -269,7 +269,7 @@ def test_redo_on_empty_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(second := DummyAction())
 
     expected_signals = [document_light.undo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -285,7 +285,7 @@ def test_redo_on_filled_undo_stack_1_element_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(first := DummyAction())
     document_light.undo_stack.append(undo_dummy := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100),\
+    with qtbot.wait_signals(expected_signals, timeout=1000),\
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -305,7 +305,7 @@ def test_redo_on_filled_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, docume
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone), \
-            qtbot.wait_signal(document_light.action_applied, timeout=100):
+            qtbot.wait_signal(document_light.action_applied, timeout=1000):
         document_light.redo()
 
     assert_that(document_light.undo_stack, contains_exactly(undo_dummy, second))

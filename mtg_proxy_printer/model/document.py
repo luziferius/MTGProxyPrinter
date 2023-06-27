@@ -275,6 +275,8 @@ class Document(QAbstractItemModel):
                 return card.language
             elif index.column() == PageColumns.Image:
                 return card.image_file
+            elif index.column() == PageColumns.IsFront:
+                return card.is_front
 
     @staticmethod
     def _get_page_preview(page: Page):

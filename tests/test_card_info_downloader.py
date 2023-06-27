@@ -14,15 +14,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
+import sqlite3
 import typing
 import unittest.mock
 
 from hamcrest import *
 import pytest
 
+import mtg_proxy_printer.card_info_downloader
+import tests.helpers
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase
-from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty
+from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
+    fill_card_database_with_json_cards
 
 
 class DatabasePrintingData(typing.NamedTuple):
@@ -388,6 +392,19 @@ def generate_test_cases_for_test_download_filters():
         ), DatabaseSetData("ha1", "Historic Anthology 1", "https://scryfall.com/sets/ha1?utm_source=api", "2019-11-21"),
         "en", "1", "b72e71c7-a65c-481d-8ad7-77bfb5d66d73", "27ad3e00-6ffb-48f7-8469-8868d066d1e2", False,
     ), "hide-digital-cards"
+    yield TestCaseData(
+        "borderless_card", True, (
+            FaceData("Absorb", "https://cards.scryfall.io/png/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.png?1682713062", True),
+        ), DatabaseSetData("dmr", "Dominaria Remastered", "https://scryfall.com/sets/dmr?utm_source=api", "2023-01-13"),
+        "en", "443", "87a7ff06-32b7-48cd-99bb-a91f7f43538d", "132ca99a-a3c7-4ed6-b4d0-0edcd7140ca2", False,
+    ), "hide-borderless"
+    TestCaseData(  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+        "double_faced_card_without_top_level_oracle_id", False, (
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", True),
+            FaceData("Stitch in Time", "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835", False),
+        ), DatabaseSetData("sld", "Secret Lair Drop", "https://scryfall.com/sets/sld?utm_source=api", "2022-04-22"),
+        "en", "382", "087c3a0d-c710-4451-989e-596b55352184", "59b2a90e-542f-4fb0-b290-000000000000", False,
+    ), "hide-reversible-cards"
 
 
 @pytest.mark.parametrize("filter_setting", [True, False])
@@ -675,3 +692,36 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
             (expected_score,)
         )
     )
+
+def test_related_printings(qtbot, card_db: CardDatabase):
+    db = card_db.db
+    cards = [
+        "The_Underworld_Cookbook",
+        "Food_Token",
+        "Asmoranomardicadaistinaculdacar",
+        "Bake_into_a_Pie",
+        "Asmoranomardicadaistinaculdacar_2",
+        "Food_Token_2",
+    ]
+    # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
+    # and Back into a Pie both create a Food token, but are set to different printings of that token card.
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder(
+            # The Food token (card id 2) is never a source, as that would pull all cards creating that token
+            (3, 1),  # Asmoranomardicadaistinaculdacar references The Underworld Cookbook by name
+            (1, 3),  # Back relation
+            (1, 2),  # Card mentions Food token
+            (4, 2),  # Card mentions Food token
+        )
+    )
+
+@pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
+def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    data_raising_exception = unittest.mock.MagicMock().__iter__.side_effect = exception()
+    with unittest.mock.patch("mtg_proxy_printer.card_info_downloader.logger.exception") as logger_mock:
+        dw.populate_database(data_raising_exception)
+    logger_mock.assert_called()
+    fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")

@@ -29,6 +29,10 @@ def migrate_from_old_appdirs():
         return
     import shutil
     data_directories.user_log_path.mkdir(parents=True, exist_ok=True)
+    new_log_path = data_directories.user_log_path
     for item in old_logs.glob("*"):
-        shutil.move(item, data_directories.user_log_dir)
+        if (new_log_path/item).exists():
+            item.unlink()  # New location already exists, cannot migrate. Simply prune the old log file
+        else:
+            shutil.move(item, new_log_path)
     old_logs.rmdir()
