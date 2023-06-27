@@ -5,7 +5,6 @@
 from pathlib import Path
 import subprocess
 
-import PyQt5.uic
 from setuptools import setup
 import setuptools.command.build_py
 
