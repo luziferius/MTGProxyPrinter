@@ -170,12 +170,21 @@ class CentralWidget(QWidget):
                 logger.info("User cancelled adding card copies")
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
-
         if isinstance(card, (Card, CheckCard)):
-            self.request_action.emit(ActionAddCard(card, count))
+            self._request_action_add_card(card, count)
         else:
             for item in card:
-                self.request_action.emit(ActionAddCard(item, count))
+                self._request_action_add_card(item, count)
+
+    def _request_action_add_card(self, card: typing.Union[Card, CheckCard], count: int):
+        # If cards have images, request the action directly. This happens when adding copies of already added cards
+        # and is required for custom cards. Otherwise, request the image from the image database. Cards without images
+        # at this point are CheckCards or related cards.
+        action = ActionAddCard(card, count)
+        if card.image_file is None:
+            self.obtain_card_image.emit(action)
+        else:
+            self.request_action.emit(action)
 
     def _add_save_image_action(self, parent: QMenu, card: typing.Union[Card, CheckCard]):
         action = QAction(QIcon.fromTheme("document-save"), "Export image", parent)
@@ -227,10 +236,12 @@ class CentralWidget(QWidget):
         # because the width can only be set after the model root index to show has been set
         default_column_width = 102
         for column, scaling_factor in (
-                (PageColumns.CardName, 1.7),
-                (PageColumns.Set, 2),
-                (PageColumns.CollectorNumber, 0.95),
-                (PageColumns.Language, 0.8)):
+            (PageColumns.CardName, 1.7),
+            (PageColumns.Set, 2),
+            (PageColumns.CollectorNumber, 0.95),
+            (PageColumns.Language, 0.8),
+            (PageColumns.IsFront, 0.8),
+        ):
             new_size = math.floor(default_column_width * scaling_factor)
             self.ui.page_card_table_view.setColumnWidth(column, new_size)
 

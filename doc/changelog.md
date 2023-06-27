@@ -1,5 +1,14 @@
 # Changelog
 
+# Version 0.24.1 (2023-06-27)  <a name="v0_24_1"></a>
+
+## Fixed issues
+
+- Fixed broken check card generation and addition of related cards. Both features failed to fetch the required images,
+  rendering the cards as white rectangles, instead of the expected card images.
+- Fixed display of the 5th column in the table showing the cards on the current page. It shows whether the image is
+  a front or back side of a (double-faced) card. It now has a proper header ("Side") and human-readable content.  
+
 # Version 0.24.0 (2023-06-26)  <a name="v0_24_0"></a>
 
 ## New features

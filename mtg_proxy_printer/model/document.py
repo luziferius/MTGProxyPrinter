@@ -80,6 +80,7 @@ class Document(QAbstractItemModel):
         PageColumns.CollectorNumber: "Collector #",
         PageColumns.Language: "Language",
         PageColumns.Image: "Image",
+        PageColumns.IsFront: "Side",
     }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
 
@@ -276,7 +277,9 @@ class Document(QAbstractItemModel):
             elif index.column() == PageColumns.Image:
                 return card.image_file
             elif index.column() == PageColumns.IsFront:
-                return card.is_front
+                if role == Qt.EditRole:
+                    return card.is_front
+                return "Front" if card.is_front else "Back"
 
     @staticmethod
     def _get_page_preview(page: Page):
