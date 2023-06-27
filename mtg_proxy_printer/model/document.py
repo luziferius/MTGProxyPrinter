@@ -309,6 +309,9 @@ class Document(QAbstractItemModel):
             (page, slot, scryfall_id, is_front, regular_card)
             for (page, (slot, (scryfall_id, is_front)))
             in itertools.chain.from_iterable(cards)
+            # TODO: For now, custom cards have an empty id. Until saving them is implemented, skip custom cards
+            #   so that the document can still be loaded
+            if scryfall_id
         )
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:

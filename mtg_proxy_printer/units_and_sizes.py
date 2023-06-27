@@ -26,6 +26,7 @@ import pint
 unit_registry = pint.UnitRegistry()
 RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
 UUID = str
+DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 
 class CardSize(typing.NamedTuple):

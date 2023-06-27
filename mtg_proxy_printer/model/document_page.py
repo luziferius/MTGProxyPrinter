@@ -16,7 +16,7 @@
 import dataclasses
 import typing
 
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, CheckCard
 from mtg_proxy_printer.units_and_sizes import PageType
 
 
@@ -38,8 +38,8 @@ class Page(typing.List[CardContainer]):
             return PageType.OVERSIZED
         return PageType.MIXED
 
-    def accepts_card(self, card: typing.Union[Card, PageType]) -> bool:
-        other_type = card.requested_page_type() if isinstance(card, Card) else card
+    def accepts_card(self, card: typing.Union[Card, CheckCard, PageType]) -> bool:
+        other_type = card.requested_page_type() if isinstance(card, (Card, CheckCard)) else card
         own_page_type = self.page_type()
         return other_type == own_page_type or own_page_type is PageType.UNDETERMINED
 

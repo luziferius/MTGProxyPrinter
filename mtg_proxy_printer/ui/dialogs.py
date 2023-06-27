@@ -21,13 +21,15 @@ from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonB
 from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
-import mtg_proxy_printer.model.carddb
+import mtg_proxy_printer.app_dirs
+from mtg_proxy_printer.model.carddb import Card
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.logger import get_logger
 
@@ -88,12 +90,12 @@ class SaveDocumentAsDialog(QFileDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
         super(SaveDocumentAsDialog, self).__init__(
-            parent, "Save document as …", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
+            parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-        self.setDefaultSuffix("mtgproxies")
+        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
         self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
@@ -117,12 +119,13 @@ class LoadDocumentDialog(QFileDialog):
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
         super(LoadDocumentDialog, self).__init__(
-            parent, "Load MTGProxyPrinter document", filter="MTGProxyPrinter document (*.mtgproxies)", **kwargs)
+            parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
+            **kwargs)
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
-        self.setDefaultSuffix("mtgproxies")
+        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
         self.setFileMode(QFileDialog.FileMode.ExistingFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)

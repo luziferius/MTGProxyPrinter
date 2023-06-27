@@ -16,21 +16,22 @@
 import pathlib
 import typing
 
-from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl
-from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices
+from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt, QSize
+from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
 from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QLabel, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
-
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
 from mtg_proxy_printer.card_info_downloader import CardInfoDownloader
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.document_controller.shuffle_document import ActionShuffleDocument
 from mtg_proxy_printer.document_controller.new_document import ActionNewDocument
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
@@ -51,6 +52,8 @@ del get_logger
 __all__ = [
     "MainWindow",
 ]
+TransformationMode = Qt.TransformationMode
+StandardKey = QKeySequence.StandardKey
 
 
 class MainWindow(QMainWindow):
@@ -70,6 +73,7 @@ class MainWindow(QMainWindow):
         self.is_running = True
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.setAcceptDrops(True)
         self.default_undo_tooltip = self.ui.action_undo.toolTip()
         self.default_redo_tooltip = self.ui.action_redo.toolTip()
         self.missing_images_manager = MissingImagesManager(document, self)
@@ -104,14 +108,14 @@ class MainWindow(QMainWindow):
         return about_dialog
 
     def _setup_platform_dependent_default_shortcuts(self):
-        actions_with_shortcuts: typing.List[typing.Tuple[QAction, QKeySequence.StandardKey]] = [
-            (self.ui.action_new_document, QKeySequence.New),
-            (self.ui.action_load_document, QKeySequence.Open),
-            (self.ui.action_save_document, QKeySequence.Save),
-            (self.ui.action_save_as, QKeySequence.SaveAs),
-            (self.ui.action_show_settings, QKeySequence.Preferences),
-            (self.ui.action_print, QKeySequence.Print),
-            (self.ui.action_quit, QKeySequence.Quit),
+        actions_with_shortcuts: typing.List[typing.Tuple[QAction, StandardKey]] = [
+            (self.ui.action_new_document, StandardKey.New),
+            (self.ui.action_load_document, StandardKey.Open),
+            (self.ui.action_save_document, StandardKey.Save),
+            (self.ui.action_save_as, StandardKey.SaveAs),
+            (self.ui.action_show_settings, StandardKey.Preferences),
+            (self.ui.action_print, StandardKey.Print),
+            (self.ui.action_quit, StandardKey.Quit),
         ]
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
@@ -411,7 +415,7 @@ class MainWindow(QMainWindow):
                 f"to download the new version?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No
                 ) == QMessageBox.StandardButton.Yes:
-            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.StrictMode)
+            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
             QDesktopServices.openUrl(url)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
@@ -457,3 +461,57 @@ class MainWindow(QMainWindow):
                 result == QMessageBox.StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        if self._to_save_file_path(event):
+            logger.info("User drags a saved MTGProxyPrinter document onto the main window, accepting event")
+            event.acceptProposedAction()
+        elif images := self._to_pixmaps(event):
+            logger.info(f"User drags {len(images)} images onto the main window, accepting event")
+            event.acceptProposedAction()
+        else:
+            logger.debug("Rejecting drag&drop action for unknown or invalid data")
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        if path := self._to_save_file_path(event):
+            logger.info("User dropped save file onto the main window, loading the dropped document")
+            self.document.loader.load_document(path)
+        elif images := self._to_pixmaps(event):
+            logger.info(f"User dropped {len(images)} images onto the main window, adding them as custom cards")
+            for image in images:
+                card = Card(
+                    "Custom card", MTGSet("CUS", "Custom"), "", "", "", True, "", "", True, False, 1, False, image)
+                action = ActionAddCard(card)
+                self.document.apply(action)
+
+    @staticmethod
+    def _to_save_file_path(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.Optional[pathlib.Path]:
+        """
+        Returns a Path instance to a file, if the drag&drop event contains a reference to exactly 1 document save file,
+        None otherwise.
+        """
+        mime_data = event.mimeData()
+        # It doesn't make sense to drop multiple save files at once, since only one can be loaded.
+        # So ignore drag&drop containing multiple files
+        if mime_data.hasUrls() and len(dropped_urls := mime_data.urls()) == 1:
+            url = dropped_urls[0].toLocalFile()
+            path = pathlib.Path(url)
+            acceptable = path.is_file() and path.suffix.casefold() == f".{DEFAULT_SAVE_SUFFIX}"
+            if acceptable:
+                return path
+        return None
+
+    @staticmethod
+    def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
+        result: typing.List[QPixmap] = []
+        mime_data = event.mimeData()
+        regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
+        width, height = regular.width.magnitude, regular.height.magnitude
+        for url in mime_data.urls():
+            pixmap = QPixmap(url.toLocalFile())
+            if not pixmap.isNull():
+                if pixmap.width() != width or pixmap.height() != height:
+                    new_size = QSize(width, height)
+                    pixmap = pixmap.scaled(new_size, mode=TransformationMode.SmoothTransformation)
+                result.append(pixmap)
+        return result

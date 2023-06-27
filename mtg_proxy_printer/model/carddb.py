@@ -24,8 +24,8 @@ import pathlib
 import textwrap
 import typing
 
-from PySide6.QtGui import QPixmap, QColor, QColorConstants
-from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, Signal
+from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, Signal, QPointF
 import delegateto
 
 if typing.TYPE_CHECKING:
@@ -55,6 +55,7 @@ MINIMUM_REFRESH_DELAY = datetime.timedelta(days=14)
 __all__ = [
     "CardIdentificationData",
     "MTGSet",
+    "CheckCard",
     "Card",
     "CardCorner",
     "CardDatabase",
@@ -121,6 +122,7 @@ class Card:
     highres_image: bool = dataclasses.field(compare=False)
     is_oversized: bool = dataclasses.field(compare=False)
     face_number: int = dataclasses.field(compare=False)
+    is_dfc: bool = dataclasses.field(compare=False)
     image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
     def set_image_file(self, image: QPixmap):
@@ -139,7 +141,7 @@ class Card:
     def corner_color(self, corner: CardCorner) -> QColor:
         """Returns the color of the card at the given corner. """
         if self.image_file is None:
-            return QColorConstants.White
+            return QColorConstants.Transparent
         sample_area = self.image_file.copy(QRect(
             QPoint(
                 round(self.image_file.width() * corner.value[0]),
@@ -152,6 +154,115 @@ class Card:
 
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class CheckCard:
+    front: Card
+    back: Card
+
+    @property
+    def name(self) -> str:
+        return f"{self.front.name} // {self.back.name}"
+
+    @property
+    def set(self) -> MTGSet:
+        return self.front.set
+
+    @property
+    def collector_number(self) -> str:
+        return self.front.collector_number
+
+    @property
+    def language(self) -> str:
+        return self.front.language
+
+    @property
+    def scryfall_id(self) -> str:
+        return self.front.scryfall_id
+
+    @property
+    def is_front(self) -> bool:
+        return True
+
+    @property
+    def oracle_id(self) -> str:
+        return self.front.oracle_id
+
+    @property
+    def image_uri(self) -> str:
+        return ""
+
+    @property
+    def highres_image(self) -> bool:
+        return self.front.highres_image and self.back.highres_image
+
+    @property
+    def is_oversized(self):
+        return self.front.is_oversized
+
+    @property
+    def face_number(self) -> int:
+        return 0
+
+    @property
+    def is_dfc(self) -> bool:
+        return False
+
+    @property
+    def image_file(self) -> typing.Optional[QPixmap]:
+        if self.front.image_file is None or self.back.image_file is None:
+            return None
+        card_size = self.front.image_file.size()
+        # Unlike metric paper sizes, the MTG card aspect ratio does not follow the golden ratio.
+        # Cards thus can’t be scaled using a singular factor of sqrt(2) on both axis.
+        # The scaled cards get a bit compressed horizontally.
+        vertical_scaling_factor = card_size.width() / card_size.height()
+        horizontal_scaling_factor = card_size.height()/(card_size.width()*2)
+        combined_image = QPixmap(card_size)
+        combined_image.fill(QColor.fromRgb(255, 255, 255, 0))  # Fill with fully transparent white
+        painter = QPainter(combined_image)
+        painter.setRenderHints(QPainter.RenderHint.SmoothPixmapTransform | QPainter.RenderHint.Antialiasing)
+        transformation = QTransform()
+        transformation.rotate(90)
+        transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)
+        painter.setTransform(transformation)
+        painter.drawPixmap(QPointF(card_size.width(), -card_size.height()), self.back.image_file)
+        painter.drawPixmap(QPointF(0, -card_size.height()), self.front.image_file)
+
+        return combined_image
+
+    def requested_page_type(self) -> PageType:
+        if self.front.image_file is None or self.back.image_file is None:
+            return PageType.OVERSIZED if self.is_oversized else PageType.REGULAR
+        size = self.front.image_file.size()
+        if (size.width(), size.height()) == (1040, 1490):
+            return PageType.OVERSIZED
+        return PageType.REGULAR
+
+    @functools.lru_cache(maxsize=len(CardCorner))
+    def corner_color(self, corner: CardCorner) -> QColor:
+        """Returns the color of the card at the given corner. """
+        if self.front.image_file is None or self.back.image_file is None:
+            return QColorConstants.Transparent
+        if corner == CardCorner.TOP_LEFT:
+            self.front.corner_color(CardCorner.BOTTOM_LEFT)
+        elif corner == CardCorner.TOP_RIGHT:
+            self.front.corner_color(CardCorner.TOP_LEFT)
+        elif corner == CardCorner.BOTTOM_LEFT:
+            self.back.corner_color(CardCorner.BOTTOM_RIGHT)
+        elif corner == CardCorner.BOTTOM_RIGHT:
+            self.back.corner_color(CardCorner.TOP_RIGHT)
+        return QColorConstants.Transparent
+
+    def display_string(self):
+        return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
+
+class ImageDatabaseCards(typing.NamedTuple):
+    visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+    hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+    unknown: typing.List["CacheContent"] = []
 
 
 OptionalCard = typing.Optional[Card]
@@ -180,7 +291,7 @@ class CardDatabase(QObject):
         """
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        db = mtg_proxy_printer.sqlite_helpers.open_database(
+        self.db = db = mtg_proxy_printer.sqlite_helpers.open_database(
             db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, False)
         migrate_card_database(db)
         logger.debug("Validating schema of the opened database")
@@ -191,7 +302,6 @@ class CardDatabase(QObject):
             logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
         else:
             logger.debug("Card database schema valid")
-        self.db = db
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
@@ -332,17 +442,12 @@ class CardDatabase(QObject):
         """
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, png_image_uri, scryfall_id, is_front,
-                oracle_id, highres_image, is_oversized, face_number, language -- get_cards_from_data()
-            FROM CardFace
-            JOIN Printing USING (printing_id)
-            JOIN FaceName USING (face_name_id)
-            JOIN PrintLanguage USING (language_id)
-            JOIN MTGSet USING (set_id)
-            JOIN Card USING (card_id)
+                oracle_id, highres_image, is_oversized, face_number, language, is_dfc -- get_cards_from_data()
+            FROM VisiblePrintings
         ''')
         if order_by_print_count:
             query += '    LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)\n'
-        where_clause = ['    WHERE Printing.is_hidden IS FALSE']
+        where_clause = ['    WHERE TRUE']
         where_parameters = []
         if card.language:
             where_clause.append(f'AND "language" = ?')
@@ -370,8 +475,8 @@ class CardDatabase(QObject):
         order_by_terms = []
         if order_by_print_count:
             order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
-        order_by_terms.append("MTGSet.wackiness_score ASC")
-        order_by_terms.append("MTGSet.release_date DESC")
+        order_by_terms.append("wackiness_score ASC")
+        order_by_terms.append("release_date DESC")
         query += "ORDER BY " + "\n    ,".join(order_by_terms)
         result = self._get_cards_from_data(query, where_parameters)
         return result
@@ -380,9 +485,10 @@ class CardDatabase(QObject):
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
+        -- get_replacement_card_for_unknown_printing()
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,
                VisiblePrintings.scryfall_id, is_front, oracle_id, highres_image,
-               is_oversized, face_number, VisiblePrintings.language -- get_replacement_card_for_unknown_printing()
+               is_oversized, face_number, VisiblePrintings.language, is_dfc
             FROM RemovedPrintings
             JOIN VisiblePrintings USING (oracle_id)
             LEFT OUTER JOIN LastImageUseTimestamps USING (scryfall_id, is_front)
@@ -408,17 +514,19 @@ class CardDatabase(QObject):
             Card(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number,
+                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
             )
             for name, set_code, set_name, collector_number, image_uri, scryfall_id, is_front, oracle_id, highres_image,
-                is_oversized, face_number, language in cursor
+                is_oversized, face_number, language, is_dfc in cursor
         ]
         return result
 
     def find_related_cards(self, card: Card) -> CardList:
         """
-        Recursively finds all cards related to the given card.
-        This may be cards referenced by name in either direction, or token cards created
+        Recursively finds all cards related to the given non-token card.
+        This may be cards referenced by name in either direction, or token cards created.
+        Tokens cannot have outgoing related cards, as that would create potentially huge graphs
+        due to evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, etc.
         """
         query = cached_dedent("""\
         WITH RECURSIVE 
@@ -430,10 +538,11 @@ class CardDatabase(QObject):
             SELECT related_id
               FROM RelatedPrintings
               JOIN source_oracle_id USING (card_id)
-            UNION
+            UNION  -- Deduplicate to break infinite recursion on cross-referenced cards
             SELECT RelatedPrintings.related_id
               FROM RelatedPrintings
               JOIN related_oracle_ids ON RelatedPrintings.card_id = related_oracle_ids.related_id
+              -- Do not include the initial input card in the output dataset
               WHERE RelatedPrintings.related_id NOT IN (SELECT source_oracle_id.card_id FROM source_oracle_id)
         )
         SELECT oracle_id
@@ -447,15 +556,16 @@ class CardDatabase(QObject):
             # isn't available, take from any other set. As a last-ditch fallback, resort to English printings.
             # The last case is most likely hit with non-English token-producing cards,
             # as long as Scryfall does not provide localized tokens.
-            related_cards = self.get_cards_from_data(
-                CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
-                order_by_print_count=True) or \
-            self.get_cards_from_data(
-                CardIdentificationData(card.language, oracle_id=related_oracle_id),
-                order_by_print_count=True) or \
-            self.get_cards_from_data(
-                CardIdentificationData("en", oracle_id=related_oracle_id),
-                order_by_print_count=True)
+            related_cards = \
+                self.get_cards_from_data(
+                    CardIdentificationData(card.language, set_code=card.set.code, oracle_id=related_oracle_id),
+                    order_by_print_count=True) or \
+                self.get_cards_from_data(
+                    CardIdentificationData(card.language, oracle_id=related_oracle_id),
+                    order_by_print_count=True) or \
+                self.get_cards_from_data(
+                    CardIdentificationData("en", oracle_id=related_oracle_id),
+                    order_by_print_count=True)
             if related_cards:
                 cards.append(related_cards[0])
         return cards
@@ -525,7 +635,7 @@ class CardDatabase(QObject):
     def get_card_with_scryfall_id(self, scryfall_id: str, is_front: bool) -> OptionalCard:
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number -- get_card_with_scryfall_id()
+            highres_image, is_oversized, face_number, is_dfc -- get_card_with_scryfall_id()
             FROM VisiblePrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
@@ -534,14 +644,14 @@ class CardDatabase(QObject):
             return None
         else:
             name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image,\
-                is_oversized, face_number = result
+                is_oversized, face_number, is_dfc = result
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
+                bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
             )
 
-    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]):
+    def get_all_cards_from_image_cache(self, cache_content: typing.List["CacheContent"]) -> ImageDatabaseCards:
         """
         Partitions the content of the ImageDatabase disk cache into three lists:
         - All visible card printings
@@ -553,30 +663,28 @@ class CardDatabase(QObject):
         """
         query = cached_dedent('''\
         SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number, is_hidden -- get_all_cards_from_image_cache()
+            highres_image, is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
             FROM AllPrintings
             WHERE scryfall_id = ? AND is_front = ?
         ''')
-        visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-        hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-        unknown: typing.List["CacheContent"] = []
+        cards = ImageDatabaseCards([], [], [])
         for cache_item in cache_content:
             result = self.db.execute(query, (cache_item.scryfall_id, cache_item.is_front)).fetchone()
             if result is None:
-                unknown.append(cache_item)
+                cards.unknown.append(cache_item)
                 continue
             name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
-                    is_oversized, face_number, is_hidden = result
+                    is_oversized, face_number, is_dfc, is_hidden = result
             card = Card(
                 name, MTGSet(set_abbr, set_name), collector_number,
                 language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number
+                bool(highres_image), bool(is_oversized), face_number, is_dfc
             )
             if is_hidden:
-                hidden.append((card, cache_item))
+                cards.hidden.append((card, cache_item))
             else:
-                visible.append((card, cache_item))
-        return visible, hidden, unknown
+                cards.visible.append((card, cache_item))
+        return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
         """
@@ -763,7 +871,7 @@ class CardDatabase(QObject):
         query = cached_dedent("""\
         SELECT card_name, set_code, set_name, collector_number, -- _translate_card()
                scryfall_id, png_image_uri, highres_image,
-               is_oversized, face_number,
+               is_oversized, face_number, is_dfc,
                MAX((set_code = ?) + (collector_number = ?)) AS similarity
             FROM VisiblePrintings
             WHERE oracle_id = ? AND language = ? AND is_front = ?
@@ -772,14 +880,14 @@ class CardDatabase(QObject):
         # Because of the aggregate function used, no hit will result in a single row consisting of only NULL values.
         result = self.db.execute(query, parameters).fetchone()
         name, set_code, set_name, collector_number, scryfall_id, image_uri, highres_image, \
-            is_oversized, face_number, similarity = result
+            is_oversized, face_number, is_dfc, similarity = result
         if similarity is None:
             logger.debug(f"Found no translations to {language_override} for card '{card.name}'.")
             return None
         return Card(
             name, MTGSet(set_code, set_name), collector_number,
             language_override, scryfall_id, card.is_front, card.oracle_id, image_uri,
-            bool(highres_image), bool(is_oversized), face_number
+            bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
         )
 
     def store_current_printing_filters(

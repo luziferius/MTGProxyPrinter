@@ -278,7 +278,7 @@ class Worker(QObject):
         self.should_run = True
         try:
             self._load_document()
-        except AssertionError as e:
+        except (AssertionError, sqlite3.DatabaseError) as e:
             logger.exception(
                 "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
             self.loading_file_failed.emit(self.save_path, str(e))

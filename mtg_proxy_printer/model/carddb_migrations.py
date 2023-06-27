@@ -619,6 +619,50 @@ def _migrate_29_to_30(db: sqlite3.Connection):
       CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
     ) WITHOUT ROWID;
     """))
+    
+    
+def _migrate_30_to_31(db: sqlite3.Connection):
+    for statement in [
+        "DROP VIEW VisiblePrintings\n",
+        "DROP VIEW AllPrintings\n",
+        textwrap.dedent("""\
+        CREATE VIEW VisiblePrintings AS
+        WITH double_faced_printings(printing_id, is_dfc) AS (
+            SELECT DISTINCT printing_id, TRUE as is_dfc
+                FROM CardFace
+                WHERE is_front IS FALSE)
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                 is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, release_date,
+                 coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE
+        ;"""),
+        textwrap.dedent("""\
+        CREATE VIEW AllPrintings AS
+        WITH double_faced_printings(printing_id, is_dfc) AS (
+            SELECT DISTINCT printing_id, TRUE as is_dfc
+                FROM CardFace
+                WHERE is_front IS FALSE)
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                 is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden,
+                 coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)
+        ;"""),
+    ]:
+        db.execute(statement)
 
 
 MIGRATION_SCRIPTS: MigrationScriptListing = (
@@ -645,6 +689,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (27, _migrate_27_to_28),
     (28, _migrate_28_to_29),
     (29, _migrate_29_to_30),
+    (30, _migrate_30_to_31),
 )
 
 

@@ -18,7 +18,7 @@ import itertools
 import math
 import typing
 
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, CheckCard
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer
@@ -42,7 +42,7 @@ class ActionAddCard(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
-    def __init__(self, card: Card, count: int = 1):
+    def __init__(self, card: typing.Union[Card, CheckCard], count: int = 1):
         self.card = card
         self.count = count
         self.added_new_pages: int = 0
