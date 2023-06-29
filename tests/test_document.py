@@ -25,7 +25,6 @@ import time
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
 
-
 try:
     from hamcrest import contains_exactly
 except ImportError:
@@ -37,9 +36,9 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.model.document import Document, Page, CardContainer
-from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
+from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings, CardType
 from mtg_proxy_printer.model.imagedb import ImageKey
 
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -65,7 +64,7 @@ class DummyAction(DocumentAction):
 
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
-    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)
+    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
     page.append(CardContainer(
         page,
         card
@@ -447,6 +446,42 @@ def test_create_save(document_custom_layout: Document):
         document_custom_layout.save_as(save_dir)
         _validate_database_schema(save_dir)
         _validate_saved_document_settings(document_custom_layout)
+
+
+@pytest.mark.parametrize("is_front", [True, False])
+def test_save_as_saves_regular_card(document: Document, is_front: bool):
+    card = document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
+    document.apply(ActionAddCard(card))
+    with TemporaryDirectory() as temp_dir:
+        save_file = pathlib.Path(temp_dir)/"test.mtgproxies"
+        document.save_as(save_file)
+        with open_database(
+                save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+            content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+    assert_that(
+        content, contains_exactly(
+            contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front, CardType.REGULAR.value)
+        )
+    )
+
+
+def test_save_as_saves_check_card(document: Document):
+    card = CheckCard(
+        document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+        document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", False),
+    )
+    document.apply(ActionAddCard(card))
+    with TemporaryDirectory() as temp_dir:
+        save_file = pathlib.Path(temp_dir)/"test.mtgproxies"
+        document.save_as(save_file)
+        with open_database(
+                save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+            content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+    assert_that(
+        content, contains_exactly(
+            contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True, CardType.CHECK_CARD.value)
+        )
+    )
 
 
 def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: Document):

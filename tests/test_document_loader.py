@@ -25,10 +25,13 @@ from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
+
 import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
+CardType = mtg_proxy_printer.model.document_loader.CardType
 
 
 @pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
@@ -140,11 +143,18 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
 
 
 @pytest.mark.parametrize("data", itertools.chain(
-    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat("r")),
-    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat("r")),
-    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat("r")),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("r")),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary"]),
+    # Syntactically invalid
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
+    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
+    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(CardType.REGULAR.value)),
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
+    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
+    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(CardType.CHECK_CARD.value)),
+    # Semantically invalid, as type "d" it means generating a DFC check card for a single sided card.
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
+    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(0), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
 ))
 def test_invalid_data_in_card_columns_raises_exception(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
@@ -197,6 +207,7 @@ def test_protects_against_infinite_save_data(
 
 
 def generate_test_cases_for_test_protects_against_infinite_settings_data():
+    # LIMIT clause in the definitions below are safety measures.
     yield 4, textwrap.dedent("""\
         CREATE VIEW DocumentSettings (
           rowid, page_height, page_width,
@@ -254,7 +265,6 @@ def test_protects_against_infinite_settings_data(
         empty_save_database: sqlite3.Connection, user_version: int, script: str):
     empty_save_database.execute(f"PRAGMA user_version = {user_version}")
     empty_save_database.execute("DROP TABLE DocumentSettings")
-    # LIMIT clause in the definition below is a safety measure.
     empty_save_database.execute(script)
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
@@ -265,3 +275,31 @@ def test_protects_against_infinite_settings_data(
         mock.assert_called_once()
     assert_document_is_empty(document)
     assert_that(document.save_file_path, is_(none()))
+
+
+def test_loads_check_card(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document, empty_save_database: sqlite3.Connection):
+    empty_save_database.executemany(
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
+            (1, 1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", CardType.CHECK_CARD.value),
+         ]
+    )
+    loader = document.loader
+    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
+        open_database.return_value = empty_save_database
+        with qtbot.wait_signal(document.action_applied, timeout=1000), \
+                qtbot.assert_not_emitted(loader.loading_file_failed):
+            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+    assert_that(
+        document.pages, contains_exactly(
+            contains_exactly(has_property("card", all_of(
+                instance_of(CheckCard),
+                has_properties({
+                    "image_file": not_none(),
+                    "name": "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun",
+                    "is_front": True,
+                    "is_dfc": False,
+                })
+            )))
+        )
+    )

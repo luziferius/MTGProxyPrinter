@@ -35,7 +35,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -59,6 +59,16 @@ SAVE_FILE_MAGIC_NUMBER = 41325044
 
 class CardType(str, enum.Enum):
     REGULAR = "r"
+    CHECK_CARD = "d"
+
+    @classmethod
+    def from_card(cls, card: typing.Union[Card, CheckCard]) -> "CardType":
+        if isinstance(card, Card):
+            return cls.REGULAR
+        elif isinstance(card, CheckCard):
+            return cls.CHECK_CARD
+        else:
+            raise NotImplementedError()
 
 
 DocumentSaveFormat = typing.List[typing.Tuple[int, int, str, bool, CardType]]
@@ -223,6 +233,7 @@ class DocumentLoader(QObject):
             logger.info(f"Quitting {self.__class__.__name__} background worker thread")
             stop_thread(self.worker_thread, logger)
 
+
 class Worker(QObject):
     """
     This is the worker object that runs inside the DocumentLoader’s internal QThread.
@@ -310,7 +321,7 @@ class Worker(QObject):
         migrated_ids = 0
         pages: typing.List[CardList] = [[]]
         current_page = pages[-1]
-        for page_number, slot, scryfall_id, is_front, _ in card_data:
+        for page_number, slot, scryfall_id, is_front, card_type in card_data:
             if not self.should_run:
                 logger.info("Cancel request received, stop processing the card list.")
                 return unknown_ids, migrated_ids
@@ -318,7 +329,17 @@ class Worker(QObject):
                 current_page_index = page_number
                 current_page: CardList = []
                 pages.append(current_page)
-            card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
+            if card_type == CardType.CHECK_CARD:
+                if not self.card_db.is_dfc(scryfall_id):
+                    logger.warning("Requested loading check card for non-DFC card, skipping it.")
+                    self.unknown_ids += 1
+                    continue
+                card = CheckCard(
+                    self.card_db.get_card_with_scryfall_id(scryfall_id, True),
+                    self.card_db.get_card_with_scryfall_id(scryfall_id, False)
+                )
+            else:
+                card = self.card_db.get_card_with_scryfall_id(scryfall_id, is_front)
             if card is None:
                 card = self._find_replacement_card(scryfall_id, is_front, prefer_already_downloaded)
                 if card:
@@ -423,13 +444,14 @@ class Worker(QObject):
                     ORDER BY page ASC, slot ASC""")
         else:
             raise AssertionError(f"Unknown database schema version: {user_version}")
+        supported_card_types: typing.List[str] = list(item.value for item in CardType)
         for row_number, row_data in enumerate(db.execute(query)):
             assert_that(row_data, contains_exactly(
                 all_of(instance_of(int), greater_than_or_equal_to(0)),
                 all_of(instance_of(int), greater_than_or_equal_to(0)),
                 all_of(instance_of(str), matches_regexp(r"[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}")),
                 is_in((0, 1)),
-                is_in(("r",))  # Currently only regular cards (r) supported
+                is_in(supported_card_types)
             ), f"Invalid data found in the save data at row {row_number}. Aborting")
             page, slot, scryfall_id, is_front, card_type = row_data
             card_data.append((page, slot, scryfall_id, bool(is_front), CardType(card_type)))

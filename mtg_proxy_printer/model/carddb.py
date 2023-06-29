@@ -704,7 +704,7 @@ class CardDatabase(QObject):
         return self._read_optional_scalar_from_db(query, (name,))
 
     def is_known_language(self, language: str) -> bool:
-        """Returns true, if the given two-letter code is a known language. Returns False otherwise."""
+        """Returns True, if the given two-letter code is a known language. Returns False otherwise."""
         query = cached_dedent('''
         SELECT EXISTS( -- is_known_language()
             SELECT *
@@ -713,6 +713,16 @@ class CardDatabase(QObject):
         )
         ''')
         return bool(self._read_optional_scalar_from_db(query, (language,)))
+
+    def is_dfc(self, scryfall_id: str) -> bool:
+        """Returns True, if the given card is a DFC, False otherwise."""
+        # This query returns two values for DFC cards, but that does not pose any issue
+        query = cached_dedent('''
+        SELECT is_dfc -- is_dfc()
+          FROM AllPrintings
+          WHERE "scryfall_id" = ?
+        ''')
+        return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
     def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
         """
