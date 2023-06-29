@@ -17,6 +17,7 @@
 This module is automatically discovered by pytest and all pytest
 fixtures defined here are available in all test modules.
 """
+import itertools
 import sqlite3
 import unittest.mock
 from pathlib import Path
@@ -61,9 +62,10 @@ def image_db():
         temp_path = Path(temp_dir)
         image_db = ImageDatabase(temp_path)
         regular_width, regular_height = image_db.blank_image.width(), image_db.blank_image.height()
-        for scryfall_id in ["0000579f-7b35-4ed3-b44c-db2a538066fe"]:
+        for scryfall_id, is_front in itertools.product(
+                ["0000579f-7b35-4ed3-b44c-db2a538066fe", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"], [True, False]):
             # Regular card images
-            key = ImageKey(scryfall_id, True, True)
+            key = ImageKey(scryfall_id, is_front, True)
             image_db.loaded_images[key] = image_db.blank_image.copy(0, 0, regular_width, regular_height)
             image_db.images_on_disk.add(key)
         for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
@@ -71,6 +73,7 @@ def image_db():
             key = ImageKey(scryfall_id, True, True)
             image_db.loaded_images[key] = image_db.blank_image.scaled(regular_height, regular_width*2)
             image_db.images_on_disk.add(key)
+
         yield image_db
         if image_db.download_thread.isRunning():
             image_db.quit_background_thread()
