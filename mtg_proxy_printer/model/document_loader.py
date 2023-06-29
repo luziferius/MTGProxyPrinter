@@ -35,7 +35,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -59,6 +59,16 @@ SAVE_FILE_MAGIC_NUMBER = 41325044
 
 class CardType(str, enum.Enum):
     REGULAR = "r"
+    CHECK_CARD = "d"
+
+    @classmethod
+    def from_card(cls, card: typing.Union[Card, CheckCard]) -> "CardType":
+        if isinstance(card, Card):
+            return cls.REGULAR
+        elif isinstance(card, CheckCard):
+            return cls.CHECK_CARD
+        else:
+            raise NotImplementedError()
 
 
 DocumentSaveFormat = typing.List[typing.Tuple[int, int, str, bool, CardType]]

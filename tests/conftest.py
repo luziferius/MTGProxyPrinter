@@ -83,7 +83,8 @@ def image_db():
 
 @pytest.fixture
 def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
-    fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
+    fill_card_database_with_json_cards(qtbot, card_db, [
+        "regular_english_card", "oversized_card", "english_double_faced_card"])
     document = Document(card_db, image_db)
     yield document
     stop_thread(document.loader.worker_thread)
