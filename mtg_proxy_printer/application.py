@@ -53,14 +53,12 @@ class Application(QApplication):
     def __init__(self, args: Namespace, argv: typing.List[str] = None):
         if argv is None:
             argv = sys.argv
-        logger.info("Starting MTGProxyPrinter")
-        if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and platform.system() == "Windows":
-            logger.info("Running on Windows without explicit platform override. Enabling dark mode rendering.")
-            # The explicit set platform and parameters overwrite the environment, so set these options iff neither
-            # present as parameters nor environment variables.
-            argv.append("-platform")
-            argv.append("windows:darkmode=1")
-        super(Application, self).__init__(argv)
+        logger.info(f"Starting MTGProxyPrinter version {meta_data.__version__}")
+        super().__init__(argv)
+        if platform.system() == "Windows" and "-style" not in argv and not os.getenv("QT_STYLE_OVERRIDE"):
+            logger.info("Running on Windows without explicit style set. Use 'fusion', which supports dark mode.")
+            # Set a dark-mode compatible style, if on Windows and the user does not override the style.
+            self.setStyle("fusion")
         self._setup_icons()
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
