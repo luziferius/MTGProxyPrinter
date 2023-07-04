@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -420,10 +420,11 @@ class SummaryPage(QWizardPage):
         logger.debug(f"{self.__class__.__name__} populated.")
 
 
-class CacheCleanupWizard(QWizard):
+class CacheCleanupWizard(WizardBase):
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
-        super(CacheCleanupWizard, self).__init__(*args, **kwargs)
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
+                 parent: QWidget = None, flags = Qt.WindowFlags()):
+        super().__init__(parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))

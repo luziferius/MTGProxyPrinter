@@ -16,7 +16,7 @@
 import pathlib
 
 from PyQt5.QtCore import QFile, QUrl, QObject
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtWidgets import QLabel, QWizard
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
@@ -32,6 +32,7 @@ __all__ = [
     "set_url_label",
     "load_ui_from_file",
     "format_size",
+    "WizardBase",
 ]
 
 try:
@@ -100,3 +101,7 @@ def format_size(size: float) -> str:
             return f"{size:3.2f} {unit}"
         size /= 1024
     return f"{size:.2f} YiB"
+
+class WizardBase(QWizard):
+    """Base class for wizards based on QWizard"""
+    pass
