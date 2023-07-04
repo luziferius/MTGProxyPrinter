@@ -15,9 +15,11 @@
 
 import pathlib
 import platform
+import typing
 
 from PyQt5.QtCore import QFile, QUrl, QObject, QSize
 from PyQt5.QtWidgets import QLabel, QWizard, QWidget
+from PyQt5.QtGui import QIcon
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
@@ -105,6 +107,7 @@ def format_size(size: float) -> str:
 
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
+    BUTTON_ICONS: typing.Dict[QWizard.WizardButton, str] = {}
 
     def __init__(self, window_size: QSize, parent: QWidget, flags):
         super().__init__(parent, flags)
@@ -114,6 +117,7 @@ class WizardBase(QWizard):
             logger.debug(f"Creating a QWizard on Windows, explicitly setting style to {target_style}")
             self.setWizardStyle(target_style)
         self._set_default_size(window_size)
+        self._setup_dialog_button_icons()
 
     def _set_default_size(self, size: QSize):
         new_width = size.width()
@@ -127,3 +131,9 @@ class WizardBase(QWizard):
             )
         else:
             self.resize(new_width, new_height)
+
+    def _setup_dialog_button_icons(self):
+        for role, icon in self.BUTTON_ICONS.items():
+            button = self.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))

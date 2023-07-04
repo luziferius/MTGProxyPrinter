@@ -532,6 +532,10 @@ class SummaryPage(QWizardPage):
 
 class DeckImportWizard(WizardBase):
     request_action = Signal(ActionImportDeckList)
+    BUTTON_ICONS = {
+        QWizard.WizardButton.FinishButton: "dialog-ok",
+        QWizard.WizardButton.CancelButton: "dialog-cancel",
+    }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, parent: QWidget = None, flags = Qt.WindowFlags()):
@@ -545,18 +549,7 @@ class DeckImportWizard(WizardBase):
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
         self.setWindowTitle("Import a deck list")
-        self._setup_dialog_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _setup_dialog_button_icons(self):
-        buttons_with_icons = [
-            (QWizard.FinishButton, "dialog-ok"),
-            (QWizard.CancelButton, "dialog-cancel"),
-        ]
-        for role, icon in buttons_with_icons:
-            button = self.button(role)
-            if button.icon().isNull():
-                button.setIcon(QIcon.fromTheme(icon))
 
     def accept(self):
         if not self._ask_about_oversized_cards():

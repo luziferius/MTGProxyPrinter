@@ -421,6 +421,11 @@ class SummaryPage(QWizardPage):
 
 
 class CacheCleanupWizard(WizardBase):
+    BUTTON_ICONS = {
+        QWizard.WizardButton.FinishButton: "edit-delete",
+        QWizard.WizardButton.CancelButton: "dialog-cancel",
+        QWizard.WizardButton.HelpButton: "help-contents",
+    }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  parent: QWidget = None, flags = Qt.WindowFlags()):
@@ -431,17 +436,7 @@ class CacheCleanupWizard(WizardBase):
         self.addPage(SummaryPage(self))
         self.setWindowTitle("Cleanup locally stored card images")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
-        self._setup_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _setup_button_icons(self):
-        buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
-            (QWizard.CancelButton, "dialog-cancel"),
-            (QWizard.HelpButton, "help-contents"),
-            (QWizard.FinishButton, "edit-delete"),
-        ]
-        for button, icon_name in buttons_with_icons:
-            self.button(button).setIcon(QIcon.fromTheme(icon_name))
 
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()
