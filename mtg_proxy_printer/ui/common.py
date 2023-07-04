@@ -14,9 +14,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
+import platform
 
 from PyQt5.QtCore import QFile, QUrl, QObject
-from PyQt5.QtWidgets import QLabel, QWizard
+from PyQt5.QtWidgets import QLabel, QWizard, QWidget
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
@@ -104,4 +105,11 @@ def format_size(size: float) -> str:
 
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
-    pass
+
+    def __init__(self, parent: QWidget, flags):
+        super().__init__(parent, flags)
+        if platform.system() == "Windows":
+            # Avoid Aero style on Windows, which does not support dark mode
+            target_style = QWizard.WizardStyle.ModernStyle
+            logger.debug(f"Creating a QWizard on Windows, explicitly setting style to {target_style}")
+            self.setWizardStyle(target_style)
