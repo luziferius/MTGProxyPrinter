@@ -53,7 +53,7 @@ class Application(QApplication):
     def __init__(self, args: Namespace, argv: typing.List[str] = None):
         if argv is None:
             argv = sys.argv
-        logger.info("Starting MTGProxyPrinter")
+        logger.info(f"Starting MTGProxyPrinter version {meta_data.__version__}")
         if not os.getenv("QT_QPA_PLUGIN") and "-platform" not in argv and platform.system() == "Windows":
             logger.info("Running on Windows without explicit platform override. Enabling dark mode rendering.")
             # The explicit set platform and parameters overwrite the environment, so set these options iff neither

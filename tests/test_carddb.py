@@ -811,3 +811,16 @@ def test_get_all_cards_from_image_cache(qtbot, card_db):
             contains_exactly(cache_content[-1]),
         )
     )
+
+
+@pytest.mark.parametrize("json_name, scryfall_id, expected", [
+    ("regular_english_card", "0000579f-7b35-4ed3-b44c-db2a538066fe", False),
+    ("english_double_faced_card", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+
+])
+def test_is_dfc(qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, expected: bool):
+    fill_card_database_with_json_card(qtbot, card_db, json_name)
+    assert_that(
+        card_db.is_dfc(scryfall_id),
+        is_(equal_to(expected))
+    )

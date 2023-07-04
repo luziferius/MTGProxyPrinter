@@ -1,5 +1,17 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- It is now possible to save and load documents containing DFC check cards. 
+  Those are no longer implicitly converted to the card front face in the saved document.
+  Loading such documents with older program versions will fail.
+- Improvements/fixes for the multi-page wizards, like the deck import wizards
+    - Wizards now have a consistent style on Windows (7) and are properly centered above the main window
+    - Wizards are no longer placed partially out of the screen under some edge cases.
+      The window title bar is now always visible.
+    - 
 # Version 0.24.1 (2023-06-27)  <a name="v0_24_1"></a>
 
 ## Fixed issues
