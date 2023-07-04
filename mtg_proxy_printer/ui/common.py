@@ -123,12 +123,17 @@ class WizardBase(QWizard):
         new_width = size.width()
         new_height = size.height()
         if (parent := self.parent()) is not None:
+            logger.info(f"{parent.pos()=}")
             parent_pos = parent.mapToGlobal(parent.pos())
-            self.setGeometry(
-                parent_pos.x() + parent.width()//2 - new_width//2,
-                parent_pos.y() + parent.height()//2 - new_height//2,
-                new_width, new_height
-            )
+            available_space = self.screen().availableGeometry()
+            new_width = min(available_space.width(), new_width)
+            new_height = min(available_space.height(), new_height)
+            logger.info(f"{parent_pos=}")
+            # Clamp the window position to the screen so that it avoids
+            # positioning the window decoration above the screen border.
+            target_x = max(0, parent_pos.x() + (parent.width() - new_width)//2)
+            target_y = max(0, parent_pos.y() + (parent.height() - new_height)//2)
+            self.setGeometry(target_x, target_y, new_width, new_height)
         else:
             self.resize(new_width, new_height)
 
