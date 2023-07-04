@@ -20,9 +20,9 @@ import re
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QAbstractTableModel
+    QItemSelection, QAbstractTableModel, QSize
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage
+from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -32,7 +32,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
@@ -530,12 +530,16 @@ class SummaryPage(QWizardPage):
             self.completeChanged.emit()
 
 
-class DeckImportWizard(QWizard):
+class DeckImportWizard(WizardBase):
     request_action = Signal(ActionImportDeckList)
+    BUTTON_ICONS = {
+        QWizard.WizardButton.FinishButton: "dialog-ok",
+        QWizard.WizardButton.CancelButton: "dialog-cancel",
+    }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 language_model: QStringListModel, *args, **kwargs):
-        super(DeckImportWizard, self).__init__(*args, **kwargs)
+                 language_model: QStringListModel, parent: QWidget = None, flags = Qt.WindowFlags()):
+        super().__init__(QSize(800, 600), parent, flags)
         self.card_db = card_db
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)
@@ -544,32 +548,8 @@ class DeckImportWizard(QWizard):
         self.addPage(self.select_deck_parser_page)
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
-        self._set_default_size()
         self.setWindowTitle("Import a deck list")
-        self._setup_dialog_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _set_default_size(self):
-        new_width, new_height = 800, 600
-        if (parent := self.parent()) is not None:
-            parent_pos = parent.mapToGlobal(parent.pos())
-            self.setGeometry(
-                parent_pos.x() + parent.width()//2 - new_width//2,
-                parent_pos.y() + parent.height()//2 - new_height//2,
-                new_width, new_height
-            )
-        else:
-            self.resize(new_width, new_height)
-
-    def _setup_dialog_button_icons(self):
-        buttons_with_icons = [
-            (QWizard.FinishButton, "dialog-ok"),
-            (QWizard.CancelButton, "dialog-cancel"),
-        ]
-        for role, icon in buttons_with_icons:
-            button = self.button(role)
-            if button.icon().isNull():
-                button.setIcon(QIcon.fromTheme(icon))
 
     def accept(self):
         if not self._ask_about_oversized_cards():
