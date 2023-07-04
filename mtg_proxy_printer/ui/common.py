@@ -16,7 +16,7 @@
 import pathlib
 import platform
 
-from PyQt5.QtCore import QFile, QUrl, QObject
+from PyQt5.QtCore import QFile, QUrl, QObject, QSize
 from PyQt5.QtWidgets import QLabel, QWizard, QWidget
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
@@ -106,10 +106,24 @@ def format_size(size: float) -> str:
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
 
-    def __init__(self, parent: QWidget, flags):
+    def __init__(self, window_size: QSize, parent: QWidget, flags):
         super().__init__(parent, flags)
         if platform.system() == "Windows":
             # Avoid Aero style on Windows, which does not support dark mode
             target_style = QWizard.WizardStyle.ModernStyle
             logger.debug(f"Creating a QWizard on Windows, explicitly setting style to {target_style}")
             self.setWizardStyle(target_style)
+        self._set_default_size(window_size)
+
+    def _set_default_size(self, size: QSize):
+        new_width = size.width()
+        new_height = size.height()
+        if (parent := self.parent()) is not None:
+            parent_pos = parent.mapToGlobal(parent.pos())
+            self.setGeometry(
+                parent_pos.x() + parent.width()//2 - new_width//2,
+                parent_pos.y() + parent.height()//2 - new_height//2,
+                new_width, new_height
+            )
+        else:
+            self.resize(new_width, new_height)

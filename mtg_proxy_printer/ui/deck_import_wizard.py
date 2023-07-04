@@ -20,7 +20,7 @@ import re
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QAbstractTableModel
+    QItemSelection, QAbstractTableModel, QSize
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
 
@@ -535,7 +535,7 @@ class DeckImportWizard(WizardBase):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, parent: QWidget = None, flags = Qt.WindowFlags()):
-        super().__init__(parent, flags)
+        super().__init__(QSize(800, 600), parent, flags)
         self.card_db = card_db
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)
@@ -544,22 +544,9 @@ class DeckImportWizard(WizardBase):
         self.addPage(self.select_deck_parser_page)
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
-        self._set_default_size()
         self.setWindowTitle("Import a deck list")
         self._setup_dialog_button_icons()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _set_default_size(self):
-        new_width, new_height = 800, 600
-        if (parent := self.parent()) is not None:
-            parent_pos = parent.mapToGlobal(parent.pos())
-            self.setGeometry(
-                parent_pos.x() + parent.width()//2 - new_width//2,
-                parent_pos.y() + parent.height()//2 - new_height//2,
-                new_width, new_height
-            )
-        else:
-            self.resize(new_width, new_height)
 
     def _setup_dialog_button_icons(self):
         buttons_with_icons = [

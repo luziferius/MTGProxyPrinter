@@ -21,7 +21,7 @@ import math
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
 
@@ -424,7 +424,7 @@ class CacheCleanupWizard(WizardBase):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  parent: QWidget = None, flags = Qt.WindowFlags()):
-        super().__init__(parent, flags)
+        super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
@@ -432,20 +432,7 @@ class CacheCleanupWizard(WizardBase):
         self.setWindowTitle("Cleanup locally stored card images")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         self._setup_button_icons()
-        self._set_default_size()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _set_default_size(self):
-        new_width, new_height = 1024, 768
-        if (parent := self.parent()) is not None:
-            parent_pos = parent.mapToGlobal(parent.pos())
-            self.setGeometry(
-                parent_pos.x() + parent.width()//2 - new_width//2,
-                parent_pos.y() + parent.height()//2 - new_height//2,
-                new_width, new_height
-            )
-        else:
-            self.resize(new_width, new_height)
 
     def _setup_button_icons(self):
         buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
