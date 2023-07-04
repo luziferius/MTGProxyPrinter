@@ -302,20 +302,20 @@ class Document(QAbstractItemModel):
         """Save the document at the internally remembered save path. Raises a RuntimeError, if no such path is set."""
         if self.save_file_path is None:
             raise RuntimeError("Cannot save without a file path!")
+        pages = enumerate(self.pages, start=1)
         cards = (
             zip(itertools.repeat(page_index), enumerate((
-                (container.card.scryfall_id, container.card.is_front) for container in page), start=1))
-            for page_index, page in enumerate(self.pages, start=1)
+                container.card for container in page), start=1))
+            for page_index, page in pages
         )
-        regular_card = CardType("r")
-        flattened_data: DocumentSaveFormat = (
-            (page, slot, scryfall_id, is_front, regular_card)
-            for (page, (slot, (scryfall_id, is_front)))
+        flattened_data: DocumentSaveFormat = [
+            (page, slot, card.scryfall_id, card.is_front, CardType.from_card(card))
+            for (page, (slot, card))
             in itertools.chain.from_iterable(cards)
             # TODO: For now, custom cards have an empty id. Until saving them is implemented, skip custom cards
             #   so that the document can still be loaded
-            if scryfall_id
-        )
+            if card.scryfall_id
+        ]
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")

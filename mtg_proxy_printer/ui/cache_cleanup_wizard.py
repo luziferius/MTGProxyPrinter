@@ -21,14 +21,14 @@ import math
 import pathlib
 import typing
 
-from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
+from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -424,40 +424,23 @@ class SummaryPage(QWizardPage):
         logger.debug(f"{self.__class__.__name__} populated.")
 
 
-class CacheCleanupWizard(QWizard):
+class CacheCleanupWizard(WizardBase):
+    BUTTON_ICONS = {
+        QWizard.WizardButton.FinishButton: "edit-delete",
+        QWizard.WizardButton.CancelButton: "dialog-cancel",
+        QWizard.WizardButton.HelpButton: "help-contents",
+    }
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
-        super(CacheCleanupWizard, self).__init__(*args, **kwargs)
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
+                 parent: QWidget = None, flags = Qt.WindowFlags()):
+        super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.addPage(SummaryPage(self))
         self.setWindowTitle("Cleanup locally stored card images")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
-        self._setup_button_icons()
-        self._set_default_size()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _set_default_size(self):
-        new_width, new_height = 1024, 768
-        if (parent := self.parent()) is not None:
-            parent_pos = parent.mapToGlobal(parent.pos())
-            self.setGeometry(
-                parent_pos.x() + parent.width()//2 - new_width//2,
-                parent_pos.y() + parent.height()//2 - new_height//2,
-                new_width, new_height
-            )
-        else:
-            self.resize(new_width, new_height)
-
-    def _setup_button_icons(self):
-        buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
-            (QWizard.WizardButton.CancelButton, "dialog-cancel"),
-            (QWizard.WizardButton.HelpButton, "help-contents"),
-            (QWizard.WizardButton.FinishButton, "edit-delete"),
-        ]
-        for button, icon_name in buttons_with_icons:
-            self.button(button).setIcon(QIcon.fromTheme(icon_name))
 
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()

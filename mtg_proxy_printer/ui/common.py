@@ -14,10 +14,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
+import platform
+import typing
 
-from PySide6.QtCore import QFile, QUrl, QObject
-from PySide6.QtWidgets import QLabel
-
+from PySide6.QtCore import QFile, QUrl, QObject, QSize
+from PySide6.QtWidgets import QLabel, QWizard, QWidget
+from PySide6.QtGui import QIcon
 from PySide6.QtUiTools import loadUiType
 
 from mtg_proxy_printer.logger import get_logger
@@ -32,6 +34,7 @@ __all__ = [
     "set_url_label",
     "load_ui_from_file",
     "format_size",
+    "WizardBase",
 ]
 
 try:
@@ -100,3 +103,46 @@ def format_size(size: float) -> str:
             return f"{size:3.2f} {unit}"
         size /= 1024
     return f"{size:.2f} YiB"
+
+
+class WizardBase(QWizard):
+    """Base class for wizards based on QWizard"""
+    BUTTON_ICONS: typing.Dict[QWizard.WizardButton, str] = {}
+
+    def __init__(self, window_size: QSize, parent: QWidget, flags):
+        super().__init__(parent, flags)
+        if platform.system() == "Windows":
+            # Avoid Aero style on Windows, which does not support dark mode
+            target_style = QWizard.WizardStyle.ModernStyle
+            logger.debug(f"Creating a QWizard on Windows, explicitly setting style to {target_style}")
+            self.setWizardStyle(target_style)
+        self._set_default_size(window_size)
+        self._setup_dialog_button_icons()
+
+    def _set_default_size(self, size: QSize):
+        new_width = size.width()
+        new_height = size.height()
+        if (parent := self.parent()) is not None:
+            parent_pos = parent.pos()
+            available_space = self.screen().availableGeometry()
+            new_width = min(available_space.width(), new_width)
+            new_height = min(available_space.height(), new_height)
+            # Clamp the window position to the screen so that it avoids
+            # positioning the window decoration above the screen border.
+            target_x = max(0, min(
+                available_space.x()+available_space.width()-new_width,
+                parent_pos.x() + (parent.width() - new_width)//2))
+            target_y = max(0, min(  # This excludes the window decoration title bar
+                available_space.y()+available_space.height()-new_height,
+                parent_pos.y() + (parent.height() - new_height)//2))
+            style = self.style()
+            target_y += style.pixelMetric(style.PixelMetric.PM_TitleBarHeight)
+            self.setGeometry(target_x, target_y, new_width, new_height)
+        else:
+            self.resize(new_width, new_height)
+
+    def _setup_dialog_button_icons(self):
+        for role, icon in self.BUTTON_ICONS.items():
+            button = self.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))
