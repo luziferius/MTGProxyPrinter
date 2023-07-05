@@ -156,7 +156,7 @@ class PageScene(QGraphicsScene):
         self.document.dataChanged.connect(self.on_data_changed)
         self.document.page_type_changed.connect(self.on_page_type_changed)
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
-        self.selected_page: QPersistentModelIndex = self.document.get_current_page_index()
+        self.selected_page = self.document.get_current_page_index()
         self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
         self.render_mode = render_mode
         background_color = self.get_background_color(render_mode)
