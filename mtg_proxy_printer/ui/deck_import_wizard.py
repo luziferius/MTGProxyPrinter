@@ -19,7 +19,7 @@ import pathlib
 import re
 import typing
 
-from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, QAbstractTableModel, \
+from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, \
     QSize
 from PySide6.QtGui import QValidator, QIcon
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
@@ -393,7 +393,8 @@ class SummaryPage(QWizardPage):
         self.card_list = CardListModel(card_db, self)
         self.card_list_sort_model = self._create_sort_model(self.card_list)
         self.card_list.oversized_card_count_changed.connect(self._update_accept_button_on_oversized_card_count_changed)
-        self.combo_box_delegate = self._setup_parsed_cards_table(self.card_list_sort_model)
+        self.ui.parsed_cards_table.setModel(self.card_list_sort_model)
+        self.combo_box_delegate = self._setup_parsed_cards_table()
         self.selected_cells_count = 0
         self.registerField("should_replace_document", self.ui.should_replace_document)
         self.ui.should_replace_document.toggled[bool].connect(
@@ -434,8 +435,7 @@ class SummaryPage(QWizardPage):
             accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
             accept_button.setToolTip("Append identified cards to the document")
 
-    def _setup_parsed_cards_table(self, model: QAbstractTableModel) -> ComboBoxItemDelegate:
-        self.ui.parsed_cards_table.setModel(model)
+    def _setup_parsed_cards_table(self) -> ComboBoxItemDelegate:
         self.ui.parsed_cards_table.selectionModel().selectionChanged.connect(self.parsed_cards_table_selection_changed)
         delegate = ComboBoxItemDelegate(self.ui.parsed_cards_table)
         self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
@@ -471,7 +471,7 @@ class SummaryPage(QWizardPage):
         logger.debug(f"Initialized {self.__class__.__name__}")
 
     def _initialize_custom_buttons(self):
-        wizard: QWizard = self.wizard()
+        wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
         wizard.setOption(QWizard.WizardOption.HaveCustomButton1, True)
         decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
@@ -492,7 +492,7 @@ class SummaryPage(QWizardPage):
     def cleanupPage(self):
         self.card_list.clear()
         super(SummaryPage, self).cleanupPage()
-        wizard: QWizard = self.wizard()
+        wizard = self.wizard()
         wizard.customButtonClicked.disconnect(self.custom_button_clicked)
         wizard.setOption(QWizard.WizardOption.HaveCustomButton1, False)
         wizard.setOption(QWizard.WizardOption.HaveCustomButton2, False)
@@ -506,13 +506,13 @@ class SummaryPage(QWizardPage):
     def parsed_cards_table_selection_changed(self, selected: QItemSelection, deselected: QItemSelection):
         self.selected_cells_count += selected.count() - deselected.count()
         logger.debug(f"Selection changed: Currently selected cells: {self.selected_cells_count}")
-        wizard: QWizard = self.wizard()
+        wizard = self.wizard()
         wizard.button(WizardButton.CustomButton2).setEnabled(self.selected_cells_count > 0)
 
     @Slot(int)
     def custom_button_clicked(self, button_id: int):
         button = WizardButton(button_id)
-        wizard: QWizard = self.wizard()
+        wizard = self.wizard()
         wizard.button(button).setEnabled(False)
         if button == WizardButton.CustomButton1:
             logger.info("User requests to remove all basic lands")

@@ -319,8 +319,7 @@ class CardFilterPage(QWizardPage):
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
-        view: QTableView = self.ui.card_image_view
-        view: QTableView
+        view = self.ui.card_image_view
         view.setModel(model)
         view.setSortingEnabled(True)
         view.sortByColumn(KnownCardColumns.Name, Qt.SortOrder.AscendingOrder)
