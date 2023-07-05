@@ -34,7 +34,7 @@ from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.logger import get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_Dialog as Ui_SettingsWindow
+    from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_SettingsWindow
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_SettingsWindow = load_ui_from_file("settings_window/settings_window")

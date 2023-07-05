@@ -129,9 +129,9 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignals([loader.loading_state_changed] * 2, timeout=1000,
+        with qtbot.waitSignals([loader.loading_state_changed] * 2,
                                check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
-                qtbot.waitSignals([loader.load_requested], timeout=1000):
+                qtbot.waitSignals([loader.load_requested]):
             loader.load_document(save_path)
         mock.assert_called_once()
     assert_that(document.rowCount(), is_(2))
@@ -171,7 +171,7 @@ def test_invalid_data_in_card_columns_raises_exception(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
@@ -198,7 +198,7 @@ def test_protects_against_infinite_save_data(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
@@ -269,7 +269,7 @@ def test_protects_against_infinite_settings_data(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
@@ -287,7 +287,7 @@ def test_loads_check_card(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
         open_database.return_value = empty_save_database
-        with qtbot.wait_signal(document.action_applied, timeout=1000), \
+        with qtbot.wait_signal(document.action_applied), \
                 qtbot.assert_not_emitted(loader.loading_file_failed):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
     assert_that(

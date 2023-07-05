@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WizardPage</class>
- <widget class="QWizardPage" name="WizardPage">
+ <class>FilterSetupPage</class>
+ <widget class="QWizardPage" name="FilterSetupPage">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -9,9 +9,6 @@
     <width>417</width>
     <height>186</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>WizardPage</string>
   </property>
   <property name="title">
    <string>Cleanup locally stored card images</string>

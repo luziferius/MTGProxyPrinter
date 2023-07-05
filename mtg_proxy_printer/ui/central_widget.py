@@ -17,7 +17,7 @@ import functools
 import math
 import operator
 import pathlib
-import typing
+from typing import Union, Type, Optional
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
     QModelIndex, QPoint
@@ -35,14 +35,14 @@ from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
 try:
-    from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_central_widget as Ui_Columnar
-    from mtg_proxy_printer.ui.generated.central_widget.grouped import Ui_central_widget as Ui_Grouped
-    from mtg_proxy_printer.ui.generated.central_widget.tabbed_vertical import Ui_central_widget as Ui_TabbedVertical
+    from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_CentralWidget_Columnar
+    from mtg_proxy_printer.ui.generated.central_widget.grouped import Ui_CentralWidget_Grouped
+    from mtg_proxy_printer.ui.generated.central_widget.tabbed_vertical import Ui_CentralWidget_Tabbed
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
-    Ui_Columnar = load_ui_from_file("central_widget/columnar")
-    Ui_Grouped = load_ui_from_file("central_widget/grouped")
-    Ui_TabbedVertical = load_ui_from_file("central_widget/tabbed_vertical")
+    Ui_CentralWidget_Columnar = load_ui_from_file("central_widget/columnar")
+    Ui_CentralWidget_Grouped = load_ui_from_file("central_widget/grouped")
+    Ui_CentralWidget_Tabbed = load_ui_from_file("central_widget/tabbed_vertical")
 
 
 from mtg_proxy_printer.logger import get_logger
@@ -54,7 +54,7 @@ __all__ = [
     "CentralWidget",
 ]
 
-UiType = typing.Union[typing.Type[Ui_Grouped], typing.Type[Ui_Columnar], typing.Type[Ui_TabbedVertical]]
+UiType = Union[Type[Ui_CentralWidget_Grouped], Type[Ui_CentralWidget_Columnar], Type[Ui_CentralWidget_Tabbed]]
 
 
 class CentralWidget(QWidget):
@@ -126,7 +126,7 @@ class CentralWidget(QWidget):
         self._add_save_image_action(menu, card)
         menu.popup(view.viewport().mapToGlobal(pos))
 
-    def _create_add_copies_actions(self, card: typing.Union[Card, CardList], add_4th: bool = False):
+    def _create_add_copies_actions(self, card: Union[Card, CardList], add_4th: bool = False):
         actions = [
             self._create_add_copies_action("Add 1 copy", 1, card),
             self._create_add_copies_action("Add 2 copies", 2, card),
@@ -137,8 +137,8 @@ class CentralWidget(QWidget):
             actions.insert(-1, self._create_add_copies_action("Add 4 copies", 4, card),)
         return actions
 
-    def _create_add_copies_action(self, label: str, count: typing.Optional[int],
-                                  card: typing.Union[Card, CheckCard, CardList]):
+    def _create_add_copies_action(self, label: str, count: Optional[int],
+                                  card: Union[Card, CheckCard, CardList]):
         action = QAction(QIcon.fromTheme("list-add"), label, self.ui.page_card_table_view)
         action.triggered.connect(functools.partial(self._add_copies, card, count))
         return action
@@ -162,7 +162,7 @@ class CentralWidget(QWidget):
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
-    def _add_copies(self, card: typing.Union[Card, CheckCard, CardList], count: typing.Optional[int]):
+    def _add_copies(self, card: Union[Card, CheckCard, CardList], count: Optional[int]):
         nl = '\n'
         card_name = card.name if isinstance(card, (Card, CheckCard)) else nl + nl.join(item.name for item in card)
         if count is None:
@@ -177,7 +177,7 @@ class CentralWidget(QWidget):
             for item in card:
                 self._request_action_add_card(item, count)
 
-    def _request_action_add_card(self, card: typing.Union[Card, CheckCard], count: int):
+    def _request_action_add_card(self, card: Union[Card, CheckCard], count: int):
         # If cards have images, request the action directly. This happens when adding copies of already added cards
         # and is required for custom cards. Otherwise, request the image from the image database. Cards without images
         # at this point are CheckCards or related cards.
@@ -187,7 +187,7 @@ class CentralWidget(QWidget):
         else:
             self.request_action.emit(action)
 
-    def _add_save_image_action(self, parent: QMenu, card: typing.Union[Card, CheckCard]):
+    def _add_save_image_action(self, parent: QMenu, card: Union[Card, CheckCard]):
         action = QAction(QIcon.fromTheme("document-save"), "Export image", parent)
         action.setData(card)
         action.triggered.connect(self._on_save_image_action_triggered)
@@ -286,7 +286,7 @@ def get_configured_central_widget_layout_class() -> UiType:
     gui_settings = mtg_proxy_printer.settings.settings["gui"]
     configured_layout = gui_settings["central-widget-layout"]
     if configured_layout == "horizontal":
-        return Ui_Grouped
+        return Ui_CentralWidget_Grouped
     if configured_layout == "columnar":
-        return Ui_Columnar
-    return Ui_TabbedVertical
+        return Ui_CentralWidget_Columnar
+    return Ui_CentralWidget_Tabbed

@@ -40,7 +40,7 @@ from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 
 try:
-    from mtg_proxy_printer.ui.generated.main_window import Ui_main_window as Ui_MainWindow
+    from mtg_proxy_printer.ui.generated.main_window import Ui_MainWindow
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_MainWindow = load_ui_from_file("main_window")

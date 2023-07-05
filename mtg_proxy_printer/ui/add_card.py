@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
+from typing import Union, Type, Optional
 
 from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
@@ -31,11 +31,11 @@ logger = get_logger(__name__)
 del get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget as Ui_vertical
-    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget as Ui_horizontal
+    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget_Vertical
+    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget_Horizontal
 except ModuleNotFoundError:
-    Ui_vertical = load_ui_from_file("add_card_widget/vertical")
-    Ui_horizontal = load_ui_from_file("add_card_widget/horizontal")
+    Ui_AddCardWidget_Vertical = load_ui_from_file("add_card_widget/vertical")
+    Ui_AddCardWidget_Horizontal = load_ui_from_file("add_card_widget/horizontal")
 
 
 __all__ = [
@@ -44,7 +44,7 @@ __all__ = [
     "HorizontalAddCardWidget",
 ]
 
-UiTypes = typing.Union[typing.Type[Ui_horizontal], typing.Type[Ui_horizontal]]
+UiTypes = Union[Type[Ui_AddCardWidget_Vertical], Type[Ui_AddCardWidget_Horizontal]]
 
 
 class AddCardWidget(QWidget):
@@ -252,7 +252,7 @@ class AddCardWidget(QWidget):
         return self.ui.language_combo_box.currentText()
 
     @property
-    def current_card_name(self) -> typing.Optional[str]:
+    def current_card_name(self) -> Optional[str]:
         selected = self.ui.card_name_list.selectedIndexes()
         if selected:
             return selected[0].data(Qt.DisplayRole)
@@ -260,7 +260,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_set_name(self) -> typing.Optional[str]:
+    def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
             return selected[0].data(Qt.EditRole)
@@ -268,7 +268,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_collector_number(self) -> typing.Optional[str]:
+    def current_collector_number(self) -> Optional[str]:
         selected = self.ui.collector_number_list.selectedIndexes()
         if selected:
             return selected[0].data(Qt.DisplayRole)
@@ -279,9 +279,9 @@ class AddCardWidget(QWidget):
 class VerticalAddCardWidget(AddCardWidget):
 
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_vertical, parent)
+        super().__init__(Ui_AddCardWidget_Vertical, parent)
 
 
 class HorizontalAddCardWidget(AddCardWidget):
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_horizontal, parent)
+        super().__init__(Ui_AddCardWidget_Horizontal, parent)
