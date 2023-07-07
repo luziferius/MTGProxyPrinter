@@ -18,12 +18,12 @@ from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -63,6 +63,9 @@ class PageConfigWidget(QGroupBox):
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
         self.ui.draw_sharp_corners.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
+        self.ui.draw_page_numbers.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked))
+        self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 
     @Slot()
@@ -89,11 +92,13 @@ class PageConfigWidget(QGroupBox):
 
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
-        document_section = settings["documents"]
+        documents_section = settings["documents"]
         for spinbox, setting in self._get_integer_settings_widgets():
-            spinbox.setValue(document_section.getint(setting))
+            spinbox.setValue(documents_section.getint(setting))
         for checkbox, setting in self._get_boolean_settings_widgets():
-            checkbox.setChecked(document_section.getboolean(setting))
+            checkbox.setChecked(documents_section.getboolean(setting))
+        for line_edit, setting in self._get_string_settings_widgets():
+            line_edit.setText(documents_section[setting])
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -121,6 +126,8 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
+        for line_edit, setting in self._get_string_settings_widgets():
+            documents_section[setting] = line_edit.text()
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
@@ -140,5 +147,12 @@ class PageConfigWidget(QGroupBox):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.ui.draw_cut_markers, "print-cut-marker"),
             (self.ui.draw_sharp_corners, "print-sharp-corners"),
+            (self.ui.draw_page_numbers, "print-page-numbers"),
+        ]
+        return widgets_with_settings
+
+    def _get_string_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+            (self.ui.document_name, "default-document-name")
         ]
         return widgets_with_settings

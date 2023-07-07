@@ -84,7 +84,9 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
+    document_name: str = ""
     draw_cut_markers: bool = False
+    draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
     image_spacing_horizontal: int = 0
     image_spacing_vertical: int = 0
@@ -99,8 +101,10 @@ class PageLayoutSettings:
     def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
         return cls(
+            document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-sharp-corners"),
+            document_settings.getboolean("draw-page-numbers"),
             document_settings.getint("image-spacing-horizontal-mm"),
             document_settings.getint("image-spacing-vertical-mm"),
             document_settings.getint("margin-bottom-mm"),
