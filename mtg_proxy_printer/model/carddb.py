@@ -742,8 +742,8 @@ class CardDatabase(QObject):
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
           source_oracle_id (oracle_id, face_number, source_likeliness, source_set_code) AS (
-            SELECT oracle_id, face_number, (
-                SELECT count() FROM Card)
+            SELECT oracle_id, face_number,
+                (SELECT count() FROM Card)
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
                   + count(oracle_id) AS source_likeliness,
@@ -770,10 +770,8 @@ class CardDatabase(QObject):
           LIMIT 1
         ;
         """)
-        return self._read_optional_scalar_from_db(
-            query,
-            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
-        )
+        parameters = card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language
+        return self._read_optional_scalar_from_db(query, parameters)
 
     def get_available_languages_for_card(self, card: Card) -> StringList:
         """
