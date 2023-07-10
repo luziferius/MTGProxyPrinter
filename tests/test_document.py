@@ -62,6 +62,10 @@ class DummyAction(DocumentAction):
         self.apply = unittest.mock.MagicMock(return_value=self)
         self.undo = unittest.mock.MagicMock(return_value=self)
 
+    @property
+    def as_str(self):
+        return f"{self.__class__.__name__}"
+
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
     card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
