@@ -50,7 +50,8 @@ del get_logger
 __all__ = [
     "DocumentSaveFormat",
     "DocumentLoader",
-    "PageLayoutSettings"
+    "PageLayoutSettings",
+    "CardType",
 ]
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
