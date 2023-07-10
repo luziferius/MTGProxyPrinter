@@ -267,6 +267,7 @@ class ImageDatabaseCards(typing.NamedTuple):
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
 AnyCardType = typing.Union[Card, CheckCard]
+T = typing.TypeVar("T", Card, CheckCard)
 
 
 @functools.lru_cache(None)
@@ -864,7 +865,7 @@ class CardDatabase(QObject):
         id_, total_cards_in_last_update = self.db.execute(query).fetchone()
         return 0 if id_ is None else total_cards_in_last_update
 
-    def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
+    def translate_card(self, to_translate: T, target_language: str = None) -> T:
         """
         Returns a new card object representing the card translated into the target language.
 
@@ -879,6 +880,11 @@ class CardDatabase(QObject):
         """
         if target_language is None or target_language == to_translate.language:
             return to_translate
+        if isinstance(to_translate, CheckCard):
+            return CheckCard(
+                (front := self.translate_card(to_translate.front, target_language)),
+                self.get_opposing_face(front)
+            )
         if (result := self._translate_card(to_translate, target_language)) is not None:
             return result
         return to_translate
