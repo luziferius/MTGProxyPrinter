@@ -19,6 +19,7 @@ import enum
 import itertools
 import math
 import pathlib
+import sys
 import textwrap
 import typing
 
@@ -40,6 +41,11 @@ from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 
 logger = get_logger(__name__)
 del get_logger
+
+if sys.version_info[:2] >= (3, 9):
+    Counter = collections.Counter
+else:
+    Counter = typing.Counter
 
 __all__ = [
     "Document",
@@ -337,7 +343,7 @@ class Document(QAbstractItemModel):
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        cards = collections.Counter()
+        cards: Counter[PageType] = collections.Counter()
         for page in self.pages:
             cards[page.page_type()] += len(page)
         required_pages = (
