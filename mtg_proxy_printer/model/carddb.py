@@ -775,6 +775,21 @@ class CardDatabase(QObject):
             (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
         )
 
+    def get_available_languages_for_card(self, card: Card) -> StringList:
+        """
+        Returns the sorted list of languages the given card is available in.
+        This is used as the data source for the ComboBoxItemDelegate model
+        to generate the choices for translating cards in the document.
+        """
+        query = cached_dedent("""\
+        SELECT DISTINCT language
+            FROM VisiblePrintings
+            WHERE oracle_id = ?
+            ORDER BY language ASC
+        """)
+        result = [item for item, in self.db.execute(query, (card.oracle_id,))]
+        return result
+
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
