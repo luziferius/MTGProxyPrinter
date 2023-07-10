@@ -66,6 +66,13 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
             editor.setCurrentIndex(matching_collector_numbers.index(index.data(Qt.EditRole)))
 
+        elif index.column() == PageColumns.Language:
+            card = index.data(Qt.UserRole)
+            matching_languages = source_model.card_db.get_available_languages_for_card(card)
+            for language in matching_languages:
+                editor.addItem(language, language)
+            editor.setCurrentIndex(matching_languages.index(index.data(Qt.EditRole)))
+
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
         new_value = editor.currentData(Qt.UserRole)
         previous_value = index.data(Qt.EditRole)
