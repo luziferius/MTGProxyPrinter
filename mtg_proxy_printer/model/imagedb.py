@@ -35,7 +35,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
-from mtg_proxy_printer.model.carddb import Card, CheckCard
+from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -304,7 +304,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.network_error_occurred.emit(reason_str)
         return reason_str
 
-    def get_image_synchronous(self, card: typing.Union[Card, CheckCard]):
+    def get_image_synchronous(self, card: AnyCardType):
         try:
             if isinstance(card, CheckCard):
                 self._get_image_synchronous(card.front)

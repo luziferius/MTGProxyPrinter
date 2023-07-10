@@ -56,6 +56,7 @@ __all__ = [
     "MTGSet",
     "CheckCard",
     "Card",
+    "AnyCardType",
     "CardCorner",
     "CardDatabase",
     "cached_dedent",
@@ -265,6 +266,7 @@ class ImageDatabaseCards(typing.NamedTuple):
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
+AnyCardType = typing.Union[Card, CheckCard]
 
 
 @functools.lru_cache(None)
