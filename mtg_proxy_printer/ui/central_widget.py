@@ -80,6 +80,7 @@ class CentralWidget(QWidget):
         combo_box_delegate = ComboBoxItemDelegate(self.ui.page_card_table_view)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.CollectorNumber, combo_box_delegate)
         self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Set, combo_box_delegate)
+        self.ui.page_card_table_view.setItemDelegateForColumn(PageColumns.Language, combo_box_delegate)
         return combo_box_delegate
 
     def set_data(self, document: Document, card_db: CardDatabase, image_db: ImageDatabase):
