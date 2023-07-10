@@ -86,7 +86,7 @@ class Document(QAbstractItemModel):
         PageColumns.Image: "Image",
         PageColumns.IsFront: "Side",
     }
-    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -222,14 +222,22 @@ class Document(QAbstractItemModel):
         data = index.internalPointer()
         if isinstance(data, CardContainer) and role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting model data for column {index.column()} to {value}")
-            card: Card = index.internalPointer().card
-            if index.column() == PageColumns.CollectorNumber:
+            card = data.card
+            column = index.column()
+            if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-            else:
+            elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
                     card.language, card.name, value, is_front=card.is_front
                 )
+            else:
+                replacement = self.card_db.translate_card(card, value)
+                if replacement != card:
+                    action = ActionReplaceCard(replacement, index.parent().row(), index.row())
+                    self.request_fill_image_for_action.emit(action)
+                    return True
+                return False
             return self._request_replacement_card(index, card_data)
         return False
 
@@ -239,7 +247,8 @@ class Document(QAbstractItemModel):
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
-            self.request_fill_image_for_action.emit(ActionReplaceCard(new_card, index.parent().row(), index.row()))
+            action = ActionReplaceCard(new_card, index.parent().row(), index.row())
+            self.request_fill_image_for_action.emit(action)
             return True
         return False
 
@@ -267,6 +276,8 @@ class Document(QAbstractItemModel):
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
         card: Card = index.internalPointer().card
+        if role == Qt.ItemDataRole.UserRole:
+            return card
         if role in {Qt.DisplayRole, Qt.EditRole}:
             if index.column() == PageColumns.CardName:
                 return card.name
