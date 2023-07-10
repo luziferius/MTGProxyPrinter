@@ -20,7 +20,7 @@ import pathlib
 from typing import Union, Type, Optional
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QPersistentModelIndex, QItemSelectionModel, \
-    QModelIndex, QPoint
+    QModelIndex, QPoint, Qt
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog, QFileDialog
 
@@ -116,7 +116,7 @@ class CentralWidget(QWidget):
             return
         logger.info(f"Page card table requests context menu at x={pos.x()}, y={pos.y()}, row={index.row()}")
         menu = QMenu(view)
-        card: Card = index.internalPointer().card
+        card: Card = index.data(Qt.ItemDataRole.UserRole)
         menu.addActions(self._create_add_copies_actions(card))
         if card.is_dfc:
             menu.addSeparator()

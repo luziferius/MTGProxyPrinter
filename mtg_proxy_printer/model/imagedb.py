@@ -25,7 +25,7 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex, Qt
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -41,7 +41,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-
+ItemDataRole = Qt.ItemDataRole
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
@@ -276,8 +276,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         blank = self.image_database.blank_image
         self.update_batch_processing_state(True)
         for index in card_indices:
-            card = index.internalPointer().card
-            self.get_image_synchronous(index.internalPointer().card)
+            card = index.data(ItemDataRole.UserRole)
+            self.get_image_synchronous(card)
             if card.image_file is not blank:
                 self.missing_image_obtained.emit(index)
         self.update_batch_processing_state(False)

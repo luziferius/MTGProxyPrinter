@@ -29,7 +29,7 @@ from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
     CardType
@@ -275,7 +275,7 @@ class Document(QAbstractItemModel):
                 f"Invalid index: {index.row()=}, {index.column()=}, "
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
-        card: Card = index.internalPointer().card
+        card: AnyCardType = index.internalPointer().card
         if role == Qt.ItemDataRole.UserRole:
             return card
         if role in {Qt.DisplayRole, Qt.EditRole}:
