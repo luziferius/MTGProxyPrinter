@@ -20,7 +20,7 @@ import typing
 
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
+from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 
 __all__ = [
@@ -54,7 +54,7 @@ def create_card(name: str, oversized: bool = False) -> Card:
     return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
 
 
-def card_container_with(card: typing.Union[Card, CheckCard], parent: Page):
+def card_container_with(card: AnyCardType, parent: Page):
     """Hamcrest matcher for a CardContainer."""
     return all_of(
         instance_of(CardContainer),

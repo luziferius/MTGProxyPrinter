@@ -35,7 +35,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard, AnyCardType
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -50,7 +50,8 @@ del get_logger
 __all__ = [
     "DocumentSaveFormat",
     "DocumentLoader",
-    "PageLayoutSettings"
+    "PageLayoutSettings",
+    "CardType",
 ]
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
@@ -62,7 +63,7 @@ class CardType(str, enum.Enum):
     CHECK_CARD = "d"
 
     @classmethod
-    def from_card(cls, card: typing.Union[Card, CheckCard]) -> "CardType":
+    def from_card(cls, card: AnyCardType) -> "CardType":
         if isinstance(card, Card):
             return cls.REGULAR
         elif isinstance(card, CheckCard):
