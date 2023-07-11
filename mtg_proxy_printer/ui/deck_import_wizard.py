@@ -436,6 +436,7 @@ class SummaryPage(QWizardPage):
         delegate = ComboBoxItemDelegate(self.ui.parsed_cards_table)
         self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
+        self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Language, delegate)
         for column, scaling_factor in (
                 (PageColumns.CardName, 2),
                 (PageColumns.Set, 2.75),
