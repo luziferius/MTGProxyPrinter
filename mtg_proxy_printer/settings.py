@@ -227,7 +227,7 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers",}
+    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:

@@ -113,6 +113,8 @@ class PageConfigWidget(QGroupBox):
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QSpinBox):
                     widget.setValue(value)
+                elif isinstance(widget, QLineEdit):
+                    widget.setText(value)
                 else:
                     widget.setChecked(value)
         self.validate_paper_size_settings()
