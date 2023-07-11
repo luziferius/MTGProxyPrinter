@@ -14,7 +14,6 @@ import itertools
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from collections import Counter
-from typing import Union, Type
 from unittest.mock import NonCallableMagicMock
 
 from PyQt5.QtWidgets import QComboBox
