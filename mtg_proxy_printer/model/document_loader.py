@@ -104,7 +104,7 @@ class PageLayoutSettings:
         return cls(
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
-            document_settings.getboolean("draw-page-numbers"),
+            document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
             document_settings.getint("image-spacing-horizontal-mm"),
             document_settings.getint("image-spacing-vertical-mm"),
