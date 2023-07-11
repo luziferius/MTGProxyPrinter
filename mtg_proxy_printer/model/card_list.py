@@ -136,7 +136,7 @@ class CardListModel(QAbstractTableModel):
             new_card = result[0]
             logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(index.row(), index.column())
-            bottom_right = top_left.siblingAtColumn(len(PageColumns)-1)
+            bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
             old_card = self.cards[index.row()]
             self.cards[index.row()] = new_card
             self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
