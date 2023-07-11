@@ -2,6 +2,15 @@
 
 # Next version (in development)
 
+## New features
+
+- Translate cards already added to the document.
+    - You can now double-click the language cells in the table showing the cards on the current page to 
+      translate card in the document to another language.
+    - The opened drop-down menu will only show languages for which a printing is available.
+    - The translation tries to keep the same set and collector number, if available in the desired language,
+      otherwise falls back to a printing in another set. 
+
 ## Fixed issues
 
 - It is now possible to save and load documents containing DFC check cards. 
@@ -9,9 +18,9 @@
   Loading such documents with older program versions will fail.
 - Improvements/fixes for the multi-page wizards, like the deck import wizards
     - Wizards now have a consistent style on Windows (7) and are properly centered above the main window
-    - Wizards are no longer placed partially out of the screen under some edge cases.
+    - Wizards are no longer placed partially out of the screen under some edge cases.  
       The window title bar is now always visible.
-    - 
+
 # Version 0.24.1 (2023-06-27)  <a name="v0_24_1"></a>
 
 ## Fixed issues

@@ -42,6 +42,7 @@ __all__ = [
     "PageRenderer",
 ]
 PixelCache = typing.DefaultDict[PageType, typing.List[float]]
+ItemDataRole = Qt.ItemDataRole
 
 
 @enum.unique
@@ -204,8 +205,8 @@ class PageScene(QGraphicsScene):
         """Draws the canvas, when the currently selected page changes."""
         logger.debug(f"Current page changed to page {selected_page.row()}")
         page_types: typing.Set[PageType] = {
-            self.selected_page.data(Qt.UserRole),
-            selected_page.data(Qt.UserRole)
+            self.selected_page.data(ItemDataRole.UserRole),
+            selected_page.data(ItemDataRole.UserRole)
         }
         self.selected_page = selected_page
 
@@ -254,7 +255,7 @@ class PageScene(QGraphicsScene):
 
     def _draw_cards(self):
         index = self.selected_page.sibling(self.selected_page.row(), 0)
-        page_type: PageType = self.selected_page.data(Qt.UserRole)
+        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
         images_to_draw = self.selected_page.model().rowCount(index)
         logger.info(f"Drawing {images_to_draw} cards")
         for row in range(images_to_draw):
@@ -263,8 +264,8 @@ class PageScene(QGraphicsScene):
     def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
         index = self.selected_page.child(row, PageColumns.Image)
         position = self._compute_position_for_image(row, page_type)
-        if index.data(Qt.DisplayRole) is not None:  # Card has a QPixmap set
-            card: Card = index.internalPointer().card
+        if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
+            card: Card = index.data(ItemDataRole.UserRole)
             self.addItem(card_item := CardItem(card, self.document))
             card_item.setPos(position)
             if next_item is not None:
@@ -277,7 +278,7 @@ class PageScene(QGraphicsScene):
                 card_item.stackBefore(next_item)
 
     def update_card_positions(self):
-        page_type: PageType = self.selected_page.data(Qt.UserRole)
+        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
         for index, card in enumerate(self.card_items):
             card.setPos(self._compute_position_for_image(index, page_type))
 
@@ -292,9 +293,9 @@ class PageScene(QGraphicsScene):
                 self.remove_cut_markers()
                 self.draw_cut_markers()
 
-    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[Qt.ItemDataRole]):
-        if top_left.parent().row() == self.selected_page.row() and Qt.DisplayRole in roles:
-            page_type: PageType = top_left.parent().data(Qt.UserRole)
+    def on_data_changed(self, top_left: QModelIndex, bottom_right: QModelIndex, roles: typing.List[ItemDataRole]):
+        if top_left.parent().row() == self.selected_page.row() and ItemDataRole.DisplayRole in roles:
+            page_type: PageType = top_left.parent().data(ItemDataRole.UserRole)
             card_items = self.card_items
             for row in range(top_left.row(), bottom_right.row()+1):
                 logger.debug(f"Card {row} on the current page was replaced, replacing image.")
@@ -307,7 +308,7 @@ class PageScene(QGraphicsScene):
             inserted_cards = last-first+1
             needs_reorder = first + inserted_cards < self.document.rowCount(parent)
             next_item = self.card_items[first] if needs_reorder else None
-            page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
+            page_type: PageType = self.selected_page.data(ItemDataRole.EditRole).page_type()
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
             for new in range(first, last+1):
                 self.draw_card(new, page_type, next_item)
@@ -371,7 +372,7 @@ class PageScene(QGraphicsScene):
 
     def draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
-        page_type: PageType = self.selected_page.data(Qt.EditRole).page_type()
+        page_type: PageType = self.selected_page.data(ItemDataRole.EditRole).page_type()
         if page_type == PageType.MIXED:
             logger.warning("Not drawing cut markers for page with mixed image sizes")
             return

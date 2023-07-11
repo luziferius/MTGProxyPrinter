@@ -35,11 +35,11 @@ from mtg_proxy_printer.logger import get_logger
 
 try:
     from mtg_proxy_printer.ui.generated.about_dialog import Ui_AboutDialog
-    from mtg_proxy_printer.ui.generated.page_config_dialog import Ui_PageConfigDialog
+    from mtg_proxy_printer.ui.generated.document_settings_dialog import Ui_DocumentSettingsDialog
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_AboutDialog = load_ui_from_file("about_dialog")
-    Ui_PageConfigDialog = load_ui_from_file("page_config_dialog")
+    Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
 
 logger = get_logger(__name__)
 del get_logger
@@ -229,7 +229,7 @@ class DocumentSettingsDialog(QDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         super(DocumentSettingsDialog, self).__init__(parent)
-        self.ui = Ui_PageConfigDialog()
+        self.ui = Ui_DocumentSettingsDialog()
         self.ui.setupUi(self)
         self.setModal(True)
         self.document = document

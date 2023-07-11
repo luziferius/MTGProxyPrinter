@@ -56,6 +56,7 @@ __all__ = [
     "MTGSet",
     "CheckCard",
     "Card",
+    "AnyCardType",
     "CardCorner",
     "CardDatabase",
     "cached_dedent",
@@ -265,6 +266,8 @@ class ImageDatabaseCards(typing.NamedTuple):
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
+AnyCardType = typing.Union[Card, CheckCard]
+T = typing.TypeVar("T", Card, CheckCard)
 
 
 @functools.lru_cache(None)
@@ -742,8 +745,8 @@ class CardDatabase(QObject):
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
           source_oracle_id (oracle_id, face_number, source_likeliness, source_set_code) AS (
-            SELECT oracle_id, face_number, (
-                SELECT count() FROM Card)
+            SELECT oracle_id, face_number,
+                (SELECT count() FROM Card)
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
                   + count(oracle_id) AS source_likeliness,
@@ -770,10 +773,28 @@ class CardDatabase(QObject):
           LIMIT 1
         ;
         """)
-        return self._read_optional_scalar_from_db(
-            query,
-            (card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language)
-        )
+        parameters = card_data.scryfall_id, card_data.set_code, card_data.name, card_data.language, target_language
+        return self._read_optional_scalar_from_db(query, parameters)
+
+    def get_available_languages_for_card(self, card: Card) -> StringList:
+        """
+        Returns the sorted list of languages the given card is available in.
+        This is used as the data source for the ComboBoxItemDelegate model
+        to generate the choices for translating cards in the document.
+        """
+        query = cached_dedent("""\
+        SELECT DISTINCT language 
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE oracle_id = ?
+            AND Printing.is_hidden IS FALSE
+          ORDER BY language ASC;
+        """)
+        result = [item for item, in self.db.execute(query, (card.oracle_id,))]
+        return result
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():
@@ -844,7 +865,7 @@ class CardDatabase(QObject):
         id_, total_cards_in_last_update = self.db.execute(query).fetchone()
         return 0 if id_ is None else total_cards_in_last_update
 
-    def translate_card(self, to_translate: Card, target_language: str = None) -> Card:
+    def translate_card(self, to_translate: T, target_language: str = None) -> T:
         """
         Returns a new card object representing the card translated into the target language.
 
@@ -859,6 +880,11 @@ class CardDatabase(QObject):
         """
         if target_language is None or target_language == to_translate.language:
             return to_translate
+        if isinstance(to_translate, CheckCard):
+            return CheckCard(
+                (front := self.translate_card(to_translate.front, target_language)),
+                self.get_opposing_face(front)
+            )
         if (result := self._translate_card(to_translate, target_language)) is not None:
             return result
         return to_translate

@@ -22,6 +22,7 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
 
@@ -47,7 +48,9 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .document_controller.helpers import insert_card_in_page, create_card, card_container_with
+from .document_controller.helpers import insert_card_in_page, create_card
+
+ItemDataRole = Qt.ItemDataRole
 
 
 class DummyAction(DocumentAction):
@@ -61,6 +64,10 @@ class DummyAction(DocumentAction):
         self.value = value
         self.apply = unittest.mock.MagicMock(return_value=self)
         self.undo = unittest.mock.MagicMock(return_value=self)
+
+    @property
+    def as_str(self):
+        return f"{self.__class__.__name__}"
 
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
@@ -348,7 +355,7 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
     for index, expected_row in zip(indices, child_rows):
         assert_that(index.row(), is_(expected_row))
         assert_that(index.parent().row(), is_(parent_row))
-        card: Card = index.internalPointer().card
+        card: Card = index.data(ItemDataRole.UserRole)
         assert_that(card.requested_page_type(), is_(page_type))
 
 
@@ -612,7 +619,7 @@ def test_get_missing_image_cards(document_light: Document):
         result := list(document_light.get_missing_image_cards()),
         has_length(2)
     )
-    cards = [i.internalPointer().card for i in result]
+    cards = [i.data(ItemDataRole.UserRole) for i in result]
     assert_that(cards, only_contains(expected))
 
 
