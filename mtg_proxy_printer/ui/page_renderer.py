@@ -22,7 +22,7 @@ import typing
 from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
     pyqtSignal as Signal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
-    QGraphicsLineItem, QGraphicsItemGroup, QGraphicsItem, QGraphicsRectItem, QGraphicsPixmapItem
+    QGraphicsLineItem, QGraphicsItemGroup, QGraphicsItem, QGraphicsRectItem, QGraphicsPixmapItem, QGraphicsTextItem
 from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
 import pint
 
@@ -49,6 +49,7 @@ ItemDataRole = Qt.ItemDataRole
 class RenderLayers(enum.Enum):
     BACKGROUND = -3
     CUT_LINES = -2
+    TEXT = -1
     CARDS = 0
 
 
@@ -134,6 +135,10 @@ def is_cut_line_item(item: QGraphicsItem) -> bool:
     return isinstance(item, QGraphicsLineItem)
 
 
+def is_text_item(item: QGraphicsItem) -> bool:
+    return isinstance(item, QGraphicsTextItem)
+
+
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
 
@@ -181,6 +186,11 @@ class PageScene(QGraphicsScene):
             return QColorConstants.Black
         return self.palette().color(QPalette.Active, QPalette.WindowText)
 
+    def get_text_color(self, render_mode: RenderMode) -> QColor:
+        if render_mode is RenderMode.ON_PAPER:
+            return QColorConstants.Black
+        return self.palette().color(QPalette.Active, QPalette.WindowText)
+
     def setPalette(self, palette: QPalette) -> None:
         logger.info("Color palette changed, updating PageScene background and cut line colors.")
         super().setPalette(palette)
@@ -188,9 +198,12 @@ class PageScene(QGraphicsScene):
         self.background.setPen(background_color)
         self.background.setBrush(background_color)
         cut_line_color = self.get_cut_marker_color(self.render_mode)
+        text_color = self.get_text_color(self.render_mode)
         logger.info(f"Number of cut lines: {len(self.cut_lines)}")
         for line in self.cut_lines:
             line.setPen(cut_line_color)
+        for item in self.text_items:
+            item.setDefaultTextColor(text_color)
 
     @property
     def card_items(self) -> typing.List[CardItem]:
@@ -199,6 +212,10 @@ class PageScene(QGraphicsScene):
     @property
     def cut_lines(self) -> typing.List[QGraphicsLineItem]:
         return list(filter(is_cut_line_item, self.items(Qt.AscendingOrder)))
+
+    @property
+    def text_items(self) -> typing.List[QGraphicsTextItem]:
+        return list(filter(is_text_item, self.items(Qt.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
