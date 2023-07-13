@@ -23,7 +23,8 @@ from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIn
     pyqtSignal as Signal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
     QGraphicsLineItem, QGraphicsItemGroup, QGraphicsItem, QGraphicsRectItem, QGraphicsPixmapItem, QGraphicsSimpleTextItem
-from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
+from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants, \
+    QFontMetrics
 import pint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
@@ -261,9 +262,11 @@ class PageScene(QGraphicsScene):
     def _update_page_text_x(self):
         title_x = self._mm_to_rounded_px(self.document.page_layout.margin_right) + 1
         self.document_title_text.setX(title_x)
+        font_metrics = QFontMetrics(self.page_number_text.font())
+        text_width = font_metrics.horizontalAdvance(self.page_number_text.text())
         page_number_x = round(
             self.width()
-            - self._mm_to_rounded_px(self.document.page_layout.margin_right + 30) - 1
+            - self._mm_to_rounded_px(self.document.page_layout.margin_right) - text_width - 2
         )
         self.page_number_text.setX(page_number_x)
 
