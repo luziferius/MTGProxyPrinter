@@ -34,10 +34,10 @@ import mtg_proxy_printer.sqlite_helpers
 CardType = mtg_proxy_printer.model.document_loader.CardType
 
 
-@pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
-def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
-    empty_save_database.execute(f"PRAGMA user_version = {version};")
-    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
+@pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
+def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
+    empty_save_database.execute(f"PRAGMA user_version = {user_version};")
+    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
