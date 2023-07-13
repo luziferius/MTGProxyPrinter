@@ -77,8 +77,9 @@ Entries use the language codes as listed on Scryfall.</string>
              </sizepolicy>
             </property>
             <property name="toolTip">
-             <string>Horizontal adds a wide search area above the currently edited page.
-Vertical adds a tall search area between the page list and the currently edited page.</string>
+             <string>Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
+Columnar organizes the main window content in four columns, and is best for (ultra-)wide screens.
+Tabbed uses tabs to only show parts of the main window at a time. Best used with small screens in portrait mode (i.e. 9:16), otherwise not recommended.</string>
             </property>
            </widget>
           </item>
