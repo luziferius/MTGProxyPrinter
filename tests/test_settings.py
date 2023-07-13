@@ -47,3 +47,11 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(default_s
         "margin-top-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-top-mm"]),
         "margin-bottom-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-bottom-mm"]),
     }))
+
+
+def test__validate_documents_section_document_name(default_settings):
+    key, value = "default-document-name", "Test"
+    documents_section = default_settings["documents"]
+    documents_section[key] = value
+    mtg_proxy_printer.settings.validate_settings(default_settings)
+    assert_that(documents_section, has_entry(key, equal_to(value)))
