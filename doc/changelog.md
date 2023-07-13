@@ -11,6 +11,11 @@
     - The translation tries to keep the same set and collector number, if available in the desired language,
       otherwise falls back to a printing in another set. 
 
+## Changed features
+
+- The Undo and Redo actions now have keyboard shortcuts assigned. They use the system-default shortcuts for
+  those actions, which are Ctrl+Z and Ctrl+Y on most systems and locales.  
+
 ## Fixed issues
 
 - It is now possible to save and load documents containing DFC check cards. 

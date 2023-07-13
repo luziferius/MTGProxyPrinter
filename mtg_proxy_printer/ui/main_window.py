@@ -114,6 +114,8 @@ class MainWindow(QMainWindow):
             (self.ui.action_show_settings, QKeySequence.Preferences),
             (self.ui.action_print, QKeySequence.Print),
             (self.ui.action_quit, QKeySequence.Quit),
+            (self.ui.action_undo, QKeySequence.Undo),
+            (self.ui.action_redo, QKeySequence.Redo),
         ]
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
