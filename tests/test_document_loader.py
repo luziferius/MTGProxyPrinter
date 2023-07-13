@@ -305,16 +305,18 @@ def test_loads_check_card(
     )
 
 
-@pytest.fixture(params=[
+@pytest.fixture(params=itertools.product([
     (4, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1]),
     (5, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1, 0]),
-])
+], [True, False]))
 def legacy_save_file(request):
-    save_version, settings = request.param  # type: int, list
+    (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
     db = mtg_proxy_printer.sqlite_helpers.open_database(
         ":memory:", f"document-v{save_version}",
         mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
     db.execute(F"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    if reverse_unordered:
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
     yield db
 
 
