@@ -531,8 +531,9 @@ class Worker(QObject):
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        settings.draw_cut_markers = bool(settings.draw_cut_markers)
-        settings.draw_sharp_corners = bool(settings.draw_sharp_corners)
+        for key, expected_type in settings.__annotations__.items():
+            if expected_type is bool:
+                setattr(settings, key, bool(getattr(settings, key)))
         return settings
 
     @staticmethod

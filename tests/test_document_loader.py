@@ -325,3 +325,8 @@ def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_fi
             return_value=legacy_save_file), \
             qtbot.wait_signal(document_light.action_applied):
         loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+    annotations = document_light.page_layout.__annotations__
+    assert_that(
+        document_light.page_layout,
+        has_properties({item: instance_of(value) for item, value in annotations.items()})
+    )
