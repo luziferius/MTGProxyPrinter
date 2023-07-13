@@ -245,7 +245,7 @@ class PageScene(QGraphicsScene):
         for item in self.card_items:
             self.removeItem(item)
         if self._is_valid_page_index(selected_page):
-            self._update_page_number_text_on_page_change()
+            self._update_page_number_text()
             self._update_page_text_x()
             self._update_page_text_y()
             self._draw_cards()
@@ -270,7 +270,7 @@ class PageScene(QGraphicsScene):
         )
         self.page_number_text.setX(page_number_x)
 
-    def _update_page_number_text_on_page_change(self):
+    def _update_page_number_text(self):
         model = self.selected_page.model()
         if self.page_number_text not in self.text_items:
             return
@@ -295,7 +295,7 @@ class PageScene(QGraphicsScene):
             self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
-        self._update_page_number_text_on_page_change()
+        self._update_page_number_text()
         self.document_title_text.setText(self._format_document_title(new_page_layout.document_name))
         self._update_text_visibility(self.document_title_text, new_page_layout.document_name)
         self._update_text_visibility(self.page_number_text, new_page_layout.draw_page_numbers)
@@ -420,9 +420,9 @@ class PageScene(QGraphicsScene):
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
-        elif parent.isValid():
-            # Page inserted or removed. Update the page number text, as it contains the total number of pages
-            self._update_page_number_text_on_page_change()
+        elif self.selected_page.isValid():
+            # Page inserted. Update the page number text, as it contains the total number of pages
+            self._update_page_number_text()
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
@@ -435,6 +435,9 @@ class PageScene(QGraphicsScene):
             for item in self.card_items[first:last+1]:
                 self.removeItem(item)
             self.update_card_positions()
+        elif self.selected_page.isValid():
+            # Page removed. Update the page number text, as it contains the total number of pages
+            self._update_page_number_text()
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
         if parent.isValid() and parent.row() == self.selected_page.row():
