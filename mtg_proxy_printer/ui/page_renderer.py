@@ -296,7 +296,7 @@ class PageScene(QGraphicsScene):
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
         self._update_page_number_text_on_page_change()
-        self.document_title_text.setText(new_page_layout.document_name)
+        self.document_title_text.setText(self._format_document_title(new_page_layout.document_name))
         self._update_text_visibility(self.document_title_text, new_page_layout.document_name)
         self._update_text_visibility(self.page_number_text, new_page_layout.draw_page_numbers)
         self._update_page_text_x()
@@ -306,6 +306,37 @@ class PageScene(QGraphicsScene):
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
             self.scene_size_changed.emit()
         logger.info("New document settings applied")
+
+    def _format_document_title(self, title: str) -> str:
+        page_layout = self.document.page_layout
+        font_metrics = QFontMetrics(self.document_title_text.font())
+        space_width_px = font_metrics.horizontalAdvance(" ")
+        margins_px = self._mm_to_rounded_px(page_layout.margin_left+page_layout.margin_right)
+        available_widths_px = itertools.chain(
+            [self.width()-margins_px-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")-4],
+            itertools.repeat(self.width()-margins_px-4)
+        )
+        words = collections.deque(title.split(" "))
+        lines: typing.List[str] = []
+        current_line_words: typing.List[str] = []
+        current_line_available_space = next(available_widths_px)
+        current_line_used_space = 0
+        logger.debug(f"Formatting line {len(lines)+1}, {current_line_available_space=}")
+        while words:
+            word = words.popleft()
+            word_width_px = font_metrics.horizontalAdvance(word)
+            if current_line_used_space + word_width_px + space_width_px <= current_line_available_space:
+                current_line_words.append(word)
+                current_line_used_space += space_width_px + word_width_px
+            else:
+                logger.debug(f"Formatting line {len(lines)+1}, {current_line_available_space=}")
+                current_line_available_space = next(available_widths_px)
+                lines.append(" ".join(current_line_words))
+                current_line_words = [word]
+                current_line_used_space = word_width_px
+        if current_line_words:
+            lines.append(" ".join(current_line_words))
+        return "\n".join(lines)
 
     def _update_text_visibility(self, item: QGraphicsSimpleTextItem, new_visibility):
         text_items = self.text_items
