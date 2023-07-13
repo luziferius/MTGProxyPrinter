@@ -303,3 +303,25 @@ def test_loads_check_card(
             )))
         )
     )
+
+
+@pytest.fixture(params=[
+    (4, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1]),
+    (5, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1, 0]),
+])
+def legacy_save_file(request):
+    save_version, settings = request.param  # type: int, list
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+        ":memory:", f"document-v{save_version}",
+        mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
+    db.execute(F"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    yield db
+
+
+def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_file, document_light):
+    loader = document_light.loader
+    with unittest.mock.patch(
+            "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
+            return_value=legacy_save_file), \
+            qtbot.wait_signal(document_light.action_applied):
+        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
