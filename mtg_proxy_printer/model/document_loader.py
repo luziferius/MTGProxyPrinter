@@ -101,7 +101,6 @@ class PageLayoutSettings:
     @classmethod
     def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
-        logger.debug(f"{document_settings['default-document-name']=}")
         return cls(
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
