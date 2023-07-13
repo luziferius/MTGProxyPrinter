@@ -101,6 +101,7 @@ class PageLayoutSettings:
     @classmethod
     def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
+        logger.debug(f"{document_settings['default-document-name']=}")
         return cls(
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
@@ -471,11 +472,13 @@ class Worker(QObject):
             settings = Worker._read_document_settings_version_6(db, default_settings)
         else:
             settings = default_settings
+        logger.debug(f"Loaded document settings: {settings}")
         return settings
 
     @staticmethod
     def _read_document_settings_version_4_5(
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+        logger.debug("Reading legacy document settings …")
         stored_keys_query = textwrap.dedent("""\
         SELECT p.name AS column_name  -- _read_document_settings_version_4_5
             FROM sqlite_schema AS s
@@ -509,7 +512,7 @@ class Worker(QObject):
         assert_that(
             settings,
             has_properties(
-                document_name=equal_to(""),
+                document_name=equal_to(default_settings.document_name),
                 page_height=all_of(instance_of(int), greater_than(0)),
                 page_width=all_of(instance_of(int), greater_than(0)),
                 margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
@@ -536,6 +539,7 @@ class Worker(QObject):
     @staticmethod
     def _read_document_settings_version_6(
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+        logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
         document_settings_query = textwrap.dedent(f"""\
             SELECT key, value

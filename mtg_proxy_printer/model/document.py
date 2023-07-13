@@ -103,6 +103,7 @@ class Document(QAbstractItemModel):
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
+        logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
         logger.info(f"Created {self.__class__.__name__} instance")
 
     @Slot(DocumentAction)
