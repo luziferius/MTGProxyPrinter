@@ -175,6 +175,7 @@ class PageScene(QGraphicsScene):
         self._update_cut_marker_positions()
         self.document_title_text = self._create_text_item()
         self.page_number_text = self._create_text_item()
+        self._update_text_items(document.page_layout)
         if document.page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
@@ -295,17 +296,20 @@ class PageScene(QGraphicsScene):
             self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
-        self._update_page_number_text()
-        self.document_title_text.setText(self._format_document_title(new_page_layout.document_name))
-        self._update_text_visibility(self.document_title_text, new_page_layout.document_name)
-        self._update_text_visibility(self.page_number_text, new_page_layout.draw_page_numbers)
-        self._update_page_text_x()
-        self._update_page_text_y()
+        self._update_text_items(new_page_layout)
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
             self.scene_size_changed.emit()
         logger.info("New document settings applied")
+
+    def _update_text_items(self, page_layout: PageLayoutSettings):
+        self._update_page_number_text()
+        self.document_title_text.setText(self._format_document_title(page_layout.document_name))
+        self._update_text_visibility(self.document_title_text, page_layout.document_name)
+        self._update_text_visibility(self.page_number_text, page_layout.draw_page_numbers)
+        self._update_page_text_x()
+        self._update_page_text_y()
 
     def _format_document_title(self, title: str) -> str:
         page_layout = self.document.page_layout
