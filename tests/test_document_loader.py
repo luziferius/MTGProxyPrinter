@@ -34,10 +34,10 @@ import mtg_proxy_printer.sqlite_helpers
 CardType = mtg_proxy_printer.model.document_loader.CardType
 
 
-@pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
-def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
-    empty_save_database.execute(f"PRAGMA user_version = {version};")
-    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
+@pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
+def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
+    empty_save_database.execute(f"PRAGMA user_version = {user_version};")
+    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
@@ -302,4 +302,33 @@ def test_loads_check_card(
                 })
             )))
         )
+    )
+
+
+@pytest.fixture(params=itertools.product([
+    (4, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1]),
+    (5, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1, 0]),
+], [True, False]))
+def legacy_save_file(request):
+    (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+        ":memory:", f"document-v{save_version}",
+        mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
+    db.execute(F"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    if reverse_unordered:
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
+    yield db
+
+
+def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_file, document_light):
+    loader = document_light.loader
+    with unittest.mock.patch(
+            "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
+            return_value=legacy_save_file), \
+            qtbot.wait_signal(document_light.action_applied):
+        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+    annotations = document_light.page_layout.__annotations__
+    assert_that(
+        document_light.page_layout,
+        has_properties({item: instance_of(value) for item, value in annotations.items()})
     )

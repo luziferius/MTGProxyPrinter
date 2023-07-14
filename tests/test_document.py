@@ -440,11 +440,6 @@ def test_save_migration(document: Document, source_version: int):
 
 def test_create_save(document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
-    assert_that(
-        set(dataclasses.astuple(document_custom_layout.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
-        "Setup failed. Duplicate values in page layout settings"
-    )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     capacity = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, capacity))
@@ -493,11 +488,6 @@ def test_save_as_saves_check_card(document: Document):
 
 def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
-    assert_that(
-        set(dataclasses.astuple(document_custom_layout.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
-        "Setup failed. Duplicate values in page layout settings"
-    )
     layout = copy.copy(document_custom_layout.page_layout)
     layout.page_height = 1000
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -594,8 +584,10 @@ def _validate_saved_document_settings(document: Document):
         assert_that(
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
+                page_layout.document_name,
                 int(page_layout.draw_cut_markers),
                 int(page_layout.draw_sharp_corners),
+                int(page_layout.draw_page_numbers),
                 page_layout.image_spacing_horizontal,
                 page_layout.image_spacing_vertical,
                 page_layout.margin_bottom,

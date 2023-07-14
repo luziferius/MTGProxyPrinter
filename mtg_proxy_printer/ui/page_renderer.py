@@ -22,8 +22,9 @@ import typing
 from PyQt5.QtCore import pyqtSlot as Slot, QRectF, QPointF, QSizeF, Qt, QModelIndex, QPersistentModelIndex, QObject,\
     pyqtSignal as Signal, QEvent
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QWidget, QAction, \
-    QGraphicsLineItem, QGraphicsItemGroup, QGraphicsItem, QGraphicsRectItem, QGraphicsPixmapItem
-from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants
+    QGraphicsLineItem, QGraphicsItemGroup, QGraphicsItem, QGraphicsRectItem, QGraphicsPixmapItem, QGraphicsSimpleTextItem
+from PyQt5.QtGui import QColor, QWheelEvent, QKeySequence, QPalette, QBrush, QResizeEvent, QPen, QColorConstants, \
+    QFontMetrics
 import pint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, unit_registry, RESOLUTION
@@ -49,6 +50,7 @@ ItemDataRole = Qt.ItemDataRole
 class RenderLayers(enum.Enum):
     BACKGROUND = -3
     CUT_LINES = -2
+    TEXT = -1
     CARDS = 0
 
 
@@ -134,6 +136,10 @@ def is_cut_line_item(item: QGraphicsItem) -> bool:
     return isinstance(item, QGraphicsLineItem)
 
 
+def is_text_item(item: QGraphicsItem) -> bool:
+    return isinstance(item, QGraphicsSimpleTextItem)
+
+
 class PageScene(QGraphicsScene):
     """This class implements the low-level rendering of the currently selected page on a blank canvas."""
 
@@ -167,9 +173,20 @@ class PageScene(QGraphicsScene):
         self.horizontal_cut_line_locations: PixelCache = collections.defaultdict(list)
         self.vertical_cut_line_locations: PixelCache = collections.defaultdict(list)
         self._update_cut_marker_positions()
+        self.document_title_text = self._create_text_item()
+        self.page_number_text = self._create_text_item()
+        self._update_text_items(document.page_layout)
         if document.page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
+
+    @staticmethod
+    def _create_text_item(font_size: float = 50):
+        item = QGraphicsSimpleTextItem()
+        font = item.font()
+        font.setPointSizeF(font_size)
+        item.setFont(font)
+        return item
 
     def get_background_color(self, render_mode: RenderMode) -> QColor:
         if render_mode is RenderMode.ON_PAPER:
@@ -181,6 +198,11 @@ class PageScene(QGraphicsScene):
             return QColorConstants.Black
         return self.palette().color(QPalette.Active, QPalette.WindowText)
 
+    def get_text_color(self, render_mode: RenderMode) -> QColor:
+        if render_mode is RenderMode.ON_PAPER:
+            return QColorConstants.Black
+        return self.palette().color(QPalette.Active, QPalette.WindowText)
+
     def setPalette(self, palette: QPalette) -> None:
         logger.info("Color palette changed, updating PageScene background and cut line colors.")
         super().setPalette(palette)
@@ -188,9 +210,12 @@ class PageScene(QGraphicsScene):
         self.background.setPen(background_color)
         self.background.setBrush(background_color)
         cut_line_color = self.get_cut_marker_color(self.render_mode)
+        text_color = self.get_text_color(self.render_mode)
         logger.info(f"Number of cut lines: {len(self.cut_lines)}")
         for line in self.cut_lines:
             line.setPen(cut_line_color)
+        for item in self.text_items:
+            item.setDefaultTextColor(text_color)
 
     @property
     def card_items(self) -> typing.List[CardItem]:
@@ -199,6 +224,10 @@ class PageScene(QGraphicsScene):
     @property
     def cut_lines(self) -> typing.List[QGraphicsLineItem]:
         return list(filter(is_cut_line_item, self.items(Qt.AscendingOrder)))
+
+    @property
+    def text_items(self) -> typing.List[QGraphicsSimpleTextItem]:
+        return list(filter(is_text_item, self.items(Qt.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):
@@ -214,14 +243,46 @@ class PageScene(QGraphicsScene):
             logger.debug("New page contains cards of different size, re-drawing cut markers")
             self.remove_cut_markers()
             self.draw_cut_markers()
-
         for item in self.card_items:
             self.removeItem(item)
         if self._is_valid_page_index(selected_page):
+            self._update_page_number_text()
+            self._update_page_text_x()
+            self._update_page_text_y()
             self._draw_cards()
+
+    def _update_page_text_y(self):
+        # Put the text labels below the
+        y = 2 + round(max(
+            self.horizontal_cut_line_locations[PageType.REGULAR][-1],
+            self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
+        ))
+        for item in self.text_items:
+            item.setY(y)
+
+    def _update_page_text_x(self):
+        title_x = self._mm_to_rounded_px(self.document.page_layout.margin_right) + 1
+        self.document_title_text.setX(title_x)
+        font_metrics = QFontMetrics(self.page_number_text.font())
+        text_width = font_metrics.horizontalAdvance(self.page_number_text.text())
+        page_number_x = round(
+            self.width()
+            - self._mm_to_rounded_px(self.document.page_layout.margin_right) - text_width - 2
+        )
+        self.page_number_text.setX(page_number_x)
+
+    def _update_page_number_text(self):
+        model = self.selected_page.model()
+        if self.page_number_text not in self.text_items:
+            return
+        logger.debug("Updating page number text")
+        page = self.selected_page.row() + 1
+        total_pages = model.rowCount()
+        self.page_number_text.setText(f"{page}/{total_pages}")
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
+        logger.info("Applying new document settings …")
         new_page_size = self.get_document_page_size(new_page_layout)
         old_size = self.sceneRect()
         size_changed = old_size != new_page_size
@@ -235,10 +296,58 @@ class PageScene(QGraphicsScene):
             self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
+        self._update_text_items(new_page_layout)
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
             # in the available space or is now too small, so emit a notification to allow the display widget to adjust.
             self.scene_size_changed.emit()
+        logger.info("New document settings applied")
+
+    def _update_text_items(self, page_layout: PageLayoutSettings):
+        self._update_page_number_text()
+        self.document_title_text.setText(self._format_document_title(page_layout.document_name))
+        self._update_text_visibility(self.document_title_text, page_layout.document_name)
+        self._update_text_visibility(self.page_number_text, page_layout.draw_page_numbers)
+        self._update_page_text_x()
+        self._update_page_text_y()
+
+    def _format_document_title(self, title: str) -> str:
+        page_layout = self.document.page_layout
+        font_metrics = QFontMetrics(self.document_title_text.font())
+        space_width_px = font_metrics.horizontalAdvance(" ")
+        margins_px = self._mm_to_rounded_px(page_layout.margin_left+page_layout.margin_right)
+        available_widths_px = itertools.chain(
+            [self.width()-margins_px-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")-4],
+            itertools.repeat(self.width()-margins_px-4)
+        )
+        words = collections.deque(title.split(" "))
+        lines: typing.List[str] = []
+        current_line_words: typing.List[str] = []
+        current_line_available_space = next(available_widths_px)
+        current_line_used_space = 0
+        logger.debug(f"Formatting line {len(lines)+1}, {current_line_available_space=}")
+        while words:
+            word = words.popleft()
+            word_width_px = font_metrics.horizontalAdvance(word)
+            if current_line_used_space + word_width_px + space_width_px <= current_line_available_space:
+                current_line_words.append(word)
+                current_line_used_space += space_width_px + word_width_px
+            else:
+                logger.debug(f"Formatting line {len(lines)+1}, {current_line_available_space=}")
+                current_line_available_space = next(available_widths_px)
+                lines.append(" ".join(current_line_words))
+                current_line_words = [word]
+                current_line_used_space = word_width_px
+        if current_line_words:
+            lines.append(" ".join(current_line_words))
+        return "\n".join(lines)
+
+    def _update_text_visibility(self, item: QGraphicsSimpleTextItem, new_visibility):
+        text_items = self.text_items
+        if item not in text_items and new_visibility:
+            self.addItem(item)
+        elif item in text_items and not new_visibility:
+            self.removeItem(item)
 
     @staticmethod
     def get_document_page_size(page_layout: PageLayoutSettings) -> QRectF:
@@ -315,6 +424,9 @@ class PageScene(QGraphicsScene):
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
+        elif self.selected_page.isValid():
+            # Page inserted. Update the page number text, as it contains the total number of pages
+            self._update_page_number_text()
 
     def on_rows_about_to_be_removed(self, parent: QModelIndex, first: int, last: int):
         if not parent.isValid() and first <= self.selected_page.row() <= last:
@@ -327,6 +439,9 @@ class PageScene(QGraphicsScene):
             for item in self.card_items[first:last+1]:
                 self.removeItem(item)
             self.update_card_positions()
+        elif self.selected_page.isValid():
+            # Page removed. Update the page number text, as it contains the total number of pages
+            self._update_page_number_text()
 
     def on_rows_moved(self, parent: QModelIndex, start: int, end: int, destination: QModelIndex, row: int):
         if parent.isValid() and parent.row() == self.selected_page.row():

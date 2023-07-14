@@ -101,6 +101,8 @@ DEFAULT_SETTINGS["documents"] = {
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
     "print-sharp-corners": "False",
+    "print-page-numbers": "False",
+    "default-document-name": "",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -130,6 +132,7 @@ DEFAULT_SETTINGS["application"] = {
     "check-for-application-updates": "None",
     "check-for-card-data-updates": "None",
 }
+MAX_DOCUMENT_NAME_LENGTH = 200
 
 
 def read_settings_from_file():
@@ -221,12 +224,17 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     card_height = card_size.as_mm(card_size.height)
     card_width = card_size.as_mm(card_size.width)
     section = settings[section_name]
+    if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
+        section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-cut-marker", "print-sharp-corners"}
+    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
+    string_settings = {"default-document-name", }
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
+        elif key in string_settings:
+            pass
         else:
             _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties

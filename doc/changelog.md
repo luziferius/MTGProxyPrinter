@@ -4,6 +4,12 @@
 
 ## New features
 
+- Added option to set an optional document name in the document settings,
+  which is printed below the cards on the bottom of each page, if set.
+  This can help distinguish multiple stacks of uncut printed sheets.
+  (Long names may be truncated, if they do not fit on the page.)
+- Added option to print page numbers on each page. It is printed as page-number / total-pages, e.g. 2/3.
+  You can use this to verify that a stack of uncut printed sheets is complete.
 - Translate cards already added to the document.
     - You can now double-click the language cells in the table showing the cards on the current page to 
       translate card in the document to another language.
