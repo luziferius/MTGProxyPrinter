@@ -477,6 +477,7 @@ class CardDatabase(QObject):
         if order_by_print_count:
             order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
         order_by_terms.append("wackiness_score ASC")
+        order_by_terms.append("highres_image DESC")
         order_by_terms.append("release_date DESC")
         query += "ORDER BY " + "\n    ,".join(order_by_terms)
         result = self._get_cards_from_data(query, where_parameters)

@@ -112,3 +112,31 @@ def test_translating_from_name_with_ambiguous_language_works(
             has_length(1)
         )
     )
+
+
+def test_print_guessing_prefers_highres_image_over_newest_printing_with_lowres_image(qtbot, card_db, image_db):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"]
+    )
+    deck = "Forest"
+    parser = GenericRegularExpressionDeckParser(card_db, image_db, r"(?P<name>.+)")
+    result_deck, unidentified = parser.parse_deck(deck, True, False)
+    assert_that(
+        unidentified,
+        is_(empty())
+    )
+    assert_that(
+        result_deck,
+        all_of(
+            has_key(
+                has_properties(
+                    language="en",
+                    name="Forest",
+                    set=has_property("name", "Zendikar Rising"),
+                    scryfall_id="e2ef9b74-481b-424b-8e33-f0b910f66370",
+                    is_front=True
+                )),
+            has_value(1),
+            has_length(1)
+        )
+    )

@@ -19,6 +19,11 @@
 
 ## Changed features
 
+- Updated the print guessing heuristic in the deck import wizard that is used when it has to choose a printing
+  among multiple choices (for example, when requesting “`1 Island`”).
+  Now, it prefers slightly older printings with high-resolution 
+  images over the absolutely newest printings that do not yet have high-resolution scans available.
+  This should get better results for reprinted cards during “spoiler season”.
 - The Undo and Redo actions now have keyboard shortcuts assigned. They use the system-default shortcuts for
   those actions, which are Ctrl+Z and Ctrl+Y on most systems and locales.  
 

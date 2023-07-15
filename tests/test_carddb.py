@@ -848,3 +848,30 @@ def test_get_available_languages_for_card(qtbot, card_db, card_data: CardIdentif
         card_db.get_available_languages_for_card(card),
         contains_exactly(*expected)
     )
+
+
+def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(qtbot, card_db):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"]
+    )
+    assert_that(
+        card_db.get_cards_from_data(CardIdentificationData(name="Forest")),
+        contains_exactly(
+            has_properties(
+                language="en",
+                name="Forest",
+                set=has_property("name", "Zendikar Rising"),
+                scryfall_id="e2ef9b74-481b-424b-8e33-f0b910f66370",
+                is_front=True,
+                highres_image=True,
+            ),
+            has_properties(
+                language="en",
+                name="Forest",
+                set=has_property("name", "Doctor Who"),
+                scryfall_id="15b3f35e-451e-4de6-a4f7-249287566964",
+                is_front=True,
+                highres_image=False,
+            ),
+        )
+    )
