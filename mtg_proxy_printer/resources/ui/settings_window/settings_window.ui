@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>SettingsWindow</class>
+ <widget class="QDialog" name="SettingsWindow">
   <property name="windowModality">
    <enum>Qt::ApplicationModal</enum>
   </property>
@@ -77,8 +77,9 @@ Entries use the language codes as listed on Scryfall.</string>
              </sizepolicy>
             </property>
             <property name="toolTip">
-             <string>Horizontal adds a wide search area above the currently edited page.
-Vertical adds a tall search area between the page list and the currently edited page.</string>
+             <string>Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
+Columnar organizes the main window content in four columns, and is best for (ultra-)wide screens.
+Tabbed uses tabs to only show parts of the main window at a time. Best used with small screens in portrait mode (i.e. 9:16), otherwise not recommended.</string>
             </property>
            </widget>
           </item>
@@ -662,7 +663,7 @@ it will be exported into multiple PDF documents automatically.</string>
   <connection>
    <sender>button_box</sender>
    <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>SettingsWindow</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -678,7 +679,7 @@ it will be exported into multiple PDF documents automatically.</string>
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>SettingsWindow</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

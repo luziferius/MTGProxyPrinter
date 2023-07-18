@@ -37,9 +37,9 @@ from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
 try:
-    from mtg_proxy_printer.ui.generated.deck_import_wizard.load_list_page import Ui_WizardPage as Ui_LoadListPage
-    from mtg_proxy_printer.ui.generated.deck_import_wizard.parser_result_page import Ui_WizardPage as Ui_SummaryPage
-    from mtg_proxy_printer.ui.generated.deck_import_wizard.select_deck_parser_page import Ui_WizardPage as Ui_SelectDeckParserPage
+    from mtg_proxy_printer.ui.generated.deck_import_wizard.load_list_page import Ui_LoadListPage
+    from mtg_proxy_printer.ui.generated.deck_import_wizard.parser_result_page import Ui_SummaryPage
+    from mtg_proxy_printer.ui.generated.deck_import_wizard.select_deck_parser_page import Ui_SelectDeckParserPage
 except ModuleNotFoundError:
     Ui_LoadListPage = load_ui_from_file("deck_import_wizard/load_list_page")
     Ui_SummaryPage = load_ui_from_file("deck_import_wizard/parser_result_page")
@@ -440,6 +440,7 @@ class SummaryPage(QWizardPage):
         delegate = ComboBoxItemDelegate(self.ui.parsed_cards_table)
         self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Set, delegate)
         self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.CollectorNumber, delegate)
+        self.ui.parsed_cards_table.setItemDelegateForColumn(PageColumns.Language, delegate)
         for column, scaling_factor in (
                 (PageColumns.CardName, 2),
                 (PageColumns.Set, 2.75),

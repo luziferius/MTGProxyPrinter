@@ -62,4 +62,3 @@ def test_mtg_arena_parser_all_format_variants_work(
             "collector_number": equal_to(card_data.collector_number),
         })
     )
-

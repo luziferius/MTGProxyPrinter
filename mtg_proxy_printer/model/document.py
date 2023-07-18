@@ -19,6 +19,7 @@ import enum
 import itertools
 import math
 import pathlib
+import sys
 import textwrap
 import typing
 
@@ -27,7 +28,7 @@ from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, QP
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
+from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
     CardType
@@ -39,6 +40,11 @@ from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 
 logger = get_logger(__name__)
 del get_logger
+
+if sys.version_info[:2] >= (3, 9):
+    Counter = collections.Counter
+else:
+    Counter = typing.Counter
 
 __all__ = [
     "Document",
@@ -82,7 +88,7 @@ class Document(QAbstractItemModel):
         PageColumns.Image: "Image",
         PageColumns.IsFront: "Side",
     }
-    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super(Document, self).__init__(*args, **kwargs)
@@ -99,6 +105,8 @@ class Document(QAbstractItemModel):
         self.page_index_cache: typing.Dict[int, int] = {id(first_page): 0}
         self.currently_edited_page = first_page
         self.page_layout = PageLayoutSettings.create_from_settings()
+        logger.debug(f"Loaded document settings from configuration file: {self.page_layout}")
+        logger.info(f"Created {self.__class__.__name__} instance")
 
     @Slot(DocumentAction)
     def apply(self, action: DocumentAction):
@@ -220,14 +228,22 @@ class Document(QAbstractItemModel):
                 and role == ItemDataRole.EditRole \
                 and index.column() in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting model data for column {index.column()} to {value}")
-            card: Card = index.internalPointer().card
-            if index.column() == PageColumns.CollectorNumber:
+            card = data.card
+            column = index.column()
+            if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-            else:
+            elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
                     card.language, card.name, value, is_front=card.is_front
                 )
+            else:
+                replacement = self.card_db.translate_card(card, value)
+                if replacement != card:
+                    action = ActionReplaceCard(replacement, index.parent().row(), index.row())
+                    self.request_fill_image_for_action.emit(action)
+                    return True
+                return False
             return self._request_replacement_card(index, card_data)
         return False
 
@@ -237,7 +253,8 @@ class Document(QAbstractItemModel):
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
-            self.request_fill_image_for_action.emit(ActionReplaceCard(new_card, index.parent().row(), index.row()))
+            action = ActionReplaceCard(new_card, index.parent().row(), index.row())
+            self.request_fill_image_for_action.emit(action)
             return True
         return False
 
@@ -264,7 +281,9 @@ class Document(QAbstractItemModel):
                 f"Invalid index: {index.row()=}, {index.column()=}, "
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
-        card: Card = index.internalPointer().card
+        card: AnyCardType = index.internalPointer().card
+        if role == Qt.ItemDataRole.UserRole:
+            return card
         if role in {ItemDataRole.DisplayRole, ItemDataRole.EditRole}:
             if index.column() == PageColumns.CardName:
                 return card.name
@@ -341,7 +360,7 @@ class Document(QAbstractItemModel):
         """
         Computes the number of pages that can be saved by compacting the document.
         """
-        cards = collections.Counter()
+        cards: Counter[PageType] = collections.Counter()
         for page in self.pages:
             cards[page.page_type()] += len(page)
         required_pages = (

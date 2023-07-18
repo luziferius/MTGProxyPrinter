@@ -824,3 +824,54 @@ def test_is_dfc(qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, 
         card_db.is_dfc(scryfall_id),
         is_(equal_to(expected))
     )
+
+
+@pytest.mark.parametrize("card_data, expected", [
+    # Forests. All source languages return all available languages
+    (CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), ["de", "en", "es"]),
+    (CardIdentificationData(scryfall_id="ffa13d4c-6c5e-44bd-859e-38e79d47a916", is_front=True), ["de", "en", "es"]),
+    (CardIdentificationData(scryfall_id="cd4cf73d-a408-48f1-9931-54707553c5d5", is_front=True), ["de", "en", "es"]),
+    # The mis-translated German Coercion cannot be translated, as the English Coercion is not in the imported test data
+    (CardIdentificationData(scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0", is_front=True), ["de"]),
+    # English/German Duress can be translated
+    (CardIdentificationData(scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3", is_front=True), ["de", "en"]),
+    (CardIdentificationData(scryfall_id="15c8d82e-6e65-4d36-bf09-b24dde016581", is_front=True), ["de", "en"]),
+])
+def test_get_available_languages_for_card(qtbot, card_db, card_data: CardIdentificationData, expected: StringList):
+    fill_card_database_with_json_cards(qtbot, card_db, [
+        "english_basic_Forest", "german_basic_Forest", "spanish_basic_Forest",
+        "german_Coercion_with_faulty_translation", "german_Duress", "english_Duress",
+    ])
+    card = card_db.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
+    assert_that(card, is_(not_none()), "Setup failed, card not found")
+    assert_that(
+        card_db.get_available_languages_for_card(card),
+        contains_exactly(*expected)
+    )
+
+
+def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(qtbot, card_db):
+    fill_card_database_with_json_cards(
+        qtbot, card_db, ["english_basic_Forest_2", "English_basic_Forest_newest_and_low_res"]
+    )
+    assert_that(
+        card_db.get_cards_from_data(CardIdentificationData(name="Forest")),
+        contains_exactly(
+            has_properties(
+                language="en",
+                name="Forest",
+                set=has_property("name", "Zendikar Rising"),
+                scryfall_id="e2ef9b74-481b-424b-8e33-f0b910f66370",
+                is_front=True,
+                highres_image=True,
+            ),
+            has_properties(
+                language="en",
+                name="Forest",
+                set=has_property("name", "Doctor Who"),
+                scryfall_id="15b3f35e-451e-4de6-a4f7-249287566964",
+                is_front=True,
+                highres_image=False,
+            ),
+        )
+    )

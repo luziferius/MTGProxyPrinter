@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>card_download_format_settings</class>
- <widget class="QGroupBox" name="card_download_format_settings">
+ <class>FormatPrintingFilter</class>
+ <widget class="QGroupBox" name="FormatPrintingFilter">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -9,9 +9,6 @@
     <width>400</width>
     <height>300</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
   </property>
   <property name="title">
    <string>Hide cards banned in specific Formats</string>

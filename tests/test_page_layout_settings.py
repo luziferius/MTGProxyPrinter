@@ -13,6 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import unittest.mock
+
+import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.units_and_sizes import PageType
@@ -109,3 +112,39 @@ def test_page_layout_lt():
     layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
     assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(9))
     assert_that(layout, is_not(less_than(layout)))
+
+
+def test_create_from_settings():
+    values = {
+        "paper-height-mm": "200",
+        "paper-width-mm": "100",
+        "margin-top-mm": "9",
+        "margin-bottom-mm": "8",
+        "margin-left-mm": "7",
+        "margin-right-mm": "6",
+        "image-spacing-horizontal-mm": "2",
+        "image-spacing-vertical-mm": "1",
+        "print-cut-marker": "True",
+        "pdf-page-count-limit": "1",
+        "print-sharp-corners": "True",
+        "print-page-numbers": "True",
+        "default-document-name": "Test",
+    }
+    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["documents"], values):
+        layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    assert_that(
+        layout, has_properties(
+            document_name="Test",
+            draw_cut_markers=True,
+            draw_page_numbers=True,
+            draw_sharp_corners=True,
+            image_spacing_horizontal=2,
+            image_spacing_vertical=1,
+            margin_bottom=8,
+            margin_left=7,
+            margin_right=6,
+            margin_top=9,
+            page_height=200,
+            page_width=100,
+        )
+    )

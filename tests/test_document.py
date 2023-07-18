@@ -22,6 +22,7 @@ from tempfile import TemporaryDirectory
 import textwrap
 import time
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
 from hamcrest import *
@@ -51,6 +52,8 @@ from mtg_proxy_printer.document_controller.edit_document_settings import ActionE
 
 from .document_controller.helpers import insert_card_in_page, create_card
 
+ItemDataRole = Qt.ItemDataRole
+
 
 class DummyAction(DocumentAction):
     """A dummy DocumentAction that does nothing. apply() and undo() are replaced with MagicMock instances."""
@@ -67,6 +70,7 @@ class DummyAction(DocumentAction):
     @property
     def as_str(self):
         return f"Value: {self.value}"
+
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
     card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
@@ -353,7 +357,7 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
     for index, expected_row in zip(indices, child_rows):
         assert_that(index.row(), is_(expected_row))
         assert_that(index.parent().row(), is_(parent_row))
-        card: Card = index.internalPointer().card
+        card: Card = index.data(ItemDataRole.UserRole)
         assert_that(card.requested_page_type(), is_(page_type))
 
 
@@ -438,11 +442,6 @@ def test_save_migration(document: Document, source_version: int):
 
 def test_create_save(document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
-    assert_that(
-        set(dataclasses.astuple(document_custom_layout.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
-        "Setup failed. Duplicate values in page layout settings"
-    )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     capacity = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, capacity))
@@ -491,11 +490,6 @@ def test_save_as_saves_check_card(document: Document):
 
 def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
-    assert_that(
-        set(dataclasses.astuple(document_custom_layout.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
-        "Setup failed. Duplicate values in page layout settings"
-    )
     layout = copy.copy(document_custom_layout.page_layout)
     layout.page_height = 1000
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -592,8 +586,10 @@ def _validate_saved_document_settings(document: Document):
         assert_that(
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
+                page_layout.document_name,
                 int(page_layout.draw_cut_markers),
                 int(page_layout.draw_sharp_corners),
+                int(page_layout.draw_page_numbers),
                 page_layout.image_spacing_horizontal,
                 page_layout.image_spacing_vertical,
                 page_layout.margin_bottom,
@@ -617,7 +613,7 @@ def test_get_missing_image_cards(document_light: Document):
         result := list(document_light.get_missing_image_cards()),
         has_length(2)
     )
-    cards = [i.internalPointer().card for i in result]
+    cards = [i.data(ItemDataRole.UserRole) for i in result]
     assert_that(cards, only_contains(expected))
 
 

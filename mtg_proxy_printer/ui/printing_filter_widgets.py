@@ -17,21 +17,22 @@
 import abc
 import configparser
 import functools
-import typing
+from functools import partial
+from typing import Union, Type, List, Tuple
 
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
 
 try:
-    from mtg_proxy_printer.ui.generated.settings_window.format_printing_filter import Ui_card_download_format_settings as Ui_FormatPrintingFilter
-    from mtg_proxy_printer.ui.generated.settings_window.general_printing_filter import Ui_Form as Ui_GeneralPrintingFilter
+    from mtg_proxy_printer.ui.generated.settings_window.format_printing_filter import Ui_FormatPrintingFilter
+    from mtg_proxy_printer.ui.generated.settings_window.general_printing_filter import Ui_GeneralPrintingFilter
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_FormatPrintingFilter = load_ui_from_file("settings_window/format_printing_filter")
     Ui_GeneralPrintingFilter = load_ui_from_file("settings_window/general_printing_filter")
 
-UiTypes = typing.Union[typing.Type[Ui_FormatPrintingFilter], typing.Type[Ui_GeneralPrintingFilter]]
+UiTypes = Union[Type[Ui_FormatPrintingFilter], Type[Ui_GeneralPrintingFilter]]
 
 
 class AbstractPrintingFilterWidget(QGroupBox):
@@ -56,7 +57,7 @@ class AbstractPrintingFilterWidget(QGroupBox):
         QDesktopServices.openUrl(query_url)
 
     @abc.abstractmethod
-    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+    def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
         pass
 
 
@@ -65,19 +66,19 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         super().__init__(Ui_GeneralPrintingFilter, parent)
         ui = self.ui
         ui.view_cards_depicting_racism.clicked.connect(
-            lambda: self.view_query_on_scryfall("function:banned-due-to-racist-imagery"))
-        ui.view_oversized_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:oversized"))
-        ui.view_white_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:white"))
-        ui.view_gold_bordered_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:gold"))
-        ui.view_borderless_cards.clicked.connect(lambda: self.view_query_on_scryfall("border:borderless"))
-        ui.view_funny_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:funny"))
-        ui.view_token.clicked.connect(lambda: self.view_query_on_scryfall("is:token"))
-        ui.view_digital_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:digital"))
-        ui.view_reversible_cards.clicked.connect(lambda: self.view_query_on_scryfall("is:reversible"))
+            partial(self.view_query_on_scryfall, "function:banned-due-to-racist-imagery"))
+        ui.view_oversized_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:oversized"))
+        ui.view_white_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:white"))
+        ui.view_gold_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:gold"))
+        ui.view_borderless_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:borderless"))
+        ui.view_funny_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:funny"))
+        ui.view_token.clicked.connect(partial(self.view_query_on_scryfall, "is:token"))
+        ui.view_digital_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:digital"))
+        ui.view_reversible_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:reversible"))
 
-    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+    def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: List[Tuple[QCheckBox, str]] = [
             (ui.hide_cards_depicting_racism, "hide-cards-depicting-racism"),
             (ui.hide_cards_without_images, "hide-cards-without-images"),
             (ui.hide_oversized_cards, "hide-oversized-cards"),
@@ -101,12 +102,12 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
             format_name = key.split("-")[-1]
             button: QPushButton = getattr(ui, f"view_banned_in_{format_name}")
             button.clicked.connect(
-                functools.partial(self.view_query_on_scryfall, f"banned:{format_name}")
+                partial(self.view_query_on_scryfall, f"banned:{format_name}")
             )
 
-    def _get_widgets_with_keys(self) -> typing.List[typing.Tuple[QCheckBox, str]]:
+    def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: List[Tuple[QCheckBox, str]] = [
             (ui.hide_banned_in_brawl, "hide-banned-in-brawl"),
             (ui.hide_banned_in_commander, "hide-banned-in-commander"),
             (ui.hide_banned_in_historic, "hide-banned-in-historic"),

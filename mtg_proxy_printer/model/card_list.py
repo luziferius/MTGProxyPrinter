@@ -20,7 +20,7 @@ import typing
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt, Slot, Signal, QItemSelection
 from PySide6.QtGui import QIcon
 
-from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -56,7 +56,7 @@ class CardListModel(QAbstractTableModel):
         PageColumns.Language: "Language",
         PageColumns.IsFront: "Side",
     }
-    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     oversized_card_count_changed = Signal(int)
 
@@ -75,6 +75,8 @@ class CardListModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
+        if role == ItemDataRole.UserRole:
+            return card
         if role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             if index.column() == PageColumns.CardName:
                 return card.name
@@ -104,27 +106,38 @@ class CardListModel(QAbstractTableModel):
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
-        if role == ItemDataRole.EditRole and index.column() in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting card list model data for column {index.column()} to {value}")
+        column = index.column()
+        if role == ItemDataRole.EditRole and column in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting card list model data for column {column} to {value}")
             card = self.cards[index.row()]
-            if index.column() == PageColumns.CollectorNumber:
+            if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-            else:
+            elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
                     card.language, card.name, value, is_front=card.is_front
                 )
+            else:
+                card_data = self.card_db.translate_card(card, value)
+                if card_data == card:
+                    return False
             return self._request_replacement_card(index, card_data)
         return False
 
-    def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
-        if result := self.card_db.get_cards_from_data(card_data):
+    def _request_replacement_card(
+            self, index: QModelIndex, card_data: typing.Union[CardIdentificationData, AnyCardType]):
+        if isinstance(card_data, CardIdentificationData):
             logger.debug(f"Requesting replacement for {card_data}")
+            result = self.card_db.get_cards_from_data(card_data)
+        else:
+            result = [card_data]
+        if result:
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
+            logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(index.row(), index.column())
-            bottom_right = top_left.siblingAtColumn(PageColumns.CollectorNumber)
+            bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
             old_card = self.cards[index.row()]
             self.cards[index.row()] = new_card
             self.dataChanged.emit(top_left, bottom_right, (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole))

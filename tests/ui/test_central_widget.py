@@ -62,6 +62,7 @@ def test__get_default_image_save_path(qtbot, main_window, name: str, expected: s
         })
     )
 
+
 @pytest.mark.parametrize("card", [
     Card("", MTGSet("", ""), "", "", "", True, "", "", True, False, 1, False, None),
     CheckCard(
