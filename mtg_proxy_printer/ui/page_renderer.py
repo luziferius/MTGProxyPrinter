@@ -46,7 +46,7 @@ __all__ = [
 ]
 PixelCache = typing.DefaultDict[PageType, typing.List[float]]
 ItemDataRole = Qt.ItemDataRole
-
+SortOrder = Qt.SortOrder
 
 @enum.unique
 class RenderLayers(enum.Enum):
@@ -221,15 +221,15 @@ class PageScene(QGraphicsScene):
 
     @property
     def card_items(self) -> typing.List[CardItem]:
-        return list(filter(is_card_item, self.items(Qt.SortOrder.AscendingOrder)))
+        return list(filter(is_card_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def cut_lines(self) -> typing.List[QGraphicsLineItem]:
-        return list(filter(is_cut_line_item, self.items(Qt.SortOrder.AscendingOrder)))
+        return list(filter(is_cut_line_item, self.items(SortOrder.AscendingOrder)))
 
     @property
     def text_items(self) -> typing.List[QGraphicsSimpleTextItem]:
-        return list(filter(is_text_item, self.items(Qt.AscendingOrder)))
+        return list(filter(is_text_item, self.items(Qt.SortOrder.AscendingOrder)))
 
     @Slot(QPersistentModelIndex)
     def on_current_page_changed(self, selected_page: QPersistentModelIndex):

@@ -49,7 +49,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             matching_sets = source_model.card_db.find_sets_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
                 index.siblingAtColumn(PageColumns.Language).data(ItemDataRole.EditRole),
-                is_front=index.siblingAtColumn(PageColumns.IsFront).data(Qt.EditRole),
+                is_front=index.siblingAtColumn(PageColumns.IsFront).data(ItemDataRole.EditRole),
             )
             current_set_code = index.data(ItemDataRole.EditRole)
             current_set_position = 0
@@ -71,12 +71,12 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
                 editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
         elif column == PageColumns.Language:
-            card = index.data(Qt.UserRole)
+            card = index.data(ItemDataRole.UserRole)
             matching_languages = source_model.card_db.get_available_languages_for_card(card)
             for language in matching_languages:
                 editor.addItem(language, language)
             if matching_languages:
-                editor.setCurrentIndex(matching_languages.index(index.data(Qt.EditRole)))
+                editor.setCurrentIndex(matching_languages.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
         new_value = editor.currentData(ItemDataRole.UserRole)

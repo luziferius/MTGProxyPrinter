@@ -282,7 +282,7 @@ class Document(QAbstractItemModel):
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
         card: AnyCardType = index.internalPointer().card
-        if role == Qt.ItemDataRole.UserRole:
+        if role == ItemDataRole.UserRole:
             return card
         if role in {ItemDataRole.DisplayRole, ItemDataRole.EditRole}:
             if index.column() == PageColumns.CardName:
@@ -296,7 +296,7 @@ class Document(QAbstractItemModel):
             elif index.column() == PageColumns.Image:
                 return card.image_file
             elif index.column() == PageColumns.IsFront:
-                if role == Qt.EditRole:
+                if role == ItemDataRole.EditRole:
                     return card.is_front
                 return "Front" if card.is_front else "Back"
 

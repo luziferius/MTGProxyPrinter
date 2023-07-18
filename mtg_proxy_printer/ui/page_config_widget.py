@@ -68,7 +68,7 @@ class PageConfigWidget(QGroupBox):
             lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked.value))
 
         self.ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked))
+            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked.value))
         self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 

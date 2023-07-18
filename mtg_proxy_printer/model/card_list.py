@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 del get_logger
 CardList = typing.List[Card]
 ItemDataRole = Qt.ItemDataRole
+ItemFlag = Qt.ItemFlag
 
 __all__ = [
     "CardListModel",
@@ -90,7 +91,7 @@ class CardListModel(QAbstractTableModel):
             elif index.column() == PageColumns.Language:
                 return card.language
             elif index.column() == PageColumns.IsFront:
-                if role == Qt.EditRole:
+                if role == ItemDataRole.EditRole:
                     return card.is_front
                 return "Front" if card.is_front else "Back"
         if card.is_oversized:
@@ -99,10 +100,10 @@ class CardListModel(QAbstractTableModel):
             elif role == ItemDataRole.DecorationRole:
                 return self._oversized_icon
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlag:
+    def flags(self, index: QModelIndex) -> ItemFlag:
         flags = super(CardListModel, self).flags(index)
         if index.column() in self.EDITABLE_COLUMNS:
-            flags |= Qt.ItemFlag.ItemIsEditable
+            flags |= ItemFlag.ItemIsEditable
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:

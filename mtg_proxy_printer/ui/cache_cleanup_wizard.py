@@ -364,7 +364,7 @@ class CardFilterPage(QWizardPage):
                 selection_model = self.ui.card_image_view.selectionModel()
                 for row in range(self.card_image_sort_model.rowCount()):
                     index = self.card_image_sort_model.index(row, KnownCardColumns.IsHidden)
-                    if index.data(Qt.ItemDataRole.EditRole):
+                    if index.data(ItemDataRole.EditRole):
                         selection_model.select(index, SelectionFlag.Select | SelectionFlag.Rows)
 
     def _select_unknown_cards_if_enabled(self):
