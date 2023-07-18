@@ -181,7 +181,7 @@ class PageScene(QGraphicsScene):
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @staticmethod
-    def _create_text_item(font_size: float = 50):
+    def _create_text_item(font_size: float = 40):
         item = QGraphicsSimpleTextItem()
         font = item.font()
         font.setPointSizeF(font_size)
