@@ -26,7 +26,7 @@ import typing
 from PySide6.QtCore import QObject, Signal, QThread
 
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_
+    has_properties, greater_than, is_, equal_to
 
 try:
     from hamcrest import contains_exactly
@@ -36,7 +36,7 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard, AnyCardType
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -51,7 +51,8 @@ del get_logger
 __all__ = [
     "DocumentSaveFormat",
     "DocumentLoader",
-    "PageLayoutSettings"
+    "PageLayoutSettings",
+    "CardType",
 ]
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
@@ -63,7 +64,7 @@ class CardType(str, enum.Enum):
     CHECK_CARD = "d"
 
     @classmethod
-    def from_card(cls, card: typing.Union[Card, CheckCard]) -> "CardType":
+    def from_card(cls, card: AnyCardType) -> "CardType":
         if isinstance(card, Card):
             return cls.REGULAR
         elif isinstance(card, CheckCard):
@@ -85,7 +86,9 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
+    document_name: str = ""
     draw_cut_markers: bool = False
+    draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
     image_spacing_horizontal: int = 0
     image_spacing_vertical: int = 0
@@ -100,7 +103,9 @@ class PageLayoutSettings:
     def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
         return cls(
+            document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
+            document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
             document_settings.getint("image-spacing-horizontal-mm"),
             document_settings.getint("image-spacing-vertical-mm"),
@@ -462,34 +467,52 @@ class Worker(QObject):
     def _read_page_layout_data_from_database(db, user_version):
         default_settings = PageLayoutSettings.create_from_settings()
         if user_version in {4, 5}:
-            settings = Worker._read_document_settings_version_4_5(db, default_settings, user_version)
+            settings = Worker._read_document_settings_version_4_5(db, default_settings)
         elif user_version == 6:
             settings = Worker._read_document_settings_version_6(db, default_settings)
         else:
             settings = default_settings
+        logger.debug(f"Loaded document settings: {settings}")
         return settings
 
     @staticmethod
     def _read_document_settings_version_4_5(
-            db: sqlite3.Connection, default_settings: PageLayoutSettings, user_version: int) -> PageLayoutSettings:
+            db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+        logger.debug("Reading legacy document settings …")
+        stored_keys_query = textwrap.dedent("""\
+        SELECT p.name AS column_name  -- _read_document_settings_version_4_5
+            FROM sqlite_schema AS s
+            JOIN pragma_table_info(s.name) AS p
+            WHERE s.type = 'table'
+              AND s.name = ?
+              AND column_name <> 'rowid'
+        """)
+        required_keys = default_settings.__annotations__.keys()
+        stored_keys = {
+            key for key, in db.execute(stored_keys_query, ('DocumentSettings',))
+            if key in default_settings.__annotations__  # Ignore potentially dropped settings
+        }
+        # Use the actual column names found in the save database, use ? for all settings not stored, so that they can
+        # be substituted with the defaults
+        query_columns = ((key if key in stored_keys else '?') for key in required_keys)
+        # Default values for settings not found in the save file
+        default_values_for_settings_not_in_the_save_file = list(
+            getattr(default_settings, key) for key in required_keys if key not in stored_keys)
         document_settings_query = textwrap.dedent(f"""\
-            SELECT
-                draw_cut_markers, 
-                {int(default_settings.draw_sharp_corners) if user_version == 4 else 'draw_sharp_corners'},
-                image_spacing_horizontal, image_spacing_vertical, 
-                margin_bottom, margin_left, margin_right, margin_top,
-                page_height, page_width
-                FROM DocumentSettings
-                WHERE rowid == 1
-            """)
+            SELECT {', '.join(query_columns)}
+              FROM DocumentSettings
+              WHERE rowid == 1
+        """)
         assert_that(
             db.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
             contains_exactly(1),
         )
-        settings = PageLayoutSettings(*db.execute(document_settings_query).fetchone())
+        settings = PageLayoutSettings(*db.execute(
+            document_settings_query, default_values_for_settings_not_in_the_save_file).fetchone())
         assert_that(
             settings,
             has_properties(
+                document_name=equal_to(default_settings.document_name),
                 page_height=all_of(instance_of(int), greater_than(0)),
                 page_width=all_of(instance_of(int), greater_than(0)),
                 margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
@@ -500,6 +523,7 @@ class Worker(QObject):
                 image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
+                draw_page_numbers=is_in((0, 1)),
             ),
             "Document settings contain invalid data or data types"
         )
@@ -508,13 +532,15 @@ class Worker(QObject):
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        settings.draw_cut_markers = bool(settings.draw_cut_markers)
-        settings.draw_sharp_corners = bool(settings.draw_sharp_corners)
+        for key, expected_type in settings.__annotations__.items():
+            if expected_type is bool:
+                setattr(settings, key, bool(getattr(settings, key)))
         return settings
 
     @staticmethod
     def _read_document_settings_version_6(
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+        logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
         document_settings_query = textwrap.dedent(f"""\
             SELECT key, value

@@ -34,9 +34,9 @@ logger = get_logger(__name__)
 del get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.card_filter_page import Ui_WizardPage as Ui_CardFilterPage
-    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_WizardPage as Ui_FilterSetupPage
-    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_WizardPage as Ui_SummaryPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.card_filter_page import Ui_CardFilterPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_FilterSetupPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_SummaryPage
 except ModuleNotFoundError:
     Ui_CardFilterPage = load_ui_from_file("cache_cleanup_wizard/card_filter_page")
     Ui_FilterSetupPage = load_ui_from_file("cache_cleanup_wizard/filter_setup_page")
@@ -319,8 +319,7 @@ class CardFilterPage(QWizardPage):
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
-        view: QTableView = self.ui.card_image_view
-        view: QTableView
+        view = self.ui.card_image_view
         view.setModel(model)
         view.setSortingEnabled(True)
         view.sortByColumn(KnownCardColumns.Name, Qt.SortOrder.AscendingOrder)
@@ -365,7 +364,7 @@ class CardFilterPage(QWizardPage):
                 selection_model = self.ui.card_image_view.selectionModel()
                 for row in range(self.card_image_sort_model.rowCount()):
                     index = self.card_image_sort_model.index(row, KnownCardColumns.IsHidden)
-                    if index.data(Qt.ItemDataRole.EditRole):
+                    if index.data(ItemDataRole.EditRole):
                         selection_model.select(index, SelectionFlag.Select | SelectionFlag.Rows)
 
     def _select_unknown_cards_if_enabled(self):

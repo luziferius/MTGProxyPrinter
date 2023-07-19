@@ -55,8 +55,8 @@ def handle_ssl_certificates():
 
 def main():
     global _app
-    mtg_proxy_printer.app_dirs.migrate_from_old_appdirs()
     arguments = mtg_proxy_printer.argument_parser.parse_args()
+    mtg_proxy_printer.app_dirs.migrate_from_old_appdirs()
     mtg_proxy_printer.logger.configure_root_logger()
     handle_ssl_certificates()
     _app = mtg_proxy_printer.application.Application(arguments)

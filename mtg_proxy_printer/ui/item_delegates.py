@@ -41,13 +41,15 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
     def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
         model: typing.Union[Document, QSortFilterProxyModel] = index.model()
         source_model: Document = model
+        column = index.column()
         while hasattr(source_model, "sourceModel"):  # Resolve the source model to gain access to the card database.
             source_model = source_model.sourceModel()
-        if index.column() == PageColumns.Set:
+
+        if column == PageColumns.Set:
             matching_sets = source_model.card_db.find_sets_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
                 index.siblingAtColumn(PageColumns.Language).data(ItemDataRole.EditRole),
-                is_front=index.siblingAtColumn(PageColumns.IsFront).data(Qt.EditRole),
+                is_front=index.siblingAtColumn(PageColumns.IsFront).data(ItemDataRole.EditRole),
             )
             current_set_code = index.data(ItemDataRole.EditRole)
             current_set_position = 0
@@ -57,7 +59,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
                     current_set_position = position
             editor.setCurrentIndex(current_set_position)
 
-        elif index.column() == PageColumns.CollectorNumber:
+        elif column == PageColumns.CollectorNumber:
             matching_collector_numbers = source_model.card_db.find_collector_numbers_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
                 index.siblingAtColumn(PageColumns.Set).data(ItemDataRole.EditRole),
@@ -65,7 +67,16 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             )
             for collector_number in matching_collector_numbers:
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
-            editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
+            if matching_collector_numbers:
+                editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
+
+        elif column == PageColumns.Language:
+            card = index.data(ItemDataRole.UserRole)
+            matching_languages = source_model.card_db.get_available_languages_for_card(card)
+            for language in matching_languages:
+                editor.addItem(language, language)
+            if matching_languages:
+                editor.setCurrentIndex(matching_languages.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
         new_value = editor.currentData(ItemDataRole.UserRole)

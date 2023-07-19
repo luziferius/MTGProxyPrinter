@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WizardPage</class>
- <widget class="QWizardPage" name="WizardPage">
+ <class>SelectDeckParserPage</class>
+ <widget class="QWizardPage" name="SelectDeckParserPage">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -337,7 +337,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_mtg_arena</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -353,7 +353,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_mtg_online</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -369,7 +369,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_scryfall_csv</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -385,7 +385,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_custom_re</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -401,7 +401,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_xmage</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -417,7 +417,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>custom_re_input</sender>
    <signal>textChanged(QString)</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -433,7 +433,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_tappedout_csv</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -577,7 +577,7 @@ p, li { white-space: pre-wrap; }
   <connection>
    <sender>select_parser_magic_workstation</sender>
    <signal>clicked()</signal>
-   <receiver>WizardPage</receiver>
+   <receiver>SelectDeckParserPage</receiver>
    <slot>isComplete()</slot>
    <hints>
     <hint type="sourcelabel">

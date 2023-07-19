@@ -25,7 +25,7 @@ import string
 import typing
 import urllib.error
 
-from PySide6.QtCore import QObject, Signal, Slot, QThread, QSize, QModelIndex
+from PySide6.QtCore import QObject, Signal, Slot, QThread, QSize, QModelIndex, Qt
 from PySide6.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -35,13 +35,13 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
-from mtg_proxy_printer.model.carddb import Card, CheckCard
+from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
-
+ItemDataRole = Qt.ItemDataRole
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
 __all__ = [
     "ImageDatabase",
@@ -274,8 +274,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         blank = self.image_database.blank_image
         self.update_batch_processing_state(True)
         for index in card_indices:
-            card = index.internalPointer().card
-            self.get_image_synchronous(index.internalPointer().card)
+            card = index.data(ItemDataRole.UserRole)
+            self.get_image_synchronous(card)
             if card.image_file is not blank:
                 self.missing_image_obtained.emit(index)
         self.update_batch_processing_state(False)
@@ -302,7 +302,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.network_error_occurred.emit(reason_str)
         return reason_str
 
-    def get_image_synchronous(self, card: typing.Union[Card, CheckCard]):
+    def get_image_synchronous(self, card: AnyCardType):
         try:
             if isinstance(card, CheckCard):
                 self._get_image_synchronous(card.front)

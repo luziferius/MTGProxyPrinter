@@ -63,7 +63,7 @@ class ActionShuffleDocument(DocumentAction):
     def _shuffle_pages_of_type(self, document: Document, shuffler: Random, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(
-            enumerate(index.internalPointer().card for index in model_indices)  # The index holds the card container
+            enumerate(index.data(ItemDataRole.UserRole) for index in model_indices)
         )
         shuffler.shuffle(cards)
         self._swap_cards(document, model_indices, cards)
@@ -80,7 +80,7 @@ class ActionShuffleDocument(DocumentAction):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(zip(
             self.shuffle_order[page_type],
-            (index.internalPointer().card for index in model_indices)  # The index holds the card container
+            (index.data(ItemDataRole.UserRole) for index in model_indices)  # The index holds the card container
         ))
         cards.sort()
         self._swap_cards(document, model_indices, cards)

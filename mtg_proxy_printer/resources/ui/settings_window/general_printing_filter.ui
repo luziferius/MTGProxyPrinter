@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QGroupBox" name="Form">
+ <class>GeneralPrintingFilter</class>
+ <widget class="QGroupBox" name="GeneralPrintingFilter">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -9,9 +9,6 @@
     <width>487</width>
     <height>302</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>Form</string>
   </property>
   <property name="title">
    <string>General printing filters</string>

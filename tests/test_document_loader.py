@@ -34,10 +34,10 @@ import mtg_proxy_printer.sqlite_helpers
 CardType = mtg_proxy_printer.model.document_loader.CardType
 
 
-@pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
-def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
-    empty_save_database.execute(f"PRAGMA user_version = {version};")
-    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
+@pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
+def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
+    empty_save_database.execute(f"PRAGMA user_version = {user_version};")
+    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
@@ -132,9 +132,9 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignals([loader.loading_state_changed] * 2, timeout=1000,
+        with qtbot.waitSignals([loader.loading_state_changed] * 2,
                                check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
-                qtbot.waitSignals([loader.load_requested], timeout=1000):
+                qtbot.waitSignals([loader.load_requested]):
             loader.load_document(save_path)
         mock.assert_called_once()
     assert_that(document.rowCount(), is_(2))
@@ -174,7 +174,7 @@ def test_invalid_data_in_card_columns_raises_exception(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
@@ -201,7 +201,7 @@ def test_protects_against_infinite_save_data(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
@@ -272,7 +272,7 @@ def test_protects_against_infinite_settings_data(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
-        with qtbot.waitSignal(loader.loading_file_failed, timeout=1000, raising=True), \
+        with qtbot.waitSignal(loader.loading_file_failed, raising=True), \
                 qtbot.assertNotEmitted(loader.load_requested):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
         mock.assert_called_once()
@@ -290,7 +290,7 @@ def test_loads_check_card(
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
         open_database.return_value = empty_save_database
-        with qtbot.wait_signal(document.action_applied, timeout=1000), \
+        with qtbot.wait_signal(document.action_applied), \
                 qtbot.assert_not_emitted(loader.loading_file_failed):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
     assert_that(
@@ -305,4 +305,32 @@ def test_loads_check_card(
                 })
             )))
         )
+    )
+
+@pytest.fixture(params=itertools.product([
+    (4, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1]),
+    (5, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1, 0]),
+], [True, False]))
+def legacy_save_file(request):
+    (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+        ":memory:", f"document-v{save_version}",
+        mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
+    db.execute(F"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    if reverse_unordered:
+        db.execute("PRAGMA reverse_unordered_selects = TRUE")
+    yield db
+
+
+def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_file, document_light):
+    loader = document_light.loader
+    with unittest.mock.patch(
+            "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
+            return_value=legacy_save_file), \
+            qtbot.wait_signal(document_light.action_applied):
+        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+    annotations = document_light.page_layout.__annotations__
+    assert_that(
+        document_light.page_layout,
+        has_properties({item: instance_of(value) for item, value in annotations.items()})
     )

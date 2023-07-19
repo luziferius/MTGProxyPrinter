@@ -2,6 +2,32 @@
 
 # Next version (in development)
 
+## New features
+
+- It is now possible to set a document name in the document settings.
+  If set, it is printed below the card images on each page.
+  This can help distinguish multiple stacks of uncut printed sheets.
+  (Long names may be truncated, if they do not fit on the page.)
+- Added option to print page numbers on each page. It is printed as `page-number / total-pages`, e.g. `2/3`.
+  You can use this to verify that a stack of uncut printed sheets is complete.
+  - This can be enabled by default for all documents in the application settings.
+- Translate cards already added to the document.
+    - You can now double-click the language cells in the table showing the cards on the current page to 
+      translate card in the document to another language.
+    - The opened drop-down menu will only show languages for which a printing is available.
+    - The translation tries to keep the same set and collector number, if available in the desired language,
+      otherwise falls back to a printing in another set. 
+
+## Changed features
+
+- Updated the print guessing heuristic in the deck import wizard that is used when it has to choose a printing
+  among multiple choices (for example, when requesting “`1 Island`”).
+  Now, it prefers slightly older printings with high-resolution 
+  images over the absolutely newest printings that do not yet have high-resolution scans available.
+  This should get better results for reprinted cards during “spoiler season”.
+- The Undo and Redo actions now have keyboard shortcuts assigned. They use the system-default shortcuts for
+  those actions, which are Ctrl+Z and Ctrl+Y on most systems and locales.  
+
 ## Fixed issues
 
 - It is now possible to save and load documents containing DFC check cards. 
@@ -9,9 +35,9 @@
   Loading such documents with older program versions will fail.
 - Improvements/fixes for the multi-page wizards, like the deck import wizards
     - Wizards now have a consistent style on Windows (7) and are properly centered above the main window
-    - Wizards are no longer placed partially out of the screen under some edge cases.
+    - Wizards are no longer placed partially out of the screen under some edge cases.  
       The window title bar is now always visible.
-    - 
+
 # Version 0.24.1 (2023-06-27)  <a name="v0_24_1"></a>
 
 ## Fixed issues

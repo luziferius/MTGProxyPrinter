@@ -196,8 +196,6 @@ class Application(QApplication):
                 QIcon.setThemeSearchPaths(theme_search_paths)
             QIcon.setThemeName("breeze")
 
-        self.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
-
     @Slot()
     def quit(self):
         logger.info("About to exit.")
