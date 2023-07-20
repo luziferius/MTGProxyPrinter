@@ -167,6 +167,10 @@ class ActionRemoveCards(DocumentAction):
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
+        # The source of the input row sequence is a Qt multi-selection, which is unordered.
+        # The individual selections are ordered, but the selection groups are not. To not break the algorithm,
+        # if the user selects cards from bottom to top, the rows have to be sorted.
+        cards_to_remove = sorted(cards_to_remove)
         self.card_ranges_to_remove = self.to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
         self.removed_cards: typing.List[typing.List[CardContainer]] = []

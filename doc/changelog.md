@@ -30,6 +30,7 @@
 
 ## Fixed issues
 
+- Fixed wrong cards being deleted when cards were selected for deletion one at a time from bottom up
 - It is now possible to save and load documents containing DFC check cards. 
   Those are no longer implicitly converted to the card front face in the saved document.
   Loading such documents with older program versions will fail.
