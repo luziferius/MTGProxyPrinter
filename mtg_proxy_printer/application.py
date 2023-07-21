@@ -78,10 +78,11 @@ class Application(QApplication):
         self.update_checker = self._create_update_checker(args)
         self.main_window.should_update_languages.emit()
 
-    def run_startup_tasks(self, args: Namespace):
+    def enqueue_startup_tasks(self, args: Namespace):
         """
         Enqueues all tasks that should run in the Qt event loop at application start.
         Includes
+        - Settings migration and change-log display after application updates
         - checking for updates or undecided update policy settings
         - notifying on empty card database
         - running the card data import, if a JSON card data document is given as a command line argument
@@ -186,7 +187,8 @@ class Application(QApplication):
         # To test if the current platform has native icon theme support, check, if QIcon.fallbackThemeName() returns
         # a non-empty string. If it is empty, explicitly set the name of the internal icon theme. This will load the
         # internal icons.
-        if not QIcon.fallbackThemeName():
+        fallback_icon_theme = QIcon.fallbackThemeName()
+        if not fallback_icon_theme:
             logger.info(
                 "No native icon theme support or no system theme set, defaulting to internal icons."
             )
@@ -197,6 +199,8 @@ class Application(QApplication):
                 theme_search_paths.append(mtg_proxy_printer.ui.common.ICON_PATH_PREFIX)
                 QIcon.setThemeSearchPaths(theme_search_paths)
             QIcon.setThemeName("breeze")
+        else:
+            logger.debug(f"Using system-provided icon theme '{fallback_icon_theme}'")
 
         self.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
