@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import List
+
 import pytest
 from hamcrest import *
 
@@ -30,8 +32,13 @@ def test___init___raises_exception_with_epty_cards_to_remove_parameter():
 @pytest.mark.parametrize("sequence, expected", [
     ([1], [(1, 1)]),
     ([1, 2], [(1, 2)]),
+    ([2, 1], [(1, 2)]),
     ([1, 2, 3], [(1, 3)]),
+    ([1, 3, 2], [(1, 3)]),
+    ([3, 1, 2], [(1, 3)]),
+    ([3, 2, 1], [(1, 3)]),
     ([1, 3], [(1, 1), (3, 3)]),
+    ([3, 1], [(1, 1), (3, 3)]),
     ([1, 3, 4], [(1, 1), (3, 4)]),
 ])
 def test___init___correctly_converts_index_list_to_ranges_list(sequence, expected):
@@ -65,13 +72,13 @@ def test_apply_removes_two_1_card_ranges(qtbot, document_light):
         )
     )
 
-
-def test_apply_removes_one_2_card_range(qtbot, document_light):
+@pytest.mark.parametrize("row_selection", [[0, 1], [1, 0]])
+def test_apply_removes_one_2_card_range(qtbot, document_light, row_selection: List[int]):
     page = document_light.pages[0]
     removed_1 = append_new_card_in_page(page, "Removed 1")
     removed_2 = append_new_card_in_page(page, "Removed 2")
     remaining = append_new_card_in_page(page, "Remaining")
-    action = ActionRemoveCards([0, 1])
+    action = ActionRemoveCards(row_selection)
     with qtbot.wait_signals([document_light.rowsAboutToBeRemoved, document_light.rowsRemoved], timeout=1000):
         assert_that(action.apply(document_light), is_(instance_of(DocumentAction)))
     assert_that(

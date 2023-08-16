@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 
 ## New features
 
@@ -30,9 +30,11 @@
 
 ## Fixed issues
 
+- Fixed wrong cards being deleted when cards were selected from bottom to top and then deleted. Now, the selected cards
+  are removed regardless of selection order.
 - It is now possible to save and load documents containing DFC check cards. 
   Those are no longer implicitly converted to the card front face in the saved document.
-  Loading such documents with older program versions will fail.
+  Loading documents containing DFC check cards with older program versions will fail.
 - Improvements/fixes for the multi-page wizards, like the deck import wizards
     - Wizards now have a consistent style on Windows (7) and are properly centered above the main window
     - Wizards are no longer placed partially out of the screen under some edge cases.  

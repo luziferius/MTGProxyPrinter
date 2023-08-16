@@ -462,6 +462,9 @@ def test_save_as_saves_regular_card(document: Document, is_front: bool):
         with open_database(
                 save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
             content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+        # Deleting the connection is required on Windows. It releases the file lock that otherwise prevents the
+        # temp_dir context manager from cleaning up the disk
+        del con
     assert_that(
         content, contains_exactly(
             contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front, CardType.REGULAR.value)
@@ -481,6 +484,9 @@ def test_save_as_saves_check_card(document: Document):
         with open_database(
                 save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
             content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+        # Deleting the connection is required on Windows. It releases the file lock that otherwise prevents the
+        # temp_dir context manager from cleaning up the disk
+        del con
     assert_that(
         content, contains_exactly(
             contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True, CardType.CHECK_CARD.value)

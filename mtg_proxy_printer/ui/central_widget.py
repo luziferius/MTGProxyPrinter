@@ -27,7 +27,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard, AnyCardType
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard, AnyCardType, AnyCardTypeForTypeCheck
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, ActionAddCard
@@ -163,14 +163,14 @@ class CentralWidget(QWidget):
 
     def _add_copies(self, card: Union[AnyCardType, CardList], count: Optional[int]):
         nl = '\n'
-        card_name = card.name if isinstance(card, AnyCardType) else nl + nl.join(item.name for item in card)
+        card_name = card.name if isinstance(card, AnyCardTypeForTypeCheck) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(self, "Add copies", f"Add copies of {card_name}", 1, 1, 100)
             if not success:
                 logger.info("User cancelled adding card copies")
                 return
         logger.info(f"Add {count} × {card_name.replace(nl, ',')} via the context menu action")
-        if isinstance(card, AnyCardType):
+        if isinstance(card, AnyCardTypeForTypeCheck):
             self._request_action_add_card(card, count)
         else:
             for item in card:

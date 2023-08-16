@@ -65,7 +65,7 @@ def main():
         QTimer.singleShot(0, _app.main_window.on_action_quit_triggered)
     else:
         logger.debug("Enqueueing startup tasks.")
-        _app.run_startup_tasks(arguments)
+        _app.enqueue_startup_tasks(arguments)
     logger.debug("Initialisation done. Starting event loop.")
     _app.exec()
     logger.debug("Left event loop.")
