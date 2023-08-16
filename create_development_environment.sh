@@ -1,5 +1,5 @@
 #!/bin/bash
-ENVIRONMENT_NAME="venv"
+ENVIRONMENT_NAME="venv-PySide6"
 
 if [ -e "${ENVIRONMENT_NAME}" ]; then
   echo "Removing already existing virtual environment."
