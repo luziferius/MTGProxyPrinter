@@ -19,6 +19,8 @@ This module is responsible for downloading deck lists from a known list of deckb
 import abc
 import collections
 import csv
+import enum
+import functools
 import html.parser
 from io import StringIO
 import platform
@@ -32,7 +34,7 @@ from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
 from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser, \
-    XMageParser
+    XMageParser, GenericRegularExpressionDeckParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -293,7 +295,7 @@ class ArchidektDownloader(DecklistDownloader):
         decoded = super().post_process(data)
         json_str = self._get_raw_deck_list_json(decoded)
         result = self._parse_json_deck_list(json_str)
-        logger.debug(f"Obtained list list containing {len(result)-1} entries")
+        logger.debug(f"Obtained list containing {len(result)-1} entries")
         return result
 
     @staticmethod
@@ -336,6 +338,67 @@ class MtgDecksNetDownloader(DecklistDownloader):
         deck_list = super().post_process(data)
         deck_list = deck_list.replace("/", " // ")
         return deck_list
+
+
+class AetherHubHTMLParser(html.parser.HTMLParser):
+    @enum.unique
+    class State(enum.Enum):
+        START = enum.auto()
+        IN_DECK = enum.auto()
+        COMPLETED = enum.auto()
+
+    def __init__(self, *, convert_charrefs: bool = True):
+        super().__init__(convert_charrefs=convert_charrefs)
+        self.deck_list: Counter[typing.Tuple[str, str]] = collections.Counter()
+        self.state: AetherHubHTMLParser.State = AetherHubHTMLParser.State.START
+        self.div_nesting_level = 0
+
+
+    def handle_starttag(self, tag: str, attrs: HTMLAttributeType) -> None:
+        attributes = dict(attrs)
+        if tag == "div" and "card-container" in attributes.get("class", ""):
+            self.state = AetherHubHTMLParser.State.IN_DECK \
+                if self.state == AetherHubHTMLParser.State.START else AetherHubHTMLParser.State.COMPLETED
+
+        elif tag == "a" and self.state == AetherHubHTMLParser.State.IN_DECK and attributes.get("class") == "cardLink":
+            self.deck_list[(attributes["data-card-set"], attributes["data-card-number"])] += 1
+
+
+
+class AetherHubDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://aetherhub\.com/[Dd]eck/.+"
+    )
+    PARSER_CLASS = functools.partial(
+        GenericRegularExpressionDeckParser,
+        regular_expression=r"(?P<copies>\d+) (?P<set_code>[^ ]+) (?P<collector_number>[^ ]+)"
+    )
+    APPLICABLE_WEBSITES = "Aetherhub (aetherhub.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        return decklist_url
+
+    def post_process(self, data: bytes) -> str:
+        decoded = super().post_process(data)
+        deck_counter = self._get_deck_counter(decoded)
+        result = self._deck_counter_to_deck_list(deck_counter)
+        logger.debug(
+            f"Obtained deck list containing {sum(deck_counter.values())} "
+            f"entries across {len(deck_counter)} distinct cards")
+        return result
+
+    @staticmethod
+    def _get_deck_counter(data: str):
+        parser = AetherHubHTMLParser()
+        parser.feed(data)
+        parser.close()
+        return parser.deck_list
+
+    @staticmethod
+    def _deck_counter_to_deck_list(deck_counter: Counter[typing.Tuple[str, str]]) -> str:
+        return "\n".join(
+            f"{card_count} {set_code} {collector_number}"
+            for (set_code, collector_number), card_count in deck_counter.items())
 
 
 class TCGPlayerDownloader(DecklistDownloader):
@@ -396,6 +459,7 @@ class CubeCobraDownloader(DecklistDownloader):
 
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
+        AetherHubDownloader,
         ArchidektDownloader,
         CubeCobraDownloader,
         DeckstatsDownloader,

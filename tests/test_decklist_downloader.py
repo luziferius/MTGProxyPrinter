@@ -24,7 +24,7 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
     MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader, \
-    CubeCobraDownloader
+    CubeCobraDownloader, AetherHubDownloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -115,6 +115,34 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield CubeCobraDownloader, "https://cubecobra.com/cube/list/gilpauper/"
     yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/gilpauper/"
     yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2/"
+
+    # Aetherhub
+    # Upper case (The website uses upper case by default)
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/2/Gallery/"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/2/Gallery"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/2/"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/2"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/Public/947693"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/Public/947693/"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/Gallery/2"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/Gallery/2/"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/wu-approach-2017-nationals-top-8-2/Gallery/"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/wu-approach-2017-nationals-top-8-2/Gallery"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/oil-will-be-one"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/oil-will-be-one/Gallery/"
+    # lower case (Those work too, if explicitly requested)
+    yield AetherHubDownloader, "https://aetherhub.com/deck/2/gallery/"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/2/gallery"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/2/"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/2"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/public/947693"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/public/947693/"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/gallery/2"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/gallery/2/"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/wu-approach-2017-nationals-top-8-2/gallery/"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/wu-approach-2017-nationals-top-8-2/gallery"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/oil-will-be-one"
+    yield AetherHubDownloader, "https://aetherhub.com/deck/oil-will-be-one/gallery/"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
@@ -214,7 +242,12 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield CubeCobraDownloader, "https://cubecobra.com/"
     yield CubeCobraDownloader, "https://cubecobra.com"
 
-
+    # Aetherhub
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck"
+    yield AetherHubDownloader, "https://aetherhub.com/"
+    yield AetherHubDownloader, "https://aetherhub.com"
+    yield AetherHubDownloader, "https://aetherhub.com/oil-will-be-one"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
@@ -256,6 +289,8 @@ def generate_test_cases_for_test_deck_list_download() \
     yield ArchidektDownloader, "https://archidekt.com/decks/8", "Mirror Entity"
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/", "4,en,Esper Sentinel"
     yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/1lb", "1 [MBS:2] Ardent Recruit"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/2", "4 MMA 208"
+    yield AetherHubDownloader, "https://aetherhub.com/Deck/wu-approach-2017-nationals-top-8-2", "4 AKH 46"
 
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
