@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Support for direct downloads from additional card list database websites:
+    - Import cube lists from [cubecobra.com](cubecobra.com)
+
 # Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 
 ## New features
