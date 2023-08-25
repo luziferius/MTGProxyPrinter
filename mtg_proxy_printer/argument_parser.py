@@ -29,8 +29,8 @@ __all__ = [
 @dataclasses.dataclass()
 class Namespace:
     """Namespace used to mock parsed arguments for type-hinting purposes"""
-    file: pathlib.Path = None
-    card_data: pathlib.Path = None
+    file: typing.Optional[pathlib.Path] = None
+    card_data: typing.Optional[pathlib.Path] = None
     test_exit_on_launch: bool = False
 
 
