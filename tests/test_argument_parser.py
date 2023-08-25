@@ -15,7 +15,6 @@
 
 import itertools
 import sys
-import typing
 
 import pytest
 from hamcrest import *
