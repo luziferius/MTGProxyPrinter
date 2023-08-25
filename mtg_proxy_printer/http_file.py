@@ -14,7 +14,10 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import functools
+try:
+    from functools import cache
+except ImportError:
+    from functools import lru_cache as cache
 import http.client
 import socket
 import time
@@ -109,7 +112,7 @@ class MeteredSeekableHTTPFile(QObject):
             self.total_bytes_processed.emit(self.read_bytes)
             self.io_finished.emit()
 
-    @functools.cache
+    @cache
     def seekable(self) -> bool:
         return self.content_length > 0 and self.file.getheader("Accept-Ranges", "none").lower() == "bytes"
 
