@@ -33,6 +33,8 @@ __all__ = [
     "write_settings_to_file",
     "validate_settings",
     "update_stored_version_string",
+    "get_boolean_card_filter_keys",
+    "parse_card_set_filters",
 ]
 
 
@@ -137,9 +139,18 @@ MAX_DOCUMENT_NAME_LENGTH = 200
 
 
 def get_boolean_card_filter_keys():
+    """Returns all keys for boolean card filter settings."""
     keys = DEFAULT_SETTINGS["card-filter"].keys()
     keys = [item for item in keys if item.startswith("hide-")]
     return keys
+
+
+def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.List[str]:
+    """Parses the hidden sets filter setting into a sorted list of set codes."""
+    raw = settings["card-filter"]["hidden-sets"]
+    raw = raw.upper()
+    sorted_and_deduplicated = sorted(set(raw.split()))
+    return sorted_and_deduplicated
 
 
 def read_settings_from_file():
