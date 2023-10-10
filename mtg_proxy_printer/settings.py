@@ -88,6 +88,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-token": "False",
     "hide-digital-cards": "True",
     "hide-reversible-cards": "False",
+    "hidden-sets": "",
 }
 DEFAULT_SETTINGS["documents"] = {
     "paper-height-mm": "297",
@@ -133,6 +134,12 @@ DEFAULT_SETTINGS["application"] = {
     "check-for-card-data-updates": "None",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
+
+
+def get_boolean_card_filter_keys():
+    keys = DEFAULT_SETTINGS["card-filter"].keys()
+    keys = [item for item in keys if item.startswith("hide-")]
+    return keys
 
 
 def read_settings_from_file():
@@ -204,7 +211,8 @@ def validate_settings(read_settings: configparser.ConfigParser):
 def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    for key in section.keys():
+    boolean_keys = get_boolean_card_filter_keys()
+    for key in boolean_keys:
         _validate_boolean(section, defaults, key)
 
 

@@ -148,6 +148,7 @@ class SettingsWindow(QDialog):
 
     def _load_card_filter_settings(self, settings: configparser.ConfigParser):
         section = settings["card-filter"]
+        self.ui.set_filter_settings.setPlainText(section["hidden-sets"])
         self.ui.card_filter_general_settings.load_settings(section)
         self.ui.card_filter_format_settings.load_settings(section)
 
@@ -266,6 +267,7 @@ class SettingsWindow(QDialog):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
+        section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
         progress_meter = ProgressMeter(
             5, "Processing updated card filters:",
             self.long_running_process_begins.emit,

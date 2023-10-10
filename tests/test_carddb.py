@@ -640,7 +640,7 @@ def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db
     )
 
 
-@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
 def test_filters_in_db_differ_from_settings_with_changed_settings_returns_true(
         card_db: CardDatabase, settings_key: str):
     section = mtg_proxy_printer.settings.settings["card-filter"]
@@ -693,7 +693,7 @@ def test__remove_old_printing_filters_with_removed_settings_removes_database_row
     )
 
 
-@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
 def test_store_current_printing_filters_updates_value_in_database(card_db: CardDatabase, settings_key: str):
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}

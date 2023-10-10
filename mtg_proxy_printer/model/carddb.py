@@ -933,6 +933,7 @@ class CardDatabase(QObject):
         if progress_signal is None:
             progress_signal = (lambda: None)
         section = mtg_proxy_printer.settings.settings["card-filter"]
+        boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         if use_transaction:
             self.db.execute("BEGIN TRANSACTION;\n")
         old_filter_removed = self._remove_old_printing_filters(section)
@@ -947,7 +948,7 @@ class CardDatabase(QObject):
                         SET filter_active = excluded.filter_active
                         WHERE filter_active <> excluded.filter_active
                     """),
-                ((key, section.getboolean(key)) for key in section.keys())
+                ((key, section.getboolean(key)) for key in boolean_keys)
             )
             progress_signal()
         if filters_need_update or old_filter_removed or force_update_hidden_column:
@@ -961,7 +962,8 @@ class CardDatabase(QObject):
             key: bool(value) for key, value
             in self.db.execute("SELECT filter_name, filter_active FROM DisplayFilters").fetchall()
         }
-        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in section.keys()}
+        boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
+        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
         return filters_in_settings != filters_in_db
 
     def _remove_old_printing_filters(self, section) -> bool:
