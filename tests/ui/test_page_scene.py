@@ -1,5 +1,6 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+import itertools
+import unittest.mock
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -19,8 +20,7 @@ from unittest.mock import patch
 
 from hamcrest import *
 import pytest
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 
 from mtg_proxy_printer.units_and_sizes import PageType
@@ -29,7 +29,7 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, Ac
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 
 from ..document_controller.helpers import create_card
-from tests.hasgetter import has_getter, has_getters
+from tests.hasgetter import has_getters
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 
@@ -42,10 +42,30 @@ def create_card_with_pixmap(name: str, oversized: bool, document):
     return card
 
 
-@pytest.fixture(params=RenderMode)
+@pytest.fixture(params=itertools.product(RenderMode, [True, False]))
 def page_scene(request, qtbot, document_light):
     """Creates a PageScene in each available rendering mode"""
-    yield PageScene(document_light, request.param)
+    render_mode, enable_text_items = request.param
+    with patch.object(document_light.page_layout, "draw_page_numbers", enable_text_items), \
+         patch.object(document_light.page_layout, "document_name", "Non-empty title" if enable_text_items else ""):
+        scene = PageScene(document_light, render_mode)
+        yield scene
+
+
+@pytest.mark.parametrize("render_mode", RenderMode)
+def test___init__does_not_add_text_items_if_disabled(document_light, render_mode: RenderMode):
+    with patch.object(document_light.page_layout, "draw_page_numbers", False), \
+         patch.object(document_light.page_layout, "document_name", ""):
+        scene = PageScene(document_light, render_mode)
+    assert_that(scene.text_items, is_(empty()))
+
+
+@pytest.mark.parametrize("render_mode", RenderMode)
+def test___init__adds_text_items_if_enabled(document_light, render_mode: RenderMode):
+    with patch.object(document_light.page_layout, "draw_page_numbers", True), \
+         patch.object(document_light.page_layout, "document_name", "Non-empty title"):
+        scene = PageScene(document_light, render_mode)
+    assert_that(scene.text_items, has_length(2))
 
 
 @pytest.mark.parametrize("count", [1, 2, 10])
@@ -171,3 +191,9 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(qtbot, page_s
         page_scene.card_items,
         has_length(page_capacity)
     )
+
+
+def test_setPalette_runs_without_exception(qtbot, page_scene):
+    palette = QPalette()
+    page_scene.setPalette(palette)
+

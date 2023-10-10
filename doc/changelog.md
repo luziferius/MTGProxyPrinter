@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
+  while a document title is set or printing page numbers is enabled.
+
 # Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 
 ## New features

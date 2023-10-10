@@ -181,7 +181,7 @@ class PageScene(QGraphicsScene):
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @staticmethod
-    def _create_text_item(font_size: float = 40):
+    def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
         item = QGraphicsSimpleTextItem()
         font = item.font()
         font.setPointSizeF(font_size)
@@ -215,7 +215,7 @@ class PageScene(QGraphicsScene):
         for line in self.cut_lines:
             line.setPen(cut_line_color)
         for item in self.text_items:
-            item.setDefaultTextColor(text_color)
+            item.setBrush(text_color)
 
     @property
     def card_items(self) -> typing.List[CardItem]:
