@@ -61,11 +61,11 @@ def test__validate_documents_section_document_name(default_settings):
 
 @pytest.mark.parametrize("set_filter, parsed_set_codes", [
     ("", []),
-    ("LEA", ["LEA"]),
-    ("2xM", ["2XM"]),
-    ("leb 2xM", ["2XM", "LEB"]),
-    ("leb 2xM leb LEB", ["2XM", "LEB"]),
-    ("   leb\n\n\t2xM ", ["2XM", "LEB"]),
+    ("LEA", ["lea"]),
+    ("2xM", ["2xm"]),
+    ("LEB 2xM", ["2xm", "leb"]),
+    ("leb 2xM leb LEB", ["2xm", "leb"]),
+    ("   LEB\n\n\t2xM ", ["2xm", "leb"]),
 ])
 def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_codes: typing.List[str]):
     default_settings["card-filter"]["hidden-sets"] = set_filter

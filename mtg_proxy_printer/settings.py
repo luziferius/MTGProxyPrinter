@@ -145,12 +145,12 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.List[str]:
-    """Parses the hidden sets filter setting into a sorted list of set codes."""
+def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.Set[str]:
+    """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
     raw = settings["card-filter"]["hidden-sets"]
-    raw = raw.upper()
-    sorted_and_deduplicated = sorted(set(raw.split()))
-    return sorted_and_deduplicated
+    raw = raw.lower()
+    deduplicated = set(raw.split())
+    return deduplicated
 
 
 def read_settings_from_file():

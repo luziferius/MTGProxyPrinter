@@ -664,6 +664,21 @@ def _migrate_30_to_31(db: sqlite3.Connection):
         db.execute(statement)
 
 
+def _migrate_31_to_32(db: sqlite3.Connection):
+    db.execute(textwrap.dedent("""\
+    CREATE VIEW CurrentlyEnabledSetCodeFilters AS
+      -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
+      SELECT DISTINCT set_code
+      FROM MTGSet
+      JOIN Printing USING (set_id)
+      JOIN PrintingDisplayFilter USING (printing_id)
+      JOIN DisplayFilters USING (filter_id)
+      WHERE filter_name = 'hidden-sets'
+    ;
+    """))
+    db.execute("CREATE INDEX LookupPrintingBySet ON Printing(set_id);\n")
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -689,6 +704,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (28, _migrate_28_to_29),
     (29, _migrate_29_to_30),
     (30, _migrate_30_to_31),
+    (31, _migrate_31_to_32),
 )
 
 

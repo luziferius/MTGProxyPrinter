@@ -59,6 +59,7 @@ CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = typing.Union[CardDataType, FaceDataType]
 UUID = str
 
+
 class CardFaceData(typing.NamedTuple):
     """Information unique to each card face."""
     printed_face_name: str
@@ -369,7 +370,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
         progress_meter = ProgressMeter(
-            8, "Post-processing card data:",
+            9, "Post-processing card data:",
             self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
         self._insert_related_printings(related_printings)
         progress_meter.advance()

@@ -269,7 +269,7 @@ class SettingsWindow(QDialog):
         self.ui.card_filter_format_settings.save_settings(section)
         section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
         progress_meter = ProgressMeter(
-            5, "Processing updated card filters:",
+            6, "Processing updated card filters:",
             self.long_running_process_begins.emit,
             self.filter_update_progress_monitor,
             self.process_finished.emit
