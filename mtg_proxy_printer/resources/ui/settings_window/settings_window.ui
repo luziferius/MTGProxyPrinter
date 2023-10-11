@@ -483,7 +483,7 @@ it will be exported into multiple PDF documents automatically.</string>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="tab_card_data_download">
+     <widget class="QWidget" name="tab_printing_filters">
       <attribute name="title">
        <string>Hide printings</string>
       </attribute>
@@ -505,17 +505,26 @@ it will be exported into multiple PDF documents automatically.</string>
         <widget class="FormatPrintingFilterWidget" name="card_filter_format_settings"/>
        </item>
        <item>
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
+        <widget class="QLabel" name="set_filter_label">
+         <property name="text">
+          <string>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</string>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
-        </spacer>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="set_filter_settings">
+         <property name="toolTip">
+          <string>Example:
+
+LEA DDU TC13 J21</string>
+         </property>
+         <property name="placeholderText">
+          <string>No sets currently hidden.</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -614,9 +623,6 @@ it will be exported into multiple PDF documents automatically.</string>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="button_box">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Reset|QDialogButtonBox::RestoreDefaults|QDialogButtonBox::Save</set>
      </property>

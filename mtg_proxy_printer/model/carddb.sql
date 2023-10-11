@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000031;
+PRAGMA user_version = 0000032;
 PRAGMA foreign_keys = on;
 BEGIN TRANSACTION;
 
@@ -148,7 +148,7 @@ CREATE TABLE RemovedPrintings (
 
 CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC);
 CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id);
-
+CREATE INDEX LookupPrintingBySet ON Printing(set_id);  -- Used by set code card filter logic
 
 CREATE VIEW VisiblePrintings AS
 WITH double_faced_printings(printing_id, is_dfc) AS (
@@ -184,6 +184,16 @@ WITH double_faced_printings(printing_id, is_dfc) AS (
   JOIN FaceName USING (face_name_id)
   JOIN PrintLanguage USING (language_id)
   LEFT OUTER JOIN double_faced_printings USING (printing_id)
+;
+
+CREATE VIEW CurrentlyEnabledSetCodeFilters AS
+  -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
+  SELECT DISTINCT set_code
+  FROM MTGSet
+  JOIN Printing USING (set_id)
+  JOIN PrintingDisplayFilter USING (printing_id)
+  JOIN DisplayFilters USING (filter_id)
+  WHERE filter_name = 'hidden-sets'
 ;
 
 COMMIT;

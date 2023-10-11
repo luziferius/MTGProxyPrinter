@@ -14,6 +14,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import typing
+
 import mtg_proxy_printer.settings
 
 import pytest
@@ -55,3 +57,19 @@ def test__validate_documents_section_document_name(default_settings):
     documents_section[key] = value
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entry(key, equal_to(value)))
+
+
+@pytest.mark.parametrize("set_filter, parsed_set_codes", [
+    ("", []),
+    ("LEA", ["lea"]),
+    ("2xM", ["2xm"]),
+    ("LEB 2xM", ["2xm", "leb"]),
+    ("leb 2xM leb LEB", ["2xm", "leb"]),
+    ("   LEB\n\n\t2xM ", ["2xm", "leb"]),
+])
+def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_codes: typing.List[str]):
+    default_settings["card-filter"]["hidden-sets"] = set_filter
+    assert_that(
+        mtg_proxy_printer.settings.parse_card_set_filters(default_settings),
+        contains_exactly(*parsed_set_codes)
+    )
