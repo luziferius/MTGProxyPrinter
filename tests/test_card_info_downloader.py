@@ -409,10 +409,34 @@ def generate_test_cases_for_test_download_filters():
 
 @pytest.mark.parametrize("filter_setting", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_download_filters())
-def test_download_filters(
+def test_boolean_download_filters(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_setting: bool):
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: str(filter_setting)})
     if filter_setting:
+        assert_hidden_import(card_db, test_case)
+    else:
+        assert_visible_import(card_db, test_case)
+
+
+def generate_test_cases_for_test_set_code_filters():
+    sliver = TestCaseData(  # English "Fury Sliver" from Time Spiral
+        "regular_english_card", True, (
+            FaceData("Fury Sliver",
+                     "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979",
+                     True),
+        ), DatabaseSetData("tsp", "Time Spiral", "https://scryfall.com/sets/tsp?utm_source=api", "2006-10-06"),
+        "en", "157", "0000579f-7b35-4ed3-b44c-db2a538066fe", "44623693-51d6-49ad-8cd7-140505caf02f", False,
+    )
+    yield sliver, "TSP", True
+    yield sliver, "tsp", True
+    yield sliver, "ABC", False
+    yield sliver, "", False
+
+
+@pytest.mark.parametrize("test_case, filter_value, is_hidden", generate_test_cases_for_test_set_code_filters())
+def test_set_code_filters(qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_value: str, is_hidden: bool):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {"hidden-sets": filter_value})
+    if is_hidden:
         assert_hidden_import(card_db, test_case)
     else:
         assert_visible_import(card_db, test_case)
@@ -463,36 +487,44 @@ def test_two_imports_having_the_same_filtered_out_card_work(qtbot, card_db: Card
             "b120e3c2-21b1-43e3-b685-9cf62bd7aa07", "9110339d-72ba-4132-801f-cd2fd738b71d", False))
 
 
-def test_re_import_with_enabled_download_filter_removes_card(qtbot, card_db: CardDatabase):
+@pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
+    ("hide-oversized-cards", "False", "True"),
+    ("hidden-sets", "", "OC16"),
+])
+def test_re_import_with_enabled_download_filter_removes_card(
+        qtbot, card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
     test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
         ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api", "2016-11-11"),
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
     )
-    filter_name = "hide-oversized-cards"
     # Pass 1: Populate the database and include the card. The card should be in the database afterwards
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "False"})
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: visible_value})
     assert_visible_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but exclude the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: hidden_value})
     # The card should not be visible
     assert_hidden_import(card_db, test_case)
 
 
-def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(qtbot, card_db: CardDatabase):
+@pytest.mark.parametrize("filter_name, visible_value, hidden_value", [
+    ("hide-oversized-cards", "False", "True"),
+    ("hidden-sets", "", "OC16"),
+])
+def test_re_import_with_disabled_download_filter_removes_removed_printings_entry(
+        qtbot, card_db: CardDatabase, filter_name: str, visible_value: str, hidden_value: str):
     test_case = TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
         "oversized_card", True, (
             FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True),
         ), DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api", "2016-11-11"),
         "en", "28", "650722b4-d72b-4745-a1a5-00a34836282b", "7e6b9b59-cd68-4e3c-827b-38833c92d6eb", True,
     )
-    filter_name = "hide-oversized-cards"
     # Pass 1: Populate the database and exclude the card. The card should not be visible
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: "True"})
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: hidden_value})
     assert_hidden_import(card_db, test_case)
     # Pass 2: Re-Populate the database, but include the card now.
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name, {filter_name: visible_value})
     # The card should be in the database. The RemovedPrintings table should be empty
     assert_visible_import(card_db, test_case)
     assert_that(
@@ -514,7 +546,7 @@ def test_re_import_after_card_ban_hides_it(qtbot, card_db: CardDatabase, test_ca
     card_json = load_json(test_case_data.json_name)
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
         fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
-        assert_hidden_import(card_db, test_case_data)
+    assert_hidden_import(card_db, test_case_data)
     fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
     assert_visible_import(card_db, test_case_data)
 
@@ -533,7 +565,7 @@ def test_re_import_after_unban_makes_card_visible(qtbot, card_db: CardDatabase, 
     assert_visible_import(card_db, test_case_data)
     with unittest.mock.patch.dict(card_json["legalities"], {"commander": "banned"}):
         fill_card_database_with_json_card(qtbot, card_db, card_json, {"hide-banned-in-commander": "True"})
-        assert_hidden_import(card_db, test_case_data)
+    assert_hidden_import(card_db, test_case_data)
 
 
 def test_updates_language(qtbot, card_db: CardDatabase):
@@ -693,6 +725,7 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
         )
     )
 
+
 def test_related_printings(qtbot, card_db: CardDatabase):
     db = card_db.db
     cards = [
@@ -716,6 +749,7 @@ def test_related_printings(qtbot, card_db: CardDatabase):
             (4, 2),  # Card mentions Food token
         )
     )
+
 
 @pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
 def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):

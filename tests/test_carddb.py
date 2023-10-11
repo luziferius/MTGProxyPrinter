@@ -641,12 +641,21 @@ def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db
 
 
 @pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
-def test_filters_in_db_differ_from_settings_with_changed_settings_returns_true(
+def test_filters_in_db_differ_from_settings_with_changed_boolean_settings_returns_true(
         card_db: CardDatabase, settings_key: str):
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     with unittest.mock.patch.dict(section, settings_to_use):
+        assert_that(
+            card_db._filters_in_db_differ_from_settings(section),
+            is_(True)
+        )
+
+
+def test_filters_in_db_differ_from_settings_with_changed_set_code_filter_returns_true(card_db: CardDatabase):
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    with unittest.mock.patch.dict(section, {"hidden-sets": "DDU"}):
         assert_that(
             card_db._filters_in_db_differ_from_settings(section),
             is_(True)
@@ -663,7 +672,17 @@ def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_fals
         )
 
 
-def test__remove_old_printing_filters_with_unaltered_settings_does_nothing(card_db: CardDatabase):
+# TODO: Parametrize and add another case with a non-empty filter value
+def test_filters_in_db_differ_from_settings_with_unchanged_set_code_filter_returns_false(card_db: CardDatabase):
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    with unittest.mock.patch.dict(section, {"hidden-sets": ""}):
+        assert_that(
+            card_db._filters_in_db_differ_from_settings(section),
+            is_(False)
+        )
+
+
+def test__remove_old_printing_filters_with_unaltered_boolean_settings_does_nothing(card_db: CardDatabase):
     query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
     section = mtg_proxy_printer.settings.settings["card-filter"]
     old_settings = card_db.db.execute(query).fetchall()
