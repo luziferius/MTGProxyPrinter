@@ -2,6 +2,12 @@
 
 # Next version (in development)
 
+## New features
+
+- Add ability to hide specific sets you don't like. Filters are entered using set codes (e.g. LEA, DBL, SLD), as listed
+  by Scryfall. In the card filter tab of the Settings window, there is now a text field where you can enter any number 
+  of those set codes (separated by any whitespace), and all cards in all entered set codes are hidden.
+
 ## Fixed issues
 
 - Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
