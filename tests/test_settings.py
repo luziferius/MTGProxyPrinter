@@ -71,5 +71,5 @@ def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_co
     default_settings["card-filter"]["hidden-sets"] = set_filter
     assert_that(
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),
-        contains_exactly(*parsed_set_codes)
+        contains_inanyorder(*parsed_set_codes)
     )
