@@ -937,7 +937,7 @@ class CardDatabase(QObject):
 
     def store_current_printing_filters(
             self, use_transaction: bool = True, *,
-            force_update_hidden_column: bool = False, requires_set_filter_update: bool = None,
+            force_update_hidden_column: bool = False,
             progress_signal: typing.Callable[[], None] = None):
         if progress_signal is None:
             progress_signal = (lambda: None)
@@ -960,10 +960,10 @@ class CardDatabase(QObject):
                 ((key, section.getboolean(key)) for key in boolean_keys)
             )
             progress_signal()
-        if self.set_code_filters_need_update():
+        if set_code_updated := self.set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         progress_signal()
-        if filters_need_update or old_filter_removed or force_update_hidden_column:
+        if filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated:
             self._update_cached_data(progress_signal)
             self.card_filter_updated.emit()
         if use_transaction:
@@ -975,10 +975,13 @@ class CardDatabase(QObject):
         # Thus, potentially added cards during a card data update do not cause the database to enter a consistent state.
         # Invariant: Before the update starts, all filters are consistent with the settings. During the update, new cards are added with filters
         # consistent with the settings. Thus, after the update completes, the data is consistent.
+        logger.info("Set code filter changed in the settings, update the database.")
         settings_set_code_filters = self.get_configured_set_code_filters()
         database_set_code_filters = self.get_currently_enabled_set_code_filters()
         new_filters = settings_set_code_filters - database_set_code_filters
         removed_filters = database_set_code_filters - settings_set_code_filters
+        logger.debug(f"Hide cards in these sets: {sorted(new_filters)}")
+        logger.debug(f"Show cards in these sets: {sorted(removed_filters)}")
         self.db.execute(
             cached_dedent("""\
                     INSERT INTO DisplayFilters (filter_name, filter_active) -- store_current_printing_filters()
@@ -1033,7 +1036,11 @@ class CardDatabase(QObject):
     def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
         filters_in_db: typing.Dict[str, bool] = {
             key: bool(value) for key, value
-            in self.db.execute("SELECT filter_name, filter_active FROM DisplayFilters").fetchall()
+            in self.db.execute(cached_dedent("""\
+            SELECT filter_name, filter_active --_filters_in_db_differ_from_settings()
+              FROM DisplayFilters
+              WHERE filter_name LIKE 'hide-%'
+            """), ()).fetchall()
         }
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
