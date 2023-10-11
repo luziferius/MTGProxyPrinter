@@ -4,9 +4,13 @@
 
 ## New features
 
-- Add ability to hide specific sets you don't like. Filters are entered using set codes (e.g. LEA, DBL, SLD), as listed
-  by Scryfall. In the card filter tab of the Settings window, there is now a text field where you can enter any number 
-  of those set codes (separated by any whitespace), and all cards in all entered set codes are hidden.
+- Add ability to hide specific sets you don't like.
+    - Filters are entered using set codes (e.g. LEA, DBL, SLD), as listed  by Scryfall.
+    - In the card filter tab of the Settings window, there is now a text field where you can enter any number 
+      of those set codes (separated by any whitespace), and all cards in all entered sets are hidden.
+    - Please note that Scryfall uses a different set code for promotional printings and tokens,
+      typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those,
+      too, you have to explicitly do that.
 
 ## Fixed issues
 
