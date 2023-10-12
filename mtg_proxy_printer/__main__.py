@@ -18,14 +18,15 @@ import mtg_proxy_printer.settings
 
 import os
 import platform
+import sys
 
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QApplication
 
 import mtg_proxy_printer.app_dirs
-import mtg_proxy_printer.argument_parser
+from mtg_proxy_printer.argument_parser import parse_args
 import mtg_proxy_printer.logger
-import mtg_proxy_printer.application
+from mtg_proxy_printer.application import Application
 import mtg_proxy_printer.natsort
 
 # Workaround that puts the Application instance into the module scope. This prevents issues with the garbage collector
@@ -55,14 +56,14 @@ def handle_ssl_certificates():
 
 def main():
     global _app
-    arguments = mtg_proxy_printer.argument_parser.parse_args()
+    arguments = parse_args()
     mtg_proxy_printer.app_dirs.migrate_from_old_appdirs()
     mtg_proxy_printer.logger.configure_root_logger()
     handle_ssl_certificates()
     # According to https://doc.qt.io/qt-5/qt.html#ApplicationAttribute-enum,
     # Qt.AA_EnableHighDpiScaling has to be set prior to creating the QApplication instance
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
-    _app = mtg_proxy_printer.application.Application(arguments)
+    _app = Application(arguments, sys.argv)
     if arguments.test_exit_on_launch:
         logger.info("Skipping startup tasks, because immediate application exit was requested.")
         QTimer.singleShot(0, _app.main_window.on_action_quit_triggered)
