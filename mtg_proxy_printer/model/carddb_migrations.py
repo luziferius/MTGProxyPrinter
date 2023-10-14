@@ -665,18 +665,24 @@ def _migrate_30_to_31(db: sqlite3.Connection):
 
 
 def _migrate_31_to_32(db: sqlite3.Connection):
-    db.execute(textwrap.dedent("""\
-    CREATE VIEW CurrentlyEnabledSetCodeFilters AS
-      -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
-      SELECT DISTINCT set_code
-      FROM MTGSet
-      JOIN Printing USING (set_id)
-      JOIN PrintingDisplayFilter USING (printing_id)
-      JOIN DisplayFilters USING (filter_id)
-      WHERE filter_name = 'hidden-sets'
-    ;
-    """))
-    db.execute("CREATE INDEX LookupPrintingBySet ON Printing(set_id);\n")
+    for statement in [
+        textwrap.dedent("""\
+        CREATE VIEW CurrentlyEnabledSetCodeFilters AS
+          -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
+          SELECT DISTINCT set_code
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN PrintingDisplayFilter USING (printing_id)
+          JOIN DisplayFilters USING (filter_id)
+          WHERE filter_name = 'hidden-sets'
+        ;
+        """),
+        "CREATE INDEX LookupPrintingBySet ON Printing(set_id);\n",
+        "COMMIT\n",
+        "PRAGMA journal_mode = 'wal';\n",
+        "BEGIN TRANSACTION\n",
+    ]:
+        db.execute(statement)
 
 
 MIGRATION_SCRIPTS: MigrationScriptListing = (
@@ -743,7 +749,7 @@ def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationSc
     for source_version, migration_script in migration_scripts:
         if db.execute("PRAGMA user_version\n").fetchone()[0] == source_version:
             logger.info(f"Running migration task for schema version {source_version}")
-            db.execute("BEGIN TRANSACTION\n")
+            db.execute("BEGIN IMMEDIATE TRANSACTION\n")
             migration_script(db)
             db.execute(f"PRAGMA user_version = {source_version + 1}\n")
             db.commit()
