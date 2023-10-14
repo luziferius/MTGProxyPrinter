@@ -35,6 +35,8 @@ __all__ = [
 ]
 
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>\d+)\s*;", re.ASCII)
+sqlite3.register_adapter(pathlib.PosixPath, str)
+sqlite3.register_adapter(pathlib.WindowsPath, str)
 
 
 def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:
