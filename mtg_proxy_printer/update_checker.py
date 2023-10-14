@@ -61,13 +61,18 @@ class BackgroundWorker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(BackgroundWorker, self).__init__(parent)
         self.card_db = card_db
-        self.db: sqlite3.Connection = None
+        self._db: sqlite3.Connection = None
         self.dw: CardInfoDatabaseImportWorker = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    @property
+    def db(self):
+        if self._db is None:
+            self._db = open_database(self.card_db.db_path, SCHEMA_NAME, self.card_db.MIN_SUPPORTED_SQLITE_VERSION)
+        return self._db
+
     def on_thread_started(self):
         logger.debug(f"{self.__class__.__name__} event loop started, creating DownloadWorker")
-        self.db = open_database(self.card_db.db_path, SCHEMA_NAME, self.card_db.MIN_SUPPORTED_SQLITE_VERSION)
         self.dw = CardInfoDatabaseImportWorker(self.card_db)
         self.dw.network_error_occurred.connect(self.network_error_occurred)
 
