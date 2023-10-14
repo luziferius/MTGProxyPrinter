@@ -24,6 +24,7 @@ from tests.helpers import fill_card_database_with_json_cards, fill_card_database
 @pytest.fixture
 def worker(card_db) -> BackgroundWorker:
     instance = BackgroundWorker(card_db)
+    instance._db = card_db.db
     yield instance
 
 
