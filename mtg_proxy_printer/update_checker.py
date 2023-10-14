@@ -16,6 +16,7 @@
 import random
 import re
 import socket
+import sqlite3
 import typing
 import urllib.parse
 import urllib.error
@@ -26,10 +27,11 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal as Signal
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
 from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.stop_thread import stop_thread
+from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -59,11 +61,13 @@ class BackgroundWorker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super(BackgroundWorker, self).__init__(parent)
         self.card_db = card_db
+        self.db: sqlite3.Connection = None
         self.dw: CardInfoDatabaseImportWorker = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def on_thread_started(self):
         logger.debug(f"{self.__class__.__name__} event loop started, creating DownloadWorker")
+        self.db = open_database(self.card_db.db_path, SCHEMA_NAME, self.card_db.MIN_SUPPORTED_SQLITE_VERSION)
         self.dw = CardInfoDatabaseImportWorker(self.card_db)
         self.dw.network_error_occurred.connect(self.network_error_occurred)
 
@@ -72,7 +76,7 @@ class BackgroundWorker(QObject):
             logger.info("Checking for card data updates disabled. Not checking for updates.")
             self.job_completed.emit()
             return
-        if not self.card_db.has_data():
+        if not self.card_database_has_data():
             logger.info("Card database has no data. Not checking for updates.")
             self.job_completed.emit()
             return
@@ -89,10 +93,26 @@ class BackgroundWorker(QObject):
             self.job_completed.emit()
 
     def _is_newer_card_data_available(self) -> typing.Tuple[int, int]:
-        total_cards_in_last_update = self.card_db.get_total_cards_in_last_update()
+        total_cards_in_last_update = self.get_total_cards_in_last_update()
         total_cards_available = self.dw.get_available_card_count()
         logger.debug(f"Total cards during last update: {total_cards_in_last_update}")
         return total_cards_available, total_cards_in_last_update
+
+    def get_total_cards_in_last_update(self) -> int:
+        """
+        Returns the latest card timestamp from the LastDatabaseUpdate table.
+        Returns today(), if the table is empty.
+        """
+        query = cached_dedent("""\
+        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update()
+            FROM LastDatabaseUpdate
+        """)
+        id_, total_cards_in_last_update = self.db.execute(query).fetchone()
+        return 0 if id_ is None else total_cards_in_last_update
+
+    def card_database_has_data(self) -> bool:
+        result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
+        return bool(result)
 
     def perform_application_update_check(self):
         if not settings.settings["application"].getboolean("check-for-application-updates"):

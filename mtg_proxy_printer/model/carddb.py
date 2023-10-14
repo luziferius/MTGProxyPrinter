@@ -294,8 +294,9 @@ class CardDatabase(QObject):
         """
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
+        self.db_path = db_path
         self.db = db = mtg_proxy_printer.sqlite_helpers.open_database(
-            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, False)
+            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, True)
         migrate_card_database(db)
         logger.debug("Validating schema of the opened database")
         try:
@@ -863,18 +864,6 @@ class CardDatabase(QObject):
             if self._read_optional_scalar_from_db(query, (scryfall_id, is_front, count)):
                 result.append(index)
         return result
-
-    def get_total_cards_in_last_update(self) -> int:
-        """
-        Returns the latest card timestamp from the LastDatabaseUpdate table.
-        Returns today(), if the table is empty.
-        """
-        query = cached_dedent("""\
-        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update()
-            FROM LastDatabaseUpdate
-        """)
-        id_, total_cards_in_last_update = self.db.execute(query).fetchone()
-        return 0 if id_ is None else total_cards_in_last_update
 
     def translate_card(self, to_translate: T, target_language: str = None) -> T:
         """

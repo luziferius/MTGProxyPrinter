@@ -614,15 +614,6 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(
         )
 
 
-def test_get_total_cards_in_last_update(qtbot, card_db: CardDatabase):
-    card_data = ["regular_english_card"]
-    fill_card_database_with_json_cards(qtbot, card_db, card_data)
-    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
-    card_data.append("english_basic_Forest")
-    fill_card_database_with_json_cards(qtbot, card_db, card_data)
-    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
-
-
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_that(
