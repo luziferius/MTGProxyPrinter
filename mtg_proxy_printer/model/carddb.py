@@ -332,7 +332,7 @@ class CardDatabase(QObject):
         self._exit_hook = close_db
 
     def begin_transaction(self):
-        self.db.execute("BEGIN TRANSACTION")
+        self.db.execute("BEGIN DEFERRED TRANSACTION")
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
@@ -388,7 +388,7 @@ class CardDatabase(QObject):
         else:
             query = query.format(name_filter='')
         result = [
-            language for language, in
+            found_name for found_name, in
             self.db.execute(
                 query, parameters
             )
@@ -675,29 +675,63 @@ class CardDatabase(QObject):
         Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
         unknown images are returned as a list with plain CacheContent instances.
         """
-        query = cached_dedent('''\
-        SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
+        from mtg_proxy_printer.model.imagedb import CacheContent
+        db = self.db
+        db.execute(cached_dedent('''\
+            CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
+              scryfall_id TEXT NOT NULL,
+              is_front INTEGER NOT NULL,
+              highres_on_disk INTEGER NOT NULL,
+              absolute_path TEXT NOT NULL
+            )
+        '''))
+        db.executemany(
+            cached_dedent("""\
+            INSERT INTO ImagesOnDisk -- get_all_cards_from_image_cache()
+              (scryfall_id, is_front, highres_on_disk, absolute_path)
+              VALUES (?, ?, ?, ?)"""),
+            map(dataclasses.astuple, cache_content)
+        )
+        known_images_query = cached_dedent('''\
+        SELECT scryfall_id, is_front, highres_on_disk, absolute_path, -- get_all_cards_from_image_cache()
+            card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
+            is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
             FROM AllPrintings
-            WHERE scryfall_id = ? AND is_front = ?
+            NATURAL JOIN ImagesOnDisk
+        ''')
+        # The EXCEPT compound query in the subquery is faster than a NOT IN () subquery
+        unknown_images_query = cached_dedent('''\
+        SELECT scryfall_id, is_front, highres_on_disk, absolute_path -- get_all_cards_from_image_cache()
+          FROM ImagesOnDisk
+          WHERE (scryfall_id, is_front) IN (
+            SELECT scryfall_id, is_front
+              FROM ImagesOnDisk
+            EXCEPT
+            SELECT scryfall_id, is_front
+              FROM Printing
+              JOIN CardFace USING (printing_id)
+          )
         ''')
         cards = ImageDatabaseCards([], [], [])
-        for cache_item in cache_content:
-            result = self.db.execute(query, (cache_item.scryfall_id, cache_item.is_front)).fetchone()
-            if result is None:
-                cards.unknown.append(cache_item)
-                continue
-            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
-                    is_oversized, face_number, is_dfc, is_hidden = result
+        cards.unknown[:] = (
+            CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
+            for scryfall_id, is_front, highres_on_disk, abs_path
+            in db.execute(unknown_images_query))
+        for scryfall_id, is_front, highres_on_disk, abs_path, \
+                name, set_code, set_name, collector_number, language, image_uri, oracle_id, \
+                is_oversized, face_number, is_dfc, is_hidden \
+                in db.execute(known_images_query):
+            cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
             card = Card(
-                name, MTGSet(set_abbr, set_name), collector_number,
+                name, MTGSet(set_code, set_name), collector_number,
                 language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number, is_dfc
+                bool(highres_on_disk), bool(is_oversized), face_number, is_dfc
             )
             if is_hidden:
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
+        db.execute("DROP TABLE ImagesOnDisk -- get_all_cards_from_image_cache()\n")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
@@ -757,12 +791,12 @@ class CardDatabase(QObject):
         query = cached_dedent("""\
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
-          source_oracle_id (oracle_id, face_number, source_likeliness, source_set_code) AS (
+          source_oracle_id (oracle_id, face_number, source_score, source_set_code) AS (
             SELECT oracle_id, face_number,
                 (SELECT count() FROM Card)
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
-                  + count(oracle_id) AS source_likeliness,
+                  + count(oracle_id) AS source_score,
                 set_code AS source_set_code
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
@@ -782,7 +816,7 @@ class CardDatabase(QObject):
           WHERE language = ?
           GROUP BY card_name
           -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
-          ORDER BY source_likeliness DESC, set_code = source_set_code DESC, release_date DESC
+          ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
           LIMIT 1
         ;
         """)
@@ -953,11 +987,14 @@ class CardDatabase(QObject):
         if set_code_updated := self.set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         progress_signal()
-        if filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated:
+        update_ui = filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated
+        if update_ui:
             self._update_cached_data(progress_signal)
-            self.card_filter_updated.emit()
         if use_transaction:
             self.db.commit()
+            self.begin_transaction()
+        if update_ui:
+            self.card_filter_updated.emit()
 
     def _update_set_code_filters_in_db(self):
         # Because this is called at application start if the user changed the settings file, and whenever the filter settings
