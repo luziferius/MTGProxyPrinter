@@ -41,7 +41,7 @@ def card_db(request) -> CardDatabase:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
-        card_db = CardDatabase(":memory:")
+        card_db = CardDatabase(":memory:", check_same_thread=False)
     if request.param:
         card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
     return card_db
@@ -89,6 +89,7 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
     fill_card_database_with_json_cards(qtbot, card_db, [
         "regular_english_card", "oversized_card", "english_double_faced_card"])
     document = Document(card_db, image_db)
+    document.loader.worker._db = card_db.db  # Explicitly share the in-memory database
     yield document
     stop_thread(document.loader.worker_thread)
 

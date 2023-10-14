@@ -22,6 +22,7 @@ import pathlib
 import sqlite3
 import textwrap
 import typing
+from unittest.mock import patch
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
@@ -35,7 +36,8 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, CardList, Card, CheckCard, AnyCardType
+from mtg_proxy_printer.model.carddb import \
+    CardDatabase, CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -256,6 +258,7 @@ class Worker(QObject):
         super().__init__(None)
         self.card_db = card_db
         self.image_db = image_db
+        self._db: sqlite3.Connection = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
         # So create a separate instance and use it synchronously inside this worker thread.
@@ -272,6 +275,16 @@ class Worker(QObject):
         self.unknown_ids = 0
         self.migrated_ids = 0
         document.action_applied.connect(self.on_document_action_applied)
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            self._db = mtg_proxy_printer.sqlite_helpers.open_database(
+                self.card_db.db_path, SCHEMA_NAME, self.card_db.MIN_SUPPORTED_SQLITE_VERSION)
+        return self._db
 
     def propagate_errors_during_load(self):
         if error_count := sum(self.network_errors_during_load.values()):
@@ -312,7 +325,8 @@ class Worker(QObject):
         # Imported here to break a circular import. TODO: Investigate a better fix
         from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
         card_data, page_settings = self._read_data_from_save_path(self.save_path)
-        pages, self.migrated_ids, self.unknown_ids = self._parse_into_cards(card_data)
+        with patch.object(self.card_db, "db", self.db):
+            pages, self.migrated_ids, self.unknown_ids = self._parse_into_cards(card_data)
         self._fix_mixed_pages(pages, page_settings)
         action = ActionLoadDocument(self.save_path, pages, page_settings)
         self.load_requested.emit(action)

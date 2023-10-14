@@ -287,7 +287,8 @@ class CardDatabase(QObject):
     MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
     card_filter_updated = Signal()
 
-    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
+    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+                 check_same_thread: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
             purposes.
@@ -296,7 +297,7 @@ class CardDatabase(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.db_path = db_path
         self.db = db = mtg_proxy_printer.sqlite_helpers.open_database(
-            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, True)
+            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=check_same_thread)
         migrate_card_database(db)
         logger.debug("Validating schema of the opened database")
         try:

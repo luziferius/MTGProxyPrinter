@@ -26,17 +26,20 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
+from unittest.mock import patch
 
 import ijson
 from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent
+from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
 from mtg_proxy_printer.progress_meter import ProgressMeter
+from mtg_proxy_printer.sqlite_helpers import open_database
+
 logger = get_logger(__name__)
 del get_logger
 
@@ -212,13 +215,24 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """
-    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
+    def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
+                 db: sqlite3.Connection = None, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.model = model
+        self._db = db
         self.should_run = True
         self.set_code_cache: typing.Dict[str, int] = {}
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            self._db = open_database(self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
+        return self._db
 
     @functools.lru_cache(maxsize=1)
     def get_available_card_count(self) -> int:
@@ -234,6 +248,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             total_cards_available = next(self.read_json_card_data_from_url(url, "total_cards"))
         except (urllib.error.URLError, socket.timeout, StopIteration):
+            logger.warning("Reading total cards failed with a network error. Report zero available cards.")
             # TODO: Perform better notification in any error case
             total_cards_available = 0
         logger.debug(f"Total cards currently available: {total_cards_available}")
@@ -244,7 +259,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             data = self.read_json_card_data_from_file(path)
             self.populate_database(data)
         except Exception:
-            self.model.db.rollback()
+            self.db.rollback()
             logger.exception(f"Error during import from file: {path}")
             self.other_error_occurred.emit(f"Error during import from file:\n{path}")
         finally:
@@ -261,11 +276,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         except urllib.error.URLError as e:
             logger.exception("Handling URLError during card data download.")
             self.network_error_occurred.emit(str(e.reason))
-            self.model.db.rollback()
+            self.db.rollback()
         except socket.timeout as e:
             logger.exception("Handling socket timeout error during card data download.")
             self.network_error_occurred.emit(f"Reading from socket failed: {e}")
-            self.model.db.rollback()
+            self.db.rollback()
         finally:
             self.download_finished.emit()
 
@@ -312,11 +327,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         try:
             card_count = self._populate_database(card_data, total_count=total_count)
         except sqlite3.Error as e:
-            self.model.db.rollback()
+            self.db.rollback()
             logger.exception(f"Database error occurred: {e}")
             self.other_error_occurred.emit(str(e))
         except Exception as e:
-            self.model.db.rollback()
+            self.db.rollback()
             logger.exception(f"Error in parsing step")
             self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
         finally:
@@ -325,13 +340,13 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
         logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
-        self.model.begin_transaction()
+        self.db.execute("BEGIN IMMEDIATE TRANSACTION")  # Acquire the write lock immediately
         progress_report_step = total_count // 1000
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
         related_printings: typing.List[RelatedPrintingData] = []
-        db: sqlite3.Connection = self.model.db
+        db = self.db
         # PrintingDisplayFilter will be re-populated while iterating over the card data.
         # Axing the previous data is far cheaper than trying
         # to update it in-place by removing up to number-of-available-filters entries per each individual card,
@@ -370,14 +385,15 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
         progress_meter = ProgressMeter(
-            9, "Post-processing card data:",
+            10, "Post-processing card data:",
             self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
         self._insert_related_printings(related_printings)
         progress_meter.advance()
         self._clean_unused_data(face_ids)
         progress_meter.advance()
-        self.model.store_current_printing_filters(
-            False, force_update_hidden_column=True, progress_signal=progress_meter.advance)
+        with patch.object(self.model, "db", self.db):
+            self.model.store_current_printing_filters(
+                False, force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\
@@ -396,7 +412,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     @functools.lru_cache(maxsize=1)
     def _read_printing_filters_from_db(self) -> typing.Dict[str, int]:
-        return dict(self.model.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
+        return dict(self.db.execute("SELECT filter_name, filter_id FROM DisplayFilters"))
 
     def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
@@ -431,11 +447,12 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             logger.debug(str(cache.cache_info()))
             cache.cache_clear()
         self.set_code_cache.clear()
+        self._db = None
 
     def _clean_unused_data(self, new_face_ids: IntTuples):
         """Purges all excess data, like printings that are no longer in the import data."""
         # Note: No cleanup for RelatedPrintings needed, as that is cleaned automatically by the database engine
-        db = self.model.db
+        db = self.db
         db_face_ids = frozenset(db.execute("SELECT card_face_id FROM CardFace\n"))
         excess_face_ids = db_face_ids.difference(new_face_ids)
         logger.info(f"Removing {len(excess_face_ids)} no longer existing card faces")
@@ -453,7 +470,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """))
 
     def _insert_related_printings(self, related_printings: typing.List[RelatedPrintingData]):
-        db = self.model.db
+        db = self.db
         logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
         db.executemany(cached_dedent("""\
         INSERT OR IGNORE INTO RelatedPrintings (card_id, related_id)
@@ -468,7 +485,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         Inserts the given language into the database and returns the generated ID.
         If the language is already present, just return the ID.
         """
-        db = self.model.db
+        db = self.db
         parameters = language,
         if result := db.execute(
                 'SELECT language_id FROM PrintLanguage WHERE "language" = ?\n',
@@ -482,7 +499,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     @functools.lru_cache(None)
     def _insert_card(self, oracle_id: str) -> int:
-        db = self.model.db
+        db = self.db
         parameters = oracle_id,
         if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
             card_id, = result
@@ -491,7 +508,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return card_id
 
     def _insert_set(self, card: CardDataType) -> int:
-        db = self.model.db
+        db = self.db
         set_abbr = card["set"]
         wackiness_score = self._get_set_wackiness_score(card)
         db.execute(cached_dedent(
@@ -521,7 +538,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         Insert the given, printed face name into the database, if it not already stored. Returns the integer
         PRIMARY KEY face_name_id, used to reference the inserted face name.
         """
-        db = self.model.db
+        db = self.db
         parameters = (printed_name, language_id)
         if result := db.execute(
                 "SELECT face_name_id FROM FaceName WHERE card_name = ? AND language_id = ?\n", parameters).fetchone():
@@ -532,7 +549,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return face_name_id
 
     def _insert_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
-        db = self.model.db
+        db = self.db
         data = PrintingData(
             card_id,
             set_id,
@@ -569,7 +586,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
-        db = self.model.db
+        db = self.db
         face_ids: IntTuples = []
         for face in self._get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
@@ -646,7 +663,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _insert_card_filters(
             self, printing_id: int, filter_data: typing.Dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
-        self.model.db.executemany(
+        self.db.executemany(
             "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
             ((printing_id, printing_filter_ids[filter_name])
              for filter_name, filter_applies in filter_data.items() if filter_applies)
@@ -672,9 +689,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """
         faces = card.get("card_faces") or [
             FaceDataType(
-                printed_name = self._get_card_name(card),
-                image_uris = card["image_uris"],
-                name = card["name"],
+                printed_name=self._get_card_name(card),
+                image_uris=card["image_uris"],
+                name=card["name"],
             )
         ]
         return (
@@ -711,4 +728,3 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         English cards only have the “name” attribute, so use that as a fallback.
         """
         return card_or_face.get("printed_name") or card_or_face["name"]
-

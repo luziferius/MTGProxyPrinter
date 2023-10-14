@@ -73,7 +73,7 @@ class BackgroundWorker(QObject):
 
     def on_thread_started(self):
         logger.debug(f"{self.__class__.__name__} event loop started, creating DownloadWorker")
-        self.dw = CardInfoDatabaseImportWorker(self.card_db)
+        self.dw = CardInfoDatabaseImportWorker(self.card_db, self.db)
         self.dw.network_error_occurred.connect(self.network_error_occurred)
 
     def perform_card_data_update_check(self):
