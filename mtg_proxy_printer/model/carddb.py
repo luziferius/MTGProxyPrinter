@@ -731,7 +731,8 @@ class CardDatabase(QObject):
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
-        db.execute("DROP TABLE ImagesOnDisk -- get_all_cards_from_image_cache()\n")
+        db.execute("ROLLBACK")
+        db.execute("BEGIN TRANSACTION")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
