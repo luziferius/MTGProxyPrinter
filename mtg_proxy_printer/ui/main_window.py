@@ -322,9 +322,8 @@ class MainWindow(QMainWindow):
                 self, "Download required Card data from Scryfall?",
                 "This program requires downloading additional card data from Scryfall to operate the card search.\n"
                 "Download the required data from Scryfall now?\n"
-                "If you decline now, you can exclude some card types or individual cards based on ban lists "
-                "in the settings and then manually start the download later.\n"
-                "Or accept and use the current settings.",
+                "Without the data, you can only print custom cards by drag&dropping "
+                "the image files onto the main window.",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
             self.ui.action_download_card_data.trigger()
 
