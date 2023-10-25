@@ -998,7 +998,7 @@ class CardDatabase(QObject):
     def _update_set_code_filters_in_db(self):
         # Because this is called at application start if the user changed the settings file, and whenever the filter settings
         # are changed in the settings window, the internal state of the display filter table is always consistent with the application settings.
-        # Thus, potentially added cards during a card data update do not cause the database to enter a consistent state.
+        # Thus, potentially added cards during a card data update do not cause the database to enter an inconsistent state.
         # Invariant: Before the update starts, all filters are consistent with the settings. During the update, new cards are added with filters
         # consistent with the settings. Thus, after the update completes, the data is consistent.
         logger.info("Set code filter changed in the settings, update the database.")
