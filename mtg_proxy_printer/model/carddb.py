@@ -26,7 +26,6 @@ import typing
 
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
-import delegateto
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
@@ -278,7 +277,6 @@ def cached_dedent(text: str):
     return textwrap.dedent(text)
 
 
-@delegateto.delegate("db", "commit", "rollback")
 class CardDatabase(QObject):
     """
     Holds the connection to the local SQLite database that contains the relevant card data.
@@ -320,7 +318,7 @@ class CardDatabase(QObject):
 
         def close_db():
             logger.debug("Rolling back active transactions.")
-            self.rollback()
+            self.db.rollback()
             logger.debug("Running SQLite PRAGMA optimize.")
             # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
             # See also: https://www.sqlite.org/lang_analyze.html
