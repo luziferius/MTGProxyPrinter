@@ -154,7 +154,7 @@ class MainWindow(QMainWindow):
             lambda: self.ui.action_download_card_data.setDisabled(True)
         )
         self.ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
-        downloader.download_finished.connect(self.should_update_languages)
+        downloader.card_data_updated.connect(self.should_update_languages)
         downloader.download_begins.connect(self.show_progress_bar)
         downloader.download_progress.connect(self.progress_bar.setValue)
         downloader.download_finished.connect(self.hide_progress_bar)

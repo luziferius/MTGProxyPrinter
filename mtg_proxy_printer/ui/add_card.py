@@ -192,7 +192,7 @@ class AddCardWidget(QWidget):
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         logger.debug("About to set the card database")
         self.card_database = card_db
-        card_db.card_filter_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
+        card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         languages = self.card_database.get_all_languages()
         if not languages:

@@ -288,7 +288,7 @@ class SettingsWindow(QDialog):
             progress_meter.finish()
             db.execute("BEGIN DEFERRED TRANSACTION")
             if update_ui:
-                self.card_db.card_filter_updated.emit()
+                self.card_db.card_data_updated.emit()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]

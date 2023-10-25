@@ -283,7 +283,7 @@ class CardDatabase(QObject):
     Provides methods for data access.
     """
     MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
-    card_filter_updated = Signal()
+    card_data_updated = Signal()
 
     def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
                  check_same_thread: bool = True):
@@ -309,9 +309,11 @@ class CardDatabase(QObject):
         if db_path != ":memory:":
             self._register_exit_hook()
         db.execute("BEGIN IMMEDIATE TRANSACTION -- __init__()\n")
-        self.store_current_printing_filters()
+        update_ui = self.store_current_printing_filters()
         db.commit()
         db.execute("BEGIN DEFERRED TRANSACTION -- __init__()\n")
+        if update_ui:
+            self.card_data_updated.emit()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -962,7 +964,7 @@ class CardDatabase(QObject):
         )
 
     def store_current_printing_filters(
-            self, use_transaction: bool = True, *,
+            self, *,
             force_update_hidden_column: bool = False,
             progress_signal: typing.Callable[[], None] = None) -> bool:
         if progress_signal is None:

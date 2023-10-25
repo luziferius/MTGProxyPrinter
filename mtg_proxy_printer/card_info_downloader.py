@@ -114,18 +114,19 @@ class CardInfoDownloader(QObject):
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
     other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
 
+    card_data_updated = Signal()
     request_import_from_file = Signal(Path)
     request_import_from_url = Signal()
     request_download_to_file = Signal(Path)
-
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
-
         self.database_import_worker = CardInfoDatabaseImportWorker(model)  # No parent assignment
+        self.database_import_worker.card_data_updated.connect(
+            self.card_data_updated, Qt.ConnectionType.QueuedConnection)
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
@@ -217,14 +218,14 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """
-    card_filter_updated = Signal()
+    card_data_updated = Signal()
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  db: sqlite3.Connection = None, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.model = model
-        self.card_filter_updated.connect(model.card_filter_updated, Qt.ConnectionType.QueuedConnection)
+        self.card_data_updated.connect(model.card_data_updated, Qt.ConnectionType.QueuedConnection)
         self._db = db
         self.should_run = True
         self.set_code_cache: typing.Dict[str, int] = {}
@@ -397,7 +398,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         self._clean_unused_data(face_ids)
         progress_meter.advance()
         with patch.object(self.model, "db", self.db):
-            update_ui = self.model.store_current_printing_filters(
+            self.model.store_current_printing_filters(
                 force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
@@ -413,8 +414,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         db.commit()
         progress_meter.advance()
         progress_meter.finish()
-        if update_ui:
-            self.card_filter_updated.emit()
+        self.card_data_updated.emit()
         return index
 
     @functools.lru_cache(maxsize=1)
