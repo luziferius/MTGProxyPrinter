@@ -29,7 +29,7 @@ import urllib.request
 from unittest.mock import patch
 
 import ijson
-from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread
+from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread, Qt
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
@@ -118,11 +118,13 @@ class CardInfoDownloader(QObject):
     request_import_from_url = Signal()
     request_download_to_file = Signal(Path)
 
+
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
+
         self.database_import_worker = CardInfoDatabaseImportWorker(model)  # No parent assignment
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
@@ -215,11 +217,14 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     """
     This class implements the actual data download and import
     """
+    card_filter_updated = Signal()
+
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase,
                  db: sqlite3.Connection = None, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.model = model
+        self.card_filter_updated.connect(model.card_filter_updated, Qt.ConnectionType.QueuedConnection)
         self._db = db
         self.should_run = True
         self.set_code_cache: typing.Dict[str, int] = {}
@@ -392,8 +397,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         self._clean_unused_data(face_ids)
         progress_meter.advance()
         with patch.object(self.model, "db", self.db):
-            self.model.store_current_printing_filters(
-                False, force_update_hidden_column=True, progress_signal=progress_meter.advance)
+            update_ui = self.model.store_current_printing_filters(
+                force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
         db.execute(cached_dedent(
             """\
@@ -408,6 +413,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         db.commit()
         progress_meter.advance()
         progress_meter.finish()
+        if update_ui:
+            self.card_filter_updated.emit()
         return index
 
     @functools.lru_cache(maxsize=1)

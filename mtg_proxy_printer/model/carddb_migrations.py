@@ -331,15 +331,11 @@ def _migrate_20_to_21(db: sqlite3.Connection):
 def _migrate_21_to_22(db: sqlite3.Connection):
     # Full edit procedure not needed here, because the table has no indices or foreign keys associated
 
-    class CardDatabaseMock(typing.NamedTuple):
-        db: sqlite3.Connection
-
-        def commit_transaction(self):
-            self.db.commit()
-
     # Import locally to break a cyclic dependency
     import mtg_proxy_printer.card_info_downloader
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabaseMock(db))
+    from mtg_proxy_printer.model.carddb import CardDatabase
+    # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabase(":memory:"))
     updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
     data = []
     for id_, timestamp in updates:

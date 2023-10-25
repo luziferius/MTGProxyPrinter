@@ -308,7 +308,10 @@ class CardDatabase(QObject):
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
+        db.execute("BEGIN IMMEDIATE TRANSACTION -- __init__()\n")
         self.store_current_printing_filters()
+        db.commit()
+        db.execute("BEGIN DEFERRED TRANSACTION -- __init__()\n")
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -961,18 +964,17 @@ class CardDatabase(QObject):
     def store_current_printing_filters(
             self, use_transaction: bool = True, *,
             force_update_hidden_column: bool = False,
-            progress_signal: typing.Callable[[], None] = None):
+            progress_signal: typing.Callable[[], None] = None) -> bool:
         if progress_signal is None:
             progress_signal = (lambda: None)
+        db = self.db
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
-        if use_transaction:
-            self.db.execute("BEGIN TRANSACTION;\n")
         old_filter_removed = self._remove_old_printing_filters(section)
         filters_need_update = self._filters_in_db_differ_from_settings(section)
         if filters_need_update:
             logger.info("Printing filters changed in the settings, update the database.")
-            self.db.executemany(
+            db.executemany(
                 cached_dedent("""\
                     INSERT INTO DisplayFilters (filter_name, filter_active) -- store_current_printing_filters()
                       VALUES (?, ?)
@@ -989,11 +991,7 @@ class CardDatabase(QObject):
         update_ui = filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated
         if update_ui:
             self._update_cached_data(progress_signal)
-        if use_transaction:
-            self.db.commit()
-            self.begin_transaction()
-        if update_ui:
-            self.card_filter_updated.emit()
+        return update_ui
 
     def _update_set_code_filters_in_db(self):
         # Because this is called at application start if the user changed the settings file, and whenever the filter settings

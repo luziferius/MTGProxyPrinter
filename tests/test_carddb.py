@@ -691,7 +691,7 @@ def test_store_current_printing_filters_updates_value_in_database(card_db: CardD
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     with unittest.mock.patch.dict(section, settings_to_use):
         assert_that(card_db._filters_in_db_differ_from_settings(section), is_(True))
-        card_db.store_current_printing_filters(False)
+        card_db.store_current_printing_filters()
         assert_that(card_db._filters_in_db_differ_from_settings(section), is_(False))
 
 

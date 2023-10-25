@@ -274,13 +274,21 @@ class SettingsWindow(QDialog):
             self.filter_update_progress_monitor,
             self.process_finished.emit
         )
+        db = self.card_db.db
+        update_ui = False
+        db.rollback()
         try:
-            self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
+            db.execute("BEGIN IMMEDIATE TRANSACTION")
+            update_ui = self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
+            db.commit()
         except sqlite3.Error as e:
             self.error_occurred.emit(e.sqlite_errorname)
             raise e
         finally:
             progress_meter.finish()
+            db.execute("BEGIN DEFERRED TRANSACTION")
+            if update_ui:
+                self.card_db.card_filter_updated.emit()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
