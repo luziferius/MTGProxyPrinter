@@ -52,7 +52,7 @@ del get_logger
 __all__ = [
     "MainWindow",
 ]
-
+UiElements = typing.List[typing.Union[QWidget, QAction]]
 
 class MainWindow(QMainWindow):
 
@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
         downloader.other_error_occurred.connect(self.on_error_occurred)
         downloader.other_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
 
-    def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
+    def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
         return [
             ui.action_new_document,
@@ -174,15 +174,20 @@ class MainWindow(QMainWindow):
             ui.action_compact_document,
             ui.action_shuffle_document,
             ui.action_load_document,
-            ui.action_print,
-            ui.action_print_preview,
-            ui.action_print_pdf,
             ui.action_import_deck_list,
             ui.action_new_page,
             ui.action_discard_page,
             ui.action_show_settings,
-            ui.action_cleanup_local_image_cache,
             ui.central_widget,
+        ] + self._get_widgets_and_actions_disabled_during_card_import()
+
+    def _get_widgets_and_actions_disabled_during_card_import(self) -> UiElements:
+        ui = self.ui
+        return [
+            ui.action_print,
+            ui.action_print_pdf,
+            ui.action_print_preview,
+            ui.action_cleanup_local_image_cache,
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
