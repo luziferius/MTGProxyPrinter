@@ -138,9 +138,13 @@ class MainWindow(QMainWindow):
 
     def _connect_document_signals(self, document: Document):
         document.loading_state_changed.connect(self.loading_state_changed)
-        document.loader.loading_file_failed.connect(self.on_document_loading_failed)
-        document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
-        document.loader.network_error_occurred.connect(self.on_network_error_occurred)
+        loader = document.loader
+        loader.loading_file_failed.connect(self.on_document_loading_failed)
+        loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
+        loader.network_error_occurred.connect(self.on_network_error_occurred)
+        loader.begin_loading_loop.connect(self.general_progress_bar.begin_outer_progress)
+        loader.progress_loading_loop.connect(self.general_progress_bar.set_outer_progress)
+        loader.finished.connect(self.general_progress_bar.end_outer_progress)
         self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
         self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
         self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
@@ -189,6 +193,9 @@ class MainWindow(QMainWindow):
         image_db.card_download_starting.connect(self.general_progress_bar.begin_inner_progress)
         image_db.card_download_finished.connect(self.general_progress_bar.end_inner_progress)
         image_db.card_download_progress.connect(self.general_progress_bar.set_inner_progress)
+        image_db.batch_process_starting.connect(self.general_progress_bar.begin_outer_progress)
+        image_db.batch_process_starting.connect(self.general_progress_bar.set_outer_progress)
+        image_db.batch_process_finished.connect(self.general_progress_bar.end_outer_progress)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
 
