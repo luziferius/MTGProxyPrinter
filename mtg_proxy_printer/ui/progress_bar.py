@@ -40,6 +40,9 @@ class ProgressBar(QWidget):
         self.set_outer_progress = ui.outer_progress_bar.setValue
         self.set_inner_progress = ui.inner_progress_bar.setValue
         for item in (ui.inner_progress_bar, ui.inner_progress_label, ui.outer_progress_bar, ui.outer_progress_label):
+            policy = item.sizePolicy()
+            policy.setRetainSizeWhenHidden(True)
+            item.setSizePolicy(policy)
             item.setVisible(False)
 
     @Slot(int)
@@ -66,6 +69,7 @@ class ProgressBar(QWidget):
         if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
             logger.warning(f"Outer progress bar missed 100% upon completion. {current=}, {maximum=}")
         progress_bar.hide()
+        self.ui.outer_progress_label.setText("")
         self.ui.outer_progress_label.hide()
 
     @Slot()
@@ -74,4 +78,5 @@ class ProgressBar(QWidget):
         if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
             logger.warning(f"Inner progress bar missed 100% upon completion. {current=}, {maximum=}")
         progress_bar.hide()
+        self.ui.inner_progress_label.setText("")
         self.ui.inner_progress_label.hide()
