@@ -23,7 +23,8 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
-    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader
+    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader, \
+    CubeCobraDownloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -106,6 +107,14 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # TCGPlayer Infinite
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532"
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/"
+
+    # CubeCobra
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/list/gilpauper"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/gilpauper"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/list/gilpauper/"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/gilpauper/"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2/"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
@@ -197,6 +206,16 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     # TCGPlayer Infinite
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer"
 
+    # CubeCobra
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://cubecobra.com/list/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/"
+    yield CubeCobraDownloader, "https://cubecobra.com/"
+    yield CubeCobraDownloader, "https://cubecobra.com"
+
+
+
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
 def test_re_matcher_rejects_unacceptable_url(downloader, url: str):
@@ -236,6 +255,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582", "4 Cabal Therapy"
     yield ArchidektDownloader, "https://archidekt.com/decks/8", "Mirror Entity"
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/", "4,en,Esper Sentinel"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/1lb", "1 [MBS:2] Ardent Recruit"
 
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")

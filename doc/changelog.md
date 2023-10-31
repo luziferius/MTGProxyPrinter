@@ -4,19 +4,27 @@
 
 ## New features
 
+- Support for direct downloads from additional card list database websites:
+    - Import cube lists from [cubecobra.com](cubecobra.com)
 - Add ability to hide specific sets you don't like.
     - Filters are entered using set codes (e.g. LEA, DBL, SLD), as listed  by Scryfall.
     - In the card filter tab of the Settings window, there is now a text field where you can enter any number 
       of those set codes (separated by any whitespace), and all cards in all entered sets are hidden.
     - Please note that Scryfall uses a different set code for promotional printings and tokens,
-      typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those,
+      typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
       too, you have to explicitly do that.
+
+## Changed features
+
+- Improved progress reporting for longer running actions: Importing deck lists and loading documents
+  now also shows an overall progress, in addition to the download progress for individual card images. 
 
 ## Fixed issues
 
 - Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
   while a document title is set or printing page numbers is enabled.
 - Fixed crashes when trying to download deck lists fails. Now, an error message is shown, if deck list downloads fail.
+- Fixed potential crash when quitting the application while it is loading a document. 
 - Improved performance of the cache cleanup wizard. Now, when clicking the Next button on the first wizard page,
   showing table with all downloaded card images on the next page should only take a second or two, instead of 10 or more.
 
