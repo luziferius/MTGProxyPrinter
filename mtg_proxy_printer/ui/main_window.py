@@ -194,7 +194,7 @@ class MainWindow(QMainWindow):
         image_db.card_download_finished.connect(self.general_progress_bar.end_inner_progress)
         image_db.card_download_progress.connect(self.general_progress_bar.set_inner_progress)
         image_db.batch_process_starting.connect(self.general_progress_bar.begin_outer_progress)
-        image_db.batch_process_starting.connect(self.general_progress_bar.set_outer_progress)
+        image_db.batch_process_progress.connect(self.general_progress_bar.set_outer_progress)
         image_db.batch_process_finished.connect(self.general_progress_bar.end_outer_progress)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
