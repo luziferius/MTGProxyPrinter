@@ -14,6 +14,11 @@
       typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
       too, you have to explicitly do that.
 
+## Changed features
+
+- Improved progress reporting for longer running actions: Importing deck lists and loading documents
+  now also shows an overall progress, in addition to the download progress for individual card images. 
+
 ## Fixed issues
 
 - Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
