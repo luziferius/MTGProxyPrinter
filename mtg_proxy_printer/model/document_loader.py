@@ -21,7 +21,6 @@ import math
 import pathlib
 import sqlite3
 import textwrap
-import time
 import typing
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
@@ -339,12 +338,6 @@ class Worker(QObject):
         self.begin_loading_loop.emit(len(card_data), "Loading document:")
         for item_number, (page_number, slot, scryfall_id, is_front, card_type) in enumerate(card_data):
             self.progress_loading_loop.emit(item_number)  # Emit at loop begin, so that each item advances the progress
-            if not item_number % 10:
-                self.image_loader.download_begins.emit(100, "Image download")
-                for i in range(101):
-                    self.image_loader.download_progress.emit(i)
-                    time.sleep(0.02)
-                self.image_loader.download_finished.emit()
             if not self.should_run:
                 logger.info("Cancel request received, stop processing the card list.")
                 return pages, unknown_ids, migrated_ids
