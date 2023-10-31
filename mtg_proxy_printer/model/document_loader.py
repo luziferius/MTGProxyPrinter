@@ -347,7 +347,7 @@ class Worker(QObject):
                 self.image_loader.download_finished.emit()
             if not self.should_run:
                 logger.info("Cancel request received, stop processing the card list.")
-                return unknown_ids, migrated_ids
+                return pages, unknown_ids, migrated_ids
             if current_page_index != page_number:
                 current_page_index = page_number
                 current_page: CardList = []
