@@ -273,23 +273,26 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     @Slot(ActionImportDeckList)
     def fill_batch_document_action_images(self, action: ActionImportDeckList):
-        logger.info("Got batch DocumentAction, filling cards")
+        cards = action.cards
+        total_cards = len(cards)
+        logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
         self.update_batch_processing_state(True)
-        self.batch_process_starting.emit(len(action.cards), "Importing deck list")
-        for index, card in enumerate(action.cards, start=1):
+        self.batch_process_starting.emit(total_cards, "Importing deck list")
+        for index, card in enumerate(cards, start=1):
             self.get_image_synchronous(card)
             self.batch_process_progress.emit(index)
         self.request_action.emit(action)
         self.batch_process_finished.emit()
         self.update_batch_processing_state(False)
-        logger.info(f"Obtained images for {len(action.cards)} cards.")
+        logger.info(f"Obtained images for {total_cards} cards.")
 
     @Slot(list)
     def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
-        logger.debug(f"Requesting {len(card_indices)} missing images")
+        total_cards = len(card_indices)
+        logger.debug(f"Requesting {total_cards} missing images")
         blank = self.image_database.blank_image
         self.update_batch_processing_state(True)
-        self.batch_process_starting.emit(len(card_indices), "Fetching missing images")
+        self.batch_process_starting.emit(total_cards, "Fetching missing images")
         for index, card_index in enumerate(card_indices, start=1):
             card = card_index.data(ItemDataRole.UserRole)
             self.get_image_synchronous(card)
@@ -298,7 +301,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.batch_process_progress.emit(index)
         self.batch_process_finished.emit()
         self.update_batch_processing_state(False)
-        logger.debug("Done fetching missing images.")
+        logger.debug(f"Done fetching {total_cards} missing images.")
         self.missing_images_obtained.emit()
 
     @Slot(bool)
