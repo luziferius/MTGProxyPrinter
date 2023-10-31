@@ -14,11 +14,17 @@
       typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
       too, you have to explicitly do that.
 
+## Changed features
+
+- Improved progress reporting for longer running actions: Importing deck lists and loading documents
+  now also shows an overall progress, in addition to the download progress for individual card images. 
+
 ## Fixed issues
 
 - Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
   while a document title is set or printing page numbers is enabled.
 - Fixed crashes when trying to download deck lists fails. Now, an error message is shown, if deck list downloads fail.
+- Fixed potential crash when quitting the application while it is loading a document. 
 
 # Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 

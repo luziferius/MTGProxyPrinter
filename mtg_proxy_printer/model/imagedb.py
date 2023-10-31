@@ -91,6 +91,10 @@ class ImageDatabase(QObject):
     card_download_finished = Signal()
     card_download_progress = Signal(int)
 
+    batch_process_starting = Signal(int, str)
+    batch_process_progress = Signal(int)
+    batch_process_finished = Signal()
+
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
     """
@@ -114,21 +118,24 @@ class ImageDatabase(QObject):
         self.download_thread = QThread()
         self.download_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.download_thread.finished.connect(lambda: logger.debug(f"{self.download_thread.objectName()} stopped."))
-        self.download_worker = ImageDownloader(self)
-        self.download_worker.moveToThread(self.download_thread)
+        self.download_worker = dw = ImageDownloader(self)
+        dw.moveToThread(self.download_thread)
 
-        self.request_batch_state_change.connect(self.download_worker.request_batch_processing_state_change)
+        self.request_batch_state_change.connect(dw.request_batch_processing_state_change)
 
-        self.download_worker.download_begins.connect(self.card_download_starting)
-        self.download_worker.download_finished.connect(self.card_download_finished)
-        self.download_worker.download_progress.connect(self.card_download_progress)
+        dw.download_begins.connect(self.card_download_starting)
+        dw.download_finished.connect(self.card_download_finished)
+        dw.download_progress.connect(self.card_download_progress)
+        dw.batch_process_starting.connect(self.batch_process_starting)
+        dw.batch_process_progress.connect(self.batch_process_progress)
+        dw.batch_process_finished.connect(self.batch_process_finished)
 
-        self.download_worker.batch_processing_state_changed.connect(self.batch_processing_state_changed)
-        self.download_worker.request_action.connect(self.request_action)
-        self.download_worker.missing_images_obtained.connect(self.missing_images_obtained)
+        dw.batch_processing_state_changed.connect(self.batch_processing_state_changed)
+        dw.request_action.connect(self.request_action)
+        dw.missing_images_obtained.connect(self.missing_images_obtained)
 
-        self.download_worker.network_error_occurred.connect(self.network_error_occurred)
-        self.download_thread.started.connect(self.download_worker.scan_disk_image_cache)
+        dw.network_error_occurred.connect(self.network_error_occurred)
+        self.download_thread.started.connect(dw.scan_disk_image_cache)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -229,6 +236,10 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     request_batch_processing_state_change = Signal(bool)
     batch_processing_state_changed = Signal(bool)
 
+    batch_process_starting = Signal(int, str)
+    batch_process_progress = Signal(int)
+    batch_process_finished = Signal()
+
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
         self.request_batch_processing_state_change.connect(self.update_batch_processing_state)
@@ -262,26 +273,35 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     @Slot(ActionImportDeckList)
     def fill_batch_document_action_images(self, action: ActionImportDeckList):
-        logger.info("Got batch DocumentAction, filling cards")
+        cards = action.cards
+        total_cards = len(cards)
+        logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
         self.update_batch_processing_state(True)
-        for card in action.cards:
+        self.batch_process_starting.emit(total_cards, "Importing deck list")
+        for index, card in enumerate(cards, start=1):
             self.get_image_synchronous(card)
-        logger.info(f"Obtained images for {len(action.cards)} cards.")
+            self.batch_process_progress.emit(index)
         self.request_action.emit(action)
+        self.batch_process_finished.emit()
         self.update_batch_processing_state(False)
+        logger.info(f"Obtained images for {total_cards} cards.")
 
     @Slot(list)
     def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
-        logger.debug(f"Requesting {len(card_indices)} missing images")
+        total_cards = len(card_indices)
+        logger.debug(f"Requesting {total_cards} missing images")
         blank = self.image_database.blank_image
         self.update_batch_processing_state(True)
-        for index in card_indices:
-            card = index.data(ItemDataRole.UserRole)
+        self.batch_process_starting.emit(total_cards, "Fetching missing images")
+        for index, card_index in enumerate(card_indices, start=1):
+            card = card_index.data(ItemDataRole.UserRole)
             self.get_image_synchronous(card)
             if card.image_file is not blank:
-                self.missing_image_obtained.emit(index)
+                self.missing_image_obtained.emit(card_index)
+            self.batch_process_progress.emit(index)
+        self.batch_process_finished.emit()
         self.update_batch_processing_state(False)
-        logger.debug("Done fetching missing images.")
+        logger.debug(f"Done fetching {total_cards} missing images.")
         self.missing_images_obtained.emit()
 
     @Slot(bool)
@@ -363,7 +383,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         download_uri = card.image_uri
         download_path = self.image_database.db_path / target_path.name
         self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
-            download_uri, f"Downloading image for card '{card.name}'")
+            download_uri, f"Downloading '{card.name}'")
         self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,

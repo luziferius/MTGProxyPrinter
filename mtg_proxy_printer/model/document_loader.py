@@ -193,23 +193,30 @@ class DocumentLoader(QObject):
     network_error_occurred = Signal(str)
     load_requested = Signal(DocumentAction)
 
+    begin_loading_loop = Signal(int, str)
+    progress_loading_loop = Signal(int)
+    finished = Signal()
+
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
         super(DocumentLoader, self).__init__(None)
         self.document = document
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
-        self.worker = Worker(card_db, image_db, document)
-        self.worker.moveToThread(self.worker_thread)
-        self.worker.load_requested.connect(self.load_requested)
+        self.worker = worker = Worker(card_db, image_db, document)
+        worker.moveToThread(self.worker_thread)
+        worker.load_requested.connect(self.load_requested)
         # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
-        self.worker.loading_file_failed.connect(self.loading_file_failed)
-        self.worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
-        self.worker.loading_file_successful.connect(self.on_loading_file_successful)
-        self.worker.network_error_occurred.connect(self.network_error_occurred)
-        self.worker.finished.connect(self.worker_thread.quit)
-        self.worker.finished.connect(lambda: self.loading_state_changed.emit(False))
-        self.worker_thread.started.connect(self.worker.load_document)
+        worker.loading_file_failed.connect(self.loading_file_failed)
+        worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
+        worker.loading_file_successful.connect(self.on_loading_file_successful)
+        worker.network_error_occurred.connect(self.network_error_occurred)
+        worker.finished.connect(self.worker_thread.quit)
+        worker.finished.connect(lambda: self.loading_state_changed.emit(False))
+        self.worker_thread.started.connect(worker.load_document)
+        worker.finished.connect(self.finished)
+        worker.begin_loading_loop.connect(self.begin_loading_loop)
+        worker.progress_loading_loop.connect(self.progress_loading_loop)
 
     def is_running(self) -> bool:
         return self.worker_thread.isRunning()
@@ -245,6 +252,8 @@ class Worker(QObject):
     It creates ActionLoadDocument instances from saved documents.
     """
 
+    begin_loading_loop = Signal(int, str)
+    progress_loading_loop = Signal(int)
     finished = Signal()
     loading_file_failed = Signal(pathlib.Path, str)
     unknown_scryfall_ids_found = Signal(int, int)
@@ -326,10 +335,12 @@ class Worker(QObject):
         migrated_ids = 0
         pages: typing.List[CardList] = [[]]
         current_page = pages[-1]
-        for page_number, slot, scryfall_id, is_front, card_type in card_data:
+        self.begin_loading_loop.emit(len(card_data), "Loading document:")
+        for item_number, (page_number, slot, scryfall_id, is_front, card_type) in enumerate(card_data):
+            self.progress_loading_loop.emit(item_number)  # Emit at loop begin, so that each item advances the progress
             if not self.should_run:
                 logger.info("Cancel request received, stop processing the card list.")
-                return unknown_ids, migrated_ids
+                return pages, unknown_ids, migrated_ids
             if current_page_index != page_number:
                 current_page_index = page_number
                 current_page: CardList = []
@@ -357,6 +368,7 @@ class Worker(QObject):
                     continue
             self.image_loader.get_image_synchronous(card)
             current_page.append(card)
+        self.progress_loading_loop.emit(len(card_data))
         return pages, migrated_ids, unknown_ids
 
     def _find_replacement_card(self, scryfall_id: str, is_front: bool, prefer_already_downloaded: bool):
