@@ -383,7 +383,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         download_uri = card.image_uri
         download_path = self.image_database.db_path / target_path.name
         self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
-            download_uri, f"Downloading image for card '{card.name}'")
+            download_uri, f"Downloading '{card.name}'")
         self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
