@@ -69,7 +69,6 @@ class ProgressBar(QWidget):
         if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
             logger.warning(f"Outer progress bar missed 100% upon completion. {current=}, {maximum=}")
         progress_bar.hide()
-        self.ui.outer_progress_label.setText("")
         self.ui.outer_progress_label.hide()
 
     @Slot()
@@ -78,5 +77,4 @@ class ProgressBar(QWidget):
         if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
             logger.warning(f"Inner progress bar missed 100% upon completion. {current=}, {maximum=}")
         progress_bar.hide()
-        self.ui.inner_progress_label.setText("")
         self.ui.inner_progress_label.hide()
