@@ -140,9 +140,9 @@ class Application(QApplication):
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
         settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
-        settings_window.long_running_process_begins.connect(main_window.general_progress_bar.begin_outer_progress)
-        settings_window.process_updated.connect(main_window.general_progress_bar.set_outer_progress)
-        settings_window.process_finished.connect(main_window.general_progress_bar.end_outer_progress)
+        settings_window.long_running_process_begins.connect(main_window.progress_bars.begin_outer_progress)
+        settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
+        settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
         settings_window.error_occurred.connect(main_window.on_error_occurred)
         main_window.ui.action_show_settings.triggered.connect(settings_window.show)
         return settings_window

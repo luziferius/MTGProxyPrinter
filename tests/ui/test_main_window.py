@@ -89,18 +89,18 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         card_db.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
         save_file_path = _create_save_file(temp_path)
 
-        assert_that(main_window.general_progress_bar.ui.inner_progress_bar.isVisible(), is_(False))
-        assert_that(main_window.general_progress_bar.ui.outer_progress_bar.isVisible(), is_(False))
-        assert_that(main_window.general_progress_bar.ui.inner_progress_label.isVisible(), is_(False))
-        assert_that(main_window.general_progress_bar.ui.outer_progress_label.isVisible(), is_(False))
+        assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))
+        assert_that(main_window.progress_bars.ui.outer_progress_bar.isVisible(), is_(False))
+        assert_that(main_window.progress_bars.ui.inner_progress_label.isVisible(), is_(False))
+        assert_that(main_window.progress_bars.ui.outer_progress_label.isVisible(), is_(False))
 
         with qtbot.wait_signal(main_window.document.loader.worker_thread.finished, timeout=1000):
             main_window.document.loader.load_document(save_file_path)
             
-    assert_that(main_window.general_progress_bar.ui.inner_progress_bar.isVisible(), is_(False))
-    assert_that(main_window.general_progress_bar.ui.outer_progress_bar.isVisible(), is_(False))
-    assert_that(main_window.general_progress_bar.ui.inner_progress_label.isVisible(), is_(False))
-    assert_that(main_window.general_progress_bar.ui.outer_progress_label.isVisible(), is_(False))
+    assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))
+    assert_that(main_window.progress_bars.ui.outer_progress_bar.isVisible(), is_(False))
+    assert_that(main_window.progress_bars.ui.inner_progress_label.isVisible(), is_(False))
+    assert_that(main_window.progress_bars.ui.outer_progress_label.isVisible(), is_(False))
     mb1.assert_not_called()
     mb2.assert_not_called()
 

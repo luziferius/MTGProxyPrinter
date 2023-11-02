@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>228</width>
-    <height>36</height>
+    <width>383</width>
+    <height>34</height>
    </rect>
   </property>
   <layout class="QHBoxLayout" name="horizontal_layout">
@@ -31,6 +31,16 @@
    </item>
    <item>
     <widget class="QProgressBar" name="outer_progress_bar"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="independent_label">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QProgressBar" name="independent_bar"/>
    </item>
   </layout>
  </widget>

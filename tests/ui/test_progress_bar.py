@@ -24,7 +24,8 @@ from tests.hasgetter import has_getters
 
 INNER_ELEMENTS = ["inner_progress_bar", "inner_progress_label"]
 OUTER_ELEMENTS = ["outer_progress_bar", "outer_progress_label"]
-ALL_ELEMENTS = INNER_ELEMENTS + OUTER_ELEMENTS
+INDEPENDENT_ELEMENTS = ["independent_bar", "independent_label"]
+ALL_ELEMENTS = INNER_ELEMENTS + OUTER_ELEMENTS + INDEPENDENT_ELEMENTS
 
 
 @pytest.fixture()
@@ -101,6 +102,35 @@ def test_begin_inner_progress_resets_progress(bar: ProgressBar):
     assert_that(bar.ui.inner_progress_bar.value(), is_(0))
 
 
+def test_begin_independent_progress_configures_label(bar: ProgressBar):
+    bar.begin_independent_progress(10, "Test")
+    assert_that(
+        bar.ui.independent_label,
+        has_getters({
+            "isVisible": is_(True),
+            "text": equal_to("Test"),
+        })
+    )
+
+
+def test_begin_independent_progress_configures_progress_bar(bar: ProgressBar):
+    bar.begin_independent_progress(10, "Test")
+    assert_that(
+        bar.ui.independent_bar,
+        has_getters({
+            "isVisible": is_(True),
+            "value": is_(0),
+            "maximum": is_(10),
+        })
+    )
+
+
+def test_begin_independent_progress_resets_progress(bar: ProgressBar):
+    bar.ui.independent_bar.setValue(5)
+    bar.begin_independent_progress(10, "Test")
+    assert_that(bar.ui.independent_bar.value(), is_(0))
+
+
 @pytest.mark.parametrize("value", [0, 5, 10])
 def test_set_outer_progress(bar: ProgressBar, value: int):
     bar.set_outer_progress(value)
@@ -111,3 +141,9 @@ def test_set_outer_progress(bar: ProgressBar, value: int):
 def test_set_inner_progress(bar: ProgressBar, value: int):
     bar.set_inner_progress(value)
     assert_that(bar.ui.inner_progress_bar.value(), is_(equal_to(value)))
+
+
+@pytest.mark.parametrize("value", [0, 5, 10])
+def test_independent_progress(bar: ProgressBar, value: int):
+    bar.set_independent_progress(value)
+    assert_that(bar.ui.independent_bar.value(), is_(equal_to(value)))
