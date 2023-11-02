@@ -146,7 +146,7 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.working_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.request_import_from_url, timeout=1000):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
@@ -168,7 +168,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_card_
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
         unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.working_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
@@ -188,7 +188,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_triggering_it(
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.working_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         ui.action_download_card_data.trigger()
     warning_box.assert_called_once()
@@ -217,7 +217,7 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.working_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.request_import_from_url, timeout=1000):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
@@ -239,7 +239,7 @@ def test_action_download_card_data_enabled_if_error_occurs_after_accepting_ask_u
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.Yes) as message_box, \
         unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.Yes) as warning_box, \
-            qtbot.waitSignal(main_window.loading_state_changed, check_params_cb=lambda value: not value), \
+            qtbot.waitSignal(main_window.card_data_downloader.working_state_changed, check_params_cb=lambda value: not value), \
             qtbot.waitSignal(main_window.card_data_downloader.network_error_occurred):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
