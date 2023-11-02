@@ -60,6 +60,7 @@ class MainWindow(QMainWindow):
     should_update_languages = Signal()
     loading_state_changed = Signal(bool)
 
+
     def __init__(self,
                  card_db: CardDatabase,
                  card_info_downloader: CardInfoDownloader,
@@ -154,19 +155,21 @@ class MainWindow(QMainWindow):
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         # Do not connect the card_info_downloader.working_state_changed
         # signal to not re-enable the action when completed. This action in particular should remain disabled.
+        ui = self.ui
         downloader.download_begins.connect(
-            lambda: self.ui.action_download_card_data.setDisabled(True)
+            lambda: ui.action_download_card_data.setDisabled(True)
         )
-        self.ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
+        for widget_or_action in self._get_widgets_and_actions_disabled_during_card_import():
+            downloader.working_state_changed.connect(widget_or_action.setDisabled)
+        ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
         downloader.card_data_updated.connect(self.should_update_languages)
         downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
         downloader.download_progress.connect(self.progress_bars.set_independent_progress)
         downloader.download_finished.connect(self.progress_bars.end_independent_progress)
-        downloader.working_state_changed.connect(self.loading_state_changed)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
-        downloader.network_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
+        downloader.network_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
         downloader.other_error_occurred.connect(self.on_error_occurred)
-        downloader.other_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
+        downloader.other_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
 
     def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
@@ -181,17 +184,17 @@ class MainWindow(QMainWindow):
             ui.action_import_deck_list,
             ui.action_new_page,
             ui.action_discard_page,
-            ui.action_show_settings,
             ui.central_widget,
         ] + self._get_widgets_and_actions_disabled_during_card_import()
 
     def _get_widgets_and_actions_disabled_during_card_import(self) -> UiElements:
         ui = self.ui
         return [
-            ui.action_print,
-            ui.action_print_pdf,
-            ui.action_print_preview,
-            ui.action_cleanup_local_image_cache,
+            ui.action_print,  # Updates image print counts
+            ui.action_print_pdf,  # Updates image print counts
+            ui.action_print_preview,  # Updates image print counts
+            ui.action_cleanup_local_image_cache,  # The database queries write to temporary tables
+            ui.action_show_settings,  # Can cause filter updates
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
