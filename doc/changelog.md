@@ -18,6 +18,8 @@
 
 - Improved progress reporting for longer running actions: Importing deck lists and loading documents
   now also shows an overall progress, in addition to the download progress for individual card images. 
+- The card data update no longer locks the entire user interface. It is now possible to continue working while
+  update runs in the background. Some actions remain locked 
 
 ## Fixed issues
 
