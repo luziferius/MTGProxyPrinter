@@ -350,8 +350,8 @@ class CardDatabase(QObject):
         # The MAX aggregate returns NULL on an empty database. So use a timestamp in 1970 to return True then.
         query = "SELECT COALESCE(MAX(update_timestamp), '1970-01-01 00:00:00') FROM LastDatabaseUpdate\n"
         result, = self.db.execute(query).fetchone()
-        last_timestamp = datetime.datetime.fromisoformat(result).date()
-        allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.date.today()
+        last_timestamp = datetime.datetime.fromisoformat(result)
+        allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today()
         return allow_update
 
     def get_all_languages(self) -> StringList:
