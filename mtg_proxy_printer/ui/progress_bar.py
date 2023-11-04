@@ -40,14 +40,17 @@ class ProgressBar(QWidget):
         self.set_outer_progress = ui.outer_progress_bar.setValue
         self.set_inner_progress = ui.inner_progress_bar.setValue
         self.set_independent_progress = ui.independent_bar.setValue
-        # the independent progress bar should not retain its size while hidden, thus is not configured here.
-        for item in (ui.inner_progress_bar, ui.inner_progress_label, ui.outer_progress_bar, ui.outer_progress_label):
-            policy = item.sizePolicy()
-            policy.setRetainSizeWhenHidden(True)
-            item.setSizePolicy(policy)
+        for item in (ui.inner_progress_bar, ui.inner_progress_label):
+            self._set_retain_size_policy(item, True)
             item.hide()
-        self.ui.independent_bar.hide()
-        self.ui.independent_label.hide()
+        for item in (ui.outer_progress_bar, ui.outer_progress_label, ui.independent_bar, ui.independent_label):
+            item.hide()
+        
+    @staticmethod
+    def _set_retain_size_policy(wigdget: QWidget, value: bool):
+        policy = wigdget.sizePolicy()
+        policy.setRetainSizeWhenHidden(value)
+        wigdget.setSizePolicy(policy)
 
     @Slot(int)
     @Slot(int, str)
