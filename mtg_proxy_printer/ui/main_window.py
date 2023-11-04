@@ -53,12 +53,13 @@ del get_logger
 __all__ = [
     "MainWindow",
 ]
-
+UiElements = typing.List[typing.Union[QWidget, QAction]]
 
 class MainWindow(QMainWindow):
 
     should_update_languages = Signal()
     loading_state_changed = Signal(bool)
+
 
     def __init__(self,
                  card_db: CardDatabase,
@@ -79,7 +80,7 @@ class MainWindow(QMainWindow):
         self.missing_images_manager.request_obtaining_images.connect(image_db.download_worker.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
         self.about_dialog = self._create_about_dialog()
-        self.general_progress_bar = self._create_progress_bar()
+        self.progress_bars = self._create_progress_bar()
         self.card_database = card_db
         self.image_db = image_db
         self._connect_image_database_signals(image_db)
@@ -142,9 +143,9 @@ class MainWindow(QMainWindow):
         loader.loading_file_failed.connect(self.on_document_loading_failed)
         loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
         loader.network_error_occurred.connect(self.on_network_error_occurred)
-        loader.begin_loading_loop.connect(self.general_progress_bar.begin_outer_progress)
-        loader.progress_loading_loop.connect(self.general_progress_bar.set_outer_progress)
-        loader.finished.connect(self.general_progress_bar.end_outer_progress)
+        loader.begin_loading_loop.connect(self.progress_bars.begin_outer_progress)
+        loader.progress_loading_loop.connect(self.progress_bars.set_outer_progress)
+        loader.finished.connect(self.progress_bars.end_outer_progress)
         self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
         self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
         self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
@@ -154,21 +155,23 @@ class MainWindow(QMainWindow):
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         # Do not connect the card_info_downloader.working_state_changed
         # signal to not re-enable the action when completed. This action in particular should remain disabled.
+        ui = self.ui
         downloader.download_begins.connect(
-            lambda: self.ui.action_download_card_data.setDisabled(True)
+            lambda: ui.action_download_card_data.setDisabled(True)
         )
-        self.ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
-        downloader.download_finished.connect(self.should_update_languages)
-        downloader.download_begins.connect(self.general_progress_bar.begin_outer_progress)
-        downloader.download_progress.connect(self.general_progress_bar.set_outer_progress)
-        downloader.download_finished.connect(self.general_progress_bar.end_outer_progress)
-        downloader.working_state_changed.connect(self.loading_state_changed)
+        for widget_or_action in self._get_widgets_and_actions_disabled_during_card_import():
+            downloader.working_state_changed.connect(widget_or_action.setDisabled)
+        ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
+        downloader.card_data_updated.connect(self.should_update_languages)
+        downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
+        downloader.download_progress.connect(self.progress_bars.set_independent_progress)
+        downloader.download_finished.connect(self.progress_bars.end_independent_progress)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
-        downloader.network_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
+        downloader.network_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
         downloader.other_error_occurred.connect(self.on_error_occurred)
-        downloader.other_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
+        downloader.other_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
 
-    def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
+    def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
         return [
             ui.action_new_document,
@@ -178,24 +181,29 @@ class MainWindow(QMainWindow):
             ui.action_compact_document,
             ui.action_shuffle_document,
             ui.action_load_document,
-            ui.action_print,
-            ui.action_print_preview,
-            ui.action_print_pdf,
             ui.action_import_deck_list,
             ui.action_new_page,
             ui.action_discard_page,
-            ui.action_show_settings,
-            ui.action_cleanup_local_image_cache,
             ui.central_widget,
+        ] + self._get_widgets_and_actions_disabled_during_card_import()
+
+    def _get_widgets_and_actions_disabled_during_card_import(self) -> UiElements:
+        ui = self.ui
+        return [
+            ui.action_print,  # Updates image print counts
+            ui.action_print_pdf,  # Updates image print counts
+            ui.action_print_preview,  # Updates image print counts
+            ui.action_cleanup_local_image_cache,  # The database queries write to temporary tables
+            ui.action_show_settings,  # Can cause filter updates
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
-        image_db.card_download_starting.connect(self.general_progress_bar.begin_inner_progress)
-        image_db.card_download_finished.connect(self.general_progress_bar.end_inner_progress)
-        image_db.card_download_progress.connect(self.general_progress_bar.set_inner_progress)
-        image_db.batch_process_starting.connect(self.general_progress_bar.begin_outer_progress)
-        image_db.batch_process_progress.connect(self.general_progress_bar.set_outer_progress)
-        image_db.batch_process_finished.connect(self.general_progress_bar.end_outer_progress)
+        image_db.card_download_starting.connect(self.progress_bars.begin_inner_progress)
+        image_db.card_download_finished.connect(self.progress_bars.end_inner_progress)
+        image_db.card_download_progress.connect(self.progress_bars.set_inner_progress)
+        image_db.batch_process_starting.connect(self.progress_bars.begin_outer_progress)
+        image_db.batch_process_progress.connect(self.progress_bars.set_outer_progress)
+        image_db.batch_process_finished.connect(self.progress_bars.end_outer_progress)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
 

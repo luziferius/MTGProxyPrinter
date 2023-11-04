@@ -16,6 +16,7 @@
 
 PRAGMA user_version = 0000032;
 PRAGMA foreign_keys = on;
+PRAGMA journal_mode = 'wal';
 BEGIN TRANSACTION;
 
 

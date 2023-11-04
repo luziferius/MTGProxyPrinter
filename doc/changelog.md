@@ -18,6 +18,8 @@
 
 - Improved progress reporting for longer running actions: Importing deck lists and loading documents
   now also shows an overall progress, in addition to the download progress for individual card images. 
+- The card data update no longer locks the entire user interface. It is now possible to continue working while
+  update runs in the background. Some actions remain locked 
 
 ## Fixed issues
 
@@ -25,6 +27,8 @@
   while a document title is set or printing page numbers is enabled.
 - Fixed crashes when trying to download deck lists fails. Now, an error message is shown, if deck list downloads fail.
 - Fixed potential crash when quitting the application while it is loading a document. 
+- Improved performance of the cache cleanup wizard. Now, when clicking the Next button on the first wizard page,
+  showing table with all downloaded card images on the next page should only take a second or two, instead of 10 or more.
 
 # Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 

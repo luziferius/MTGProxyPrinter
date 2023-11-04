@@ -39,11 +39,18 @@ class ProgressBar(QWidget):
         ui.setupUi(self)
         self.set_outer_progress = ui.outer_progress_bar.setValue
         self.set_inner_progress = ui.inner_progress_bar.setValue
-        for item in (ui.inner_progress_bar, ui.inner_progress_label, ui.outer_progress_bar, ui.outer_progress_label):
-            policy = item.sizePolicy()
-            policy.setRetainSizeWhenHidden(True)
-            item.setSizePolicy(policy)
-            item.setVisible(False)
+        self.set_independent_progress = ui.independent_bar.setValue
+        for item in (ui.inner_progress_bar, ui.inner_progress_label):
+            self._set_retain_size_policy(item, True)
+            item.hide()
+        for item in (ui.outer_progress_bar, ui.outer_progress_label, ui.independent_bar, ui.independent_label):
+            item.hide()
+        
+    @staticmethod
+    def _set_retain_size_policy(wigdget: QWidget, value: bool):
+        policy = wigdget.sizePolicy()
+        policy.setRetainSizeWhenHidden(value)
+        wigdget.setSizePolicy(policy)
 
     @Slot(int)
     @Slot(int, str)
@@ -54,6 +61,11 @@ class ProgressBar(QWidget):
     @Slot(int, str)
     def begin_inner_progress(self, upper_limit: int, ui_hint: str = ""):
         self._begin_progress(self.ui.inner_progress_bar, self.ui.inner_progress_label, upper_limit, ui_hint)
+
+    @Slot(int)
+    @Slot(int, str)
+    def begin_independent_progress(self, upper_limit: int, ui_hint: str = ""):
+        self._begin_progress(self.ui.independent_bar, self.ui.independent_label, upper_limit, ui_hint)
 
     @staticmethod
     def _begin_progress(progress_bar: QProgressBar, label: QLabel, upper_limit: int, ui_hint: str):
@@ -78,3 +90,11 @@ class ProgressBar(QWidget):
             logger.warning(f"Inner progress bar missed 100% upon completion. {current=}, {maximum=}")
         progress_bar.hide()
         self.ui.inner_progress_label.hide()
+
+    @Slot()
+    def end_independent_progress(self):
+        progress_bar = self.ui.independent_bar
+        if (current := progress_bar.value()) != (maximum := progress_bar.maximum()):
+            logger.warning(f"Independent progress bar missed 100% upon completion. {current=}, {maximum=}")
+        progress_bar.hide()
+        self.ui.independent_label.hide()

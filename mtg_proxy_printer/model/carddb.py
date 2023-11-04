@@ -26,7 +26,6 @@ import typing
 
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
-import delegateto
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
@@ -278,24 +277,25 @@ def cached_dedent(text: str):
     return textwrap.dedent(text)
 
 
-@delegateto.delegate("db", "commit", "rollback")
 class CardDatabase(QObject):
     """
     Holds the connection to the local SQLite database that contains the relevant card data.
     Provides methods for data access.
     """
     MIN_SUPPORTED_SQLITE_VERSION = (3, 35, 0)
-    card_filter_updated = Signal()
+    card_data_updated = Signal()
 
-    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
+    def __init__(self, db_path: typing.Union[str, pathlib.Path] = DEFAULT_DATABASE_LOCATION, parent: QObject = None,
+                 check_same_thread: bool = True):
         """
         :param db_path: Path to the database file. May be “:memory:” to create an in-memory database for testing
             purposes.
         """
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
+        self.db_path = db_path
         self.db = db = mtg_proxy_printer.sqlite_helpers.open_database(
-            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, False)
+            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=check_same_thread)
         migrate_card_database(db)
         logger.debug("Validating schema of the opened database")
         try:
@@ -308,7 +308,12 @@ class CardDatabase(QObject):
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
-        self.store_current_printing_filters()
+        db.execute("BEGIN IMMEDIATE TRANSACTION -- __init__()\n")
+        update_ui = self.store_current_printing_filters()
+        db.commit()
+        db.execute("BEGIN DEFERRED TRANSACTION -- __init__()\n")
+        if update_ui:
+            self.card_data_updated.emit()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -318,7 +323,7 @@ class CardDatabase(QObject):
 
         def close_db():
             logger.debug("Rolling back active transactions.")
-            self.rollback()
+            self.db.rollback()
             logger.debug("Running SQLite PRAGMA optimize.")
             # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
             # See also: https://www.sqlite.org/lang_analyze.html
@@ -330,7 +335,7 @@ class CardDatabase(QObject):
         self._exit_hook = close_db
 
     def begin_transaction(self):
-        self.db.execute("BEGIN TRANSACTION")
+        self.db.execute("BEGIN DEFERRED TRANSACTION")
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
@@ -386,7 +391,7 @@ class CardDatabase(QObject):
         else:
             query = query.format(name_filter='')
         result = [
-            language for language, in
+            found_name for found_name, in
             self.db.execute(
                 query, parameters
             )
@@ -673,29 +678,64 @@ class CardDatabase(QObject):
         Visible and invisible printings are returned as lists containing tuples (Card, CacheContent),
         unknown images are returned as a list with plain CacheContent instances.
         """
-        query = cached_dedent('''\
-        SELECT card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
-            highres_image, is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
+        from mtg_proxy_printer.model.imagedb import CacheContent
+        db = self.db
+        db.execute(cached_dedent('''\
+            CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
+              scryfall_id TEXT NOT NULL,
+              is_front INTEGER NOT NULL,
+              highres_on_disk INTEGER NOT NULL,
+              absolute_path TEXT NOT NULL
+            )
+        '''))
+        db.executemany(
+            cached_dedent("""\
+            INSERT INTO ImagesOnDisk -- get_all_cards_from_image_cache()
+              (scryfall_id, is_front, highres_on_disk, absolute_path)
+              VALUES (?, ?, ?, ?)"""),
+            map(dataclasses.astuple, cache_content)
+        )
+        known_images_query = cached_dedent('''\
+        SELECT scryfall_id, is_front, highres_on_disk, absolute_path, -- get_all_cards_from_image_cache()
+            card_name, set_code, set_name, collector_number, "language", png_image_uri, oracle_id,
+            is_oversized, face_number, is_dfc, is_hidden -- get_all_cards_from_image_cache()
             FROM AllPrintings
-            WHERE scryfall_id = ? AND is_front = ?
+            NATURAL JOIN ImagesOnDisk
+        ''')
+        # The EXCEPT compound query in the subquery is faster than a NOT IN () subquery
+        unknown_images_query = cached_dedent('''\
+        SELECT scryfall_id, is_front, highres_on_disk, absolute_path -- get_all_cards_from_image_cache()
+          FROM ImagesOnDisk
+          WHERE (scryfall_id, is_front) IN (
+            SELECT scryfall_id, is_front
+              FROM ImagesOnDisk
+            EXCEPT
+            SELECT scryfall_id, is_front
+              FROM Printing
+              JOIN CardFace USING (printing_id)
+          )
         ''')
         cards = ImageDatabaseCards([], [], [])
-        for cache_item in cache_content:
-            result = self.db.execute(query, (cache_item.scryfall_id, cache_item.is_front)).fetchone()
-            if result is None:
-                cards.unknown.append(cache_item)
-                continue
-            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
-                    is_oversized, face_number, is_dfc, is_hidden = result
+        cards.unknown[:] = (
+            CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
+            for scryfall_id, is_front, highres_on_disk, abs_path
+            in db.execute(unknown_images_query))
+        for scryfall_id, is_front, highres_on_disk, abs_path, \
+                name, set_code, set_name, collector_number, language, image_uri, oracle_id, \
+                is_oversized, face_number, is_dfc, is_hidden \
+                in db.execute(known_images_query):
+            cache_item = CacheContent(scryfall_id, bool(is_front), bool(highres_on_disk), pathlib.Path(abs_path))
             card = Card(
-                name, MTGSet(set_abbr, set_name), collector_number,
+                name, MTGSet(set_code, set_name), collector_number,
                 language, cache_item.scryfall_id, cache_item.is_front, oracle_id, image_uri,
-                bool(highres_image), bool(is_oversized), face_number, is_dfc
+                bool(highres_on_disk), bool(is_oversized), face_number, is_dfc
             )
             if is_hidden:
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
+        db.execute("ROLLBACK")
+        db.execute("BEGIN TRANSACTION")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
@@ -755,12 +795,12 @@ class CardDatabase(QObject):
         query = cached_dedent("""\
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
-          source_oracle_id (oracle_id, face_number, source_likeliness, source_set_code) AS (
+          source_oracle_id (oracle_id, face_number, source_score, source_set_code) AS (
             SELECT oracle_id, face_number,
                 (SELECT count() FROM Card)
                   * (COALESCE(scryfall_id = source_scryfall_id, 0)
                      OR COALESCE(set_code = source_set_code, 0))
-                  + count(oracle_id) AS source_likeliness,
+                  + count(oracle_id) AS source_score,
                 set_code AS source_set_code
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
@@ -780,7 +820,7 @@ class CardDatabase(QObject):
           WHERE language = ?
           GROUP BY card_name
           -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name
-          ORDER BY source_likeliness DESC, set_code = source_set_code DESC, release_date DESC
+          ORDER BY source_score DESC, set_code = source_set_code DESC, release_date DESC
           LIMIT 1
         ;
         """)
@@ -864,18 +904,6 @@ class CardDatabase(QObject):
                 result.append(index)
         return result
 
-    def get_total_cards_in_last_update(self) -> int:
-        """
-        Returns the latest card timestamp from the LastDatabaseUpdate table.
-        Returns today(), if the table is empty.
-        """
-        query = cached_dedent("""\
-        SELECT MAX(update_id), reported_card_count -- get_total_cards_in_last_update()
-            FROM LastDatabaseUpdate
-        """)
-        id_, total_cards_in_last_update = self.db.execute(query).fetchone()
-        return 0 if id_ is None else total_cards_in_last_update
-
     def translate_card(self, to_translate: T, target_language: str = None) -> T:
         """
         Returns a new card object representing the card translated into the target language.
@@ -936,20 +964,19 @@ class CardDatabase(QObject):
         )
 
     def store_current_printing_filters(
-            self, use_transaction: bool = True, *,
+            self, *,
             force_update_hidden_column: bool = False,
-            progress_signal: typing.Callable[[], None] = None):
+            progress_signal: typing.Callable[[], None] = None) -> bool:
         if progress_signal is None:
             progress_signal = (lambda: None)
+        db = self.db
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
-        if use_transaction:
-            self.db.execute("BEGIN TRANSACTION;\n")
         old_filter_removed = self._remove_old_printing_filters(section)
         filters_need_update = self._filters_in_db_differ_from_settings(section)
         if filters_need_update:
             logger.info("Printing filters changed in the settings, update the database.")
-            self.db.executemany(
+            db.executemany(
                 cached_dedent("""\
                     INSERT INTO DisplayFilters (filter_name, filter_active) -- store_current_printing_filters()
                       VALUES (?, ?)
@@ -963,16 +990,15 @@ class CardDatabase(QObject):
         if set_code_updated := self.set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         progress_signal()
-        if filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated:
+        update_ui = filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated
+        if update_ui:
             self._update_cached_data(progress_signal)
-            self.card_filter_updated.emit()
-        if use_transaction:
-            self.db.commit()
+        return update_ui
 
     def _update_set_code_filters_in_db(self):
         # Because this is called at application start if the user changed the settings file, and whenever the filter settings
         # are changed in the settings window, the internal state of the display filter table is always consistent with the application settings.
-        # Thus, potentially added cards during a card data update do not cause the database to enter a consistent state.
+        # Thus, potentially added cards during a card data update do not cause the database to enter an inconsistent state.
         # Invariant: Before the update starts, all filters are consistent with the settings. During the update, new cards are added with filters
         # consistent with the settings. Thus, after the update completes, the data is consistent.
         logger.info("Set code filter changed in the settings, update the database.")
