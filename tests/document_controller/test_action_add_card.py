@@ -132,6 +132,20 @@ def test_apply_with_count_and_with_target_page_adds_that_many_copies_to_that_pag
     assert_that(action.added_new_pages, is_(0))
 
 
+def test_apply_with_target_page_works_while_currently_edited_page_is_full(qtbot, card, document_light_3):
+    document_light_3.set_currently_edited_page(document_light_3.pages[0])
+    ActionAddCard(card, 9).apply(document_light_3)
+    ActionAddCard(card, 2, target_page=1).apply(document_light_3)
+    assert_that(
+        document_light_3.pages,
+        contains_exactly(
+            has_length(9),
+            has_length(2),
+            is_(empty()),
+        )
+    )
+
+
 def test_apply_with_count_overflowing_page_adds_new_page(qtbot, card, document_light):
     capacity = document_light.page_layout.compute_page_card_capacity()
     count = capacity * 3

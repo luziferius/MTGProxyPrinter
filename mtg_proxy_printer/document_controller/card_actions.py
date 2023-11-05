@@ -60,15 +60,16 @@ class ActionAddCard(DocumentAction):
         page_capacity_for_card = document.page_layout.compute_page_card_capacity(self.card.requested_page_type())
         current_page_position = self.target_page if self.target_page is not None \
             else document.find_page_list_index(document.currently_edited_page)
-        if len(document.currently_edited_page) < page_capacity_for_card \
-                and document.currently_edited_page.accepts_card(self.card):
+        page = document.pages[current_page_position]
+        if len(page) < page_capacity_for_card and page.accepts_card(self.card):
             copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
             if added_cards:
                 self.added_cards_to_existing_pages.append((current_page_position, added_cards))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < document.rowCount():
-            if document.pages[current_page_position].accepts_card(self.card):
+            page = document.pages[current_page_position]
+            if page.accepts_card(self.card):
                 copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
                 if added_cards:
                     self.added_cards_to_existing_pages.append((current_page_position, added_cards))
