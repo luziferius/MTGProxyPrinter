@@ -29,6 +29,7 @@
 - Fixed potential crash when quitting the application while it is loading a document. 
 - Improved performance of the cache cleanup wizard. Now, when clicking the Next button on the first wizard page,
   showing table with all downloaded card images on the next page should only take a second or two, instead of 10 or more.
+- Minor performance optimizations in the document loader and deck list importer.
 
 # Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 
