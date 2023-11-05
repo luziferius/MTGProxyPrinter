@@ -12,7 +12,8 @@
       of those set codes (separated by any whitespace), and all cards in all entered sets are hidden.
     - Please note that Scryfall uses a different set code for promotional printings and tokens,
       typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
-      too, you have to explicitly do that.
+      too, you have to explicitly do that. Also note that promotional cards have a lower priority when the app has to 
+      choose a printing on its own, so hiding them is generally not required.
 
 ## Changed features
 
