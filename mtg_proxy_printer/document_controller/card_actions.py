@@ -42,11 +42,12 @@ class ActionAddCard(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
-    def __init__(self, card: AnyCardType, count: int = 1):
+    def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None):
+        self.target_page = target_page
         self.card = card
         self.count = count
         self.added_new_pages: int = 0
-        self.first_added_page: int = 0
+        self.first_added_page: typing.Optional[int] = None
         self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
 
     def apply(self, document: "Document") -> Self:
@@ -57,16 +58,18 @@ class ActionAddCard(DocumentAction):
         """
         copies = self.count  # Copy the count, because the value is mutated
         page_capacity_for_card = document.page_layout.compute_page_card_capacity(self.card.requested_page_type())
-        current_page_position = document.find_page_list_index(document.currently_edited_page)
-        if len(document.currently_edited_page) < page_capacity_for_card \
-                and document.currently_edited_page.accepts_card(self.card):
+        current_page_position = self.target_page if self.target_page is not None \
+            else document.find_page_list_index(document.currently_edited_page)
+        page = document.pages[current_page_position]
+        if len(page) < page_capacity_for_card and page.accepts_card(self.card):
             copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
             if added_cards:
                 self.added_cards_to_existing_pages.append((current_page_position, added_cards))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < document.rowCount():
-            if document.pages[current_page_position].accepts_card(self.card):
+            page = document.pages[current_page_position]
+            if page.accepts_card(self.card):
                 copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
                 if added_cards:
                     self.added_cards_to_existing_pages.append((current_page_position, added_cards))
@@ -138,10 +141,10 @@ class ActionAddCard(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        if len(self.added_cards_to_existing_pages) == 1:
+        if len(self.added_cards_to_existing_pages) == 1 and not self.first_added_page:
             # Cards added to a single existing page
             target = f"to page {self.added_cards_to_existing_pages[0][0]+1}"
-        elif self.first_added_page:
+        elif self.first_added_page and not self.added_cards_to_existing_pages:
             # Cards added to a single new page
             target = f"to page {self.first_added_page+1}"
         else:

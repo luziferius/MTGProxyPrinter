@@ -23,6 +23,7 @@ from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
 from .test_action_new_page import append_new_pages
 from .helpers import insert_card_in_page, card_container_with
@@ -47,6 +48,12 @@ def check_card(card, image_db):
     return CheckCard(card, other)
 
 
+@pytest.fixture()
+def document_light_3(document_light):
+    ActionNewPage(count=2).apply(document_light)
+    return document_light
+
+
 def test_apply_without_count_adds_single_card(qtbot, card, document_light):
     action = ActionAddCard(card)
     page = document_light.pages[0]
@@ -58,6 +65,22 @@ def test_apply_without_count_adds_single_card(qtbot, card, document_light):
         )
     )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, 1)))
+    assert_that(action.added_new_pages, is_(0))
+
+
+@pytest.mark.parametrize("target_page", range(3))
+def test_apply_without_count_and_with_target_page_adds_single_card_to_that_page(
+        qtbot, card, document_light_3, target_page: int):
+    action = ActionAddCard(card, target_page=target_page)
+    page = document_light_3.pages[target_page]
+    assert_that(action.apply(document_light_3), is_(same_instance(action)))
+    assert_that(
+        page,
+        contains_exactly(
+            card_container_with(card, page)
+        )
+    )
+    assert_that(action.added_cards_to_existing_pages, contains_exactly((target_page, 1)))
     assert_that(action.added_new_pages, is_(0))
 
 
@@ -78,7 +101,7 @@ def test_apply_with_check_card_adds_card_to_current_page(qtbot, card, check_card
 
 
 @pytest.mark.parametrize("count", [1, 3])
-def test_apply_with_count_adds_single_card(qtbot, card, document_light, count: int):
+def test_apply_with_count_adds_that_many_copies(qtbot, card, document_light, count: int):
     action = ActionAddCard(card, count)
     page = document_light.pages[0]
     assert_that(action.apply(document_light), is_(same_instance(action)))
@@ -90,6 +113,37 @@ def test_apply_with_count_adds_single_card(qtbot, card, document_light, count: i
     )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, count)))
     assert_that(action.added_new_pages, is_(0))
+
+
+@pytest.mark.parametrize("count", [1, 3])
+@pytest.mark.parametrize("target_page", range(3))
+def test_apply_with_count_and_with_target_page_adds_that_many_copies_to_that_page(
+        qtbot, card, document_light_3, target_page: int, count: int):
+    action = ActionAddCard(card, count, target_page=target_page)
+    page = document_light_3.pages[target_page]
+    assert_that(action.apply(document_light_3), is_(same_instance(action)))
+    assert_that(
+        page,
+        contains_exactly(
+            *[card_container_with(card, page)]*count
+        )
+    )
+    assert_that(action.added_cards_to_existing_pages, contains_exactly((target_page, count)))
+    assert_that(action.added_new_pages, is_(0))
+
+
+def test_apply_with_target_page_works_while_currently_edited_page_is_full(qtbot, card, document_light_3):
+    document_light_3.set_currently_edited_page(document_light_3.pages[0])
+    ActionAddCard(card, 9).apply(document_light_3)
+    ActionAddCard(card, 2, target_page=1).apply(document_light_3)
+    assert_that(
+        document_light_3.pages,
+        contains_exactly(
+            has_length(9),
+            has_length(2),
+            is_(empty()),
+        )
+    )
 
 
 def test_apply_with_count_overflowing_page_adds_new_page(qtbot, card, document_light):
