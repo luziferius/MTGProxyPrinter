@@ -55,11 +55,11 @@ __all__ = [
 ]
 UiElements = typing.List[typing.Union[QWidget, QAction]]
 
+
 class MainWindow(QMainWindow):
 
     should_update_languages = Signal()
     loading_state_changed = Signal(bool)
-
 
     def __init__(self,
                  card_db: CardDatabase,
