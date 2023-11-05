@@ -23,6 +23,9 @@ if typing.TYPE_CHECKING:
 from ._interface import ActionList, DocumentAction, Self, IllegalStateError
 from .page_actions import ActionRemovePage
 from .card_actions import ActionAddCard
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 __all__ = [
     "ActionImportDeckList",
@@ -39,12 +42,17 @@ class ActionImportDeckList(DocumentAction):
         self.actions: ActionList = []
 
     def apply(self, document: "Document") -> Self:
+        logger.info(f"About to apply {self.__class__.__name__}")
         if self.actions:
             raise IllegalStateError("Cannot apply action twice")
         if self.clear_document:
             self.actions.append(ActionRemovePage(0, document.rowCount()).apply(document))
+        active_page = document.find_page_list_index(document.currently_edited_page)
         for action in map(ActionAddCard, self.cards):
+            action.target_page = active_page
             self.actions.append(action.apply(document))
+            if action.first_added_page is not None:
+                active_page = action.first_added_page
         return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
