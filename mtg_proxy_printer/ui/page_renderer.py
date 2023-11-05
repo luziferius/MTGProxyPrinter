@@ -316,9 +316,10 @@ class PageScene(QGraphicsScene):
         font_metrics = QFontMetrics(self.document_title_text.font())
         space_width_px = font_metrics.horizontalAdvance(" ")
         margins_px = self._mm_to_rounded_px(page_layout.margin_left+page_layout.margin_right)
+        width = self.width()-margins_px-4
         available_widths_px = itertools.chain(
-            [self.width()-margins_px-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")-4],
-            itertools.repeat(self.width()-margins_px-4)
+            [width-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")],
+            itertools.repeat(width)
         )
         words = collections.deque(title.split(" "))
         lines: typing.List[str] = []
