@@ -185,6 +185,7 @@ class MainWindow(QMainWindow):
             ui.action_new_page,
             ui.action_discard_page,
             ui.central_widget,
+            ui.action_cleanup_local_image_cache,
         ] + self._get_widgets_and_actions_disabled_during_card_import()
 
     def _get_widgets_and_actions_disabled_during_card_import(self) -> UiElements:
@@ -193,7 +194,6 @@ class MainWindow(QMainWindow):
             ui.action_print,  # Updates image print counts
             ui.action_print_pdf,  # Updates image print counts
             ui.action_print_preview,  # Updates image print counts
-            ui.action_cleanup_local_image_cache,  # The database queries write to temporary tables
             ui.action_show_settings,  # Can cause filter updates
         ]
 
