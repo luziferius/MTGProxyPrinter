@@ -5,7 +5,7 @@
 ## New features
 
 - Support for direct downloads from additional card list database websites:
-    - Import cube lists from [cubecobra.com](cubecobra.com)
+    - Import cube lists from [cubecobra.com](https://cubecobra.com)
 - Add ability to hide specific sets you don't like.
     - Filters are entered using set codes (e.g. LEA, DBL, SLD), as listed  by Scryfall.
     - In the card filter tab of the Settings window, there is now a text field where you can enter any number 
