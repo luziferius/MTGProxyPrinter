@@ -47,7 +47,7 @@ class ActionAddCard(DocumentAction):
         self.card = card
         self.count = count
         self.added_new_pages: int = 0
-        self.first_added_page: int = 0
+        self.first_added_page: typing.Optional[int] = None
         self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
 
     def apply(self, document: "Document") -> Self:
@@ -140,10 +140,10 @@ class ActionAddCard(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        if len(self.added_cards_to_existing_pages) == 1:
+        if len(self.added_cards_to_existing_pages) == 1 and not self.first_added_page:
             # Cards added to a single existing page
             target = f"to page {self.added_cards_to_existing_pages[0][0]+1}"
-        elif self.first_added_page:
+        elif self.first_added_page and not self.added_cards_to_existing_pages:
             # Cards added to a single new page
             target = f"to page {self.first_added_page+1}"
         else:
