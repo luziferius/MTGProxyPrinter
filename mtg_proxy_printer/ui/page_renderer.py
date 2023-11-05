@@ -424,7 +424,7 @@ class PageScene(QGraphicsScene):
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
-        elif self.selected_page.isValid():
+        elif not parent.isValid():
             # Page inserted. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
 
@@ -439,7 +439,7 @@ class PageScene(QGraphicsScene):
             for item in self.card_items[first:last+1]:
                 self.removeItem(item)
             self.update_card_positions()
-        elif self.selected_page.isValid():
+        elif not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
 
