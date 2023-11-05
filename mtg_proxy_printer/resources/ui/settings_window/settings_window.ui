@@ -265,7 +265,7 @@ Uncheck to disable this automatism.</string>
        <item row="3" column="1">
         <widget class="QLineEdit" name="deck_list_search_path">
          <property name="toolTip">
-          <string>If set, use this as the default location for loading deck lists. Your webbrowser’s download directorry is a good choice.</string>
+          <string>If set, use this as the default location for loading deck lists. Your webbrowser’s download directory is a good choice.</string>
          </property>
          <property name="inputMethodHints">
           <set>Qt::ImhNoAutoUppercase</set>
