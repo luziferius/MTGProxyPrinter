@@ -603,15 +603,18 @@ def test_allow_updating_card_data_on_freshly_populated_database_returns_false(qt
 def test_allow_updating_card_data_on_stale_populated_database_returns_true(
         qtbot, card_db: CardDatabase, delta_days: int):
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    today = datetime.date.today()
+    today = datetime.datetime.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
-    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.date") as mock_date:
+    fromisoformat = datetime.datetime.fromisoformat
+    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.datetime") as mock_date:
         mock_date.today.return_value = now
-        assert_that(datetime.date.today(), is_not(today))
+        mock_date.fromisoformat = fromisoformat
+        assert_that(datetime.datetime.today(), is_not(today))
         assert_that(
             card_db.allow_updating_card_data(),
             is_(delta_days >= 0)
         )
+
 
 
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
