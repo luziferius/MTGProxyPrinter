@@ -120,3 +120,4 @@ def test_format_printing_filter_saves_correctly(qtbot, download_section, setting
         has_entry(setting, equal_to(str(value))),
         f"Key not saved correctly: {setting}"
     )
+

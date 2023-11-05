@@ -183,7 +183,7 @@ class PageScene(QGraphicsScene):
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
 
     @staticmethod
-    def _create_text_item(font_size: float = 40):
+    def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
         item = QGraphicsSimpleTextItem()
         font = item.font()
         font.setPointSizeF(font_size)
@@ -217,7 +217,7 @@ class PageScene(QGraphicsScene):
         for line in self.cut_lines:
             line.setPen(cut_line_color)
         for item in self.text_items:
-            item.setDefaultTextColor(text_color)
+            item.setBrush(text_color)
 
     @property
     def card_items(self) -> typing.List[CardItem]:
@@ -318,9 +318,10 @@ class PageScene(QGraphicsScene):
         font_metrics = QFontMetrics(self.document_title_text.font())
         space_width_px = font_metrics.horizontalAdvance(" ")
         margins_px = self._mm_to_rounded_px(page_layout.margin_left+page_layout.margin_right)
+        width = self.width()-margins_px-4
         available_widths_px = itertools.chain(
-            [self.width()-margins_px-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")-4],
-            itertools.repeat(self.width()-margins_px-4)
+            [width-QFontMetrics(self.page_number_text.font()).horizontalAdvance("999/999")],
+            itertools.repeat(width)
         )
         words = collections.deque(title.split(" "))
         lines: typing.List[str] = []
@@ -427,7 +428,7 @@ class PageScene(QGraphicsScene):
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
-        elif self.selected_page.isValid():
+        elif not parent.isValid():
             # Page inserted. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
 
@@ -442,7 +443,7 @@ class PageScene(QGraphicsScene):
             for item in self.card_items[first:last+1]:
                 self.removeItem(item)
             self.update_card_positions()
-        elif self.selected_page.isValid():
+        elif not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
 

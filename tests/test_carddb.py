@@ -603,24 +603,18 @@ def test_allow_updating_card_data_on_freshly_populated_database_returns_false(qt
 def test_allow_updating_card_data_on_stale_populated_database_returns_true(
         qtbot, card_db: CardDatabase, delta_days: int):
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    today = datetime.date.today()
+    today = datetime.datetime.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
-    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.date") as mock_date:
+    fromisoformat = datetime.datetime.fromisoformat
+    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.datetime") as mock_date:
         mock_date.today.return_value = now
-        assert_that(datetime.date.today(), is_not(today))
+        mock_date.fromisoformat = fromisoformat
+        assert_that(datetime.datetime.today(), is_not(today))
         assert_that(
             card_db.allow_updating_card_data(),
             is_(delta_days >= 0)
         )
 
-
-def test_get_total_cards_in_last_update(qtbot, card_db: CardDatabase):
-    card_data = ["regular_english_card"]
-    fill_card_database_with_json_cards(qtbot, card_db, card_data)
-    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
-    card_data.append("english_basic_Forest")
-    fill_card_database_with_json_cards(qtbot, card_db, card_data)
-    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
 
 
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
@@ -640,8 +634,8 @@ def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db
     )
 
 
-@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
-def test_filters_in_db_differ_from_settings_with_changed_settings_returns_true(
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
+def test_filters_in_db_differ_from_settings_with_changed_boolean_settings_returns_true(
         card_db: CardDatabase, settings_key: str):
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
@@ -663,7 +657,7 @@ def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_fals
         )
 
 
-def test__remove_old_printing_filters_with_unaltered_settings_does_nothing(card_db: CardDatabase):
+def test__remove_old_printing_filters_with_unchanged_boolean_settings_does_nothing(card_db: CardDatabase):
     query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
     section = mtg_proxy_printer.settings.settings["card-filter"]
     old_settings = card_db.db.execute(query).fetchall()
@@ -693,14 +687,14 @@ def test__remove_old_printing_filters_with_removed_settings_removes_database_row
     )
 
 
-@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
+@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
 def test_store_current_printing_filters_updates_value_in_database(card_db: CardDatabase, settings_key: str):
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     with unittest.mock.patch.dict(section, settings_to_use):
         assert_that(card_db._filters_in_db_differ_from_settings(section), is_(True))
-        card_db.store_current_printing_filters(True)
+        card_db.store_current_printing_filters()
         assert_that(card_db._filters_in_db_differ_from_settings(section), is_(False))
 
 

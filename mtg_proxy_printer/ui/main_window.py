@@ -18,7 +18,7 @@ import typing
 
 from PySide6.QtCore import Slot, Signal, QStringListModel, QUrl, Qt, QSize
 from PySide6.QtGui import QCloseEvent, QKeySequence, QAction, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
-from PySide6.QtWidgets import QApplication, QMessageBox, QProgressBar, QWidget, QLabel, QMainWindow, QDialog
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget, QMainWindow, QDialog
 from PySide6.QtPrintSupport import QPrintDialog
 
 from mtg_proxy_printer.missing_images_manager import MissingImagesManager
@@ -38,6 +38,7 @@ from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, Lo
     AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
+from mtg_proxy_printer.ui.progress_bar import ProgressBar
 
 try:
     from mtg_proxy_printer.ui.generated.main_window import Ui_MainWindow
@@ -54,6 +55,7 @@ __all__ = [
 ]
 TransformationMode = Qt.TransformationMode
 StandardKey = QKeySequence.StandardKey
+UiElements = typing.List[typing.Union[QWidget, QAction]]
 
 
 class MainWindow(QMainWindow):
@@ -80,8 +82,7 @@ class MainWindow(QMainWindow):
         self.missing_images_manager.request_obtaining_images.connect(image_db.download_worker.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
         self.about_dialog = self._create_about_dialog()
-        self.progress_label = self._create_progress_label()
-        self.progress_bar = self._create_progress_bar()
+        self.progress_bars = self._create_progress_bar()
         self.card_database = card_db
         self.image_db = image_db
         self._connect_image_database_signals(image_db)
@@ -139,9 +140,13 @@ class MainWindow(QMainWindow):
 
     def _connect_document_signals(self, document: Document):
         document.loading_state_changed.connect(self.loading_state_changed)
-        document.loader.loading_file_failed.connect(self.on_document_loading_failed)
-        document.loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
-        document.loader.network_error_occurred.connect(self.on_network_error_occurred)
+        loader = document.loader
+        loader.loading_file_failed.connect(self.on_document_loading_failed)
+        loader.unknown_scryfall_ids_found.connect(self.on_document_loading_found_unknown_scryfall_ids)
+        loader.network_error_occurred.connect(self.on_network_error_occurred)
+        loader.begin_loading_loop.connect(self.progress_bars.begin_outer_progress)
+        loader.progress_loading_loop.connect(self.progress_bars.set_outer_progress)
+        loader.finished.connect(self.progress_bars.end_outer_progress)
         self.ui.action_new_page.triggered.connect(lambda: document.apply(ActionNewPage()))
         self.ui.action_discard_page.triggered.connect(lambda: document.apply(ActionRemovePage()))
         self.ui.action_new_document.triggered.connect(lambda: document.apply(ActionNewDocument()))
@@ -151,21 +156,23 @@ class MainWindow(QMainWindow):
     def _connect_card_info_downloader_signals(self, downloader: CardInfoDownloader):
         # Do not connect the card_info_downloader.working_state_changed
         # signal to not re-enable the action when completed. This action in particular should remain disabled.
+        ui = self.ui
         downloader.download_begins.connect(
-            lambda: self.ui.action_download_card_data.setDisabled(True)
+            lambda: ui.action_download_card_data.setDisabled(True)
         )
-        self.ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
-        downloader.download_finished.connect(self.should_update_languages)
-        downloader.download_begins.connect(self.show_progress_bar)
-        downloader.download_progress.connect(self.progress_bar.setValue)
-        downloader.download_finished.connect(self.hide_progress_bar)
-        downloader.working_state_changed.connect(self.loading_state_changed)
+        for widget_or_action in self._get_widgets_and_actions_disabled_during_card_import():
+            downloader.working_state_changed.connect(widget_or_action.setDisabled)
+        ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
+        downloader.card_data_updated.connect(self.should_update_languages)
+        downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
+        downloader.download_progress.connect(self.progress_bars.set_independent_progress)
+        downloader.download_finished.connect(self.progress_bars.end_independent_progress)
         downloader.network_error_occurred.connect(self.on_network_error_occurred)
-        downloader.network_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
+        downloader.network_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
         downloader.other_error_occurred.connect(self.on_error_occurred)
-        downloader.other_error_occurred.connect(lambda _: self.ui.action_download_card_data.setEnabled(True))
+        downloader.other_error_occurred.connect(lambda _: ui.action_download_card_data.setEnabled(True))
 
-    def _get_widgets_and_actions_disabled_in_loading_state(self) -> typing.List[typing.Union[QWidget, QAction]]:
+    def _get_widgets_and_actions_disabled_in_loading_state(self) -> UiElements:
         ui = self.ui
         return [
             ui.action_new_document,
@@ -175,32 +182,34 @@ class MainWindow(QMainWindow):
             ui.action_compact_document,
             ui.action_shuffle_document,
             ui.action_load_document,
-            ui.action_print,
-            ui.action_print_preview,
-            ui.action_print_pdf,
             ui.action_import_deck_list,
             ui.action_new_page,
             ui.action_discard_page,
-            ui.action_show_settings,
-            ui.action_cleanup_local_image_cache,
             ui.central_widget,
+            ui.action_cleanup_local_image_cache,
+        ] + self._get_widgets_and_actions_disabled_during_card_import()
+
+    def _get_widgets_and_actions_disabled_during_card_import(self) -> UiElements:
+        ui = self.ui
+        return [
+            ui.action_print,  # Updates image print counts
+            ui.action_print_pdf,  # Updates image print counts
+            ui.action_print_preview,  # Updates image print counts
+            ui.action_show_settings,  # Can cause filter updates
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
-        image_db.card_download_starting.connect(self.show_progress_bar)
-        image_db.card_download_finished.connect(self.hide_progress_bar)
-        image_db.card_download_progress.connect(self.progress_bar.setValue)
+        image_db.card_download_starting.connect(self.progress_bars.begin_inner_progress)
+        image_db.card_download_finished.connect(self.progress_bars.end_inner_progress)
+        image_db.card_download_progress.connect(self.progress_bars.set_inner_progress)
+        image_db.batch_process_starting.connect(self.progress_bars.begin_outer_progress)
+        image_db.batch_process_progress.connect(self.progress_bars.set_outer_progress)
+        image_db.batch_process_finished.connect(self.progress_bars.end_outer_progress)
         image_db.batch_processing_state_changed.connect(self.loading_state_changed)
         image_db.network_error_occurred.connect(self.on_network_error_occurred)
 
-    def _create_progress_label(self):
-        progress_label = QLabel(self)
-        self.statusBar().addPermanentWidget(progress_label)
-        return progress_label
-
     def _create_progress_bar(self):
-        progress_bar = QProgressBar(self)
-        progress_bar.hide()
+        progress_bar = ProgressBar(self)
         self.statusBar().addPermanentWidget(progress_bar)
         return progress_bar
 
@@ -323,26 +332,11 @@ class MainWindow(QMainWindow):
                 self, "Download required Card data from Scryfall?",
                 "This program requires downloading additional card data from Scryfall to operate the card search.\n"
                 "Download the required data from Scryfall now?\n"
-                "If you decline now, you can exclude some card types or individual cards based on ban lists "
-                "in the settings and then manually start the download later.\n"
-                "Or accept and use the current settings.",
+                "Without the data, you can only print custom cards by drag&dropping "
+                "the image files onto the main window.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.Yes) == QMessageBox.StandardButton.Yes:
             self.card_data_downloader.request_import_from_url.emit()
-
-    @Slot(int)
-    @Slot(int, str)
-    def show_progress_bar(self, expected_total_item_count: int, message: str = ""):
-        self.progress_label.setText(message)
-        self.progress_bar.reset()
-        self.progress_bar.setMaximum(expected_total_item_count)
-        self.progress_bar.show()
-
-    @Slot()
-    def hide_progress_bar(self):
-        self.progress_label.clear()
-        self.progress_bar.reset()
-        self.progress_bar.hide()
 
     @Slot()
     def on_action_save_document_triggered(self):

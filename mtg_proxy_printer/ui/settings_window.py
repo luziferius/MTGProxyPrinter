@@ -112,7 +112,7 @@ class SettingsWindow(QDialog):
         logger.debug("Loading the settings")
         self._load_look_and_feel_settings(settings)
         self._load_images_settings(settings)
-        self._load_download_settings(settings)
+        self._load_card_filter_settings(settings)
         self.ui.page_configuration_group_box.load_document_settings_from_config(settings)
         self._load_document_settings(settings)
         self._load_save_path_settings(settings)
@@ -146,8 +146,9 @@ class SettingsWindow(QDialog):
         document_section = settings["documents"]
         self.ui.pdf_page_count_limit.setValue(document_section.getint("pdf-page-count-limit"))
 
-    def _load_download_settings(self, settings: configparser.ConfigParser):
+    def _load_card_filter_settings(self, settings: configparser.ConfigParser):
         section = settings["card-filter"]
+        self.ui.set_filter_settings.setPlainText(section["hidden-sets"])
         self.ui.card_filter_general_settings.load_settings(section)
         self.ui.card_filter_format_settings.load_settings(section)
 
@@ -237,7 +238,7 @@ class SettingsWindow(QDialog):
         logger.info("User saves the configuration to disk.")
         self._save_look_and_feel_settings()
         self._save_images_settings()
-        self._save_downloads_settings()
+        self._save_card_filter_settings()
         self.ui.page_configuration_group_box.save_document_settings_to_config()
         self._save_documents_settings()
         self._save_save_path_settings()
@@ -264,23 +265,32 @@ class SettingsWindow(QDialog):
         images_section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
         images_section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
-    def _save_downloads_settings(self):
+    def _save_card_filter_settings(self):
         section = mtg_proxy_printer.settings.settings["card-filter"]
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
+        section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
         progress_meter = ProgressMeter(
-            5, "Processing updated card filters:",
+            6, "Processing updated card filters:",
             self.long_running_process_begins.emit,
             self.filter_update_progress_monitor,
             self.process_finished.emit
         )
+        db = self.card_db.db
+        update_ui = False
+        db.rollback()
         try:
-            self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
+            db.execute("BEGIN IMMEDIATE TRANSACTION")
+            update_ui = self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
+            db.commit()
         except sqlite3.Error as e:
             self.error_occurred.emit(e.sqlite_errorname)
             raise e
         finally:
             progress_meter.finish()
+            db.execute("BEGIN DEFERRED TRANSACTION")
+            if update_ui:
+                self.card_db.card_data_updated.emit()
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]

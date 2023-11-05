@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -18,11 +18,12 @@ import math
 import pathlib
 import re
 import typing
+import urllib.error
 
-from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, \
-    QSize
+from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, QSize
 from PySide6.QtGui import QValidator, QIcon
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
+
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
@@ -202,7 +203,25 @@ class LoadListPage(QWizardPage):
             if downloader_class is not None:
                 self.setField("deck-list-downloaded", downloader_class.__name__)
                 downloader = downloader_class(self)
-                self.ui.deck_list.setPlainText(downloader.download(url))
+                try:
+                    deck_list = downloader.download(url)
+                except urllib.error.HTTPError as e:
+                    btn = QMessageBox.StandardButton.Ok
+                    msg = f"Download failed with HTTP error {e.code}.\n\n" \
+                          f"Verify that the URL is valid, reachable, and that the deck list is set to public.\n" \
+                          f"This program cannot download private deck lists. Please note, that setting deck lists to\n"\
+                          f"public may take a minute or two to apply."
+                    QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
+                except Exception:
+                    btn = QMessageBox.StandardButton.Ok
+                    msg = f"Download failed.\n\n" \
+                          f"Check your internet connection, verify that the URL is valid, reachable, " \
+                          f"and that the deck list is set to public. " \
+                          f"This program cannot download private deck lists. If this persists, " \
+                          f"please report a bug in the issue tracker on the homepage."
+                    QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
+                else:
+                    self.ui.deck_list.setPlainText(deck_list)
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \

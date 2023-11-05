@@ -37,7 +37,7 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
 
 
-@pytest.mark.parametrize("card_count", [1, 9, 10, 100])
+@pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
 def test_apply_appends_cards(document_light, card_count: int):
     page_capacity = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
     expected_pages = math.ceil(card_count/page_capacity)
@@ -110,7 +110,7 @@ def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_ove
     )
 
 
-@pytest.mark.parametrize("card_count", [1, 9, 10, 100])
+@pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
 def test_undo_removes_created_pages(document_light, card_count):
     pages = document_light.pages
     cards = [create_card(f"Card {number}") for number in range(1, card_count+1)]

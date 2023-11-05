@@ -412,7 +412,7 @@ class Document(QAbstractItemModel):
             """,
             data
         )
-        self.card_db.commit()
+        self.card_db.db.commit()
 
     def has_missing_images(self) -> bool:
         try:

@@ -280,6 +280,23 @@ def test_protects_against_infinite_settings_data(
     assert_that(document.save_file_path, is_(none()))
 
 
+def test_cancelling_loading_does_not_crash(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        empty_save_database: sqlite3.Connection):
+    empty_save_database.executemany(
+        'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)', [
+            (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r"),
+            (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b", "r"),
+        ]
+    )
+    loader = document.loader
+    loader.begin_loading_loop.connect(lambda: setattr(loader.worker, "should_run", False))
+    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
+        open_database.return_value = empty_save_database
+        with qtbot.wait_signals([loader.begin_loading_loop, loader.progress_loading_loop, loader.loading_state_changed], timeout=100):
+            loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+
+
 def test_loads_check_card(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document, empty_save_database: sqlite3.Connection):
     empty_save_database.executemany(
@@ -316,7 +333,7 @@ def legacy_save_file(request):
     db = mtg_proxy_printer.sqlite_helpers.open_database(
         ":memory:", f"document-v{save_version}",
         mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
-    db.execute(F"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
     if reverse_unordered:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     yield db

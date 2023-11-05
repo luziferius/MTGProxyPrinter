@@ -52,10 +52,9 @@ class ActionLoadDocument(DocumentAction):
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
         self.actions.append(ActionNewPage(count=len(self.loaded_cards)-1).apply(document))
-        for page, cards_on_page in zip(document.pages, self.loaded_cards):
-            document.set_currently_edited_page(page)
+        for page_index, page, cards_on_page in zip(range(len(document.pages)), document.pages, self.loaded_cards):
             for card in cards_on_page:
-                self.actions.append(ActionAddCard(card).apply(document))
+                self.actions.append(ActionAddCard(card, target_page=page_index).apply(document))
         document.set_currently_edited_page(document.pages[0])
         return super().apply(document)
 
