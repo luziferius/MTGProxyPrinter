@@ -546,30 +546,29 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             card["oversized"],
             card["highres_image"],
         )
-        db.execute(cached_dedent(
-            """\
-            INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT (scryfall_id) DO UPDATE
-                    SET card_id = excluded.card_id,
-                        set_id = excluded.set_id,
-                        collector_number = excluded.collector_number,
-                        is_oversized = excluded.is_oversized,
-                        highres_image = excluded.highres_image
-                WHERE card_id <> excluded.card_id
-                   OR set_id <> excluded.set_id
-                   OR collector_number <> excluded.collector_number
-                   OR is_oversized <> excluded.is_oversized
-                   OR highres_image <> excluded.highres_image
-            """), data,
-        )
-        printing_id, = db.execute(cached_dedent(
-            """\
-            SELECT printing_id
+        db_row = db.execute(cached_dedent("""\
+            SELECT card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image, printing_id
                 FROM Printing
                 WHERE scryfall_id = ?
             """), (data.scryfall_id,)
         ).fetchone()
+        printing_id: int = db_row[-1] if db_row else None
+        if printing_id is not None:
+            db_data = PrintingData(*db_row[:4], bool(db_row[4]), bool(db_row[5]))
+            if db_data != data:
+                db.execute(cached_dedent("""\
+                    UPDATE Printing
+                      SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?
+                      WHERE printing_id = ?
+                    """),
+                    (*data[:3], card["oversized"], card["highres_image"], printing_id),
+                )
+        if printing_id is None:
+            printing_id = db.execute(cached_dedent("""\
+                INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """), data,
+            ).lastrowid
         return printing_id
 
     def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
