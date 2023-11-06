@@ -1,5 +1,5 @@
 # Main dependencies
-PySide6-Essentials >= 6.4.0
+PySide6-Essentials >= 6.5.0
 pint
 platformdirs >= 2.6.0
 ijson >= 3.1.0; python_version < '3.11'

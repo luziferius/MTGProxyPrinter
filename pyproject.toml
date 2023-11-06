@@ -30,7 +30,7 @@ classifiers = [
 # Older Python works fine with ijson >= 3.1
 dependencies = [
     "platformdirs >= 2.6.0",
-    "PySide6-Essentials >= 6.4.0",
+    "PySide6-Essentials >= 6.5.0",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
     "pint",
@@ -110,7 +110,7 @@ deps =
     platformdirs26: platformdirs == 2.6
     platformdirs33: platformdirs >= 3.3.0
     build
-    PySide6-Essentials >= 6.4.0
+    PySide6-Essentials >= 6.5.0
     ijson >= 3.1.0; python_version < '3.11'
     ijson >= 3.2.0; python_version >= '3.11'
     pint
