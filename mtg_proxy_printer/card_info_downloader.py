@@ -366,7 +366,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             if card["object"] != "card":
                 logger.warning(f"Non-card found in card data during import: {card}")
                 continue
-            if self._should_skip_card(card):
+            if _should_skip_card(card):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
                     INSERT INTO RemovedPrintings (scryfall_id, language, oracle_id)
@@ -376,11 +376,11 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                             language = excluded.language
                         WHERE oracle_id <> excluded.oracle_id
                            OR language <> excluded.language
-                    ;"""), (card["id"], card["lang"], self._get_oracle_id(card)))
+                    ;"""), (card["id"], card["lang"], _get_oracle_id(card)))
                 continue
             try:
                 face_ids += self._parse_single_printing(card)
-                related_printings += self._get_related_cards(card)
+                related_printings += _get_related_cards(card)
             except Exception as e:
                 logger.exception(f"Error while parsing card at position {index}. {card=}")
                 raise RuntimeError(f"Error while parsing card at position {index}: {e}")
@@ -423,26 +423,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def _parse_single_printing(self, card: CardDataType):
         language_id = self._insert_language(card["lang"])
-        oracle_id = self._get_oracle_id(card)
+        oracle_id = _get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
         set_id = self.set_code_cache.get(card["set"])
         if not set_id:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
         printing_id = self._insert_printing(card, card_id, set_id)
-        filter_data = self._get_card_filter_data(card)
+        filter_data = _get_card_filter_data(card)
         self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
-
-    @staticmethod
-    def _get_related_cards(card: CardDataType):
-        if card["layout"] == "token":
-            # A token is never a source, as that would pull all cards creating that token
-            return
-        card_id = card["id"]
-        for related_card in card.get("all_parts", []):
-            if card_id != (related_id := related_card["id"]):
-                yield RelatedPrintingData(card_id, related_id)
 
     def _clear_lru_caches(self):
         """
@@ -517,7 +507,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _insert_set(self, card: CardDataType) -> int:
         db = self.db
         set_abbr = card["set"]
-        wackiness_score = self._get_set_wackiness_score(card)
+        wackiness_score = _get_set_wackiness_score(card)
         db.execute(cached_dedent(
             """\
             INSERT INTO MTGSet (set_code, set_name, set_uri, release_date, wackiness_score)
@@ -595,7 +585,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         """Inserts all faces of the given card together with their names."""
         db = self.db
         face_ids: IntTuples = []
-        for face in self._get_card_faces(card):
+        for face in _get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
             face_id: typing.Tuple[int] = db.execute(cached_dedent(
                 """\
@@ -612,61 +602,6 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 face_ids.append(face_id)
         return face_ids
 
-    @staticmethod
-    def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
-        legalities = card["legalities"]
-        return {
-            # Racism filter
-            "hide-cards-depicting-racism": card.get("content_warning", False),
-            # Cards with placeholder images (low-res image with "not available in your language" overlay)
-            "hide-cards-without-images": card["image_status"] == "placeholder",
-            "hide-oversized-cards": card["oversized"],
-            # Border filter
-            "hide-white-bordered": card["border_color"] == "white",
-            "hide-gold-bordered": card["border_color"] == "gold",
-            "hide-borderless": card["border_color"] == "borderless",
-            # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-            "hide-reversible-cards": card["layout"] == "reversible",
-            # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
-            # black-bordered promotional cards, in addition to silver-bordered cards.
-            "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
-            # Token cards
-            "hide-token": card["layout"] == "token",
-            "hide-digital-cards": card["digital"],
-            # Specific format legality. Use .get() with a default instead of [] to not fail
-            # if Scryfall removes one of the listed formats in the future.
-            "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
-            "hide-banned-in-commander": legalities.get("commander", "") == "banned",
-            "hide-banned-in-historic": legalities.get("historic", "") == "banned",
-            "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
-            "hide-banned-in-modern": legalities.get("modern", "") == "banned",
-            "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
-            "hide-banned-in-penny": legalities.get("penny", "") == "banned",
-            "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
-            "hide-banned-in-standard": legalities.get("standard", "") == "banned",
-            "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
-        }
-
-    @staticmethod
-    def _get_set_wackiness_score(card: CardDataType) -> SetWackinessScore:
-        if card["oversized"]:
-            result = SetWackinessScore.OVERSIZED
-        elif card["layout"] == "art_series":
-            result = SetWackinessScore.ART_SERIES
-        elif card["digital"]:
-            result = SetWackinessScore.DIGITAL
-        elif card["border_color"] == "white":
-            result = SetWackinessScore.WHITE_BORDERED
-        elif card["set_type"] == "funny":
-            result = SetWackinessScore.FUNNY
-        elif card["border_color"] == "gold":
-            result = SetWackinessScore.GOLD_BORDERED
-        elif card["set_type"] == "promo":
-            result = SetWackinessScore.PROMOTIONAL
-        else:
-            result = SetWackinessScore.REGULAR
-        return result
-
     def _insert_card_filters(
             self, printing_id: int, filter_data: typing.Dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
@@ -676,62 +611,128 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
              for filter_name, filter_applies in filter_data.items() if filter_applies)
         )
 
-    @staticmethod
-    def _should_skip_card(card: CardDataType) -> bool:
-        # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
-        # Also skip double faced cards that have at least one face without images
-        return card["image_status"] == "missing" or (
-                "card_faces" in card
-                and "image_uris" not in card
-                and any("image_uris" not in face for face in card["card_faces"])
+
+def _get_related_cards(card: CardDataType):
+    if card["layout"] == "token":
+        # A token is never a source, as that would pull all cards creating that token
+        return
+    card_id = card["id"]
+    for related_card in card.get("all_parts", []):
+        if card_id != (related_id := related_card["id"]):
+            yield RelatedPrintingData(card_id, related_id)
+
+
+def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
+    legalities = card["legalities"]
+    return {
+        # Racism filter
+        "hide-cards-depicting-racism": card.get("content_warning", False),
+        # Cards with placeholder images (low-res image with "not available in your language" overlay)
+        "hide-cards-without-images": card["image_status"] == "placeholder",
+        "hide-oversized-cards": card["oversized"],
+        # Border filter
+        "hide-white-bordered": card["border_color"] == "white",
+        "hide-gold-bordered": card["border_color"] == "gold",
+        "hide-borderless": card["border_color"] == "borderless",
+        # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
+        "hide-reversible-cards": card["layout"] == "reversible",
+        # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
+        # black-bordered promotional cards, in addition to silver-bordered cards.
+        "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
+        # Token cards
+        "hide-token": card["layout"] == "token",
+        "hide-digital-cards": card["digital"],
+        # Specific format legality. Use .get() with a default instead of [] to not fail
+        # if Scryfall removes one of the listed formats in the future.
+        "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",
+        "hide-banned-in-commander": legalities.get("commander", "") == "banned",
+        "hide-banned-in-historic": legalities.get("historic", "") == "banned",
+        "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
+        "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+        "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
+        "hide-banned-in-penny": legalities.get("penny", "") == "banned",
+        "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
+        "hide-banned-in-standard": legalities.get("standard", "") == "banned",
+        "hide-banned-in-vintage": legalities.get("vintage", "") == "banned",
+    }
+
+
+def _get_set_wackiness_score(card: CardDataType) -> SetWackinessScore:
+    if card["oversized"]:
+        result = SetWackinessScore.OVERSIZED
+    elif card["layout"] == "art_series":
+        result = SetWackinessScore.ART_SERIES
+    elif card["digital"]:
+        result = SetWackinessScore.DIGITAL
+    elif card["border_color"] == "white":
+        result = SetWackinessScore.WHITE_BORDERED
+    elif card["set_type"] == "funny":
+        result = SetWackinessScore.FUNNY
+    elif card["border_color"] == "gold":
+        result = SetWackinessScore.GOLD_BORDERED
+    elif card["set_type"] == "promo":
+        result = SetWackinessScore.PROMOTIONAL
+    else:
+        result = SetWackinessScore.REGULAR
+    return result
+
+
+def _should_skip_card(card: CardDataType) -> bool:
+    # Cards without images. These have no "image_uris" item can’t be printed at all. Unconditionally skip these
+    # Also skip double faced cards that have at least one face without images
+    return card["image_status"] == "missing" or (
+            "card_faces" in card
+            and "image_uris" not in card
+            and any("image_uris" not in face for face in card["card_faces"])
+    )
+
+
+def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
+    """
+    Yields a CardFaceData object for each face found in the card object.
+    The printed name falls back to the English name, if the card has no printed_name key.
+
+    Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
+    this function builds a "card_face" object providing only the required information from the card object itself.
+    """
+    faces = card.get("card_faces") or [
+        FaceDataType(
+            printed_name=_get_card_name(card),
+            image_uris=card["image_uris"],
+            name=card["name"],
         )
-
-    def _get_card_faces(self, card: CardDataType) -> typing.Generator[CardFaceData, None, None]:
-        """
-        Yields a CardFaceData object for each face found in the card object.
-        The printed name falls back to the English name, if the card has no printed_name key.
-
-        Yields a single face, if the card has no "card_faces" key with a faces array. In this case,
-        this function builds a "card_face" object providing only the required information from the card object itself.
-        """
-        faces = card.get("card_faces") or [
-            FaceDataType(
-                printed_name=self._get_card_name(card),
-                image_uris=card["image_uris"],
-                name=card["name"],
-            )
-        ]
-        return (
-            CardFaceData(
-                self._get_card_name(face),
-                image_uri := (face.get("image_uris") or card["image_uris"])["png"],
-                # (image_uri := self._get_png_image_uri(card, face)),
-                # The API does not expose which side a face is, so get that
-                # detail using the directory structure in the URI. This is kind of a hack, though.
-                "/front/" in image_uri,
-                face_number
-            )
-            for face_number, face in enumerate(faces)
+    ]
+    return (
+        CardFaceData(
+            _get_card_name(face),
+            image_uri := (face.get("image_uris") or card["image_uris"])["png"],
+            # (image_uri := self._get_png_image_uri(card, face)),
+            # The API does not expose which side a face is, so get that
+            # detail using the directory structure in the URI. This is kind of a hack, though.
+            "/front/" in image_uri,
+            face_number
         )
+        for face_number, face in enumerate(faces)
+    )
 
-    @staticmethod
-    def _get_oracle_id(card: CardDataType) -> str:
-        """
-        Reads the oracle_id property of the given card.
 
-        This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
-        card object does not contain the oracle_id.
-        """
-        try:
-            return card["oracle_id"]
-        except KeyError:
-            first_face = card["card_faces"][0]
-            return first_face["oracle_id"]
+def _get_oracle_id(card: CardDataType) -> str:
+    """
+    Reads the oracle_id property of the given card.
 
-    @staticmethod
-    def _get_card_name(card_or_face: CardOrFace) -> str:
-        """
-        Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
-        English cards only have the “name” attribute, so use that as a fallback.
-        """
-        return card_or_face.get("printed_name") or card_or_face["name"]
+    This assumes that both sides of a double-faced card have the same oracle_id, in the case that the parent
+    card object does not contain the oracle_id.
+    """
+    try:
+        return card["oracle_id"]
+    except KeyError:
+        first_face = card["card_faces"][0]
+        return first_face["oracle_id"]
+
+
+def _get_card_name(card_or_face: CardOrFace) -> str:
+    """
+    Reads the card name. Non-English cards have both "printed_name" and "name", so prefer "printed_name".
+    English cards only have the “name” attribute, so use that as a fallback.
+    """
+    return card_or_face.get("printed_name") or card_or_face["name"]
