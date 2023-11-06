@@ -55,6 +55,9 @@ class Application(QApplication):
             argv = sys.argv
         logger.info(f"Starting MTGProxyPrinter version {meta_data.__version__}")
         super().__init__(argv)
+        # Note: The sub-expression '"-style" not in argv' breaks, if "-style" is passed as a value for another
+        # argument or as a positional argument.
+        # (For example, if the user wants to load a document with file name "-style" via command line argument.)
         if platform.system() == "Windows" and "-style" not in argv and not os.getenv("QT_STYLE_OVERRIDE"):
             logger.info("Running on Windows without explicit style set. Use 'fusion', which supports dark mode.")
             # Set a dark-mode compatible style, if on Windows and the user does not override the style.
