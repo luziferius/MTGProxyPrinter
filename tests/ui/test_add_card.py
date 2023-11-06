@@ -29,6 +29,9 @@ from tests.helpers import fill_card_database_with_json_card
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
+LeftButton = Qt.MouseButton.LeftButton
+ClearAndSelect = QItemSelectionModel.SelectionFlag.ClearAndSelect
+StandardButton = QDialogButtonBox.StandardButton
 
 
 @pytest.mark.parametrize("widget_class", [HorizontalAddCardWidget, VerticalAddCardWidget])
@@ -43,11 +46,9 @@ def test_add_card_works_with_art_series_card(qtbot: QtBot, card_db: CardDatabase
     )
     qtbot.add_widget(add_card_widget := widget_class())
     add_card_widget.set_card_database(card_db)
-    add_card_widget.ui.copies_input.setValue(1)
-    add_card_widget.ui.card_name_list.setSelection(QRect(1, 1, 1, 1), QItemSelectionModel.ClearAndSelect)
-    qtbot.mouseClick(add_card_widget.ui.card_name_list, Qt.MouseButton.LeftButton, pos=QPoint(10, 10))
-    qtbot.wait(10)
-    qtbot.mouseClick(
-        add_card_widget.ui.button_box.button(QDialogButtonBox.StandardButton.Ok), Qt.MouseButton.LeftButton
-    )
+    add_card_widget.card_name_filter_updated("")  # Populate the card name list
+    add_card_widget.ui.card_name_list.setSelection(QRect(1, 1, 1, 1), ClearAndSelect)
+    qtbot.mouseClick(add_card_widget.ui.card_name_list, LeftButton, pos=QPoint(10, 10))
+    ok_button = add_card_widget.ui.button_box.button(StandardButton.Ok)
+    qtbot.mouseClick(ok_button, LeftButton, pos=QPoint(10, 10))
     assert_that(add_card_widget._read_card_data_from_ui(), is_(equal_to(expected_card_identification_data)))
