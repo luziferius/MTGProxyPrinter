@@ -363,9 +363,6 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 logger.info(f"Aborting card import after {index} cards due to user request.")
                 self.download_finished.emit()
                 return index
-            if card["object"] != "card":
-                logger.warning(f"Non-card found in card data during import: {card}")
-                continue
             if _should_skip_card(card):
                 skipped_cards += 1
                 db.execute(cached_dedent("""\
@@ -391,7 +388,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
         progress_meter = ProgressMeter(
-            10, "Post-processing card data:",
+            9, "Post-processing card data:",
             self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
         self._insert_related_printings(related_printings)
         progress_meter.advance()
@@ -401,13 +398,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             self.model.store_current_printing_filters(
                 force_update_hidden_column=True, progress_signal=progress_meter.advance)
         # Store the timestamp of this import.
-        db.execute(cached_dedent(
-            """\
-            INSERT INTO LastDatabaseUpdate (reported_card_count)
-                VALUES (?)
-            """),
-            (index,)
-        )
+        db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n",(index,))
         progress_meter.advance()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
