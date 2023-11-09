@@ -457,7 +457,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         the import. This will lead to assignment of wrong data via invalid foreign key relations.
         To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
         """
-        for cache in (self._insert_language, self._insert_card, self._read_printing_filters_from_db):
+        lru_caches = filter(lambda item: hasattr(item, "cache_clear"), self.__dict__)
+        for cache in lru_caches:
             logger.debug(str(cache.cache_info()))
             cache.cache_clear()
         self.set_code_cache.clear()
@@ -547,6 +548,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
         return set_id
 
+    @functools.lru_cache(None)
     def _insert_face_name(self, printed_name: str, language_id: int) -> int:
         """
         Insert the given, printed face name into the database, if it not already stored. Returns the integer
