@@ -443,7 +443,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         oracle_id = _get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
         set_id = self.set_code_cache.get(card["set"])
-        if not set_id:
+        if set_id is None:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
         printing_id = self._handle_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
