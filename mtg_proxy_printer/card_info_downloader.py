@@ -612,26 +612,31 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             needs_update = new_data != db_data
         return printing_id, needs_update
 
-
     def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
         db = self.db
         face_ids: IntTuples = []
         for face in _get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
-            face_id: typing.Tuple[int] = db.execute(cached_dedent(
-                """\
-                INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
-                    SET png_image_uri = excluded.png_image_uri,
-                        face_number = excluded.face_number
-                    RETURNING card_face_id
-                """),
-                (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
-            ).fetchone()
-            if face_id is not None:
-                face_ids.append(face_id)
+            card_face_id: typing.Optional[typing.Tuple[int]] = db.execute(
+                "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
+                (face_name_id, printing_id, face.is_front)).fetchone()
+            if card_face_id is None:
+                card_face_id = db.execute(cached_dedent("""\
+                    INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
+                        VALUES (?, ?, ?, ?, ?)
+                    """),
+                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                ).lastrowid,
+            elif db.execute(
+                    "SELECT png_image_uri <> ? OR face_number <> ? FROM CardFace WHERE card_face_id = ?\n",
+                    (face.image_uri, face.face_number, card_face_id[0])).fetchone()[0]:
+                db.execute(
+                    "UPDATE CardFace SET png_image_uri = ?, face_number = ? WHERE card_face_id = ?\n",
+                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                )
+            if card_face_id is not None:
+                face_ids.append(card_face_id)
         return face_ids
 
     def _insert_card_filters(
