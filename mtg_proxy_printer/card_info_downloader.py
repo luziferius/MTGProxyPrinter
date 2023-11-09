@@ -29,7 +29,7 @@ import urllib.request
 from unittest.mock import patch
 
 import ijson
-from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread, Qt
+from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread, Qt, QRunnable, QThreadPool
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
@@ -56,6 +56,7 @@ BULK_DATA_API_END_POINT = "https://api.scryfall.com/bulk-data/all-cards"
 # Set a default socket timeout to prevent hanging indefinitely, if the network connection breaks while a download
 # is in progress
 socket.setdefaulttimeout(5)
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 IntTuples = typing.List[typing.Tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
@@ -76,9 +77,9 @@ class PrintingData(typing.NamedTuple):
     card_id: int
     set_id: int
     collector_number: str
-    scryfall_id: UUID
     is_oversized: bool
     highres_image: bool
+    scryfall_id: UUID
 
 
 class RelatedPrintingData(typing.NamedTuple):
@@ -98,7 +99,16 @@ class SetWackinessScore(int, enum.Enum):
     OVERSIZED = 10
 
 
-class CardInfoDownloader(QObject):
+class ProgressSignalContainer(QObject):
+    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
+    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
+    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
+    working_state_changed = Signal(bool)
+    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
+    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
+
+
+class CardInfoDownloader(ProgressSignalContainer):
     """
     Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
     Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
@@ -107,12 +117,6 @@ class CardInfoDownloader(QObject):
     This is the public interface. The actual implementation resides in the CardInfoDownloadWorker class, which
     is run asynchronously in another thread.
     """
-    download_progress = Signal(int)  # Emits the total number of processed data after processing each item
-    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
-    download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
-    working_state_changed = Signal(bool)
-    network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
-    other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
 
     card_data_updated = Signal()
     request_import_from_file = Signal(Path)
@@ -126,12 +130,13 @@ class CardInfoDownloader(QObject):
         self.model = model
         self.database_import_worker = CardInfoDatabaseImportWorker(model)  # No parent assignment
         self.database_import_worker.card_data_updated.connect(
-            self.card_data_updated, Qt.ConnectionType.QueuedConnection)
+            self.card_data_updated, QueuedConnection)
         self.worker_thread = QThread()
         self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.database_import_worker.moveToThread(self.worker_thread)
-        self.file_download_worker = self._create_file_download_worker(self.worker_thread)
+        self.file_download_worker = None
+        self.request_download_to_file.connect(self.download_to_file)
         self.request_import_from_file.connect(self.database_import_worker.import_card_data_from_local_file)
         self.request_import_from_url.connect(self.database_import_worker.import_card_data_from_online_api)
         self.database_import_worker.download_begins.connect(self.download_begins)
@@ -144,17 +149,15 @@ class CardInfoDownloader(QObject):
         self.worker_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_file_download_worker(self, thread: QThread) -> "CardInfoFileDownloadWorker":
-        # No Qt parent assignment, because cross-thread parent relationships are unsupported
-        worker = CardInfoFileDownloadWorker()
-        worker.moveToThread(thread)  # Move to thread before connecting signals to create queued connections
-        worker.download_begins.connect(self.download_begins)
-        worker.download_progress.connect(self.download_progress)
-        worker.download_finished.connect(self.download_finished)
-        worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.other_error_occurred.connect(self.other_error_occurred)
-        self.request_download_to_file.connect(worker.store_raw_card_data_in_file)
-        return worker
+    def download_to_file(self, download_path: Path):
+        self.file_download_worker = CardInfoFileDownloader(download_path)
+        signals = self.file_download_worker.signals
+        signals.download_begins.connect(self.download_begins, QueuedConnection)
+        signals.download_progress.connect(self.download_progress, QueuedConnection)
+        signals.download_finished.connect(self.download_finished, QueuedConnection)
+        signals.network_error_occurred.connect(self.network_error_occurred, QueuedConnection)
+        signals.other_error_occurred.connect(self.other_error_occurred, QueuedConnection)
+        QThreadPool.globalInstance().start(self.file_download_worker)
 
     def cancel_running_operations(self):
         if self.worker_thread.isRunning():
@@ -185,13 +188,16 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
     """
     This class implements downloading the raw card data to a file stored in the file system
     """
+    def __init__(self, download_path: Path, parent: QObject = None):
+        super().__init__(parent=parent)
+        self.download_path = download_path
 
-    def store_raw_card_data_in_file(self, download_path: Path):
+    def run_download(self):
         """
         Allows the user to store the raw JSON card data at the given path.
         Accessible by a button in the Debug tab in the Settings window.
         """
-        logger.info(f"Store raw card data as a compressed JSON at path {download_path}")
+        logger.info(f"Store raw card data as a compressed JSON at path {self.download_path}")
         logger.debug("Request bulk data URL from the Scryfall API.")
         url, size = self.get_scryfall_bulk_card_data_url()
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
@@ -207,11 +213,31 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         if monitor.content_length <= 0:
             monitor.content_length = size
         monitor.io_finished.connect(self.download_finished)  # Unlocks UI when finished
-        download_file_path = download_path/file_name
+        download_file_path = self.download_path/file_name
         logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
         with download_file_path.open("wb") as download_file, monitor:
             shutil.copyfileobj(monitor, download_file)
         logger.info("Download completed")
+
+
+class CardInfoFileDownloader(QRunnable):
+    """This runner asynchronously downloads the card data and stores it in the given location"""
+    def __init__(self, download_path: Path):
+        super().__init__()
+        self.signals = ProgressSignalContainer()
+        self.download_path = download_path
+        self.worker = None
+
+    def run(self):
+        signals = self.signals
+        self.worker = worker = CardInfoFileDownloadWorker(self.download_path)
+        worker.download_begins.connect(signals.download_begins)
+        worker.download_progress.connect(signals.download_progress)
+        worker.download_finished.connect(signals.download_finished)
+        worker.network_error_occurred.connect(signals.network_error_occurred)
+        worker.other_error_occurred.connect(signals.other_error_occurred)
+        worker.download_finished.connect(lambda: setattr(self, "worker", None))
+        worker.run_download()
 
 
 class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
@@ -417,9 +443,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         oracle_id = _get_oracle_id(card)
         card_id = self._insert_card(oracle_id)
         set_id = self.set_code_cache.get(card["set"])
-        if not set_id:
+        if set_id is None:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
-        printing_id = self._insert_printing(card, card_id, set_id)
+        printing_id = self._handle_printing(card, card_id, set_id)
         filter_data = _get_card_filter_data(card)
         self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
@@ -431,7 +457,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         the import. This will lead to assignment of wrong data via invalid foreign key relations.
         To prevent these issues, clear the LRU caches. Also frees RAM by purging data that isn’t used anymore.
         """
-        for cache in (self._insert_language, self._insert_card, self._read_printing_filters_from_db):
+        lru_caches = filter(lambda item: hasattr(item, "cache_clear"), self.__dict__)
+        for cache in lru_caches:
             logger.debug(str(cache.cache_info()))
             cache.cache_clear()
         self.set_code_cache.clear()
@@ -521,6 +548,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         set_id, = db.execute('SELECT set_id FROM MTGSet WHERE set_code = ?\n', (set_abbr,)).fetchone()
         return set_id
 
+    @functools.lru_cache(None)
     def _insert_face_name(self, printed_name: str, language_id: int) -> int:
         """
         Insert the given, printed face name into the database, if it not already stored. Returns the integer
@@ -536,41 +564,53 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "INSERT INTO FaceName (card_name, language_id) VALUES (?, ?)\n", parameters).lastrowid
         return face_name_id
 
-    def _insert_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
+    def _handle_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
         data = PrintingData(
-            card_id,
-            set_id,
-            card["collector_number"],
-            card["id"],
-            card["oversized"],
-            card["highres_image"],
+            card_id, set_id, card["collector_number"], card["oversized"], card["highres_image"], card["id"],
         )
-        db.execute(cached_dedent(
-            """\
-            INSERT INTO Printing (card_id, set_id, collector_number, scryfall_id, is_oversized, highres_image)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT (scryfall_id) DO UPDATE
-                    SET card_id = excluded.card_id,
-                        set_id = excluded.set_id,
-                        collector_number = excluded.collector_number,
-                        is_oversized = excluded.is_oversized,
-                        highres_image = excluded.highres_image
-                WHERE card_id <> excluded.card_id
-                   OR set_id <> excluded.set_id
-                   OR collector_number <> excluded.collector_number
-                   OR is_oversized <> excluded.is_oversized
-                   OR highres_image <> excluded.highres_image
-            """), data,
-        )
-        printing_id, = db.execute(cached_dedent(
-            """\
-            SELECT printing_id
-                FROM Printing
-                WHERE scryfall_id = ?
-            """), (data.scryfall_id,)
-        ).fetchone()
+        printing_id, needs_update = self._is_printing_present(data)
+        if printing_id is None:
+            printing_id = db.execute(cached_dedent("""\
+                INSERT INTO Printing (card_id, set_id, collector_number, is_oversized, highres_image, scryfall_id)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """), data,
+            ).lastrowid
+        if needs_update:
+            db.execute(cached_dedent("""\
+                UPDATE Printing
+                  SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?
+                  WHERE printing_id = ?
+                """),
+                (*data[:5], printing_id),
+            )
         return printing_id
+
+    def _is_printing_present(self, new_data: PrintingData) -> typing.Tuple[typing.Optional[int], bool]:
+        """
+        Returns tuple printing_id, needs_update for the given printing data.
+        The printing_id returns the id for the given printing, if in database, or None, if not present.
+        needs_update is True, if the printing is present and needs a database update, False otherwise.
+        """
+        db = self.db
+        printing_id, = db.execute(cached_dedent("""\
+            SELECT printing_id
+              FROM Printing
+              WHERE scryfall_id = ?
+            """), (new_data.scryfall_id,)
+        ).fetchone() or (None,)
+        needs_update = False
+        if printing_id is not None:
+            card_id, set_id, collector_number, is_oversized, highres_image = db.execute(cached_dedent("""\
+            SELECT card_id, set_id, collector_number, is_oversized, highres_image
+                FROM Printing
+                WHERE printing_id = ?
+            """), (printing_id,)).fetchone()
+            # Note: No db round-trip for the scryfall_id, since it is unique and was used to look up the printing_id.
+            db_data = PrintingData(
+                card_id, set_id, collector_number, bool(is_oversized), bool(highres_image), new_data.scryfall_id)
+            needs_update = new_data != db_data
+        return printing_id, needs_update
 
     def _insert_card_faces(self, card: CardDataType, language_id: int, printing_id: int) -> IntTuples:
         """Inserts all faces of the given card together with their names."""
@@ -578,19 +618,25 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         face_ids: IntTuples = []
         for face in _get_card_faces(card):
             face_name_id = self._insert_face_name(face.printed_face_name, language_id)
-            face_id: typing.Tuple[int] = db.execute(cached_dedent(
-                """\
-                INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
-                    VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT (printing_id, face_name_id, is_front) DO UPDATE
-                    SET png_image_uri = excluded.png_image_uri,
-                        face_number = excluded.face_number
-                    RETURNING card_face_id
-                """),
-                (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
-            ).fetchone()
-            if face_id is not None:
-                face_ids.append(face_id)
+            card_face_id: typing.Optional[typing.Tuple[int]] = db.execute(
+                "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
+                (face_name_id, printing_id, face.is_front)).fetchone()
+            if card_face_id is None:
+                card_face_id = db.execute(cached_dedent("""\
+                    INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
+                        VALUES (?, ?, ?, ?, ?)
+                    """),
+                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                ).lastrowid,
+            elif db.execute(
+                    "SELECT png_image_uri <> ? OR face_number <> ? FROM CardFace WHERE card_face_id = ?\n",
+                    (face.image_uri, face.face_number, card_face_id[0])).fetchone()[0]:
+                db.execute(
+                    "UPDATE CardFace SET png_image_uri = ?, face_number = ? WHERE card_face_id = ?\n",
+                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                )
+            if card_face_id is not None:
+                face_ids.append(card_face_id)
         return face_ids
 
     def _insert_card_filters(
