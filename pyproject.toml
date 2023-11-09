@@ -33,7 +33,8 @@ dependencies = [
     "PySide6-Essentials >= 6.4.0",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
-    "pint",
+    "pint < 0.22; platform_system == 'windows'",  # 0.22 dropped Py 3.8 support, thus Win7 support
+    "pint; platform_system != 'windows'",
     "delegateto == 1.5",
     "PyHamcrest >= 1.8.1",
     "truststore; python_version >= '3.10'",
@@ -113,7 +114,8 @@ deps =
     PySide6-Essentials >= 6.4.0
     ijson >= 3.1.0; python_version < '3.11'
     ijson >= 3.2.0; python_version >= '3.11'
-    pint
+    pint < 0.22; platform_system == 'windows'
+    pint; platform_system != 'windows'
     delegateto == 1.5
     PyHamcrest >= 1.8.1
     truststore; python_version >= '3.10'

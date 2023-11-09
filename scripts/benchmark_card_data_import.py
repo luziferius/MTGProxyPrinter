@@ -60,13 +60,15 @@ to_be_profiled_functions = {
         "_parse_single_printing",
         "_insert_set",
         "_insert_card_faces",
-        "_get_card_filter_data",
         "_insert_card_filters",
         "_clean_unused_data",
         "_insert_card",
-        "_insert_printing",
+        "_handle_printing",
         "_insert_face_name",
     ],
+    mtg_proxy_printer.card_info_downloader: [
+        "_get_card_filter_data",
+    ]
 }
 
 
