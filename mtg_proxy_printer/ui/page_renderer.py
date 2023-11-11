@@ -272,12 +272,11 @@ class PageScene(QGraphicsScene):
         self.page_number_text.setX(page_number_x)
 
     def _update_page_number_text(self):
-        model = self.selected_page.model()
         if self.page_number_text not in self.text_items:
             return
         logger.debug("Updating page number text")
         page = self.selected_page.row() + 1
-        total_pages = model.rowCount()
+        total_pages = self.document.rowCount()
         self.page_number_text.setText(f"{page}/{total_pages}")
 
     @Slot(PageLayoutSettings)
