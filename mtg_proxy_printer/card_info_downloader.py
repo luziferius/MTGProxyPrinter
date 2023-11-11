@@ -31,7 +31,9 @@ import ijson
 from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread, Qt, QRunnable, QThreadPool
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME, PrintingFilterUpdater
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
+from mtg_proxy_printer.sqlite_helpers import cached_dedent
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger

@@ -26,7 +26,7 @@ from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.carddb import PrintingFilterUpdater
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
@@ -270,9 +270,7 @@ class SettingsWindow(QDialog):
             self.process_updated.emit,
             self.process_finished.emit
         )
-        updater = mtg_proxy_printer.model.carddb.PrintingFilterUpdater(
-            self.card_db
-        )
+        updater = PrintingFilterUpdater(self.card_db)
         updater.signals.advance_progress.connect(progress_meter.advance, QueuedConnection)
         updater.signals.update_completed.connect(self.process_finished, QueuedConnection)
         updater.signals.update_completed.connect(

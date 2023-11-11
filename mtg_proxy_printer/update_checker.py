@@ -27,11 +27,11 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal as Signal
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer import settings
-from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
 from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.stop_thread import stop_thread
-from mtg_proxy_printer.sqlite_helpers import open_database
+from mtg_proxy_printer.sqlite_helpers import open_database, cached_dedent
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
