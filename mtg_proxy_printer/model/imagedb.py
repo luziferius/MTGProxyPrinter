@@ -337,8 +337,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         except socket.timeout as e:
             self.last_error_message = self._handle_network_error_during_download(
                 card, f"Reading from socket failed: {e}")
-        finally:
-            self.download_finished.emit()
 
     def _get_image_synchronous(self, card: Card):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
