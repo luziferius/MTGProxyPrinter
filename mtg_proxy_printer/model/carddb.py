@@ -21,11 +21,12 @@ import enum
 import itertools
 import functools
 import pathlib
+import sqlite3
 import textwrap
 import typing
 
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal, QRunnable
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
@@ -41,6 +42,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 StringList = typing.List[str]
 OptionalString = typing.Optional[str]
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
@@ -308,12 +310,9 @@ class CardDatabase(QObject):
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
-        db.execute("BEGIN IMMEDIATE TRANSACTION -- __init__()\n")
-        update_ui = self.store_current_printing_filters()
-        db.commit()
-        db.execute("BEGIN DEFERRED TRANSACTION -- __init__()\n")
-        if update_ui:
-            self.card_data_updated.emit()
+        filter_updater = PrintingFilterUpdater(self, db)
+        filter_updater.run()
+        self.begin_transaction()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -334,7 +333,13 @@ class CardDatabase(QObject):
         atexit.register(close_db)
         self._exit_hook = close_db
 
+    def restart_transaction(self):
+        logger.info("Rolling back active read transaction")
+        self.db.rollback()
+        self.begin_transaction()
+
     def begin_transaction(self):
+        logger.info("Starting new read transaction")
         self.db.execute("BEGIN DEFERRED TRANSACTION")
 
     def has_data(self) -> bool:
@@ -360,15 +365,6 @@ class CardDatabase(QObject):
         result = [
             lang for lang, in self.db.execute(
                 "SELECT language FROM PrintLanguage ORDER BY language ASC -- get_all_languages()\n")
-        ]
-        return result
-
-    def get_all_set_codes(self) -> StringList:
-        """Returns all known set codes, sorted ascendingly."""
-        logger.debug("Reading all known set codes")
-        result = [
-            code for code, in self.db.execute(
-                "SELECT set_code FROM MTGSet ORDER BY set_code ASC -- get_all_set_codes()\n")
         ]
         return result
 
@@ -963,17 +959,75 @@ class CardDatabase(QObject):
             bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
         )
 
-    def store_current_printing_filters(
-            self, *,
-            force_update_hidden_column: bool = False,
-            progress_signal: typing.Callable[[], None] = None) -> bool:
-        if progress_signal is None:
-            progress_signal = (lambda: None)
+
+
+class PrintingFilterUpdater(QRunnable):
+    """
+    This class updates the printing filters stored in the database.
+    Syncs the db-internal printing filters with the filters stored in the configuration file,
+    and updates the is_hidden columns.
+    """
+    class SignalContainer(QObject):
+        ui_update_required = Signal()
+        update_completed = Signal()
+        error_occurred = Signal(str)
+        advance_progress = Signal()
+
+
+    def __init__(
+            self, model: CardDatabase, db_connection: sqlite3.Connection = None, *,
+            force_update_hidden_column: bool = False):
+        """
+        :param model: CardDatabase instance to work on
+        :param force_update_hidden_column: Force re-writing the is_hidden columns. The columns need updates,
+          if the filter values change (determined internally) or the card data changes.
+          This boolean can be used by the card data update to enforce refreshing
+          the cached is_hidden, as the value may change for each card, even if the filters stayed constant.
+        :param progress_signal: Optional callable, called between each run SQL statement. Useful for progress reporting
+        """
+        super().__init__()
+        self.signals = signals = PrintingFilterUpdater.SignalContainer()
+        self.model = model
+        signals.ui_update_required.connect(model.restart_transaction, QueuedConnection)
+        signals.ui_update_required.connect(model.card_data_updated, QueuedConnection)
+        self.force_update_hidden_column = force_update_hidden_column
+        self._db = db_connection
+        self.update_ui = False
+
+    @property
+    def db(self) -> sqlite3.Connection:
+        # Delay connection creation until first access.
+        # Avoids opening connections that aren't actually used and opens the connection
+        # in the thread that actually uses it.
+        if self._db is None:
+            self._db = mtg_proxy_printer.sqlite_helpers.open_database(
+                self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
+        return self._db
+
+    def run(self):
+        logger.debug(f"Called {self.__class__.__name__}.run()")
+        try:
+            self.update_ui = self.store_current_printing_filters()
+        except sqlite3.Error as e:
+            logger.exception(e)
+            self.signals.error_occurred.emit(e.sqlite_errorname)
+            self.db.rollback()
+        finally:
+            self.signals.update_completed.emit()
+            logger.debug(f"Closing connection {self.__class__.__name__}.db")
+            if self.db is not self.model.db:
+                self.db.close()
+                self._db = None
+
+    def store_current_printing_filters(self) -> bool:
         db = self.db
+        progress_signal = self.signals.advance_progress.emit
+        db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         old_filter_removed = self._remove_old_printing_filters(section)
         filters_need_update = self._filters_in_db_differ_from_settings(section)
+
         if filters_need_update:
             logger.info("Printing filters changed in the settings, update the database.")
             db.executemany(
@@ -990,10 +1044,43 @@ class CardDatabase(QObject):
         if set_code_updated := self.set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         progress_signal()
-        update_ui = filters_need_update or old_filter_removed or force_update_hidden_column or set_code_updated
+        update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
             self._update_cached_data(progress_signal)
+        db.commit()
+        if update_ui:
+            self.signals.ui_update_required.emit()
         return update_ui
+
+    def set_code_filters_need_update(self) -> bool:
+        return self.get_currently_enabled_set_code_filters() != self.get_configured_set_code_filters()
+
+    def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
+        filters_in_db: typing.Dict[str, bool] = {
+            key: bool(value) for key, value
+            in self.db.execute(cached_dedent("""\
+            SELECT filter_name, filter_active --_filters_in_db_differ_from_settings()
+              FROM DisplayFilters
+              WHERE filter_name LIKE 'hide-%'
+            """), ()).fetchall()
+        }
+        boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
+        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
+        return filters_in_settings != filters_in_db
+
+    def _remove_old_printing_filters(self, section) -> bool:
+        stored_filters = {
+            filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
+        }
+        known_filters = set(section.keys())
+        old_filters = stored_filters - known_filters
+        if old_filters:
+            logger.info(f"Removing old printing filters from the database: {old_filters}")
+            self.db.executemany(
+                "DELETE FROM DisplayFilters WHERE filter_name = ?",
+                ((filter_name,) for filter_name in old_filters)
+            )
+        return bool(old_filters)
 
     def _update_set_code_filters_in_db(self):
         # Because this is called at application start if the user changed the settings file, and whenever the filter settings
@@ -1050,41 +1137,20 @@ class CardDatabase(QObject):
         self.db.execute("DROP TABLE RemovedSetFilters -- store_current_printing_filters()\n")
         self.db.execute("DROP TABLE AddedSetFilters -- store_current_printing_filters()\n")
 
-    def set_code_filters_need_update(self) -> bool:
-        return self.get_currently_enabled_set_code_filters() != self.get_configured_set_code_filters()
-
     def get_configured_set_code_filters(self) -> typing.Set[str]:
         # The intersection removes all words that are not known set codes
         return mtg_proxy_printer.settings.parse_card_set_filters().intersection(
             self.get_all_set_codes()
         )
 
-    def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
-        filters_in_db: typing.Dict[str, bool] = {
-            key: bool(value) for key, value
-            in self.db.execute(cached_dedent("""\
-            SELECT filter_name, filter_active --_filters_in_db_differ_from_settings()
-              FROM DisplayFilters
-              WHERE filter_name LIKE 'hide-%'
-            """), ()).fetchall()
-        }
-        boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
-        filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
-        return filters_in_settings != filters_in_db
-
-    def _remove_old_printing_filters(self, section) -> bool:
-        stored_filters = {
-            filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
-        }
-        known_filters = set(section.keys())
-        old_filters = stored_filters - known_filters
-        if old_filters:
-            logger.info(f"Removing old printing filters from the database: {old_filters}")
-            self.db.executemany(
-                "DELETE FROM DisplayFilters WHERE filter_name = ?",
-                ((filter_name,) for filter_name in old_filters)
-            )
-        return bool(old_filters)
+    def get_all_set_codes(self) -> StringList:
+        """Returns all known set codes."""
+        logger.debug("Reading all known set codes")
+        result = [
+            code for code, in self.db.execute(
+                "SELECT set_code FROM MTGSet -- get_all_set_codes()\n")
+        ]
+        return result
 
     def _update_cached_data(self, progress_signal: typing.Callable[[], None]):
         logger.debug("Update the Printing.is_hidden column")
@@ -1156,3 +1222,9 @@ class CardDatabase(QObject):
             "SELECT set_code FROM CurrentlyEnabledSetCodeFilters -- get_currently_enabled_set_code_filters()\n")
         result = {value for (value,) in values}
         return result
+
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
+        if result := self.db.execute(query, parameters).fetchone():
+            return result[0]
+        else:
+            return None

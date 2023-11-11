@@ -14,18 +14,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import functools
 import logging
 import pathlib
-import sqlite3
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths, QThreadPool
 from PyQt5.QtWidgets import QDialogButtonBox, QCheckBox, \
-    QFileDialog, QLineEdit, QMessageBox, QWidget, QApplication, QDialog
+    QFileDialog, QLineEdit, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import PrintingFilterUpdater
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
@@ -50,7 +51,7 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
     None: Qt.PartiallyChecked
 }
 check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
-
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 class SettingsWindow(QDialog):
     """Implements the Settings window."""
@@ -70,6 +71,7 @@ class SettingsWindow(QDialog):
         self.language_model = language_model
         self.document = document
         self.card_db = document.card_db
+        self.progress_meter = None
         self.requested_card_download.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.preferred_language_combo_box.setModel(self.language_model)
         ui.page_configuration_group_box.setTitle("Default settings for new documents")
@@ -81,12 +83,6 @@ class SettingsWindow(QDialog):
 
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def filter_update_progress_monitor(self, step: int):
-        self.process_updated.emit(step)
-        # Required here, because it is running synchronously in the main thread
-        # Because the main window UI is largely disabled, this should pose no real harm
-        QApplication.instance().processEvents()
 
     def _setup_button_box(self):
         button_box = self.ui.button_box
@@ -268,27 +264,21 @@ class SettingsWindow(QDialog):
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
         section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
-        progress_meter = ProgressMeter(
+        self.progress_meter = progress_meter = ProgressMeter(
             6, "Processing updated card filters:",
             self.long_running_process_begins.emit,
-            self.filter_update_progress_monitor,
+            self.process_updated.emit,
             self.process_finished.emit
         )
-        db = self.card_db.db
-        update_ui = False
-        db.rollback()
-        try:
-            db.execute("BEGIN IMMEDIATE TRANSACTION")
-            update_ui = self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
-            db.commit()
-        except sqlite3.Error as e:
-            self.error_occurred.emit(e.sqlite_errorname)
-            raise e
-        finally:
-            progress_meter.finish()
-            db.execute("BEGIN DEFERRED TRANSACTION")
-            if update_ui:
-                self.card_db.card_data_updated.emit()
+        updater = mtg_proxy_printer.model.carddb.PrintingFilterUpdater(
+            self.card_db
+        )
+        updater.signals.advance_progress.connect(progress_meter.advance, QueuedConnection)
+        updater.signals.update_completed.connect(self.process_finished, QueuedConnection)
+        updater.signals.update_completed.connect(
+            functools.partial(setattr, self, "progress_meter", None), QueuedConnection)
+        updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
+        QThreadPool.globalInstance().start(updater)
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]
