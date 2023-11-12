@@ -1,5 +1,5 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -9,10 +9,11 @@
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import importlib.resources
 import pathlib
 import re
@@ -32,6 +33,8 @@ __all__ = [
     "check_database_schema_version",
     "create_in_memory_database",
     "read_resource_text",
+    "cached_dedent",
+    "validate_database_schema"
 ]
 
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>\d+)\s*;", re.ASCII)
@@ -89,7 +92,7 @@ def open_database(
     db = sqlite3.connect(db_path, check_same_thread=check_same_thread)
     logger.debug(f"Connected SQLite database {location}.")
     # These settings are volatile, thus have to be set for each opened connection
-    db.executescript("PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF;")
+    db.executescript("PRAGMA foreign_keys = ON; PRAGMA trusted_schema = OFF;\n")
     logger.debug("Enabled SQLite3 foreign keys support.")
     if should_create_schema:
         populate_database_schema(db, schema_name)
@@ -186,3 +189,9 @@ def validate_database_schema(
             contains_exactly(*db_known_good.execute(indices_query).fetchall()),
             "Given file inconsistent: Unexpected indices")
     return user_schema_version
+
+
+@functools.lru_cache(None)
+def cached_dedent(text: str):
+    """Wraps textwrap.dedent() in an LRU cache."""
+    return textwrap.dedent(text)

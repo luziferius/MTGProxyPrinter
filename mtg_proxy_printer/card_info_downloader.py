@@ -26,13 +26,14 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from unittest.mock import patch
 
 import ijson
 from PyQt5.QtCore import pyqtSignal as Signal, QObject, QThread, Qt, QRunnable, QThreadPool
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
+from mtg_proxy_printer.sqlite_helpers import cached_dedent
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -420,9 +421,10 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         progress_meter.advance()
         self._clean_unused_data(face_ids)
         progress_meter.advance()
-        with patch.object(self.model, "db", self.db):
-            self.model.store_current_printing_filters(
-                force_update_hidden_column=True, progress_signal=progress_meter.advance)
+        updater = PrintingFilterUpdater(
+            self.model, self.db, force_update_hidden_column=True)
+        updater.signals.advance_progress.connect(progress_meter.advance)
+        updater.run()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n",(index,))
         progress_meter.advance()

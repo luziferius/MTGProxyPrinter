@@ -398,7 +398,7 @@ class Document(QAbstractItemModel):
         data = set(itertools.chain.from_iterable(
             map(self._get_page_content_as_scryfall_ids, self.pages)
         ))
-        self.card_db.begin_transaction()
+        self.card_db.db.rollback()
         self.card_db.db.executemany(
             r"""
             INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
@@ -409,6 +409,7 @@ class Document(QAbstractItemModel):
             data
         )
         self.card_db.db.commit()
+        self.card_db.begin_transaction()
 
     def has_missing_images(self) -> bool:
         try:

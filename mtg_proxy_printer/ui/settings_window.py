@@ -14,18 +14,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import functools
 import logging
 import pathlib
-import sqlite3
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths, QThreadPool
 from PyQt5.QtWidgets import QDialogButtonBox, QCheckBox, \
-    QFileDialog, QLineEdit, QMessageBox, QWidget, QApplication, QDialog
+    QFileDialog, QLineEdit, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
@@ -50,7 +51,7 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
     None: Qt.PartiallyChecked
 }
 check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
-
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 class SettingsWindow(QDialog):
     """Implements the Settings window."""
@@ -81,12 +82,6 @@ class SettingsWindow(QDialog):
 
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def filter_update_progress_monitor(self, step: int):
-        self.process_updated.emit(step)
-        # Required here, because it is running synchronously in the main thread
-        # Because the main window UI is largely disabled, this should pose no real harm
-        QApplication.instance().processEvents()
 
     def _setup_button_box(self):
         button_box = self.ui.button_box
@@ -268,27 +263,10 @@ class SettingsWindow(QDialog):
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
         section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
-        progress_meter = ProgressMeter(
-            6, "Processing updated card filters:",
-            self.long_running_process_begins.emit,
-            self.filter_update_progress_monitor,
-            self.process_finished.emit
-        )
-        db = self.card_db.db
-        update_ui = False
-        db.rollback()
-        try:
-            db.execute("BEGIN IMMEDIATE TRANSACTION")
-            update_ui = self.card_db.store_current_printing_filters(progress_signal=progress_meter.advance)
-            db.commit()
-        except sqlite3.Error as e:
-            self.error_occurred.emit(e.sqlite_errorname)
-            raise e
-        finally:
-            progress_meter.finish()
-            db.execute("BEGIN DEFERRED TRANSACTION")
-            if update_ui:
-                self.card_db.card_data_updated.emit()
+        updater = PrintingFilterUpdater(self.card_db)
+        updater.connect_progress_signals(self.long_running_process_begins, self.process_updated, self.process_finished)
+        updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
+        QThreadPool.globalInstance().start(updater)
 
     def _save_documents_settings(self):
         documents_section = mtg_proxy_printer.settings.settings["documents"]

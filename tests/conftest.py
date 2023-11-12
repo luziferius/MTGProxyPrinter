@@ -30,6 +30,7 @@ from hamcrest import assert_that, is_
 from mtg_proxy_printer.stop_thread import stop_thread
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, IMAGE_SIZE
@@ -44,6 +45,7 @@ def card_db(request) -> CardDatabase:
         card_db = CardDatabase(":memory:", check_same_thread=False)
     if request.param:
         card_db.db.execute("PRAGMA reverse_unordered_selects = TRUE")
+    PrintingFilterUpdater(card_db, card_db.db).run()
     return card_db
 
 
