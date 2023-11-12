@@ -57,6 +57,7 @@ class PrintingFilterUpdater(QRunnable):
         signals.ui_update_required.connect(model.restart_transaction, QueuedConnection)
         signals.ui_update_required.connect(model.card_data_updated, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
+        self.db_passed = bool(db_connection)
         self._db = db_connection
         self.update_ui = False
 
@@ -83,8 +84,8 @@ class PrintingFilterUpdater(QRunnable):
             self.db.rollback()
         finally:
             self.signals.update_completed.emit()
-            logger.debug(f"Closing connection {self.__class__.__name__}.db")
-            if self.db is not self.model.db:
+            if not self.db_passed:
+                logger.debug(f"Closing connection {self.__class__.__name__}.db")
                 self.db.close()
                 self._db = None
 
