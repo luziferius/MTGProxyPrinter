@@ -45,11 +45,15 @@ class PrintingFilterUpdater(QRunnable):
             force_update_hidden_column: bool = False):
         """
         :param model: CardDatabase instance to work on
+        :param db_connection: Database connection to use. Only useful for testing. During normal operation, this class opens
+          a separate connection by using the database filesystem path stored in the passed-in model.
+          This doesn't work for in-memory databases used by unit tests.
+          Thus, it requires an option to pass an existing connection to override the logic that opens new connections,
+          and also suppresses automatic connection closure during tests.
         :param force_update_hidden_column: Force re-writing the is_hidden columns. The columns need updates,
           if the filter values change (determined internally) or the card data changes.
           This boolean can be used by the card data update to enforce refreshing
           the cached is_hidden, as the value may change for each card, even if the filters stayed constant.
-        :param progress_signal: Optional callable, called between each run SQL statement. Useful for progress reporting
         """
         super().__init__()
         self.signals = signals = PrintingFilterUpdater.SignalContainer()
