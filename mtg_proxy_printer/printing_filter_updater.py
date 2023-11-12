@@ -74,7 +74,7 @@ class PrintingFilterUpdater(QRunnable):
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
-            if self.db is self.model.db:
+            if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
             self.update_ui = self.store_current_printing_filters()
