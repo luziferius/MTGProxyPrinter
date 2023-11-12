@@ -22,8 +22,10 @@ from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, Qt
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
+    from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, logger, StringList
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
+from mtg_proxy_printer.progress_meter import ProgressMeter
 
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
@@ -34,10 +36,15 @@ class PrintingFilterUpdater(QRunnable):
     and updates the is_hidden columns.
     """
     class SignalContainer(QObject):
-        ui_update_required = Signal()
+        begin_update = Signal(int, str)
+        progress = Signal(int)
         update_completed = Signal()
-        error_occurred = Signal(str)
         advance_progress = Signal()
+        ui_update_required = Signal()
+        error_occurred = Signal(str)
+
+    PROGRESS_STEP_COUNT = 6
+    PROGRESS_MESSAGE = "Processing updated card filters:"
 
 
     def __init__(
@@ -58,12 +65,33 @@ class PrintingFilterUpdater(QRunnable):
         super().__init__()
         self.signals = signals = PrintingFilterUpdater.SignalContainer()
         self.model = model
+        self.progress = 0
         signals.ui_update_required.connect(model.restart_transaction, QueuedConnection)
         signals.ui_update_required.connect(model.card_data_updated, QueuedConnection)
         self.force_update_hidden_column = force_update_hidden_column
         self.db_passed = bool(db_connection)
         self._db = db_connection
         self.update_ui = False
+
+    def connect_main_window_signals(self, main_window: "MainWindow"):
+        progress_bars = main_window.progress_bars
+        self.connect_progress_signals(
+            progress_bars.begin_independent_progress,
+            progress_bars.set_independent_progress,
+            progress_bars.end_independent_progress
+        )
+
+    def connect_progress_signals(self, begin_signal, progress_signal, end_signal):
+        signals = self.signals
+        signals.begin_update.connect(begin_signal, QueuedConnection)
+        signals.progress.connect(progress_signal, QueuedConnection)
+        signals.update_completed.connect(end_signal, QueuedConnection)
+
+
+    def advance_progress(self):
+        self.progress += 1
+        self.signals.progress.emit(self.progress)
+        self.signals.advance_progress.emit()
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -81,6 +109,7 @@ class PrintingFilterUpdater(QRunnable):
             if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
+            self.signals.begin_update.emit(self.PROGRESS_STEP_COUNT, self.PROGRESS_MESSAGE)
             self.update_ui = self.store_current_printing_filters()
         except sqlite3.Error as e:
             logger.exception(e)
@@ -95,7 +124,7 @@ class PrintingFilterUpdater(QRunnable):
 
     def store_current_printing_filters(self) -> bool:
         db = self.db
-        progress_signal = self.signals.advance_progress.emit
+        progress_signal = self.advance_progress
         db.execute("BEGIN IMMEDIATE TRANSACTION\n")
         section = mtg_proxy_printer.settings.settings["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()

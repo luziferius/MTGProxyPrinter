@@ -302,9 +302,6 @@ class CardDatabase(QObject):
         self._exit_hook = None
         if db_path != ":memory:":
             self._register_exit_hook()
-        from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater  # Break import cycle
-        filter_updater = PrintingFilterUpdater(self, db)
-        filter_updater.run()
         self.begin_transaction()
 
     def _register_exit_hook(self):

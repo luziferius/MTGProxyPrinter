@@ -71,7 +71,6 @@ class SettingsWindow(QDialog):
         self.language_model = language_model
         self.document = document
         self.card_db = document.card_db
-        self.progress_meter = None
         self.requested_card_download.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.preferred_language_combo_box.setModel(self.language_model)
         ui.page_configuration_group_box.setTitle("Default settings for new documents")
@@ -264,17 +263,8 @@ class SettingsWindow(QDialog):
         self.ui.card_filter_general_settings.save_settings(section)
         self.ui.card_filter_format_settings.save_settings(section)
         section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
-        self.progress_meter = progress_meter = ProgressMeter(
-            6, "Processing updated card filters:",
-            self.long_running_process_begins.emit,
-            self.process_updated.emit,
-            self.process_finished.emit
-        )
         updater = PrintingFilterUpdater(self.card_db)
-        updater.signals.advance_progress.connect(progress_meter.advance, QueuedConnection)
-        updater.signals.update_completed.connect(self.process_finished, QueuedConnection)
-        updater.signals.update_completed.connect(
-            functools.partial(setattr, self, "progress_meter", None), QueuedConnection)
+        updater.connect_progress_signals(self.long_running_process_begins, self.process_updated, self.process_finished)
         updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
         QThreadPool.globalInstance().start(updater)
 
