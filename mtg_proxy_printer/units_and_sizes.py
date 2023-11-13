@@ -110,7 +110,18 @@ class RelatedCardType(typing.TypedDict):
     type_line: str
     uri: str
 
-class _CardCoreFields(typing.TypedDict):
+
+_CardPreviewFields = typing.TypedDict("_CardPreviewFields", {
+    # Note: Requires this syntax, because keys are not valid python identifiers
+    "preview.previewed_at": str,
+    "preview.source_uri": WEB_URI,
+    "preview.source": str,
+})
+
+class CardDataType(_CardPreviewFields):
+    """Card data type modelled according to https://scryfall.com/docs/api/cards"""
+
+    # Core fields
     arena_id: NotRequired[int]
     id: UUID
     lang: str
@@ -128,7 +139,7 @@ class _CardCoreFields(typing.TypedDict):
     scryfall_uri: WEB_URI
     uri: API_URI
 
-class _CardGameplayFields(typing.TypedDict):
+    # Gameplay fields
     all_parts: NotRequired[typing.List[RelatedCardType]]
     card_faces: NotRequired[typing.List[FaceDataType]]
     cmc: float
@@ -152,7 +163,7 @@ class _CardGameplayFields(typing.TypedDict):
     toughness: NotRequired[str]
     type_line: str
 
-class _CardPrintFields(typing.TypedDict):
+    # Print fields
     artist: NotRequired[str]
     artist_ids: NotRequired[typing.List[UUID]]
     attraction_lights: NotRequired[IntList]
@@ -197,18 +208,6 @@ class _CardPrintFields(typing.TypedDict):
     variation_of: NotRequired[UUID]
     security_stamp: NotRequired[str]
     watermark: NotRequired[str]
-
-_CardPreviewFields = typing.TypedDict("_CardPreviewFields", {
-    # Note: Requires this syntax, because keys are not valid python identifiers
-    "preview.previewed_at": str,
-    "preview.source_uri": WEB_URI,
-    "preview.source": str,
-})
-
-class CardDataType(_CardCoreFields, _CardGameplayFields, _CardPrintFields, _CardPreviewFields):
-    """Card data type modelled according to https://scryfall.com/docs/api/cards"""
-    pass
-
 
 class BulkDataType(typing.TypedDict):
     """
