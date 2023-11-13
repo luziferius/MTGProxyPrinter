@@ -674,7 +674,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         "hide-gold-bordered": card["border_color"] == "gold",
         "hide-borderless": card["border_color"] == "borderless",
         # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-        "hide-reversible-cards": card["layout"] == "reversible",
+        "hide-reversible-cards": card["layout"] == "reversible_card",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
