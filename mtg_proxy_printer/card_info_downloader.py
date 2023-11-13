@@ -739,6 +739,8 @@ def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, 
             printed_name=_get_card_name(card),
             image_uris=card["image_uris"],
             name=card["name"],
+            object=card["object"],
+            mana_cost=card["mana_cost"],
         )
     ]
     return (
