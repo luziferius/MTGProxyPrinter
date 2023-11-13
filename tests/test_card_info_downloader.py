@@ -459,6 +459,7 @@ DataPath = typing.List[typing.Union[str, int]]
     (TestCaseData("regular_english_card"), ["set"], "tsa"),
     (TestCaseData("regular_english_card"), ["set_name"], "Time Spiral Altered"),
     (TestCaseData("regular_english_card"), ["scryfall_set_uri"], "https://scryfall.com/sets/tsa"),
+    (TestCaseData("regular_english_card"), ["released_at"], "2000-01-01"),  # Dating back is allowed.
     (TestCaseData("regular_english_card"), ["collector_number"], "1234"),
     (TestCaseData("regular_english_card"), ["oversized"], True),
     (TestCaseData("regular_english_card"), ["highres_image"], False),
@@ -474,8 +475,27 @@ def test_updates_changed_value_on_re_import(
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
+        # Assert within patched context, so that it can see the changed data in the test case data.
         assert_visible_import(card_db, test_case)
 
+
+@pytest.mark.parametrize("test_case, dict_path, value", [
+    # Some sets got additional cards appended to them after initial release. Those have a later release date,
+    # which would shift the whole set release date. Do not allow updating the release date to a later date
+    (TestCaseData("regular_english_card"), ["released_at"], "2020-01-01"),  # English "Fury Sliver" from Time Spiral
+])
+def test_updates_ignores_changed_value_on_re_import(
+        qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
+    json_data = test_case.json_dict
+    to_patch = json_data
+    for item in dict_path[:-1]:
+        to_patch = to_patch[item]
+    assert_that(to_patch, is_(instance_of(dict)), "Setup failed: Walking path did not end in a dict to patch")
+    fill_card_database_with_json_card(qtbot, card_db, json_data)
+    with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
+        fill_card_database_with_json_card(qtbot, card_db, json_data)
+    # Outside the patched context to validate against the original data.
+    assert_visible_import(card_db, test_case)
 
 @pytest.mark.parametrize("json_name, expected_score", [
     ("regular_english_card", SetWackinessScore.REGULAR),
