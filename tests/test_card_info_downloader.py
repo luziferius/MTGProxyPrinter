@@ -462,6 +462,7 @@ DataPath = typing.List[typing.Union[str, int]]
     (TestCaseData("regular_english_card"), ["collector_number"], "1234"),
     (TestCaseData("regular_english_card"), ["oversized"], True),
     (TestCaseData("regular_english_card"), ["highres_image"], False),
+    (TestCaseData("regular_english_card"), ["image_uris", "png"], "https://c1.scryfall.com/file/front/invalid.png"),
 ])
 def test_updates_changed_value_on_re_import(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):

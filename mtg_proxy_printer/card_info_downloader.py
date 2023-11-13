@@ -635,7 +635,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                     (face.image_uri, face.face_number, card_face_id[0])).fetchone()[0]:
                 db.execute(
                     "UPDATE CardFace SET png_image_uri = ?, face_number = ? WHERE card_face_id = ?\n",
-                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                    (face.image_uri, face.face_number, card_face_id[0]),
                 )
             if card_face_id is not None:
                 face_ids.append(card_face_id)
