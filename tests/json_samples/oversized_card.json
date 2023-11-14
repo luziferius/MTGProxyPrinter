@@ -16,16 +16,16 @@
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296"
+    "small": "https://cards.scryfall.io/small/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "normal": "https://cards.scryfall.io/normal/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "large": "https://cards.scryfall.io/large/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "png": "https://cards.scryfall.io/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.jpg?1561757296"
   },
   "mana_cost": "{G}{W}{U}{B}",
   "cmc": 4.0,
-  "type_line": "Legendary Creature — Angel Horror",
+  "type_line": "Legendary Creature — Phyrexian Angel Horror",
   "oracle_text": "Flying, vigilance, deathtouch, lifelink\nAt the beginning of your end step, proliferate. (Choose any number of permanents and/or players, then give each another counter of each kind already there.)",
   "power": "4",
   "toughness": "4",
@@ -51,30 +51,40 @@
   "legalities": {
     "standard": "not_legal",
     "future": "not_legal",
-    "historic": "not_legal",
-    "gladiator": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "not_legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
     "penny": "not_legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
-
+    "paper"
   ],
   "reserved": false,
   "foil": true,
   "nonfoil": false,
+  "finishes": [
+    "foil"
+  ],
   "oversized": true,
   "promo": false,
   "reprint": true,
   "variation": false,
+  "set_id": "caa8f8c4-d0bf-4848-9c66-e2fcabd1585c",
   "set": "oc16",
   "set_name": "Commander 2016 Oversized",
   "set_type": "memorabilia",
@@ -94,26 +104,27 @@
   "illustration_id": "aa6efe75-3fa3-42cd-800e-23320b431646",
   "border_color": "black",
   "frame": "2015",
+  "security_stamp": "oval",
   "full_art": false,
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 1339,
+  "edhrec_rank": 1408,
   "prices": {
     "usd": null,
-    "usd_foil": "15.12",
+    "usd_foil": "14.66",
+    "usd_etched": null,
     "eur": null,
-    "eur_foil": "2.88",
+    "eur_foil": "4.94",
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Atraxa%2C+Praetors%27+Voice&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Atraxa%2C+Praetors%27+Voice&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Atraxa%2C+Praetors%27+Voice",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Atraxa%2C+Praetors%27+Voice"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAtraxa%252C%2BPraetors%2527%2BVoice",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAtraxa%252C%2BPraetors%2527%2BVoice",
+    "edhrec": "https://edhrec.com/route/?cc=Atraxa%2C+Praetors%27+Voice"
   },
   "purchase_uris": {
-    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=125317&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F125317%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Atraxa%2C+Praetors%27+Voice&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Atraxa%2C+Praetors%27+Voice&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

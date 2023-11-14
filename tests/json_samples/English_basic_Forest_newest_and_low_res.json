@@ -3,7 +3,7 @@
   "id": "15b3f35e-451e-4de6-a4f7-249287566964",
   "oracle_id": "b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6",
   "multiverse_ids": [
-
+    635475
   ],
   "tcgplayer_id": 496078,
   "name": "Forest",
@@ -15,12 +15,12 @@
   "highres_image": false,
   "image_status": "lowres",
   "image_uris": {
-    "small": "https://cards.scryfall.io/small/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1688773119",
-    "normal": "https://cards.scryfall.io/normal/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1688773119",
-    "large": "https://cards.scryfall.io/large/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1688773119",
-    "png": "https://cards.scryfall.io/png/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.png?1688773119",
-    "art_crop": "https://cards.scryfall.io/art_crop/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1688773119",
-    "border_crop": "https://cards.scryfall.io/border_crop/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1688773119"
+    "small": "https://cards.scryfall.io/small/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1696636874",
+    "normal": "https://cards.scryfall.io/normal/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1696636874",
+    "large": "https://cards.scryfall.io/large/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1696636874",
+    "png": "https://cards.scryfall.io/png/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.png?1696636874",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1696636874",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/1/5/15b3f35e-451e-4de6-a4f7-249287566964.jpg?1696636874"
   },
   "mana_cost": "",
   "cmc": 0.0,
@@ -101,20 +101,21 @@
   "booster": false,
   "story_spotlight": false,
   "prices": {
-    "usd": null,
-    "usd_foil": null,
+    "usd": "0.15",
+    "usd_foil": "0.14",
     "usd_etched": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Forest&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=635475&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DForest",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DForest",
     "edhrec": "https://edhrec.com/route/?cc=Forest"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/496078?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F496078%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Forest&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Forest&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

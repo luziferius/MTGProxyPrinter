@@ -11,8 +11,8 @@
   "uri": "https://api.scryfall.com/cards/002ad179-ddf4-4f48-9504-cfa02e11a52e",
   "scryfall_uri": "https://scryfall.com/card/aznr/25/clearwater-pathway-clearwater-pathway?utm_source=api",
   "layout": "art_series",
-  "highres_image": false,
-  "image_status": "lowres",
+  "highres_image": true,
+  "image_status": "highres_scan",
   "cmc": 0.0,
   "type_line": "Card // Card",
   "color_identity": [
@@ -35,17 +35,18 @@
       "artist_id": "3593dd7e-c547-4a32-81cd-7da725f60118",
       "illustration_id": "3be0e68b-1bd6-4941-8605-503290443a04",
       "image_uris": {
-        "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859",
-        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859"
+        "small": "https://cards.scryfall.io/small/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "normal": "https://cards.scryfall.io/normal/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "large": "https://cards.scryfall.io/large/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "png": "https://cards.scryfall.io/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457"
       }
     },
     {
       "object": "card_face",
       "name": "Clearwater Pathway",
+      "flavor_name": "",
       "mana_cost": "",
       "type_line": "Card",
       "oracle_text": "",
@@ -56,12 +57,12 @@
       "artist_id": "3593dd7e-c547-4a32-81cd-7da725f60118",
       "illustration_id": "09ad330a-17c5-4c28-a97a-de0562ba2fd8",
       "image_uris": {
-        "small": "https://c1.scryfall.com/file/scryfall-cards/small/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "large": "https://c1.scryfall.com/file/scryfall-cards/large/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "png": "https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859",
-        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859",
-        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1600982859"
+        "small": "https://cards.scryfall.io/small/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "normal": "https://cards.scryfall.io/normal/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "large": "https://cards.scryfall.io/large/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "png": "https://cards.scryfall.io/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1678735457",
+        "art_crop": "https://cards.scryfall.io/art_crop/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457",
+        "border_crop": "https://cards.scryfall.io/border_crop/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.jpg?1678735457"
       }
     }
   ],
@@ -71,27 +72,38 @@
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "not_legal",
     "legacy": "not_legal",
     "pauper": "not_legal",
     "vintage": "not_legal",
     "penny": "not_legal",
     "commander": "not_legal",
+    "oathbreaker": "not_legal",
     "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "not_legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
-
+    "paper"
   ],
   "reserved": false,
   "foil": true,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
   "oversized": false,
   "promo": false,
   "reprint": false,
   "variation": false,
+  "set_id": "168acc08-0dea-40e7-ab0d-93bb2832e72b",
   "set": "aznr",
   "set_name": "Zendikar Rising Art Series",
   "set_type": "memorabilia",
@@ -103,7 +115,6 @@
   "collector_number": "25",
   "digital": false,
   "rarity": "common",
-  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
   "artist": "Johannes Voss",
   "artist_ids": [
     "3593dd7e-c547-4a32-81cd-7da725f60118"
@@ -114,22 +125,21 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 1669,
   "prices": {
     "usd": null,
     "usd_foil": null,
+    "usd_etched": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Clearwater+Pathway+%2F%2F+Clearwater+Pathway&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Clearwater+Pathway+%2F%2F+Clearwater+Pathway&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Clearwater+Pathway",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Clearwater+Pathway"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DClearwater%2BPathway%2B%252F%252F%2BClearwater%2BPathway",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DClearwater%2BPathway%2B%252F%252F%2BClearwater%2BPathway",
+    "edhrec": "https://edhrec.com/route/?cc=Clearwater+Pathway"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Clearwater+Pathway&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DClearwater%2BPathway%26view%3Dgrid",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Clearwater+Pathway&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Clearwater+Pathway&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

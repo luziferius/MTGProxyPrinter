@@ -23,7 +23,7 @@ import pytest
 
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
-from mtg_proxy_printer.model.carddb import CardDatabase
+from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.units_and_sizes import UUID
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
@@ -170,6 +170,28 @@ class TestCaseData:
             DatabasePrintingData(self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image)
         ]
 
+    def as_card(self, face_id: int = 1) -> Card:
+        cd = self.json_dict
+        card_set = MTGSet(cd["set"], cd["set_name"])
+        oracle_id = cd.get("oracle_id") or cd["card_faces"][0]["oracle_id"]
+        face_id -= 1
+        if (faces := cd.get("card_faces")) is not None:
+            face = faces[face_id]
+            image_uris = cd.get("image_uris") or face["image_uris"]
+            last_image_uris = cd.get("image_uris") or cd["card_faces"][-1]["image_uris"]
+            return Card(
+                face.get("printed_name") or face["name"], card_set,
+                cd["collector_number"],  cd["lang"], cd["id"], "/front/" in image_uris["png"], oracle_id,
+                image_uris["png"], cd["highres_image"],
+                cd["oversized"], face_id, "/back/" in last_image_uris["png"], None
+            )
+        return Card(
+            cd.get("printed_name") or cd["name"], card_set,
+            cd["collector_number"],  cd["lang"], cd["id"], True, oracle_id,
+            cd["image_uris"]["png"], cd["highres_image"],
+            cd["oversized"], 0, False, None
+        )
+
 
 def _assert_card_contains(card_db: CardDatabase, test_case: TestCaseData):
     """Checks Oracle_id"""
@@ -288,7 +310,7 @@ def test_test_case_data():
             "oracle_id": "7e6b9b59-cd68-4e3c-827b-38833c92d6eb",
             "is_oversized": True,
             "face_data": contains_exactly(
-                FaceData("Atraxa, Praetors' Voice", "https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True)
+                FaceData("Atraxa, Praetors' Voice", "https://cards.scryfall.io/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True)
             ),
             "set": DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api", "2016-11-11")
         })

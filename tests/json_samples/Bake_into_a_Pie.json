@@ -117,29 +117,29 @@
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 5399,
-  "penny_rank": 12914,
+  "edhrec_rank": 5529,
+  "penny_rank": 13299,
   "preview": {
     "source": "GameStar",
     "source_uri": "https://www.gamestar.de/galerien/magic_the_gathering_jumpstart,134799.html",
     "previewed_at": "2020-06-17"
   },
   "prices": {
-    "usd": "0.07",
+    "usd": "0.08",
     "usd_foil": null,
     "usd_etched": null,
-    "eur": "0.19",
+    "eur": "0.07",
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=489207",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Bake+into+a+Pie&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Bake+into+a+Pie&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=489207&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DBake%2Binto%2Ba%2BPie",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DBake%2Binto%2Ba%2BPie",
     "edhrec": "https://edhrec.com/route/?cc=Bake+into+a+Pie"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/215968?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F215968%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Bake+into+a+Pie&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Bake+into+a+Pie&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
