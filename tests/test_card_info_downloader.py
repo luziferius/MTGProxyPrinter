@@ -344,6 +344,7 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("banned_in_historic"), "hide-banned-in-historic"
     yield TestCaseData("banned_in_legacy"), "hide-banned-in-legacy"
     yield TestCaseData("banned_in_modern"), "hide-banned-in-modern"
+    yield TestCaseData("banned_in_oathbreaker"), "hide-banned-in-oathbreaker"
     yield TestCaseData("banned_in_pauper"), "hide-banned-in-pauper"
     yield TestCaseData("banned_in_penny"), "hide-banned-in-penny"  # The format has zero banned cards. The JSON document was altered to fake a banned card for testing purposes.
     yield TestCaseData("banned_in_pioneer"), "hide-banned-in-pioneer"

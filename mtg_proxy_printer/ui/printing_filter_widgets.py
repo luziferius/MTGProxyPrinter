@@ -62,6 +62,9 @@ class AbstractPrintingFilterWidget(QGroupBox):
 
 
 class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
+    """
+    Manages settings for all printing filters that are not related to bans in specific formats
+    """
     def __init__(self, parent: QWidget = None):
         super().__init__(Ui_GeneralPrintingFilter, parent)
         ui = self.ui
@@ -94,7 +97,12 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
 
 
 class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
-
+    """
+    Manages printing filters for bans in specific formats. An enabled filter for a given format hides
+    all cards that are banned in that format.
+    """
+    # TODO 1: Refactor to generate the checkbox list and button list from the format list in the settings
+    # TODO 2: Write test that ensures that there is a bijection between settings keys and widgets
     def __init__(self, parent: QWidget = None):
         super().__init__(Ui_FormatPrintingFilter, parent)
         ui = self.ui
@@ -113,6 +121,7 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_banned_in_historic, "hide-banned-in-historic"),
             (ui.hide_banned_in_legacy, "hide-banned-in-legacy"),
             (ui.hide_banned_in_modern, "hide-banned-in-modern"),
+            (ui.hide_banned_in_oathbreaker, "hide-banned-in-oathbreaker"),
             (ui.hide_banned_in_pauper, "hide-banned-in-pauper"),
             (ui.hide_banned_in_penny, "hide-banned-in-penny"),
             (ui.hide_banned_in_pioneer, "hide-banned-in-pioneer"),

@@ -78,6 +78,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-banned-in-historic": "False",
     "hide-banned-in-legacy": "False",
     "hide-banned-in-modern": "False",
+    "hide-banned-in-oathbreaker": "False",
     "hide-banned-in-pauper": "False",
     "hide-banned-in-penny": "False",
     "hide-banned-in-pioneer": "False",

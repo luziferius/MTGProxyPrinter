@@ -688,6 +688,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         "hide-banned-in-historic": legalities.get("historic", "") == "banned",
         "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
         "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+        "hide-banned-in-oathbreaker": legalities.get("oathbreaker", "") == "banned",
         "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
         "hide-banned-in-penny": legalities.get("penny", "") == "banned",
         "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
