@@ -44,8 +44,8 @@ setup_py.setup_parameters["executables"] = [
     Executable(
         f"{setup_py.main_package}/__main__.py",
         base=base,
-        target_name='MTGProxyPrinter',
-        shortcut_name='MTGProxyPrinter',
+        target_name=project_name,
+        shortcut_name=project_name,
         shortcut_dir='StartMenuFolder',
     ),
 ]
