@@ -19,10 +19,10 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QColorConstants, QPixmap, QImage, QPainter, QColor
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsScene
 
-from mtg_proxy_printer.ui.page_renderer import CardItem
+from mtg_proxy_printer.ui.page_scene import CardItem
 
 from tests.document_controller.helpers import append_new_card_in_page
-from tests.hasgetter import has_getter, has_getters
+from tests.hasgetter import has_getter
 
 
 def test_pixmap_set_in_init(qtbot, document_light):

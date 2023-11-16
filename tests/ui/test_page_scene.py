@@ -24,7 +24,7 @@ from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.ui.page_renderer import RenderMode, PageScene
+from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
 
