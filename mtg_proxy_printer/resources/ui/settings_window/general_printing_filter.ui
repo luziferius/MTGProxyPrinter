@@ -14,17 +14,38 @@
    <string>General printing filters</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="2">
-    <widget class="QCheckBox" name="hide_funny_cards">
-     <property name="toolTip">
-      <string>“Funny” cards, not legal in any constructed format.
-This includes full-art Contraptions from Unstable,
-cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
-some black-bordered promotional cards with non-standard back faces,
-and all silver-bordered cards.</string>
+   <item row="5" column="3">
+    <widget class="QPushButton" name="view_digital_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="text">
-      <string>Hide “funny” cards</string>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QPushButton" name="view_cards_without_images">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
@@ -44,6 +65,17 @@ and all silver-bordered cards.</string>
      </property>
     </widget>
    </item>
+   <item row="6" column="0">
+    <widget class="QCheckBox" name="hide_borderless_cards">
+     <property name="toolTip">
+      <string>Hide cards without a defined, solid-color border.
+Those require higher cutting precision to get right.</string>
+     </property>
+     <property name="text">
+      <string>Hide borderless cards</string>
+     </property>
+    </widget>
+   </item>
    <item row="4" column="2">
     <widget class="QCheckBox" name="hide_token">
      <property name="text">
@@ -51,8 +83,8 @@ and all silver-bordered cards.</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="3">
-    <widget class="QPushButton" name="view_digital_cards">
+   <item row="2" column="3">
+    <widget class="QPushButton" name="view_funny_cards">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -94,18 +126,8 @@ This filter hides those.</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="2">
-    <widget class="QCheckBox" name="hide_digital_cards">
-     <property name="toolTip">
-      <string>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</string>
-     </property>
-     <property name="text">
-      <string>Hide digital cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="3">
-    <widget class="QPushButton" name="view_funny_cards">
+   <item row="0" column="3">
+    <widget class="QPushButton" name="view_oversized_cards">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -117,6 +139,30 @@ This filter hides those.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="2">
+    <widget class="QCheckBox" name="hide_digital_cards">
+     <property name="toolTip">
+      <string>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</string>
+     </property>
+     <property name="text">
+      <string>Hide digital cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QCheckBox" name="hide_funny_cards">
+     <property name="toolTip">
+      <string>“Funny” cards, not legal in any constructed format.
+This includes full-art Contraptions from Unstable,
+cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
+some black-bordered promotional cards with non-standard back faces,
+and all silver-bordered cards.</string>
+     </property>
+     <property name="text">
+      <string>Hide “funny” cards</string>
      </property>
     </widget>
    </item>
@@ -132,19 +178,23 @@ oversized commander creature or Planeswalker cards included in some pre-construc
      </property>
     </widget>
    </item>
-   <item row="0" column="3">
-    <widget class="QPushButton" name="view_oversized_cards">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
+   <item row="5" column="0">
+    <widget class="QCheckBox" name="hide_gold_bordered_cards">
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+Many also have printed signatures of the involved players in the text box.
+
+These are not tournament legal</string>
      </property>
-     <property name="icon">
-      <iconset theme="globe"/>
+     <property name="text">
+      <string>Hide gold-bordered cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QCheckBox" name="hide_white_bordered_cards">
+     <property name="text">
+      <string>Hide white-bordered cards</string>
      </property>
     </widget>
    </item>
@@ -186,26 +236,19 @@ English placeholder images with an overlay text stating
      </property>
     </widget>
    </item>
-   <item row="2" column="1">
-    <widget class="QPushButton" name="view_cards_without_images">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
+   <item row="5" column="1">
+    <widget class="QPushButton" name="view_gold_bordered_cards">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
      <property name="icon">
       <iconset theme="globe"/>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="QCheckBox" name="hide_white_bordered_cards">
-     <property name="text">
-      <string>Hide white-bordered cards</string>
      </property>
     </widget>
    </item>
@@ -225,39 +268,6 @@ English placeholder images with an overlay text stating
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <widget class="QCheckBox" name="hide_gold_bordered_cards">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders. Many also have printed signatures of the involved players in the text box.&lt;/p&gt;&lt;p&gt;These are not tournament legal.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Hide gold-bordered cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="1">
-    <widget class="QPushButton" name="view_gold_bordered_cards">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
-     </property>
-     <property name="icon">
-      <iconset theme="globe"/>
-     </property>
-    </widget>
-   </item>
-   <item row="6" column="0">
-    <widget class="QCheckBox" name="hide_borderless_cards">
-     <property name="text">
-      <string>Hide borderless cards</string>
-     </property>
-    </widget>
-   </item>
    <item row="6" column="1">
     <widget class="QPushButton" name="view_borderless_cards">
      <property name="sizePolicy">
@@ -271,6 +281,27 @@ English placeholder images with an overlay text stating
      </property>
      <property name="icon">
       <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QPushButton" name="view_extended_art_cards">
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QCheckBox" name="hide_extended_art_cards">
+     <property name="toolTip">
+      <string>Hide cards with artwork extending to the left and right card border.
+Similar to borderless cards, these require higher precision during the cutting process.</string>
+     </property>
+     <property name="text">
+      <string>Hide extended art cards</string>
      </property>
     </widget>
    </item>

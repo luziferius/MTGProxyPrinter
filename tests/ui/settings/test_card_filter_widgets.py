@@ -44,7 +44,9 @@ general_printing_widget_mapping = {
     "hide-gold-bordered": "hide_gold_bordered_cards",
     "hide-oversized-cards": "hide_oversized_cards",
     "hide-token": "hide_token",
-    "hide-white-bordered": "hide_white_bordered_cards"
+    "hide-white-bordered": "hide_white_bordered_cards",
+    "hide-borderless": "hide_borderless_cards",
+    "hide-extended-art": "hide_extended_art_cards",
 }
 
 

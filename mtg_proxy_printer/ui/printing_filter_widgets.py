@@ -74,6 +74,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         ui.view_white_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:white"))
         ui.view_gold_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:gold"))
         ui.view_borderless_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:borderless"))
+        ui.view_extended_art_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:extended"))
         ui.view_funny_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:funny"))
         ui.view_token.clicked.connect(partial(self.view_query_on_scryfall, "is:token"))
         ui.view_digital_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:digital"))
@@ -88,6 +89,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_white_bordered_cards, "hide-white-bordered"),
             (ui.hide_gold_bordered_cards, "hide-gold-bordered"),
             (ui.hide_borderless_cards, "hide-borderless"),
+            (ui.hide_extended_art_cards, "hide-extended-art"),
             (ui.hide_funny_cards, "hide-funny-cards"),
             (ui.hide_token, "hide-token"),
             (ui.hide_digital_cards, "hide-digital-cards"),

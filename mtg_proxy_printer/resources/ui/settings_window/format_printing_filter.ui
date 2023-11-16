@@ -253,6 +253,9 @@
    </item>
    <item row="5" column="1">
     <widget class="QPushButton" name="view_banned_in_oathbreaker">
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
      <property name="icon">
       <iconset theme="globe"/>
      </property>

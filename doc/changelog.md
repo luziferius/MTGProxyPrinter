@@ -8,6 +8,7 @@
     - Import cube lists from [cubecobra.com](https://cubecobra.com)
 - Added card filters
     - Cards banned in Oathbreaker
+    - Cards with extended art
     - Add ability to hide specific sets you don't like.
         - Filters are entered using set codes (e.g. LEA DBL SLD), as listed by Scryfall.
         - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
@@ -22,7 +23,7 @@
 
 - Improved progress reporting for longer running actions: Importing deck lists and loading documents
   now also shows an overall progress, in addition to the download progress for individual card images. 
-- The card data update no longer locks the entire user interface. It is now possible to continue working while
+- The card data update no longer locks the entire user interface. It is now possible to continue working while the
   update runs in the background.
   - For now, some actions remain unavailable during the update. (This restriction may be lifted in future versions.)
 

@@ -353,6 +353,7 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("digital_only_card"), "hide-digital-cards"
     yield TestCaseData("digital_reprint"), "hide-digital-cards"
     yield TestCaseData("borderless_card"), "hide-borderless"
+    yield TestCaseData("extended_art"), "hide-extended-art"
     yield TestCaseData("double_faced_card_without_top_level_oracle_id"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
 
 
