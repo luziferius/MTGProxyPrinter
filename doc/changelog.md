@@ -6,26 +6,30 @@
 
 - Support for direct downloads from additional card list database websites:
     - Import cube lists from [cubecobra.com](https://cubecobra.com)
-- Add ability to hide specific sets you don't like.
-    - Filters are entered using set codes (e.g. LEA DBL SLD), as listed by Scryfall.
-    - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
-      tab in the Settings window.
-    - All cards in all entered sets are hidden.
-    - Please note that Scryfall uses a different set code for promotional printings and tokens,
-      typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
-      too, you have to explicitly do that. Also note that promotional cards have a lower priority when the app has to 
-      choose a printing on its own, so hiding them is generally not required.
+- Added card filters
+    - Cards banned in Oathbreaker
+    - Cards with extended art
+    - Add ability to hide specific sets you don't like.
+        - Filters are entered using set codes (e.g. LEA DBL SLD), as listed by Scryfall.
+        - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
+          tab in the Settings window.
+        - All cards in all entered sets are hidden.
+        - Please note that Scryfall uses a different set code for promotional printings and tokens,
+          typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
+          too, you have to explicitly do that. Also note that promotional cards have a lower priority
+          when the app has to choose a printing on its own, so hiding them is generally not required.
 
 ## Changed features
 
 - Improved progress reporting for longer running actions: Importing deck lists and loading documents
   now also shows an overall progress, in addition to the download progress for individual card images. 
-- The card data update no longer locks the entire user interface. It is now possible to continue working while
+- The card data update no longer locks the entire user interface. It is now possible to continue working while the
   update runs in the background.
   - For now, some actions remain unavailable during the update. (This restriction may be lifted in future versions.)
 
 ## Fixed issues
 
+- Fixed broken card filter for [reversible cards](https://scryfall.com/search?q=is:reversible). The filter now works as expected.
 - Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
   while a document title is set or printing page numbers is enabled.
 - Fixed crashes when trying to download a deck list fails. Now, an error message is shown, if deck list downloads fail.

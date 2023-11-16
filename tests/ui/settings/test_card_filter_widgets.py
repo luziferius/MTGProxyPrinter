@@ -44,7 +44,9 @@ general_printing_widget_mapping = {
     "hide-gold-bordered": "hide_gold_bordered_cards",
     "hide-oversized-cards": "hide_oversized_cards",
     "hide-token": "hide_token",
-    "hide-white-bordered": "hide_white_bordered_cards"
+    "hide-white-bordered": "hide_white_bordered_cards",
+    "hide-borderless": "hide_borderless_cards",
+    "hide-extended-art": "hide_extended_art_cards",
 }
 
 
@@ -78,6 +80,7 @@ format_printing_widget_mapping = {
     "hide-banned-in-historic": "hide_banned_in_historic",
     "hide-banned-in-legacy": "hide_banned_in_legacy",
     "hide-banned-in-modern": "hide_banned_in_modern",
+    "hide-banned-in-oathbreaker": "hide_banned_in_oathbreaker",
     "hide-banned-in-pauper": "hide_banned_in_pauper",
     "hide-banned-in-penny": "hide_banned_in_penny",
     "hide-banned-in-pioneer": "hide_banned_in_pioneer",

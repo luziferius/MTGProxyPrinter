@@ -635,7 +635,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                     (face.image_uri, face.face_number, card_face_id[0])).fetchone()[0]:
                 db.execute(
                     "UPDATE CardFace SET png_image_uri = ?, face_number = ? WHERE card_face_id = ?\n",
-                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                    (face.image_uri, face.face_number, card_face_id[0]),
                 )
             if card_face_id is not None:
                 face_ids.append(card_face_id)
@@ -673,8 +673,9 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         "hide-white-bordered": card["border_color"] == "white",
         "hide-gold-bordered": card["border_color"] == "gold",
         "hide-borderless": card["border_color"] == "borderless",
+        "hide-extended-art": "extendedart" in card.get("frame_effects", tuple()),
         # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-        "hide-reversible-cards": card["layout"] == "reversible",
+        "hide-reversible-cards": card["layout"] == "reversible_card",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
@@ -688,6 +689,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         "hide-banned-in-historic": legalities.get("historic", "") == "banned",
         "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
         "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+        "hide-banned-in-oathbreaker": legalities.get("oathbreaker", "") == "banned",
         "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
         "hide-banned-in-penny": legalities.get("penny", "") == "banned",
         "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
@@ -739,6 +741,8 @@ def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, 
             printed_name=_get_card_name(card),
             image_uris=card["image_uris"],
             name=card["name"],
+            object=card["object"],
+            mana_cost=card["mana_cost"],
         )
     ]
     return (

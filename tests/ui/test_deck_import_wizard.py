@@ -207,8 +207,8 @@ def _validate_model_content(list_model):
         "language": equal_to("en"),
         "is_front": is_(True),
         "image_uri": equal_to(
-            "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-            "0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+            "https://cards.scryfall.io/png/front/0/0/"
+            "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
         "image_file": is_(none()),
     }))
 
@@ -267,8 +267,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "language": equal_to("en"),
             "is_front": is_(True),
             "image_uri": equal_to(
-                "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-                "0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+                "https://cards.scryfall.io/png/front/0/0/"
+                "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
             "image_file": is_(none()),
         }),
         has_properties({
@@ -282,8 +282,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "language": equal_to("en"),
             "is_front": is_(True),
             "image_uri": equal_to(
-                "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-                "a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
+                "https://cards.scryfall.io/png/front/a/8/"
+                "a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
             "image_file": is_(none()),
         }),
     ))

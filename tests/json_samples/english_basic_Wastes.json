@@ -16,43 +16,51 @@
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.png?1657725364",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364"
+    "small": "https://cards.scryfall.io/small/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "normal": "https://cards.scryfall.io/normal/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "large": "https://cards.scryfall.io/large/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "png": "https://cards.scryfall.io/png/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.png?1657725364",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/9/c/9cc070d3-4b83-4684-9caf-063e5c473a77.jpg?1657725364"
   },
   "mana_cost": "",
-  "cmc": 0,
+  "cmc": 0.0,
   "type_line": "Basic Land",
   "oracle_text": "{T}: Add {C}.",
-  "colors": [],
-  "color_identity": [],
-  "keywords": [],
+  "colors": [
+
+  ],
+  "color_identity": [
+
+  ],
+  "keywords": [
+
+  ],
   "produced_mana": [
     "C"
   ],
   "legalities": {
     "standard": "not_legal",
     "future": "not_legal",
-    "historic": "not_legal",
-    "gladiator": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
     "pioneer": "legal",
-    "explorer": "not_legal",
+    "explorer": "legal",
     "modern": "legal",
     "legacy": "legal",
     "pauper": "legal",
     "vintage": "legal",
-    "penny": "legal",
+    "penny": "not_legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
-    "historicbrawl": "not_legal",
+    "historicbrawl": "legal",
     "alchemy": "not_legal",
     "paupercommander": "legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "paper",
@@ -93,21 +101,21 @@
   "booster": true,
   "story_spotlight": false,
   "prices": {
-    "usd": "2.21",
+    "usd": "2.01",
     "usd_foil": null,
     "usd_etched": null,
-    "eur": "0.99",
+    "eur": "2.20",
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=407693",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Wastes&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Wastes&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=407693&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DWastes",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DWastes",
     "edhrec": "https://edhrec.com/route/?cc=Wastes"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/110703?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F110703%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Wastes&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Wastes&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
