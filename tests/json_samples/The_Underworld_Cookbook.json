@@ -75,7 +75,7 @@
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
-    "penny": "legal",
+    "penny": "not_legal",
     "commander": "legal",
     "oathbreaker": "legal",
     "brawl": "not_legal",
@@ -130,29 +130,29 @@
   "promo_types": [
     "boosterfun"
   ],
-  "edhrec_rank": 4567,
-  "penny_rank": 553,
+  "edhrec_rank": 4531,
+  "penny_rank": 626,
   "preview": {
     "source": "Wizards of the Coast",
     "source_uri": "https://magic.wizards.com/en/articles/archive/card-preview/challenge-accepted-2021-05-26",
     "previewed_at": "2021-05-26"
   },
   "prices": {
-    "usd": "0.22",
-    "usd_foil": "0.60",
-    "usd_etched": "1.94",
-    "eur": "0.15",
-    "eur_foil": "0.75",
-    "tix": null
+    "usd": "0.25",
+    "usd_foil": "1.04",
+    "usd_etched": "1.72",
+    "eur": "0.99",
+    "eur_foil": "0.49",
+    "tix": "10.92"
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=525615",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=The+Underworld+Cookbook&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=The+Underworld+Cookbook&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=525615&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DThe%2BUnderworld%2BCookbook",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DThe%2BUnderworld%2BCookbook",
     "edhrec": "https://edhrec.com/route/?cc=The+Underworld+Cookbook"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/239739?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F239739%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=The+Underworld+Cookbook&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards/91141?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

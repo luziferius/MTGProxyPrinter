@@ -31,9 +31,9 @@ FILTER_VALUES = [
 
 
 @pytest.fixture()
-def settings_window(qtbot: QtBot, document_light):
+def settings_window(qtbot: QtBot, document):
     language_model = QStringListModel(["en"])
-    window = SettingsWindow(language_model, document_light)
+    window = SettingsWindow(language_model, document)
     qtbot.add_widget(window)
     yield window
 

@@ -26,13 +26,14 @@ import typing
 import urllib.error
 import urllib.parse
 import urllib.request
-from unittest.mock import patch
 
 import ijson
 from PySide6.QtCore import Signal, QObject, QThread, Qt, QRunnable, QThreadPool
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, cached_dedent, SCHEMA_NAME
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
+from mtg_proxy_printer.sqlite_helpers import cached_dedent
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
@@ -420,9 +421,10 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         progress_meter.advance()
         self._clean_unused_data(face_ids)
         progress_meter.advance()
-        with patch.object(self.model, "db", self.db):
-            self.model.store_current_printing_filters(
-                force_update_hidden_column=True, progress_signal=progress_meter.advance)
+        updater = PrintingFilterUpdater(
+            self.model, self.db, force_update_hidden_column=True)
+        updater.signals.advance_progress.connect(progress_meter.advance)
+        updater.run()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n",(index,))
         progress_meter.advance()
@@ -633,7 +635,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                     (face.image_uri, face.face_number, card_face_id[0])).fetchone()[0]:
                 db.execute(
                     "UPDATE CardFace SET png_image_uri = ?, face_number = ? WHERE card_face_id = ?\n",
-                    (printing_id, face_name_id, face.is_front, face.image_uri, face.face_number),
+                    (face.image_uri, face.face_number, card_face_id[0]),
                 )
             if card_face_id is not None:
                 face_ids.append(card_face_id)
@@ -671,8 +673,9 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         "hide-white-bordered": card["border_color"] == "white",
         "hide-gold-bordered": card["border_color"] == "gold",
         "hide-borderless": card["border_color"] == "borderless",
+        "hide-extended-art": "extendedart" in card.get("frame_effects", tuple()),
         # Some special SLD reprints of single-sided cards as double-sided cards with unique artwork per side
-        "hide-reversible-cards": card["layout"] == "reversible",
+        "hide-reversible-cards": card["layout"] == "reversible_card",
         # “Funny” cards, not legal in any constructed format. This includes full-art Contraptions from Unstable and some
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
@@ -686,6 +689,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         "hide-banned-in-historic": legalities.get("historic", "") == "banned",
         "hide-banned-in-legacy": legalities.get("legacy", "") == "banned",
         "hide-banned-in-modern": legalities.get("modern", "") == "banned",
+        "hide-banned-in-oathbreaker": legalities.get("oathbreaker", "") == "banned",
         "hide-banned-in-pauper": legalities.get("pauper", "") == "banned",
         "hide-banned-in-penny": legalities.get("penny", "") == "banned",
         "hide-banned-in-pioneer": legalities.get("pioneer", "") == "banned",
@@ -737,6 +741,8 @@ def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, 
             printed_name=_get_card_name(card),
             image_uris=card["image_uris"],
             name=card["name"],
+            object=card["object"],
+            mana_cost=card["mana_cost"],
         )
     ]
     return (

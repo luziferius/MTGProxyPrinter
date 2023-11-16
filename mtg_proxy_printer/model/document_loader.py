@@ -320,6 +320,9 @@ class Worker(QObject):
                 "Selected file is not a known MTGProxyPrinter document or contains invalid data. Not loading it.")
             self.loading_file_failed.emit(self.save_path, str(e))
             self.finished.emit()
+        finally:
+            self.db.close()
+            self._db = None
 
     def on_document_action_applied(self, action: DocumentAction):
         # Imported here to break a circular import. TODO: Investigate a better fix

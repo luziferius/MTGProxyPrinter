@@ -2,7 +2,9 @@
   "object": "card",
   "id": "b72e71c7-a65c-481d-8ad7-77bfb5d66d73",
   "oracle_id": "27ad3e00-6ffb-48f7-8469-8868d066d1e2",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+    547347
+  ],
   "arena_id": 37338,
   "name": "Serra Ascendant",
   "lang": "en",
@@ -13,15 +15,15 @@
   "highres_image": false,
   "image_status": "lowres",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.png?1576794512",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512"
+    "small": "https://cards.scryfall.io/small/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
+    "normal": "https://cards.scryfall.io/normal/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
+    "large": "https://cards.scryfall.io/large/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
+    "png": "https://cards.scryfall.io/png/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.png?1576794512",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/b/7/b72e71c7-a65c-481d-8ad7-77bfb5d66d73.jpg?1576794512"
   },
   "mana_cost": "{W}",
-  "cmc": 1,
+  "cmc": 1.0,
   "type_line": "Creature — Human Monk",
   "oracle_text": "Lifelink (Damage dealt by this creature also causes you to gain that much life.)\nAs long as you have 30 or more life, Serra Ascendant gets +5/+5 and has flying.",
   "power": "1",
@@ -41,19 +43,22 @@
     "historic": "legal",
     "gladiator": "legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
     "penny": "not_legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
     "historicbrawl": "legal",
     "alchemy": "not_legal",
     "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "legal"
   },
   "games": [
     "arena"
@@ -88,12 +93,12 @@
   "illustration_id": "79ae0249-ae42-4b1d-ad53-04e3a3d6c864",
   "border_color": "black",
   "frame": "2015",
-  "security_stamp": "oval",
   "full_art": false,
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 718,
+  "edhrec_rank": 720,
+  "penny_rank": 764,
   "prices": {
     "usd": null,
     "usd_foil": null,
@@ -103,9 +108,9 @@
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Serra+Ascendant&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Serra+Ascendant&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Serra+Ascendant",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Serra+Ascendant"
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=547347&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DSerra%2BAscendant",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DSerra%2BAscendant",
+    "edhrec": "https://edhrec.com/route/?cc=Serra+Ascendant"
   }
 }

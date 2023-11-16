@@ -2,7 +2,9 @@
   "object": "card",
   "id": "2149da9d-35ad-4f32-8072-fb515100b2fd",
   "oracle_id": "6e3a97ee-472f-49a8-908a-8e71f815edab",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+
+  ],
   "tcgplayer_id": 287755,
   "cardmarket_id": 677076,
   "name": "Form of the Approach of the Second Sun",
@@ -22,7 +24,7 @@
     "border_crop": "https://cards.scryfall.io/border_crop/front/2/1/2149da9d-35ad-4f32-8072-fb515100b2fd.jpg?1673913099"
   },
   "mana_cost": "{4}{W}",
-  "cmc": 5,
+  "cmc": 5.0,
   "type_line": "Enchantment",
   "oracle_text": "When this enchantment enters the battlefield, you gain 7 life. You become a card until you leave your library or that library is shuffled. Put yourself seventh from the top, balancing the cards on top of you on your head.\nWhen you draw yourself, you win the game.\nWhen one or more cards fall off your head, exile them and all cards on your head, then sacrifice this enchantment.",
   "colors": [
@@ -31,7 +33,9 @@
   "color_identity": [
     "W"
   ],
-  "keywords": [],
+  "keywords": [
+
+  ],
   "legalities": {
     "standard": "not_legal",
     "future": "not_legal",
@@ -94,27 +98,27 @@
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 24728,
+  "edhrec_rank": 25704,
   "preview": {
     "source": "Wizards of the Coast",
     "source_uri": "https://magic.wizards.com/en/articles/archive/making-magic/making-space-part-2-2022-09-26",
     "previewed_at": "2022-09-26"
   },
   "prices": {
-    "usd": "0.09",
+    "usd": "0.04",
     "usd_foil": "0.12",
     "usd_etched": null,
-    "eur": "0.08",
-    "eur_foil": "0.09",
+    "eur": "0.03",
+    "eur_foil": "0.19",
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Form+of+the+Approach+of+the+Second+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Form+of+the+Approach+of+the+Second+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DForm%2Bof%2Bthe%2BApproach%2Bof%2Bthe%2BSecond%2BSun",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DForm%2Bof%2Bthe%2BApproach%2Bof%2Bthe%2BSecond%2BSun",
     "edhrec": "https://edhrec.com/route/?cc=Form+of+the+Approach+of+the+Second+Sun"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/287755?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F287755%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Form+of+the+Approach+of+the+Second+Sun&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Form+of+the+Approach+of+the+Second+Sun&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

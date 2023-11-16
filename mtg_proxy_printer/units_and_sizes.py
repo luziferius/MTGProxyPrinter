@@ -25,9 +25,14 @@ import pint
 
 unit_registry = pint.UnitRegistry()
 RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
-UUID = str
 DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
+# typing shortcuts
+UUID = WEB_URI = API_URI = str
+Colors = StringList = typing.List[str]
+StringSet = typing.Set[str]
+IntList = typing.List[int]
+StrDict = typing.Dict[str, str]
 
 class CardSize(typing.NamedTuple):
     width: pint.Quantity
@@ -73,12 +78,29 @@ class ImageUriType(typing.TypedDict):
 
 
 class FaceDataType(typing.TypedDict):
+    artist: NotRequired[str]
+    artist_ids: NotRequired[typing.List[UUID]]
+    cmc: NotRequired[float]
+    color_indicator: NotRequired[Colors]
+    colors: NotRequired[Colors]
+    defense: NotRequired[str]
+    flavor_text: NotRequired[str]
+    illustration_id: NotRequired[UUID]
     image_uris: NotRequired[ImageUriType]
     layout: NotRequired[str]
+    loyalty: NotRequired[str]
+    mana_cost: str
     name: str
-    oracle_id: NotRequired[UUID]
+    object: str  # Object type, always constant
+    oracle_id: NotRequired[UUID]  # Present in either the faces of reversible cards, or the parent card object otherwise
+    oracle_text: NotRequired[str]
+    power: NotRequired[str]
     printed_name: NotRequired[str]
-
+    printed_text: NotRequired[str]
+    printed_type_line: NotRequired[str]
+    toughness: NotRequired[str]
+    type_line: NotRequired[str]
+    watermark: NotRequired[str]
 
 class RelatedCardType(typing.TypedDict):
     object: str
@@ -89,34 +111,103 @@ class RelatedCardType(typing.TypedDict):
     uri: str
 
 
-class CardDataType(typing.TypedDict):
+_CardPreviewFields = typing.TypedDict("_CardPreviewFields", {
+    # Note: Requires this syntax, because keys are not valid python identifiers
+    "preview.previewed_at": str,
+    "preview.source_uri": WEB_URI,
+    "preview.source": str,
+})
+
+class CardDataType(_CardPreviewFields):
     """Card data type modelled according to https://scryfall.com/docs/api/cards"""
+
+    # Core fields
+    arena_id: NotRequired[int]
+    id: UUID
+    lang: str
+    mtgo_id: NotRequired[int]
+    mtgo_foil_id: NotRequired[int]
+    multiverse_ids: NotRequired[IntList]
+    tcgplayer_id: NotRequired[int]
+    tcgplayer_etched_id: NotRequired[int]
+    cardmarket_id: NotRequired[int]
+    object: str  # Object type, always "card"
+    layout: str
+    oracle_id: NotRequired[UUID]  # Always present, except for "reversible" cards, where this is in the individual faces
+    print_search_uri: API_URI
+    rulings_uri: API_URI
+    scryfall_uri: WEB_URI
+    uri: API_URI
+
+    # Gameplay fields
     all_parts: NotRequired[typing.List[RelatedCardType]]
+    card_faces: NotRequired[typing.List[FaceDataType]]
+    cmc: float
+    color_identity: Colors
+    color_indicator: NotRequired[Colors]
+    colors: NotRequired[Colors]
+    defense: NotRequired[str]
+    edhrec_rank: NotRequired[int]
+    hand_modifier: NotRequired[str]
+    keywords: NotRequired[StringList]
+    legalities: StrDict
+    life_modifier: NotRequired[str]
+    loyalty: NotRequired[str]
+    mana_cost: NotRequired[str]
+    name: str
+    oracle_text: NotRequired[str]
+    penny_rank: NotRequired[int]
+    power: NotRequired[str]
+    produced_mana: NotRequired[Colors]
+    reserved: bool
+    toughness: NotRequired[str]
+    type_line: str
+
+    # Print fields
+    artist: NotRequired[str]
+    artist_ids: NotRequired[typing.List[UUID]]
+    attraction_lights: NotRequired[IntList]
+    booster: bool
     border_color: str
     card_back_id: UUID
-    card_faces: NotRequired[typing.List[FaceDataType]]
     collector_number: str
     content_warning: NotRequired[bool]
     digital: bool
+    finishes: StringList
+    flavor_name: NotRequired[str]
+    flavor_text: NotRequired[str]
+    frame_effects: NotRequired[StringList]
+    frame: str
+    full_art: bool
+    games: StringList
     highres_image: bool
-    id: UUID
+    illustration_id: NotRequired[UUID]
     image_status: str
     image_uris: NotRequired[ImageUriType]
-    lang: str
-    layout: str
-    legalities: typing.Dict[str, str]
-    name: str
-    object: str
-    oracle_id: NotRequired[UUID]  # Reversible cards hold the oracle_id in the card_faces elements instead.
     oversized: bool
+    prices: typing.Dict[str, float]
     printed_name: NotRequired[str]
+    printed_text: NotRequired[str]
+    printed_type_line: NotRequired[str]
     promo: bool
+    promo_types: NotRequired[StringList]
+    purchase_uris: NotRequired[typing.Dict[str, UUID]]
+    rarity: str
+    related_uris: typing.Dict[str, WEB_URI]
     released_at: str
-    scryfall_set_uri: str
-    set: str
+    reprint: bool
+    scryfall_set_uri: WEB_URI
     set_name: str
+    set_search_uri: API_URI
     set_type: str
-
+    set: str  # Set code
+    set_id: UUID
+    story_spotlight: bool
+    textless: bool
+    variation: bool
+    variation_of: NotRequired[UUID]
+    security_stamp: NotRequired[str]
+    watermark: NotRequired[str]
 
 class BulkDataType(typing.TypedDict):
     """
