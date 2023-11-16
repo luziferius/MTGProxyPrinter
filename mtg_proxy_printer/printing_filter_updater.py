@@ -23,11 +23,14 @@ import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
     from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.model.carddb import SCHEMA_NAME, logger, StringList
+from mtg_proxy_printer.model.carddb import SCHEMA_NAME, StringList
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
-from mtg_proxy_printer.progress_meter import ProgressMeter
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+
 
 class PrintingFilterUpdater(QRunnable):
     """
@@ -45,7 +48,6 @@ class PrintingFilterUpdater(QRunnable):
 
     PROGRESS_STEP_COUNT = 6
     PROGRESS_MESSAGE = "Processing updated card filters:"
-
 
     def __init__(
             self, model: "CardDatabase", db_connection: sqlite3.Connection = None, *,
@@ -86,7 +88,6 @@ class PrintingFilterUpdater(QRunnable):
         signals.begin_update.connect(begin_signal, QueuedConnection)
         signals.progress.connect(progress_signal, QueuedConnection)
         signals.update_completed.connect(end_signal, QueuedConnection)
-
 
     def advance_progress(self):
         self.progress += 1
