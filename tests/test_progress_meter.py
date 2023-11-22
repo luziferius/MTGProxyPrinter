@@ -20,7 +20,8 @@ from hamcrest import *
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
 
-@pytest.fixture()
+
+@pytest.fixture
 def progress_meter():
     return ProgressMeter(3, "Test Message", MagicMock(), MagicMock(), MagicMock())
 

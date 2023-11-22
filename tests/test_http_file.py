@@ -37,7 +37,8 @@ def http_file():
         file = mock()
         file.getheader.return_value = -1
         file.isclosed.return_value = False
-        yield mtg_proxy_printer.http_file.MeteredSeekableHTTPFile("")
+        yield (f := mtg_proxy_printer.http_file.MeteredSeekableHTTPFile(""))
+    file.__dict__.clear()
 
 
 def set_file_size(http_file: MeteredSeekableHTTPFile, size: int):
