@@ -167,7 +167,7 @@ def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def card_db_with_cards(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_cards(
         qtbot, card_db,
@@ -196,6 +196,7 @@ def card_db_with_cards(qtbot, card_db: CardDatabase):
         ],
     )
     yield card_db
+    card_db.__dict__.clear()
 
 
 def generate_test_cases_for_test_translate_card_name():

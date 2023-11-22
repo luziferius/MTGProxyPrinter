@@ -26,6 +26,7 @@ def worker(card_db) -> BackgroundWorker:
     instance = BackgroundWorker(card_db)
     instance._db = card_db.db
     yield instance
+    instance.__dict__.clear()
 
 
 def test_get_total_cards_in_last_update(qtbot, worker: BackgroundWorker):

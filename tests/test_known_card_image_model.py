@@ -18,7 +18,6 @@ Tests the KnownCardImageModel used internally by the CacheCleanupWizard.
 """
 
 import pathlib
-import tempfile
 import typing
 
 from PyQt5.QtCore import Qt
@@ -42,21 +41,21 @@ class Environment(typing.NamedTuple):
     back_image: pathlib.Path
 
 
-@pytest.fixture()
-def environment(qtbot, card_db: CardDatabase):
+@pytest.fixture
+def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, "english_double_faced_card")
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = pathlib.Path(temp_dir)
-        image_db = ImageDatabase(temp_path)
-        front_image = image_db.db_path/"lowres_front"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
-        back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
-        front_image.parent.mkdir(parents=True)
-        back_image.parent.mkdir(parents=True)
-        image_db.blank_image.save(str(front_image), "PNG")
-        image_db.blank_image.save(str(back_image), "PNG")
-        yield Environment(card_db, image_db, front_image, back_image)
-        logger.info("Stopping ImageDatabase background downloader thread.")
-        image_db.quit_background_thread()
+    image_db = ImageDatabase(tmp_path)
+    front_image = image_db.db_path/"lowres_front"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
+    back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
+    front_image.parent.mkdir(parents=True)
+    back_image.parent.mkdir(parents=True)
+    image_db.blank_image.save(str(front_image), "PNG")
+    image_db.blank_image.save(str(back_image), "PNG")
+    yield Environment(card_db, image_db, front_image, back_image)
+    logger.info("Stopping ImageDatabase background downloader thread.")
+    image_db.download_thread.finished.disconnect(image_db._log_thread_stop)
+    image_db.quit_background_thread()
+    image_db.__dict__.clear()
 
 
 @pytest.mark.parametrize("is_hidden", [True, False])

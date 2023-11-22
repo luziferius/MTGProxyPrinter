@@ -65,10 +65,12 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
         yield main_window
         main_window.hide()
         stop_thread(cid.worker_thread)
+        del cid
+        main_window.__dict__.clear()
 
 
 def test_main_window_hides_progress_bar_after_downloading_image_during_load(
-        qtbot: QtBot, card_db: CardDatabase, main_window: MainWindow):
+        qtbot: QtBot, main_window: MainWindow):
     with unittest.mock.patch.object(  # Mock all HTTP-specific I/O calls
                 mtg_proxy_printer.downloader_base.mtg_proxy_printer.http_file.MeteredSeekableHTTPFile,
                 "_read_content_length") as cl_mock, \
@@ -86,7 +88,7 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         temp_path = main_window.image_db.db_path
         mock_image_path = _create_mock_image(main_window.image_db, temp_path)
         cl_mock.return_value = mock_image_path.stat().st_size
-        card_db.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
+        main_window.card_database.db.execute("UPDATE CardFace SET png_image_uri = ?", (mock_image_path.as_uri(),))
         save_file_path = _create_save_file(temp_path)
 
         assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))

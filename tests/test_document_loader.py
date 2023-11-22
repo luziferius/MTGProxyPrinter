@@ -290,7 +290,9 @@ def test_cancelling_loading_does_not_crash(
     loader.begin_loading_loop.connect(lambda: setattr(loader.worker, "should_run", False))
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
         open_database.return_value = empty_save_database
-        with qtbot.wait_signals([loader.begin_loading_loop, loader.progress_loading_loop, loader.loading_state_changed], timeout=100):
+        with qtbot.wait_signals(
+                [loader.begin_loading_loop, loader.progress_loading_loop,
+                 loader.loading_state_changed, loader.worker_thread.finished], timeout=100):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
 
 
@@ -335,6 +337,8 @@ def legacy_save_file(request):
     if reverse_unordered:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     yield db
+    db.close()
+    del db
 
 
 def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_file, document_light):
