@@ -1,19 +1,20 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-import itertools
-import unittest.mock
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+
+import itertools
 from functools import partial
 import typing
 from unittest.mock import patch
@@ -75,7 +76,7 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
     document = page_scene.document
     with qtbot.wait_signal(document.action_applied):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document)))
-    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markes_mock,\
+    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markes_mock, \
             qtbot.wait_signals([document.action_applied, document.rowsInserted]):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document), count))
     cut_markes_mock.assert_not_called()
@@ -196,4 +197,3 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(qtbot, page_s
 def test_setPalette_runs_without_exception(qtbot, page_scene):
     palette = QPalette()
     page_scene.setPalette(palette)
-
