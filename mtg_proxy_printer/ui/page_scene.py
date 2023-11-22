@@ -33,9 +33,10 @@ class RenderLayers(enum.Enum):
 
 
 @enum.unique
-class RenderMode(enum.Enum):
+class RenderMode(enum.Flag):
     ON_SCREEN = enum.auto()
     ON_PAPER = enum.auto()
+    IMPLICIT_MARGINS = enum.auto()
 
 
 class CutMarkerParameters(typing.NamedTuple):
@@ -157,17 +158,17 @@ class PageScene(QGraphicsScene):
         return item
 
     def get_background_color(self, render_mode: RenderMode) -> QColor:
-        if render_mode is RenderMode.ON_PAPER:
+        if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Transparent
         return self.palette().color(QPalette.Active, QPalette.Base)
 
     def get_cut_marker_color(self, render_mode: RenderMode) -> QColor:
-        if render_mode is RenderMode.ON_PAPER:
+        if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
         return self.palette().color(QPalette.Active, QPalette.WindowText)
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
-        if render_mode is RenderMode.ON_PAPER:
+        if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
         return self.palette().color(QPalette.Active, QPalette.WindowText)
 
