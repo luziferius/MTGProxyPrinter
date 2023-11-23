@@ -117,7 +117,7 @@ class ImageDatabase(QObject):
         self.images_on_disk: typing.Set[ImageKey] = set()
         self.download_thread = QThread()
         self.download_thread.setObjectName(f"{self.__class__.__name__} background worker")
-        self.download_thread.finished.connect(lambda: logger.debug(f"{self.download_thread.objectName()} stopped."))
+        self.download_thread.finished.connect(self._log_thread_stop)
         self.download_worker = dw = ImageDownloader(self)
         dw.moveToThread(self.download_thread)
 
@@ -138,6 +138,9 @@ class ImageDatabase(QObject):
         self.download_thread.started.connect(dw.scan_disk_image_cache)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _log_thread_stop(self):
+        logger.debug(f"{self.download_thread.objectName()} stopped.")
 
     @property
     @functools.lru_cache(maxsize=1)

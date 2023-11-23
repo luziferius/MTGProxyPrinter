@@ -369,6 +369,7 @@ def document_custom_layout(document: Document) -> Document:
     )
     document.apply(ActionEditDocumentSettings(custom_layout))
     yield document
+    document.__dict__.clear()
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):

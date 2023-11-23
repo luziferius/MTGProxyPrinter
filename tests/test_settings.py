@@ -22,7 +22,7 @@ import pytest
 from hamcrest import *
 
 
-@pytest.fixture()
+@pytest.fixture
 def default_settings() -> configparser.ConfigParser:
     settings = configparser.ConfigParser()
     settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)

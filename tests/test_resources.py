@@ -30,7 +30,7 @@ def list_dir(directory: Path) -> typing.Iterable[Path]:
             yield Path(os.path.relpath(subdir, directory), file_name)
 
 
-@pytest.fixture()
+@pytest.fixture
 def resource_path() -> Path:
     import mtg_proxy_printer.resources
     directory = Path(mtg_proxy_printer.resources.__path__._path[0])

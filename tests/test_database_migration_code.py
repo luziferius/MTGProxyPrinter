@@ -142,7 +142,7 @@ def test_migrated_card_database_contains_expected_indices(card_db: CardDatabase)
         ))
 
 
-@pytest.fixture()
+@pytest.fixture
 def card_db_at_version_21() -> sqlite3.Connection:
     previous_patches = MIGRATION_SCRIPTS[:MIGRATION_SCRIPTS.index((21, _migrate_21_to_22))]
     db = sqlite3.connect(":memory:")
