@@ -122,6 +122,7 @@ class PageScene(QGraphicsScene):
           On Screen, the background uses the theme’s background color and cut markers use a high-contrast color.
         :param parent: Optional Qt parent object
         """
+        self.render_mode = render_mode
         super(PageScene, self).__init__(self.get_document_page_size(document.page_layout), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
@@ -134,7 +135,6 @@ class PageScene(QGraphicsScene):
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page = self.document.get_current_page_index()
         self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
-        self.render_mode = render_mode
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
@@ -147,7 +147,7 @@ class PageScene(QGraphicsScene):
         self._update_text_items(document.page_layout)
         if document.page_layout.draw_cut_markers:
             self.draw_cut_markers()
-        logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
+        logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
 
     @staticmethod
     def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
@@ -318,10 +318,13 @@ class PageScene(QGraphicsScene):
         elif item in text_items and not new_visibility:
             self.removeItem(item)
 
-    @staticmethod
-    def get_document_page_size(page_layout: PageLayoutSettings) -> QRectF:
-        height: pint.Quantity = page_layout.page_height * unit_registry.millimeter
-        width: pint.Quantity = page_layout.page_width * unit_registry.millimeter
+    def get_document_page_size(self, page_layout: PageLayoutSettings) -> QRectF:
+        without_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
+        vertical_margins = without_margins * (page_layout.margin_top + page_layout.margin_bottom)
+        horizontal_margins = without_margins * (page_layout.margin_left + page_layout.margin_right)
+
+        height: pint.Quantity = (page_layout.page_height - vertical_margins) * unit_registry.millimeter
+        width: pint.Quantity = (page_layout.page_width - horizontal_margins) * unit_registry.millimeter
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
@@ -430,8 +433,12 @@ class PageScene(QGraphicsScene):
         card_width: int = card_size.width.magnitude
         page_layout = self.document.page_layout
 
-        margin_left = self._mm_to_rounded_px(page_layout.margin_left)
-        margin_top = self._mm_to_rounded_px(page_layout.margin_top)
+        margin_left = 0 \
+            if RenderMode.IMPLICIT_MARGINS in self.render_mode \
+            else self._mm_to_rounded_px(page_layout.margin_left)
+        margin_top = 0 \
+            if RenderMode.IMPLICIT_MARGINS in self.render_mode \
+            else self._mm_to_rounded_px(page_layout.margin_top)
 
         cards_per_row = page_layout.compute_page_column_count(page_type)
         row, column = divmod(index_row, cards_per_row)
@@ -470,15 +477,16 @@ class PageScene(QGraphicsScene):
         self.vertical_cut_line_locations.clear()
         self.horizontal_cut_line_locations.clear()
         page_layout = self.document.page_layout
+        has_margins = RenderMode.IMPLICIT_MARGINS not in self.render_mode
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 card_size.height, page_layout.compute_page_row_count(page_type),
-                page_layout.margin_top, page_layout.image_spacing_horizontal)
+                page_layout.margin_top*has_margins, page_layout.image_spacing_horizontal)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 card_size.width, page_layout.compute_page_column_count(page_type),
-                page_layout.margin_left, page_layout.image_spacing_vertical
+                page_layout.margin_left*has_margins, page_layout.image_spacing_vertical
             ))
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \

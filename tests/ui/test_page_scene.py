@@ -43,7 +43,7 @@ def create_card_with_pixmap(name: str, oversized: bool, document):
     return card
 
 
-@pytest.fixture(params=itertools.product([RenderMode.ON_PAPER, RenderMode.ON_PAPER], [True, False]))
+@pytest.fixture(params=itertools.product([RenderMode.ON_PAPER, RenderMode.ON_SCREEN], [True, False]))
 def page_scene(request, qtbot, document_light):
     """Creates a PageScene in each available rendering mode"""
     render_mode, enable_text_items = request.param

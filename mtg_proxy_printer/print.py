@@ -52,8 +52,9 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    page_width = document.page_layout.page_width
-    page_height = document.page_layout.page_height
+    layout = document.page_layout
+    page_width = layout.page_width
+    page_height = layout.page_height
     if page_width > page_height:
         logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
         printer.setPageOrientation(QPageLayout.Landscape)
@@ -70,8 +71,10 @@ def create_qprinter(document: Document) -> QPrinter:
     printer.setDuplex(QPrinter.DuplexNone)
     printer.setOutputFormat(QPrinter.NativeFormat)
     # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
-    printer.setFullPage(True)
-    printer.setPageMargins(0, 0, 0, 0, QPrinter.Millimeter)
+    #printer.setFullPage(True)
+    printer.setPageMargins(
+        layout.margin_left, layout.margin_top, layout.margin_right, layout.margin_bottom, QPrinter.Millimeter
+    )
     return printer
 
 
@@ -125,7 +128,7 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.scene = PageScene(document, RenderMode.ON_PAPER, self)
+        self.scene = PageScene(document, RenderMode.ON_PAPER | RenderMode.IMPLICIT_MARGINS, self)
 
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
