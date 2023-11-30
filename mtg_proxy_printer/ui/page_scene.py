@@ -428,29 +428,41 @@ class PageScene(QGraphicsScene):
     @functools.lru_cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
-        card_size = CardSizes.for_page_type(page_type)
-        card_height: int = card_size.height.magnitude
-        card_width: int = card_size.width.magnitude
         page_layout = self.document.page_layout
+        implicit_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
 
-        margin_left = 0 \
-            if RenderMode.IMPLICIT_MARGINS in self.render_mode \
-            else self._mm_to_rounded_px(page_layout.margin_left)
-        margin_top = 0 \
-            if RenderMode.IMPLICIT_MARGINS in self.render_mode \
-            else self._mm_to_rounded_px(page_layout.margin_top)
+        page_width = self._mm_to_rounded_px(page_layout.page_width) \
+            - implicit_margins * self._mm_to_rounded_px(page_layout.margin_left)
+        page_height = self._mm_to_rounded_px(page_layout.page_height) \
+            - implicit_margins * self._mm_to_rounded_px(page_layout.margin_top)
 
-        cards_per_row = page_layout.compute_page_column_count(page_type)
-        row, column = divmod(index_row, cards_per_row)
+        card_size = CardSizes.for_page_type(page_type)
+        image_height: int = card_size.height.magnitude
+        image_width: int = card_size.width.magnitude
 
         spacing_vertical = self._mm_to_rounded_px(page_layout.image_spacing_vertical)
         spacing_horizontal = self._mm_to_rounded_px(page_layout.image_spacing_horizontal)
 
-        x_pos = margin_left + column * (card_width + spacing_horizontal)
-        y_pos = margin_top + row * (card_height + spacing_vertical)
+        column_count = page_layout.compute_page_column_count(page_type)
+        row_count = page_layout.compute_page_row_count(page_type)
+        row, column = divmod(index_row, column_count)
+
+        left_border = (
+            page_width
+            - image_width * column_count
+            - spacing_horizontal * (column_count - 1)
+        ) / 2
+        top_border = (
+            page_height
+            - image_height * row_count
+            - spacing_vertical * (row_count - 1)
+        ) / 2
+
+        x = left_border + (image_width + spacing_horizontal) * column
+        y = top_border + (image_height + spacing_vertical) * row
         return QPointF(
-            x_pos,
-            y_pos,
+            x,
+            y,
         )
 
     @staticmethod
