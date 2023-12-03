@@ -140,8 +140,8 @@ class PageConfigWidget(QGroupBox):
             (self.ui.margin_bottom, "margin-bottom-mm"),
             (self.ui.margin_left, "margin-left-mm"),
             (self.ui.margin_right, "margin-right-mm"),
-            (self.ui.image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.ui.image_spacing_vertical, "image-spacing-vertical-mm"),
+            (self.ui.image_spacing_horizontal, "row-spacing-mm"),
+            (self.ui.image_spacing_vertical, "column-spacing-mm"),
         ]
         return widgets_with_settings
 
