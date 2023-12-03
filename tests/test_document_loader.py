@@ -42,7 +42,7 @@ def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Conn
         mock.return_value = empty_save_database
         assert_that(
             calling(mtg_proxy_printer.model.document_loader.Worker._read_data_from_save_path).with_args(
-                "Value ignored by mock"),
+                "Value ignored by mock", "Value ignored by mock"),
             raises(AssertionError)
         )
         mock.assert_called_once()
@@ -75,7 +75,7 @@ def test_valid_data_loads_correctly(
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
         page_height=300, page_width=200,
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2,
+        row_spacing=3, column_spacing=2,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
     page_layout_items = dataclasses.asdict(page_layout).items()
@@ -325,15 +325,28 @@ def test_loads_check_card(
 
 
 @pytest.fixture(params=itertools.product([
-    (4, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1]),
-    (5, [1, 200, 150, 5, 5, 5, 5, 1, 1, 1, 0]),
-], [True, False]))
+    (4, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1]),
+    (5, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1, 0]),
+    # Only old image spacing keys present
+    (6, [("document_name", ""), ("draw_cut_markers", 1), ("draw_page_numbers", 0), ("draw_sharp_corners", 0),
+         ("image_spacing_horizontal", 2), ("image_spacing_vertical", 3), ("margin_top", 4), ("margin_bottom", 5),
+         ("margin_left", 6), ("margin_right", 7), ("page_height", 200), ("page_width", 150)]),
+    # Old and new image spacing keys present. This should never exist in the wild. Ensure that the new keys are used.
+    (6, [("document_name", ""), ("draw_cut_markers", 1), ("draw_page_numbers", 0), ("draw_sharp_corners", 0),
+         ("image_spacing_horizontal", 8), ("image_spacing_vertical", 9), ("margin_top", 4), ("margin_bottom", 5),
+         ("margin_left", 6), ("margin_right", 7), ("page_height", 200), ("page_width", 150),
+         ("row_spacing", 2), ("column_spacing", 3)]),
+
+    ], [True, False]))
 def legacy_save_file(request):
     (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
     db = mtg_proxy_printer.sqlite_helpers.open_database(
         ":memory:", f"document-v{save_version}",
         mtg_proxy_printer.model.document_loader.DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False)
-    db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    if save_version < 6:
+        db.execute(f"INSERT INTO DocumentSettings VALUES ({', '.join('?'*len(settings))})", settings)
+    else:
+        db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", settings)
     if reverse_unordered:
         db.execute("PRAGMA reverse_unordered_selects = TRUE")
     yield db
@@ -341,7 +354,8 @@ def legacy_save_file(request):
     del db
 
 
-def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_file, document_light):
+def test_load_settings_from_legacy_save_file_is_successful(
+        qtbot: QtBot, legacy_save_file: sqlite3.Connection, document_light):
     loader = document_light.loader
     with unittest.mock.patch(
             "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
@@ -353,3 +367,37 @@ def test_load_settings_from_legacy_save_file_is_successful(qtbot, legacy_save_fi
         document_light.page_layout,
         has_properties({item: instance_of(value) for item, value in annotations.items()})
     )
+    assert_that(document_light.page_layout, has_properties({
+        "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
+        "row_spacing": 2, "column_spacing": 3,
+        "margin_top": 4, "margin_bottom": 5, "margin_left": 6, "margin_right": 7,
+        "page_height": 200, "page_width": 150
+    }))
+
+
+@pytest.mark.parametrize("title", ["str", "", "1", "0x1", "1.0.0", "1..0", "01", "1.0"])
+def test_load_correctly_sets_document_title(
+        qtbot: QtBot, empty_save_database: sqlite3.Connection, document_light, title):
+    if title.startswith("0") or title == "1.0":
+        # TODO: Leading zeros, and trailing zero decimals aren't handled correctly
+        pytest.xfail("Leading zeros and trailing zero decimals not yet supported correctly")
+    loader = document_light.loader
+    annotations = document_light.page_layout.__annotations__
+    empty_save_database.executemany(
+        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
+        dataclasses.asdict(document_light.page_layout).items())
+    empty_save_database.execute(
+        "UPDATE DocumentSettings SET value = ? WHERE key = ?",
+        (title, "document_name"))
+
+    with unittest.mock.patch(
+            "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
+            return_value=empty_save_database), \
+            qtbot.wait_signal(document_light.action_applied):
+        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+
+    assert_that(
+        document_light.page_layout,
+        has_properties({item: instance_of(value) for item, value in annotations.items()})
+    )
+    assert_that(document_light.page_layout, has_property("document_name", equal_to(title)))

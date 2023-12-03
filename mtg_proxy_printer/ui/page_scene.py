@@ -427,7 +427,7 @@ class PageScene(QGraphicsScene):
         card_size = CardSizes.for_page_type(page_type)
         card_height: int = card_size.height.magnitude
         card_width: int = card_size.width.magnitude
-        page_layout = self.document.page_layout
+        page_layout: PageLayoutSettings = self.document.page_layout
 
         margin_left = self._mm_to_rounded_px(page_layout.margin_left)
         margin_top = self._mm_to_rounded_px(page_layout.margin_top)
@@ -435,8 +435,8 @@ class PageScene(QGraphicsScene):
         cards_per_row = page_layout.compute_page_column_count(page_type)
         row, column = divmod(index_row, cards_per_row)
 
-        spacing_vertical = self._mm_to_rounded_px(page_layout.image_spacing_vertical)
-        spacing_horizontal = self._mm_to_rounded_px(page_layout.image_spacing_horizontal)
+        spacing_vertical = self._mm_to_rounded_px(page_layout.column_spacing)
+        spacing_horizontal = self._mm_to_rounded_px(page_layout.row_spacing)
 
         x_pos = margin_left + column * (card_width + spacing_horizontal)
         y_pos = margin_top + row * (card_height + spacing_vertical)
@@ -468,16 +468,16 @@ class PageScene(QGraphicsScene):
         logger.debug("Updating cut marker positions")
         self.vertical_cut_line_locations.clear()
         self.horizontal_cut_line_locations.clear()
-        page_layout = self.document.page_layout
+        page_layout: PageLayoutSettings = self.document.page_layout
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 card_size.height, page_layout.compute_page_row_count(page_type),
-                page_layout.margin_top, page_layout.image_spacing_horizontal)
+                page_layout.margin_top, page_layout.row_spacing)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 card_size.width, page_layout.compute_page_column_count(page_type),
-                page_layout.margin_left, page_layout.image_spacing_vertical
+                page_layout.margin_left, page_layout.column_spacing
             ))
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \

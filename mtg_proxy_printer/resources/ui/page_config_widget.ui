@@ -23,7 +23,9 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>Default paper height in millimeters</string>
+      <string>Paper height in millimeters.
+Must match the size of the sheets in the printer.
+Otherwise, scaling may be applied by the printer driver.</string>
      </property>
      <property name="suffix">
       <string> mm</string>
@@ -90,7 +92,7 @@
     </widget>
    </item>
    <item row="25" column="3">
-    <widget class="QSpinBox" name="image_spacing_horizontal">
+    <widget class="QSpinBox" name="row_spacing">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -98,7 +100,9 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Space between image rows in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</string>
      </property>
      <property name="suffix">
       <string> mm</string>
@@ -149,22 +153,22 @@
     </widget>
    </item>
    <item row="25" column="1">
-    <widget class="QLabel" name="image_spacing_horizontal_label">
+    <widget class="QLabel" name="row_spacing_label">
      <property name="text">
-      <string>Horizontal image spacing</string>
+      <string>Row spacing</string>
      </property>
      <property name="buddy">
-      <cstring>image_spacing_horizontal</cstring>
+      <cstring>row_spacing</cstring>
      </property>
     </widget>
    </item>
    <item row="26" column="1">
-    <widget class="QLabel" name="image_spacing_vertical_label">
+    <widget class="QLabel" name="column_spacing_label">
      <property name="text">
-      <string>Vertical image spacing</string>
+      <string>Column spacing</string>
      </property>
      <property name="buddy">
-      <cstring>image_spacing_vertical</cstring>
+      <cstring>column_spacing</cstring>
      </property>
     </widget>
    </item>
@@ -207,7 +211,7 @@
     </widget>
    </item>
    <item row="26" column="3">
-    <widget class="QSpinBox" name="image_spacing_vertical">
+    <widget class="QSpinBox" name="column_spacing">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -215,7 +219,9 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space above and below images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>Space between image columns in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</string>
      </property>
      <property name="suffix">
       <string> mm</string>
@@ -288,7 +294,9 @@ based on the page size and spacings configured</string>
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>Default paper width in millimeters</string>
+      <string>Paper width in millimeters.
+Must match the size of the sheets in the printer.
+Otherwise, scaling may be applied by the printer driver.</string>
      </property>
      <property name="suffix">
       <string> mm</string>
@@ -340,8 +348,8 @@ Leave empty to disable.</string>
   <tabstop>margin_bottom</tabstop>
   <tabstop>margin_left</tabstop>
   <tabstop>margin_right</tabstop>
-  <tabstop>image_spacing_horizontal</tabstop>
-  <tabstop>image_spacing_vertical</tabstop>
+  <tabstop>row_spacing</tabstop>
+  <tabstop>column_spacing</tabstop>
  </tabstops>
  <resources/>
  <connections>
@@ -538,7 +546,7 @@ Leave empty to disable.</string>
    </hints>
   </connection>
   <connection>
-   <sender>image_spacing_horizontal</sender>
+   <sender>row_spacing</sender>
    <signal>valueChanged(int)</signal>
    <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -554,7 +562,7 @@ Leave empty to disable.</string>
    </hints>
   </connection>
   <connection>
-   <sender>image_spacing_horizontal</sender>
+   <sender>row_spacing</sender>
    <signal>valueChanged(int)</signal>
    <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
@@ -570,7 +578,7 @@ Leave empty to disable.</string>
    </hints>
   </connection>
   <connection>
-   <sender>image_spacing_vertical</sender>
+   <sender>column_spacing</sender>
    <signal>valueChanged(int)</signal>
    <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
@@ -586,7 +594,7 @@ Leave empty to disable.</string>
    </hints>
   </connection>
   <connection>
-   <sender>image_spacing_vertical</sender>
+   <sender>column_spacing</sender>
    <signal>valueChanged(int)</signal>
    <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>

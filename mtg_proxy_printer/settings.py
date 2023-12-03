@@ -101,8 +101,8 @@ DEFAULT_SETTINGS["documents"] = {
     "margin-bottom-mm": "10",
     "margin-left-mm": "7",
     "margin-right-mm": "7",
-    "image-spacing-horizontal-mm": "0",
-    "image-spacing-vertical-mm": "0",
+    "row-spacing-mm": "0",
+    "column-spacing-mm": "0",
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
     "print-sharp-corners": "False",
@@ -281,12 +281,12 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - card_height):
+    if section.getint("column-spacing-mm") > (available_spacing_vertical := available_height - card_height):
         # Prevent vertical spacing from overlapping with bottom margin
-        section["image-spacing-vertical-mm"] = str(available_spacing_vertical)
-    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - card_width):
+        section["column-spacing-mm"] = str(available_spacing_vertical)
+    if section.getint("row-spacing-mm") > (available_spacing_horizontal := available_width - card_width):
         # Prevent horizontal spacing from overlapping with right margin
-        section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
+        section["row-spacing-mm"] = str(available_spacing_horizontal)
 
 
 def _validate_application_section(settings: configparser.ConfigParser, section_name: str = "application"):
@@ -375,6 +375,8 @@ def migrate_settings(settings: configparser.ConfigParser):
     _migrate_layout_setting(settings)
     _migrate_download_settings(settings)
     _migrate_default_save_paths_settings(settings)
+    _migrate_print_guessing_settings(settings)
+    _migrate_image_spacing_settings(settings)
 
 
 def _migrate_layout_setting(settings: configparser.ConfigParser):
@@ -428,6 +430,13 @@ def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
     target["enable-print-guessing-by-default"] = "True"
     target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
     target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+
+def _migrate_image_spacing_settings(settings: configparser.ConfigParser):
+    section = settings["documents"]
+    section["row-spacing-mm"] = section["image-spacing-horizontal-mm"]
+    section["column-spacing-mm"] = section["image-spacing-vertical-mm"]
+    del section["image-spacing-horizontal-mm"]
+    del section["image-spacing-vertical-mm"]
 
 
 # Read the settings from file during module import

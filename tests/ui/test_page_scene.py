@@ -120,8 +120,8 @@ def test_cut_line_locations_when_enabled(
         page_type: PageType, horizontal_spacing: int, vertical_spacing: int,
         expected_verticals: typing.List[float], expected_horizontals: typing.List[float]):
     document = page_scene.document
-    document.page_layout.image_spacing_horizontal = horizontal_spacing
-    document.page_layout.image_spacing_vertical = vertical_spacing
+    document.page_layout.row_spacing = horizontal_spacing
+    document.page_layout.column_spacing = vertical_spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
     if page_type is not PageType.UNDETERMINED:
