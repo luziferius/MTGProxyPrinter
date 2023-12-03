@@ -30,6 +30,7 @@
 ## Fixed issues
 
 - Fixed broken card filter for [reversible cards](https://scryfall.com/search?q=is:reversible). The filter now works as expected.
+- Fixed crash when loading a document that was saved with a numerical document title, for example `1`
 - Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
   while a document title is set or printing page numbers is enabled.
 - Fixed crashes when trying to download a deck list fails. Now, an error message is shown, if deck list downloads fail.

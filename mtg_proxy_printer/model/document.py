@@ -19,6 +19,7 @@ import enum
 import itertools
 import math
 import pathlib
+import sqlite3
 import sys
 import textwrap
 import typing
@@ -32,7 +33,7 @@ from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
-    CardType
+    CardType, migrate_database
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
@@ -334,7 +335,7 @@ class Document(QAbstractItemModel):
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
-            _migrate_database(db)
+            migrate_database(db, self.page_layout)
             db.execute("DELETE FROM Card")
             db.executemany(
                 "INSERT INTO Card (page, slot, scryfall_id, is_front, type) VALUES (?, ?, ?, ?, ?)",
@@ -440,100 +441,3 @@ class Document(QAbstractItemModel):
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)
         )
-
-
-def _migrate_database(db):
-    if db.execute("PRAGMA user_version\n").fetchone()[0] == 2:
-        for statement in [
-            "ALTER TABLE Card RENAME TO Card_old",
-            textwrap.dedent("""\
-            CREATE TABLE Card (
-              page INTEGER NOT NULL CHECK (page > 0),
-              slot INTEGER NOT NULL CHECK (slot > 0),
-              is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
-              scryfall_id TEXT NOT NULL,
-              PRIMARY KEY(page, slot)
-            ) WITHOUT ROWID"""),
-            textwrap.dedent("""\
-            INSERT INTO Card (page, slot, scryfall_id, is_front)
-                SELECT page, slot, scryfall_id, 1 AS is_front
-                FROM Card_old"""),
-            "DROP TABLE Card_old",
-            "PRAGMA user_version = 3",
-        ]:
-            db.execute(f"{statement};\n")
-    if db.execute("PRAGMA user_version\n").fetchone()[0] == 3:
-        db.execute(textwrap.dedent("""\
-        CREATE TABLE DocumentSettings (
-          rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
-          page_height INTEGER NOT NULL CHECK (page_height > 0),
-          page_width INTEGER NOT NULL CHECK (page_width > 0),
-          margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
-          margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
-          margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
-          margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
-          image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
-          image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
-          draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (0, 1))
-        );"""))
-        db.execute(f"PRAGMA user_version = 4")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 4:
-        for statement in [
-            "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
-            textwrap.dedent("""\
-            CREATE TABLE DocumentSettings (
-              rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
-              page_height INTEGER NOT NULL CHECK (page_height > 0),
-              page_width INTEGER NOT NULL CHECK (page_width > 0),
-              margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
-              margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
-              margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
-              margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
-              image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
-              image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
-              draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (TRUE, FALSE)),
-              draw_sharp_corners INTEGER NOT NULL CHECK (draw_sharp_corners in (TRUE, FALSE))
-            )"""),
-            "INSERT INTO DocumentSettings SELECT *, FALSE FROM DocumentSettings_Old",
-            "DROP TABLE DocumentSettings_Old",
-            "PRAGMA user_version = 5",
-        ]:
-            db.execute(f"{statement}\n")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 5:
-        for statement in [
-                "ALTER TABLE Card RENAME TO Card_old",
-                textwrap.dedent("""\
-                CREATE TABLE Card (
-                  page INTEGER NOT NULL CHECK (page > 0),
-                  slot INTEGER NOT NULL CHECK (slot > 0),
-                  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-                  scryfall_id TEXT NOT NULL,
-                  type TEXT NOT NULL CHECK (type <> ''),
-                  PRIMARY KEY(page, slot)
-                ) WITHOUT ROWID;"""),
-                textwrap.dedent("""\
-                INSERT INTO Card (page, slot, scryfall_id, is_front, type)
-                    SELECT page, slot, scryfall_id, 1 AS is_front, 'r' AS type
-                    FROM Card_old"""),
-                "DROP TABLE Card_old",
-                "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
-                textwrap.dedent("""\
-                CREATE TABLE DocumentSettings (
-                  key TEXT NOT NULL UNIQUE CHECK (key <> ''),
-                  value INTEGER NOT NULL CHECK (value >= 0)
-                )"""),
-                textwrap.dedent("""INSERT INTO DocumentSettings (key, value) 
-                  SELECT 'page_height', "page_height" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'page_width', "page_width" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_top', "margin_top" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_bottom', "margin_bottom" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_left', "margin_left" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_right', "margin_right" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'row_spacing', "image_spacing_horizontal" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'column_spacing', "image_spacing_vertical" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'draw_cut_markers', "draw_cut_markers" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
-                  """),
-                "DROP TABLE DocumentSettings_Old",
-                "PRAGMA user_version = 6",]:
-            db.execute(f"{statement}\n")
