@@ -33,8 +33,8 @@ import mtg_proxy_printer.ui.page_config_widget
     "margin_bottom",
     "margin_left",
     "margin_right",
-    "image_spacing_horizontal",
-    "image_spacing_vertical",
+    "row_spacing",
+    "column_spacing",
 ])
 def test_set_integer_spin_boxes(qtbot: QtBot, attribute_name: str):
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
@@ -81,8 +81,8 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
     ("margin-right-mm", "margin_right", 0),
-    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
-    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+    ("row-spacing-mm", "row_spacing", 0),
+    ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_load_integer_document_settings_from_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
@@ -124,8 +124,8 @@ def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, a
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
     ("margin-right-mm", "margin_right", 0),
-    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
-    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+    ("row-spacing-mm", "row_spacing", 0),
+    ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_save_integer_document_settings_to_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
@@ -180,8 +180,8 @@ def test_save_boolean_document_settings_to_config(
     ("margin_bottom", 0),
     ("margin_left", 0),
     ("margin_right", 0),
-    ("image_spacing_horizontal", 0),
-    ("image_spacing_vertical", 0),
+    ("row_spacing", 0),
+    ("column_spacing", 0),
 ])
 def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_value: int, value: int):
     """
