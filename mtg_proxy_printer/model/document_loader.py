@@ -91,8 +91,8 @@ class PageLayoutSettings:
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    image_spacing_horizontal: int = 0
-    image_spacing_vertical: int = 0
+    row_spacing: int = 0
+    column_spacing: int = 0
     margin_bottom: int = 0
     margin_left: int = 0
     margin_right: int = 0
@@ -148,7 +148,7 @@ class PageLayoutSettings:
         card_width = card_size.as_mm(card_size.width)
         total_width = self.page_width
         margins = self.margin_left + self.margin_right
-        spacing = self.image_spacing_horizontal
+        spacing = self.row_spacing
 
         total_width -= margins
         if total_width < card_width:
@@ -163,7 +163,7 @@ class PageLayoutSettings:
         card_height = card_size.as_mm(card_size.height)
         total_height = self.page_height
         margins = self.margin_top + self.margin_bottom
-        spacing = self.image_spacing_vertical
+        spacing = self.column_spacing
         total_height -= margins
         if total_height < card_height:
             return 0
@@ -547,8 +547,8 @@ class Worker(QObject):
                 margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                row_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                column_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
@@ -586,8 +586,8 @@ class Worker(QObject):
                 margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                row_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                column_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
             ),

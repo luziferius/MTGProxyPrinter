@@ -529,8 +529,8 @@ def _migrate_database(db):
                   SELECT 'margin_bottom', "margin_bottom" FROM DocumentSettings_Old UNION ALL
                   SELECT 'margin_left', "margin_left" FROM DocumentSettings_Old UNION ALL
                   SELECT 'margin_right', "margin_right" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'image_spacing_horizontal', "image_spacing_horizontal" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'image_spacing_vertical', "image_spacing_vertical" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'row_spacing', "image_spacing_horizontal" FROM DocumentSettings_Old UNION ALL
+                  SELECT 'column_spacing', "image_spacing_vertical" FROM DocumentSettings_Old UNION ALL
                   SELECT 'draw_cut_markers', "draw_cut_markers" FROM DocumentSettings_Old UNION ALL
                   SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
                   """),

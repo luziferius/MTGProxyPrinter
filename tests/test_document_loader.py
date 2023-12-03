@@ -75,7 +75,7 @@ def test_valid_data_loads_correctly(
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
         page_height=300, page_width=200,
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2,
+        row_spacing=3, column_spacing=2,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
     page_layout_items = dataclasses.asdict(page_layout).items()
