@@ -56,9 +56,9 @@ class PageConfigWidget(QGroupBox):
         self.ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
         self.ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
         self.ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        self.ui.image_spacing_horizontal.valueChanged[int].connect(
+        self.ui.row_spacing.valueChanged[int].connect(
             partial(setattr, page_layout, "image_spacing_horizontal"))
-        self.ui.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
+        self.ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
         self.ui.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
         self.ui.draw_sharp_corners.stateChanged.connect(
@@ -140,8 +140,8 @@ class PageConfigWidget(QGroupBox):
             (self.ui.margin_bottom, "margin-bottom-mm"),
             (self.ui.margin_left, "margin-left-mm"),
             (self.ui.margin_right, "margin-right-mm"),
-            (self.ui.image_spacing_horizontal, "row-spacing-mm"),
-            (self.ui.image_spacing_vertical, "column-spacing-mm"),
+            (self.ui.row_spacing, "row-spacing-mm"),
+            (self.ui.column_spacing, "column-spacing-mm"),
         ]
         return widgets_with_settings
 
