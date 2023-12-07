@@ -40,6 +40,7 @@ class RenderMode(enum.Flag):
 
 
 class CutMarkerParameters(typing.NamedTuple):
+    total_space: int
     card_size: pint.Quantity
     item_count: int
     margin: int
@@ -230,14 +231,17 @@ class PageScene(QGraphicsScene):
             item.setY(y)
 
     def _update_page_text_x(self):
-        title_x = self._mm_to_rounded_px(self.document.page_layout.margin_right) + 1
+        try:
+            # This may throw a KeyError on MIXED pages
+            title_x = round(self.vertical_cut_line_locations[PageType.REGULAR][0])
+            page_number_x = round(self.vertical_cut_line_locations[PageType.REGULAR][-1])
+        except KeyError:
+            title_x = 0
+            page_number_x = self.width()
         self.document_title_text.setX(title_x)
         font_metrics = QFontMetrics(self.page_number_text.font())
         text_width = font_metrics.horizontalAdvance(self.page_number_text.text())
-        page_number_x = round(
-            self.width()
-            - self._mm_to_rounded_px(self.document.page_layout.margin_right) - text_width - 2
-        )
+        page_number_x -= text_width + 2
         self.page_number_text.setX(page_number_x)
 
     def _update_page_number_text(self):
@@ -436,6 +440,9 @@ class PageScene(QGraphicsScene):
         page_height = self._mm_to_rounded_px(page_layout.page_height) \
             - implicit_margins * self._mm_to_rounded_px(page_layout.margin_top)
 
+        left_margin = implicit_margins * self._mm_to_rounded_px(page_layout.margin_left)
+        top_margin = implicit_margins * self._mm_to_rounded_px(page_layout.margin_top)
+
         card_size = CardSizes.for_page_type(page_type)
         image_height: int = card_size.height.magnitude
         image_width: int = card_size.width.magnitude
@@ -447,15 +454,21 @@ class PageScene(QGraphicsScene):
         row_count = page_layout.compute_page_row_count(page_type)
         row, column = divmod(index_row, column_count)
 
-        left_border = (
+        # Excessively large margins may shift the page content off-center. Clamp the borders to the non-negative range
+        # to avoid clipping images off
+        left_border = max(
             page_width
+            - left_margin
             - image_width * column_count
-            - spacing_horizontal * (column_count - 1)
+            - spacing_horizontal * (column_count - 1),
+            0
         ) / 2
-        top_border = (
+        top_border = max(
             page_height
+            - top_margin
             - image_height * row_count
-            - spacing_vertical * (row_count - 1)
+            - spacing_vertical * (row_count - 1),
+            0
         ) / 2
 
         x = left_border + (image_width + spacing_horizontal) * column
@@ -493,24 +506,37 @@ class PageScene(QGraphicsScene):
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
+                page_layout.page_height,
                 card_size.height, page_layout.compute_page_row_count(page_type),
                 page_layout.margin_top*has_margins, page_layout.row_spacing)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
+                page_layout.page_width,
                 card_size.width, page_layout.compute_page_column_count(page_type),
                 page_layout.margin_left*has_margins, page_layout.column_spacing
             ))
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
             -> typing.Generator[float, None, None]:
-        margin = self._mm_to_rounded_px(parameters.margin)
+        margin = (RenderMode.IMPLICIT_MARGINS in self.render_mode) * self._mm_to_rounded_px(parameters.margin)
         spacing = self._mm_to_rounded_px(parameters.image_spacing)
         card_size: int = parameters.card_size.magnitude
+
+        # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
+        # to avoid placing marker lines out of the drawing range
+        border = max(
+            self._mm_to_rounded_px(parameters.total_space)
+            - margin
+            - card_size * parameters.item_count
+            - spacing * (parameters.item_count - 1),
+            0
+        ) / 2
+
         # Without spacing, draw a line top/left of each row/column.
         # To also draw a line below/right of the last row/column, add a virtual row/column if spacing is zero.
         # With positive spacing, draw a line left/right/above/below *each* row/column.
-        for item in range(parameters.item_count + (0 if spacing else 1)):
-            pixel_position: float = margin + item*(spacing+card_size)
+        for item in range(parameters.item_count + (not spacing)):
+            pixel_position: float = border + item*(spacing+card_size)
             yield pixel_position
             if parameters.image_spacing:
                 yield pixel_position + card_size
