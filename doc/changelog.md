@@ -21,6 +21,8 @@
 
 ## Changed features
 
+- Centered printing: The printing area is now centered on the page, and no longer depends on the margins.
+- The default page margins for new installations are now set to 5mm in all directions.
 - Reworded the image spacing document settings. These are now named "Row spacing" and "Column spacing", which should
   be easier to understand.
 - Improved progress reporting for longer running actions: Importing deck lists and loading documents
