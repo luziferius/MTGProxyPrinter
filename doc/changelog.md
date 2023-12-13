@@ -5,12 +5,12 @@
 ## New features
 
 - Support for direct downloads from additional card list database websites:
-    - Import cube lists from [cubecobra.com](https://cubecobra.com)
-- Added card filters
-    - Cards banned in Oathbreaker
-    - Cards with extended art
+    - Import cube lists from [cubecobra.com](https://cubecobra.com). The application cannot fetch custom cards from there.
+- Added card filters for
+    - cards banned in Oathbreaker
+    - cards with extended art
     - Add ability to hide specific sets you don't like.
-        - Filters are entered using set codes (e.g. LEA DBL SLD), as listed by Scryfall.
+        - Filters are entered using set codes (e.g. `LEA DBL SLD`), as listed by Scryfall.
         - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
           tab in the Settings window.
         - All cards in all entered sets are hidden.
@@ -21,6 +21,8 @@
 
 ## Changed features
 
+- Reworded the image spacing document settings. These are now named "Row spacing" and "Column spacing", which should
+  be easier to understand.
 - Improved progress reporting for longer running actions: Importing deck lists and loading documents
   now also shows an overall progress, in addition to the download progress for individual card images. 
 - The card data update no longer locks the entire user interface. It is now possible to continue working while the
@@ -30,12 +32,14 @@
 ## Fixed issues
 
 - Fixed broken card filter for [reversible cards](https://scryfall.com/search?q=is:reversible). The filter now works as expected.
-- Fixed crash when the system color palette changes (e.g. enabling/disabling system-wide application dark mode),
+- Fixed crash when loading a document that was saved with a numerical document title, for example `1`
+- Fixed crash when the system color palette changes (e.g. by enabling/disabling system-wide application dark mode),
   while a document title is set or printing page numbers is enabled.
 - Fixed crashes when trying to download a deck list fails. Now, an error message is shown, if deck list downloads fail.
 - Fixed potential crash when quitting the application while it is loading a document.
 
 ## Optimizations
+
 - Improved performance of the image cache cleanup wizard with a lot of downloaded images:
   Reduced loading time of the second wizard page from potentially multiple minutes to a second or two.
 - Reduced CPU usage and disk writes during card data updates.
