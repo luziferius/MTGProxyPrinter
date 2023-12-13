@@ -62,8 +62,8 @@ def read_path(setting: str) -> str:
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
-        preferred_file_name = document.save_file_path.name if document.save_file_path is not None else ""
-        super(SavePDFDialog, self).__init__(parent, "Export as PDF", preferred_file_name, "PDF-Documents (*.pdf)")
+        super(SavePDFDialog, self).__init__(
+            parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
         if default_path := read_path("pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -73,6 +73,15 @@ class SavePDFDialog(QFileDialog):
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @staticmethod
+    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+        if document.save_file_path is None:
+            return ""
+        stem = document.save_file_path.stem
+        if "." in stem:
+            return f"{stem}.pdf"
+        return stem
 
     @Slot()
     def on_accept(self):
