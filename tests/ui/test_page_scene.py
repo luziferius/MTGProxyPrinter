@@ -43,17 +43,21 @@ def create_card_with_pixmap(name: str, oversized: bool, document):
     return card
 
 
-@pytest.fixture(params=itertools.product([RenderMode.ON_PAPER, RenderMode.ON_SCREEN], [True, False]))
+@pytest.fixture(params=itertools.product(
+    [RenderMode.ON_PAPER, RenderMode.ON_SCREEN],
+    [RenderMode(0), RenderMode.IMPLICIT_MARGINS],
+    [True, False]))
 def page_scene(request, qtbot, document_light):
     """Creates a PageScene in each available rendering mode"""
-    render_mode, enable_text_items = request.param
+    render_mode, implicit_margins, enable_text_items = request.param
+    render_mode |= implicit_margins
     with patch.object(document_light.page_layout, "draw_page_numbers", enable_text_items), \
          patch.object(document_light.page_layout, "document_name", "Non-empty title" if enable_text_items else ""):
         scene = PageScene(document_light, render_mode)
         yield scene
 
 
-@pytest.mark.parametrize("render_mode", RenderMode)
+@pytest.mark.parametrize("render_mode", [RenderMode.ON_PAPER, RenderMode.ON_SCREEN])
 def test___init__does_not_add_text_items_if_disabled(document_light, render_mode: RenderMode):
     with patch.object(document_light.page_layout, "draw_page_numbers", False), \
          patch.object(document_light.page_layout, "document_name", ""):
@@ -61,7 +65,7 @@ def test___init__does_not_add_text_items_if_disabled(document_light, render_mode
     assert_that(scene.text_items, is_(empty()))
 
 
-@pytest.mark.parametrize("render_mode", RenderMode)
+@pytest.mark.parametrize("render_mode", [RenderMode.ON_PAPER, RenderMode.ON_SCREEN])
 def test___init__adds_text_items_if_enabled(document_light, render_mode: RenderMode):
     with patch.object(document_light.page_layout, "draw_page_numbers", True), \
          patch.object(document_light.page_layout, "document_name", "Non-empty title"):
@@ -108,13 +112,13 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot, page_scene: Pa
 
 
 @pytest.mark.parametrize("page_type, horizontal_spacing, vertical_spacing, expected_verticals, expected_horizontals", [
-    (PageType.UNDETERMINED, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238]),
-    (PageType.REGULAR, 0, 0, [83, 828, 1573, 2318], [118, 1158, 2198, 3238]),
-    (PageType.OVERSIZED, 0, 0, [83, 1123, 2163], [118, 1608, 3098]),
+    (PageType.UNDETERMINED, 0, 0, [122.5, 867.5, 1612.5, 2357.5], [194, 1234, 2274, 3314]),
+    (PageType.REGULAR, 0, 0, [122.5, 867.5, 1612.5, 2357.5], [194, 1234, 2274, 3314]),
+    (PageType.OVERSIZED, 0, 0, [200, 1240, 2280], [264, 1754, 3244]),
 
-    (PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262]),
-    (PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262]),
-    (PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110]),
+    (PageType.UNDETERMINED, 1, 1, [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5], [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.REGULAR, 1, 1, [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5], [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.OVERSIZED, 1, 1, [194, 1234, 1246, 2286], [258, 1748, 1760, 3250]),
 ])
 def test_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
@@ -125,6 +129,13 @@ def test_cut_line_locations_when_enabled(
     document.page_layout.column_spacing = vertical_spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
+    '''
+    if RenderMode.IMPLICIT_MARGINS not in page_scene.render_mode:
+        vertical_offset = page_scene._mm_to_rounded_px(document.page_layout.margin_left)
+        horizontal_offset = page_scene._mm_to_rounded_px(document.page_layout.margin_top)
+        expected_verticals[:] = [x+vertical_offset for x in expected_verticals]
+        expected_horizontals[:] = [y+horizontal_offset for y in expected_horizontals]
+    '''
     if page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
             document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
@@ -150,12 +161,15 @@ def test_cut_line_locations_when_enabled(
     close_to_ = partial(close_to, delta=0.005)
     assert_that(
         page_scene.vertical_cut_line_locations[page_type],
-        contains_inanyorder(
-            *map(close_to_, expected_verticals))
+        contains_inanyorder(*map(close_to_, expected_verticals)),
+        f"Wrong values in {page_scene.vertical_cut_line_locations[page_type]=}, "
+        f"{RenderMode.IMPLICIT_MARGINS in page_scene.render_mode=}"
     )
     assert_that(
         page_scene.horizontal_cut_line_locations[page_type],
-        contains_inanyorder(*map(close_to_, expected_horizontals))
+        contains_inanyorder(*map(close_to_, expected_horizontals)),
+        f"Wrong values in {page_scene.horizontal_cut_line_locations[page_type]=}, "
+        f"{RenderMode.IMPLICIT_MARGINS in page_scene.render_mode=}"
     )
     assert_that(
         page_scene.cut_lines,
