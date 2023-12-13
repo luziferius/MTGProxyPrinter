@@ -431,8 +431,11 @@ def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
     target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
     target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
 
+
 def _migrate_image_spacing_settings(settings: configparser.ConfigParser):
     section = settings["documents"]
+    if "image-spacing-horizontal-mm" not in section:
+        return
     section["row-spacing-mm"] = section["image-spacing-horizontal-mm"]
     section["column-spacing-mm"] = section["image-spacing-vertical-mm"]
     del section["image-spacing-horizontal-mm"]
