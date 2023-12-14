@@ -670,7 +670,7 @@ def test_update_page_layout_copies_the_passed_in_instance(document_light: Docume
 
 @pytest.mark.parametrize("page_type, column_spacing, row_spacing, expected", [
     (PageType.REGULAR, 0, 0, 9),
-    (PageType.REGULAR, 10, 0, 6),
+    (PageType.REGULAR, 17, 0, 6),
     (PageType.REGULAR, 0, 10, 6),
     (PageType.OVERSIZED, 0, 0, 4),
     (PageType.OVERSIZED, 0, 10, 4),
