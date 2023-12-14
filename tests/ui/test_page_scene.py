@@ -268,6 +268,7 @@ def test_horizontal_cut_line_locations_when_enabled(
 def test_vertical_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected: typing.List[float]):
+    page_scene.render_mode |= flags
     document = page_scene.document
     document.page_layout.margin_left = margins
     document.page_layout.margin_right = 0

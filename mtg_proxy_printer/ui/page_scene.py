@@ -515,8 +515,7 @@ class PageScene(QGraphicsScene):
                 page_layout.margin_left, page_layout.column_spacing
             ))
 
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
-            -> typing.Generator[float, None, None]:
+    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
         spacing = self._mm_to_rounded_px(parameters.image_spacing)
         card_size: int = parameters.card_size.magnitude
 
