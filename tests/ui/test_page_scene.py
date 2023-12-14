@@ -154,8 +154,6 @@ def test_cut_lines_bounding_rects_cross_entire_page(
 
 
 @pytest.mark.parametrize("page_type, spacing, margins, flags, expected", [
-    (PageType.UNDETERMINED, 0, 5, RenderMode.IMPLICIT_MARGINS, [135, 1175, 2215, 3255]),
-
     (PageType.UNDETERMINED, 0, 0, RenderMode(0), [194, 1234, 2274, 3314]),
     (PageType.REGULAR, 0, 0, RenderMode(0), [194, 1234, 2274, 3314]),
     (PageType.OVERSIZED, 0, 0, RenderMode(0), [264, 1754, 3244]),
@@ -194,7 +192,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     (PageType.OVERSIZED, 0, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 2980]),
     (PageType.UNDETERMINED, 1, 17, RenderMode(0), [201, 1241, 1253, 2293, 2305, 3345]),
     (PageType.REGULAR, 1, 17, RenderMode(0), [201, 1241, 1253, 2293, 2305, 3345]),
-    (PageType.OVERSIZED, 1, 23, RenderMode(0), [273, 1763, 1775, 3265]),
+    (PageType.OVERSIZED, 1, 23, RenderMode(0), [272, 1762, 1774, 3264]),
     (PageType.UNDETERMINED, 1, 17, RenderMode.IMPLICIT_MARGINS, [0, 1040, 1052, 2092, 2104, 3144]),
     (PageType.REGULAR, 1, 17, RenderMode.IMPLICIT_MARGINS, [0, 1040, 1052, 2092, 2104, 3144]),
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 1502, 2992]),

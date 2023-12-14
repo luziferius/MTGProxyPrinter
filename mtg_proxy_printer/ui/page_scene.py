@@ -517,19 +517,20 @@ class PageScene(QGraphicsScene):
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
             -> typing.Generator[float, None, None]:
-        margin = (RenderMode.IMPLICIT_MARGINS in self.render_mode) * self._mm_to_rounded_px(parameters.margin)
         spacing = self._mm_to_rounded_px(parameters.image_spacing)
         card_size: int = parameters.card_size.magnitude
 
         # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
         # to avoid placing marker lines out of the drawing range
-        border = max(
+        border = (
             self._mm_to_rounded_px(parameters.total_space)
-            - 2*margin
             - card_size * parameters.item_count
-            - spacing * (parameters.item_count - 1),
-            0
+            - spacing * (parameters.item_count - 1)
         ) / 2
+        margin = self._mm_to_rounded_px(parameters.margin)
+        border = max(border, margin)
+        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
+            border -= margin
 
         # Without spacing, draw a line top/left of each row/column.
         # To also draw a line below/right of the last row/column, add a virtual row/column if spacing is zero.
