@@ -502,18 +502,17 @@ class PageScene(QGraphicsScene):
         self.vertical_cut_line_locations.clear()
         self.horizontal_cut_line_locations.clear()
         page_layout: PageLayoutSettings = self.document.page_layout
-        has_margins = RenderMode.IMPLICIT_MARGINS not in self.render_mode
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 page_layout.page_height,
                 card_size.height, page_layout.compute_page_row_count(page_type),
-                page_layout.margin_top*has_margins, page_layout.row_spacing)
+                page_layout.margin_top, page_layout.row_spacing)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 page_layout.page_width,
                 card_size.width, page_layout.compute_page_column_count(page_type),
-                page_layout.margin_left*has_margins, page_layout.column_spacing
+                page_layout.margin_left, page_layout.column_spacing
             ))
 
     def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
@@ -526,7 +525,7 @@ class PageScene(QGraphicsScene):
         # to avoid placing marker lines out of the drawing range
         border = max(
             self._mm_to_rounded_px(parameters.total_space)
-            - margin
+            - 2*margin
             - card_size * parameters.item_count
             - spacing * (parameters.item_count - 1),
             0

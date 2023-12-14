@@ -46,13 +46,10 @@ def create_card_with_pixmap(name: str, oversized: bool, document):
 
 @pytest.fixture(params=itertools.product(
     [RenderMode.ON_PAPER, RenderMode.ON_SCREEN],
-#    [RenderMode(0), RenderMode.IMPLICIT_MARGINS],
-    [RenderMode(0)],  # For now, not testing implicit margins. TODO: Enable testing it
     [True, False]))
 def page_scene(request, qtbot, document_light):
     """Creates a PageScene in each available rendering mode"""
-    render_mode, implicit_margins, enable_text_items = request.param  # type: RenderMode, RenderMode, bool
-    render_mode |= implicit_margins
+    render_mode, enable_text_items = request.param  # type: RenderMode, bool
     with patch.object(document_light.page_layout, "draw_page_numbers", enable_text_items), \
          patch.object(document_light.page_layout, "document_name", "Non-empty title" if enable_text_items else ""):
         scene = PageScene(document_light, render_mode)
@@ -156,27 +153,67 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     )
 
 
-@pytest.mark.parametrize("page_type, spacing, expected", [
-    (PageType.UNDETERMINED, 0, [194, 1234, 2274, 3314]),
-    (PageType.REGULAR, 0, [194, 1234, 2274, 3314]),
-    (PageType.OVERSIZED, 0, [264, 1754, 3244]),
+@pytest.mark.parametrize("page_type, spacing, margins, flags, expected", [
+    (PageType.UNDETERMINED, 0, 5, RenderMode.IMPLICIT_MARGINS, [135, 1175, 2215, 3255]),
 
-    (PageType.UNDETERMINED, 1, [182, 1222, 1234, 2274, 2286, 3326]),
-    (PageType.REGULAR, 1, [182, 1222, 1234, 2274, 2286, 3326]),
-    (PageType.OVERSIZED, 1, [258, 1748, 1760, 3250]),
+    (PageType.UNDETERMINED, 0, 0, RenderMode(0), [194, 1234, 2274, 3314]),
+    (PageType.REGULAR, 0, 0, RenderMode(0), [194, 1234, 2274, 3314]),
+    (PageType.OVERSIZED, 0, 0, RenderMode(0), [264, 1754, 3244]),
+    (PageType.UNDETERMINED, 0, 5, RenderMode(0), [194, 1234, 2274, 3314]),
+    (PageType.REGULAR, 0, 5, RenderMode(0), [194, 1234, 2274, 3314]),
+    (PageType.OVERSIZED, 0, 5, RenderMode(0), [264, 1754, 3244]),
+
+    (PageType.UNDETERMINED, 0, 0, RenderMode.IMPLICIT_MARGINS, [194, 1234, 2274, 3314]),
+    (PageType.REGULAR, 0, 0, RenderMode.IMPLICIT_MARGINS, [194, 1234, 2274, 3314]),
+    (PageType.OVERSIZED, 0, 0, RenderMode.IMPLICIT_MARGINS, [264, 1754, 3244]),
+    (PageType.UNDETERMINED, 0, 5, RenderMode.IMPLICIT_MARGINS, [135, 1175, 2215, 3255]),
+    (PageType.REGULAR, 0, 5, RenderMode.IMPLICIT_MARGINS, [135, 1175, 2215, 3255]),
+    (PageType.OVERSIZED, 0, 5, RenderMode.IMPLICIT_MARGINS, [205, 1695, 3185]),
+
+    (PageType.UNDETERMINED, 1, 0, RenderMode(0), [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.REGULAR, 1, 0, RenderMode(0), [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.OVERSIZED, 1, 0, RenderMode(0), [258, 1748, 1760, 3250]),
+    (PageType.UNDETERMINED, 1, 5, RenderMode(0), [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.REGULAR, 1, 5, RenderMode(0), [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.OVERSIZED, 1, 5, RenderMode(0), [258, 1748, 1760, 3250]),
+    
+    (PageType.UNDETERMINED, 1, 0, RenderMode.IMPLICIT_MARGINS, [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.REGULAR, 1, 0, RenderMode.IMPLICIT_MARGINS, [182, 1222, 1234, 2274, 2286, 3326]),
+    (PageType.OVERSIZED, 1, 0, RenderMode.IMPLICIT_MARGINS, [258, 1748, 1760, 3250]),
+    (PageType.UNDETERMINED, 1, 5, RenderMode.IMPLICIT_MARGINS, [123, 1163, 1175, 2215, 2227, 3267]),
+    (PageType.REGULAR, 1, 5, RenderMode.IMPLICIT_MARGINS, [123, 1163, 1175, 2215, 2227, 3267]),
+    (PageType.OVERSIZED, 1, 5, RenderMode.IMPLICIT_MARGINS, [199, 1689, 1701, 3191]),
+
+    # Large top margin, pushing the images down.
+    # With implicit margins, the first element would otherwise have negative coordinates and gets truncated
+    (PageType.UNDETERMINED, 0, 17, RenderMode(0), [201, 1241, 2281, 3321]),
+    (PageType.REGULAR, 0, 17, RenderMode(0), [201, 1241, 2281, 3321]),
+    (PageType.OVERSIZED, 0, 23, RenderMode(0), [272, 1762, 3252]),
+    (PageType.UNDETERMINED, 0, 17, RenderMode.IMPLICIT_MARGINS, [0, 1040, 2080, 3120]),
+    (PageType.REGULAR, 0, 17, RenderMode.IMPLICIT_MARGINS, [0, 1040, 2080, 3120]),
+    (PageType.OVERSIZED, 0, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 2980]),
+    (PageType.UNDETERMINED, 1, 17, RenderMode(0), [201, 1241, 1253, 2293, 2305, 3345]),
+    (PageType.REGULAR, 1, 17, RenderMode(0), [201, 1241, 1253, 2293, 2305, 3345]),
+    (PageType.OVERSIZED, 1, 23, RenderMode(0), [273, 1763, 1775, 3265]),
+    (PageType.UNDETERMINED, 1, 17, RenderMode.IMPLICIT_MARGINS, [0, 1040, 1052, 2092, 2104, 3144]),
+    (PageType.REGULAR, 1, 17, RenderMode.IMPLICIT_MARGINS, [0, 1040, 1052, 2092, 2104, 3144]),
+    (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 1502, 2992]),
+    # TODO: Add cases for large bottom margin, pushing images up
 ])
 def test_horizontal_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
-        page_type: PageType, spacing: int, expected: typing.List[float]):
+        page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected: typing.List[float]):
+    page_scene.render_mode |= flags
     document = page_scene.document
+    document.page_layout.margin_top = margins
+    document.page_layout.margin_bottom = 0
     document.page_layout.row_spacing = spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
-
-    if RenderMode.IMPLICIT_MARGINS in page_scene.render_mode:
-        offset = page_scene._mm_to_rounded_px(document.page_layout.margin_top)
-        expected[:] = [y-offset for y in expected]
-
+    assert_that(
+        document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
+        "Test setup failed! Margins caused unexpected capacity decrease"
+    )
     if page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
             document.apply(
@@ -197,28 +234,52 @@ def test_horizontal_cut_line_locations_when_enabled(
     )
 
 
-@pytest.mark.parametrize("page_type, spacing, expected", [
-    (PageType.UNDETERMINED, 0, [122.5, 867.5, 1612.5, 2357.5]),
-    (PageType.REGULAR, 0, [122.5, 867.5, 1612.5, 2357.5]),
-    (PageType.OVERSIZED, 0, [200, 1240, 2280]),
+@pytest.mark.parametrize("page_type, spacing, margins, flags, expected", [
+    (PageType.UNDETERMINED, 0, 0, RenderMode(0), [122.5, 867.5, 1612.5, 2357.5]),
+    (PageType.REGULAR, 0, 0, RenderMode(0), [122.5, 867.5, 1612.5, 2357.5]),
+    (PageType.OVERSIZED, 0, 0, RenderMode(0), [200, 1240, 2280]),
+    (PageType.UNDETERMINED, 0, 5, RenderMode(0), [122.5, 867.5, 1612.5, 2357.5]),
+    (PageType.REGULAR, 0, 5, RenderMode(0), [122.5, 867.5, 1612.5, 2357.5]),
+    (PageType.OVERSIZED, 0, 5, RenderMode(0), [200, 1240, 2280]),
+    
+    (PageType.UNDETERMINED, 0, 0, RenderMode.IMPLICIT_MARGINS, [122.5, 867.5, 1612.5, 2357.5]),
+    (PageType.REGULAR, 0, 0, RenderMode.IMPLICIT_MARGINS, [122.5, 867.5, 1612.5, 2357.5]),
+    (PageType.OVERSIZED, 0, 0, RenderMode.IMPLICIT_MARGINS, [200, 1240, 2280]),
+    (PageType.UNDETERMINED, 0, 5, RenderMode.IMPLICIT_MARGINS, [63.5, 808.5, 1553.5, 2298.5]),
+    (PageType.REGULAR, 0, 5, RenderMode.IMPLICIT_MARGINS, [63.5, 808.5, 1553.5, 2298.5]),
+    (PageType.OVERSIZED, 0, 5, RenderMode.IMPLICIT_MARGINS, [141, 1181, 2221]),
 
-    (PageType.UNDETERMINED, 1, [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
-    (PageType.REGULAR, 1, [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
-    (PageType.OVERSIZED, 1, [194, 1234, 1246, 2286]),
+    (PageType.UNDETERMINED, 1, 0, RenderMode(0), [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
+    (PageType.REGULAR, 1, 0, RenderMode(0), [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
+    (PageType.OVERSIZED, 1, 0, RenderMode(0), [194, 1234, 1246, 2286]),
+    (PageType.UNDETERMINED, 1, 5, RenderMode(0), [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
+    (PageType.REGULAR, 1, 5, RenderMode(0), [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
+    (PageType.OVERSIZED, 1, 5, RenderMode(0), [194, 1234, 1246, 2286]),
+
+    (PageType.UNDETERMINED, 1, 0, RenderMode.IMPLICIT_MARGINS, [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
+    (PageType.REGULAR, 1, 0, RenderMode.IMPLICIT_MARGINS, [110.5, 855.5, 867.5, 1612.5, 1624.5, 2369.5]),
+    (PageType.OVERSIZED, 1, 0, RenderMode.IMPLICIT_MARGINS, [194, 1234, 1246, 2286]),
+    (PageType.UNDETERMINED, 1, 5, RenderMode.IMPLICIT_MARGINS, [51.5, 796.5, 808.5, 1553.5, 1565.5, 2310.5]),
+    (PageType.REGULAR, 1, 5, RenderMode.IMPLICIT_MARGINS, [51.5, 796.5, 808.5, 1553.5, 1565.5, 2310.5]),
+    (PageType.OVERSIZED, 1, 5, RenderMode.IMPLICIT_MARGINS, [135, 1175, 1187, 2227]),
+    # Large left margin, pushing the images to the right.
+    # With implicit margins, the first element would otherwise have negative coordinates and gets truncated
+    # TODO: Add cases.
+    # TODO: Add cases for large right margins pushing images to the left
 ])
 def test_vertical_cut_line_locations_when_enabled(
         qtbot, page_scene: PageScene,
-        page_type: PageType, spacing: int,
-        expected: typing.List[float]):
+        page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected: typing.List[float]):
     document = page_scene.document
+    document.page_layout.margin_left = margins
+    document.page_layout.margin_right = 0
     document.page_layout.column_spacing = spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
-
-    if RenderMode.IMPLICIT_MARGINS in page_scene.render_mode:
-        offset = page_scene._mm_to_rounded_px(document.page_layout.margin_left)
-        expected[:] = [x-offset for x in expected]
-
+    assert_that(
+        document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
+        "Test setup failed! Margins caused unexpected capacity decrease"
+    )
     if page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
             document.apply(
