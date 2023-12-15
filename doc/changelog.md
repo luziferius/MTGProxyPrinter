@@ -22,6 +22,10 @@
 ## Changed features
 
 - Centered printing: The printing area is now centered on the page, and no longer depends on the margins.
+    - The margins thus no longer affect the location of the printing area, and are only used to determine how many
+      images fit on a page.
+    - Note that only the printing area itself is centered.
+    - Printings are still added from top-left to bottom-right within the printing area.
 - The default page margins for new installations are now set to 5mm in all directions.
 - Reworded the image spacing document settings. These are now named "Row spacing" and "Column spacing", which should
   be easier to understand.
@@ -29,7 +33,9 @@
   now also shows an overall progress, in addition to the download progress for individual card images. 
 - The card data update no longer locks the entire user interface. It is now possible to continue working while the
   update runs in the background.
-  - For now, some actions remain unavailable during the update. (This restriction may be lifted in future versions.)
+    - For now, some actions (printing, PDF export, deleting downloaded card images via the in-app wizard, 
+      and accessing the application settings) remain unavailable during the update.
+      (This restriction may be lifted in future versions.)
 
 ## Fixed issues
 
