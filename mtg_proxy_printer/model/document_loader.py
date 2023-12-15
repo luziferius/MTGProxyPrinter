@@ -24,7 +24,8 @@ import textwrap
 import typing
 from unittest.mock import patch
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread
+from PyQt5.QtGui import QPageLayout, QPageSize
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, QMarginsF, QSizeF
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
@@ -46,6 +47,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
+    from mtg_proxy_printer.ui.page_scene import RenderMode
 logger = get_logger(__name__)
 del get_logger
 
@@ -117,6 +119,18 @@ class PageLayoutSettings:
             document_settings.getint("paper-height-mm"),
             document_settings.getint("paper-width-mm"),
         )
+
+    def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
+        orientation = QPageLayout.Orientation
+        margins = QMarginsF(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom) \
+            if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
+        layout = QPageLayout(
+            QPageSize(QSizeF(*sorted([self.page_width, self.page_height])), QPageSize.Unit.Millimeter),
+            orientation.Portrait if self.page_width < self.page_height else orientation.Landscape,
+            margins,
+            QPageLayout.Unit.Millimeter,
+        )
+        return layout
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):

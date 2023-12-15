@@ -19,11 +19,15 @@ import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.ui.page_scene import RenderMode
 
-
+from PyQt5.QtGui import QPageLayout, QPageSize
+from PyQt5.QtCore import QMarginsF
 import pytest
 from hamcrest import *
 PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
+
+from tests.hasgetter import has_getter, has_getters
 
 
 @pytest.fixture
@@ -133,3 +137,39 @@ def test_create_from_settings():
             page_width=100,
         )
     )
+
+
+@pytest.mark.parametrize("height, width, orientation", [
+    (297, 210, QPageLayout.Orientation.Portrait),
+    (210, 297, QPageLayout.Orientation.Landscape),
+])
+@pytest.mark.parametrize("render_mode, margins", [
+    (RenderMode(0), QMarginsF(0, 0, 0, 0)),
+    (RenderMode.IMPLICIT_MARGINS, QMarginsF(1, 2, 3, 4)),
+])
+def test_to_page_layout(
+        page_layout: PageLayoutSettings,
+        render_mode: RenderMode, margins: QMarginsF,
+        height: int, width: int, orientation: QPageLayout.Orientation
+):
+    page_layout.page_height = height
+    page_layout.page_width = width
+    page_layout.margin_left = 1
+    page_layout.margin_top = 2
+    page_layout.margin_right = 3
+    page_layout.margin_bottom = 4
+    q_page_layout = page_layout.to_page_layout(render_mode)
+    assert_that(q_page_layout, has_getters(
+        margins=has_getters(
+            left=margins.left(),
+            top=margins.top(),
+            right=margins.right(),
+            bottom=margins.bottom(),
+        ),
+        isValid=True,
+        orientation=orientation,
+    ))
+    assert_that(q_page_layout.pageSize().size(QPageSize.Unit.Millimeter), has_getters(
+        height=close_to(297, 0.01),
+        width=close_to(210, 0.01),
+    ))

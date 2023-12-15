@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout, QPageSize
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
@@ -53,17 +53,13 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 def create_qprinter(document: Document) -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
     layout = document.page_layout
-    page_width = layout.page_width
-    page_height = layout.page_height
-    if page_width > page_height:
-        logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
-        printer.setPageOrientation(QPageLayout.Landscape)
-        # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
-        # resulting in correct values.
-        page_size = QSizeF(page_height, page_width)
-    else:
-        page_size = QSizeF(page_width, page_height)
-    printer.setPageSizeMM(page_size)
+    page_layout = document.page_layout.to_page_layout(RenderMode.IMPLICIT_MARGINS)
+    if not printer.setPageLayout(page_layout):
+        logger.error(
+            f"Setting page layout failed! "
+            f"Layout: page_size={page_layout.pageSize().size(QPageSize.Unit.Millimeter)}, "
+            f"orientation={page_layout.orientation()}, "
+            f"margins={layout.margin_left, layout.margin_top, layout.margin_right, layout.margin_bottom}")
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     # Disable duplex printing by default
@@ -71,10 +67,7 @@ def create_qprinter(document: Document) -> QPrinter:
     printer.setDuplex(QPrinter.DuplexNone)
     printer.setOutputFormat(QPrinter.NativeFormat)
     # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
-    #printer.setFullPage(True)
-    printer.setPageMargins(
-        layout.margin_left, layout.margin_top, layout.margin_right, layout.margin_bottom, QPrinter.Millimeter
-    )
+    # printer.setFullPage(True)
     return printer
 
 
