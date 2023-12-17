@@ -333,7 +333,7 @@ class PageScene(QGraphicsScene):
             QPointF(0, 0),
             QSizeF(
                 (RESOLUTION * width).to("pixel").magnitude,
-                (RESOLUTION * height).to("pixel").magnitude
+                (RESOLUTION * height).to("pixel").magnitude,
             )
         )
         return page_size
@@ -433,22 +433,19 @@ class PageScene(QGraphicsScene):
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout
-        implicit_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
 
-        page_width = self._mm_to_rounded_px(page_layout.page_width) \
-            - implicit_margins * self._mm_to_rounded_px(page_layout.margin_left)
-        page_height = self._mm_to_rounded_px(page_layout.page_height) \
-            - implicit_margins * self._mm_to_rounded_px(page_layout.margin_top)
+        page_width = self._mm_to_rounded_px(page_layout.page_width)
+        page_height = self._mm_to_rounded_px(page_layout.page_height)
 
-        left_margin = implicit_margins * self._mm_to_rounded_px(page_layout.margin_left)
-        top_margin = implicit_margins * self._mm_to_rounded_px(page_layout.margin_top)
+        left_margin = self._mm_to_rounded_px(page_layout.margin_left)
+        top_margin = self._mm_to_rounded_px(page_layout.margin_top)
 
         card_size = CardSizes.for_page_type(page_type)
         image_height: int = card_size.height.magnitude
         image_width: int = card_size.width.magnitude
 
-        spacing_vertical = self._mm_to_rounded_px(page_layout.column_spacing)
-        spacing_horizontal = self._mm_to_rounded_px(page_layout.row_spacing)
+        column_spacing = self._mm_to_rounded_px(page_layout.column_spacing)
+        row_spacing = self._mm_to_rounded_px(page_layout.row_spacing)
 
         column_count = page_layout.compute_page_column_count(page_type)
         row_count = page_layout.compute_page_row_count(page_type)
@@ -458,21 +455,25 @@ class PageScene(QGraphicsScene):
         # to avoid clipping images off
         left_border = max(
             page_width
-            - left_margin
             - image_width * column_count
-            - spacing_horizontal * (column_count - 1),
+            - column_spacing * (column_count - 1),
             0
         ) / 2
         top_border = max(
             page_height
-            - top_margin
             - image_height * row_count
-            - spacing_vertical * (row_count - 1),
+            - row_spacing * (row_count - 1),
             0
         ) / 2
 
-        x = left_border + (image_width + spacing_horizontal) * column
-        y = top_border + (image_height + spacing_vertical) * row
+        left_border = max(left_border, left_margin)
+        top_border = max(top_border, top_margin)
+        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
+            left_border -= left_margin
+            top_border -= top_margin
+
+        x = left_border + (image_width + column_spacing) * column
+        y = top_border + (image_height + row_spacing) * row
         return QPointF(
             x,
             y,

@@ -34,6 +34,7 @@ StringSet = typing.Set[str]
 IntList = typing.List[int]
 StrDict = typing.Dict[str, str]
 
+
 class CardSize(typing.NamedTuple):
     width: pint.Quantity
     height: pint.Quantity
