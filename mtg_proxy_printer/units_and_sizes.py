@@ -103,6 +103,7 @@ class FaceDataType(typing.TypedDict):
     type_line: NotRequired[str]
     watermark: NotRequired[str]
 
+
 class RelatedCardType(typing.TypedDict):
     object: str
     id: UUID
@@ -118,6 +119,7 @@ _CardPreviewFields = typing.TypedDict("_CardPreviewFields", {
     "preview.source_uri": WEB_URI,
     "preview.source": str,
 })
+
 
 class CardDataType(_CardPreviewFields):
     """Card data type modelled according to https://scryfall.com/docs/api/cards"""
@@ -209,6 +211,7 @@ class CardDataType(_CardPreviewFields):
     variation_of: NotRequired[UUID]
     security_stamp: NotRequired[str]
     watermark: NotRequired[str]
+
 
 class BulkDataType(typing.TypedDict):
     """
