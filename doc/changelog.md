@@ -24,8 +24,9 @@
 - Centered printing: The printing area is now centered on the page, and no longer depends on the margins.
     - The margins thus no longer affect the location of the printing area, and are only used to determine how many
       images fit on a page.
-    - Note that only the printing area itself is centered.
-    - Printings are still added from top-left to bottom-right within the printing area.
+    - Note that only the printing area itself is centered. Printings are still added from top-left to bottom-right
+      within the printing area.
+    - Entering very large top/left margins may shift the printing area off-center.
 - The default page margins for new installations are now set to 5mm in all directions.
 - Reworded the image spacing document settings. These are now named "Row spacing" and "Column spacing", which should
   be easier to understand.
