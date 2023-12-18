@@ -4,8 +4,12 @@
 
 ## New features
 
-- Support for direct downloads from additional card list database websites:
-    - Import cube lists from [cubecobra.com](https://cubecobra.com). The application cannot fetch custom cards from there.
+- Added option to disable borderless printing to improve printer compatibility with printer drivers that refuse to
+  accept borderless printing, and force-downscale prints in borderless mode.  
+  If your printer driver refuses to print to-size in borderless mode,
+  you can now use an alternative mode, which explicitly sets the page margins in the printer configuration.
+    - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
+      printers physical printing area.
 - Added card filters for
     - cards banned in Oathbreaker
     - cards with extended art
@@ -18,6 +22,8 @@
           typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
           too, you have to explicitly do that. Also note that promotional cards have a lower priority
           when the app has to choose a printing on its own, so hiding them is generally not required.
+- Added support for direct downloads of cube lists from [cubecobra.com](https://cubecobra.com).
+    - The application cannot fetch custom cards from there.
 
 ## Changed features
 
@@ -36,7 +42,7 @@
   update runs in the background.
     - For now, some actions (printing, PDF export, deleting downloaded card images via the in-app wizard, 
       and accessing the application settings) remain unavailable during the update.
-      (This restriction may be lifted in future versions.)
+      (This restriction may be lifted in future versions. If you manage to circumvent the lock, expect crashes.)
 
 ## Fixed issues
 
