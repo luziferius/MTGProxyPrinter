@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
-import functools
 import logging
 import pathlib
 import typing
@@ -31,7 +30,6 @@ from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -52,6 +50,7 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
 }
 check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+
 
 class SettingsWindow(QDialog):
     """Implements the Settings window."""
@@ -114,6 +113,7 @@ class SettingsWindow(QDialog):
         self._load_debug_settings(settings)
         self._load_print_guessing_settings(settings)
         self._load_update_check_settings(settings)
+        self._load_printer_settings(settings)
         logger.debug("Finished loading settings")
 
     def _load_update_check_settings(self, settings: configparser.ConfigParser):
@@ -160,6 +160,11 @@ class SettingsWindow(QDialog):
         log_level_combo_box = self.ui.log_level_combo_box
         log_level_combo_box.setCurrentIndex(log_level_combo_box.findText(section["log-level"]))
 
+    def _load_printer_settings(self, settings: configparser.ConfigParser):
+        section = settings["printer"]
+        for widget, setting in self._get_printer_settings_widgets():
+            widget.setChecked(section.getboolean(setting))
+
     def _load_print_guessing_settings(self, settings: configparser.ConfigParser):
         section = settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
@@ -196,6 +201,13 @@ class SettingsWindow(QDialog):
             (ui.print_guessing_enable, "enable-print-guessing-by-default"),
             (ui.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (ui.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
+        ]
+        return widgets_with_settings
+
+    def _get_printer_settings_widgets(self):
+        ui = self.ui
+        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+            (ui.printer_use_borderless_printing, "borderless-printing")
         ]
         return widgets_with_settings
 
@@ -239,6 +251,7 @@ class SettingsWindow(QDialog):
         self._save_debug_settings()
         self._save_print_guessing_settings()
         self._save_update_check_settings()
+        self._save_printer_settings()
         logger.debug("Settings read from UI widgets, about to write the configuration to disk.")
         mtg_proxy_printer.settings.write_settings_to_file()
         self.saved.emit()
@@ -287,6 +300,11 @@ class SettingsWindow(QDialog):
     def _save_print_guessing_settings(self):
         section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_print_guessing_checkbox_widgets():
+            section[setting] = str(widget.isChecked())
+
+    def _save_printer_settings(self):
+        section = mtg_proxy_printer.settings.settings["printer"]
+        for widget, setting in self._get_printer_settings_widgets():
             section[setting] = str(widget.isChecked())
 
     def restore_defaults(self):

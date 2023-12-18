@@ -215,9 +215,10 @@ class AboutMTGProxyPrinterDialog(QDialog):
 class PrintPreviewDialog(QPrintPreviewDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
-        self.qprinter = mtg_proxy_printer.print.create_qprinter(document)
+        self.renderer = mtg_proxy_printer.print.Renderer(document)
+        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
         super(PrintPreviewDialog, self).__init__(self.qprinter, parent)
-        self.renderer = mtg_proxy_printer.print.Renderer(document, self)
+        self.renderer.setParent(self)
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -225,9 +226,10 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 class PrintDialog(QPrintDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
-        self.qprinter = mtg_proxy_printer.print.create_qprinter(document)
+        self.renderer = mtg_proxy_printer.print.Renderer(document)
+        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
         super(PrintDialog, self).__init__(self.qprinter, parent)
-        self.renderer = mtg_proxy_printer.print.Renderer(document, self)
+        self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
         self.accepted.connect(document.store_image_usage)

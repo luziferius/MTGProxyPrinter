@@ -21,7 +21,6 @@ import itertools
 import sqlite3
 import unittest.mock
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from PyQt5.QtGui import QColor, QPixmap
 import pytest

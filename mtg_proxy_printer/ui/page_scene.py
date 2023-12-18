@@ -33,12 +33,14 @@ class RenderLayers(enum.Enum):
 
 
 @enum.unique
-class RenderMode(enum.Enum):
+class RenderMode(enum.Flag):
     ON_SCREEN = enum.auto()
     ON_PAPER = enum.auto()
+    IMPLICIT_MARGINS = enum.auto()
 
 
 class CutMarkerParameters(typing.NamedTuple):
+    total_space: int
     card_size: pint.Quantity
     item_count: int
     margin: int
@@ -121,6 +123,7 @@ class PageScene(QGraphicsScene):
           On Screen, the background uses the theme’s background color and cut markers use a high-contrast color.
         :param parent: Optional Qt parent object
         """
+        self.render_mode = render_mode
         super(PageScene, self).__init__(self.get_document_page_size(document.page_layout), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
@@ -133,7 +136,6 @@ class PageScene(QGraphicsScene):
         self.document.page_layout_changed.connect(self.on_page_layout_changed)
         self.selected_page = self.document.get_current_page_index()
         self.setBackgroundBrush(QBrush(QColorConstants.White, Qt.SolidPattern))
-        self.render_mode = render_mode
         background_color = self.get_background_color(render_mode)
         logger.debug(f"Drawing background rectangle")
         self.background = self.addRect(0, 0, self.width(), self.height(), background_color, background_color)
@@ -146,7 +148,7 @@ class PageScene(QGraphicsScene):
         self._update_text_items(document.page_layout)
         if document.page_layout.draw_cut_markers:
             self.draw_cut_markers()
-        logger.info(f"Created {self.__class__.__name__} instance. Render mode: {self.render_mode}")
+        logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
 
     @staticmethod
     def _create_text_item(font_size: float = 40) -> QGraphicsSimpleTextItem:
@@ -157,17 +159,17 @@ class PageScene(QGraphicsScene):
         return item
 
     def get_background_color(self, render_mode: RenderMode) -> QColor:
-        if render_mode is RenderMode.ON_PAPER:
+        if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Transparent
         return self.palette().color(QPalette.Active, QPalette.Base)
 
     def get_cut_marker_color(self, render_mode: RenderMode) -> QColor:
-        if render_mode is RenderMode.ON_PAPER:
+        if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
         return self.palette().color(QPalette.Active, QPalette.WindowText)
 
     def get_text_color(self, render_mode: RenderMode) -> QColor:
-        if render_mode is RenderMode.ON_PAPER:
+        if RenderMode.ON_PAPER in render_mode:
             return QColorConstants.Black
         return self.palette().color(QPalette.Active, QPalette.WindowText)
 
@@ -229,14 +231,17 @@ class PageScene(QGraphicsScene):
             item.setY(y)
 
     def _update_page_text_x(self):
-        title_x = self._mm_to_rounded_px(self.document.page_layout.margin_right) + 1
+        try:
+            # This may throw a KeyError on MIXED pages
+            title_x = round(self.vertical_cut_line_locations[PageType.REGULAR][0])
+            page_number_x = round(self.vertical_cut_line_locations[PageType.REGULAR][-1])
+        except KeyError:
+            title_x = 0
+            page_number_x = self.width()
         self.document_title_text.setX(title_x)
         font_metrics = QFontMetrics(self.page_number_text.font())
         text_width = font_metrics.horizontalAdvance(self.page_number_text.text())
-        page_number_x = round(
-            self.width()
-            - self._mm_to_rounded_px(self.document.page_layout.margin_right) - text_width - 2
-        )
+        page_number_x -= text_width + 2
         self.page_number_text.setX(page_number_x)
 
     def _update_page_number_text(self):
@@ -317,15 +322,18 @@ class PageScene(QGraphicsScene):
         elif item in text_items and not new_visibility:
             self.removeItem(item)
 
-    @staticmethod
-    def get_document_page_size(page_layout: PageLayoutSettings) -> QRectF:
-        height: pint.Quantity = page_layout.page_height * unit_registry.millimeter
-        width: pint.Quantity = page_layout.page_width * unit_registry.millimeter
+    def get_document_page_size(self, page_layout: PageLayoutSettings) -> QRectF:
+        without_margins = RenderMode.IMPLICIT_MARGINS in self.render_mode
+        vertical_margins = without_margins * (page_layout.margin_top + page_layout.margin_bottom)
+        horizontal_margins = without_margins * (page_layout.margin_left + page_layout.margin_right)
+
+        height: pint.Quantity = (page_layout.page_height - vertical_margins) * unit_registry.millimeter
+        width: pint.Quantity = (page_layout.page_width - horizontal_margins) * unit_registry.millimeter
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
                 (RESOLUTION * width).to("pixel").magnitude,
-                (RESOLUTION * height).to("pixel").magnitude
+                (RESOLUTION * height).to("pixel").magnitude,
             )
         )
         return page_size
@@ -424,25 +432,51 @@ class PageScene(QGraphicsScene):
     @functools.lru_cache
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
-        card_size = CardSizes.for_page_type(page_type)
-        card_height: int = card_size.height.magnitude
-        card_width: int = card_size.width.magnitude
         page_layout: PageLayoutSettings = self.document.page_layout
 
-        margin_left = self._mm_to_rounded_px(page_layout.margin_left)
-        margin_top = self._mm_to_rounded_px(page_layout.margin_top)
+        page_width = self._mm_to_rounded_px(page_layout.page_width)
+        page_height = self._mm_to_rounded_px(page_layout.page_height)
 
-        cards_per_row = page_layout.compute_page_column_count(page_type)
-        row, column = divmod(index_row, cards_per_row)
+        left_margin = self._mm_to_rounded_px(page_layout.margin_left)
+        top_margin = self._mm_to_rounded_px(page_layout.margin_top)
 
-        spacing_vertical = self._mm_to_rounded_px(page_layout.column_spacing)
-        spacing_horizontal = self._mm_to_rounded_px(page_layout.row_spacing)
+        card_size = CardSizes.for_page_type(page_type)
+        image_height: int = card_size.height.magnitude
+        image_width: int = card_size.width.magnitude
 
-        x_pos = margin_left + column * (card_width + spacing_horizontal)
-        y_pos = margin_top + row * (card_height + spacing_vertical)
+        column_spacing = self._mm_to_rounded_px(page_layout.column_spacing)
+        row_spacing = self._mm_to_rounded_px(page_layout.row_spacing)
+
+        column_count = page_layout.compute_page_column_count(page_type)
+        row_count = page_layout.compute_page_row_count(page_type)
+        row, column = divmod(index_row, column_count)
+
+        # Excessively large margins may shift the page content off-center. Clamp the borders to the non-negative range
+        # to avoid clipping images off
+        left_border = max(
+            page_width
+            - image_width * column_count
+            - column_spacing * (column_count - 1),
+            0
+        ) / 2
+        top_border = max(
+            page_height
+            - image_height * row_count
+            - row_spacing * (row_count - 1),
+            0
+        ) / 2
+
+        left_border = max(left_border, left_margin)
+        top_border = max(top_border, top_margin)
+        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
+            left_border -= left_margin
+            top_border -= top_margin
+
+        x = left_border + (image_width + column_spacing) * column
+        y = top_border + (image_height + row_spacing) * row
         return QPointF(
-            x_pos,
-            y_pos,
+            x,
+            y,
         )
 
     @staticmethod
@@ -472,24 +506,37 @@ class PageScene(QGraphicsScene):
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
             card_size: CardSize = CardSizes.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
+                page_layout.page_height,
                 card_size.height, page_layout.compute_page_row_count(page_type),
                 page_layout.margin_top, page_layout.row_spacing)
             )
             self.vertical_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
+                page_layout.page_width,
                 card_size.width, page_layout.compute_page_column_count(page_type),
                 page_layout.margin_left, page_layout.column_spacing
             ))
 
-    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) \
-            -> typing.Generator[float, None, None]:
-        margin = self._mm_to_rounded_px(parameters.margin)
+    def _compute_cut_marker_positions(self, parameters: CutMarkerParameters) -> typing.Generator[float, None, None]:
         spacing = self._mm_to_rounded_px(parameters.image_spacing)
         card_size: int = parameters.card_size.magnitude
+
+        # Excessively large margins may shift the page content off-center. Clamp the border to the non-negative range
+        # to avoid placing marker lines out of the drawing range
+        border = (
+            self._mm_to_rounded_px(parameters.total_space)
+            - card_size * parameters.item_count
+            - spacing * (parameters.item_count - 1)
+        ) / 2
+        margin = self._mm_to_rounded_px(parameters.margin)
+        border = max(border, margin)
+        if RenderMode.IMPLICIT_MARGINS in self.render_mode:
+            border -= margin
+
         # Without spacing, draw a line top/left of each row/column.
         # To also draw a line below/right of the last row/column, add a virtual row/column if spacing is zero.
         # With positive spacing, draw a line left/right/above/below *each* row/column.
-        for item in range(parameters.item_count + (0 if spacing else 1)):
-            pixel_position: float = margin + item*(spacing+card_size)
+        for item in range(parameters.item_count + (not spacing)):
+            pixel_position: float = border + item*(spacing+card_size)
             yield pixel_position
             if parameters.image_spacing:
                 yield pixel_position + card_size
