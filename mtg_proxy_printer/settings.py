@@ -137,6 +137,9 @@ DEFAULT_SETTINGS["application"] = {
     "check-for-application-updates": "None",
     "check-for-card-data-updates": "None",
 }
+DEFAULT_SETTINGS["printer"] = {
+    "borderless-printing": "True"
+}
 MAX_DOCUMENT_NAME_LENGTH = 200
 
 
@@ -219,6 +222,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_debug_section(read_settings)
     _validate_decklist_import_section(read_settings)
     _validate_default_filesystem_paths_section(read_settings)
+    _validate_printer_section(read_settings)
 
 
 def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
@@ -326,6 +330,12 @@ def _validate_default_filesystem_paths_section(
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
+
+
+def _validate_printer_section(settings: configparser.ConfigParser, section_name: str = "printer"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
+    _validate_boolean(section, defaults, "borderless-printing")
 
 
 def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
