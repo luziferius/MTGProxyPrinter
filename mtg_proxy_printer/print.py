@@ -31,7 +31,7 @@ del get_logger
 
 __all__ = [
     "export_pdf",
-    "create_qprinter",
+    "create_printer",
     "Renderer",
 ]
 
@@ -50,10 +50,10 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
     document.store_image_usage()
 
 
-def create_qprinter(document: Document) -> QPrinter:
+def create_printer(renderer: "Renderer") -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    layout = document.page_layout
-    page_layout = document.page_layout.to_page_layout(RenderMode.IMPLICIT_MARGINS)
+    layout = renderer.document.page_layout
+    page_layout = layout.to_page_layout(renderer.render_mode)
     if not printer.setPageLayout(page_layout):
         logger.error(
             f"Setting page layout failed! "
@@ -66,8 +66,8 @@ def create_qprinter(document: Document) -> QPrinter:
     printer.setDoubleSidedPrinting(False)
     printer.setDuplex(QPrinter.DuplexNone)
     printer.setOutputFormat(QPrinter.NativeFormat)
-    # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
-    # printer.setFullPage(True)
+    if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
+        printer.setFullPage(True)
     return printer
 
 
@@ -121,7 +121,10 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.scene = PageScene(document, RenderMode.ON_PAPER | RenderMode.IMPLICIT_MARGINS, self)
+        self.render_mode = RenderMode.ON_PAPER
+        if not settings["printer"].getboolean("borderless-printing"):
+            self.render_mode |= RenderMode.IMPLICIT_MARGINS
+        self.scene = PageScene(document, self.render_mode, self)
 
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
