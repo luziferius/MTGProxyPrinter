@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import pytest
 from hamcrest import *
 
@@ -27,7 +29,7 @@ import mtg_proxy_printer.natsort
     ("+1", 1),
     ("1.0", "1.0"),
 ])
-def test_try_convert_int(input_: str | int, expected: str | int):
+def test_try_convert_int(input_: Union[str, int], expected: Union[str, int]):
     assert_that(
         mtg_proxy_printer.natsort.try_convert_int(input_),
         is_(equal_to(expected))
