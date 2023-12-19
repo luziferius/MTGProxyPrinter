@@ -1,12 +1,12 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.26.0 (2023-12-19)  <a name="v0_26_0"></a>
 
 ## New features
 
 - Added option to disable borderless printing to improve printer compatibility with printer drivers that refuse to
   accept borderless printing, and force-downscale prints in borderless mode.  
-  If your printer driver refuses to print to-size in borderless mode,
+    - If your printer driver refuses to print to-size in borderless mode,
   you can now use an alternative mode, which explicitly sets the page margins in the printer configuration.
     - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
       printers physical printing area.
@@ -47,12 +47,12 @@
 ## Fixed issues
 
 - Fixed broken card filter for [reversible cards](https://scryfall.com/search?q=is:reversible). The filter now works as expected.
-- Fixed crash when loading a document that was saved with a numerical document title, for example `1`
+- Fixed crash when loading a document that was saved with a numerical document title, for example "`1`"
 - Fixed default suggested PDF file name when exporting a loaded document as a PDF. 
-  It now suggests a valid file name with correct file type.
-- Fixed crash when the system color palette changes (e.g. by enabling/disabling system-wide application dark mode),
-  while a document title is set or printing page numbers is enabled.
-- Fixed crashes when trying to download a deck list fails. Now, an error message is shown, if deck list downloads fail.
+  The export dialog now suggests a valid file name with correct file extension.
+- Fixed crash when the system color palette changes (for example by enabling/disabling
+  system-wide application dark mode), while a document title is set or printing page numbers is enabled.
+- Fixed crashes when trying to download a deck list fails. An error message is shown, if deck list downloads fail.
 - Fixed potential crash when quitting the application while it is loading a document.
 
 ## Optimizations
