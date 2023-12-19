@@ -74,7 +74,6 @@ setup_py.setup_parameters["options"] = {
             "pydoc_data",
             "tkinter",
             "toml",
-            "unittest",
             "sqlite3.test",  # Ignore the internal test suite
             "pint.testsuite",  # Ignore the internal test suite
             "importlib_metadata",
