@@ -1,5 +1,5 @@
 # Copyright (C) 2023 Thomas Hess <thomas.hess@udo.edu>
-import itertools
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -14,6 +14,7 @@ import itertools
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from collections import Counter
+import itertools
 from unittest.mock import NonCallableMagicMock
 
 from PyQt5.QtWidgets import QComboBox
