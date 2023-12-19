@@ -15,7 +15,7 @@
 
 import itertools
 import sys
-from typing import Tuple, List
+from typing import Tuple, List, Iterable
 
 import pytest
 from hamcrest import *
@@ -23,7 +23,7 @@ from hamcrest import *
 import mtg_proxy_printer.argument_parser
 
 
-def powerset(*items: List[str]) -> itertools.chain[Tuple[List[str], ...]]:
+def powerset(*items: List[str]) -> Iterable[Tuple[List[str], ...]]:
     length = len(items)
     return itertools.chain.from_iterable(
         itertools.combinations(items, subset)
