@@ -277,9 +277,11 @@ def with_database_write_lock(func):
     """Decorator managing a lock. Used to serialize database write transactions."""
     def wrapped(*args, **kwargs):
         write_semaphore.acquire()
+        logger.debug(f"Obtained database write lock")
         try:
             func(*args, **kwargs)
         finally:
+            logger.debug("Releasing database write lock")
             write_semaphore.release()
     return wrapped
 
