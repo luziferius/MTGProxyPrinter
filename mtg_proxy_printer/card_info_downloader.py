@@ -209,7 +209,7 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
-            size = math.floor(size / 6.54)
+            size = math.floor(size / 7.09)
             logger.info(f"Content length estimated as {size} bytes")
         if monitor.content_length <= 0:
             monitor.content_length = size
