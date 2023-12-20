@@ -68,6 +68,7 @@ class BackgroundWorker(QObject):
     @property
     def db(self):
         if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
             self._db = open_database(self.card_db.db_path, SCHEMA_NAME, self.card_db.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 

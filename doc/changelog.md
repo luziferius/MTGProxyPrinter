@@ -1,5 +1,17 @@
 # Changelog
 
+# Next version (in development)
+
+## Changed features
+
+- Lifted restriction on the allowed actions while the card data update runs. It is now possible to print documents,
+  export PDFs, and edit the application settings.
+
+## Fixed issues
+
+- Fixed multiple crashes that may have occurred in 0.26.0 when trying to run multiple actions in parallel,
+  like exporting a PDF, while simultaneously updating the printing filters. 
+
 # Version 0.26.0 (2023-12-19)  <a name="v0_26_0"></a>
 
 ## New features
@@ -7,7 +19,7 @@
 - Added option to disable borderless printing to improve printer compatibility with printer drivers that refuse to
   accept borderless printing, and force-downscale prints in borderless mode.  
     - If your printer driver refuses to print to-size in borderless mode,
-  you can now use an alternative mode, which explicitly sets the page margins in the printer configuration.
+      you can now use an alternative mode, which explicitly sets the page margins in the printer configuration.
     - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
       printers physical printing area.
 - Added card filters for
