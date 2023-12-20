@@ -122,7 +122,6 @@ class CardInfoDownloader(ProgressSignalContainer):
     card_data_updated = Signal()
     request_import_from_file = Signal(Path)
     request_import_from_url = Signal()
-    request_download_to_file = Signal(Path)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
@@ -137,7 +136,6 @@ class CardInfoDownloader(ProgressSignalContainer):
         self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.database_import_worker.moveToThread(self.worker_thread)
         self.file_download_worker = None
-        self.request_download_to_file.connect(self.download_to_file)
         self.request_import_from_file.connect(self.database_import_worker.import_card_data_from_local_file)
         self.request_import_from_url.connect(self.database_import_worker.import_card_data_from_online_api)
         self.database_import_worker.download_begins.connect(self.download_begins)
