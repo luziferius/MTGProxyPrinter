@@ -23,7 +23,7 @@ import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
     from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.model.carddb import SCHEMA_NAME, StringList
+from mtg_proxy_printer.model.carddb import SCHEMA_NAME, StringList, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -104,6 +104,7 @@ class PrintingFilterUpdater(QRunnable):
                 self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 
+    @with_database_write_lock
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
