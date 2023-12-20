@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout, QPageSize
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
@@ -37,6 +37,7 @@ __all__ = [
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
+    global _runner
     pages_to_print = settings["documents"].getint("pdf-page-count-limit") or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
@@ -47,7 +48,6 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
         logger.info(f"Creating PDF ({document_index+1}/{total_documents}) with up to {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
-    document.store_image_usage()
 
 
 def create_printer(renderer: "Renderer") -> QPrinter:

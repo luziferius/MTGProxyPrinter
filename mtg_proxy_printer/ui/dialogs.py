@@ -16,7 +16,7 @@
 import pathlib
 import sys
 
-from PyQt5.QtCore import QFile, pyqtSlot as Slot
+from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -31,6 +31,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
+from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -72,6 +73,7 @@ class SavePDFDialog(QFileDialog):
         self.setFileMode(QFileDialog.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
+        self._print_count_updater = PrintCountUpdater(document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
@@ -88,6 +90,7 @@ class SavePDFDialog(QFileDialog):
         logger.debug("User chose a file name, about to generate the PDF document")
         path = self.selectedFiles()[0]
         mtg_proxy_printer.print.export_pdf(self.document, path, self)
+        QThreadPool.globalInstance().start(self._print_count_updater)
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -232,7 +235,8 @@ class PrintDialog(QPrintDialog):
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
-        self.accepted.connect(document.store_image_usage)
+        self._print_count_updater = PrintCountUpdater(document)
+        self.accepted.connect(lambda: QThreadPool.globalInstance().start(self._print_count_updater))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 

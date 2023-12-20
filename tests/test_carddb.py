@@ -24,10 +24,10 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
-    MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card
 from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
@@ -293,10 +293,11 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
         ],
     )
     document = Document(card_db, MagicMock())
+    print_count_updater = PrintCountUpdater(document)
     document.apply(ActionAddCard(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
-    document.store_image_usage()
+    print_count_updater.run()
     document.apply(ActionAddCard(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
-    document.store_image_usage()
+    print_count_updater.run()
     # Test
     assert_that(
         result := card_db.cards_used_less_often_then([
@@ -498,15 +499,6 @@ def test_get_replacement_card(
         ])
     card_db.get_replacement_card_for_unknown_printing(CardIdentificationData(scryfall_id="english-id", language="en"))
 
-
-"""
-case = TestCaseData("regular_english_card")
-case = TestCaseData("oversized_card")
-case = TestCaseData("german_basic_Forest")
-case = TestCaseData("spanish_basic_Forest")
-case = TestCaseData("english_double_faced_card")
-case = TestCaseData("english_double_faced_art_series_card")
-"""
 
 def generate_test_cases_for_test__translate_card():
     # Same-language translation

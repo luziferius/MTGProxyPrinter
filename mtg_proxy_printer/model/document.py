@@ -390,28 +390,6 @@ class Document(QAbstractItemModel):
             for card_number in range(len(page)):
                 yield self.index(card_number, 0, page_index)
 
-    def store_image_usage(self):
-        """
-        Increments the usage count of all cards used in the document and updates the last use timestamps.
-        Should be called after a successful PDF export and direct printing.
-        """
-        logger.info("Updating image usage for all cards in the document.")
-        data = set(itertools.chain.from_iterable(
-            map(self._get_page_content_as_scryfall_ids, self.pages)
-        ))
-        self.card_db.db.rollback()
-        self.card_db.db.executemany(
-            r"""
-            INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
-              VALUES (?, ?)
-              ON CONFLICT (scryfall_id, is_front)
-              DO UPDATE SET usage_count = usage_count + 1, last_use_date = CURRENT_TIMESTAMP;
-            """,
-            data
-        )
-        self.card_db.db.commit()
-        self.card_db.begin_transaction()
-
     def has_missing_images(self) -> bool:
         try:
             next(self.get_missing_image_cards())
@@ -435,6 +413,11 @@ class Document(QAbstractItemModel):
     @staticmethod
     def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
+
+    def get_all_card_keys_in_document(self) -> typing.Set[typing.Tuple[str, bool]]:
+        return set(itertools.chain.from_iterable(
+            map(self._get_page_content_as_scryfall_ids, self.pages)
+        ))
 
     def recreate_page_index_cache(self):
         self.page_index_cache.clear()
