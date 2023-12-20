@@ -156,12 +156,12 @@ class MainWindow(QMainWindow):
         # Do not connect the card_info_downloader.working_state_changed
         # signal to not re-enable the action when completed. This action in particular should remain disabled.
         ui = self.ui
-        downloader.download_begins.connect(
-            lambda: ui.action_download_card_data.setDisabled(True)
-        )
         for widget_or_action in self._get_widgets_and_actions_disabled_during_card_import():
             downloader.working_state_changed.connect(widget_or_action.setDisabled)
-        ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
+
+        ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
+        downloader.download_begins.connect(lambda: ui.action_download_card_data.setDisabled(True))
+        ui.action_download_card_data.triggered.connect(downloader.import_from_api)
         downloader.card_data_updated.connect(self.should_update_languages)
         downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
         downloader.download_progress.connect(self.progress_bars.set_independent_progress)
@@ -244,7 +244,6 @@ class MainWindow(QMainWindow):
         logger.info(f"User wants to quit.")
         self.is_running = False
         self.card_data_downloader.cancel_running_operations()
-        self.card_data_downloader.quit_background_thread()
         self.document.loader.cancel_running_operations()
         self.document.loader.quit_background_thread()
         self.image_db.quit_background_thread()

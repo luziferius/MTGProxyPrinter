@@ -106,7 +106,7 @@ class Application(QApplication):
         QTimer.singleShot(100, self.update_checker.check_for_updates)
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
-            self.card_info_downloader.request_import_from_file.emit(args.card_data)
+            self.card_info_downloader.import_from_file(args.card_data)
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
