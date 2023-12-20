@@ -187,7 +187,7 @@ class CardInfoWorkerBase(DownloaderBase):
 
 class CardInfoFileDownloadWorker(CardInfoWorkerBase):
     """
-    This class implements downloading the raw card data to a file stored in the file system
+    This class implements downloading the raw card data to a file stored in the file system.
     """
     def __init__(self, download_path: Path, parent: QObject = None):
         super().__init__(parent=parent)
@@ -227,11 +227,12 @@ class CardInfoFileDownloader(QRunnable):
         super().__init__()
         self.signals = ProgressSignalContainer()
         self.download_path = download_path
-        self.worker = None
 
     def run(self):
         signals = self.signals
-        self.worker = worker = CardInfoFileDownloadWorker(self.download_path)
+        # Implementation note: The actual download worker uses Qt signals, and thus is encapsulated in a class
+        # derived from QObject, and not this QRunnable.
+        worker = CardInfoFileDownloadWorker(self.download_path)
         worker.download_begins.connect(signals.download_begins)
         worker.download_progress.connect(signals.download_progress)
         worker.download_finished.connect(signals.download_finished)
@@ -252,7 +253,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.model = model
-        self.card_data_updated.connect(model.card_data_updated, Qt.ConnectionType.QueuedConnection)
+        self.card_data_updated.connect(model.card_data_updated, QueuedConnection)
         self._db = db
         self.should_run = True
         self.set_code_cache: typing.Dict[str, int] = {}
