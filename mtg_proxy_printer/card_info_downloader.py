@@ -263,7 +263,6 @@ class CardInfoFileImportRunner(QRunnable):
         self.parent = parent
         self.worker = None
 
-    @with_database_write_lock
     def run(self):
         parent = self.parent
         self.worker = worker = CardInfoDatabaseImportWorker(parent.model)
@@ -290,7 +289,6 @@ class CardInfoApiImportRunner(QRunnable):
         self.parent = parent
         self.worker = None
 
-    @with_database_write_lock
     def run(self):
         parent = self.parent
         self.worker = worker = CardInfoDatabaseImportWorker(parent.model)
@@ -356,6 +354,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
 
+    @with_database_write_lock
     def import_card_data_from_local_file(self, path: Path):
         try:
             data = self.read_json_card_data_from_file(path)
@@ -367,6 +366,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         finally:
             self.download_finished.emit()
 
+    @with_database_write_lock
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
         try:
@@ -493,7 +493,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         updater = PrintingFilterUpdater(
             self.model, self.db, force_update_hidden_column=True)
         updater.signals.advance_progress.connect(progress_meter.advance)
-        updater.run()
+        updater.store_current_printing_filters()
         # Store the timestamp of this import.
         db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n",(index,))
         progress_meter.advance()

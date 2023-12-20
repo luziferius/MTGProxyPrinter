@@ -74,6 +74,7 @@ class PrintingFilterUpdater(QRunnable):
         self.db_passed = bool(db_connection)
         self._db = db_connection
         self.update_ui = False
+        logger.debug(f"Created {self.__class__.__name__} instance.")
 
     def connect_main_window_signals(self, main_window: "MainWindow"):
         progress_bars = main_window.progress_bars
@@ -100,6 +101,7 @@ class PrintingFilterUpdater(QRunnable):
         # Avoids opening connections that aren't actually used and opens the connection
         # in the thread that actually uses it.
         if self._db is None:
+            logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
             self._db = open_database(
                 self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
@@ -107,12 +109,15 @@ class PrintingFilterUpdater(QRunnable):
     @with_database_write_lock
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
+        self.store_current_printing_filters()
+
+    def store_current_printing_filters(self):
         try:
             if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
             self.signals.begin_update.emit(self.PROGRESS_STEP_COUNT, self.PROGRESS_MESSAGE)
-            self.update_ui = self.store_current_printing_filters()
+            self.update_ui = self._store_current_printing_filters()
         except sqlite3.Error as e:
             logger.exception(e)
             self.signals.error_occurred.emit(e.sqlite_errorname)
@@ -120,11 +125,11 @@ class PrintingFilterUpdater(QRunnable):
         finally:
             self.signals.update_completed.emit()
             if not self.db_passed:
-                logger.debug(f"Closing connection {self.__class__.__name__}.db")
+                logger.debug(f"Closing {self.__class__.__name__} connection")
                 self.db.close()
                 self._db = None
 
-    def store_current_printing_filters(self) -> bool:
+    def _store_current_printing_filters(self) -> bool:
         db = self.db
         progress_signal = self.advance_progress
         db.execute("BEGIN IMMEDIATE TRANSACTION\n")
@@ -146,7 +151,7 @@ class PrintingFilterUpdater(QRunnable):
                 ((key, section.getboolean(key)) for key in boolean_keys)
             )
             progress_signal()
-        if set_code_updated := self.set_code_filters_need_update():
+        if set_code_updated := self._set_code_filters_need_update():
             self._update_set_code_filters_in_db()
         progress_signal()
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
@@ -157,7 +162,7 @@ class PrintingFilterUpdater(QRunnable):
             self.signals.ui_update_required.emit()
         return update_ui
 
-    def set_code_filters_need_update(self) -> bool:
+    def _set_code_filters_need_update(self) -> bool:
         return self.get_currently_enabled_set_code_filters() != self.get_configured_set_code_filters()
 
     def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
