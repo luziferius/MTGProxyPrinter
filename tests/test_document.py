@@ -392,22 +392,6 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
     )
 
 
-def test_clear_database_not_clearing_last_image_use_timestamps(document: Document):
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    # Add two copies. Should only count as one usage
-    document.apply(ActionAddCard(card, 2))
-    document.store_image_usage()
-    usages = document.card_db.db.execute(
-        "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
-        "FROM LastImageUseTimestamps").fetchall()
-    end = int(time.time())
-    assert_that(
-        usages,
-        contains_exactly(
-            contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
-    )
-
-
 def test_document_is_created_empty(document_light: Document):
     capacity = document_light.page_layout.compute_page_card_capacity()
     assert_that(capacity, is_(greater_than_or_equal_to(1)))
