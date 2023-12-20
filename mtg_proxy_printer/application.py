@@ -73,9 +73,9 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        printing_filter_updater = PrintingFilterUpdater(self.card_db)
-        printing_filter_updater.connect_main_window_signals(self.main_window)
-        QThreadPool.globalInstance().start(printing_filter_updater)
+        self.printing_filter_updater = runner = PrintingFilterUpdater(self.card_db)
+        runner.connect_main_window_signals(self.main_window)
+        QThreadPool.globalInstance().start(runner)
         self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
@@ -212,6 +212,7 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
+        self.printing_filter_updater.cancel()
         self.update_checker.stop_background_worker()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")

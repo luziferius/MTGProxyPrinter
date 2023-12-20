@@ -74,7 +74,12 @@ class PrintingFilterUpdater(QRunnable):
         self.db_passed = bool(db_connection)
         self._db = db_connection
         self.update_ui = False
+        self.should_abort = False
         logger.debug(f"Created {self.__class__.__name__} instance.")
+
+    def cancel(self):
+        logger.warning(f"Cancelling {self.__class__.__name__}.run()")
+        self.should_abort = True
 
     def connect_main_window_signals(self, main_window: "MainWindow"):
         progress_bars = main_window.progress_bars
@@ -118,6 +123,9 @@ class PrintingFilterUpdater(QRunnable):
                 self.db.commit()
             self.signals.begin_update.emit(self.PROGRESS_STEP_COUNT, self.PROGRESS_MESSAGE)
             self.update_ui = self._store_current_printing_filters()
+            if self.should_abort:
+                self.db.rollback()
+                return
         except sqlite3.Error as e:
             logger.exception(e)
             self.signals.error_occurred.emit(e.sqlite_errorname)
@@ -137,7 +145,8 @@ class PrintingFilterUpdater(QRunnable):
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         old_filter_removed = self._remove_old_printing_filters(section)
         filters_need_update = self._filters_in_db_differ_from_settings(section)
-
+        if self.should_abort:
+            return False
         if filters_need_update:
             logger.info("Printing filters changed in the settings, update the database.")
             db.executemany(
@@ -150,9 +159,13 @@ class PrintingFilterUpdater(QRunnable):
                     """),
                 ((key, section.getboolean(key)) for key in boolean_keys)
             )
+            if self.should_abort:
+                return False
             progress_signal()
         if set_code_updated := self._set_code_filters_need_update():
             self._update_set_code_filters_in_db()
+        if self.should_abort:
+            return False
         progress_signal()
         update_ui = filters_need_update or old_filter_removed or self.force_update_hidden_column or set_code_updated
         if update_ui:
@@ -277,6 +290,8 @@ class PrintingFilterUpdater(QRunnable):
             ))
         ;
         """))
+        if self.should_abort:
+            return
         progress_signal()
         logger.debug("Update the FaceName.is_hidden column")
         self.db.execute(cached_dedent("""\
@@ -299,6 +314,8 @@ class PrintingFilterUpdater(QRunnable):
           AND FaceName.is_hidden <> FaceNameShouldBeHidden.should_be_hidden
         ;
         """))
+        if self.should_abort:
+            return
         progress_signal()
         logger.debug("Update the RemovedPrintings table")
         self.db.execute(cached_dedent("""\
@@ -309,6 +326,8 @@ class PrintingFilterUpdater(QRunnable):
             WHERE Printing.is_hidden IS FALSE
           );
         """))
+        if self.should_abort:
+            return
         progress_signal()
         # Performance note: Using INSERT OR IGNORE and removing the inner scryfall_id NOT IN (subquery) simplifies the
         # query plan, but takes about 40% longer to evaluate (on the card data of late April 2022)
@@ -327,6 +346,8 @@ class PrintingFilterUpdater(QRunnable):
                 FROM RemovedPrintings AS rp
               );
         """))
+        if self.should_abort:
+            return
         progress_signal()
         logger.debug("Finished maintenance tasks.")
 
