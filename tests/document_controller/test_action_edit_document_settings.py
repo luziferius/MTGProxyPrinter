@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -54,9 +54,9 @@ def test_apply_emits_settings_changed_signal(qtbot, document_light):
     (0, 30),  # Both sizes overflow
 ])
 def test_page_capacity_reduction_reflows_document(qtbot, document_light, initial_h_spacing: int, new_h_spacing: int):
-    document_light.page_layout.image_spacing_horizontal = initial_h_spacing
+    document_light.page_layout.row_spacing = initial_h_spacing
     new_settings = copy.copy(document_light.page_layout)
-    new_settings.image_spacing_horizontal = new_h_spacing
+    new_settings.row_spacing = new_h_spacing
     action = ActionEditDocumentSettings(copy.copy(new_settings))
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
@@ -78,7 +78,7 @@ def test_reflow_moves_card_on_later_page(qtbot, document_light):
     assert_that(move_to_1, has_length(3), "Test setup failed")
 
     new_layout = copy.copy(document_light.page_layout)
-    new_layout.image_spacing_horizontal = 30
+    new_layout.row_spacing = 30
     assert_that(new_layout.compute_page_card_capacity(PageType.REGULAR), is_(6), "Test setup failed")
 
     action = ActionEditDocumentSettings(new_layout)
@@ -105,7 +105,7 @@ def test_reflow_moves_card_on_later_page_stepping_over_different_card_size_page(
     move_to_2 = document_light.pages[0][6:]
 
     new_layout = copy.copy(document_light.page_layout)
-    new_layout.image_spacing_horizontal = 30
+    new_layout.row_spacing = 30
 
     action = ActionEditDocumentSettings(new_layout)
     action.apply(document_light)
@@ -127,7 +127,7 @@ def test_reflow_appends_new_page_if_required(qtbot, document_light):
     move_to_1 = document_light.pages[0][6:]
 
     new_layout = copy.copy(document_light.page_layout)
-    new_layout.image_spacing_horizontal = 30
+    new_layout.row_spacing = 30
 
     action = ActionEditDocumentSettings(new_layout)
     action.apply(document_light)
@@ -156,7 +156,7 @@ def test_reflow_does_not_append_empty_pages(qtbot, document_light):
     )
 
     new_layout = copy.copy(document_light.page_layout)
-    new_layout.image_spacing_horizontal = 30
+    new_layout.row_spacing = 30
 
     action = ActionEditDocumentSettings(new_layout)
     action.apply(document_light)

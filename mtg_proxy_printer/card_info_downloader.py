@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -28,14 +28,13 @@ import urllib.parse
 import urllib.request
 
 import ijson
-from PySide6.QtCore import Signal, QObject, QThread, Qt, QRunnable, QThreadPool
+from PySide6.QtCore import Signal, QObject, Qt, QRunnable, QThreadPool, QTimer
 
 from mtg_proxy_printer.downloader_base import DownloaderBase
-from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME
+from mtg_proxy_printer.model.carddb import CardDatabase, SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
-from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
 from mtg_proxy_printer.progress_meter import ProgressMeter
@@ -120,55 +119,38 @@ class CardInfoDownloader(ProgressSignalContainer):
     """
 
     card_data_updated = Signal()
-    request_import_from_file = Signal(Path)
-    request_import_from_url = Signal()
-    request_download_to_file = Signal(Path)
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
         super(CardInfoDownloader, self).__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
-        self.database_import_worker = CardInfoDatabaseImportWorker(model)  # No parent assignment
-        self.database_import_worker.card_data_updated.connect(
-            self.card_data_updated, QueuedConnection)
-        self.worker_thread = QThread()
-        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
-        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
-        self.database_import_worker.moveToThread(self.worker_thread)
-        self.file_download_worker = None
-        self.request_download_to_file.connect(self.download_to_file)
-        self.request_import_from_file.connect(self.database_import_worker.import_card_data_from_local_file)
-        self.request_import_from_url.connect(self.database_import_worker.import_card_data_from_online_api)
-        self.database_import_worker.download_begins.connect(self.download_begins)
-        self.database_import_worker.download_begins.connect(lambda: self.working_state_changed.emit(True))
-        self.database_import_worker.download_progress.connect(self.download_progress)
-        self.database_import_worker.download_finished.connect(self.download_finished)
-        self.database_import_worker.download_finished.connect(lambda: self.working_state_changed.emit(False))
-        self.database_import_worker.network_error_occurred.connect(self.network_error_occurred)
-        self.database_import_worker.other_error_occurred.connect(self.other_error_occurred)
-        self.worker_thread.start()
+        self.runners = []
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def download_to_file(self, download_path: Path):
-        self.file_download_worker = CardInfoFileDownloader(download_path)
-        signals = self.file_download_worker.signals
+        self.runners.append(runner := CardInfoFileDownloadRunner(download_path, self))  # Keep a reference around
+        signals = runner.signals
         signals.download_begins.connect(self.download_begins, QueuedConnection)
         signals.download_progress.connect(self.download_progress, QueuedConnection)
         signals.download_finished.connect(self.download_finished, QueuedConnection)
         signals.network_error_occurred.connect(self.network_error_occurred, QueuedConnection)
         signals.other_error_occurred.connect(self.other_error_occurred, QueuedConnection)
-        QThreadPool.globalInstance().start(self.file_download_worker)
+        signals.download_finished.connect(  # Cleanup the stored reference 100ms after completion
+            functools.partial(QTimer.singleShot, 100, lambda: self.runners.remove(self)))
+        QThreadPool.globalInstance().start(runner)
+
+    def import_from_file(self, file_path: Path):
+        self.runners.append(runner := CardInfoFileImportRunner(file_path, self))  # Keep a reference around
+        QThreadPool.globalInstance().start(runner)
+
+    def import_from_api(self):
+        self.runners.append(runner := CardInfoApiImportRunner(self))  # Keep a reference around
+        QThreadPool.globalInstance().start(runner)
 
     def cancel_running_operations(self):
-        if self.worker_thread.isRunning():
-            logger.info("Cancelling currently running card download")
-            self.database_import_worker.should_run = False
-
-    def quit_background_thread(self):
-        if self.worker_thread.isRunning():
-            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            stop_thread(self.worker_thread, logger)
+        for runner in self.runners:
+            runner.cancel()
 
 
 class CardInfoWorkerBase(DownloaderBase):
@@ -187,11 +169,12 @@ class CardInfoWorkerBase(DownloaderBase):
 
 class CardInfoFileDownloadWorker(CardInfoWorkerBase):
     """
-    This class implements downloading the raw card data to a file stored in the file system
+    This class implements downloading the raw card data to a file stored in the file system.
     """
     def __init__(self, download_path: Path, parent: QObject = None):
         super().__init__(parent=parent)
         self.download_path = download_path
+        self.connection = None
 
     def run_download(self):
         """
@@ -209,7 +192,7 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
         if monitor.content_encoding() == "gzip":
             file_name += ".gz"
-            size = math.floor(size / 6.54)
+            size = math.floor(size / 7.09)
             logger.info(f"Content length estimated as {size} bytes")
         if monitor.content_length <= 0:
             monitor.content_length = size
@@ -217,28 +200,111 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         download_file_path = self.download_path/file_name
         logger.debug(f"Opened URL '{url}' and target file at '{download_file_path}', about to download contents.")
         with download_file_path.open("wb") as download_file, monitor:
-            shutil.copyfileobj(monitor, download_file)
-        logger.info("Download completed")
+            self.connection = monitor
+            try:
+                shutil.copyfileobj(monitor, download_file)
+            except AttributeError:
+                failure = True
+            else:
+                failure = False
+            finally:
+                self.connection = None
+        if failure:
+            logger.error("Download failed! Deleting incomplete download.")
+            download_file_path.unlink(missing_ok=True)
+        else:
+            logger.info("Download completed")
+
+    def cancel(self):
+        try:
+            self.connection.close()
+        finally:
+            pass
 
 
-class CardInfoFileDownloader(QRunnable):
+class CardInfoFileDownloadRunner(QRunnable):
     """This runner asynchronously downloads the card data and stores it in the given location"""
-    def __init__(self, download_path: Path):
+    def __init__(self, download_path: Path, parent: CardInfoDownloader):
         super().__init__()
+        self.parent = parent
         self.signals = ProgressSignalContainer()
         self.download_path = download_path
-        self.worker = None
+        self.worker: typing.Optional[CardInfoFileDownloadWorker] = None
 
+    @with_database_write_lock  # While it technically does not access the card db, it still shares the progress meter
     def run(self):
         signals = self.signals
+        # Implementation note: The actual download worker uses Qt signals, and thus is encapsulated in a class
+        # derived from QObject, and not this QRunnable.
         self.worker = worker = CardInfoFileDownloadWorker(self.download_path)
         worker.download_begins.connect(signals.download_begins)
         worker.download_progress.connect(signals.download_progress)
         worker.download_finished.connect(signals.download_finished)
         worker.network_error_occurred.connect(signals.network_error_occurred)
         worker.other_error_occurred.connect(signals.other_error_occurred)
-        worker.download_finished.connect(lambda: setattr(self, "worker", None))
-        worker.run_download()
+        try:
+            worker.run_download()
+        except (urllib.error.HTTPError, urllib.error.URLError, socket.timeout):
+            pass
+
+    def cancel(self):
+        try:
+            self.worker.connection.close()
+        except AttributeError:
+            pass
+
+
+class CardInfoFileImportRunner(QRunnable):
+
+    def __init__(self, path: Path, parent: CardInfoDownloader):
+        super().__init__()
+        self.path = path
+        self.parent = parent
+        self.worker = None
+
+    def run(self):
+        parent = self.parent
+        self.worker = worker = CardInfoDatabaseImportWorker(parent.model)
+        worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
+        worker.download_begins.connect(parent.download_begins, QueuedConnection)
+        worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
+        worker.download_progress.connect(parent.download_progress, QueuedConnection)
+        worker.download_finished.connect(parent.download_finished, QueuedConnection)
+        worker.download_finished.connect(lambda: parent.working_state_changed.emit(False), QueuedConnection)
+        worker.network_error_occurred.connect(parent.network_error_occurred, QueuedConnection)
+        worker.other_error_occurred.connect(parent.other_error_occurred, QueuedConnection)
+        worker.download_finished.connect(  # Cleanup the stored reference 100ms after completion
+            functools.partial(QTimer.singleShot, 100, lambda: self.parent.runners.remove(self)))
+        worker.import_card_data_from_local_file(self.path)
+
+    def cancel(self):
+        self.worker.should_run = False
+
+
+class CardInfoApiImportRunner(QRunnable):
+
+    def __init__(self, parent: CardInfoDownloader):
+        super().__init__()
+        self.parent = parent
+        self.worker = None
+
+    def run(self):
+        parent = self.parent
+        self.worker = worker = CardInfoDatabaseImportWorker(parent.model)
+        worker.card_data_updated.connect(parent.card_data_updated, QueuedConnection)
+        worker.download_begins.connect(parent.download_begins, QueuedConnection)
+        worker.download_begins.connect(lambda: parent.working_state_changed.emit(True), QueuedConnection)
+        worker.download_progress.connect(parent.download_progress, QueuedConnection)
+        worker.download_finished.connect(parent.download_finished, QueuedConnection)
+        worker.download_finished.connect(lambda: parent.working_state_changed.emit(False), QueuedConnection)
+        worker.network_error_occurred.connect(parent.network_error_occurred, QueuedConnection)
+        worker.other_error_occurred.connect(parent.other_error_occurred, QueuedConnection)
+        worker.download_finished.connect(  # Cleanup the stored reference 100ms after completion
+            functools.partial(QTimer.singleShot, 100, lambda: self.parent.runners.remove(self)))
+        worker.import_card_data_from_online_api()
+
+    def cancel(self):
+        self.worker.should_run = False
 
 
 class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
@@ -252,7 +318,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.model = model
-        self.card_data_updated.connect(model.card_data_updated, Qt.ConnectionType.QueuedConnection)
+        self.card_data_updated.connect(model.card_data_updated, QueuedConnection)
         self._db = db
         self.should_run = True
         self.set_code_cache: typing.Dict[str, int] = {}
@@ -287,6 +353,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
 
+    @with_database_write_lock
     def import_card_data_from_local_file(self, path: Path):
         try:
             data = self.read_json_card_data_from_file(path)
@@ -298,6 +365,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         finally:
             self.download_finished.emit()
 
+    @with_database_write_lock
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
         try:
@@ -424,9 +492,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         updater = PrintingFilterUpdater(
             self.model, self.db, force_update_hidden_column=True)
         updater.signals.advance_progress.connect(progress_meter.advance)
-        updater.run()
+        updater.store_current_printing_filters()
         # Store the timestamp of this import.
-        db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n",(index,))
+        db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
         progress_meter.advance()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
@@ -576,8 +644,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             printing_id = db.execute(cached_dedent("""\
                 INSERT INTO Printing (card_id, set_id, collector_number, is_oversized, highres_image, scryfall_id)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """), data,
-            ).lastrowid
+                """), data).lastrowid
         if needs_update:
             db.execute(cached_dedent("""\
                 UPDATE Printing

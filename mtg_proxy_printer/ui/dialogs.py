@@ -1,22 +1,22 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
 import sys
 
-from PySide6.QtCore import QFile, Slot
+from PySide6.QtCore import QFile, Slot, QThreadPool
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -31,6 +31,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
+from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.logger import get_logger
 
 try:
@@ -62,8 +63,8 @@ def read_path(setting: str) -> str:
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
-        preferred_file_name = document.save_file_path.name if document.save_file_path is not None else ""
-        super(SavePDFDialog, self).__init__(parent, "Export as PDF", preferred_file_name, "PDF-Documents (*.pdf)")
+        super(SavePDFDialog, self).__init__(
+            parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
         if default_path := read_path("pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -72,13 +73,24 @@ class SavePDFDialog(QFileDialog):
         self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
+        self._print_count_updater = PrintCountUpdater(document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    @staticmethod
+    def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
+        if document.save_file_path is None:
+            return ""
+        stem = document.save_file_path.stem
+        if "." in stem:
+            return f"{stem}.pdf"
+        return stem
 
     @Slot()
     def on_accept(self):
         logger.debug("User chose a file name, about to generate the PDF document")
         path = self.selectedFiles()[0]
         mtg_proxy_printer.print.export_pdf(self.document, path, self)
+        QThreadPool.globalInstance().start(self._print_count_updater)
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -206,9 +218,10 @@ class AboutMTGProxyPrinterDialog(QDialog):
 class PrintPreviewDialog(QPrintPreviewDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
-        self.qprinter = mtg_proxy_printer.print.create_qprinter(document)
+        self.renderer = mtg_proxy_printer.print.Renderer(document)
+        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
         super(PrintPreviewDialog, self).__init__(self.qprinter, parent)
-        self.renderer = mtg_proxy_printer.print.Renderer(document, self)
+        self.renderer.setParent(self)
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -216,12 +229,14 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 class PrintDialog(QPrintDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
-        self.qprinter = mtg_proxy_printer.print.create_qprinter(document)
+        self.renderer = mtg_proxy_printer.print.Renderer(document)
+        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
         super(PrintDialog, self).__init__(self.qprinter, parent)
-        self.renderer = mtg_proxy_printer.print.Renderer(document, self)
+        self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
-        self.accepted.connect(document.store_image_usage)
+        self._print_count_updater = PrintCountUpdater(document)
+        self.accepted.connect(lambda: QThreadPool.globalInstance().start(self._print_count_updater))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 

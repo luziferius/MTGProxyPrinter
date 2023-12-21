@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -366,11 +366,11 @@ def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(
         page_height=300, page_width=200,
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        image_spacing_horizontal=3, image_spacing_vertical=2,
+        row_spacing=3, column_spacing=2,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
     document.apply(ActionEditDocumentSettings(custom_layout))
-    yield document
+    return document
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
@@ -390,22 +390,6 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
     assert_that(
         document_custom_layout,
         has_property("page_layout", equal_to(default_layout))
-    )
-
-
-def test_clear_database_not_clearing_last_image_use_timestamps(document: Document):
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    # Add two copies. Should only count as one usage
-    document.apply(ActionAddCard(card, 2))
-    document.store_image_usage()
-    usages = document.card_db.db.execute(
-        "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
-        "FROM LastImageUseTimestamps").fetchall()
-    end = int(time.time())
-    assert_that(
-        usages,
-        contains_exactly(
-            contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
     )
 
 
@@ -588,22 +572,22 @@ def _validate_saved_document_settings(document: Document):
               WHERE key IN ({keys})
               ORDER BY key ASC
             """)
-        page_layout = document.page_layout
+        page_layout: PageLayoutSettings = document.page_layout
         assert_that(
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
+                page_layout.column_spacing,
                 page_layout.document_name,
                 int(page_layout.draw_cut_markers),
                 int(page_layout.draw_sharp_corners),
                 int(page_layout.draw_page_numbers),
-                page_layout.image_spacing_horizontal,
-                page_layout.image_spacing_vertical,
                 page_layout.margin_bottom,
                 page_layout.margin_left,
                 page_layout.margin_right,
                 page_layout.margin_top,
                 page_layout.page_height,
                 page_layout.page_width,
+                page_layout.row_spacing,
         ))
 
 
@@ -663,24 +647,25 @@ def test_compute_pages_saved_by_compacting(
 
 def test_update_page_layout_copies_the_passed_in_instance(document_light: Document):
     layout = copy.copy(document_light.page_layout)
-    layout.image_spacing_horizontal = 1
+    layout.row_spacing = 1
     document_light.apply(ActionEditDocumentSettings(layout))
-    layout.image_spacing_horizontal = 2
-    assert_that(document_light.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
+    layout.row_spacing = 2
+    assert_that(document_light.page_layout, has_property("row_spacing", equal_to(1)))
 
 
-@pytest.mark.parametrize("page_type, v_spacing, h_spacing, expected", [
+@pytest.mark.parametrize("page_type, column_spacing, row_spacing, expected", [
     (PageType.REGULAR, 0, 0, 9),
-    (PageType.REGULAR, 10, 0, 6),
+    (PageType.REGULAR, 17, 0, 6),
     (PageType.REGULAR, 0, 10, 6),
     (PageType.OVERSIZED, 0, 0, 4),
     (PageType.OVERSIZED, 0, 10, 4),
     (PageType.OVERSIZED, 0, 25, 2),
 ])
-def test_page_layout_compute_page_card_capacity(page_type:PageType, v_spacing: int, h_spacing: int, expected: int):
+def test_page_layout_compute_page_card_capacity(
+        page_type:PageType, column_spacing: int, row_spacing: int, expected: int):
     layout = PageLayoutSettings.create_from_settings()
-    layout.image_spacing_horizontal = h_spacing
-    layout.image_spacing_vertical = v_spacing
+    layout.row_spacing = row_spacing
+    layout.column_spacing = column_spacing
     assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
 
 

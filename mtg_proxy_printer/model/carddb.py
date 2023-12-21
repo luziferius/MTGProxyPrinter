@@ -20,6 +20,7 @@ import enum
 import itertools
 import functools
 import pathlib
+import threading
 import typing
 
 from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
@@ -62,6 +63,7 @@ __all__ = [
     "CardList",
     "OLD_DATABASE_LOCATION",
     "DEFAULT_DATABASE_LOCATION",
+    "with_database_write_lock",
 ]
 
 
@@ -270,6 +272,20 @@ AnyCardType = typing.Union[Card, CheckCard]
 # Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
 AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)
 T = typing.TypeVar("T", Card, CheckCard)
+write_semaphore = threading.BoundedSemaphore()
+
+
+def with_database_write_lock(func):
+    """Decorator managing a lock. Used to serialize database write transactions."""
+    def wrapped(*args, **kwargs):
+        write_semaphore.acquire()
+        logger.debug(f"Obtained database write lock")
+        try:
+            func(*args, **kwargs)
+        finally:
+            logger.debug("Releasing database write lock")
+            write_semaphore.release()
+    return wrapped
 
 
 class CardDatabase(QObject):
@@ -554,7 +570,7 @@ class CardDatabase(QObject):
           FROM Card
           JOIN related_oracle_ids ON Card.card_id = related_oracle_ids.related_id
         """)
-        related_card_ids = self.db.execute(query, (card.oracle_id,)).fetchall()
+        related_card_ids = self.db.execute(query, (card.oracle_id,)).fetchall()  # TODO: fetchall() not required
         cards = []
         for related_oracle_id, in related_card_ids:
             # Prefer same set over other sets, which is important for multi-component cards like Meld cards. If it
@@ -648,7 +664,7 @@ class CardDatabase(QObject):
         if result is None:
             return None
         else:
-            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image,\
+            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
                 is_oversized, face_number, is_dfc = result
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,

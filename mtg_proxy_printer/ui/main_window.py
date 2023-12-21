@@ -1,15 +1,15 @@
 # Copyright (C) 2018, 2019 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -157,12 +157,9 @@ class MainWindow(QMainWindow):
         # Do not connect the card_info_downloader.working_state_changed
         # signal to not re-enable the action when completed. This action in particular should remain disabled.
         ui = self.ui
-        downloader.download_begins.connect(
-            lambda: ui.action_download_card_data.setDisabled(True)
-        )
-        for widget_or_action in self._get_widgets_and_actions_disabled_during_card_import():
-            downloader.working_state_changed.connect(widget_or_action.setDisabled)
-        ui.action_download_card_data.triggered.connect(downloader.request_import_from_url)
+        ui.action_download_card_data.triggered.connect(lambda: ui.action_download_card_data.setDisabled(True))
+        downloader.download_begins.connect(lambda: ui.action_download_card_data.setDisabled(True))
+        ui.action_download_card_data.triggered.connect(downloader.import_from_api)
         downloader.card_data_updated.connect(self.should_update_languages)
         downloader.download_begins.connect(self.progress_bars.begin_independent_progress)
         downloader.download_progress.connect(self.progress_bars.set_independent_progress)
@@ -187,15 +184,10 @@ class MainWindow(QMainWindow):
             ui.action_discard_page,
             ui.central_widget,
             ui.action_cleanup_local_image_cache,
-        ] + self._get_widgets_and_actions_disabled_during_card_import()
-
-    def _get_widgets_and_actions_disabled_during_card_import(self) -> UiElements:
-        ui = self.ui
-        return [
-            ui.action_print,  # Updates image print counts
-            ui.action_print_pdf,  # Updates image print counts
-            ui.action_print_preview,  # Updates image print counts
-            ui.action_show_settings,  # Can cause filter updates
+            ui.action_print,
+            ui.action_print_pdf,
+            ui.action_print_preview,
+            ui.action_show_settings,
         ]
 
     def _connect_image_database_signals(self, image_db: ImageDatabase):
@@ -245,7 +237,6 @@ class MainWindow(QMainWindow):
         logger.info(f"User wants to quit.")
         self.is_running = False
         self.card_data_downloader.cancel_running_operations()
-        self.card_data_downloader.quit_background_thread()
         self.document.loader.cancel_running_operations()
         self.document.loader.quit_background_thread()
         self.image_db.quit_background_thread()
@@ -336,7 +327,7 @@ class MainWindow(QMainWindow):
                 "the image files onto the main window.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.Yes) == QMessageBox.StandardButton.Yes:
-            self.card_data_downloader.request_import_from_url.emit()
+            self.card_data_downloader.import_from_api()
 
     @Slot()
     def on_action_save_document_triggered(self):
@@ -421,7 +412,7 @@ class MainWindow(QMainWindow):
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
                 ) == QMessageBox.StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
-            self.card_data_downloader.request_import_from_url.emit()
+            self.card_data_downloader.import_from_api()
         else:
             # If the user declines to perform the update now, allow them to perform it later by enabling the action.
             self.ui.action_download_card_data.setEnabled(True)

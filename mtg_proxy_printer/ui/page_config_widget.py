@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -56,9 +56,8 @@ class PageConfigWidget(QGroupBox):
         self.ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
         self.ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
         self.ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        self.ui.image_spacing_horizontal.valueChanged[int].connect(
-            partial(setattr, page_layout, "image_spacing_horizontal"))
-        self.ui.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
+        self.ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
+        self.ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
 
         # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
         # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
@@ -144,8 +143,8 @@ class PageConfigWidget(QGroupBox):
             (self.ui.margin_bottom, "margin-bottom-mm"),
             (self.ui.margin_left, "margin-left-mm"),
             (self.ui.margin_right, "margin-right-mm"),
-            (self.ui.image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.ui.image_spacing_vertical, "image-spacing-vertical-mm"),
+            (self.ui.row_spacing, "row-spacing-mm"),
+            (self.ui.column_spacing, "column-spacing-mm"),
         ]
         return widgets_with_settings
 

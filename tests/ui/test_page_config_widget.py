@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,8 +33,8 @@ import mtg_proxy_printer.ui.page_config_widget
     "margin_bottom",
     "margin_left",
     "margin_right",
-    "image_spacing_horizontal",
-    "image_spacing_vertical",
+    "row_spacing",
+    "column_spacing",
 ])
 def test_set_integer_spin_boxes(qtbot: QtBot, attribute_name: str):
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
@@ -76,14 +76,14 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
 
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
-    ("paper-height-mm", "page_height", 146),
-    ("paper-width-mm", "page_width", 95),
+    ("paper-height-mm", "page_height", 136),
+    ("paper-width-mm", "page_width", 93),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
     ("margin-right-mm", "margin_right", 0),
-    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
-    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+    ("row-spacing-mm", "row_spacing", 0),
+    ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_load_integer_document_settings_from_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
@@ -119,14 +119,14 @@ def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, a
 
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
-    ("paper-height-mm", "page_height", 146),
-    ("paper-width-mm", "page_width", 102),
+    ("paper-height-mm", "page_height", 136),
+    ("paper-width-mm", "page_width", 98),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
     ("margin-right-mm", "margin_right", 0),
-    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
-    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+    ("row-spacing-mm", "row_spacing", 0),
+    ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_save_integer_document_settings_to_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
@@ -175,14 +175,14 @@ def test_save_boolean_document_settings_to_config(
 
 @pytest.mark.parametrize("value", [0, 1, 200, 1000])
 @pytest.mark.parametrize("attribute_name, min_value", [
-    ("page_height", 146),
-    ("page_width", 102),
+    ("page_height", 136),
+    ("page_width", 98),
     ("margin_top", 0),
     ("margin_bottom", 0),
     ("margin_left", 0),
     ("margin_right", 0),
-    ("image_spacing_horizontal", 0),
-    ("image_spacing_vertical", 0),
+    ("row_spacing", 0),
+    ("column_spacing", 0),
 ])
 def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_value: int, value: int):
     """

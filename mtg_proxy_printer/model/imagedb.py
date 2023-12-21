@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -116,7 +116,7 @@ class ImageDatabase(QObject):
         self.images_on_disk: typing.Set[ImageKey] = set()
         self.download_thread = QThread()
         self.download_thread.setObjectName(f"{self.__class__.__name__} background worker")
-        self.download_thread.finished.connect(lambda: logger.debug(f"{self.download_thread.objectName()} stopped."))
+        self.download_thread.finished.connect(self._log_thread_stop)
         self.download_worker = dw = ImageDownloader(self)
         dw.moveToThread(self.download_thread)
 
@@ -137,6 +137,9 @@ class ImageDatabase(QObject):
         self.download_thread.started.connect(dw.scan_disk_image_cache)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _log_thread_stop(self):
+        logger.debug(f"{self.download_thread.objectName()} stopped.")
 
     @property
     @functools.lru_cache(maxsize=1)

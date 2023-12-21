@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,10 +24,10 @@ import textwrap
 import typing
 from unittest.mock import patch
 
-from PySide6.QtCore import QObject, Signal, QThread
-
+from PySide6.QtGui import QPageLayout, QPageSize
+from PySide6.QtCore import QObject, Signal, QThread, QMarginsF, QSizeF
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_, equal_to
+    has_properties, greater_than, is_, any_of
 
 try:
     from hamcrest import contains_exactly
@@ -47,6 +47,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
+    from mtg_proxy_printer.ui.page_scene import RenderMode
 logger = get_logger(__name__)
 del get_logger
 
@@ -92,8 +93,8 @@ class PageLayoutSettings:
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    image_spacing_horizontal: int = 0
-    image_spacing_vertical: int = 0
+    row_spacing: int = 0
+    column_spacing: int = 0
     margin_bottom: int = 0
     margin_left: int = 0
     margin_right: int = 0
@@ -109,8 +110,8 @@ class PageLayoutSettings:
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
-            document_settings.getint("image-spacing-horizontal-mm"),
-            document_settings.getint("image-spacing-vertical-mm"),
+            document_settings.getint("row-spacing-mm"),
+            document_settings.getint("column-spacing-mm"),
             document_settings.getint("margin-bottom-mm"),
             document_settings.getint("margin-left-mm"),
             document_settings.getint("margin-right-mm"),
@@ -118,6 +119,18 @@ class PageLayoutSettings:
             document_settings.getint("paper-height-mm"),
             document_settings.getint("paper-width-mm"),
         )
+
+    def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
+        orientation = QPageLayout.Orientation
+        margins = QMarginsF(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom) \
+            if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
+        layout = QPageLayout(
+            QPageSize(QSizeF(*sorted([self.page_width, self.page_height])), QPageSize.Unit.Millimeter),
+            orientation.Portrait if self.page_width < self.page_height else orientation.Landscape,
+            margins,
+            QPageLayout.Unit.Millimeter,
+        )
+        return layout
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):
@@ -149,7 +162,7 @@ class PageLayoutSettings:
         card_width = card_size.as_mm(card_size.width)
         total_width = self.page_width
         margins = self.margin_left + self.margin_right
-        spacing = self.image_spacing_horizontal
+        spacing = self.row_spacing
 
         total_width -= margins
         if total_width < card_width:
@@ -164,7 +177,7 @@ class PageLayoutSettings:
         card_height = card_size.as_mm(card_size.height)
         total_height = self.page_height
         margins = self.margin_top + self.margin_bottom
-        spacing = self.image_spacing_vertical
+        spacing = self.column_spacing
         total_height -= margins
         if total_height < card_height:
             return 0
@@ -337,7 +350,7 @@ class Worker(QObject):
     def _load_document(self):
         # Imported here to break a circular import. TODO: Investigate a better fix
         from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
-        card_data, page_settings = self._read_data_from_save_path(self.save_path)
+        card_data, page_settings = self._read_data_from_save_path(self.save_path, self.document.page_layout)
         with patch.object(self.card_db, "db", self.db):
             pages, self.migrated_ids, self.unknown_ids = self._parse_into_cards(card_data)
         self._fix_mixed_pages(pages, page_settings)
@@ -444,7 +457,7 @@ class Worker(QObject):
         return len(set(card.requested_page_type() for card in page)) > 1
 
     @staticmethod
-    def _read_data_from_save_path(save_file_path: pathlib.Path):
+    def _read_data_from_save_path(save_file_path: pathlib.Path, settings: PageLayoutSettings):
         """
         Reads the data from disk into a list.
 
@@ -455,30 +468,20 @@ class Worker(QObject):
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             user_version = Worker._validate_database_schema(db)
-            card_data = Worker._read_card_data_from_database(db, user_version)
+            if user_version not in range(2, 7):
+                raise AssertionError(f"Unknown database schema version: {user_version}")
+            migrate_database(db, settings)
+            card_data = Worker._read_card_data_from_database(db)
             settings = Worker._read_page_layout_data_from_database(db, user_version)
         return card_data, settings
 
     @staticmethod
-    def _read_card_data_from_database(db: sqlite3.Connection, user_version: int) -> DocumentSaveFormat:
+    def _read_card_data_from_database(db: sqlite3.Connection) -> DocumentSaveFormat:
         card_data: DocumentSaveFormat = []
-        if user_version == 2:
-            query = textwrap.dedent("""\
-                SELECT page, slot, scryfall_id, 1 AS is_front, 'r' AS type
-                    FROM Card
-                    ORDER BY page ASC, slot ASC""")
-        elif user_version in {3, 4, 5}:
-            query = textwrap.dedent("""\
-                SELECT page, slot, scryfall_id, is_front, 'r' AS type
-                    FROM Card
-                    ORDER BY page ASC, slot ASC""")
-        elif user_version == 6:
-            query = textwrap.dedent("""\
-                SELECT page, slot, scryfall_id, is_front, type
-                    FROM Card
-                    ORDER BY page ASC, slot ASC""")
-        else:
-            raise AssertionError(f"Unknown database schema version: {user_version}")
+        query = textwrap.dedent("""\
+            SELECT page, slot, scryfall_id, is_front, type
+                FROM Card
+                ORDER BY page ASC, slot ASC""")
         supported_card_types: typing.List[str] = list(item.value for item in CardType)
         for row_number, row_data in enumerate(db.execute(query)):
             assert_that(row_data, contains_exactly(
@@ -495,79 +498,15 @@ class Worker(QObject):
     @staticmethod
     def _read_page_layout_data_from_database(db, user_version):
         default_settings = PageLayoutSettings.create_from_settings()
-        if user_version in {4, 5}:
-            settings = Worker._read_document_settings_version_4_5(db, default_settings)
-        elif user_version == 6:
-            settings = Worker._read_document_settings_version_6(db, default_settings)
+        if user_version >= 4:
+            settings = Worker._read_document_settings(db, default_settings)
         else:
             settings = default_settings
         logger.debug(f"Loaded document settings: {settings}")
         return settings
 
     @staticmethod
-    def _read_document_settings_version_4_5(
-            db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
-        logger.debug("Reading legacy document settings …")
-        stored_keys_query = textwrap.dedent("""\
-        SELECT p.name AS column_name  -- _read_document_settings_version_4_5
-            FROM sqlite_schema AS s
-            JOIN pragma_table_info(s.name) AS p
-            WHERE s.type = 'table'
-              AND s.name = ?
-              AND column_name <> 'rowid'
-        """)
-        required_keys = default_settings.__annotations__.keys()
-        stored_keys = {
-            key for key, in db.execute(stored_keys_query, ('DocumentSettings',))
-            if key in default_settings.__annotations__  # Ignore potentially dropped settings
-        }
-        # Use the actual column names found in the save database, use ? for all settings not stored, so that they can
-        # be substituted with the defaults
-        query_columns = ((key if key in stored_keys else '?') for key in required_keys)
-        # Default values for settings not found in the save file
-        default_values_for_settings_not_in_the_save_file = list(
-            getattr(default_settings, key) for key in required_keys if key not in stored_keys)
-        document_settings_query = textwrap.dedent(f"""\
-            SELECT {', '.join(query_columns)}
-              FROM DocumentSettings
-              WHERE rowid == 1
-        """)
-        assert_that(
-            db.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
-            contains_exactly(1),
-        )
-        settings = PageLayoutSettings(*db.execute(
-            document_settings_query, default_values_for_settings_not_in_the_save_file).fetchone())
-        assert_that(
-            settings,
-            has_properties(
-                document_name=equal_to(default_settings.document_name),
-                page_height=all_of(instance_of(int), greater_than(0)),
-                page_width=all_of(instance_of(int), greater_than(0)),
-                margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                draw_cut_markers=is_in((0, 1)),
-                draw_sharp_corners=is_in((0, 1)),
-                draw_page_numbers=is_in((0, 1)),
-            ),
-            "Document settings contain invalid data or data types"
-        )
-        assert_that(
-            settings.compute_page_card_capacity(),
-            is_(greater_than_or_equal_to(1)),
-            "Document settings invalid: At least one card has to fit on a page."
-        )
-        for key, expected_type in settings.__annotations__.items():
-            if expected_type is bool:
-                setattr(settings, key, bool(getattr(settings, key)))
-        return settings
-
-    @staticmethod
-    def _read_document_settings_version_6(
+    def _read_document_settings(
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
@@ -587,10 +526,12 @@ class Worker(QObject):
                 margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_horizontal=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                image_spacing_vertical=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                row_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                column_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
+                draw_page_numbers=is_in((0, 1)),
+                document_name=(any_of(instance_of(str), instance_of(int))),
             ),
             "Document settings contain invalid data or data types"
         )
@@ -601,6 +542,11 @@ class Worker(QObject):
         )
         default_settings.draw_cut_markers = bool(default_settings.draw_cut_markers)
         default_settings.draw_sharp_corners = bool(default_settings.draw_sharp_corners)
+        default_settings.draw_page_numbers = bool(default_settings.draw_page_numbers)
+        # Numerical column affinity coerces document titles like "1" to integers, so convert to str in those cases
+        # This does lose leading zeros and zero decimals (e.g. "1.000", however.
+        if not isinstance(default_settings.document_name, str):
+            default_settings.document_name = str(default_settings.document_name)
         return default_settings
 
     @staticmethod
@@ -617,3 +563,165 @@ class Worker(QObject):
         if self.image_loader.currently_opened_file is not None:
             # Force aborting the download by closing the input stream
             self.image_loader.currently_opened_file.close()
+
+
+def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
+    logger.debug("Running save file migration tasks")
+    _migrate_2_to_3(db, settings)
+    _migrate_3_to_4(db, settings)
+    _migrate_4_to_5(db, settings)
+    _migrate_5_to_6(db, settings)
+    migrate_image_spacing_settings(db)
+    logger.debug("Finished running migration tasks")
+
+
+def _migrate_2_to_3(db: sqlite3.Connection, settings: PageLayoutSettings):
+    if db.execute("PRAGMA user_version\n").fetchone()[0] != 2:
+        return
+    logger.debug("Migrating save file from version 2 to 3")
+    for statement in [
+        "ALTER TABLE Card RENAME TO Card_old",
+        textwrap.dedent("""\
+        CREATE TABLE Card (
+          page INTEGER NOT NULL CHECK (page > 0),
+          slot INTEGER NOT NULL CHECK (slot > 0),
+          is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
+          scryfall_id TEXT NOT NULL,
+          PRIMARY KEY(page, slot)
+        ) WITHOUT ROWID
+        """),
+        textwrap.dedent("""\
+        INSERT INTO Card (page, slot, scryfall_id, is_front)
+            SELECT page, slot, scryfall_id, 1 AS is_front
+            FROM Card_old"""),
+        "DROP TABLE Card_old",
+        "PRAGMA user_version = 3",
+    ]:
+        db.execute(f"{statement};\n")
+
+
+def _migrate_3_to_4(db: sqlite3.Connection, settings: PageLayoutSettings):
+    if db.execute("PRAGMA user_version\n").fetchone()[0] != 3:
+        return
+    logger.debug("Migrating save file from version 3 to 4")
+    db.execute(textwrap.dedent("""\
+    CREATE TABLE DocumentSettings (
+      rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
+      page_height INTEGER NOT NULL CHECK (page_height > 0),
+      page_width INTEGER NOT NULL CHECK (page_width > 0),
+      margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
+      margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
+      margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
+      margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
+      image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
+      image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
+      draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (0, 1))
+    );
+    """))
+    db.execute(
+        "INSERT INTO DocumentSettings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (1, settings.page_height, settings.page_width,
+         settings.margin_top, settings.margin_bottom, settings.margin_left, settings.margin_right,
+         settings.row_spacing, settings.column_spacing, settings.draw_cut_markers
+         )
+    )
+    db.execute(f"PRAGMA user_version = 4;\n")
+
+
+def _migrate_4_to_5(db: sqlite3.Connection, settings: PageLayoutSettings):
+    if db.execute("PRAGMA user_version").fetchone()[0] != 4:
+        return
+    logger.debug("Migrating save file from version 4 to 5")
+    db.execute("ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old;\n")
+    db.execute(textwrap.dedent("""\
+        CREATE TABLE DocumentSettings (
+          rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
+          page_height INTEGER NOT NULL CHECK (page_height > 0),
+          page_width INTEGER NOT NULL CHECK (page_width > 0),
+          margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
+          margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
+          margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
+          margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
+          image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
+          image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
+          draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (TRUE, FALSE)),
+          draw_sharp_corners INTEGER NOT NULL CHECK (draw_sharp_corners in (TRUE, FALSE))
+        );
+        """))
+    db.execute("INSERT INTO DocumentSettings SELECT *, ? FROM DocumentSettings_Old;\n", (settings.draw_sharp_corners,))
+    db.execute("DROP TABLE DocumentSettings_Old;\n")
+    db.execute("PRAGMA user_version = 5;\n")
+
+
+def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
+    if db.execute("PRAGMA user_version").fetchone()[0] != 5:
+        return
+    logger.debug("Migrating save file from version 5 to 6")
+    for statement in [
+            "ALTER TABLE Card RENAME TO Card_old",
+            textwrap.dedent("""\
+            CREATE TABLE Card (
+              page INTEGER NOT NULL CHECK (page > 0),
+              slot INTEGER NOT NULL CHECK (slot > 0),
+              is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
+              scryfall_id TEXT NOT NULL,
+              type TEXT NOT NULL CHECK (type <> ''),
+              PRIMARY KEY(page, slot)
+            ) WITHOUT ROWID;"""),
+            textwrap.dedent("""\
+            INSERT INTO Card (page, slot, scryfall_id, is_front, type)
+                SELECT page, slot, scryfall_id, 1 AS is_front, 'r' AS type
+                FROM Card_old"""),
+            "DROP TABLE Card_old",
+            "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
+            textwrap.dedent("""\
+            CREATE TABLE DocumentSettings (
+              key TEXT NOT NULL UNIQUE CHECK (key <> ''),
+              value INTEGER NOT NULL CHECK (value >= 0)
+            )"""),
+            textwrap.dedent("""INSERT INTO DocumentSettings (key, value) 
+              SELECT 'page_height', "page_height" FROM DocumentSettings_Old UNION ALL
+              SELECT 'page_width', "page_width" FROM DocumentSettings_Old UNION ALL
+              SELECT 'margin_top', "margin_top" FROM DocumentSettings_Old UNION ALL
+              SELECT 'margin_bottom', "margin_bottom" FROM DocumentSettings_Old UNION ALL
+              SELECT 'margin_left', "margin_left" FROM DocumentSettings_Old UNION ALL
+              SELECT 'margin_right', "margin_right" FROM DocumentSettings_Old UNION ALL
+              SELECT 'row_spacing', "image_spacing_horizontal" FROM DocumentSettings_Old UNION ALL
+              SELECT 'column_spacing', "image_spacing_vertical" FROM DocumentSettings_Old UNION ALL
+              SELECT 'draw_cut_markers', "draw_cut_markers" FROM DocumentSettings_Old UNION ALL
+              SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
+              """),
+            "DROP TABLE DocumentSettings_Old",
+            "PRAGMA user_version = 6",
+    ]:
+        db.execute(f"{statement}\n")
+    db.execute(
+        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
+        ("document_name", settings.document_name)
+    )
+
+
+def migrate_image_spacing_settings(db: sqlite3.Connection):
+    if db.execute("PRAGMA user_version").fetchone()[0] != 6:
+        return
+    logger.debug("Migrating save file version 6 image spacing settings")
+    for statement in [
+        textwrap.dedent("""\
+        UPDATE DocumentSettings SET key = 'row_spacing'
+          WHERE key == 'image_spacing_horizontal' 
+          AND NOT EXISTS (
+            SELECT key FROM DocumentSettings
+            WHERE key == 'row_spacing')
+        """),
+        textwrap.dedent("""\
+        UPDATE DocumentSettings SET key = 'column_spacing'
+          WHERE key == 'image_spacing_vertical' 
+          AND NOT EXISTS (
+            SELECT key FROM DocumentSettings
+            WHERE key == 'column_spacing')
+        """),
+        "DELETE FROM DocumentSettings WHERE key = 'image_spacing_vertical'",
+        "DELETE FROM DocumentSettings WHERE key = 'image_spacing_horizontal'",
+        # Not updating the user_version
+    ]:
+        db.execute(f"{statement}\n")

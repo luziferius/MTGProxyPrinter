@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PySide6.QtCore import Slot, Qt, QTimer, QStringListModel, QThreadPool
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
@@ -73,9 +73,9 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        printing_filter_updater = PrintingFilterUpdater(self.card_db)
-        printing_filter_updater.connect_main_window_signals(self.main_window)
-        QThreadPool.globalInstance().start(printing_filter_updater)
+        self.printing_filter_updater = runner = PrintingFilterUpdater(self.card_db)
+        runner.connect_main_window_signals(self.main_window)
+        QThreadPool.globalInstance().start(runner)
         self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
@@ -106,7 +106,7 @@ class Application(QApplication):
         QTimer.singleShot(100, self.update_checker.check_for_updates)
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
-            self.card_info_downloader.request_import_from_file.emit(args.card_data)
+            self.card_info_downloader.import_from_file(args.card_data)
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
@@ -144,7 +144,7 @@ class Application(QApplication):
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
-        settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
+        settings_window.requested_card_download.connect(card_info_downloader.download_to_file)
         settings_window.long_running_process_begins.connect(main_window.progress_bars.begin_outer_progress)
         settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
         settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
@@ -210,6 +210,7 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
+        self.printing_filter_updater.cancel()
         self.update_checker.stop_background_worker()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")

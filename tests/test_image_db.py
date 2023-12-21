@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -56,7 +56,6 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
         mock_downloader.assert_called()
     for key in keys:
         assert_that((image_db.db_path / key.format_relative_path()).is_file(), is_(True))
-
     # Test
     image_db.delete_disk_cache_entries([keys[0]])
     assert_that((image_db.db_path / keys[0].format_relative_path()).is_file(), is_(False))

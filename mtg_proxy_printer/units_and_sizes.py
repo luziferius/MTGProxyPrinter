@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,6 +33,7 @@ Colors = StringList = typing.List[str]
 StringSet = typing.Set[str]
 IntList = typing.List[int]
 StrDict = typing.Dict[str, str]
+
 
 class CardSize(typing.NamedTuple):
     width: pint.Quantity
@@ -102,6 +103,7 @@ class FaceDataType(typing.TypedDict):
     type_line: NotRequired[str]
     watermark: NotRequired[str]
 
+
 class RelatedCardType(typing.TypedDict):
     object: str
     id: UUID
@@ -117,6 +119,7 @@ _CardPreviewFields = typing.TypedDict("_CardPreviewFields", {
     "preview.source_uri": WEB_URI,
     "preview.source": str,
 })
+
 
 class CardDataType(_CardPreviewFields):
     """Card data type modelled according to https://scryfall.com/docs/api/cards"""
@@ -208,6 +211,7 @@ class CardDataType(_CardPreviewFields):
     variation_of: NotRequired[UUID]
     security_stamp: NotRequired[str]
     watermark: NotRequired[str]
+
 
 class BulkDataType(typing.TypedDict):
     """

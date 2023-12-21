@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2018-2023 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,22 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PySide6.QtCore import QStringListModel
+from pathlib import Path
+from unittest.mock import MagicMock
 
+import pytest
 from hamcrest import *
-from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.ui.settings_window import SettingsWindow
+from mtg_proxy_printer.ui.dialogs import SavePDFDialog
 
 
-def test_first_tab_is_selected_when_shown(qtbot: QtBot, document):
-    language_model = QStringListModel(["en"])
-    dialog = SettingsWindow(language_model, document)
-    ui = dialog.ui
-    qtbot.addWidget(dialog)
-    with qtbot.waitExposed(dialog):
-        dialog.show()
+@pytest.mark.parametrize("save_path, expected_name", [
+    (None, ""),
+    (Path("/tmp/foo"), "foo"),
+    (Path("/tmp/foo.mtgproxies"), "foo"),
+    (Path("/tmp/foo.bar.mtgproxies"), "foo.bar.pdf"),
+])
+def test_default_pdf_file_name(save_path: Path, expected_name: str):
+    document = MagicMock()
+    document.save_file_path = save_path
     assert_that(
-        ui.tab_widget.currentIndex(), is_(0),
-        "Wrong initial tab selected. Fix the settings window UI file."
+        SavePDFDialog.get_preferred_file_name(document),
+        is_(equal_to(expected_name))
     )

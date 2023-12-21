@@ -41,13 +41,14 @@ def test_handle_ssl_certificates_honors_certificates_set_via_environment():
 
 @pytest.fixture
 def main_mocks():
-    with patch("mtg_proxy_printer.__main__.mtg_proxy_printer.logger.configure_root_logger") as configure_root_logger,\
+    with patch("mtg_proxy_printer.__main__.mtg_proxy_printer.logger.configure_root_logger") as configure_root_logger, \
             patch.multiple(
             "mtg_proxy_printer.__main__",
             _app=DEFAULT, Application=DEFAULT, handle_ssl_certificates=DEFAULT,
-            parse_args=DEFAULT, QTimer=DEFAULT, logger=DEFAULT, QApplication=DEFAULT) as mocks:
+            parse_args=DEFAULT, QTimer=DEFAULT, logger=DEFAULT) as mocks:
         mocks["configure_root_logger"] = configure_root_logger
         yield mocks
+    mocks.clear()
 
 
 def test_main_calls_handle_ssl_certificates(main_mocks):

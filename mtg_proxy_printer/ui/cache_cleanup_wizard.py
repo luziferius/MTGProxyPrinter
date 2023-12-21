@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ import typing
 
 from PySide6.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
+from PySide6.QtWidgets import QWidget, QWizard, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
@@ -431,7 +431,7 @@ class CacheCleanupWizard(WizardBase):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 parent: QWidget = None, flags = Qt.WindowFlags()):
+                 parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))

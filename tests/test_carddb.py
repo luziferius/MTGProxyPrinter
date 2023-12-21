@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,10 +24,10 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
-    MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card
 from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
@@ -167,7 +167,7 @@ def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def card_db_with_cards(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_cards(
         qtbot, card_db,
@@ -195,7 +195,7 @@ def card_db_with_cards(qtbot, card_db: CardDatabase):
             "english_double_faced_art_series_card",
         ],
     )
-    yield card_db
+    return card_db
 
 
 def generate_test_cases_for_test_translate_card_name():
@@ -267,6 +267,7 @@ def test_translate_card_name(
 
 
 @pytest.mark.parametrize("usage_count, expected", [
+    (1, [2]),
     (-1, []),
     (0, []),
     (1, [2]),
@@ -292,10 +293,12 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
         ],
     )
     document = Document(card_db, MagicMock())
-    document.apply(ActionAddCard(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
-    document.store_image_usage()
-    document.apply(ActionAddCard(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
-    document.store_image_usage()
+    document.apply(ActionAddCard(
+        _get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
+    PrintCountUpdater(document, card_db.db).run()
+    document.apply(ActionAddCard(
+        _get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
+    PrintCountUpdater(document, card_db.db).run()
     # Test
     assert_that(
         result := card_db.cards_used_less_often_then([
@@ -497,15 +500,6 @@ def test_get_replacement_card(
         ])
     card_db.get_replacement_card_for_unknown_printing(CardIdentificationData(scryfall_id="english-id", language="en"))
 
-
-"""
-case = TestCaseData("regular_english_card")
-case = TestCaseData("oversized_card")
-case = TestCaseData("german_basic_Forest")
-case = TestCaseData("spanish_basic_Forest")
-case = TestCaseData("english_double_faced_card")
-case = TestCaseData("english_double_faced_art_series_card")
-"""
 
 def generate_test_cases_for_test__translate_card():
     # Same-language translation

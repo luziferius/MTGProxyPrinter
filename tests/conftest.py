@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,7 +21,6 @@ import itertools
 import sqlite3
 import unittest.mock
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 from PySide6.QtGui import QColor, QPixmap
 import pytest
@@ -58,32 +57,30 @@ def empty_save_database(request) -> sqlite3.Connection:
     return db
 
 
-@pytest.fixture()
-def image_db():
-    with TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        image_db = ImageDatabase(temp_path)
-        regular_width, regular_height = image_db.blank_image.width(), image_db.blank_image.height()
-        for scryfall_id, is_front in itertools.product(
-                ["0000579f-7b35-4ed3-b44c-db2a538066fe", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"], [True, False]):
-            # Regular card images
-            key = ImageKey(scryfall_id, is_front, True)
-            image_db.loaded_images[key] = image_db.blank_image.copy(0, 0, regular_width, regular_height)
-            image_db.images_on_disk.add(key)
-        for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
-            # Oversized card images
-            key = ImageKey(scryfall_id, True, True)
-            image_db.loaded_images[key] = image_db.blank_image.scaled(regular_height, regular_width*2)
-            image_db.images_on_disk.add(key)
+@pytest.fixture
+def image_db(qtbot, tmp_path: Path):
+    image_db = ImageDatabase(tmp_path)
+    regular_width, regular_height = image_db.blank_image.width(), image_db.blank_image.height()
+    for scryfall_id, is_front in itertools.product(
+            ["0000579f-7b35-4ed3-b44c-db2a538066fe", "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"], [True, False]):
+        # Regular card images
+        key = ImageKey(scryfall_id, is_front, True)
+        image_db.loaded_images[key] = image_db.blank_image.copy(0, 0, regular_width, regular_height)
+        image_db.images_on_disk.add(key)
+    for scryfall_id in ["650722b4-d72b-4745-a1a5-00a34836282b"]:
+        # Oversized card images
+        key = ImageKey(scryfall_id, True, True)
+        image_db.loaded_images[key] = image_db.blank_image.scaled(regular_height, regular_width*2)
+        image_db.images_on_disk.add(key)
 
-        yield image_db
-        if image_db.download_thread.isRunning():
-            image_db.quit_background_thread()
-            try:
-                assert_that(image_db.download_thread.isRunning(), is_(False))
-            finally:
-                stop_thread(image_db.download_thread)
-    assert_that(temp_path.exists(), is_(False))
+    yield image_db
+    if image_db.download_thread.isRunning():
+        image_db.quit_background_thread()
+        try:
+            assert_that(image_db.download_thread.isRunning(), is_(False))
+        finally:
+            stop_thread(image_db.download_thread)
+    image_db.download_thread.finished.disconnect(image_db._log_thread_stop)
 
 
 @pytest.fixture
