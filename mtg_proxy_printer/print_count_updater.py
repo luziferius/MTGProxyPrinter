@@ -31,10 +31,11 @@ class PrintCountUpdater(QRunnable):
     """
     This class updates the print counts stored in the database.
     """
-    def __init__(self, document):
+    def __init__(self, document, db: sqlite3.Connection = None):
         super().__init__()
         self.document = document
-        self._db = None
+        self.db_passed_in = bool(db)
+        self._db = db
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -68,5 +69,6 @@ class PrintCountUpdater(QRunnable):
             data
         )
         db.commit()
-        db.close()
+        if not self.db_passed_in:
+            db.close()
         self._db = None

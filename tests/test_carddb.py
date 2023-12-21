@@ -293,11 +293,10 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
         ],
     )
     document = Document(card_db, MagicMock())
-    print_count_updater = PrintCountUpdater(document)
     document.apply(ActionAddCard(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
-    print_count_updater.run()
+    PrintCountUpdater(document, card_db.db).run()
     document.apply(ActionAddCard(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
-    print_count_updater.run()
+    PrintCountUpdater(document, card_db.db).run()
     # Test
     assert_that(
         result := card_db.cards_used_less_often_then([
