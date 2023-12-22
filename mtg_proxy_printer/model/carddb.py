@@ -276,7 +276,8 @@ write_semaphore = threading.BoundedSemaphore()
 
 
 def with_database_write_lock(func):
-    """Decorator managing a lock. Used to serialize database write transactions."""
+    """Decorator managing the database lock. Used to serialize database write transactions."""
+    @functools.wraps(func)
     def wrapped(*args, **kwargs):
         write_semaphore.acquire()
         logger.debug(f"Obtained database write lock")
