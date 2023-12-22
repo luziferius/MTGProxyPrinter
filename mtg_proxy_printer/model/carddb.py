@@ -283,7 +283,9 @@ def with_database_write_lock(func):
         logger.debug(f"Obtained database write lock")
         try:
             app: "Application" = QApplication.instance()
-            if app and app.should_run:
+            # The instance used by unit tests does not have the should_run attribute.
+            # Skip the second condition in that case
+            if app and (not hasattr(app, "should_run") or app.should_run):
                 return func(*args, **kwargs)
             else:
                 logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
