@@ -96,7 +96,7 @@ class Document(QAbstractItemModel):
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
-        self.loader = DocumentLoader(card_db, image_db, self)
+        self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
         self.pages: PageList = [first_page := Page()]
