@@ -63,6 +63,7 @@ class Application(QApplication):
             argv.append("-platform")
             argv.append("windows:darkmode=1")
         super(Application, self).__init__(argv)
+        self.should_run = True
         self._setup_icons()
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
@@ -212,6 +213,7 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
+        self.should_run = False
         self.printing_filter_updater.cancel()
         self.update_checker.stop_background_worker()
         self.closeAllWindows()

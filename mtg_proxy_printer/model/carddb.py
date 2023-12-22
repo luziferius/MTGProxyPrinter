@@ -23,11 +23,13 @@ import pathlib
 import threading
 import typing
 
+from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
+    from mtg_proxy_printer.application import Application
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
@@ -279,7 +281,11 @@ def with_database_write_lock(func):
         write_semaphore.acquire()
         logger.debug(f"Obtained database write lock")
         try:
-            func(*args, **kwargs)
+            app: "Application" = QApplication.instance()
+            if app and app.should_run:
+                return func(*args, **kwargs)
+            else:
+                logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
         finally:
             logger.debug("Releasing database write lock")
             write_semaphore.release()
