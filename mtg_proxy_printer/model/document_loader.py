@@ -25,7 +25,7 @@ import typing
 from unittest.mock import patch
 
 from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThread, QMarginsF, QSizeF
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
@@ -216,32 +216,22 @@ class DocumentLoader(QObject):
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
         super(DocumentLoader, self).__init__(None)
         self.document = document
-        self.worker_thread = QThread()
-        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
-        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
         self.worker = worker = Worker(card_db, image_db, document)
-        worker.moveToThread(self.worker_thread)
         worker.load_requested.connect(self.load_requested)
-        # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
         worker.loading_file_failed.connect(self.loading_file_failed)
         worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
         worker.loading_file_successful.connect(self.on_loading_file_successful)
         worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.finished.connect(self.worker_thread.quit)
         worker.finished.connect(lambda: self.loading_state_changed.emit(False))
-        self.worker_thread.started.connect(worker.load_document)
         worker.finished.connect(self.finished)
         worker.begin_loading_loop.connect(self.begin_loading_loop)
         worker.progress_loading_loop.connect(self.progress_loading_loop)
-
-    def is_running(self) -> bool:
-        return self.worker_thread.isRunning()
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
         self.loading_state_changed.emit(True)
         self.worker.save_path = save_file_path
-        self.worker_thread.start()
+        QThreadPool.globalInstance().start(self.worker.load_document)
 
     def on_loading_file_successful(self, file_path: pathlib.Path):
         logger.info(f"Loading document from {file_path} successful.")
@@ -252,14 +242,7 @@ class DocumentLoader(QObject):
         Can be called to cancel loading a document.
         This forces the worker thread to abort any running image downloads.
         """
-        if not self.worker_thread.isRunning():
-            return
         self.worker.cancel_running_operations()
-
-    def quit_background_thread(self):
-        if self.worker_thread.isRunning():
-            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            stop_thread(self.worker_thread, logger)
 
 
 class Worker(QObject):
@@ -326,6 +309,7 @@ class Worker(QObject):
 
     def load_document(self):
         self.should_run = True
+        self.image_loader.moveToThread(self.thread())
         try:
             self._load_document()
         except (AssertionError, sqlite3.DatabaseError) as e:
