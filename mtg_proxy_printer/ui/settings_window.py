@@ -362,6 +362,7 @@ class SettingsWindow(QDialog):
                 f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
                 QMessageBox.Ok, QMessageBox.Ok)
             return
+        logger.info(f"Download card data to file {path}")
         self.requested_card_download.emit(path)
 
     @Slot()
@@ -381,4 +382,5 @@ class SettingsWindow(QDialog):
                 f"Cannot find the selected file:\n{location}",
                 QMessageBox.Ok, QMessageBox.Ok)
             return
+        logger.info(f"Import card data from {path}")
         QApplication.instance().card_info_downloader.import_from_file(path)
