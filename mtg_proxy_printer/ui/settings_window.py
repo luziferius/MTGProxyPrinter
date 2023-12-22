@@ -19,7 +19,7 @@ import pathlib
 import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, pyqtSlot as Slot, Qt, QUrl, QStandardPaths, QThreadPool
-from PyQt5.QtWidgets import QDialogButtonBox, QCheckBox, \
+from PyQt5.QtWidgets import QDialogButtonBox, QCheckBox, QApplication, \
     QFileDialog, QLineEdit, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QDesktopServices, QIcon
 
@@ -349,10 +349,12 @@ class SettingsWindow(QDialog):
 
     @Slot()
     def on_debug_download_card_data_as_file_clicked(self):
+        logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
             self, "Select download location",
             QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
         if not location:
+            logger.debug("User cancelled location selection. Not downloading.")
             return
         if not (path := pathlib.Path(location)).is_dir():
             QMessageBox.critical(
@@ -361,3 +363,22 @@ class SettingsWindow(QDialog):
                 QMessageBox.Ok, QMessageBox.Ok)
             return
         self.requested_card_download.emit(path)
+
+    @Slot()
+    def on_debug_import_card_data_from_file_clicked(self):
+        logger.debug("User about to import card tata from a previously downloaded file.")
+        location, _ = QFileDialog.getOpenFileName(
+            self, "Import previously downloaded card data obtained from Scryfall",
+            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+            "Scryfall card data (*.json, *.json.gz)")
+        logger.info(f"{location=}")
+        if not location:
+            logger.debug("User cancelled file selection. Not importing.")
+            return
+        if not (path := pathlib.Path(location)).is_file():
+            QMessageBox.critical(
+                self, "Selected location is not a file",
+                f"Cannot find the selected file:\n{location}",
+                QMessageBox.Ok, QMessageBox.Ok)
+            return
+        QApplication.instance().card_info_downloader.import_from_file(path)

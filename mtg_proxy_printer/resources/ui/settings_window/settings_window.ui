@@ -190,7 +190,7 @@ Uncheck to disable this automatism.</string>
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="document-open"/>
+              <iconset theme="document-open"/>
             </property>
            </widget>
           </item>
@@ -565,21 +565,31 @@ LEA DDU TC13 J21</string>
        <string>Debug settings</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_7">
-       <item row="3" column="0" colspan="2">
-        <widget class="Line" name="debug_settings_header_line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0" colspan="2">
-        <widget class="QLabel" name="debug_settings_headerlabel">
+       <item row="5" column="0">
+        <widget class="QCheckBox" name="enable_write_log_file">
          <property name="text">
-          <string>Debug settings (Changing these require an application restart)</string>
+          <string>Enable writing a log file to disk</string>
          </property>
         </widget>
        </item>
-       <item row="9" column="0" colspan="2">
+       <item row="6" column="1">
+        <widget class="QComboBox" name="log_level_combo_box">
+         <property name="toolTip">
+          <string>Only write events with the given severity level and higher to the log file.</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QPushButton" name="open_debug_log_location">
+         <property name="text">
+          <string>Open debug log directory</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-open"/>
+         </property>
+        </widget>
+       </item>
+       <item row="10" column="0" colspan="2">
         <spacer name="verticalSpacer_5">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -602,20 +612,10 @@ LEA DDU TC13 J21</string>
          </property>
         </widget>
        </item>
-       <item row="7" column="1">
-        <widget class="QPushButton" name="open_debug_log_location">
+       <item row="2" column="0" colspan="2">
+        <widget class="QLabel" name="debug_settings_headerlabel">
          <property name="text">
-          <string>Open debug log directory</string>
-         </property>
-         <property name="icon">
-          <iconset theme="document-open"/>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1">
-        <widget class="QComboBox" name="log_level_combo_box">
-         <property name="toolTip">
-          <string>Only write events with the given severity level and higher to the log file.</string>
+          <string>Debug settings (Changing these require an application restart)</string>
          </property>
         </widget>
        </item>
@@ -632,10 +632,20 @@ LEA DDU TC13 J21</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="0">
-        <widget class="QCheckBox" name="enable_write_log_file">
+       <item row="3" column="0" colspan="2">
+        <widget class="Line" name="debug_settings_header_line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QPushButton" name="debug_import_card_data_from_file">
          <property name="text">
-          <string>Enable writing a log file to disk</string>
+          <string>Import card data from file</string>
+         </property>
+         <property name="icon">
+          <iconset theme="document-import"/>
          </property>
         </widget>
        </item>
