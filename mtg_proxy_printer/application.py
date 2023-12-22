@@ -215,7 +215,7 @@ class Application(QApplication):
         logger.info("About to exit.")
         self.should_run = False
         self.printing_filter_updater.cancel()
-        self.update_checker.stop_background_worker()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")
+        QThreadPool.globalInstance().waitForDone(1000)
         super().quit()
