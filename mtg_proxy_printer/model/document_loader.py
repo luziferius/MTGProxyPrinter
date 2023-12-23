@@ -234,6 +234,11 @@ class DocumentLoader(LoaderSignals):
         logger.info(f"Loading document from {file_path} successful.")
         self.document.save_file_path = file_path
 
+    def cancel(self):
+        for instance in LoaderRunner.INSTANCES:
+            if isinstance(instance, LoaderRunner):
+                instance.cancel()
+
 
 class LoaderRunner(Runnable):
     def __init__(self, path: pathlib.Path, parent: DocumentLoader):
