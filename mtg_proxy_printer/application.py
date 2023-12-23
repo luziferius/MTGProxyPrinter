@@ -105,7 +105,7 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-        QTimer.singleShot(100, self.update_checker.check_for_updates)
+        self.update_checker.check_for_updates()
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.import_from_file(args.card_data)
