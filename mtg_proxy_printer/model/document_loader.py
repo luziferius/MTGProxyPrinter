@@ -26,7 +26,7 @@ import typing
 from unittest.mock import patch
 
 from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, QRunnable, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, QRunnable, QTimer, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
@@ -59,7 +59,7 @@ __all__ = [
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
-
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 class CardType(str, enum.Enum):
     REGULAR = "r"
@@ -223,8 +223,8 @@ class DocumentLoader(LoaderSignals):
         self.document = document
         self.runner = None
         self.db = db
-
         self.finished.connect(functools.partial(self.loading_state_changed.emit,False))
+
         self.finished.connect(  # Delete the held reference after 100ms
             functools.partial(
                 QTimer.singleShot, 100,
@@ -258,12 +258,11 @@ class LoaderRunner(QRunnable):
         self.parent = parent
         self.path = path
         self.worker = None
-    
+
     def run(self):
         self.worker = self._create_worker()
         self.worker.load_document()
-        self.worker = None
-    
+
     def _create_worker(self):
         parent = self.parent
         worker = Worker(parent.document, self.path)
@@ -277,7 +276,6 @@ class LoaderRunner(QRunnable):
         worker.finished.connect(parent.finished)
         worker.begin_loading_loop.connect(parent.begin_loading_loop)
         worker.progress_loading_loop.connect(parent.progress_loading_loop)
-        parent.document.action_applied.connect(worker.on_document_action_applied)
         return worker
 
     def cancel(self):
@@ -296,6 +294,7 @@ class Worker(LoaderSignals):
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
+        document.action_applied.connect(self.on_document_action_applied, Qt.ConnectionType.DirectConnection)
         self.save_path = path
         self.card_db = document.card_db
         self.image_db = image_db = document.image_db
