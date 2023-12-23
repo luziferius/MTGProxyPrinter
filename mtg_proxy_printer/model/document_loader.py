@@ -59,7 +59,7 @@ __all__ = [
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
-QueuedConnection = Qt.ConnectionType.QueuedConnection
+
 
 class CardType(str, enum.Enum):
     REGULAR = "r"
