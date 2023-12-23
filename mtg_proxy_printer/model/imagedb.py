@@ -25,8 +25,7 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex, Qt, \
-    QThreadPool, QRunnable, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex, Qt, QThreadPool
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -38,13 +37,13 @@ import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.stop_thread import stop_thread
+from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
 ItemDataRole = Qt.ItemDataRole
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
-runners = []
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",
@@ -84,23 +83,24 @@ ImageKeySet = typing.Set[ImageKey]
 IMAGE_SIZE = QSize(745, 1040)
 
 
-class InitOnDiskDataRunner(QRunnable):
+class InitOnDiskDataRunner(Runnable):
     """
     Iterates the image storage directory and computes the set of ImageKey instances, placing them in the image database.
     """
 
     def __init__(self, images_on_disk: ImageKeySet, db_path: pathlib.Path):
         super().__init__()
-        runners.append(self)
         self.db_path = db_path
         self.images_on_disk = images_on_disk
 
     def run(self):
         logger.info("Reading all image IDs of images stored on disk.")
-        self.images_on_disk.update(
-            image.as_key() for image in read_disk_cache_content(self.db_path)
-        )
-        QTimer.singleShot(100, functools.partial(runners.remove, self))
+        try:
+            self.images_on_disk.update(
+                image.as_key() for image in read_disk_cache_content(self.db_path)
+            )
+        finally:
+            self.release_instance()
 
 
 class ImageDatabase(QObject):

@@ -235,8 +235,6 @@ class MainWindow(QMainWindow):
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
         self.is_running = False
-        self.card_data_downloader.cancel_running_operations()
-        self.document.loader.cancel_running_operations()
         self.image_db.quit_background_thread()
         if self.ui.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")

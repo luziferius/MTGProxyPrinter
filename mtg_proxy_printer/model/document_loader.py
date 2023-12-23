@@ -26,7 +26,7 @@ import typing
 from unittest.mock import patch
 
 from PyQt5.QtGui import QPageLayout, QPageSize
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, QRunnable, QTimer, Qt
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
@@ -43,6 +43,7 @@ from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
 from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.runner import Runnable
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -221,38 +222,20 @@ class DocumentLoader(LoaderSignals):
     def __init__(self, document: "Document", db: sqlite3.Connection = None):  # db parameter used by test code
         super(DocumentLoader, self).__init__(None)
         self.document = document
-        self.runner = None
         self.db = db
         self.finished.connect(functools.partial(self.loading_state_changed.emit,False))
-
-        self.finished.connect(  # Delete the held reference after 100ms
-            functools.partial(
-                QTimer.singleShot, 100,
-                functools.partial(setattr, self, "runner", None))
-        )
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
         self.loading_state_changed.emit(True)
-        self.runner = LoaderRunner(save_file_path, self)
-        QThreadPool.globalInstance().start(self.runner)
+        QThreadPool.globalInstance().start(LoaderRunner(save_file_path, self))
 
     def on_loading_file_successful(self, file_path: pathlib.Path):
         logger.info(f"Loading document from {file_path} successful.")
         self.document.save_file_path = file_path
 
-    def cancel_running_operations(self):
-        """
-        Can be called to cancel loading a document.
-        This forces the worker thread to abort any running image downloads.
-        """
-        try:
-            self.runner.cancel()
-        except AttributeError:
-            pass
 
-
-class LoaderRunner(QRunnable):
+class LoaderRunner(Runnable):
     def __init__(self, path: pathlib.Path, parent: DocumentLoader):
         super().__init__()
         self.parent = parent
@@ -260,8 +243,11 @@ class LoaderRunner(QRunnable):
         self.worker = None
 
     def run(self):
-        self.worker = self._create_worker()
-        self.worker.load_document()
+        try:
+            self.worker = self._create_worker()
+            self.worker.load_document()
+        finally:
+            self.release_instance()
 
     def _create_worker(self):
         parent = self.parent

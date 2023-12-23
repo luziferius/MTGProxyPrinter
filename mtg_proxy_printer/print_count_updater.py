@@ -14,20 +14,18 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import itertools
 import sqlite3
-
-from PyQt5.QtCore import QRunnable
 
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import open_database
+from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
 
-class PrintCountUpdater(QRunnable):
+class PrintCountUpdater(Runnable):
     """
     This class updates the print counts stored in the database.
     """
@@ -55,6 +53,12 @@ class PrintCountUpdater(QRunnable):
         Increments the usage count of all cards used in the document and updates the last use timestamps.
         Should be called after a successful PDF export and direct printing.
         """
+        try:
+            self._update_image_usage()
+        finally:
+            self.release_instance()
+
+    def _update_image_usage(self):
         logger.info("Updating image usage for all cards in the document.")
         db = self.db
         data = self.document.get_all_card_keys_in_document()

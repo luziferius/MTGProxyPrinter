@@ -41,6 +41,7 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
+from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -74,7 +75,7 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        self.printing_filter_updater = runner = PrintingFilterUpdater(self.card_db)
+        runner = PrintingFilterUpdater(self.card_db)
         runner.connect_main_window_signals(self.main_window)
         QThreadPool.globalInstance().start(runner)
         self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
@@ -214,7 +215,7 @@ class Application(QApplication):
     def quit(self):
         logger.info("About to exit.")
         self.should_run = False
-        self.printing_filter_updater.cancel()
+        Runnable.cancel_all_runners()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")
         QThreadPool.globalInstance().waitForDone(1000)

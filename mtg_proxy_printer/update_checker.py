@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from functools import partial
 import random
 import re
 import socket
@@ -22,7 +21,7 @@ import urllib.parse
 import urllib.error
 
 import ijson
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, QRunnable, QThreadPool, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool
 
 from mtg_proxy_printer.argument_parser import Namespace
 import mtg_proxy_printer.meta_data
@@ -31,6 +30,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.card_info_downloader import CardInfoDatabaseImportWorker, CardInfoWorkerBase
 from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
+from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -47,7 +47,6 @@ KNOWN_APPLICATION_MIRRORS: StringList = [
     # Don’t use the master repository for now, as it may not be able to handle load spikes
     # "http://1337net.duckdns.org:8080/MTGProxyPrinter",
 ]
-_runners = []
 
 
 class CardDataUpdateCheckWorker(CardInfoDatabaseImportWorker):
@@ -93,7 +92,7 @@ class CardDataUpdateCheckWorker(CardInfoDatabaseImportWorker):
         return bool(result)
 
 
-class CardDataUpdateCheckRunner(QRunnable):
+class CardDataUpdateCheckRunner(Runnable):
 
     def __init__(self, parent: "UpdateChecker"):
         super().__init__()
@@ -103,7 +102,7 @@ class CardDataUpdateCheckRunner(QRunnable):
         try:
             self._perform_check()
         finally:
-            QTimer.singleShot(100, partial(_runners.remove, self))
+            self.release_instance()
 
     def _perform_check(self):
         worker = CardDataUpdateCheckWorker(self.parent.card_db)
@@ -160,7 +159,7 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
         return natural_sorted((match["version"] for match in matches), reverse=True)
 
 
-class ApplicationUpdateCheckRunner(QRunnable):
+class ApplicationUpdateCheckRunner(Runnable):
 
     def __init__(self, parent: "UpdateChecker"):
         super().__init__()
@@ -170,7 +169,7 @@ class ApplicationUpdateCheckRunner(QRunnable):
         try:
             self._perform_check()
         finally:
-            QTimer.singleShot(100, partial(_runners.remove, self))
+            self.release_instance()
 
     def _perform_check(self):
         worker = ApplicationUpdateCheckWorker()
@@ -196,13 +195,11 @@ class UpdateChecker(QObject):
         app_settings = settings.settings["application"]
         if app_settings.getboolean("check-for-application-updates"):
             logger.debug("Enqueue application update check")
-            _runners.append(runner := ApplicationUpdateCheckRunner(self))
-            QThreadPool.globalInstance().start(runner)
+            QThreadPool.globalInstance().start(ApplicationUpdateCheckRunner(self))
         else:
             logger.info("Not running application update check")
         if not self.card_data_parameter_passed and app_settings.getboolean("check-for-card-data-updates") :
             logger.debug("Enqueue card data update check")
-            _runners.append(runner := CardDataUpdateCheckRunner(self))
-            QThreadPool.globalInstance().start(runner)
+            QThreadPool.globalInstance().start(CardDataUpdateCheckRunner(self))
         else:
             logger.info("Not running card data update check")
