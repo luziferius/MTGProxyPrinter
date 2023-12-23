@@ -25,7 +25,8 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex, Qt
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex, Qt, \
+    QThreadPool, QRunnable, QTimer
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -43,6 +44,7 @@ del get_logger
 
 ItemDataRole = Qt.ItemDataRole
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardImages"
+runners = []
 __all__ = [
     "ImageDatabase",
     "ImageDownloader",
@@ -78,7 +80,27 @@ class CacheContent(ImageKey):
 
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
+ImageKeySet = typing.Set[ImageKey]
 IMAGE_SIZE = QSize(745, 1040)
+
+
+class InitOnDiskDataRunner(QRunnable):
+    """
+    Iterates the image storage directory and computes the set of ImageKey instances, placing them in the image database.
+    """
+
+    def __init__(self, images_on_disk: ImageKeySet, db_path: pathlib.Path):
+        super().__init__()
+        runners.append(self)
+        self.db_path = db_path
+        self.images_on_disk = images_on_disk
+
+    def run(self):
+        logger.info("Reading all image IDs of images stored on disk.")
+        self.images_on_disk.update(
+            image.as_key() for image in read_disk_cache_content(self.db_path)
+        )
+        QTimer.singleShot(100, functools.partial(runners.remove, self))
 
 
 class ImageDatabase(QObject):
@@ -108,6 +130,7 @@ class ImageDatabase(QObject):
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         super(ImageDatabase, self).__init__(parent)
+        self.read_disk_cache_content = functools.partial(read_disk_cache_content, db_path)
         self.db_path = db_path
         _migrate_database(db_path)
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance
@@ -115,6 +138,7 @@ class ImageDatabase(QObject):
         # to save memory.
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
         self.images_on_disk: typing.Set[ImageKey] = set()
+        QThreadPool.globalInstance().start(InitOnDiskDataRunner(self.images_on_disk, db_path))
         self.download_thread = QThread()
         self.download_thread.setObjectName(f"{self.__class__.__name__} background worker")
         self.download_thread.finished.connect(self._log_thread_stop)
@@ -135,7 +159,6 @@ class ImageDatabase(QObject):
         dw.missing_images_obtained.connect(self.missing_images_obtained)
 
         dw.network_error_occurred.connect(self.network_error_occurred)
-        self.download_thread.started.connect(dw.scan_disk_image_cache)
         self.download_thread.start()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -171,24 +194,6 @@ class ImageDatabase(QObject):
             card for card in possible_matches
             if ImageKey(card.scryfall_id, card.is_front, card.highres_image) in self.images_on_disk
         ]
-
-    def read_disk_cache_content(self) -> typing.List[CacheContent]:
-        """
-        Returns all entries currently in the hard disk image cache.
-
-        :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
-        """
-        result: typing.List[CacheContent] = []
-        data: typing.Iterable[typing.Tuple[pathlib.Path, bool, bool]] = (
-            (self.db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
-             is_front, is_high_resolution)
-            for is_front, is_high_resolution in itertools.product([True, False], repeat=2)
-        )
-        for directory, is_front, is_high_resolution in data:
-            result += (
-                CacheContent(path.stem, is_front, is_high_resolution, path)
-                for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
-        return result
 
     def delete_disk_cache_entries(self, images: typing.Iterable[ImageKey]) -> PathSizeList:
         """
@@ -255,16 +260,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
         self.currently_opened_file_monitor: typing.Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def scan_disk_image_cache(self):
-        """
-        Performs two tasks in order: Scans the image cache on disk, then starts to process the download request queue.
-        This is done to perform both tasks asynchronously and not block the application GUI/startup.
-        """
-        logger.info("Reading all image IDs of images stored on disk.")
-        self.image_database.images_on_disk.update(
-            image.as_key() for image in self.image_database.read_disk_cache_content()
-        )
 
     @Slot(ActionReplaceCard)
     @Slot(ActionAddCard)
@@ -405,6 +400,26 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             if download_path.is_file():
                 download_path.unlink()
             self.download_finished.emit()
+
+
+def read_disk_cache_content(db_path: pathlib.Path) -> typing.List[CacheContent]:
+    """
+    Returns all entries currently in the given hard disk image cache.
+
+    :returns: List with tuples (scryfall_id: str, is_front: bool, absolute_image_file_path: pathlib.Path)
+    """
+    result: typing.List[CacheContent] = []
+    data: typing.Iterable[typing.Tuple[pathlib.Path, bool, bool]] = (
+        (db_path/CacheContent.format_level_1_directory_name(is_front, is_high_resolution),
+         is_front, is_high_resolution)
+        for is_front, is_high_resolution in itertools.product([True, False], repeat=2)
+    )
+    for directory, is_front, is_high_resolution in data:
+        result += (
+            CacheContent(path.stem, is_front, is_high_resolution, path)
+            for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
+    return result
+
 
 
 def _migrate_database(db_path: pathlib.Path):
