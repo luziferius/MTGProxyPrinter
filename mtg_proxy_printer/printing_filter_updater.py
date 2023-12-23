@@ -23,10 +23,11 @@ import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
     from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.model.carddb import SCHEMA_NAME, StringList, with_database_write_lock
+from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import StringList
 logger = get_logger(__name__)
 del get_logger
 

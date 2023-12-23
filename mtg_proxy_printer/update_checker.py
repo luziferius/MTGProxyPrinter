@@ -32,6 +32,7 @@ from mtg_proxy_printer.natsort import natural_sorted, str_less_than
 from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import StringList, OptStr
 logger = get_logger(__name__)
 del get_logger
 
@@ -39,8 +40,6 @@ __all__ = [
     "UpdateChecker",
 ]
 
-StringList = typing.List[str]
-OptStr = typing.Optional[str]
 VERSION_TAG_MATCHER = re.compile(r"v(?P<version>\d+\.\d+\.\d+)")
 KNOWN_APPLICATION_MIRRORS: StringList = [
     "http://chiselapp.com/user/luziferius/repository/MTGProxyPrinter",

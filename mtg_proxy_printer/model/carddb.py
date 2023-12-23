@@ -37,15 +37,13 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
 QueuedConnection = Qt.ConnectionType.QueuedConnection
-StringList = typing.List[str]
-OptionalString = typing.Optional[str]
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
 SCHEMA_NAME = "carddb"
@@ -70,13 +68,13 @@ __all__ = [
 
 @dataclasses.dataclass
 class CardIdentificationData:
-    language: OptionalString = None
-    name: OptionalString = None
-    set_code: OptionalString = None
-    collector_number: OptionalString = None
-    scryfall_id: OptionalString = None
+    language: OptStr = None
+    name: OptStr = None
+    set_code: OptStr = None
+    collector_number: OptStr = None
+    scryfall_id: OptStr = None
     is_front: typing.Optional[bool] = None
-    oracle_id: OptionalString = None
+    oracle_id: OptStr = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -789,7 +787,7 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
+    def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptStr:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
