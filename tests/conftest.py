@@ -24,9 +24,7 @@ from pathlib import Path
 
 from PyQt5.QtGui import QColor, QPixmap
 import pytest
-from hamcrest import assert_that, is_
 
-from mtg_proxy_printer.stop_thread import stop_thread
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
