@@ -25,11 +25,6 @@ from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 
 
-def test_quit_background_thread(image_db: ImageDatabase):
-    image_db.quit_background_thread()
-    assert_that(image_db.download_thread.isRunning(), is_(False))
-
-
 def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:
     buffer = QBuffer()
     buffer.open(QIODevice.WriteOnly)
@@ -45,7 +40,7 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
         ImageKey("7ef83f4c-abcd-abcd-9876-1234567890ab", True, True),  # Same prefix
     ]
     for key in keys:
-        with qtbot.waitSignal(image_db.download_worker.download_finished, timeout=1000):
+        with qtbot.waitSignal(image_db.card_download_finished, timeout=1000):
             blank_image_file = qpixmap_to_bytes_io(image_db.blank_image)
             image_db.download_worker.read_from_url = mock_downloader = MagicMock()
             mock_downloader.return_value = blank_image_file, MagicMock()

@@ -74,13 +74,6 @@ def image_db(tmp_path: Path):
         image_db.images_on_disk.add(key)
 
     yield image_db
-    if image_db.download_thread.isRunning():
-        image_db.quit_background_thread()
-        try:
-            assert_that(image_db.download_thread.isRunning(), is_(False))
-        finally:
-            stop_thread(image_db.download_thread)
-    image_db.download_thread.finished.disconnect(image_db._log_thread_stop)
     image_db.__dict__.clear()
 
 

@@ -19,12 +19,11 @@ import enum
 import itertools
 import math
 import pathlib
-import sqlite3
 import sys
 import textwrap
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers

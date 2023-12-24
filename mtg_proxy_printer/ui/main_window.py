@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.default_undo_tooltip = self.ui.action_undo.toolTip()
         self.default_redo_tooltip = self.ui.action_redo.toolTip()
         self.missing_images_manager = MissingImagesManager(document, self)
-        self.missing_images_manager.request_obtaining_images.connect(image_db.download_worker.obtain_missing_images)
+        self.missing_images_manager.request_obtaining_images.connect(image_db.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
         self.about_dialog = self._create_about_dialog()
         self.progress_bars = self._create_progress_bar()
@@ -235,7 +235,6 @@ class MainWindow(QMainWindow):
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
         self.is_running = False
-        self.image_db.quit_background_thread()
         if self.ui.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
             mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.ui.toolBar.isVisible())
@@ -252,7 +251,7 @@ class MainWindow(QMainWindow):
     def on_action_import_deck_list_triggered(self):
         logger.info(f"User imports a deck list.")
         wizard = DeckImportWizard(self.card_database, self.image_db, self.language_model, parent=self)
-        wizard.request_action.connect(self.image_db.download_worker.fill_batch_document_action_images)
+        wizard.request_action.connect(self.image_db.fill_batch_document_action_images)
         wizard.show()
 
     @Slot()

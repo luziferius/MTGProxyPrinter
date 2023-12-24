@@ -25,7 +25,7 @@ import string
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QThread, QSize, QModelIndex, Qt, QThreadPool
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QSize, QModelIndex, Qt, QThreadPool
 from PyQt5.QtGui import QPixmap, QColor
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -36,7 +36,6 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
 from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
-from mtg_proxy_printer.stop_thread import stop_thread
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -81,6 +80,9 @@ class CacheContent(ImageKey):
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 ImageKeySet = typing.Set[ImageKey]
 IMAGE_SIZE = QSize(745, 1040)
+BatchActions = typing.Union[ActionImportDeckList]
+SingleActions = typing.Union[ActionAddCard, ActionReplaceCard]
+IndexList = typing.List[QModelIndex]
 
 
 class InitOnDiskDataRunner(Runnable):
@@ -124,7 +126,6 @@ class ImageDatabase(QObject):
     a deck list. It signals if such a long-running process starts or finishes.
     """
     batch_processing_state_changed = Signal(bool)
-    request_batch_state_change = Signal(bool)
 
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
@@ -139,31 +140,8 @@ class ImageDatabase(QObject):
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
         self.images_on_disk: typing.Set[ImageKey] = set()
         QThreadPool.globalInstance().start(InitOnDiskDataRunner(self.images_on_disk, db_path))
-        self.download_thread = QThread()
-        self.download_thread.setObjectName(f"{self.__class__.__name__} background worker")
-        self.download_thread.finished.connect(self._log_thread_stop)
-        self.download_worker = dw = ImageDownloader(self)
-        dw.moveToThread(self.download_thread)
-
-        self.request_batch_state_change.connect(dw.request_batch_processing_state_change)
-
-        dw.download_begins.connect(self.card_download_starting)
-        dw.download_finished.connect(self.card_download_finished)
-        dw.download_progress.connect(self.card_download_progress)
-        dw.batch_process_starting.connect(self.batch_process_starting)
-        dw.batch_process_progress.connect(self.batch_process_progress)
-        dw.batch_process_finished.connect(self.batch_process_finished)
-
-        dw.batch_processing_state_changed.connect(self.batch_processing_state_changed)
-        dw.request_action.connect(self.request_action)
-        dw.missing_images_obtained.connect(self.missing_images_obtained)
-
-        dw.network_error_occurred.connect(self.network_error_occurred)
-        self.download_thread.start()
+        self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _log_thread_stop(self):
-        logger.debug(f"{self.download_thread.objectName()} stopped.")
 
     @property
     @functools.lru_cache(maxsize=1)
@@ -172,18 +150,6 @@ class ImageDatabase(QObject):
         pixmap = QPixmap(IMAGE_SIZE)
         pixmap.fill(QColor("white"))
         return pixmap
-
-    def quit_background_thread(self):
-        logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-        self.download_worker.should_run = False
-        try:
-            self.download_worker.currently_opened_file_monitor.close()
-            self.download_worker.currently_opened_file.close()
-        except AttributeError:
-            # Ignore error on possible race condition, if the download worker thread removes the currently opened file,
-            # while this runs.
-            pass
-        stop_thread(self.download_thread, logger)
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
         """
@@ -224,6 +190,86 @@ class ImageDatabase(QObject):
             if e.errno != errno.ENOTEMPTY:
                 raise e
 
+    @Slot(list)
+    def obtain_missing_images(self, card_indices: IndexList):
+        logger.info(f"Trying to obtain {len(card_indices)} missing images.")
+        QThreadPool.globalInstance().start(ObtainMissingImagesRunner(self, card_indices))
+
+    @Slot(ActionReplaceCard)
+    @Slot(ActionAddCard)
+    def fill_document_action_image(self, action: SingleActions):
+        logger.debug(f"About to obtain image for card in action")
+        QThreadPool.globalInstance().start(SingleDownloadRunner(self, action))
+
+    @Slot(ActionImportDeckList)
+    def fill_batch_document_action_images(self, action: BatchActions):
+        logger.debug(f"About to obtain images for cards in batch action")
+        QThreadPool.globalInstance().start(BatchDownloadRunner(self, action))
+
+
+class ImageDbRunnable(Runnable):
+
+    def __init__(self, parent: ImageDatabase):
+        super().__init__()
+        self.parent = parent
+        self.downloader: typing.Optional[ImageDownloader] = None
+
+    def cancel(self):
+        if self.downloader is None:
+            return
+        self.downloader.should_run = False
+        try:
+            self.downloader.currently_opened_file.close()
+        except AttributeError:
+            pass
+        try:
+            self.downloader.currently_opened_file_monitor.close()
+        except AttributeError:
+            pass
+
+
+class ObtainMissingImagesRunner(ImageDbRunnable):
+
+    def __init__(self, parent: ImageDatabase, indices: IndexList):
+        super().__init__(parent)
+        self.indices = indices
+
+    def run(self):
+        try:
+            self.downloader = downloader = ImageDownloader(self.parent)
+            downloader.connect_image_db_signals(self.parent)
+            downloader.obtain_missing_images(self.indices)
+        finally:
+            self.release_instance()
+
+
+class SingleDownloadRunner(ImageDbRunnable):
+    def __init__(self, parent: ImageDatabase, action: SingleActions):
+        super().__init__(parent)
+        self.action = action
+
+    def run(self):
+        try:
+            self.downloader = downloader = ImageDownloader(self.parent)
+            downloader.connect_image_db_signals(self.parent)
+            downloader.fill_document_action_image(self.action)
+        finally:
+            self.release_instance()
+
+
+class BatchDownloadRunner(ImageDbRunnable):
+    def __init__(self, parent: ImageDatabase, action: BatchActions):
+        super().__init__(parent)
+        self.action = action
+
+    def run(self):
+        try:
+            self.downloader = downloader = ImageDownloader(self.parent)
+            downloader.connect_image_db_signals(self.parent)
+            downloader.fill_batch_document_action_images(self.action)
+        finally:
+            self.release_instance()
+
 
 class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     """
@@ -237,11 +283,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     missing_images_obtained = Signal()
     missing_image_obtained = Signal(QModelIndex)
 
-    """
-    Messages if the instance performs a batch operation when it processes image requests for
-    a deck list. It signals if such a long-running process starts or finishes.
-    """
-    request_batch_processing_state_change = Signal(bool)
     batch_processing_state_changed = Signal(bool)
 
     batch_process_starting = Signal(int, str)
@@ -250,7 +291,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
         super(ImageDownloader, self).__init__(parent)
-        self.request_batch_processing_state_change.connect(self.update_batch_processing_state)
         self.image_database = image_db
         self.should_run = True
         self.batch_processing_state: bool = False
@@ -260,17 +300,28 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.currently_opened_file: typing.Optional[io.BytesIO] = None
         self.currently_opened_file_monitor: typing.Optional[mtg_proxy_printer.http_file.MeteredSeekableHTTPFile] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
+        
+    def connect_image_db_signals(self, image_db: ImageDatabase):
+        self.download_begins.connect(image_db.card_download_starting)
+        self.download_finished.connect(image_db.card_download_finished)
+        self.download_progress.connect(image_db.card_download_progress)
 
-    @Slot(ActionReplaceCard)
-    @Slot(ActionAddCard)
-    def fill_document_action_image(self, action: typing.Union[ActionAddCard, ActionReplaceCard]):
+        self.batch_process_starting.connect(image_db.batch_process_starting)
+        self.batch_process_progress.connect(image_db.batch_process_progress)
+        self.batch_process_finished.connect(image_db.batch_process_finished)
+        self.batch_processing_state_changed.connect(image_db.batch_processing_state_changed)
+
+        self.request_action.connect(image_db.request_action)
+        self.missing_images_obtained.connect(image_db.missing_images_obtained)
+        self.network_error_occurred.connect(image_db.network_error_occurred)
+
+    def fill_document_action_image(self, action: SingleActions):
         logger.info("Got DocumentAction, filling card")
         self.get_image_synchronous(action.card)
         logger.info("Obtained image, requesting apply()")
         self.request_action.emit(action)
 
-    @Slot(ActionImportDeckList)
-    def fill_batch_document_action_images(self, action: ActionImportDeckList):
+    def fill_batch_document_action_images(self, action: BatchActions):
         cards = action.cards
         total_cards = len(cards)
         logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
@@ -284,7 +335,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.update_batch_processing_state(False)
         logger.info(f"Obtained images for {total_cards} cards.")
 
-    @Slot(list)
     def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
         total_cards = len(card_indices)
         logger.debug(f"Requesting {total_cards} missing images")
@@ -302,14 +352,10 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         logger.debug(f"Done fetching {total_cards} missing images.")
         self.missing_images_obtained.emit()
 
-    @Slot(bool)
     def update_batch_processing_state(self, value: bool):
         self.batch_processing_state = value
         if not self.batch_processing_state and self.last_error_message:
             self.network_error_occurred.emit(self.last_error_message)
-        # Unconditionally forget any previously stored error messages when changing the batch processing state.
-        # This prevents re-raising already reported, previous errors when starting a new batch
-        self.last_error_message = ""
         self.batch_processing_state_changed.emit(value)
 
     def _handle_network_error_during_download(self, card: Card, reason_str: str):
@@ -419,7 +465,6 @@ def read_disk_cache_content(db_path: pathlib.Path) -> typing.List[CacheContent]:
             CacheContent(path.stem, is_front, is_high_resolution, path)
             for path in directory.glob("[0-9a-z][0-9a-z]/*.png"))
     return result
-
 
 
 def _migrate_database(db_path: pathlib.Path):

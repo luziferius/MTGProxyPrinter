@@ -87,7 +87,7 @@ class CentralWidget(QWidget):
         self.document = document
         self.card_db = card_db
         self.image_db = image_db
-        self.obtain_card_image.connect(image_db.download_worker.fill_document_action_image)
+        self.obtain_card_image.connect(image_db.fill_document_action_image)  # TODO: Why here?
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
@@ -102,7 +102,7 @@ class CentralWidget(QWidget):
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_card_database(card_db)
-        self.ui.add_card_widget.request_action.connect(image_db.download_worker.fill_document_action_image)
+        self.ui.add_card_widget.request_action.connect(image_db.fill_document_action_image)
 
     def _setup_document_view(self, document: Document):
         self.ui.document_view.setModel(document)
