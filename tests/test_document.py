@@ -189,7 +189,7 @@ def test_undo_on_empty_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, documen
     document_light.undo_stack.append(first := DummyAction())
     document_light.undo_stack.append(second := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=1000),\
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -288,7 +288,7 @@ def test_redo_on_filled_undo_stack_1_element_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(first := DummyAction())
     document_light.undo_stack.append(undo_dummy := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=1000),\
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -478,7 +478,7 @@ def test_save_as_saves_check_card(document: Document):
     )
 
 
-def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: Document):
+def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
     layout = copy.copy(document_custom_layout.page_layout)
     layout.page_height = 1000
@@ -488,18 +488,18 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
     cards_per_page = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, cards_per_page))
-    with TemporaryDirectory() as temp_dir:
-        save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
-        document_custom_layout.save_as(save_dir)
-        _validate_database_schema(save_dir)
-        _validate_saved_document_settings(document_custom_layout)
-        with qtbot.waitSignal(document_custom_layout.page_layout_changed):
-            document_custom_layout.apply(ActionEditDocumentSettings(layout))
-        document_custom_layout.save_to_disk()
-        with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
-                               check_params_cbs=[lambda value: value, lambda value: not value]):
-            document_custom_layout.loader.load_document(save_dir)
-        assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
+
+    save_dir = pathlib.Path(tmp_path)/"test.mtgproxies"
+    document_custom_layout.save_as(save_dir)
+    _validate_database_schema(save_dir)
+    _validate_saved_document_settings(document_custom_layout)
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed):
+        document_custom_layout.apply(ActionEditDocumentSettings(layout))
+    document_custom_layout.save_to_disk()
+    with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
+                           check_params_cbs=[lambda value: value, lambda value: not value]):
+        document_custom_layout.loader.load_document(save_dir)
+    assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
 
 
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
@@ -588,7 +588,7 @@ def _validate_saved_document_settings(document: Document):
                 page_layout.page_height,
                 page_layout.page_width,
                 page_layout.row_spacing,
-        ))
+            ))
 
 
 def test_get_missing_image_cards(document_light: Document):
@@ -662,7 +662,7 @@ def test_update_page_layout_copies_the_passed_in_instance(document_light: Docume
     (PageType.OVERSIZED, 0, 25, 2),
 ])
 def test_page_layout_compute_page_card_capacity(
-        page_type:PageType, column_spacing: int, row_spacing: int, expected: int):
+        page_type: PageType, column_spacing: int, row_spacing: int, expected: int):
     layout = PageLayoutSettings.create_from_settings()
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing

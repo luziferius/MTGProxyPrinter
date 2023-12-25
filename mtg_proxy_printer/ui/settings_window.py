@@ -19,7 +19,8 @@ import pathlib
 import typing
 
 from PySide6.QtCore import QStringListModel, Signal, Slot, Qt, QUrl, QStandardPaths, QThreadPool
-from PySide6.QtWidgets import QDialogButtonBox, QCheckBox, QFileDialog, QLineEdit, QMessageBox, QWidget, QDialog
+from PySide6.QtWidgets import QDialogButtonBox, QCheckBox, QFileDialog, QLineEdit, QMessageBox, QWidget, QDialog, \
+    QApplication
 from PySide6.QtGui import QDesktopServices, QIcon
 
 import mtg_proxy_printer.app_dirs
@@ -350,10 +351,12 @@ class SettingsWindow(QDialog):
 
     @Slot()
     def on_debug_download_card_data_as_file_clicked(self):
+        logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
             self, "Select download location",
             QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
         if not location:
+            logger.debug("User cancelled location selection. Not downloading.")
             return
         if not (path := pathlib.Path(location)).is_dir():
             QMessageBox.critical(
@@ -361,4 +364,25 @@ class SettingsWindow(QDialog):
                 f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
+        logger.info(f"Download card data to file {path}")
         self.requested_card_download.emit(path)
+
+    @Slot()
+    def on_debug_import_card_data_from_file_clicked(self):
+        logger.debug("User about to import card tata from a previously downloaded file.")
+        location, _ = QFileDialog.getOpenFileName(
+            self, "Import previously downloaded card data obtained from Scryfall",
+            QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
+            "Scryfall card data (*.json, *.json.gz)")
+        logger.info(f"{location=}")
+        if not location:
+            logger.debug("User cancelled file selection. Not importing.")
+            return
+        if not (path := pathlib.Path(location)).is_file():
+            QMessageBox.critical(
+                self, "Selected location is not a file",
+                f"Cannot find the selected file:\n{location}",
+                QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
+            return
+        logger.info(f"Import card data from {path}")
+        QApplication.instance().card_info_downloader.import_from_file(path)

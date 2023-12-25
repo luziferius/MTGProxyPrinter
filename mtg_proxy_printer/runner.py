@@ -13,25 +13,38 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from logging import Logger
+import typing
 
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QRunnable
 
 from mtg_proxy_printer.logger import get_logger
-
-default_logger = get_logger(__name__)
+logger = get_logger(__name__)
 del get_logger
 
+__all__ = [
+    "Runnable",
+]
 
-def stop_thread(thread: QThread, logger: Logger = default_logger):
-    """Stops a running QThread with logging."""
-    if not thread.isRunning():
-        return
-    thread.quit()
-    if not thread.wait(5000):
-        logger.error("Background thread still running after quit()!")
-        thread.setTerminationEnabled(True)
-        thread.terminate()
-        if not thread.wait(10000):
-            logger.critical("Background thread still running after terminate()!")
-    logger.info(f"Background worker stopped. Result: {thread.isRunning()=}")
+
+class Runnable(QRunnable):
+    INSTANCES: typing.List["Runnable"] = []
+
+    def __init__(self):
+        super().__init__()
+        self.INSTANCES.append(self)
+
+    def release_instance(self):
+        logger.debug(f"Releasing instance {self}")
+        self.INSTANCES.remove(self)
+
+    def cancel(self):
+        pass
+
+    @classmethod
+    def cancel_all_runners(cls):
+        if not cls.INSTANCES:
+            return
+        logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
+        for item in cls.INSTANCES:
+            logger.debug(f"Cancel task {item}")
+            item.cancel()

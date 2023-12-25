@@ -144,7 +144,6 @@ class TestCaseData:
     def db_print_language(self):
         return [(self.language,)]
 
-
     def db_face_name(self) -> typing.List[typing.Tuple[str]]:
         # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
         # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.
@@ -520,6 +519,7 @@ def test_updates_ignores_changed_value_on_re_import(
         fill_card_database_with_json_card(qtbot, card_db, json_data)
     # Outside the patched context to validate against the original data.
     assert_visible_import(card_db, test_case)
+
 
 @pytest.mark.parametrize("json_name, expected_score", [
     ("regular_english_card", SetWackinessScore.REGULAR),

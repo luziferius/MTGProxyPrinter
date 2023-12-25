@@ -16,6 +16,7 @@
 import collections
 import dataclasses
 import enum
+import functools
 import itertools
 import math
 import pathlib
@@ -25,7 +26,7 @@ import typing
 from unittest.mock import patch
 
 from PySide6.QtGui import QPageLayout, QPageSize
-from PySide6.QtCore import QObject, Signal, QThread, QMarginsF, QSizeF
+from PySide6.QtCore import QObject, Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
@@ -37,13 +38,12 @@ except ImportError:
 
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
-from mtg_proxy_printer.model.carddb import \
-    CardDatabase, CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageDownloader
-from mtg_proxy_printer.stop_thread import stop_thread
+from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
+from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
 from mtg_proxy_printer.document_controller import DocumentAction
+from mtg_proxy_printer.runner import Runnable
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -190,97 +190,105 @@ class PageLayoutSettings:
         return self.compute_page_row_count(page_type) * self.compute_page_column_count(page_type)
 
 
-class DocumentLoader(QObject):
+class LoaderSignals(QObject):
+    """
+    These Qt signals are used to communicate loading progress.
+    They are shared by the API and backend classes.
+    """
+    finished = Signal()
+    unknown_scryfall_ids_found = Signal(int, int)
+    loading_file_failed = Signal(pathlib.Path, str)
+
+    begin_loading_loop = Signal(int, str)
+    progress_loading_loop = Signal(int)
+    # Emitted when downloading required images during the loading process failed due to network issues.
+    network_error_occurred = Signal(str)
+    load_requested = Signal(DocumentAction)
+
+
+class DocumentLoader(LoaderSignals):
     """
     Implements asynchronous background document loading.
     Loading a document can take a long time, if it includes downloading all card images and still takes a noticeable
     time when the card images have to be loaded from a slow hard disk.
 
-    This class uses a QThread with a background worker to push that work off the GUI thread to keep the application
+    This class uses an internal worker to push that work off the GUI thread to keep the application
     responsive during a loading process.
     """
 
+    loading_state_changed = Signal(bool)
     MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
-    loading_state_changed = Signal(bool)
-    unknown_scryfall_ids_found = Signal(int, int)
-    loading_file_failed = Signal(pathlib.Path, str)
-    # Emitted when downloading required images during the loading process failed due to network issues.
-    network_error_occurred = Signal(str)
-    load_requested = Signal(DocumentAction)
-
-    begin_loading_loop = Signal(int, str)
-    progress_loading_loop = Signal(int)
-    finished = Signal()
-
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
+    def __init__(self, document: "Document", db: sqlite3.Connection = None):  # db parameter used by test code
         super(DocumentLoader, self).__init__(None)
         self.document = document
-        self.worker_thread = QThread()
-        self.worker_thread.setObjectName(f"{self.__class__.__name__} background worker")
-        self.worker_thread.finished.connect(lambda: logger.debug(f"{self.worker_thread.objectName()} stopped."))
-        self.worker = worker = Worker(card_db, image_db, document)
-        worker.moveToThread(self.worker_thread)
-        worker.load_requested.connect(self.load_requested)
-        # Relay two errors/warnings. Can be used to notify the user by displaying some message box with relevant info
-        worker.loading_file_failed.connect(self.loading_file_failed)
-        worker.unknown_scryfall_ids_found.connect(self.unknown_scryfall_ids_found)
-        worker.loading_file_successful.connect(self.on_loading_file_successful)
-        worker.network_error_occurred.connect(self.network_error_occurred)
-        worker.finished.connect(self.worker_thread.quit)
-        worker.finished.connect(lambda: self.loading_state_changed.emit(False))
-        self.worker_thread.started.connect(worker.load_document)
-        worker.finished.connect(self.finished)
-        worker.begin_loading_loop.connect(self.begin_loading_loop)
-        worker.progress_loading_loop.connect(self.progress_loading_loop)
-
-    def is_running(self) -> bool:
-        return self.worker_thread.isRunning()
+        self.db = db
+        self.finished.connect(functools.partial(self.loading_state_changed.emit, False))
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
         self.loading_state_changed.emit(True)
-        self.worker.save_path = save_file_path
-        self.worker_thread.start()
+        QThreadPool.globalInstance().start(LoaderRunner(save_file_path, self))
 
     def on_loading_file_successful(self, file_path: pathlib.Path):
         logger.info(f"Loading document from {file_path} successful.")
         self.document.save_file_path = file_path
 
-    def cancel_running_operations(self):
-        """
-        Can be called to cancel loading a document.
-        This forces the worker thread to abort any running image downloads.
-        """
-        if not self.worker_thread.isRunning():
-            return
-        self.worker.cancel_running_operations()
-
-    def quit_background_thread(self):
-        if self.worker_thread.isRunning():
-            logger.info(f"Quitting {self.__class__.__name__} background worker thread")
-            stop_thread(self.worker_thread, logger)
+    def cancel(self):
+        for instance in LoaderRunner.INSTANCES:
+            if isinstance(instance, LoaderRunner):
+                instance.cancel()
 
 
-class Worker(QObject):
+class LoaderRunner(Runnable):
+    def __init__(self, path: pathlib.Path, parent: DocumentLoader):
+        super().__init__()
+        self.parent = parent
+        self.path = path
+        self.worker = None
+
+    def run(self):
+        try:
+            self.worker = self._create_worker()
+            self.worker.load_document()
+        finally:
+            self.release_instance()
+
+    def _create_worker(self):
+        parent = self.parent
+        worker = Worker(parent.document, self.path)
+        if parent.db is not None:  # Used by tests to explicitly set the database
+            worker._db = parent.db
+        worker.load_requested.connect(parent.load_requested)
+        worker.loading_file_failed.connect(parent.loading_file_failed)
+        worker.unknown_scryfall_ids_found.connect(parent.unknown_scryfall_ids_found)
+        worker.loading_file_successful.connect(parent.on_loading_file_successful)
+        worker.network_error_occurred.connect(parent.network_error_occurred)
+        worker.finished.connect(parent.finished)
+        worker.begin_loading_loop.connect(parent.begin_loading_loop)
+        worker.progress_loading_loop.connect(parent.progress_loading_loop)
+        return worker
+
+    def cancel(self):
+        try:
+            self.worker.cancel_running_operations()
+        except AttributeError:
+            pass
+
+
+class Worker(LoaderSignals):
     """
-    This is the worker object that runs inside the DocumentLoader’s internal QThread.
-    It creates ActionLoadDocument instances from saved documents.
+    This worker creates ActionLoadDocument instances from saved documents.
     """
-
-    begin_loading_loop = Signal(int, str)
-    progress_loading_loop = Signal(int)
-    finished = Signal()
-    loading_file_failed = Signal(pathlib.Path, str)
-    unknown_scryfall_ids_found = Signal(int, int)
     loading_file_successful = Signal(pathlib.Path)
-    network_error_occurred = Signal(str)
-    load_requested = Signal(DocumentAction)
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, document: "Document"):
+    def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
-        self.card_db = card_db
-        self.image_db = image_db
+        self.document = document
+        document.action_applied.connect(self.on_document_action_applied, Qt.ConnectionType.DirectConnection)
+        self.save_path = path
+        self.card_db = document.card_db
+        self.image_db = image_db = document.image_db
         self._db: sqlite3.Connection = None
         # Create our own ImageDownloader, instead of using the ImageDownloader embedded in the ImageDatabase.
         # That one lives in its own thread and runs asynchronously and is thus unusable for loading documents.
@@ -292,12 +300,9 @@ class Worker(QObject):
         self.image_loader.network_error_occurred.connect(self.on_network_error_occurred)
         self.network_errors_during_load: typing.Counter[str] = collections.Counter()
         self.finished.connect(self.propagate_errors_during_load)
-        self.document = document
-        self.save_path = pathlib.Path()
         self.should_run: bool = True
         self.unknown_ids = 0
         self.migrated_ids = 0
-        document.action_applied.connect(self.on_document_action_applied)
 
     @property
     def db(self) -> sqlite3.Connection:
@@ -313,7 +318,7 @@ class Worker(QObject):
         if error_count := sum(self.network_errors_during_load.values()):
             logger.warning(f"{error_count} errors occurred during document load, reporting to the user")
             self.network_error_occurred.emit(
-                f"Some cards may be missing images, proceeed with caution.\n"
+                f"Some cards may be missing images, proceed with caution.\n"
                 f"Error count: {error_count}. Most common error message:\n"
                 f"{self.network_errors_during_load.most_common(1)[0][0]}"
             )

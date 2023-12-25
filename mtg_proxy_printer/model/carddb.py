@@ -23,11 +23,13 @@ import pathlib
 import threading
 import typing
 
+from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
 from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, Signal, QPointF
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
+    from mtg_proxy_printer.application import Application
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
@@ -35,15 +37,13 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
 
 QueuedConnection = Qt.ConnectionType.QueuedConnection
-StringList = typing.List[str]
-OptionalString = typing.Optional[str]
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
 ItemDataRole = Qt.ItemDataRole
@@ -69,13 +69,13 @@ __all__ = [
 
 @dataclasses.dataclass
 class CardIdentificationData:
-    language: OptionalString = None
-    name: OptionalString = None
-    set_code: OptionalString = None
-    collector_number: OptionalString = None
-    scryfall_id: OptionalString = None
+    language: OptStr = None
+    name: OptStr = None
+    set_code: OptStr = None
+    collector_number: OptStr = None
+    scryfall_id: OptStr = None
     is_front: typing.Optional[bool] = None
-    oracle_id: OptionalString = None
+    oracle_id: OptStr = None
 
 
 @dataclasses.dataclass(frozen=True)
@@ -276,12 +276,19 @@ write_semaphore = threading.BoundedSemaphore()
 
 
 def with_database_write_lock(func):
-    """Decorator managing a lock. Used to serialize database write transactions."""
+    """Decorator managing the database lock. Used to serialize database write transactions."""
+    @functools.wraps(func)
     def wrapped(*args, **kwargs):
         write_semaphore.acquire()
         logger.debug(f"Obtained database write lock")
         try:
-            func(*args, **kwargs)
+            app: "Application" = QApplication.instance()
+            # The instance used by unit tests does not have the should_run attribute.
+            # Skip the second condition in that case
+            if app and (not hasattr(app, "should_run") or app.should_run):
+                return func(*args, **kwargs)
+            else:
+                logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
         finally:
             logger.debug("Releasing database write lock")
             write_semaphore.release()
@@ -782,7 +789,7 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptionalString:
+    def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptStr:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.

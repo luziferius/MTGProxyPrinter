@@ -290,12 +290,12 @@ def test_cancelling_loading_does_not_crash(
         ]
     )
     loader = document.loader
-    loader.begin_loading_loop.connect(lambda: setattr(loader.worker, "should_run", False))
+    loader.begin_loading_loop.connect(loader.cancel)
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
         open_database.return_value = empty_save_database
         with qtbot.wait_signals(
                 [loader.begin_loading_loop, loader.progress_loading_loop,
-                 loader.loading_state_changed, loader.worker_thread.finished], timeout=100):
+                 loader.loading_state_changed, loader.finished], timeout=100):
             loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
 
 
@@ -325,6 +325,7 @@ def test_loads_check_card(
             )))
         )
     )
+
 
 @pytest.fixture(params=itertools.product([
     (4, [1, 200, 150, 4, 5, 6, 7, 2, 3, 1]),

@@ -52,9 +52,6 @@ def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
     image_db.blank_image.save(str(front_image), "PNG")
     image_db.blank_image.save(str(back_image), "PNG")
     yield Environment(card_db, image_db, front_image, back_image)
-    logger.info("Stopping ImageDatabase background downloader thread.")
-    image_db.download_thread.finished.disconnect(image_db._log_thread_stop)
-    image_db.quit_background_thread()
 
 
 @pytest.mark.parametrize("is_hidden", [True, False])

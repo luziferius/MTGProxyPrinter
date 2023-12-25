@@ -41,6 +41,8 @@ import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
+from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -64,6 +66,7 @@ class Application(QApplication):
             logger.info("Running on Windows without explicit style set. Use 'fusion', which supports dark mode.")
             # Set a dark-mode compatible style, if on Windows and the user does not override the style.
             self.setStyle("fusion")
+        self.should_run = True
         self._setup_icons()
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
@@ -74,7 +77,7 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        self.printing_filter_updater = runner = PrintingFilterUpdater(self.card_db)
+        runner = PrintingFilterUpdater(self.card_db)
         runner.connect_main_window_signals(self.main_window)
         QThreadPool.globalInstance().start(runner)
         self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
@@ -104,7 +107,7 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-        QTimer.singleShot(100, self.update_checker.check_for_updates)
+        self.update_checker.check_for_updates()
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.import_from_file(args.card_data)
@@ -158,7 +161,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        document.request_fill_image_for_action.connect(image_db.download_worker.fill_document_action_image)
+        document.request_fill_image_for_action.connect(image_db.fill_document_action_image)
         image_db.request_action.connect(document.apply)
         image_db.download_worker.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
@@ -211,8 +214,10 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
-        self.printing_filter_updater.cancel()
-        self.update_checker.stop_background_worker()
+        self.should_run = False
         self.closeAllWindows()
+        MeteredSeekableHTTPFile.close_all_instances()
+        Runnable.cancel_all_runners()
         logger.debug("All windows closed. Calling quit()")
+        QThreadPool.globalInstance().waitForDone()
         super().quit()

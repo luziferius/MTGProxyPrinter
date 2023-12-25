@@ -16,9 +16,9 @@
 import dataclasses
 import pathlib
 import unittest.mock
-from PySide6.QtWidgets import QMessageBox
 
 from PySide6.QtCore import QStringListModel, QThreadPool
+from PySide6.QtWidgets import QMessageBox
 from pytestqt.qtbot import QtBot
 from hamcrest import *
 import pytest
@@ -46,7 +46,6 @@ def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> Ma
     with unittest.mock.patch(
             "mtg_proxy_printer.ui.central_widget.get_configured_central_widget_layout_class",
             return_value=request.param), \
-            unittest.mock.patch("PySide6.QtCore.QThreadPool.globalInstance"), \
             unittest.mock.patch.object(mtg_proxy_printer.ui.main_window.MainWindow, "on_action_quit_triggered"), \
             unittest.mock.patch.object(
                 mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker, "get_scryfall_bulk_card_data_url",
@@ -90,7 +89,7 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         assert_that(main_window.progress_bars.ui.inner_progress_label.isVisible(), is_(False))
         assert_that(main_window.progress_bars.ui.outer_progress_label.isVisible(), is_(False))
 
-        with qtbot.wait_signal(main_window.document.loader.worker_thread.finished):
+        with qtbot.wait_signal(main_window.document.action_applied, timeout=1000):
             main_window.document.loader.load_document(save_file_path)
             
     assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))
@@ -131,9 +130,10 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
         unittest.mock.patch(
             "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
+        unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.show_card_data_update_available_message_box(10000)
-    QThreadPool.globalInstance().start.assert_not_called()
+    thread_pool_start.assert_not_called()
     import_from_api.assert_not_called()
 
 
@@ -141,11 +141,12 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes
-    ) as message_box:
+        mtg_proxy_printer.ui.main_window.QMessageBox,
+            "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
+            unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
-    QThreadPool.globalInstance().start.assert_called_once()
+    thread_pool_start.assert_called_once()
 
 
 def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, main_window: MainWindow):
@@ -177,10 +178,11 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
             mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
         unittest.mock.patch(
             "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
+            unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
             qtbot.assertNotEmitted(main_window.loading_state_changed):
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
-    QThreadPool.globalInstance().start.assert_not_called()
+    thread_pool_start.assert_not_called()
     import_from_api.assert_not_called()
     assert_that(ui.action_download_card_data.isEnabled(), is_(True))
 
@@ -190,10 +192,11 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes
-    ) as message_box:
+    ) as message_box, \
+        unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
         main_window.ask_user_about_empty_database()
     message_box.assert_called_once()
-    QThreadPool.globalInstance().start.assert_called_once()
+    thread_pool_start.assert_called_once()
 
 
 def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):

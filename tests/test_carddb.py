@@ -294,10 +294,12 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
     )
     document = Document(card_db, MagicMock())
     document.apply(ActionAddCard(
-        _get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
+        _get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
+    )
     PrintCountUpdater(document, card_db.db).run()
     document.apply(ActionAddCard(
-        _get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
+        _get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1)
+    )
     PrintCountUpdater(document, card_db.db).run()
     # Test
     assert_that(
@@ -343,7 +345,6 @@ def generate_test_cases_for_test_get_cards_from_data():
     case = TestCaseData("oversized_card")
     yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id), [case.as_card(),]
     yield CardIdentificationData(scryfall_id=case.scryfall_id), [case.as_card(),]
-
 
     # Tests effect of is_front on double-faced cards
     case = TestCaseData("english_double_faced_card")
@@ -608,7 +609,6 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(
         )
 
 
-
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")
     assert_that(
@@ -696,13 +696,13 @@ def test_get_basic_land_oracle_ids(
 def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: StringList):
     fill_card_database_with_json_cards(
         qtbot, card_db, [
-        "The_Underworld_Cookbook",
-        "Food_Token",
-        "Asmoranomardicadaistinaculdacar",
-        "Bake_into_a_Pie",
-        "Asmoranomardicadaistinaculdacar_2",
-        "Food_Token_2",
-    ])
+            "The_Underworld_Cookbook",
+            "Food_Token",
+            "Asmoranomardicadaistinaculdacar",
+            "Bake_into_a_Pie",
+            "Asmoranomardicadaistinaculdacar_2",
+            "Food_Token_2",
+        ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
     assert_that(source_card, is_(not_none()))
     related = card_db.find_related_cards(source_card)
