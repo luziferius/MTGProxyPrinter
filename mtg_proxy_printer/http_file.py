@@ -76,6 +76,7 @@ class MeteredSeekableHTTPFile(QObject):
         :param retry_limit: The downloader will re-establish the connection this many times before failing
         """
         super(MeteredSeekableHTTPFile, self).__init__(parent)
+        self.INSTANCES.append(self)
         self.retry_limit = retry_limit
         self.ui_hint = ui_hint
         self.url = url
@@ -88,7 +89,6 @@ class MeteredSeekableHTTPFile(QObject):
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
         self.read_bytes = 0
-        self.INSTANCES.append(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
@@ -225,18 +225,25 @@ class MeteredSeekableHTTPFile(QObject):
             except urllib.error.URLError as e:
                 # URLError is most likely caused by being offline,
                 # so wait a bit to not immediately burn all remaining retries
+                if self.closed:
+                    # Do not sleep, if this instance was closed externally. Just break in that case.
+                    break
                 time.sleep(5)
                 last_error = e
             else:
                 return response
         if last_error is not None:
             logger.exception(last_error)
-
             raise last_error
 
     def close(self):
         self.closed = True
-        self.file.close()
+        try:
+            self.file.close()
+        except AttributeError:
+            # When force-closing the connection, the file attribute may never be set to something. In that case,
+            # simply ignore that self.file has no close()
+            pass
 
     @classmethod
     def close_all_instances(cls):

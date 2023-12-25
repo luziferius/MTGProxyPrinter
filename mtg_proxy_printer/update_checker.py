@@ -100,6 +100,8 @@ class CardDataUpdateCheckRunner(Runnable):
     def run(self):
         try:
             self._perform_check()
+        except ValueError:
+            logger.info("Card data update check cancelled.")
         finally:
             self.release_instance()
 
@@ -167,6 +169,8 @@ class ApplicationUpdateCheckRunner(Runnable):
     def run(self):
         try:
             self._perform_check()
+        except ValueError:
+            logger.info("Application update check cancelled.")
         finally:
             self.release_instance()
 

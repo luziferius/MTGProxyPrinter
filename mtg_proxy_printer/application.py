@@ -216,9 +216,9 @@ class Application(QApplication):
     def quit(self):
         logger.info("About to exit.")
         self.should_run = False
+        self.closeAllWindows()
         MeteredSeekableHTTPFile.close_all_instances()
         Runnable.cancel_all_runners()
-        self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")
-        QThreadPool.globalInstance().waitForDone(1000)
+        QThreadPool.globalInstance().waitForDone()
         super().quit()

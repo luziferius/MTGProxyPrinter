@@ -14,9 +14,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import typing
-from functools import partial
 
-from PyQt5.QtCore import QRunnable, QTimer
+from PyQt5.QtCore import QRunnable, QTimer, pyqtSlot as Slot, Qt
+
+from mtg_proxy_printer.logger import get_logger
+logger = get_logger(__name__)
+del get_logger
 
 __all__ = [
     "Runnable",
@@ -31,12 +34,17 @@ class Runnable(QRunnable):
         self.INSTANCES.append(self)
 
     def release_instance(self):
-        QTimer.singleShot(100, partial(self.INSTANCES.remove, self))
+        logger.debug(f"Releasing instance {self}")
+        self.INSTANCES.remove(self)
 
     def cancel(self):
         pass
 
     @classmethod
     def cancel_all_runners(cls):
+        if not cls.INSTANCES:
+            return
+        logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
         for item in cls.INSTANCES:
+            logger.debug(f"Cancel task {item}")
             item.cancel()
