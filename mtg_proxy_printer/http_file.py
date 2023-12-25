@@ -88,6 +88,7 @@ class MeteredSeekableHTTPFile(QObject):
         self.content_length = self._read_content_length(self.file)
         self._pos = 0
         self.read_bytes = 0
+        self.INSTANCES.append(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
@@ -103,7 +104,6 @@ class MeteredSeekableHTTPFile(QObject):
         return None
 
     def __enter__(self):
-        self.INSTANCES.append(self)
         self.io_begin.emit(self.content_length, self.ui_hint)
         return self
 
@@ -111,9 +111,9 @@ class MeteredSeekableHTTPFile(QObject):
         try:
             self.file.__exit__(exc_type, exc_val, exc_tb)
         finally:
-            self.INSTANCES.remove(self)
             self.total_bytes_processed.emit(self.read_bytes)
             self.io_finished.emit()
+            self.INSTANCES.remove(self)
 
     @cache
     def seekable(self) -> bool:
