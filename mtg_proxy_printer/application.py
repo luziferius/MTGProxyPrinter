@@ -42,6 +42,7 @@ import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
 from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -215,6 +216,7 @@ class Application(QApplication):
     def quit(self):
         logger.info("About to exit.")
         self.should_run = False
+        MeteredSeekableHTTPFile.close_all_instances()
         Runnable.cancel_all_runners()
         self.closeAllWindows()
         logger.debug("All windows closed. Calling quit()")

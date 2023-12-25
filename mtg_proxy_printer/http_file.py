@@ -59,6 +59,7 @@ class MeteredSeekableHTTPFile(QObject):
     without adding the “Accept-Ranges” header field with value “bytes”, seeking will be disabled.
     In this case, linear reading with progress reports can still be performed.
     """
+    INSTANCES: typing.List["MeteredSeekableHTTPFile"] = []
 
     io_begin = Signal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
     io_finished = Signal()  # Emitted in __exit__, when the file is closed
@@ -102,6 +103,7 @@ class MeteredSeekableHTTPFile(QObject):
         return None
 
     def __enter__(self):
+        self.INSTANCES.append(self)
         self.io_begin.emit(self.content_length, self.ui_hint)
         return self
 
@@ -109,6 +111,7 @@ class MeteredSeekableHTTPFile(QObject):
         try:
             self.file.__exit__(exc_type, exc_val, exc_tb)
         finally:
+            self.INSTANCES.remove(self)
             self.total_bytes_processed.emit(self.read_bytes)
             self.io_finished.emit()
 
@@ -234,3 +237,13 @@ class MeteredSeekableHTTPFile(QObject):
     def close(self):
         self.closed = True
         self.file.close()
+
+    @classmethod
+    def close_all_instances(cls):
+        if not cls.INSTANCES:
+            return
+        logger.info(f"Force closing {len(cls.INSTANCES)} still open file downloads.")
+        for instance in cls.INSTANCES:
+            instance.retry_limit = 1
+            instance.close()
+        logger.debug("Closed all file downloads")
