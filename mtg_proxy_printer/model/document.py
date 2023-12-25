@@ -19,12 +19,11 @@ import enum
 import itertools
 import math
 import pathlib
-import sqlite3
 import sys
 import textwrap
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
@@ -96,7 +95,7 @@ class Document(QAbstractItemModel):
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
-        self.loader = DocumentLoader(card_db, image_db, self)
+        self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
         self.pages: PageList = [first_page := Page()]

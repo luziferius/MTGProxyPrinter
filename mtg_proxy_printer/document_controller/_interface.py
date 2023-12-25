@@ -18,6 +18,8 @@ from functools import partial
 import operator
 import typing
 
+from mtg_proxy_printer.units_and_sizes import StringList
+
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 
@@ -25,8 +27,6 @@ try:
     from typing import Self
 except ImportError:  # Compatibility with Python < 3.11
     Self = typing.TypeVar("Self", bound="DocumentAction")
-
-StringList = typing.List[str]
 
 __all__ = [
     "DocumentAction",

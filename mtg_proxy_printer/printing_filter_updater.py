@@ -17,22 +17,24 @@ import configparser
 import sqlite3
 import typing
 
-from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal, Qt
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, Qt
 
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
     from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.model.carddb import SCHEMA_NAME, StringList, with_database_write_lock
+from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
+from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.units_and_sizes import StringList
 logger = get_logger(__name__)
 del get_logger
 
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 
-class PrintingFilterUpdater(QRunnable):
+class PrintingFilterUpdater(Runnable):
     """
     This class updates the printing filters stored in the database.
     Syncs the db-internal printing filters with the filters stored in the configuration file,
@@ -78,7 +80,6 @@ class PrintingFilterUpdater(QRunnable):
         logger.debug(f"Created {self.__class__.__name__} instance.")
 
     def cancel(self):
-        logger.warning(f"Cancelling {self.__class__.__name__}.run()")
         self.should_abort = True
 
     def connect_main_window_signals(self, main_window: "MainWindow"):
@@ -114,7 +115,10 @@ class PrintingFilterUpdater(QRunnable):
     @with_database_write_lock
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
-        self.store_current_printing_filters()
+        try:
+            self.store_current_printing_filters()
+        finally:
+            self.release_instance()
 
     def store_current_printing_filters(self):
         try:
