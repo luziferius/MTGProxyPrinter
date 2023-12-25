@@ -83,6 +83,7 @@ IMAGE_SIZE = QSize(745, 1040)
 BatchActions = typing.Union[ActionImportDeckList]
 SingleActions = typing.Union[ActionAddCard, ActionReplaceCard]
 IndexList = typing.List[QModelIndex]
+OptionalPixmap = typing.Optional[QPixmap]
 
 
 class InitOnDiskDataRunner(Runnable):
@@ -371,10 +372,10 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     def get_image_synchronous(self, card: AnyCardType):
         try:
             if isinstance(card, CheckCard):
-                self._get_image_synchronous(card.front)
-                self._get_image_synchronous(card.back)
+                self._fetch_and_set_image(card.front)
+                self._fetch_and_set_image(card.back)
             else:
-                self._get_image_synchronous(card)
+                self._fetch_and_set_image(card)
         except urllib.error.URLError as e:
             self.last_error_message = self._handle_network_error_during_download(
                 card, str(e.reason))
@@ -382,70 +383,78 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.last_error_message = self._handle_network_error_during_download(
                 card, f"Reading from socket failed: {e}")
 
-    def _get_image_synchronous(self, card: Card):
+    def _fetch_and_set_image(self, card: Card):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
-        try:
-            pixmap = self.image_database.loaded_images[key]
-        except KeyError:
-            logger.debug("Image not in memory, requesting from disk")
-            pixmap = self._fetch_image(card)
-            self.image_database.loaded_images[key] = pixmap
-            self.image_database.images_on_disk.add(key)
-            logger.debug("Image loaded")
+        image_path = self.image_database.db_path / key.format_relative_path()
+        pixmap = self._load_from_memory(key) \
+            or self._load_from_disk(key, image_path) \
+            or self._download_from_scryfall(card, image_path) \
+            or self.image_database.blank_image
+        if pixmap is not self.image_database.blank_image:
+            self._remove_outdated_low_resolution_image(card)
         card.set_image_file(pixmap)
 
-    def _fetch_image(self, card: Card) -> QPixmap:
-        key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
-        cache_file_path = self.image_database.db_path / key.format_relative_path()
-        cache_file_path.parent.mkdir(parents=True, exist_ok=True)
-        pixmap = None
-        if cache_file_path.exists():
-            pixmap = QPixmap(str(cache_file_path))
+    def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
+        return self.image_database.loaded_images.get(key)
+
+    def _load_from_disk(self, key: ImageKey, image_path: pathlib.Path) -> OptionalPixmap:
+        if not self.should_run:
+            return None
+        logger.debug("Image not in memory, requesting from disk")
+        if image_path.exists():
+            pixmap = QPixmap(str(image_path))
             if pixmap.isNull():
-                logger.warning(f'Failed to load image from "{cache_file_path}", deleting file.')
-                cache_file_path.unlink()
-        if not cache_file_path.exists():
-            logger.debug("Image not in disk cache, downloading from Scryfall")
-            self._download_image_from_scryfall(card, cache_file_path)
-            pixmap = QPixmap(str(cache_file_path))
-            if card.highres_image:
-                self._remove_outdated_low_resolution_image(card)
-        return pixmap
+                logger.warning(f'Failed to load image from "{image_path}", deleting corrupted file.')
+                image_path.unlink()
+            else:
+                logger.debug("Image loaded from disk")
+                self.image_database.loaded_images[key] = pixmap
+                return pixmap
+        return None
 
     def _remove_outdated_low_resolution_image(self, card):
+        if not card.highres_image:
+            return
         low_resolution_image_path = self.image_database.db_path / ImageKey(
             card.scryfall_id, card.is_front, False).format_relative_path()
         if low_resolution_image_path.exists():
             logger.info("Removing outdated low-resolution image")
             low_resolution_image_path.unlink()
 
-    def _download_image_from_scryfall(self, card: Card, target_path: pathlib.Path):
+    def _download_from_scryfall(self, card: Card, image_path: pathlib.Path) -> OptionalPixmap:
         if not self.should_run:
-            return
+            return None
+        logger.debug("Image not on disk, downloading from Scryfall")
+        image_path.parent.mkdir(parents=True, exist_ok=True)
         download_uri = card.image_uri
-        download_path = self.image_database.db_path / target_path.name
+        # Download to the root of the image database directory, not into the target directory. If something goes wrong,
+        # the incomplete image can be deleted. Once loading the image succeeds, it can be moved to the final location.
+        download_path = self.image_database.db_path / image_path.name
         self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
             download_uri, f"Downloading '{card.name}'")
         self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,
         # getting terminated by the user, a mid-transfer network outage, a full disk or any other failure condition.
+        pixmap = None
         try:
             with self.currently_opened_file, download_path.open("wb") as file_in_cache:
                 shutil.copyfileobj(self.currently_opened_file, file_in_cache)
+            pixmap = QPixmap(str(download_path))
+            if pixmap.isNull():
+                raise ValueError("Invalid image fetched from Scryfall")
         except Exception as e:
             logger.exception(e)
-            # raise e
+            logger.info("Download aborted, not moving potentially incomplete download into the cache.")
+            download_path.unlink(missing_ok=True)
+        else:
+            logger.debug(f"Moving downloaded image into the image cache at {image_path}")
+            shutil.move(download_path, image_path)
         finally:
-            if self.should_run:
-                logger.debug(f"Moving downloaded image into the image cache at {target_path}")
-                shutil.move(download_path, target_path)
-            else:
-                logger.info("Download aborted, not moving potentially incomplete download into the cache.")
             self.currently_opened_file = None
-            if download_path.is_file():
-                download_path.unlink()
+            download_path.unlink(missing_ok=True)
             self.download_finished.emit()
+        return pixmap
 
 
 def read_disk_cache_content(db_path: pathlib.Path) -> typing.List[CacheContent]:
