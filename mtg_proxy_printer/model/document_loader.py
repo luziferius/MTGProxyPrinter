@@ -223,7 +223,7 @@ class DocumentLoader(LoaderSignals):
         super(DocumentLoader, self).__init__(None)
         self.document = document
         self.db = db
-        self.finished.connect(functools.partial(self.loading_state_changed.emit, False))
+        self.finished.connect(functools.partial(self.loading_state_changed.emit, False), Qt.ConnectionType.DirectConnection)
 
     def load_document(self, save_file_path: pathlib.Path):
         logger.info(f"Loading document from {save_file_path}")
@@ -259,7 +259,8 @@ class LoaderRunner(Runnable):
         worker = Worker(parent.document, self.path)
         if parent.db is not None:  # Used by tests to explicitly set the database
             worker._db = parent.db
-        worker.load_requested.connect(parent.load_requested)
+        # The blocking connection causes the worker to wait for the document in the main thread to complete the loading
+        worker.load_requested.connect(parent.load_requested, Qt.ConnectionType.BlockingQueuedConnection)
         worker.loading_file_failed.connect(parent.loading_file_failed)
         worker.unknown_scryfall_ids_found.connect(parent.unknown_scryfall_ids_found)
         worker.loading_file_successful.connect(parent.on_loading_file_successful)
@@ -285,7 +286,6 @@ class Worker(LoaderSignals):
     def __init__(self, document: "Document", path: pathlib.Path):
         super().__init__(None)
         self.document = document
-        document.action_applied.connect(self.on_document_action_applied, Qt.ConnectionType.DirectConnection)
         self.save_path = path
         self.card_db = document.card_db
         self.image_db = image_db = document.image_db
@@ -342,15 +342,12 @@ class Worker(LoaderSignals):
             self.db.close()
             self._db = None
 
-    def on_document_action_applied(self, action: DocumentAction):
-        # Imported here to break a circular import. TODO: Investigate a better fix
-        from mtg_proxy_printer.document_controller.load_document import ActionLoadDocument
-        if isinstance(action, ActionLoadDocument):
-            if self.unknown_ids or self.migrated_ids:
-                self.unknown_scryfall_ids_found.emit(self.unknown_ids, self.migrated_ids)
-                self.unknown_ids = self.migrated_ids = 0
-            self.loading_file_successful.emit(self.save_path)
-            self.finished.emit()
+    def _complete_loading(self):
+        if self.unknown_ids or self.migrated_ids:
+            self.unknown_scryfall_ids_found.emit(self.unknown_ids, self.migrated_ids)
+            self.unknown_ids = self.migrated_ids = 0
+        self.loading_file_successful.emit(self.save_path)
+        self.finished.emit()
 
     def _load_document(self):
         # Imported here to break a circular import. TODO: Investigate a better fix
@@ -361,6 +358,7 @@ class Worker(LoaderSignals):
         self._fix_mixed_pages(pages, page_settings)
         action = ActionLoadDocument(self.save_path, pages, page_settings)
         self.load_requested.emit(action)
+        self._complete_loading()
 
     def _parse_into_cards(self, card_data: DocumentSaveFormat) -> (typing.List[CardList], int, int):
         prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(

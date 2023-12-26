@@ -89,7 +89,11 @@ def test_main_window_hides_progress_bar_after_downloading_image_during_load(
         assert_that(main_window.progress_bars.ui.inner_progress_label.isVisible(), is_(False))
         assert_that(main_window.progress_bars.ui.outer_progress_label.isVisible(), is_(False))
 
-        with qtbot.wait_signal(main_window.document.action_applied, timeout=1000):
+        with qtbot.wait_signals(
+                [(main_window.loading_state_changed, "loading_state_changed(True)"),
+                 (main_window.loading_state_changed, "loading_state_changed(False)"),
+                 (main_window.document.loader.finished, "finished"),], timeout=1000,
+                check_params_cbs=[lambda value: value, lambda value: not value, lambda: True]):
             main_window.document.loader.load_document(save_file_path)
             
     assert_that(main_window.progress_bars.ui.inner_progress_bar.isVisible(), is_(False))
