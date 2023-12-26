@@ -71,7 +71,7 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/"
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
-    #MTGTop8
+    # MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
 
@@ -169,7 +169,7 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield MTGAZoneDownloader, "https://mtgazone.com/"
     yield MTGAZoneDownloader, "https://mtgazone.com/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
-    #MTGTop8
+    # MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&"
@@ -213,8 +213,6 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield CubeCobraDownloader, "https://cubecobra.com/cube/"
     yield CubeCobraDownloader, "https://cubecobra.com/"
     yield CubeCobraDownloader, "https://cubecobra.com"
-
-
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
@@ -280,7 +278,7 @@ def test_decklists_net_post_process(deck_list: bytes, expected: str):
     """
     downloader = MtgDecksNetDownloader()
     stream = MagicMock()
-    stream.read.return_value=deck_list
+    stream.read.return_value = deck_list
     with patch("mtg_proxy_printer.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
         reader.return_value = stream, MagicMock()
         result = downloader.download("")

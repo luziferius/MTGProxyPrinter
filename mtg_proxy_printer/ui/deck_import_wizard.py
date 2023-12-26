@@ -558,7 +558,7 @@ class DeckImportWizard(WizardBase):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 language_model: QStringListModel, parent: QWidget = None, flags = Qt.WindowFlags()):
+                 language_model: QStringListModel, parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(QSize(800, 600), parent, flags)
         self.card_db = card_db
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)

@@ -40,8 +40,8 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
 @pytest.mark.parametrize("name, expected", [
     ('"Quoted"', 'Quoted'),
     ('New\nline', 'Newline'),
-    ('Ends with dot and space. ','Ends with dot and space'),
-    ('Ends with dot and space .','Ends with dot and space'),
+    ('Ends with dot and space. ', 'Ends with dot and space'),
+    ('Ends with dot and space .', 'Ends with dot and space'),
     ('\tTab\t', 'Tab')
 ])
 def test__get_default_image_save_path(qtbot, main_window, name: str, expected: str):

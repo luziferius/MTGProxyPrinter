@@ -16,8 +16,6 @@
 """
 This module contains an assortment of small helper functions used in the tests for the document controller
 """
-import typing
-
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType

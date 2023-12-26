@@ -105,6 +105,7 @@ def format_size(size: float) -> str:
         size /= 1024
     return f"{size:.2f} YiB"
 
+
 class WizardBase(QWizard):
     """Base class for wizards based on QWizard"""
     BUTTON_ICONS: typing.Dict[QWizard.WizardButton, str] = {}

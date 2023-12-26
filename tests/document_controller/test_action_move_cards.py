@@ -72,7 +72,7 @@ def test_apply_move_all_cards_onto_empty_page(qtbot, document_light):
     with qtbot.wait_signals(
             [document_light.page_type_changed] * 2 + [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0, lambda index: index.row() == 1] +
-                                          [row_move_validator] * 2):
+                                           [row_move_validator] * 2):
         ActionMoveCards(0, [0], 1).apply(document_light)
 
     assert_that(
@@ -95,7 +95,7 @@ def test_apply_move_all_cards_onto_partially_filled_page(qtbot, document_light):
     with qtbot.wait_signals(
             [document_light.page_type_changed, document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0] +
-                                          [row_move_validator] * 2):
+                                           [row_move_validator] * 2):
         ActionMoveCards(0, [0], 1).apply(document_light)
 
     assert_that(
@@ -121,7 +121,7 @@ def test_apply_move_subset_of_cards_onto_empty_page(qtbot, document_light):
     with qtbot.wait_signals(
             [document_light.page_type_changed, document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 1] +
-                                          [row_move_validator] * 2):
+                                           [row_move_validator] * 2):
         ActionMoveCards(0, [0], 1).apply(document_light)
 
     assert_that(
@@ -264,7 +264,7 @@ def test_undo_move_all_cards_onto_empty_page(qtbot, document_light):
     with qtbot.wait_signals(
             [document_light.page_type_changed] * 2 + [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0, lambda index: index.row() == 1] +
-                                          [row_move_validator] * 2):
+                                           [row_move_validator] * 2):
         ActionMoveCards(0, [0], 1).undo(document_light)
 
     assert_that(
@@ -287,7 +287,7 @@ def test_undo_move_all_cards_onto_partially_filled_page(qtbot, document_light):
     with qtbot.wait_signals(
             [document_light.page_type_changed, document_light.rowsAboutToBeMoved, document_light.rowsMoved],
             timeout=1000, check_params_cbs=[lambda index: index.row() == 0] +
-                                          [row_move_validator] * 2):
+                                           [row_move_validator] * 2):
         ActionMoveCards(0, [0], 1).undo(document_light)
 
     assert_that(

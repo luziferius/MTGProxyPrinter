@@ -23,7 +23,7 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
+from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
@@ -339,7 +339,7 @@ class CardFilterPage(QWizardPage):
         for card, key in hidden:
             self.card_image_model.add_row(card, key, True)
         for key in unknown:
-             self.unknown_image_model.add_row(key)
+            self.unknown_image_model.add_row(key)
         self._apply_filter()
 
     def _apply_filter(self):
@@ -369,7 +369,7 @@ class CardFilterPage(QWizardPage):
             selection_model = self.ui.unknown_image_view.selectionModel()
             for row in range(self.unknown_image_model.rowCount()):
                 index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
-                selection_model.select(index,QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                selection_model.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def _select_rows(self, indices: typing.Iterable[int]):
         selection_model = self.ui.card_image_view.selectionModel()
@@ -427,7 +427,7 @@ class CacheCleanupWizard(WizardBase):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 parent: QWidget = None, flags = Qt.WindowFlags()):
+                 parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))

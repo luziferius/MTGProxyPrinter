@@ -43,6 +43,7 @@ JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
 
+
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
     Validator that checks, if the given string is a valid URL prefix pointing to a deck on a known deck
@@ -386,12 +387,10 @@ class CubeCobraDownloader(DecklistDownloader):
     PARSER_CLASS = XMageParser
     APPLICABLE_WEBSITES = "CubeCobra (cubecobra.com)"
 
-
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         cube_name = match.group("cube_name")
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
-
 
 
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {

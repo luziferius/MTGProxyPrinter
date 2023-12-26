@@ -20,7 +20,6 @@ import typing
 import unittest.mock
 from tempfile import TemporaryDirectory
 import textwrap
-import time
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
@@ -187,7 +186,7 @@ def test_undo_on_empty_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, documen
     document_light.undo_stack.append(first := DummyAction())
     document_light.undo_stack.append(second := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=1000),\
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -286,7 +285,7 @@ def test_redo_on_filled_undo_stack_1_element_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(first := DummyAction())
     document_light.undo_stack.append(undo_dummy := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=1000),\
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -587,7 +586,8 @@ def _validate_saved_document_settings(document: Document):
                 page_layout.page_height,
                 page_layout.page_width,
                 page_layout.row_spacing,
-        ))
+            )
+        )
 
 
 def test_get_missing_image_cards(document_light: Document):
@@ -661,7 +661,7 @@ def test_update_page_layout_copies_the_passed_in_instance(document_light: Docume
     (PageType.OVERSIZED, 0, 25, 2),
 ])
 def test_page_layout_compute_page_card_capacity(
-        page_type:PageType, column_spacing: int, row_spacing: int, expected: int):
+        page_type: PageType, column_spacing: int, row_spacing: int, expected: int):
     layout = PageLayoutSettings.create_from_settings()
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing

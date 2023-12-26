@@ -72,6 +72,7 @@ def test_apply_removes_two_1_card_ranges(qtbot, document_light):
         )
     )
 
+
 @pytest.mark.parametrize("row_selection", [[0, 1], [1, 0]])
 def test_apply_removes_one_2_card_range(qtbot, document_light, row_selection: List[int]):
     page = document_light.pages[0]

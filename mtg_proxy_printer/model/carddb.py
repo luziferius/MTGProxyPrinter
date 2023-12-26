@@ -63,6 +63,7 @@ __all__ = [
     "OLD_DATABASE_LOCATION",
     "DEFAULT_DATABASE_LOCATION",
     "with_database_write_lock",
+    "SCHEMA_NAME",
 ]
 
 
@@ -669,7 +670,7 @@ class CardDatabase(QObject):
         if result is None:
             return None
         else:
-            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image,\
+            name, set_abbr, set_name, collector_number, language, image_uri, oracle_id, highres_image, \
                 is_oversized, face_number, is_dfc = result
             return Card(
                 name, MTGSet(set_abbr, set_name), collector_number,

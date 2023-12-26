@@ -16,7 +16,6 @@
 
 import abc
 import configparser
-import functools
 from functools import partial
 from typing import Union, Type, List, Tuple
 

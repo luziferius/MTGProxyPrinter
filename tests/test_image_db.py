@@ -14,15 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import io
-from unittest.mock import MagicMock, patch
 
 from PyQt5.QtCore import QBuffer, QIODevice
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, ImageDownloader
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 
 
 def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:

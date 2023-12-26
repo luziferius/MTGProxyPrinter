@@ -18,7 +18,7 @@ from functools import partial
 from hamcrest import *
 from PyQt5.QtCore import QModelIndex
 
-from mtg_proxy_printer.model.document_page import CardContainer, Page
+from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionRemovePage
 
@@ -201,7 +201,6 @@ def test_undo_with_position_restores_page_at_given_middle_position(qtbot, docume
             [document_light.rowsAboutToBeInserted, document_light.rowsInserted],
             check_params_cbs=[validator]*2, timeout=1000):
         assert_that(action.undo(document_light), is_(same_instance(action)))
-
 
     assert_that(
         document_light.pages,

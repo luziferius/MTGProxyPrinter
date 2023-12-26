@@ -27,7 +27,7 @@ import pytest
 from hamcrest import *
 PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
 
-from tests.hasgetter import has_getter, has_getters
+from tests.hasgetter import has_getters
 
 
 @pytest.fixture

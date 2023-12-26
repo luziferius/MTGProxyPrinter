@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QRunnable, QTimer, pyqtSlot as Slot, Qt
+from PyQt5.QtCore import QRunnable
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)

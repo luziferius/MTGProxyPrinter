@@ -491,7 +491,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         updater.signals.advance_progress.connect(progress_meter.advance)
         updater.store_current_printing_filters()
         # Store the timestamp of this import.
-        db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n",(index,))
+        db.execute("INSERT INTO LastDatabaseUpdate (reported_card_count) VALUES (?)\n", (index,))
         progress_meter.advance()
         # Populate the sqlite stat tables to give the query optimizer data to work with.
         db.execute("ANALYZE\n")
@@ -641,15 +641,14 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             printing_id = db.execute(cached_dedent("""\
                 INSERT INTO Printing (card_id, set_id, collector_number, is_oversized, highres_image, scryfall_id)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """), data,
-            ).lastrowid
+                """), data).lastrowid
         if needs_update:
             db.execute(cached_dedent("""\
                 UPDATE Printing
                   SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?
                   WHERE printing_id = ?
                 """),
-                (*data[:5], printing_id),
+                       (*data[:5], printing_id),
             )
         return printing_id
 

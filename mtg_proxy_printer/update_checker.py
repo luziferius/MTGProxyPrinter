@@ -201,7 +201,7 @@ class UpdateChecker(QObject):
             QThreadPool.globalInstance().start(ApplicationUpdateCheckRunner(self))
         else:
             logger.info("Not running application update check")
-        if not self.card_data_parameter_passed and app_settings.getboolean("check-for-card-data-updates") :
+        if not self.card_data_parameter_passed and app_settings.getboolean("check-for-card-data-updates"):
             logger.debug("Enqueue card data update check")
             QThreadPool.globalInstance().start(CardDataUpdateCheckRunner(self))
         else:
