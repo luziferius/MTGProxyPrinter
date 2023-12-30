@@ -1,7 +1,9 @@
 {
   "object": "card",
   "id": "087c3a0d-c710-4451-989e-596b55352184",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+
+  ],
   "tcgplayer_id": 259215,
   "name": "Stitch in Time // Stitch in Time",
   "lang": "en",
@@ -9,13 +11,15 @@
   "uri": "https://api.scryfall.com/cards/087c3a0d-c710-4451-989e-596b55352184",
   "scryfall_uri": "https://scryfall.com/card/sld/382/stitch-in-time-stitch-in-time?utm_source=api",
   "layout": "reversible_card",
-  "highres_image": false,
-  "image_status": "lowres",
+  "highres_image": true,
+  "image_status": "highres_scan",
   "color_identity": [
     "R",
     "U"
   ],
-  "keywords": [],
+  "keywords": [
+
+  ],
   "card_faces": [
     {
       "object": "card_face",
@@ -23,7 +27,7 @@
       "layout": "normal",
       "name": "Stitch in Time",
       "mana_cost": "{1}{U}{R}",
-      "cmc": 3,
+      "cmc": 3.0,
       "type_line": "Sorcery",
       "oracle_text": "Flip a coin. If you win the flip, take an extra turn after this one.",
       "colors": [
@@ -35,12 +39,12 @@
       "artist_id": "e89041e3-0b4b-4df1-9900-fdeb015e0a71",
       "illustration_id": "80541dd1-39bd-4707-8fcb-fd5b1c812e92",
       "image_uris": {
-        "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835",
-        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835"
+        "small": "https://cards.scryfall.io/small/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "normal": "https://cards.scryfall.io/normal/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "large": "https://cards.scryfall.io/large/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "png": "https://cards.scryfall.io/png/front/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1670031740",
+        "art_crop": "https://cards.scryfall.io/art_crop/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "border_crop": "https://cards.scryfall.io/border_crop/front/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740"
       }
     },
     {
@@ -50,7 +54,7 @@
       "name": "Stitch in Time",
       "flavor_name": "",
       "mana_cost": "{1}{U}{R}",
-      "cmc": 3,
+      "cmc": 3.0,
       "type_line": "Sorcery",
       "oracle_text": "Flip a coin. If you win the flip, take an extra turn after this one.",
       "colors": [
@@ -62,12 +66,12 @@
       "artist_id": "e89041e3-0b4b-4df1-9900-fdeb015e0a71",
       "illustration_id": "4219d608-ebde-41b7-b9d8-8c2e08663185",
       "image_uris": {
-        "small": "https://c1.scryfall.com/file/scryfall-cards/small/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "large": "https://c1.scryfall.com/file/scryfall-cards/large/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "png": "https://c1.scryfall.com/file/scryfall-cards/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1637270835",
-        "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835",
-        "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1637270835"
+        "small": "https://cards.scryfall.io/small/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "normal": "https://cards.scryfall.io/normal/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "large": "https://cards.scryfall.io/large/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "png": "https://cards.scryfall.io/png/back/0/8/087c3a0d-c710-4451-989e-596b55352184.png?1670031740",
+        "art_crop": "https://cards.scryfall.io/art_crop/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740",
+        "border_crop": "https://cards.scryfall.io/border_crop/back/0/8/087c3a0d-c710-4451-989e-596b55352184.jpg?1670031740"
       }
     }
   ],
@@ -77,28 +81,30 @@
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
     "penny": "legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
     "historicbrawl": "not_legal",
     "alchemy": "not_legal",
     "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "legal"
   },
   "games": [
     "paper"
   ],
   "reserved": false,
   "foil": true,
-  "nonfoil": true,
+  "nonfoil": false,
   "finishes": [
-    "nonfoil",
     "foil"
   ],
   "oversized": false,
@@ -121,7 +127,7 @@
   "artist_ids": [
     "e89041e3-0b4b-4df1-9900-fdeb015e0a71"
   ],
-  "border_color": "black",
+  "border_color": "borderless",
   "frame": "2015",
   "frame_effects": [
     "inverted"
@@ -131,23 +137,23 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 4293,
+  "edhrec_rank": 5325,
+  "penny_rank": 4126,
   "prices": {
     "usd": null,
-    "usd_foil": "20.00",
+    "usd_foil": "8.62",
     "usd_etched": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Stitch+in+Time+%2F%2F+Stitch+in+Time&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Stitch+in+Time+%2F%2F+Stitch+in+Time&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Stitch+in+Time+%2F%2F+Stitch+in+Time",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Stitch+in+Time+%2F%2F+Stitch+in+Time"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DStitch%2Bin%2BTime%2B%252F%252F%2BStitch%2Bin%2BTime",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DStitch%2Bin%2BTime%2B%252F%252F%2BStitch%2Bin%2BTime",
+    "edhrec": "https://edhrec.com/route/?cc=Stitch+in+Time+%2F%2F+Stitch+in+Time"
   },
   "purchase_uris": {
-    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=259215&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F259215%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Stitch+in+Time+%2F%2F+Stitch+in+Time&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Stitch+in+Time+%2F%2F+Stitch+in+Time&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

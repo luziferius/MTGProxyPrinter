@@ -1,0 +1,146 @@
+{
+  "object": "card",
+  "id": "2c6e5b25-b721-45ee-894a-697de1310b8c",
+  "oracle_id": "1b9ec782-0ba1-41f1-bc39-d3302494ecb3",
+  "multiverse_ids": [
+    489207
+  ],
+  "arena_id": 72263,
+  "tcgplayer_id": 215968,
+  "cardmarket_id": 472614,
+  "name": "Bake into a Pie",
+  "lang": "en",
+  "released_at": "2020-07-17",
+  "uri": "https://api.scryfall.com/cards/2c6e5b25-b721-45ee-894a-697de1310b8c",
+  "scryfall_uri": "https://scryfall.com/card/jmp/201/bake-into-a-pie?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/2/c/2c6e5b25-b721-45ee-894a-697de1310b8c.jpg?1600699396",
+    "normal": "https://cards.scryfall.io/normal/front/2/c/2c6e5b25-b721-45ee-894a-697de1310b8c.jpg?1600699396",
+    "large": "https://cards.scryfall.io/large/front/2/c/2c6e5b25-b721-45ee-894a-697de1310b8c.jpg?1600699396",
+    "png": "https://cards.scryfall.io/png/front/2/c/2c6e5b25-b721-45ee-894a-697de1310b8c.png?1600699396",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/2/c/2c6e5b25-b721-45ee-894a-697de1310b8c.jpg?1600699396",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/2/c/2c6e5b25-b721-45ee-894a-697de1310b8c.jpg?1600699396"
+  },
+  "mana_cost": "{2}{B}{B}",
+  "cmc": 4.0,
+  "type_line": "Instant",
+  "oracle_text": "Destroy target creature. Create a Food token. (It's an artifact with \"{2}, {T}, Sacrifice this artifact: You gain 3 life.\")",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+    "Food"
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "2c6e5b25-b721-45ee-894a-697de1310b8c",
+      "component": "combo_piece",
+      "name": "Bake into a Pie",
+      "type_line": "Instant",
+      "uri": "https://api.scryfall.com/cards/2c6e5b25-b721-45ee-894a-697de1310b8c"
+    },
+    {
+      "object": "related_card",
+      "id": "e4b7e3b5-2f3c-4eb7-abc9-322a049a9e1a",
+      "component": "token",
+      "name": "Food",
+      "type_line": "Token Artifact — Food",
+      "uri": "https://api.scryfall.com/cards/e4b7e3b5-2f3c-4eb7-abc9-322a049a9e1a"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "explorer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "arena",
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "0f6ccf25-a627-4263-86df-5757137f1696",
+  "set": "jmp",
+  "set_name": "Jumpstart",
+  "set_type": "draft_innovation",
+  "set_uri": "https://api.scryfall.com/sets/0f6ccf25-a627-4263-86df-5757137f1696",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Ajmp&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/jmp?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/2c6e5b25-b721-45ee-894a-697de1310b8c/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1b9ec782-0ba1-41f1-bc39-d3302494ecb3&unique=prints",
+  "collector_number": "201",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "\"My secret ingredient? Well, I can't tell you that. But here's a hint. It's not love.\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Zoltan Boros",
+  "artist_ids": [
+    "1885e6cb-c827-4896-994e-3d0a027d602f"
+  ],
+  "illustration_id": "c6d7c553-50c8-4ede-90ad-8a4772673017",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 5529,
+  "penny_rank": 13299,
+  "preview": {
+    "source": "GameStar",
+    "source_uri": "https://www.gamestar.de/galerien/magic_the_gathering_jumpstart,134799.html",
+    "previewed_at": "2020-06-17"
+  },
+  "prices": {
+    "usd": "0.08",
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": "0.07",
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=489207&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DBake%2Binto%2Ba%2BPie",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DBake%2Binto%2Ba%2BPie",
+    "edhrec": "https://edhrec.com/route/?cc=Bake+into+a+Pie"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F215968%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Bake+into+a+Pie&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Bake+into+a+Pie&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

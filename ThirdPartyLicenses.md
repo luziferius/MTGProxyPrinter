@@ -5,9 +5,11 @@ by this program.
 
 &nbsp;
 
-# Appdirs
+# platformdirs
 
-Copyright (c) 2010 ActiveState Software Inc.
+MIT License
+
+Copyright (c) 2010-202x The platformdirs developers
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the

@@ -52,6 +52,7 @@ to_be_profiled_functions = {
         "_translate_card",
         "store_current_printing_filters",
         "_update_cached_data",
+        "get_all_cards_from_image_cache",
     ],
 }
 

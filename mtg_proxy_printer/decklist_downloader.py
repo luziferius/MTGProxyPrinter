@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -31,7 +31,8 @@ from PyQt5.QtGui import QValidator
 from mtg_proxy_printer.downloader_base import DownloaderBase
 from mtg_proxy_printer.decklist_parser.common import ParserBase
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser, TappedOutCSVParser
-from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser
+from mtg_proxy_printer.decklist_parser.re_parsers import MTGArenaParser, MagicWorkstationDeckDataFormatParser, \
+    XMageParser
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -379,9 +380,23 @@ class TCGPlayerDownloader(DecklistDownloader):
         return result
 
 
+class CubeCobraDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://cubecobra\.com/cube/[a-z]+/(?P<cube_name>[0-9A-Za-z-_]+).*?"
+    )
+    PARSER_CLASS = XMageParser
+    APPLICABLE_WEBSITES = "CubeCobra (cubecobra.com)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        cube_name = match.group("cube_name")
+        return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
+
+
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ArchidektDownloader,
+        CubeCobraDownloader,
         DeckstatsDownloader,
         MTGTop8Downloader,
         MoxfieldDownloader,

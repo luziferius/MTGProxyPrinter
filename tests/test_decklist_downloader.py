@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,8 @@ from .helpers import SHOULD_SKIP_NETWORK_TESTS
 
 from mtg_proxy_printer.decklist_downloader import ScryfallDownloader, MTGGoldfishDownloader, MTGWTFDownloader, \
     IsIdentifyingDeckUrlValidator, DecklistDownloader, TappedOutDownloader, MoxfieldDownloader, DeckstatsDownloader, \
-    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader
+    MtgDecksNetDownloader, ArchidektDownloader, TCGPlayerDownloader, MTGTop8Downloader, MTGAZoneDownloader, \
+    CubeCobraDownloader
 
 
 UrlTestData = typing.Tuple[typing.Type[DecklistDownloader], str]
@@ -70,7 +71,7 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/"
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
-    #MTGTop8
+    # MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
 
@@ -106,6 +107,14 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # TCGPlayer Infinite
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532"
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/"
+
+    # CubeCobra
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/list/gilpauper"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/gilpauper"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/list/gilpauper/"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/gilpauper/"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2/"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
@@ -160,7 +169,7 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield MTGAZoneDownloader, "https://mtgazone.com/"
     yield MTGAZoneDownloader, "https://mtgazone.com/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
-    #MTGTop8
+    # MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&"
@@ -196,6 +205,14 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
 
     # TCGPlayer Infinite
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer"
+
+    # CubeCobra
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://cubecobra.com/list/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/"
+    yield CubeCobraDownloader, "https://cubecobra.com/"
+    yield CubeCobraDownloader, "https://cubecobra.com"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_rejects_unacceptable_url())
@@ -236,6 +253,7 @@ def generate_test_cases_for_test_deck_list_download() \
     yield MtgDecksNetDownloader, "https://mtgdecks.net/Premodern/false-cure-decklist-by-pol-tavarone-1544582", "4 Cabal Therapy"
     yield ArchidektDownloader, "https://archidekt.com/decks/8", "Mirror Entity"
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532/", "4,en,Esper Sentinel"
+    yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/1lb", "1 [MBS:2] Ardent Recruit"
 
 
 @pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
@@ -260,7 +278,7 @@ def test_decklists_net_post_process(deck_list: bytes, expected: str):
     """
     downloader = MtgDecksNetDownloader()
     stream = MagicMock()
-    stream.read.return_value=deck_list
+    stream.read.return_value = deck_list
     with patch("mtg_proxy_printer.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
         reader.return_value = stream, MagicMock()
         result = downloader.download("")

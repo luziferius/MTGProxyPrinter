@@ -2,7 +2,9 @@
   "object": "card",
   "id": "63b54145-6686-4814-a617-7d8ed661a72c",
   "oracle_id": "93a0e938-b916-47ec-9803-369e885e253c",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+
+  ],
   "mtgo_id": 43596,
   "name": "Future Sight",
   "lang": "en",
@@ -13,15 +15,15 @@
   "highres_image": false,
   "image_status": "lowres",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.png?1562545244",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244"
+    "small": "https://cards.scryfall.io/small/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
+    "normal": "https://cards.scryfall.io/normal/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
+    "large": "https://cards.scryfall.io/large/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
+    "png": "https://cards.scryfall.io/png/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.png?1562545244",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/6/3/63b54145-6686-4814-a617-7d8ed661a72c.jpg?1562545244"
   },
   "mana_cost": "{2}{U}{U}{U}",
-  "cmc": 5,
+  "cmc": 5.0,
   "type_line": "Enchantment",
   "oracle_text": "Play with the top card of your library revealed.\nYou may play lands and cast spells from the top of your library.",
   "colors": [
@@ -30,23 +32,31 @@
   "color_identity": [
     "U"
   ],
-  "keywords": [],
+  "keywords": [
+
+  ],
   "legalities": {
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
     "penny": "legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "legal"
+    "premodern": "legal",
+    "predh": "legal"
   },
   "games": [
     "mtgo"
@@ -54,10 +64,14 @@
   "reserved": false,
   "foil": true,
   "nonfoil": false,
+  "finishes": [
+    "foil"
+  ],
   "oversized": false,
   "promo": true,
   "reprint": true,
   "variation": false,
+  "set_id": "638940fb-6be9-4be3-b83f-68d3902fbbe5",
   "set": "prm",
   "set_name": "Magic Online Promos",
   "set_type": "promo",
@@ -81,22 +95,23 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 1504,
+  "edhrec_rank": 4480,
+  "penny_rank": 1042,
   "prices": {
     "usd": null,
     "usd_foil": null,
+    "usd_etched": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Future+Sight&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Future+Sight&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Future+Sight",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Future+Sight"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DFuture%2BSight",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DFuture%2BSight",
+    "edhrec": "https://edhrec.com/route/?cc=Future+Sight"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Future+Sight&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DFuture%2BSight%26view%3Dgrid",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Future+Sight&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards/43596?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

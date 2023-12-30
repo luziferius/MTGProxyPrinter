@@ -14,8 +14,9 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000030;
+PRAGMA user_version = 0000033;
 PRAGMA foreign_keys = on;
+PRAGMA journal_mode = 'wal';
 BEGIN TRANSACTION;
 
 
@@ -67,6 +68,13 @@ CREATE TABLE Printing (
   card_layout TEXT NULL
 );
 
+CREATE TABLE RelatedPrintings (
+  card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  PRIMARY KEY (card_id, related_id),
+  CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+) WITHOUT ROWID;
+
 CREATE INDEX Printing_Index_Find_Printing_From_Card_Data
   ON Printing(card_id, set_id, collector_number);
 CREATE INDEX Printing_is_hidden
@@ -111,9 +119,9 @@ CREATE TABLE MTGSet (
 
 CREATE TABLE LastDatabaseUpdate (
   -- Contains the history of all performed card data updates
-  update_id             INTEGER NOT NULL PRIMARY KEY,
-  update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-  reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
+  update_id           INTEGER NOT NULL PRIMARY KEY,
+  update_timestamp    TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+  reported_card_count INTEGER NOT NULL CHECK (reported_card_count >= 0)
 );
 
 CREATE TABLE DisplayFilters (
@@ -161,30 +169,52 @@ CREATE TABLE RemovedPrintings (
 
 CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC);
 CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id);
-
+CREATE INDEX LookupPrintingBySet ON Printing(set_id);  -- Used by set code card filter logic
 
 CREATE VIEW VisiblePrintings AS
+WITH double_faced_printings(printing_id, is_dfc) AS (
+  SELECT DISTINCT printing_id, TRUE as is_dfc
+    FROM CardFace
+    WHERE is_front IS FALSE)
   SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
-         is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, release_date
+    is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, release_date,
+    coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc
   FROM Card
   JOIN Printing USING (card_id)
   JOIN MTGSet   USING (set_id)
   JOIN CardFace USING (printing_id)
   JOIN FaceName USING (face_name_id)
   JOIN PrintLanguage USING (language_id)
+  LEFT OUTER JOIN double_faced_printings USING (printing_id)
   WHERE Printing.is_hidden IS FALSE
     AND FaceName.is_hidden IS FALSE
 ;
 
 CREATE VIEW AllPrintings AS
+WITH double_faced_printings(printing_id, is_dfc) AS (
+  SELECT DISTINCT printing_id, TRUE as is_dfc
+    FROM CardFace
+    WHERE is_front IS FALSE)
   SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
-         is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+     is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden,
+     coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc
   FROM Card
   JOIN Printing USING (card_id)
   JOIN MTGSet   USING (set_id)
   JOIN CardFace USING (printing_id)
   JOIN FaceName USING (face_name_id)
   JOIN PrintLanguage USING (language_id)
+  LEFT OUTER JOIN double_faced_printings USING (printing_id)
+;
+
+CREATE VIEW CurrentlyEnabledSetCodeFilters AS
+  -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
+  SELECT DISTINCT set_code
+  FROM MTGSet
+  JOIN Printing USING (set_id)
+  JOIN PrintingDisplayFilter USING (printing_id)
+  JOIN DisplayFilters USING (filter_id)
+  WHERE filter_name = 'hidden-sets'
 ;
 
 COMMIT;

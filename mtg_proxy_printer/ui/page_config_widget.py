@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -18,15 +18,16 @@ from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QComboBox
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QComboBox
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSize
+from mtg_proxy_printer.units_and_sizes import CardSizes
 
 try:
-    from mtg_proxy_printer.ui.generated.page_config_widget import Ui_page_configuration_group_box as Ui_PageConfigWidget
+    from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
 except ModuleNotFoundError:
     Ui_PageConfigWidget = load_ui_from_file("page_config_widget")
 
@@ -59,17 +60,19 @@ class PageConfigWidget(QGroupBox):
             lambda index: setattr(page_layout, "duplex_mode", tuple(DuplexMode)[index]))
         ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
         ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
+        self.ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
+        self.ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
         ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
         ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
         ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
         ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        ui.image_spacing_horizontal.valueChanged[int].connect(
-            partial(setattr, page_layout, "image_spacing_horizontal"))
-        ui.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
         ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
+            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.CheckState.Checked))
         ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked))
+        self.ui.draw_page_numbers.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked))
+        self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 
     @Slot()
@@ -96,12 +99,14 @@ class PageConfigWidget(QGroupBox):
 
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
-        document_section = settings["documents"]
+        documents_section = settings["documents"]
         for spinbox, setting in self._get_integer_settings_widgets():
-            spinbox.setValue(document_section.getint(setting))
+            spinbox.setValue(documents_section.getint(setting))
         for checkbox, setting in self._get_boolean_settings_widgets():
-            checkbox.setChecked(document_section.getboolean(setting))
+            checkbox.setChecked(documents_section.getboolean(setting))
         self.ui.duplex_mode.setCurrentIndex(tuple(DuplexMode).index(document_section["duplex-mode"]))
+        for line_edit, setting in self._get_string_settings_widgets():
+            line_edit.setText(documents_section[setting])
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -118,6 +123,8 @@ class PageConfigWidget(QGroupBox):
                     widget.setValue(value)
                 elif isinstance(widget, QComboBox):
                     widget.setCurrentIndex(tuple(DuplexMode).index(value))
+                elif isinstance(widget, QLineEdit):
+                    widget.setText(value)
                 else:
                     widget.setChecked(value)
         self.validate_paper_size_settings()
@@ -132,6 +139,8 @@ class PageConfigWidget(QGroupBox):
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
         documents_section["duplex-mode"] = self.ui.duplex_mode.currentData(Qt.ItemDataRole.UserRole)
+        for line_edit, setting in self._get_string_settings_widgets():
+            documents_section[setting] = line_edit.text()
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
@@ -142,8 +151,8 @@ class PageConfigWidget(QGroupBox):
             (self.ui.margin_bottom, "margin-bottom-mm"),
             (self.ui.margin_left, "margin-left-mm"),
             (self.ui.margin_right, "margin-right-mm"),
-            (self.ui.image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.ui.image_spacing_vertical, "image-spacing-vertical-mm"),
+            (self.ui.row_spacing, "row-spacing-mm"),
+            (self.ui.column_spacing, "column-spacing-mm"),
         ]
         return widgets_with_settings
 
@@ -151,6 +160,13 @@ class PageConfigWidget(QGroupBox):
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (self.ui.draw_cut_markers, "print-cut-marker"),
             (self.ui.draw_sharp_corners, "print-sharp-corners"),
+            (self.ui.draw_page_numbers, "print-page-numbers"),
+        ]
+        return widgets_with_settings
+
+    def _get_string_settings_widgets(self):
+        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
+            (self.ui.document_name, "default-document-name")
         ]
         return widgets_with_settings
 

@@ -78,8 +78,8 @@
     }
   ],
   "legalities": {
-    "standard": "not_legal",
-    "future": "not_legal",
+    "standard": "legal",
+    "future": "legal",
     "historic": "legal",
     "gladiator": "legal",
     "pioneer": "legal",
@@ -91,7 +91,7 @@
     "penny": "legal",
     "commander": "legal",
     "oathbreaker": "legal",
-    "brawl": "not_legal",
+    "brawl": "legal",
     "historicbrawl": "legal",
     "alchemy": "not_legal",
     "paupercommander": "not_legal",
@@ -142,8 +142,8 @@
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 619,
-  "penny_rank": 3260,
+  "edhrec_rank": 706,
+  "penny_rank": 3586,
   "prices": {
     "usd": null,
     "usd_foil": null,
@@ -154,12 +154,12 @@
   },
   "related_uris": {
     "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=438037&printed=true",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Growing+Rites+of+Itlimoc+%2F%2F+Itlimoc%2C+Cradle+of+the+Sun&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DGrowing%2BRites%2Bof%2BItlimoc%2B%252F%252F%2BItlimoc%252C%2BCradle%2Bof%2Bthe%2BSun",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DGrowing%2BRites%2Bof%2BItlimoc%2B%252F%252F%2BItlimoc%252C%2BCradle%2Bof%2Bthe%2BSun",
     "edhrec": "https://edhrec.com/route/?cc=Growing+Rites+of+Itlimoc"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Growing+Rites+of+Itlimoc&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DGrowing%2BRites%2Bof%2BItlimoc%26view%3Dgrid",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Growing+Rites+of+Itlimoc&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Growing+Rites+of+Itlimoc&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

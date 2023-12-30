@@ -1,25 +1,24 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
 This module contains an assortment of small helper functions used in the tests for the document controller
 """
-
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
+from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.document_page import CardContainer, Page
 
 __all__ = [
@@ -50,10 +49,10 @@ def verify_page_index_cache_is_valid(document):
 
 def create_card(name: str, oversized: bool = False) -> Card:
     """Creates a Card with given name and size. Most properties are empty."""
-    return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)
+    return Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
 
 
-def card_container_with(card: Card, parent: Page):
+def card_container_with(card: AnyCardType, parent: Page):
     """Hamcrest matcher for a CardContainer."""
     return all_of(
         instance_of(CardContainer),

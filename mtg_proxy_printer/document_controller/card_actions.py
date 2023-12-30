@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -18,7 +18,7 @@ import itertools
 import math
 import typing
 
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, AnyCardType
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import CardContainer
@@ -42,11 +42,12 @@ class ActionAddCard(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["card", "count", "added_new_pages", "added_cards_to_existing_pages"]
 
-    def __init__(self, card: Card, count: int = 1):
+    def __init__(self, card: AnyCardType, count: int = 1, *, target_page: int = None):
+        self.target_page = target_page
         self.card = card
         self.count = count
         self.added_new_pages: int = 0
-        self.first_added_page: int = 0
+        self.first_added_page: typing.Optional[int] = None
         self.added_cards_to_existing_pages: typing.List[typing.Tuple[int, int]] = []
 
     def apply(self, document: "Document") -> Self:
@@ -57,16 +58,18 @@ class ActionAddCard(DocumentAction):
         """
         copies = self.count  # Copy the count, because the value is mutated
         page_capacity_for_card = document.page_layout.compute_page_card_capacity(self.card.requested_page_type())
-        current_page_position = document.find_page_list_index(document.currently_edited_page)
-        if len(document.currently_edited_page) < page_capacity_for_card \
-                and document.currently_edited_page.accepts_card(self.card):
+        current_page_position = self.target_page if self.target_page is not None \
+            else document.find_page_list_index(document.currently_edited_page)
+        page = document.pages[current_page_position]
+        if len(page) < page_capacity_for_card and page.accepts_card(self.card):
             copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
             if added_cards:
                 self.added_cards_to_existing_pages.append((current_page_position, added_cards))
             logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
         current_page_position += 1
         while copies > 0 and current_page_position < document.rowCount():
-            if document.pages[current_page_position].accepts_card(self.card):
+            page = document.pages[current_page_position]
+            if page.accepts_card(self.card):
                 copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
                 if added_cards:
                     self.added_cards_to_existing_pages.append((current_page_position, added_cards))
@@ -138,10 +141,10 @@ class ActionAddCard(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        if len(self.added_cards_to_existing_pages) == 1:
+        if len(self.added_cards_to_existing_pages) == 1 and not self.first_added_page:
             # Cards added to a single existing page
             target = f"to page {self.added_cards_to_existing_pages[0][0]+1}"
-        elif self.first_added_page:
+        elif self.first_added_page and not self.added_cards_to_existing_pages:
             # Cards added to a single new page
             target = f"to page {self.first_added_page+1}"
         else:
@@ -167,6 +170,10 @@ class ActionRemoveCards(DocumentAction):
     def __init__(self, cards_to_remove: typing.Sequence[int], page_number: int = None):
         if not cards_to_remove:
             raise ValueError("Parameter cards_to_remove must not be empty")
+        # The source of the input row sequence is a Qt multi-selection, which is unordered.
+        # The individual selections are ordered, but the selection groups are not. To not break the algorithm,
+        # if the user selects cards from bottom to top, the rows have to be sorted.
+        cards_to_remove = sorted(cards_to_remove)
         self.card_ranges_to_remove = self.to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
         self.removed_cards: typing.List[typing.List[CardContainer]] = []

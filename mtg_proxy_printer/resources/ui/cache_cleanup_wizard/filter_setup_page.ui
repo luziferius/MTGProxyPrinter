@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WizardPage</class>
- <widget class="QWizardPage" name="WizardPage">
+ <class>FilterSetupPage</class>
+ <widget class="QWizardPage" name="FilterSetupPage">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -9,9 +9,6 @@
     <width>417</width>
     <height>186</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>WizardPage</string>
   </property>
   <property name="title">
    <string>Cleanup locally stored card images</string>
@@ -36,7 +33,7 @@
       <string>Select images for removal based on any matching criterion.</string>
      </property>
      <property name="title">
-      <string>Select images for deletion, if …</string>
+      <string>Select images for deletion, that are …</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="1" column="0">
@@ -49,7 +46,7 @@
       <item row="0" column="0">
        <widget class="QCheckBox" name="time_filter_enabled_checkbox">
         <property name="text">
-         <string>Not used in the last:</string>
+         <string>Not used in prints for:</string>
         </property>
        </widget>
       </item>
@@ -94,7 +91,7 @@ For example, if you downloaded images of silver-bordered cards and then configur
 all these images become hidden and will be removed.</string>
         </property>
         <property name="text">
-         <string>Remove unknown images and images of hidden printings</string>
+         <string>Unknown or belong to hidden printings</string>
         </property>
        </widget>
       </item>
