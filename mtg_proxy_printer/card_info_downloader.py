@@ -36,7 +36,7 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
 from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.runner import Runnable
@@ -62,7 +62,6 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 IntTuples = typing.List[typing.Tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = typing.Union[CardDataType, FaceDataType]
-UUID = str
 
 
 class CardFaceData(typing.NamedTuple):
@@ -580,7 +579,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         return language_id
 
     @functools.lru_cache(None)
-    def _insert_card(self, oracle_id: str) -> int:
+    def _insert_card(self, oracle_id: UUID) -> int:
         db = self.db
         parameters = oracle_id,
         if result := db.execute("SELECT card_id FROM Card WHERE oracle_id = ?\n", parameters).fetchone():
@@ -634,7 +633,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _handle_printing(self, card: CardDataType, card_id: int, set_id: int) -> int:
         db = self.db
         data = PrintingData(
-            card_id, set_id, card["collector_number"], card["oversized"], card["highres_image"], card["id"],
+            card_id, set_id, card["collector_number"], card["oversized"], card["highres_image"], UUID(card["id"]),
         )
         printing_id, needs_update = self._is_printing_present(data)
         if printing_id is None:
@@ -643,12 +642,13 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                     VALUES (?, ?, ?, ?, ?, ?)
                 """), data).lastrowid
         if needs_update:
-            db.execute(cached_dedent("""\
+            db.execute(
+                cached_dedent("""\
                 UPDATE Printing
                   SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?
                   WHERE printing_id = ?
                 """),
-                       (*data[:5], printing_id),
+                (*data[:5], printing_id),
             )
         return printing_id
 
@@ -719,9 +719,9 @@ def _get_related_cards(card: CardDataType):
     if card["layout"] == "token":
         # A token is never a source, as that would pull all cards creating that token
         return
-    card_id = card["id"]
+    card_id = UUID(card["id"])
     for related_card in card.get("all_parts", []):
-        if card_id != (related_id := related_card["id"]):
+        if card_id != (related_id := UUID(related_card["id"])):
             yield RelatedPrintingData(card_id, related_id)
 
 
@@ -823,7 +823,7 @@ def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, 
     )
 
 
-def _get_oracle_id(card: CardDataType) -> str:
+def _get_oracle_id(card: CardDataType) -> UUID:
     """
     Reads the oracle_id property of the given card.
 
@@ -831,10 +831,10 @@ def _get_oracle_id(card: CardDataType) -> str:
     card object does not contain the oracle_id.
     """
     try:
-        return card["oracle_id"]
+        return UUID(card["oracle_id"])
     except KeyError:
         first_face = card["card_faces"][0]
-        return first_face["oracle_id"]
+        return UUID(first_face["oracle_id"])
 
 
 def _get_card_name(card_or_face: CardOrFace) -> str:
