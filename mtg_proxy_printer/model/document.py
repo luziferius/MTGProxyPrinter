@@ -423,5 +423,3 @@ class Document(QAbstractItemModel):
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)
         )
-                "PRAGMA user_version = 6",]:
-       db.execute(f"{statement}\n")

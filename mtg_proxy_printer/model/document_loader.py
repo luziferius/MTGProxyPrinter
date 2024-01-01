@@ -519,9 +519,6 @@ class Worker(LoaderSignals):
 
     @staticmethod
     def _read_document_settings(
-                'off' AS duplex_mode,
-                duplex_mode=is_in(list(DuplexMode)),
-        Worker._read_document_settings_cast_types(settings)
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
