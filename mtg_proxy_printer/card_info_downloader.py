@@ -36,7 +36,7 @@ from mtg_proxy_printer.sqlite_helpers import cached_dedent
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 import mtg_proxy_printer.metered_file
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType
+from mtg_proxy_printer.units_and_sizes import CardDataType, FaceDataType, BulkDataType, UUID
 from mtg_proxy_printer.progress_meter import ProgressMeter
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.runner import Runnable
@@ -62,7 +62,6 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 IntTuples = typing.List[typing.Tuple[int]]
 CardStream = typing.Generator[CardDataType, None, None]
 CardOrFace = typing.Union[CardDataType, FaceDataType]
-UUID = str
 
 
 class CardFaceData(typing.NamedTuple):
@@ -89,8 +88,9 @@ class RelatedPrintingData(typing.NamedTuple):
     printing_id: UUID
     related_id: UUID
 
+
 class OracleData(typing.NamedTuple):
-    oracle_id: str
+    oracle_id: UUID
     card_layout: str
 
 
@@ -546,7 +546,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         if set_id is None:
             self.set_code_cache[card["set"]] = set_id = self._insert_set(card)
         back_face_id = self._insert_card_back_id(card.get("card_back_id"))
-        printing_id = self._insert_printing(card, card_id, set_id, back_face_id)
+        printing_id = self._handle_printing(card, card_id, set_id, back_face_id)
         filter_data = _get_card_filter_data(card)
         self._insert_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
@@ -691,11 +691,10 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _handle_printing(self, card: CardDataType, card_id: int, set_id: int, back_face_id: typing.Optional[int]) -> int:
         db = self.db
         data = PrintingData(
-            card_id, set_id, card["collector_number"], card["oversized"], card["highres_image"], card["id"],
-            back_face_id,
+            card_id, set_id, card["collector_number"], card["oversized"], card["highres_image"],
             # Only add the card layout override,
             # if it is a reversible card with multiple layouts in the individual faces
-            card["layout"] if "oracle_id" not in card else None,
+            back_face_id, card["layout"] if "oracle_id" not in card else None, UUID(card["id"]),
         )
         printing_id, needs_update = self._is_printing_present(data)
         if printing_id is None:
@@ -704,20 +703,14 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """), data).lastrowid
         if needs_update:
-            # FIXME: MERGE!
-            db.execute(cached_dedent("""\
+            db.execute(
+                cached_dedent("""\
                 UPDATE Printing
-                  SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?
+                  SET card_id = ?, set_id = ?, collector_number = ?, is_oversized = ?, highres_image = ?,
+                      back_face_id = ?, card_layout = ?
                   WHERE printing_id = ?
                 """),
-                       (*data[:5], printing_id),
-                        highres_image = excluded.highres_image,
-                        back_face_id = excluded.back_face_id,
-                        card_layout = excluded.card_layout
-                   -- Use IS NOT to update on different non-NULL values or if exactly one is NULL.
-                   -- In this case, NULL should be treated as equal to NULL to indicate "no change".
-                   OR back_face_id IS NOT excluded.back_face_id
-                   OR card_layout IS NOT excluded.card_layout
+                (*data[:-1], printing_id),
             )
         return printing_id
 
@@ -736,14 +729,16 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         ).fetchone() or (None,)
         needs_update = False
         if printing_id is not None:
-            card_id, set_id, collector_number, is_oversized, highres_image = db.execute(cached_dedent("""\
-            SELECT card_id, set_id, collector_number, is_oversized, highres_image
-                FROM Printing
-                WHERE printing_id = ?
-            """), (printing_id,)).fetchone()
+            card_id, set_id, collector_number, is_oversized, highres_image, back_face_id, card_layout = db.execute(
+                cached_dedent("""\
+                SELECT card_id, set_id, collector_number, is_oversized, highres_image, back_face_id, card_layout
+                    FROM Printing
+                    WHERE printing_id = ?
+                """), (printing_id,)).fetchone()
             # Note: No db round-trip for the scryfall_id, since it is unique and was used to look up the printing_id.
             db_data = PrintingData(
-                card_id, set_id, collector_number, bool(is_oversized), bool(highres_image), new_data.scryfall_id)
+                card_id, set_id, collector_number, bool(is_oversized), bool(highres_image),
+                back_face_id, card_layout, new_data.scryfall_id)
             needs_update = new_data != db_data
         return printing_id, needs_update
 
@@ -757,7 +752,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
                 (face_name_id, printing_id, face.is_front)).fetchone()
             if card_face_id is None:
-                card_face_id = db.execute(cached_dedent("""\
+                card_face_id = db.execute(
+                    cached_dedent("""\
                     INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
                         VALUES (?, ?, ?, ?, ?)
                     """),
@@ -788,9 +784,9 @@ def _get_related_cards(card: CardDataType):
     if card["layout"] == "token":
         # A token is never a source, as that would pull all cards creating that token
         return
-    card_id = card["id"]
+    card_id = UUID(card["id"])
     for related_card in card.get("all_parts", []):
-        if card_id != (related_id := related_card["id"]):
+        if card_id != (related_id := UUID(related_card["id"])):
             yield RelatedPrintingData(card_id, related_id)
 
 
@@ -892,7 +888,7 @@ def _get_card_faces(card: CardDataType) -> typing.Generator[CardFaceData, None, 
     )
 
 
-def _get_oracle_id(card: CardDataType) -> str:
+def _get_oracle_id(card: CardDataType) -> UUID:
     """
     Reads the oracle_id property of the given card.
 
@@ -900,10 +896,10 @@ def _get_oracle_id(card: CardDataType) -> str:
     card object does not contain the oracle_id.
     """
     try:
-        return card["oracle_id"]
+        return UUID(card["oracle_id"])
     except KeyError:
         first_face = card["card_faces"][0]
-        return first_face["oracle_id"]
+        return UUID(first_face["oracle_id"])
 
 
 def _get_card_name(card_or_face: CardOrFace) -> str:
