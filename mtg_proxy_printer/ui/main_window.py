@@ -485,7 +485,7 @@ class MainWindow(QMainWindow):
     def _to_pixmaps(event: typing.Union[QDragEnterEvent, QDropEvent]) -> typing.List[QPixmap]:
         result: typing.List[QPixmap] = []
         mime_data = event.mimeData()
-        regular = mtg_proxy_printer.units_and_sizes.CardSizes.REGULAR
+        regular = mtg_proxy_printer.units_and_sizes.CardSize.REGULAR
         width, height = regular.width.magnitude, regular.height.magnitude
         for url in mime_data.urls():
             pixmap = QPixmap(url.toLocalFile())

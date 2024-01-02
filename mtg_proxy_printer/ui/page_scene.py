@@ -15,7 +15,7 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSize
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -440,7 +440,7 @@ class PageScene(QGraphicsScene):
         left_margin = self._mm_to_rounded_px(page_layout.margin_left)
         top_margin = self._mm_to_rounded_px(page_layout.margin_top)
 
-        card_size = CardSizes.for_page_type(page_type)
+        card_size = CardSize.for_page_type(page_type)
         image_height: int = card_size.height.magnitude
         image_width: int = card_size.width.magnitude
 
@@ -504,7 +504,7 @@ class PageScene(QGraphicsScene):
         self.horizontal_cut_line_locations.clear()
         page_layout: PageLayoutSettings = self.document.page_layout
         for page_type in (PageType.UNDETERMINED, PageType.REGULAR, PageType.OVERSIZED):
-            card_size: CardSize = CardSizes.for_page_type(page_type)
+            card_size: CardSize = CardSize.for_page_type(page_type)
             self.horizontal_cut_line_locations[page_type] += self._compute_cut_marker_positions(CutMarkerParameters(
                 page_layout.page_height,
                 card_size.height, page_layout.compute_page_row_count(page_type),
