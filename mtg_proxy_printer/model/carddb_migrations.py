@@ -682,7 +682,6 @@ def _migrate_31_to_32(db: sqlite3.Connection):
 
 
 def _migrate_32_to_33(db: sqlite3.Connection):
-    # FIXME: VERIFY AFTER MERGE!
     ((view1,), (view2,)) = db.execute(textwrap.dedent("""\
         SELECT sql
           FROM sqlite_schema
@@ -690,6 +689,9 @@ def _migrate_32_to_33(db: sqlite3.Connection):
           AND type = 'view'
         """)).fetchall()
     for statement in [
+        "ROLLBACK\n",
+        "PRAGMA foreign_keys = OFF\n",
+        "BEGIN IMMEDIATE TRANSACTION",
         "DROP VIEW AllPrintings\n",
         "DROP VIEW VisiblePrintings\n",
         textwrap.dedent("""\
@@ -709,7 +711,7 @@ def _migrate_32_to_33(db: sqlite3.Connection):
           SELECT card_id, oracle_id, 'unknown' AS card_layout
           FROM Card
         """),
-        "DROP TABLE Card",
+        "DROP TABLE Card\n",
         "ALTER TABLE Card2 RENAME TO Card\n",
         textwrap.dedent("""\
         CREATE TABLE BackFace (
@@ -725,10 +727,13 @@ def _migrate_32_to_33(db: sqlite3.Connection):
               substr(scryfall_card_back_id, 1, 1), substr(scryfall_card_back_id, 2, 1), scryfall_card_back_id
             )) VIRTUAL
         );"""),
-        "ALTER TABLE Printing ADD COLUMN back_face_id INTEGER REFERENCES BackFace(back_face_id);",
-        "ALTER TABLE Printing ADD COLUMN card_layout TEXT NULL;",
+        "ALTER TABLE Printing ADD COLUMN back_face_id INTEGER REFERENCES BackFace(back_face_id);\n",
+        "ALTER TABLE Printing ADD COLUMN card_layout TEXT NULL;\n",
         view1,
         view2,
+        "COMMIT\n",
+        "PRAGMA foreign_keys = ON\n",
+        "BEGIN IMMEDIATE TRANSACTION\n",
     ]:
         db.execute(statement)
 
