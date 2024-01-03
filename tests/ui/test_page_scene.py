@@ -127,16 +127,6 @@ class CutLineLocationTestData(typing.NamedTuple):
     expected_horizontals: typing.List[int]
 
 
-def generate_test_cases_for_test_cut_line_locations_when_enabled() \
-        -> typing.Generator[CutLineLocationTestData, None, None]:
-    # Default A4 Page size in pixels: width=2480, height=3508
-
-    def arange(offset: int, size: int, count: int):
-        return [offset+size*item for item in range(count+1)]
-
-    # Odd page (0, the first page), same values regardless of duplex mode
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
 @pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0, 1], repeat=2))
 def test_cut_lines_property_only_lists_line_elements(
         qtbot: QtBot, page_scene: PageScene, row_spacing: int, column_spacing: int):
@@ -157,6 +147,18 @@ def test_cut_lines_property_only_lists_line_elements(
         only_contains(*page_scene.items()),
         "cut_lines mut not contain lines not present in the PageScene"
     )
+
+
+def generate_test_cases_for_test_cut_line_locations_when_enabled() \
+        -> typing.Generator[CutLineLocationTestData, None, None]:
+    # Default A4 Page size in pixels: width=2480, height=3508
+
+    def arange(offset: int, size: int, count: int):
+        return [offset+size*item for item in range(count+1)]
+
+    # Odd page (0, the first page), same values regardless of duplex mode
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
+    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
     yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
     yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
     yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
@@ -201,6 +203,7 @@ def test_cut_lines_property_only_lists_line_elements(
 
 @pytest.mark.parametrize("data", generate_test_cases_for_test_cut_line_locations_when_enabled())
 def test_cut_line_locations_when_enabled(qtbot, page_scene: PageScene, data: CutLineLocationTestData):
+    pytest.fail("MERGE WENT WRONG, TEST DISAPPEARED!")
 
 
 @pytest.mark.parametrize("row_spacing", [0, 1])
@@ -267,6 +270,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     (PageType.OVERSIZED, 0, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 2980]),
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 1502, 2992]),
     # TODO: Add cases for large bottom margin, pushing images up
+])
 def test_horizontal_cut_line_locations_when_enabled(
         qtbot: QtBot, page_scene: PageScene,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: typing.List):
@@ -275,14 +279,13 @@ def test_horizontal_cut_line_locations_when_enabled(
     document.page_layout.margin_top = margins
     document.page_layout.margin_bottom = 0
     document.page_layout.row_spacing = spacing
-    document.page_layout.image_spacing_horizontal = data.h_spacing
-    document.page_layout.image_spacing_vertical = data.v_spacing
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
         document.page_layout.compute_page_card_capacity(page_type), is_in((4, 9)),
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
+    if page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
             document.apply(
                 ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))

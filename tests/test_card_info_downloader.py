@@ -26,7 +26,7 @@ import pytest
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.card_info_downloader import SetWackinessScore
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
-from mtg_proxy_printer.units_and_sizes import UUID
+from mtg_proxy_printer.units_and_sizes import UUID, OptStr
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, load_json, assert_relation_is_empty, \
     fill_card_database_with_json_cards, CardDataType
@@ -102,14 +102,24 @@ class TestCaseData(UnpackMixin):
     # Implementation note: Implemented as a frozen dataclass,
     # because this is not meant to be fed directly into an _assert_* method expecting a list of tuples.
     json_name: str
-    layout: str
-    card_back_id: typing.Optional[str]
-    layout_override: typing.Optional[str] = None
-
     __test__ = False  # Instruct PyTest to not collect this as a Test class, even if the name starts with "Test"
 
     def db_card(self) -> typing.List[typing.Tuple[str, str, int]]:
         return [(self.oracle_id, self.layout, int(self.layout == "meld"))]
+
+    @property
+    def layout(self) -> str:
+        return self.json_dict["layout"]
+
+    @property
+    def card_back_id(self) -> typing.Optional[UUID]:
+        id_ = self.json_dict.get("card_back_id", None)
+        return UUID(id_) if id_ else None
+
+    @property
+    def layout_override(self) -> OptStr:
+        card = self.json_dict
+        return card["layout"] if "oracle_id" not in card else None
 
     @property
     def json_dict(self) -> CardDataType:
@@ -130,12 +140,12 @@ class TestCaseData(UnpackMixin):
 
     @property
     def scryfall_id(self) -> UUID:
-        return self.json_dict["id"]
+        return UUID(self.json_dict["id"])
 
     @property
     def oracle_id(self) -> UUID:
         card = self.json_dict
-        return card.get("oracle_id") or card["card_faces"][0]["oracle_id"]
+        return UUID(card.get("oracle_id") or card["card_faces"][0]["oracle_id"])
 
     @property
     def is_oversized(self) -> bool:
@@ -157,7 +167,6 @@ class TestCaseData(UnpackMixin):
     def set(self) -> DatabaseSetData:
         card = self.json_dict
         return DatabaseSetData(card["set"], card["set_name"], card["scryfall_set_uri"], card["released_at"])
-
 
     def db_set(self):
         return [self.set]
@@ -337,35 +346,51 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
             ):
         assert_relation_is_empty(card_db, filtered_view)
 
+
 def patch_test_case(test_case: TestCaseData, field: str, values: typing.Any) -> TestCaseData:
     data = dict(test_case)
     data[field] = values
     return TestCaseData(**data)
 
+
 def test_test_case_data():
     case = TestCaseData("oversized_card")
-    assert_that(  # FIXME: ADD BACK FACE ID
+    assert_that(
         case, has_properties({
             "highres_image": True,
             "language": "en",
             "collector_number": "28",
             "scryfall_id": "650722b4-d72b-4745-a1a5-00a34836282b",
             "oracle_id": "7e6b9b59-cd68-4e3c-827b-38833c92d6eb",
+            "back_face_id": "597b79b3-7d77-4261-871a-60dd17403388",
+            "layout": "normal",
             "is_oversized": True,
             "face_data": contains_exactly(
                 FaceData("Atraxa, Praetors' Voice", "https://cards.scryfall.io/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296", True)
             ),
             "set": DatabaseSetData("oc16", "Commander 2016 Oversized", "https://scryfall.com/sets/oc16?utm_source=api", "2016-11-11")
         })
-    ),
-    "oversized_card": TestCaseData(  # Oversized printing of "Atraxa, Praetors' Voice"
-        "oversized_card", True, (
+    )
+
+
 def generate_test_cases_for_test_card_import():
+    # TODO: Iterate over json_samples directory, and yield a case for each JSON in it?
+    # Then skip the cases with missing images (there are 1 or 2 in there)
+    yield TestCaseData("double_faced_card_without_top_level_oracle_id")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
     yield TestCaseData("non_english_double_faced_card")  # Chinese "Growing Rites of Itlimoc // Itlimoc, Cradle of the Sun"
     yield TestCaseData("split_card")  # Korean "Cut // Ribbons"
     yield TestCaseData("english_double_faced_art_series_card")  # English art series card "Clearwater Pathway // Clearwater Pathway"
     yield TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
-    yield TestCaseData("double_faced_card_without_top_level_oracle_id")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("meld_card")
+
+
+@pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
+def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
+    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
+    assert_visible_import(card_db, test_case)
+
+
+def generate_test_cases_for_test_download_filters():
     yield TestCaseData("depicting_racism"), "hide-cards-depicting-racism"  # German printing of "Crusade"
     yield TestCaseData("placeholder_image"), "hide-cards-without-images"  # Spanish printing of "Air Elemental"
     yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
@@ -389,50 +414,6 @@ def generate_test_cases_for_test_card_import():
     yield TestCaseData("borderless_card"), "hide-borderless"
     yield TestCaseData("extended_art"), "hide-extended-art"
     yield TestCaseData("double_faced_card_without_top_level_oracle_id"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
-    "meld_card": TestCaseData(
-        "meld_card", True, (
-            FaceData("Urza, Lord Protector", "https://cards.scryfall.io/png/front/8/a/8aefe8bd-216a-4ec1-9362-3f9dbf7fd083.png?1674421887", True),
-        ), DatabaseSetData("bro", "The Brothers' War", "https://scryfall.com/sets/bro?utm_source=api", "2022-11-18"),
-        "en", "225", "8aefe8bd-216a-4ec1-9362-3f9dbf7fd083", "df2af646-3e5b-43a3-8f3e-50565889f456", False, "meld",  "58a4215b-9f3d-40d4-bc05-d8d3cc2354d9",
-    )
-}
-
-
-def generate_test_cases_for_test_card_import():
-    yield CASE_DATA["non_english_double_faced_card"]
-    yield CASE_DATA["split_card"]
-    yield CASE_DATA["english_double_faced_art_series_card"]
-    yield CASE_DATA["regular_english_card"]
-    yield CASE_DATA["double_faced_card_without_top_level_oracle_id"]
-    yield CASE_DATA["meld_card"]
-
-
-@pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
-def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
-    fill_card_database_with_json_card(qtbot, card_db, test_case.json_name)
-    assert_visible_import(card_db, test_case)
-
-
-def generate_test_cases_for_test_download_filters():
-    yield CASE_DATA["depicting_racism"], "hide-cards-depicting-racism",
-    yield CASE_DATA["placeholder_image"], "hide-cards-without-images",
-    yield CASE_DATA["oversized_card"], "hide-oversized-cards",
-    yield CASE_DATA["funny_card_with_silver_border"], "hide-funny-cards",
-    yield CASE_DATA["funny_card_with_acorn_security_stamp"], "hide-funny-cards",
-    yield CASE_DATA["gold_bordered_card"], "hide-gold-bordered",
-    yield CASE_DATA["white_bordered_card"], "hide-white-bordered",
-    yield CASE_DATA["banned_in_brawl"], "hide-banned-in-brawl",
-    yield CASE_DATA["banned_in_commander"], "hide-banned-in-commander",
-    yield CASE_DATA["banned_in_historic"], "hide-banned-in-historic",
-    yield CASE_DATA["banned_in_legacy"], "hide-banned-in-legacy",
-    yield CASE_DATA["banned_in_modern"], "hide-banned-in-modern",
-    yield CASE_DATA["banned_in_pauper"], "hide-banned-in-pauper",
-    yield CASE_DATA["banned_in_penny"], "hide-banned-in-penny",
-    yield CASE_DATA["banned_in_pioneer"], "hide-banned-in-pioneer"
-    yield CASE_DATA["banned_in_standard"], "hide-banned-in-standard"
-    yield CASE_DATA["banned_in_vintage"], "hide-banned-in-vintage"
-    yield CASE_DATA["digital_only_card"], "hide-digital-cards"
-    yield CASE_DATA["digital_reprint"], "hide-digital-cards"
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
@@ -461,6 +442,8 @@ def test_set_code_filters(qtbot, card_db: CardDatabase, test_case: TestCaseData,
         assert_hidden_import(card_db, test_case)
     else:
         assert_visible_import(card_db, test_case)
+
+
 @pytest.mark.parametrize("filter_setting", [True, False])
 @pytest.mark.parametrize("test_case, filter_name", [
     (TestCaseData("funny_legal_card"), "hide-funny-cards"),  # Black-bordered, eternal-legal "Aerialephant" from Unfinity
@@ -572,23 +555,6 @@ def test_updates_changed_value_on_re_import(
     for item in dict_path[:-1]:
         to_patch = to_patch[item]
     assert_that(to_patch, is_(instance_of(dict)), "Setup failed: Walking path did not end in a dict to patch")
-def test_updates_release_date(qtbot, card_db: CardDatabase):
-    test_case = CASE_DATA["regular_english_card"]
-    sd = test_case.set
-    test_case = patch_test_case(
-        test_case, "set", DatabaseSetData(sd.set_code, sd.set_name, sd.set_uri, "2000-01-01"))
-    json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
-    with unittest.mock.patch.dict(json_data, {"released_at": test_case.set.release_date}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_visible_import(card_db, test_case)
-
-
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
-    with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
-        # Assert within patched context, so that it can see the changed data in the test case data.
-        assert_visible_import(card_db, test_case)
 
 
 @pytest.mark.parametrize("test_case, dict_path, value", [
@@ -611,7 +577,7 @@ def test_updates_ignores_changed_value_on_re_import(
 
 def test_updates_card_layout(qtbot, card_db: CardDatabase):
     test_case = patch_test_case(
-        CASE_DATA["regular_english_card"], "layout", "other")
+        TestCaseData("regular_english_card"), "layout", "other")
     json_data = load_json(test_case.json_name)
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(json_data, {"layout": test_case.layout}):
