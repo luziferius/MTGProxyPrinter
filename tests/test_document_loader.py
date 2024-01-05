@@ -35,11 +35,10 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 CardType = mtg_proxy_printer.model.document_loader.CardType
 
-
-@pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
-def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
-    empty_save_database.execute(f"PRAGMA user_version = {user_version};")
-    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(user_version))
+document_scripts: typing.List[typing.Tuple[int, str]] = [
+    (2, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, scryfall_id) VALUES 
+      (1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe'),
       (1, 2, '0000579f-7b35-4ed3-b44c-db2a538066fe');
     """)),
     (3, textwrap.dedent("""\
@@ -69,6 +68,42 @@ def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Conn
     ) VALUES (
       1, 297, 210, 7, 7, 7, 7, 
       1, 1, 0, 0);
+    """)),
+    (6, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id, type) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r');
+    INSERT INTO DocumentSettings (key, value) VALUES
+      ('page_height', 297),
+      ('page_width', 210),
+      ('margin_top', 7),
+      ('margin_bottom', 7),
+      ('margin_left', 7),
+      ('margin_right', 7),
+      ('row_spacing', 1),
+      ('column_spacing', 1),
+      ('daw_cut_markers', 0),
+      ('draw_sharp_corners', 0),
+      ('duplex_mode', 'off')
+    ;
+    """)),
+    (6, textwrap.dedent("""\
+    INSERT INTO CARD (page, slot, is_front, scryfall_id, type) VALUES 
+      (1, 1, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r'),
+      (1, 2, 1, '0000579f-7b35-4ed3-b44c-db2a538066fe', 'r');
+    INSERT INTO DocumentSettings (key, value) VALUES 
+      ('page_height', 297),
+      ('page_width', 210),
+      ('margin_top', 7),
+      ('margin_bottom', 7),
+      ('margin_left', 7),
+      ('margin_right', 7),
+      ('row_spacing', 1),
+      ('column_spacing', 1),
+      ('daw_cut_markers', 0),
+      ('draw_sharp_corners', 0),
+      ('duplex_mode', 'dfc-only')
+    ;
     """)),
     (6, textwrap.dedent("""\
     INSERT INTO CARD (page, slot, is_front, scryfall_id, type) VALUES 
@@ -122,11 +157,15 @@ def saved_document(request) -> sqlite3.Connection:
     return db
 
 
+@pytest.mark.parametrize("version", [-1, 0, 1, 7, 8])
+def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, version: int):
+    empty_save_database.execute(f"PRAGMA user_version = {version};")
+    assert_that(empty_save_database.execute("PRAGMA user_version").fetchone()[0], is_(version))
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
         mock.return_value = empty_save_database
         assert_that(
             calling(mtg_proxy_printer.model.document_loader.Worker._read_data_from_save_path).with_args(
-                "Value ignored by mock", "Value ignored by mock"),
+                "Value ignored by mock"),
             raises(AssertionError)
         )
         mock.assert_called_once()
@@ -152,7 +191,6 @@ def disabled_check_constraints(db: sqlite3.Connection):
 def test_valid_data_loads_correctly(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
         saved_document: sqlite3.Connection):
-        row_spacing=3, column_spacing=2,
     loader = document.loader
     save_path = pathlib.Path("/tmp/invalid.mtgproxies")
     with unittest.mock.patch(
