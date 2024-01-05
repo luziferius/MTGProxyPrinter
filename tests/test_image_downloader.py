@@ -24,9 +24,7 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
-import mtg_proxy_printer.model.imagedb
-
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, ImageDownloader
 
 CARD_IN_CACHE = ImageKey("scryfall_id", True, True)
 
@@ -49,9 +47,9 @@ def create_card_not_in_cache() -> Card:
 
 @pytest.fixture()
 def image_downloader(image_db: ImageDatabase):
-    image_db.quit_background_thread()
+    downloader = ImageDownloader(image_db)
     image_db.loaded_images[CARD_IN_CACHE] = image_db.blank_image
-    yield image_db.download_worker
+    yield downloader
 
 
 @pytest.mark.parametrize("action", [
@@ -247,7 +245,7 @@ def test__download_image_from_scryfall_moves_successful_downloaded_image_to_stor
             patch("mtg_proxy_printer.model.imagedb.shutil.move") as move_mock, \
             patch.object(image_downloader.image_database, "db_path") as db_path_mock, \
             patch.object(image_downloader, "read_from_url", return_value=(download_source_mock, MagicMock())):
-        image_downloader._download_image_from_scryfall(card, target_file_path)
+        image_downloader._download_from_scryfall(card, target_file_path)
     copy_mock.assert_called_once_with(download_source_mock, (db_path_mock/temp_file_path).open().__enter__())
     move_mock.assert_called_once_with(db_path_mock/temp_file_path, target_file_path)
 
@@ -265,7 +263,7 @@ def test__download_image_from_scryfall_does_not_move_image_to_storage_on_downloa
             patch("mtg_proxy_printer.model.imagedb.logger.exception") as logger_mock, \
             patch.object(image_downloader.image_database, "db_path") as db_path_mock, \
             patch.object(image_downloader, "read_from_url", return_value=(download_source_mock, MagicMock())):
-        image_downloader._download_image_from_scryfall(card, target_file_path)
+        image_downloader._download_from_scryfall(card, target_file_path)
     copy_mock.assert_called_once_with(download_source_mock, (db_path_mock/temp_file_path).open().__enter__())
     move_mock.assert_not_called()
     logger_mock.assert_called_once()

@@ -121,6 +121,7 @@ class ImageDatabase(QObject):
     batch_process_finished = Signal()
 
     request_action = Signal(DocumentAction)
+    missing_image_obtained = Signal(QModelIndex)
     missing_images_obtained = Signal()
     """
     Messages if the internal ImageDownloader instance performs a batch operation when it processes image requests for
@@ -141,7 +142,6 @@ class ImageDatabase(QObject):
         self.loaded_images: typing.Dict[ImageKey, QPixmap] = {}
         self.images_on_disk: typing.Set[ImageKey] = set()
         QThreadPool.globalInstance().start(InitOnDiskDataRunner(self.images_on_disk, db_path))
-        self.download_worker = ImageDownloader(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @property
@@ -313,6 +313,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         self.batch_processing_state_changed.connect(image_db.batch_processing_state_changed)
 
         self.request_action.connect(image_db.request_action)
+        self.missing_image_obtained.connect(image_db.missing_image_obtained)
         self.missing_images_obtained.connect(image_db.missing_images_obtained)
         self.network_error_occurred.connect(image_db.network_error_occurred)
 
