@@ -19,12 +19,13 @@ from pytestqt.qtbot import QtBot
 from PyQt5.QtGui import QPixmap, QColorConstants
 
 from mtg_proxy_printer.model.carddb import Card, CheckCard, MTGSet
-from mtg_proxy_printer.model.imagedb import IMAGE_SIZE
+from mtg_proxy_printer.units_and_sizes import CardSize
 
+# FIXME: Tests for oversized check cards?
 
 @pytest.fixture
 def blank_image(qtbot) -> QPixmap:
-    pixmap = QPixmap(IMAGE_SIZE)
+    pixmap = QPixmap(CardSize.REGULAR.as_qsize_px())
     pixmap.fill(QColorConstants.White)
     return pixmap
 
