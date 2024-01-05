@@ -112,7 +112,7 @@ class TestCaseData(UnpackMixin):
         return self.json_dict["layout"]
 
     @property
-    def card_back_id(self) -> typing.Optional[UUID]:
+    def back_face_id(self) -> typing.Optional[UUID]:
         id_ = self.json_dict.get("card_back_id", None)
         return UUID(id_) if id_ else None
 
@@ -198,13 +198,13 @@ class TestCaseData(UnpackMixin):
         return [
             DatabasePrintingData(
                 self.collector_number, self.scryfall_id, self.is_oversized, self.highres_image,
-                1 if self.card_back_id else None,
+                1 if self.back_face_id else None,
                 self.layout_override,
             )
         ]
 
     def db_back_face(self) -> typing.List[typing.Tuple[str]]:
-        return [(self.card_back_id,)] if self.card_back_id else []
+        return [(self.back_face_id,)] if self.back_face_id else []
 
     def as_card(self, face_id: int = 1) -> Card:
         cd = self.json_dict
