@@ -89,6 +89,7 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
 @pytest.fixture
 def document_light(qtbot) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock()
+    mock_image_db = unittest.mock.NonCallableMagicMock(spec=ImageDatabase)
     card_size = mtg_proxy_printer.units_and_sizes.CardSize.REGULAR.as_qsize_px()
     mock_image_db.blank_image = QPixmap(card_size)
     mock_image_db.blank_image.fill(QColor("white"))
