@@ -35,23 +35,23 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 DuplexMode = mtg_proxy_printer.settings.DuplexMode
+CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
     def __init__(self, parent: QWidget = None):
         super(PageConfigWidget, self).__init__(parent)
-        self.ui = Ui_PageConfigWidget()
-        self.ui.setupUi(self)
-        self.page_layout = self._setup_page_layout()
+        self.ui = ui = Ui_PageConfigWidget()
+        ui.setupUi(self)
+        self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_page_layout(self) -> PageLayoutSettings:
+    def _setup_page_layout(self, ui: Ui_PageConfigWidget) -> PageLayoutSettings:
         # Implementation note: The signal connections below will also trigger
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        ui = self.ui
         ui.duplex_mode.addItem("Disabled", DuplexMode.OFF)
         ui.duplex_mode.addItem("Double-faced cards only", DuplexMode.DFC_ONLY)
         ui.duplex_mode.addItem("Full", DuplexMode.FULL)
@@ -59,19 +59,19 @@ class PageConfigWidget(QGroupBox):
             lambda index: setattr(page_layout, "duplex_mode", tuple(DuplexMode)[index]))
         ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
         ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
-        self.ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
-        self.ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
+        ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
+        ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
         ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
         ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
         ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
         ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
         ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.CheckState.Checked))
+            lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
         ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked))
-        self.ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked))
-        self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == CheckState.Checked))
+        ui.draw_page_numbers.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
+        ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 
     @Slot()
@@ -103,7 +103,7 @@ class PageConfigWidget(QGroupBox):
             spinbox.setValue(documents_section.getint(setting))
         for checkbox, setting in self._get_boolean_settings_widgets():
             checkbox.setChecked(documents_section.getboolean(setting))
-        self.ui.duplex_mode.setCurrentIndex(tuple(DuplexMode).index(document_section["duplex-mode"]))
+        self.ui.duplex_mode.setCurrentIndex(tuple(DuplexMode).index(documents_section["duplex-mode"]))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
         logger.debug(f"Loading from settings finished")
@@ -168,4 +168,3 @@ class PageConfigWidget(QGroupBox):
             (self.ui.document_name, "default-document-name")
         ]
         return widgets_with_settings
-
