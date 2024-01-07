@@ -347,12 +347,6 @@ def assert_hidden_import(card_db: CardDatabase, test_case: TestCaseData):
         assert_relation_is_empty(card_db, filtered_view)
 
 
-def patch_test_case(test_case: TestCaseData, field: str, values: typing.Any) -> TestCaseData:
-    data = dict(test_case)
-    data[field] = values
-    return TestCaseData(**data)
-
-
 def test_test_case_data():
     case = TestCaseData("oversized_card")
     assert_that(
@@ -547,6 +541,7 @@ DataPath = typing.List[typing.Union[str, int]]
     (TestCaseData("regular_english_card"), ["oversized"], True),
     (TestCaseData("regular_english_card"), ["highres_image"], False),
     (TestCaseData("regular_english_card"), ["image_uris", "png"], "https://c1.scryfall.com/file/front/invalid.png"),
+    (TestCaseData("regular_english_card"), ["layout"], "other"),
 ])
 def test_updates_changed_value_on_re_import(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, dict_path: DataPath, value):
@@ -572,17 +567,6 @@ def test_updates_ignores_changed_value_on_re_import(
     fill_card_database_with_json_card(qtbot, card_db, json_data)
     with unittest.mock.patch.dict(to_patch, {dict_path[-1]: value}):
         fill_card_database_with_json_card(qtbot, card_db, json_data)
-    assert_visible_import(card_db, test_case)
-
-
-def test_updates_card_layout(qtbot, card_db: CardDatabase):
-    test_case = patch_test_case(
-        TestCaseData("regular_english_card"), "layout", "other")
-    json_data = load_json(test_case.json_name)
-    fill_card_database_with_json_card(qtbot, card_db, json_data)
-    with unittest.mock.patch.dict(json_data, {"layout": test_case.layout}):
-        fill_card_database_with_json_card(qtbot, card_db, json_data)
-    # Outside the patched context to validate against the original data.
     assert_visible_import(card_db, test_case)
 
 
