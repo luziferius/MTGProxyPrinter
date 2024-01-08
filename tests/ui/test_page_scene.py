@@ -117,16 +117,6 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_sc
     )
 
 
-class CutLineLocationTestData(typing.NamedTuple):
-    page_index: int
-    duplex_mode: DuplexMode
-    page_type: PageType
-    h_spacing: int
-    v_spacing: int
-    expected_verticals: typing.List[int]
-    expected_horizontals: typing.List[int]
-
-
 @pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0, 1], repeat=2))
 def test_cut_lines_property_only_lists_line_elements(
         qtbot: QtBot, page_scene: PageScene, row_spacing: int, column_spacing: int):
@@ -147,63 +137,6 @@ def test_cut_lines_property_only_lists_line_elements(
         only_contains(*page_scene.items()),
         "cut_lines mut not contain lines not present in the PageScene"
     )
-
-
-def generate_test_cases_for_test_cut_line_locations_when_enabled() \
-        -> typing.Generator[CutLineLocationTestData, None, None]:
-    # Default A4 Page size in pixels: width=2480, height=3508
-
-    def arange(offset: int, size: int, count: int):
-        return [offset+size*item for item in range(count+1)]
-
-    # Odd page (0, the first page), same values regardless of duplex mode
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, DuplexMode.OFF, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
-
-    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
-    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
-
-    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
-    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(0, DuplexMode.FULL, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
-    
-    # Even page (0, second page). Duplex mode other than OFF mirrors the page layout
-    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.UNDETERMINED, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.REGULAR, 0, 0, arange(83, 745, 3), arange(118, 1040, 3))
-    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.OVERSIZED, 0, 0, arange(83, 1040, 2), arange(118, 1490, 2))
-    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.UNDETERMINED, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.REGULAR, 1, 1, [83, 828, 840, 1585, 1597, 2342], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, DuplexMode.OFF, PageType.OVERSIZED, 1, 1, [83, 1123, 1135, 2175], [118, 1608, 1620, 3110])
-
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 0, 0, [317, 1357, 2397], arange(118, 1490, 2))
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 1, 1, [305, 1345, 1357, 2397], [118, 1608, 1620, 3110])
-
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 0, 0, [162, 907, 1652, 2397], arange(118, 1040, 3))
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 0, 0, [317, 1357, 2397], arange(118, 1490, 2))
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.UNDETERMINED, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.REGULAR, 1, 1, [138, 883, 895, 1640, 1652, 2397], [118, 1158, 1170, 2210, 2222, 3262])
-    yield CutLineLocationTestData(1, DuplexMode.DFC_ONLY, PageType.OVERSIZED, 1, 1, [305, 1345, 1357, 2397], [118, 1608, 1620, 3110])
-
-
-@pytest.mark.parametrize("data", generate_test_cases_for_test_cut_line_locations_when_enabled())
-def test_cut_line_locations_when_enabled(qtbot, page_scene: PageScene, data: CutLineLocationTestData):
-    pytest.fail("MERGE WENT WRONG, TEST DISAPPEARED!")
 
 
 @pytest.mark.parametrize("row_spacing", [0, 1])
@@ -271,11 +204,13 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490, 1502, 2992]),
     # TODO: Add cases for large bottom margin, pushing images up
 ])
+@pytest.mark.parametrize("duplex_mode", DuplexMode)
 def test_horizontal_cut_line_locations_when_enabled(
-        qtbot: QtBot, page_scene: PageScene,
+        qtbot: QtBot, page_scene: PageScene, duplex_mode: DuplexMode,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: typing.List):
     page_scene.render_mode |= flags
     document = page_scene.document
+    document.page_layout.duplex_mode = duplex_mode
     document.page_layout.margin_top = margins
     document.page_layout.margin_bottom = 0
     document.page_layout.row_spacing = spacing
@@ -287,8 +222,8 @@ def test_horizontal_cut_line_locations_when_enabled(
     )
     if page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(
-                ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
+            card = create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)
+            document.apply(ActionAddCard(card))
 
     assert_that(
         page_scene.horizontal_cut_line_locations[page_type],
@@ -349,11 +284,13 @@ def test_horizontal_cut_line_locations_when_enabled(
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1040, 1052, 2092]),
     # TODO: Add cases for large right margins pushing images to the left
 ])
+@pytest.mark.parametrize("duplex_mode", DuplexMode)
 def test_vertical_cut_line_locations_when_enabled(
-        qtbot: QtBot, page_scene: PageScene,
+        qtbot: QtBot, page_scene: PageScene, duplex_mode: DuplexMode,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: typing.List[float]):
     page_scene.render_mode |= flags
     document = page_scene.document
+    document.page_layout.duplex_mode = duplex_mode
     document.page_layout.margin_left = margins
     document.page_layout.margin_right = 0
     document.page_layout.column_spacing = spacing
@@ -365,8 +302,8 @@ def test_vertical_cut_line_locations_when_enabled(
     )
     if page_type is not PageType.UNDETERMINED:
         with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(
-                ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
+            card = create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)
+            document.apply(ActionAddCard(card))
 
     assert_that(
         page_scene.vertical_cut_line_locations[page_type],
@@ -420,11 +357,13 @@ def test_vertical_cut_line_locations_when_enabled(
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1052]),
     # TODO: Add cases for large right margins pushing images to the left
 ])
+@pytest.mark.parametrize("duplex_mode", DuplexMode)
 def test__compute_position_for_image_x(
-        qtbot: QtBot, page_scene: PageScene,
+        qtbot: QtBot, page_scene: PageScene, duplex_mode: DuplexMode,
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
+    document.page_layout.duplex_mode = duplex_mode
     document.page_layout.column_spacing = spacing
     document.page_layout.margin_left = margin
     document.page_layout.margin_right = 0
@@ -481,11 +420,13 @@ def elementwise_repeat(items: typing.Iterable, times: int) -> list:
     (PageType.OVERSIZED, 0, 23, RenderMode.IMPLICIT_MARGINS, [0, 1490]),
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1502]),
 ])
+@pytest.mark.parametrize("duplex_mode", DuplexMode)
 def test__compute_position_for_image_y(
-        qtbot: QtBot, page_scene: PageScene,
+        qtbot: QtBot, page_scene: PageScene, duplex_mode: DuplexMode,
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
+    document.page_layout.duplex_mode = duplex_mode
     document.page_layout.row_spacing = spacing
     document.page_layout.margin_top = margin
     document.page_layout.margin_bottom = 0
