@@ -149,11 +149,11 @@ class ActionAddCard(DocumentAction):
             target = f"to page {self.first_added_page+1}"
         else:
             # Cards added to multiple existing and/or new pages
-            pages = itertools.chain(
-                ((page + 1) for page, _ in self.added_cards_to_existing_pages),  # Existing pages, can be empty
-                range(self.first_added_page, self.first_added_page+self.added_new_pages)  # New pages, can be empty
-            )
-            page_ranges = ActionRemoveCards.to_list_of_ranges(pages)
+            existing_pages = ((page + 1) for page, _ in self.added_cards_to_existing_pages)
+            new_pages = range(self.first_added_page, self.first_added_page+self.added_new_pages) \
+                if self.first_added_page else []
+            all_pages = itertools.chain(existing_pages, new_pages)
+            page_ranges = to_list_of_ranges(all_pages)
             # Human-readable representation: pages are comma-separated,
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
             formatted_pages = ", ".join(
@@ -173,8 +173,7 @@ class ActionRemoveCards(DocumentAction):
         # The source of the input row sequence is a Qt multi-selection, which is unordered.
         # The individual selections are ordered, but the selection groups are not. To not break the algorithm,
         # if the user selects cards from bottom to top, the rows have to be sorted.
-        cards_to_remove = sorted(cards_to_remove)
-        self.card_ranges_to_remove = self.to_list_of_ranges(cards_to_remove)
+        self.card_ranges_to_remove = to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
         self.removed_cards: typing.List[typing.List[CardContainer]] = []
 
@@ -207,20 +206,21 @@ class ActionRemoveCards(DocumentAction):
         self.removed_cards.clear()
         return self
 
-    @staticmethod
-    def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
-        ranges: typing.List[typing.Tuple[int, int]] = []
-        sequence = itertools.chain(sequence, (sentinel := object(),))
-        lower = upper = next(sequence)
-        for item in sequence:
-            if item is sentinel or upper != item-1:
-                ranges.append((lower, upper))
-                lower = upper = item
-            else:
-                upper = item
-        return ranges
-
     @functools.cached_property
     def as_str(self):
         return f"Remove {sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)} " \
                f"from page {self.page_number+1}"
+
+
+def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
+    sequence = sorted(sequence)
+    ranges: typing.List[typing.Tuple[int, int]] = []
+    sequence = itertools.chain(sequence, (sentinel := object(),))
+    lower = upper = next(sequence)
+    for item in sequence:
+        if item is sentinel or upper != item-1:
+            ranges.append((lower, upper))
+            lower = upper = item
+        else:
+            upper = item
+    return ranges
