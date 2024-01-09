@@ -9,8 +9,9 @@
 
 ## Fixed issues
 
+- Fixed crash when adding multiple copies of a card distributes those cards on the current and next page.
 - Fixed multiple crashes that may have occurred in 0.26.0 when trying to run multiple actions in parallel,
-  like exporting a PDF, while simultaneously updating the printing filters. 
+  like exporting a PDF, while updating the printing filter settings runs simultaneously.
 
 # Version 0.26.0 (2023-12-19)  <a name="v0_26_0"></a>
 

@@ -149,11 +149,11 @@ class ActionAddCard(DocumentAction):
             target = f"to page {self.first_added_page+1}"
         else:
             # Cards added to multiple existing and/or new pages
-            pages = itertools.chain(
-                ((page + 1) for page, _ in self.added_cards_to_existing_pages),  # Existing pages, can be empty
-                range(self.first_added_page, self.first_added_page+self.added_new_pages)  # New pages, can be empty
-            )
-            page_ranges = ActionRemoveCards.to_list_of_ranges(pages)
+            existing_pages = ((page + 1) for page, _ in self.added_cards_to_existing_pages)
+            new_pages = range(self.first_added_page, self.first_added_page+self.added_new_pages) \
+                if self.first_added_page else []
+            all_pages = itertools.chain(existing_pages, new_pages)
+            page_ranges = ActionRemoveCards.to_list_of_ranges(all_pages)
             # Human-readable representation: pages are comma-separated,
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
             formatted_pages = ", ".join(
