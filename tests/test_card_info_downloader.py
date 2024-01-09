@@ -109,7 +109,8 @@ class TestCaseData(UnpackMixin):
 
     @property
     def layout(self) -> str:
-        return self.json_dict["layout"]
+        card = self.json_dict
+        return card["layout"] if "oracle_id" in card else card["card_faces"][0]["layout"]
 
     @property
     def back_face_id(self) -> typing.Optional[UUID]:
@@ -152,16 +153,15 @@ class TestCaseData(UnpackMixin):
         return self.json_dict["oversized"]
 
     @property
-    def face_data(self) -> typing.List[FaceData]:
+    def face_data(self) -> typing.Sequence[FaceData]:
         card = self.json_dict
         if faces := card.get("card_faces"):
-            result = []
             for face in faces:
                 name = face.get("printed_name", face["name"])
                 images = card.get("image_uris") or face["image_uris"]
-                result.append(FaceData(name, (png_uri := images["png"]), "/front/" in png_uri))
-            return result
-        return [FaceData(card.get("printed_name", card["name"]), card["image_uris"]["png"], True)]
+                yield FaceData(name, (png_uri := images["png"]), "/front/" in png_uri)
+        else:
+            yield FaceData(card.get("printed_name", card["name"]), card["image_uris"]["png"], True)
 
     @property
     def set(self) -> DatabaseSetData:
