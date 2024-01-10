@@ -124,8 +124,7 @@ def test_fill_document_action_image_with_not_yet_fetched_image(
 def test_fill_batch_document_action_image_with_cached_image(
         qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction):
     blank = image_downloader.image_database.blank_image
-    expected_signals = [image_downloader.batch_processing_state_changed] * 2 + [
-        image_downloader.download_finished, image_downloader.request_action]
+    expected_signals = [image_downloader.batch_processing_state_changed] * 2 + [image_downloader.request_action]
     with qtbot.wait_signals(expected_signals), \
             patch.object(image_downloader, "_download_from_scryfall") as _download_from_scryfall:
         image_downloader.fill_batch_document_action_images(action)
@@ -177,18 +176,28 @@ def test_obtain_missing_images(
     card1, card2 = create_card_not_in_cache(), create_card_not_in_cache()
     card1.image_file = card2.image_file = blank = image_downloader.image_database.blank_image
     new_image = blank.copy()
+    new_image.fill(Qt.GlobalColor.black)
+    to_fetch_image_file = qpixmap_to_bytes_io(new_image)
     ActionAddCard(card1).apply(document_light)
     ActionAddCard(card2).apply(document_light)
     page_index = document_light.index(0, 0)
     card_indices = [document_light.index(0, 0, page_index), document_light.index(1, 0, page_index)]
+
     expected_signals = [image_downloader.batch_processing_state_changed]*2 + [image_downloader.download_finished]
     with qtbot.wait_signals(expected_signals), \
-            patch.object(image_downloader, "_download_from_scryfall", return_value=new_image) as _download_from_scryfall:
+            patch.object(
+                image_downloader,
+                "read_from_url", return_value=(to_fetch_image_file, MagicMock())) as read_from_url:
         image_downloader.obtain_missing_images(card_indices)
     assert_that(
         document_light.pages[0],
         contains_exactly(
-            *[has_property("card", has_property("image_file", is_(same_instance(new_image))))]*len(card_indices),
+            *[has_property(
+                "card",
+                # TODO: PyQt5 cannot compare QPixmap instances. So only test for a different object being set.
+                #  With PySide6, use equal_to(new_image)
+                has_property("image_file", not_(same_instance(blank))))
+             ] * len(card_indices),
         )
     )
     assert_that(image_downloader.last_error_message, is_(empty()))
@@ -207,7 +216,7 @@ def test_error_during_single_download_relays_error_message(
         exception_class: ExceptionType, reason: str):
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
-    with patch.object(image_downloader, "_download_from_scryfall", side_effect=exception), \
+    with patch.object(image_downloader, "read_from_url", side_effect=exception), \
             qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param), \
             qtbot.wait_signal(image_downloader.download_finished):
         image_downloader.fill_document_action_image(action)
@@ -230,7 +239,7 @@ def test_error_during_batch_process_relays_error_message(
         exception_class: ExceptionType, reason: str):
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
-    with patch.object(image_downloader, "_download_from_scryfall", side_effect=exception), \
+    with patch.object(image_downloader, "read_from_url", side_effect=exception), \
             qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param), \
             qtbot.wait_signal(image_downloader.download_finished):
         image_downloader.fill_batch_document_action_images(action)
@@ -261,7 +270,7 @@ def test_obtain_missing_images_handles_network_error(
         image_downloader.network_error_occurred, image_downloader.missing_images_obtained,
         image_downloader.download_finished]
     with qtbot.wait_signals(expected_signals), \
-            patch.object(image_downloader, "_download_from_scryfall", side_effect=exception):
+            patch.object(image_downloader, "read_from_url", side_effect=exception):
         image_downloader.obtain_missing_images(card_indices)
     assert_that(
         document_light.pages[0],

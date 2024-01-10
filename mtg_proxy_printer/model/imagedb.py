@@ -389,17 +389,20 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
         image_path = self.image_database.db_path / key.format_relative_path()
         pixmap = self._load_from_memory(key) \
-            or self._load_from_disk(key, image_path) \
+            or self._load_from_disk(image_path) \
             or self._download_from_scryfall(card, image_path) \
             or self.image_database.blank_image
         if pixmap is not self.image_database.blank_image:
+            if key not in self.image_database.loaded_images:
+                self.image_database.loaded_images[key] = pixmap
+                self.image_database.images_on_disk.add(key)
             self._remove_outdated_low_resolution_image(card)
         card.set_image_file(pixmap)
 
     def _load_from_memory(self, key: ImageKey) -> OptionalPixmap:
         return self.image_database.loaded_images.get(key)
 
-    def _load_from_disk(self, key: ImageKey, image_path: pathlib.Path) -> OptionalPixmap:
+    def _load_from_disk(self, image_path: pathlib.Path) -> OptionalPixmap:
         if not self.should_run:
             return None
         logger.debug("Image not in memory, requesting from disk")
@@ -410,7 +413,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
                 image_path.unlink()
             else:
                 logger.debug("Image loaded from disk")
-                self.image_database.loaded_images[key] = pixmap
                 return pixmap
         return None
 
