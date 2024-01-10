@@ -275,7 +275,7 @@ def test__download_image_from_scryfall_moves_successful_downloaded_image_to_stor
 
 
 @pytest.mark.parametrize("error", [socket.timeout("Test reason"), urllib.error.URLError("Test reason")])
-^def test__download_image_from_scryfall_does_not_move_image_to_storage_on_download_failure(
+def test__download_image_from_scryfall_does_not_move_image_to_storage_on_download_failure(
         qtbot, image_downloader, error):
     image_downloader.should_run = True
     card = create_card_not_in_cache()
