@@ -14,25 +14,30 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import socket
+import typing
 import urllib.error
 from unittest.mock import patch, MagicMock
 
-import mtg_proxy_printer.model.imagedb
 import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 
+from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, ImageDownloader
 from mtg_proxy_printer.units_and_sizes import CardSize
 from .test_image_db import qpixmap_to_bytes_io
 
 CARD_IN_CACHE = ImageKey("scryfall_id", True, True)
+ExceptionType = typing.Type[Exception]
+# TODO: Improve type hinting. Distinguish between batch DocumentActions and non-batch actions.
+#  Maybe encode it directly in the type system?
 
 
 def create_card_in_cache() -> Card:
@@ -52,13 +57,14 @@ def create_card_not_in_cache() -> Card:
 
 
 @pytest.fixture
-def image_downloader(image_db: ImageDatabase):
-    downloader = ImageDownloader(image_db)
-    image_db.loaded_images[CARD_IN_CACHE] = image_db.blank_image
+def image_downloader(image_db: ImageDatabase) -> ImageDownloader:
+    downloader = ImageDownloader(image_db)  # TODO: Is it possible to use a MagicMock() here?
+    image_db.loaded_images[CARD_IN_CACHE] = image_db.blank_image  # TODO: And the blank_pixmap fixture here?
     yield downloader
 
+
 @pytest.fixture
-def blank_pixmap():
+def blank_pixmap() -> QPixmap:
     pixmap = QPixmap(CardSize.REGULAR.as_qsize_px())
     pixmap.fill(Qt.GlobalColor.white)
     return pixmap
@@ -68,7 +74,8 @@ def blank_pixmap():
     ActionAddCard(create_card_in_cache()),
     ActionReplaceCard(create_card_in_cache(), 1, 1),
 ])
-def test_fill_document_action_image_with_cached_image(qtbot: QtBot, image_downloader, action):
+def test_fill_document_action_image_with_cached_image(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction):
     with qtbot.wait_signal(image_downloader.request_action), \
             patch.object(image_downloader, "_download_from_scryfall") as _download_from_scryfall:
         image_downloader.fill_document_action_image(action)
@@ -83,7 +90,8 @@ def test_fill_document_action_image_with_cached_image(qtbot: QtBot, image_downlo
     ActionAddCard(create_card_not_in_cache()),
     ActionReplaceCard(create_card_not_in_cache(), 1, 1),
 ])
-def test_fill_document_action_image_with_not_yet_fetched_image(qtbot: QtBot, image_downloader, action):
+def test_fill_document_action_image_with_not_yet_fetched_image(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction):
     blank = image_downloader.image_database.blank_image
     card = action.card
     image_key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
@@ -113,7 +121,8 @@ def test_fill_document_action_image_with_not_yet_fetched_image(qtbot: QtBot, ima
 @pytest.mark.parametrize("action", [
     ActionImportDeckList([create_card_in_cache(), create_card_in_cache()], False),
 ])
-def test_fill_batch_document_action_image_with_cached_image(qtbot: QtBot, image_downloader, action):
+def test_fill_batch_document_action_image_with_cached_image(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction):
     blank = image_downloader.image_database.blank_image
     expected_signals = [image_downloader.batch_processing_state_changed] * 2 + [
         image_downloader.download_finished, image_downloader.request_action]
@@ -132,7 +141,8 @@ def test_fill_batch_document_action_image_with_cached_image(qtbot: QtBot, image_
 @pytest.mark.parametrize("action", [
     ActionImportDeckList([create_card_not_in_cache(), create_card_not_in_cache()], False),
 ])
-def test_fill_batch_document_action_image_with_not_yet_fetched_image(qtbot: QtBot, image_downloader, action):
+def test_fill_batch_document_action_image_with_not_yet_fetched_image(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction):
     card = action.cards[0]
     image_key = ImageKey(card.scryfall_id, card.is_front, card.highres_image)
     blank = image_downloader.image_database.blank_image
@@ -162,7 +172,8 @@ def test_fill_batch_document_action_image_with_not_yet_fetched_image(qtbot: QtBo
     )
 
 
-def test_obtain_missing_images(qtbot, image_downloader, document_light):
+def test_obtain_missing_images(
+        qtbot: QtBot, image_downloader: ImageDownloader, document_light: Document):
     card1, card2 = create_card_not_in_cache(), create_card_not_in_cache()
     card1.image_file = card2.image_file = blank = image_downloader.image_database.blank_image
     new_image = blank.copy()
@@ -191,7 +202,9 @@ def test_obtain_missing_images(qtbot, image_downloader, document_light):
     (urllib.error.URLError, "Test reason"),
     (socket.timeout, "Test error"),
 ])
-def test_error_during_single_download_relays_error_message(qtbot, image_downloader, action, exception_class, reason):
+def test_error_during_single_download_relays_error_message(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction,
+        exception_class: ExceptionType, reason: str):
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
     with patch.object(image_downloader, "_download_from_scryfall", side_effect=exception), \
@@ -212,7 +225,9 @@ def test_error_during_single_download_relays_error_message(qtbot, image_download
     (urllib.error.URLError, "Test reason"),
     (socket.timeout, "Test error"),
 ])
-def test_error_during_batch_process_relays_error_message(qtbot, image_downloader, action, exception_class, reason):
+def test_error_during_batch_process_relays_error_message(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction,
+        exception_class: ExceptionType, reason: str):
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
     with patch.object(image_downloader, "_download_from_scryfall", side_effect=exception), \
@@ -232,7 +247,9 @@ def test_error_during_batch_process_relays_error_message(qtbot, image_downloader
     (urllib.error.URLError, "Test reason"),
     (socket.timeout, "Test error"),
 ])
-def test_obtain_missing_images_handles_network_error(qtbot, image_downloader, document_light, exception_class, reason):
+def test_obtain_missing_images_handles_network_error(
+        qtbot: QtBot, image_downloader: ImageDownloader, document_light: Document,
+        exception_class: ExceptionType, reason: str):
     exception = exception_class(reason)
     card1, card2 = create_card_not_in_cache(), create_card_not_in_cache()
     card1.image_file = card2.image_file = blank = image_downloader.image_database.blank_image
@@ -255,7 +272,8 @@ def test_obtain_missing_images_handles_network_error(qtbot, image_downloader, do
     assert_that(image_downloader.last_error_message, is_(empty()))
 
 
-def test__download_image_from_scryfall_moves_successful_downloaded_image_to_storage(qtbot, blank_pixmap, image_downloader):
+def test__download_image_from_scryfall_moves_successful_downloaded_image_to_storage(
+        qtbot: QtBot, blank_pixmap: QPixmap, image_downloader: ImageDownloader):
     image_downloader.should_run = True
     card = create_card_not_in_cache()
     temp_file_path = image_downloader.image_database.db_path / f"{card.scryfall_id}.png"
@@ -276,7 +294,7 @@ def test__download_image_from_scryfall_moves_successful_downloaded_image_to_stor
 
 @pytest.mark.parametrize("error", [socket.timeout("Test reason"), urllib.error.URLError("Test reason")])
 def test__download_image_from_scryfall_does_not_move_image_to_storage_on_download_failure(
-        qtbot, image_downloader, error):
+        qtbot: QtBot, image_downloader: ImageDownloader, error: Exception):
     image_downloader.should_run = True
     card = create_card_not_in_cache()
     image_file = MagicMock()
