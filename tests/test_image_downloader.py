@@ -17,15 +17,19 @@ import socket
 import urllib.error
 from unittest.mock import patch, MagicMock
 
+import mtg_proxy_printer.model.imagedb
 import pytest
 from hamcrest import *
 from pytestqt.qtbot import QtBot
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtCore import Qt
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, ImageDownloader
+from mtg_proxy_printer.units_and_sizes import CardSize
 from .test_image_db import qpixmap_to_bytes_io
 
 CARD_IN_CACHE = ImageKey("scryfall_id", True, True)
@@ -47,11 +51,17 @@ def create_card_not_in_cache() -> Card:
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def image_downloader(image_db: ImageDatabase):
     downloader = ImageDownloader(image_db)
     image_db.loaded_images[CARD_IN_CACHE] = image_db.blank_image
     yield downloader
+
+@pytest.fixture
+def blank_pixmap():
+    pixmap = QPixmap(CardSize.REGULAR.as_qsize_px())
+    pixmap.fill(Qt.GlobalColor.white)
+    return pixmap
 
 
 @pytest.mark.parametrize("action", [
@@ -245,35 +255,39 @@ def test_obtain_missing_images_handles_network_error(qtbot, image_downloader, do
     assert_that(image_downloader.last_error_message, is_(empty()))
 
 
-def test__download_image_from_scryfall_moves_successful_downloaded_image_to_storage(qtbot, image_downloader):
+def test__download_image_from_scryfall_moves_successful_downloaded_image_to_storage(qtbot, blank_pixmap, image_downloader):
     image_downloader.should_run = True
     card = create_card_not_in_cache()
-    download_source_mock = MagicMock()
     temp_file_path = image_downloader.image_database.db_path / f"{card.scryfall_id}.png"
     target_file_path = MagicMock()
+    source_file = MagicMock()
     with patch("mtg_proxy_printer.model.imagedb.shutil.copyfileobj",) as copy_mock, \
             patch("mtg_proxy_printer.model.imagedb.shutil.move") as move_mock, \
+            patch("mtg_proxy_printer.model.imagedb.logger.exception") as logger_mock, \
+            patch("mtg_proxy_printer.model.imagedb.QPixmap", return_value=blank_pixmap) as qpixmap_mock, \
             patch.object(image_downloader.image_database, "db_path") as db_path_mock, \
-            patch.object(image_downloader, "read_from_url", return_value=(download_source_mock, MagicMock())):
+            patch.object(image_downloader, "read_from_url", return_value=(source_file, MagicMock())):
         image_downloader._download_from_scryfall(card, target_file_path)
-    copy_mock.assert_called_once_with(download_source_mock, (db_path_mock/temp_file_path).open().__enter__())
+    copy_mock.assert_called_once_with(source_file, (db_path_mock/temp_file_path).open().__enter__())
+    logger_mock.assert_not_called()
     move_mock.assert_called_once_with(db_path_mock/temp_file_path, target_file_path)
+    qpixmap_mock.assert_called_once()
 
 
 @pytest.mark.parametrize("error", [socket.timeout("Test reason"), urllib.error.URLError("Test reason")])
-def test__download_image_from_scryfall_does_not_move_image_to_storage_on_download_failure(
+^def test__download_image_from_scryfall_does_not_move_image_to_storage_on_download_failure(
         qtbot, image_downloader, error):
     image_downloader.should_run = True
     card = create_card_not_in_cache()
-    download_source_mock = MagicMock()
+    image_file = MagicMock()
     temp_file_path = image_downloader.image_database.db_path / f"{card.scryfall_id}.png"
     target_file_path = MagicMock()
     with patch("mtg_proxy_printer.model.imagedb.shutil.copyfileobj", side_effect=error) as copy_mock, \
             patch("mtg_proxy_printer.model.imagedb.shutil.move") as move_mock, \
             patch("mtg_proxy_printer.model.imagedb.logger.exception") as logger_mock, \
             patch.object(image_downloader.image_database, "db_path") as db_path_mock, \
-            patch.object(image_downloader, "read_from_url", return_value=(download_source_mock, MagicMock())):
+            patch.object(image_downloader, "read_from_url", return_value=(image_file, MagicMock())):
         image_downloader._download_from_scryfall(card, target_file_path)
-    copy_mock.assert_called_once_with(download_source_mock, (db_path_mock/temp_file_path).open().__enter__())
+    copy_mock.assert_called_once_with(image_file, (db_path_mock/temp_file_path).open().__enter__())
     move_mock.assert_not_called()
     logger_mock.assert_called_once()
