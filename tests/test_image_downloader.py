@@ -234,7 +234,6 @@ def test_error_before_single_download_relays_error_message(
         action.card.image_file,
         is_(same_instance(blank)),
     )
-    assert_that(image_downloader.last_error_message, is_(empty()))
 
 
 @pytest.mark.parametrize("action", [
@@ -258,7 +257,6 @@ def test_error_during_single_download_relays_error_message(
         action.card.image_file,
         is_(same_instance(blank)),
     )
-    assert_that(image_downloader.last_error_message, is_(empty()))
 
 
 @pytest.mark.parametrize("action", [
@@ -283,7 +281,6 @@ def test_error_during_batch_process_relays_error_message(
             *[has_property("image_file", is_(same_instance(blank)))] * len(action.cards),
         )
     )
-    assert_that(image_downloader.last_error_message, is_(empty()))
 
 
 @pytest.mark.parametrize("exception_class, reason", [
@@ -312,7 +309,6 @@ def test_obtain_missing_images_handles_network_error(
             *[has_property("card", has_property("image_file", is_(same_instance(blank))))]*len(card_indices),
         )
     )
-    assert_that(image_downloader.last_error_message, is_(empty()))
 
 
 def test__download_image_from_scryfall_moves_successful_downloaded_image_to_storage(
@@ -348,7 +344,9 @@ def test__download_image_from_scryfall_does_not_move_image_to_storage_on_downloa
             patch("mtg_proxy_printer.model.imagedb.logger.exception") as logger_mock, \
             patch.object(image_downloader.image_database, "db_path") as db_path_mock, \
             patch.object(image_downloader, "read_from_url", return_value=(image_file, MagicMock())):
-        image_downloader._download_from_scryfall(card, target_file_path)
+        assert_that(
+            calling(image_downloader._download_from_scryfall).with_args(card, target_file_path),
+            raises(error.__class__))
     copy_mock.assert_called_once_with(image_file, (db_path_mock/temp_file_path).open().__enter__())
     move_mock.assert_not_called()
     logger_mock.assert_called_once()

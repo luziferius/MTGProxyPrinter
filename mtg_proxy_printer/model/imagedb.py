@@ -379,9 +379,11 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             else:
                 self._fetch_and_set_image(card)
         except urllib.error.URLError as e:
+            card.image_file = self.image_database.blank_image
             self.last_error_message = self._handle_network_error_during_download(
                 card, str(e.reason))
         except socket.timeout as e:
+            card.image_file = self.image_database.blank_image
             self.last_error_message = self._handle_network_error_during_download(
                 card, f"Reading from socket failed: {e}")
 
@@ -450,9 +452,8 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         except Exception as e:
             logger.exception(e)
             logger.info("Download aborted, not moving potentially incomplete download into the cache.")
-            # TODO: handle batch processing
-            self.network_error_occurred.emit(f"{e}")
             download_path.unlink(missing_ok=True)
+            raise e
         else:
             logger.debug(f"Moving downloaded image into the image cache at {image_path}")
             shutil.move(download_path, image_path)
