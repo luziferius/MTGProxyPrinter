@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>page_configuration_group_box</class>
- <widget class="QGroupBox" name="page_configuration_group_box">
+ <class>PageConfigWidget</class>
+ <widget class="QGroupBox" name="PageConfigWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -14,36 +14,7 @@
    <string>Default settings for new documents</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="21" column="3">
-    <widget class="QSpinBox" name="image_spacing_vertical">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space above and below images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="16" column="1">
-    <widget class="QLabel" name="margin_bottom_label">
-     <property name="text">
-      <string>Bottom Margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_bottom</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="19" column="3">
+   <item row="25" column="3">
     <widget class="QSpinBox" name="margin_right">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -62,18 +33,8 @@
      </property>
     </widget>
    </item>
-   <item row="18" column="1">
-    <widget class="QLabel" name="margin_left_label">
-     <property name="text">
-      <string>Left margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_left</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="12" column="3">
-    <widget class="QSpinBox" name="page_height">
+   <item row="20" column="3">
+    <widget class="QSpinBox" name="page_width">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -81,7 +42,9 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>Default paper height in millimeters</string>
+      <string>Paper width in millimeters.
+Must match the size of the sheets in the printer.
+Otherwise, scaling may be applied by the printer driver.</string>
      </property>
      <property name="suffix">
       <string> mm</string>
@@ -91,27 +54,163 @@
      </property>
     </widget>
    </item>
-   <item row="14" column="1">
-    <widget class="QLabel" name="page_width_label">
+   <item row="0" column="1">
+    <widget class="QLabel" name="document_name_label">
      <property name="text">
-      <string>Page width</string>
+      <string>Document name</string>
      </property>
      <property name="buddy">
-      <cstring>page_width</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="20" column="1">
-    <widget class="QLabel" name="image_spacing_horizontal_label">
-     <property name="text">
-      <string>Horizontal image spacing</string>
-     </property>
-     <property name="buddy">
-      <cstring>image_spacing_horizontal</cstring>
+      <cstring>document_name</cstring>
      </property>
     </widget>
    </item>
    <item row="18" column="3">
+    <widget class="QSpinBox" name="page_height">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Paper height in millimeters.
+Must match the size of the sheets in the printer.
+Otherwise, scaling may be applied by the printer driver.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="27" column="3">
+    <widget class="QSpinBox" name="column_spacing">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Space between image columns in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="3">
+    <widget class="QSpinBox" name="margin_top">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="27" column="1">
+    <widget class="QLabel" name="column_spacing_label">
+     <property name="text">
+      <string>Column spacing</string>
+     </property>
+     <property name="buddy">
+      <cstring>column_spacing</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="28" column="3">
+    <widget class="QLabel" name="page_capacity">
+     <property name="toolTip">
+      <string>Number of regular-size cards fitting on each page,
+based on the page size and spacings configured</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="22" column="1">
+    <widget class="QLabel" name="margin_bottom_label">
+     <property name="text">
+      <string>Bottom Margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_bottom</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="26" column="1">
+    <widget class="QLabel" name="row_spacing_label">
+     <property name="text">
+      <string>Row spacing</string>
+     </property>
+     <property name="buddy">
+      <cstring>row_spacing</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="1" colspan="3">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="1">
+    <widget class="QLabel" name="margin_top_label">
+     <property name="text">
+      <string>Top margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_top</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="28" column="1">
+    <widget class="QLabel" name="page_capacity_label">
+     <property name="text">
+      <string>Resulting page capacity:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="18" column="1">
+    <widget class="QLabel" name="page_height_label">
+     <property name="text">
+      <string>Page height</string>
+     </property>
+     <property name="buddy">
+      <cstring>page_height</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="3">
+    <widget class="QCheckBox" name="draw_page_numbers">
+     <property name="toolTip">
+      <string>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</string>
+     </property>
+     <property name="text">
+      <string>Print page numbers</string>
+     </property>
+    </widget>
+   </item>
+   <item row="24" column="3">
     <widget class="QSpinBox" name="margin_left">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -130,7 +229,53 @@
      </property>
     </widget>
    </item>
-   <item row="16" column="3">
+   <item row="3" column="3">
+    <widget class="QCheckBox" name="draw_sharp_corners">
+     <property name="text">
+      <string>Draw 90° card corners, instead of round ones</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QLineEdit" name="document_name">
+     <property name="toolTip">
+      <string>The document name is printed on each page and can help you keeping track
+of different printed sheets and to which deck they belong.
+
+Leave empty to disable.</string>
+     </property>
+     <property name="maxLength">
+      <number>200</number>
+     </property>
+     <property name="placeholderText">
+      <string>Document/deck name</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="20" column="1">
+    <widget class="QLabel" name="page_width_label">
+     <property name="text">
+      <string>Page width</string>
+     </property>
+     <property name="buddy">
+      <cstring>page_width</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="24" column="1">
+    <widget class="QLabel" name="margin_left_label">
+     <property name="text">
+      <string>Left margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_left</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="22" column="3">
     <widget class="QSpinBox" name="margin_bottom">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -150,135 +295,6 @@
     </widget>
    </item>
    <item row="2" column="3">
-    <widget class="QCheckBox" name="draw_sharp_corners">
-     <property name="text">
-      <string>Draw 90° card corners, instead of round ones</string>
-     </property>
-    </widget>
-   </item>
-   <item row="22" column="1">
-    <widget class="QLabel" name="page_capacity_label">
-     <property name="text">
-      <string>Resulting page capacity:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="14" column="3">
-    <widget class="QSpinBox" name="page_width">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>Default paper width in millimeters</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="15" column="1">
-    <widget class="QLabel" name="margin_top_label">
-     <property name="text">
-      <string>Top margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_top</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="1" colspan="3">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="21" column="1">
-    <widget class="QLabel" name="image_spacing_vertical_label">
-     <property name="text">
-      <string>Vertical image spacing</string>
-     </property>
-     <property name="buddy">
-      <cstring>image_spacing_vertical</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="12" column="1">
-    <widget class="QLabel" name="page_height_label">
-     <property name="text">
-      <string>Page height</string>
-     </property>
-     <property name="buddy">
-      <cstring>page_height</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="15" column="3">
-    <widget class="QSpinBox" name="margin_top">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="19" column="1">
-    <widget class="QLabel" name="margin_right_label">
-     <property name="text">
-      <string>Right margin</string>
-     </property>
-     <property name="buddy">
-      <cstring>margin_right</cstring>
-     </property>
-    </widget>
-   </item>
-   <item row="22" column="3">
-    <widget class="QLabel" name="page_capacity">
-     <property name="toolTip">
-      <string>Number of regular-size cards fitting on each page,
-based on the page size and spacings configured</string>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="20" column="3">
-    <widget class="QSpinBox" name="image_spacing_horizontal">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Space left and right of images. Images are this many millimeters apart.&lt;/p&gt;&lt;p&gt;If set to zero, you only need one cut to separate two images, otherwise you need two cuts but require less precision hitting the exact middle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="suffix">
-      <string> mm</string>
-     </property>
-     <property name="maximum">
-      <number>10000</number>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="3">
     <widget class="QCheckBox" name="draw_cut_markers">
      <property name="toolTip">
       <string>Enable printing additional lines to aid cutting the printed sheets.</string>
@@ -288,10 +304,41 @@ based on the page size and spacings configured</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="3">
+   <item row="25" column="1">
+    <widget class="QLabel" name="margin_right_label">
+     <property name="text">
+      <string>Right margin</string>
+     </property>
+     <property name="buddy">
+      <cstring>margin_right</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="26" column="3">
+    <widget class="QSpinBox" name="row_spacing">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Space between image rows in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</string>
+     </property>
+     <property name="suffix">
+      <string> mm</string>
+     </property>
+     <property name="maximum">
+      <number>10000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="3">
     <widget class="QComboBox" name="duplex_mode"/>
    </item>
-   <item row="3" column="1">
+   <item row="4" column="1">
     <widget class="QLabel" name="duplex_mode_label">
      <property name="text">
       <string>Duplex mode</string>
@@ -304,27 +351,31 @@ based on the page size and spacings configured</string>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>document_name</tabstop>
+  <tabstop>draw_page_numbers</tabstop>
   <tabstop>draw_cut_markers</tabstop>
+  <tabstop>draw_sharp_corners</tabstop>
+  <tabstop>duplex_mode</tabstop>
   <tabstop>page_height</tabstop>
   <tabstop>page_width</tabstop>
   <tabstop>margin_top</tabstop>
   <tabstop>margin_bottom</tabstop>
   <tabstop>margin_left</tabstop>
   <tabstop>margin_right</tabstop>
-  <tabstop>image_spacing_horizontal</tabstop>
-  <tabstop>image_spacing_vertical</tabstop>
+  <tabstop>row_spacing</tabstop>
+  <tabstop>column_spacing</tabstop>
  </tabstops>
  <resources/>
  <connections>
   <connection>
    <sender>page_height</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>160</y>
+     <x>361</x>
+     <y>212</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -335,12 +386,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>page_height</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>160</y>
+     <x>361</x>
+     <y>212</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -351,12 +402,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>page_width</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>196</y>
+     <x>361</x>
+     <y>246</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -367,12 +418,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>page_width</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>196</y>
+     <x>361</x>
+     <y>246</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -383,12 +434,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_top</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>232</y>
+     <x>361</x>
+     <y>279</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -399,12 +450,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_top</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>232</y>
+     <x>361</x>
+     <y>279</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -415,12 +466,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_bottom</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>268</y>
+     <x>361</x>
+     <y>312</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -431,12 +482,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_bottom</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>268</y>
+     <x>361</x>
+     <y>312</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -447,12 +498,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_left</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>304</y>
+     <x>361</x>
+     <y>345</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -463,12 +514,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_left</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>304</y>
+     <x>361</x>
+     <y>345</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -479,12 +530,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_right</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>340</y>
+     <x>361</x>
+     <y>379</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -495,12 +546,12 @@ based on the page size and spacings configured</string>
   <connection>
    <sender>margin_right</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>340</y>
+     <x>361</x>
+     <y>379</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>
@@ -509,45 +560,13 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>image_spacing_horizontal</sender>
+   <sender>row_spacing</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>validate_paper_size_settings()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
-     <y>376</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>image_spacing_horizontal</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
-   <slot>page_layout_setting_changed()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>367</x>
-     <y>376</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>image_spacing_vertical</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
-   <slot>validate_paper_size_settings()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>367</x>
+     <x>361</x>
      <y>412</y>
     </hint>
     <hint type="destinationlabel">
@@ -557,14 +576,46 @@ based on the page size and spacings configured</string>
    </hints>
   </connection>
   <connection>
-   <sender>image_spacing_vertical</sender>
+   <sender>row_spacing</sender>
    <signal>valueChanged(int)</signal>
-   <receiver>page_configuration_group_box</receiver>
+   <receiver>PageConfigWidget</receiver>
    <slot>page_layout_setting_changed()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>367</x>
+     <x>361</x>
      <y>412</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>column_spacing</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>PageConfigWidget</receiver>
+   <slot>validate_paper_size_settings()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>361</x>
+     <y>445</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>20</x>
+     <y>20</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>column_spacing</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>PageConfigWidget</receiver>
+   <slot>page_layout_setting_changed()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>361</x>
+     <y>445</y>
     </hint>
     <hint type="destinationlabel">
      <x>20</x>

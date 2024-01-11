@@ -1,19 +1,19 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
+from typing import Union, Type, Optional
 
 from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
@@ -31,11 +31,11 @@ logger = get_logger(__name__)
 del get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget as Ui_vertical
-    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget as Ui_horizontal
+    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget_Vertical
+    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget_Horizontal
 except ModuleNotFoundError:
-    Ui_vertical = load_ui_from_file("add_card_widget/vertical")
-    Ui_horizontal = load_ui_from_file("add_card_widget/horizontal")
+    Ui_AddCardWidget_Vertical = load_ui_from_file("add_card_widget/vertical")
+    Ui_AddCardWidget_Horizontal = load_ui_from_file("add_card_widget/horizontal")
 
 
 __all__ = [
@@ -44,7 +44,7 @@ __all__ = [
     "HorizontalAddCardWidget",
 ]
 
-UiTypes = typing.Union[typing.Type[Ui_horizontal], typing.Type[Ui_horizontal]]
+UiTypes = Union[Type[Ui_AddCardWidget_Vertical], Type[Ui_AddCardWidget_Horizontal]]
 
 
 class AddCardWidget(QWidget):
@@ -192,7 +192,7 @@ class AddCardWidget(QWidget):
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         logger.debug("About to set the card database")
         self.card_database = card_db
-        card_db.card_filter_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
+        card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         languages = self.card_database.get_all_languages()
         if not languages:
@@ -252,7 +252,7 @@ class AddCardWidget(QWidget):
         return self.ui.language_combo_box.currentText()
 
     @property
-    def current_card_name(self) -> typing.Optional[str]:
+    def current_card_name(self) -> Optional[str]:
         selected = self.ui.card_name_list.selectedIndexes()
         if selected:
             return selected[0].data(Qt.DisplayRole)
@@ -260,7 +260,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_set_name(self) -> typing.Optional[str]:
+    def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
             return selected[0].data(Qt.EditRole)
@@ -268,7 +268,7 @@ class AddCardWidget(QWidget):
             return None
 
     @property
-    def current_collector_number(self) -> typing.Optional[str]:
+    def current_collector_number(self) -> Optional[str]:
         selected = self.ui.collector_number_list.selectedIndexes()
         if selected:
             return selected[0].data(Qt.DisplayRole)
@@ -279,9 +279,9 @@ class AddCardWidget(QWidget):
 class VerticalAddCardWidget(AddCardWidget):
 
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_vertical, parent)
+        super().__init__(Ui_AddCardWidget_Vertical, parent)
 
 
 class HorizontalAddCardWidget(AddCardWidget):
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_horizontal, parent)
+        super().__init__(Ui_AddCardWidget_Horizontal, parent)

@@ -2,26 +2,28 @@
   "object": "card",
   "id": "7a7640d4-72e0-42e4-96ea-eaedc7ffb304",
   "oracle_id": "9fb2f004-96a4-49ba-9f62-ba60fa27c895",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+    548227
+  ],
   "arena_id": 79906,
   "name": "Angel of Eternal Dawn",
   "lang": "en",
   "released_at": "2021-12-09",
   "uri": "https://api.scryfall.com/cards/7a7640d4-72e0-42e4-96ea-eaedc7ffb304",
-  "scryfall_uri": "https://scryfall.com/card/y22/1/angel-of-eternal-dawn?utm_source=api",
+  "scryfall_uri": "https://scryfall.com/card/ymid/1/angel-of-eternal-dawn?utm_source=api",
   "layout": "normal",
   "highres_image": false,
   "image_status": "lowres",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1645416649",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1645416649",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1645416649",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.png?1645416649",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1645416649",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1645416649"
+    "small": "https://cards.scryfall.io/small/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1680464977",
+    "normal": "https://cards.scryfall.io/normal/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1680464977",
+    "large": "https://cards.scryfall.io/large/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1680464977",
+    "png": "https://cards.scryfall.io/png/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.png?1680464977",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1680464977",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/7/a/7a7640d4-72e0-42e4-96ea-eaedc7ffb304.jpg?1680464977"
   },
   "mana_cost": "{2}{W}",
-  "cmc": 3,
+  "cmc": 3.0,
   "type_line": "Creature — Angel",
   "oracle_text": "Flying\nWhen Angel of Eternal Dawn enters the battlefield, it becomes day.\nIt can't become night.\nYour opponents can't cast spells with mana value greater than the number of turns they have begun.",
   "power": "2",
@@ -41,19 +43,22 @@
     "historic": "legal",
     "gladiator": "legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "not_legal",
     "legacy": "not_legal",
     "pauper": "not_legal",
     "vintage": "not_legal",
     "penny": "not_legal",
     "commander": "not_legal",
+    "oathbreaker": "not_legal",
     "brawl": "not_legal",
     "historicbrawl": "legal",
-    "alchemy": "legal",
+    "alchemy": "not_legal",
     "paupercommander": "not_legal",
     "duel": "not_legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "arena"
@@ -69,12 +74,12 @@
   "reprint": false,
   "variation": false,
   "set_id": "8a673262-8745-452d-820a-03d5c4a4f135",
-  "set": "y22",
+  "set": "ymid",
   "set_name": "Alchemy: Innistrad",
   "set_type": "alchemy",
   "set_uri": "https://api.scryfall.com/sets/8a673262-8745-452d-820a-03d5c4a4f135",
-  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Ay22&unique=prints",
-  "scryfall_set_uri": "https://scryfall.com/sets/y22?utm_source=api",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aymid&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/ymid?utm_source=api",
   "rulings_uri": "https://api.scryfall.com/cards/7a7640d4-72e0-42e4-96ea-eaedc7ffb304/rulings",
   "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A9fb2f004-96a4-49ba-9f62-ba60fa27c895&unique=prints",
   "collector_number": "1",
@@ -93,6 +98,9 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
+  "promo_types": [
+    "alchemy"
+  ],
   "preview": {
     "source": "Amy the Amazonian",
     "source_uri": "https://twitter.com/coL_Amazonian/status/1466897032015228930",
@@ -107,9 +115,9 @@
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Angel+of+Eternal+Dawn&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Angel+of+Eternal+Dawn&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Angel+of+Eternal+Dawn",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Angel+of+Eternal+Dawn"
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=548227&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAngel%2Bof%2BEternal%2BDawn",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAngel%2Bof%2BEternal%2BDawn",
+    "edhrec": "https://edhrec.com/route/?cc=Angel+of+Eternal+Dawn"
   }
 }

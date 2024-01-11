@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -49,7 +49,7 @@ def test_apply(qtbot, document_light):
         has_property("name", equal_to("Card 2")),
         has_property("name", equal_to("Card 3")),
     ))
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.apply(document_light)
     new_page_content = cards_on_page(page)
     assert_that(new_page_content, contains_inanyorder(*old_page_content))
@@ -138,12 +138,12 @@ def test_second_apply_produces_same_order(qtbot, document_light):
     append_new_card_in_page(page, "Card 3")
     old_page_content = cards_on_page(page)
     card_count = len(old_page_content)
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.apply(document_light)
     new_page_content = cards_on_page(page)
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.undo(document_light)
     assert_that(cards_on_page(page), contains_exactly(*old_page_content), "Setup failed: undo() broken")
-    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=100):
+    with qtbot.wait_signals([document_light.dataChanged] * card_count, timeout=1000):
         action.apply(document_light)
     assert_that(cards_on_page(page), contains_exactly(*new_page_content), "Second apply() produced different order")

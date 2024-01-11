@@ -33,7 +33,8 @@ dependencies = [
     "PyQt5",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
-    "pint",
+    "pint < 0.22; platform_system == 'windows'",  # 0.22 dropped Py 3.8 support, thus Win7 support
+    "pint; platform_system != 'windows'",
     "delegateto == 1.5",
     "PyHamcrest >= 1.8.1",
     "truststore; python_version >= '3.10'",
@@ -86,8 +87,8 @@ legacy_tox_ini = """
 minversion = 3.18
 
 envlist = 
-    py3-{unit_tests, test_create_bundle}-{windows, linux}
-
+    py3-unit_tests-platformdirs{26,33}-{windows, linux}
+    py3-test_create_bundle-{windows, linux}
 
 [testenv]
 skip_install = True
@@ -100,16 +101,20 @@ platform =
 
 
 allowlist_externals =
+    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
 
 
 deps =
     platformdirs >= 2.6.0
+    platformdirs26: platformdirs == 2.6
+    platformdirs33: platformdirs >= 3.3.0
     build
     PyQt5
     ijson >= 3.1.0; python_version < '3.11'
     ijson >= 3.2.0; python_version >= '3.11'
-    pint
+    pint < 0.22; platform_system == 'windows'
+    pint; platform_system != 'windows'
     delegateto == 1.5
     PyHamcrest >= 1.8.1
     truststore; python_version >= '3.10'
@@ -127,7 +132,7 @@ test_deps =
     {[testenv]build_deps}
 
 
-[testenv:py3-unit_tests-{windows, linux}]
+[testenv:py3-unit_tests-platformdirs{26,33}-{windows, linux}]
 
 # Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
 # This also prevents unwanted user interactions with the widgets under test.
@@ -143,7 +148,7 @@ deps =
 commands =
     pytest tests
 
-[testenv:py3-visible_unit_tests]
+[testenv:py3-platformdirs{26,33}-visible_unit_tests]
 # Runs the unit tests with the default Qt platform plugin,
 # causing them to visibly spawn GUI windows for tests of view logic.
 # Can be used to inspect the actions and GUI states manually.
@@ -161,6 +166,7 @@ commands =
 passenv =
     DISPLAY
     QT_*
+    XDG_RUNTIME_DIR
     
 setenv = 
    PYTHONDEVMODE = 1
@@ -178,6 +184,9 @@ deps =
 setenv =
     linux: QT_QPA_PLATFORM = offscreen
     PYTHONDEVMODE = 1
+
+passenv =
+    XDG_RUNTIME_DIR
 
 commands =
     python scripts{/}compile_ui_files.py --full --purge-existing

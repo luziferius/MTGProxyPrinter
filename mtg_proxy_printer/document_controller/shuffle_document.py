@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -34,7 +34,7 @@ from mtg_proxy_printer.units_and_sizes import PageType
 __all__ = [
     "ActionShuffleDocument",
 ]
-
+ItemDataRole = Qt.ItemDataRole
 IndexedCards = typing.List[typing.Tuple[int, Card]]
 ModelIndexList = typing.List[QModelIndex]
 
@@ -62,7 +62,7 @@ class ActionShuffleDocument(DocumentAction):
     def _shuffle_pages_of_type(self, document: Document, shuffler: Random, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(
-            enumerate(index.internalPointer().card for index in model_indices)  # The index holds the card container
+            enumerate(index.data(ItemDataRole.UserRole) for index in model_indices)
         )
         shuffler.shuffle(cards)
         self._swap_cards(document, model_indices, cards)
@@ -79,7 +79,7 @@ class ActionShuffleDocument(DocumentAction):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(zip(
             self.shuffle_order[page_type],
-            (index.internalPointer().card for index in model_indices)  # The index holds the card container
+            (index.data(ItemDataRole.UserRole) for index in model_indices)  # The index holds the card container
         ))
         cards.sort()
         self._swap_cards(document, model_indices, cards)

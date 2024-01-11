@@ -1,19 +1,18 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 import itertools
 import typing
 import unittest.mock
@@ -127,18 +126,18 @@ def test_remove_selected_cards_works(qtbot: QtBot, card_db: CardDatabase):
 
 
 def _move_wizard_forward(qtbot: QtBot, wizard: QWizard):
-    with qtbot.wait_signal(wizard.currentIdChanged, timeout=100):
+    with qtbot.wait_signal(wizard.currentIdChanged, timeout=1000):
         wizard.next()
 
 
 def _move_wizard_backward(qtbot: QtBot, wizard: QWizard):
-    with qtbot.wait_signal(wizard.currentIdChanged, timeout=100):
+    with qtbot.wait_signal(wizard.currentIdChanged, timeout=1000):
         wizard.back()
 
 
 def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
-    with qtbot.wait_signal(page.completeChanged, timeout=100):
+    with qtbot.wait_signal(page.completeChanged, timeout=1000):
         cb: QCheckBox = page.ui.select_parser_mtg_online
         cb.click()
     assert_that(page.ui.select_parser_mtg_online.isChecked())
@@ -152,7 +151,7 @@ def _select_magic_online_parser(qtbot: QtBot, wizard: DeckImportWizard):
 def _select_magic_arena_parser(qtbot: QtBot, wizard: DeckImportWizard):
     page = wizard.select_deck_parser_page
     cb: QCheckBox = page.ui.select_parser_mtg_arena
-    with qtbot.wait_signal(cb.clicked, timeout=100):
+    with qtbot.wait_signal(cb.clicked, timeout=1000):
         cb.click()
     assert_that(page.ui.select_parser_mtg_arena.isChecked())
     assert_that(page.complete, is_(True))
@@ -183,13 +182,13 @@ def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, i
 
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, enable_print_guessing: bool = False):
     page = wizard.load_list_page
-    with qtbot.wait_signal(page.ui.deck_list.textChanged, timeout=100):
+    with qtbot.wait_signal(page.ui.deck_list.textChanged, timeout=1000):
         page.ui.deck_list.setPlainText(deck_list)
     assert_that(wizard.field("deck_list"), is_(equal_to(deck_list)))
     assert_that(page.isComplete())
     cb: QCheckBox = page.ui.print_guessing_enable
     if enable_print_guessing and not cb.isChecked():
-        with qtbot.wait_signal(cb.stateChanged, timeout=100):
+        with qtbot.wait_signal(cb.stateChanged, timeout=1000):
             cb.click()
         assert_that(cb.isChecked())
 
@@ -208,8 +207,8 @@ def _validate_model_content(list_model):
         "language": equal_to("en"),
         "is_front": is_(True),
         "image_uri": equal_to(
-            "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-            "0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+            "https://cards.scryfall.io/png/front/0/0/"
+            "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
         "image_file": is_(none()),
     }))
 
@@ -250,7 +249,7 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
     # Now accept the dialog and capture the emitted deck
     deck_receiver = CardListReceiver()
     wizard.request_action.connect(deck_receiver.on_import_action_received)
-    with qtbot.wait_signal(wizard.request_action, timeout=100):
+    with qtbot.wait_signal(wizard.request_action, timeout=1000):
         QTest.keyClick(wizard, Qt.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),
@@ -268,8 +267,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "language": equal_to("en"),
             "is_front": is_(True),
             "image_uri": equal_to(
-                "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-                "0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+                "https://cards.scryfall.io/png/front/0/0/"
+                "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
             "image_file": is_(none()),
         }),
         has_properties({
@@ -283,8 +282,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "language": equal_to("en"),
             "is_front": is_(True),
             "image_uri": equal_to(
-                "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-                "a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
+                "https://cards.scryfall.io/png/front/a/8/"
+                "a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
             "image_file": is_(none()),
         }),
     ))

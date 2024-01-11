@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>central_widget</class>
- <widget class="QWidget" name="central_widget">
+ <class>CentralWidget_Grouped</class>
+ <widget class="QWidget" name="CentralWidget_Grouped">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -70,6 +70,9 @@
        <verstretch>10</verstretch>
       </sizepolicy>
      </property>
+     <property name="contextMenuPolicy">
+      <enum>Qt::CustomContextMenu</enum>
+     </property>
      <property name="lineWidth">
       <number>0</number>
      </property>
@@ -115,18 +118,18 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>HorizontalAddCardWidget</class>
-   <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.add_card</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
    <class>PageRenderer</class>
    <extends>QGraphicsView</extends>
    <header>mtg_proxy_printer.ui.page_renderer</header>
    <slots>
     <slot>on_resize_event_triggered()</slot>
    </slots>
+  </customwidget>
+  <customwidget>
+   <class>HorizontalAddCardWidget</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.add_card</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

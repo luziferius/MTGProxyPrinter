@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -17,13 +17,13 @@ import math
 from pathlib import Path
 
 from PyQt5.QtCore import QObject, QMarginsF, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.page_renderer import PageScene, RenderMode
+from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
@@ -31,7 +31,7 @@ del get_logger
 
 __all__ = [
     "export_pdf",
-    "create_qprinter",
+    "create_printer",
     "Renderer",
 ]
 
@@ -47,28 +47,25 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
         logger.info(f"Creating PDF ({document_index+1}/{total_documents}) with up to {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
-    document.store_image_usage()
 
 
-def create_qprinter(document: Document) -> QPrinter:
+def create_printer(renderer: "Renderer") -> QPrinter:
     printer = QPrinter(QPrinter.HighResolution)
-    page_size = document.page_layout.paper_size()
-    if page_size.width() > page_size.height():
-        logger.debug(
-            f"Document width ({page_size.width()}mm) > height ({page_size.height()}mm): Printing in landscape mode.")
-        printer.setPageOrientation(QPageLayout.Landscape)
-        # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
-        # resulting in correct values.
-        page_size.transpose()
-    printer.setPageSizeMM(page_size)
+    layout = renderer.document.page_layout
+    page_layout = layout.to_page_layout(renderer.render_mode)
+    if not printer.setPageLayout(page_layout):
+        logger.error(
+            f"Setting page layout failed! "
+            f"Layout: page_size={page_layout.pageSize().size(QPageSize.Unit.Millimeter)}, "
+            f"orientation={page_layout.orientation()}, "
+            f"margins={layout.margin_left, layout.margin_top, layout.margin_right, layout.margin_bottom}")
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     printer.setDoubleSidedPrinting(document.page_layout.duplex_mode.is_duplex())
     printer.setDuplex(document.page_layout.duplex_mode.qt_duplex_mode())
     printer.setOutputFormat(QPrinter.NativeFormat)
-    # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
-    printer.setFullPage(True)
-    printer.setPageMargins(0, 0, 0, 0, QPrinter.Millimeter)
+    if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
+        printer.setFullPage(True)
     return printer
 
 
@@ -122,7 +119,10 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.scene = PageScene(document, RenderMode.ON_PAPER, self)
+        self.render_mode = RenderMode.ON_PAPER
+        if not settings["printer"].getboolean("borderless-printing"):
+            self.render_mode |= RenderMode.IMPLICIT_MARGINS
+        self.scene = PageScene(document, self.render_mode, self)
 
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):

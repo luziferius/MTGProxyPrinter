@@ -134,12 +134,12 @@
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Clearwater+Pathway+%2F%2F+Clearwater+Pathway&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Clearwater+Pathway+%2F%2F+Clearwater+Pathway&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DClearwater%2BPathway%2B%252F%252F%2BClearwater%2BPathway",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DClearwater%2BPathway%2B%252F%252F%2BClearwater%2BPathway",
     "edhrec": "https://edhrec.com/route/?cc=Clearwater+Pathway"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Clearwater+Pathway&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall&view=grid",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DClearwater%2BPathway%26view%3Dgrid",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Clearwater+Pathway&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Clearwater+Pathway&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

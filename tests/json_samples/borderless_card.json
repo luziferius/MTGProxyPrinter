@@ -1,0 +1,131 @@
+{
+  "object": "card",
+  "id": "87a7ff06-32b7-48cd-99bb-a91f7f43538d",
+  "oracle_id": "132ca99a-a3c7-4ed6-b4d0-0edcd7140ca2",
+  "multiverse_ids": [
+    600994
+  ],
+  "mtgo_id": 108115,
+  "tcgplayer_id": 458026,
+  "name": "Absorb",
+  "lang": "en",
+  "released_at": "2023-01-13",
+  "uri": "https://api.scryfall.com/cards/87a7ff06-32b7-48cd-99bb-a91f7f43538d",
+  "scryfall_uri": "https://scryfall.com/card/dmr/443/absorb?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.jpg?1682713062",
+    "normal": "https://cards.scryfall.io/normal/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.jpg?1682713062",
+    "large": "https://cards.scryfall.io/large/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.jpg?1682713062",
+    "png": "https://cards.scryfall.io/png/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.png?1682713062",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.jpg?1682713062",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/8/7/87a7ff06-32b7-48cd-99bb-a91f7f43538d.jpg?1682713062"
+  },
+  "mana_cost": "{W}{U}{U}",
+  "cmc": 3.0,
+  "type_line": "Instant",
+  "oracle_text": "Counter target spell. You gain 3 life.",
+  "colors": [
+    "U",
+    "W"
+  ],
+  "color_identity": [
+    "U",
+    "W"
+  ],
+  "keywords": [
+
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "explorer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "legal",
+    "predh": "legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "ca4c2884-e539-4b7f-980d-5d6a50220f2a",
+  "set": "dmr",
+  "set_name": "Dominaria Remastered",
+  "set_type": "masters",
+  "set_uri": "https://api.scryfall.com/sets/ca4c2884-e539-4b7f-980d-5d6a50220f2a",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Admr&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/dmr?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/87a7ff06-32b7-48cd-99bb-a91f7f43538d/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A132ca99a-a3c7-4ed6-b4d0-0edcd7140ca2&unique=prints",
+  "collector_number": "443",
+  "digital": false,
+  "rarity": "rare",
+  "flavor_text": "\"It's a shame to see such potential wasted on petty evil. Let's correct that, shall we?\"",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Randy Gallegos",
+  "artist_ids": [
+    "a5048cc7-438a-4378-98e4-da99b78e1db0"
+  ],
+  "illustration_id": "dcb5f43a-b156-44cf-b37a-3a14364584f8",
+  "border_color": "borderless",
+  "frame": "2015",
+  "frame_effects": [
+    "inverted"
+  ],
+  "security_stamp": "oval",
+  "full_art": true,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "promo_types": [
+    "boosterfun"
+  ],
+  "edhrec_rank": 4006,
+  "prices": {
+    "usd": "0.37",
+    "usd_foil": "0.67",
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": "0.30"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=600994&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAbsorb",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAbsorb",
+    "edhrec": "https://edhrec.com/route/?cc=Absorb"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F458026%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Absorb&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/108115?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>WizardPage</class>
- <widget class="QWizardPage" name="WizardPage">
+ <class>CardFilterPage</class>
+ <widget class="QWizardPage" name="CardFilterPage">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -9,9 +9,6 @@
     <width>406</width>
     <height>568</height>
    </rect>
-  </property>
-  <property name="windowTitle">
-   <string>WizardPage</string>
   </property>
   <property name="title">
    <string>Select images for removal</string>

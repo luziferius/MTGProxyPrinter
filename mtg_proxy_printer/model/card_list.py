@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -20,7 +20,7 @@ import typing
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
-from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase
+from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -36,10 +36,11 @@ INVALID_INDEX = QModelIndex()
 
 class PageColumns(enum.IntEnum):
     CardName = 0
-    Set = 1
-    CollectorNumber = 2
-    Language = 3
-    Image = 4
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    Language = enum.auto()
+    IsFront = enum.auto()
+    Image = enum.auto()
 
 
 class CardListModel(QAbstractTableModel):
@@ -52,8 +53,9 @@ class CardListModel(QAbstractTableModel):
         PageColumns.Set: "Set",
         PageColumns.CollectorNumber: "Collector #",
         PageColumns.Language: "Language",
+        PageColumns.IsFront: "Side",
     }
-    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber}
+    EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     oversized_card_count_changed = Signal(int)
 
@@ -72,6 +74,8 @@ class CardListModel(QAbstractTableModel):
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
+        if role == Qt.ItemDataRole.UserRole:
+            return card
         if role in (Qt.DisplayRole, Qt.EditRole):
             if index.column() == PageColumns.CardName:
                 return card.name
@@ -84,6 +88,10 @@ class CardListModel(QAbstractTableModel):
                 return card.collector_number
             elif index.column() == PageColumns.Language:
                 return card.language
+            elif index.column() == PageColumns.IsFront:
+                if role == Qt.EditRole:
+                    return card.is_front
+                return "Front" if card.is_front else "Back"
         if card.is_oversized:
             if role == Qt.ToolTipRole:
                 return "Beware: Potentially oversized card!\nThis card may not fit in your deck."
@@ -97,27 +105,38 @@ class CardListModel(QAbstractTableModel):
         return flags
 
     def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
-        if role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
-            logger.debug(f"Setting card list model data for column {index.column()} to {value}")
+        column = index.column()
+        if role == Qt.EditRole and column in self.EDITABLE_COLUMNS:
+            logger.debug(f"Setting card list model data for column {column} to {value}")
             card = self.cards[index.row()]
-            if index.column() == PageColumns.CollectorNumber:
+            if column == PageColumns.CollectorNumber:
                 card_data = CardIdentificationData(
                     card.language, card.name, card.set.code, value, is_front=card.is_front)
-            else:
+            elif column == PageColumns.Set:
                 card_data = CardIdentificationData(
                     card.language, card.name, value, is_front=card.is_front
                 )
+            else:
+                card_data = self.card_db.translate_card(card, value)
+                if card_data == card:
+                    return False
             return self._request_replacement_card(index, card_data)
         return False
 
-    def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
-        if result := self.card_db.get_cards_from_data(card_data):
+    def _request_replacement_card(
+            self, index: QModelIndex, card_data: typing.Union[CardIdentificationData, AnyCardType]):
+        if isinstance(card_data, CardIdentificationData):
             logger.debug(f"Requesting replacement for {card_data}")
+            result = self.card_db.get_cards_from_data(card_data)
+        else:
+            result = [card_data]
+        if result:
             # Simply choose the first match. The user can’t make a choice at this point, so just use one of
             # the results.
             new_card = result[0]
+            logger.debug(f"Replacing with {new_card}")
             top_left = index.sibling(index.row(), index.column())
-            bottom_right = top_left.siblingAtColumn(PageColumns.CollectorNumber)
+            bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
             old_card = self.cards[index.row()]
             self.cards[index.row()] = new_card
             self.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))

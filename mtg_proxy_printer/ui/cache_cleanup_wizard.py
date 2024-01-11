@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,22 +21,22 @@ import math
 import pathlib
 import typing
 
-from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel
+from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
+from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.card_filter_page import Ui_WizardPage as Ui_CardFilterPage
-    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_WizardPage as Ui_FilterSetupPage
-    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_WizardPage as Ui_SummaryPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.card_filter_page import Ui_CardFilterPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.filter_setup_page import Ui_FilterSetupPage
+    from mtg_proxy_printer.ui.generated.cache_cleanup_wizard.summary_page import Ui_SummaryPage
 except ModuleNotFoundError:
     Ui_CardFilterPage = load_ui_from_file("cache_cleanup_wizard/card_filter_page")
     Ui_FilterSetupPage = load_ui_from_file("cache_cleanup_wizard/filter_setup_page")
@@ -65,13 +65,14 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
 
 class KnownCardColumns(enum.IntEnum):
     Name = 0
-    Set = 1
-    CollectorNumber = 2
-    IsFront = 3
-    HasHighResolution = 4
-    Size = 5
-    ScryfallId = 6
-    FilesystemPath = 7
+    Set = enum.auto()
+    CollectorNumber = enum.auto()
+    IsHidden = enum.auto()
+    IsFront = enum.auto()
+    HasHighResolution = enum.auto()
+    Size = enum.auto()
+    ScryfallId = enum.auto()
+    FilesystemPath = enum.auto()
 
 
 @dataclasses.dataclass()
@@ -79,6 +80,7 @@ class KnownCardRow:
     name: str
     set: MTGSet
     collector_number: str
+    is_hidden: bool
     is_front: bool
     has_high_resolution: bool
     size: int
@@ -94,6 +96,12 @@ class KnownCardRow:
             data = self.set.data(role)
         elif column == KnownCardColumns.CollectorNumber and role in (Qt.DisplayRole, Qt.EditRole):
             data = self.collector_number
+        elif column == KnownCardColumns.IsHidden and role == Qt.DisplayRole:
+            data = "Yes" if self.is_hidden else "No"
+        elif column == KnownCardColumns.IsHidden and role == Qt.ToolTipRole and self.is_hidden:
+            data = "This printing is hidden by an enabled card filter\nand is thus unavailable for printing."
+        elif column == KnownCardColumns.IsHidden and role == Qt.EditRole:
+            data = self.is_hidden
         elif column == KnownCardColumns.IsFront and role == Qt.DisplayRole:
             data = "Front" if self.is_front else "Back"
         elif column == KnownCardColumns.IsFront and role == Qt.EditRole:
@@ -123,6 +131,7 @@ class KnownCardImageModel(QAbstractTableModel):
         KnownCardColumns.Name: "Name",
         KnownCardColumns.Set: "Set",
         KnownCardColumns.CollectorNumber: "Collector #",
+        KnownCardColumns.IsHidden: "Is Hidden",
         KnownCardColumns.IsFront: "Front/Back",
         KnownCardColumns.HasHighResolution: "High resolution?",
         KnownCardColumns.Size: "Size",
@@ -151,12 +160,12 @@ class KnownCardImageModel(QAbstractTableModel):
             return row.data(index.column(), role)
         return None
 
-    def add_row(self, card: Card, image: ImageCacheContent):
+    def add_row(self, card: Card, image: ImageCacheContent, is_hidden: bool):
         position = self.rowCount()
         self.beginInsertRows(INVALID_INDEX, position, position)
         size_bytes = image.absolute_path.stat().st_size
         row = KnownCardRow(
-            card.name, card.set, card.collector_number,
+            card.name, card.set, card.collector_number, is_hidden,
             image.is_front, image.is_high_resolution, size_bytes, card.scryfall_id, image.absolute_path,
         )
         self._data.append(row)
@@ -307,8 +316,7 @@ class CardFilterPage(QWizardPage):
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
-        view: QTableView = self.ui.card_image_view
-        view: QTableView
+        view = self.ui.card_image_view
         view.setModel(model)
         view.setSortingEnabled(True)
         view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
@@ -324,42 +332,50 @@ class CardFilterPage(QWizardPage):
 
     def initializePage(self) -> None:
         super(CardFilterPage, self).initializePage()
-        for image in self.image_db.read_disk_cache_content():
-            if (card := self.card_db.get_card_with_scryfall_id(image.scryfall_id, image.is_front)) is not None:
-                self.card_image_model.add_row(card, image)
-            else:
-                self.unknown_image_model.add_row(image)
+        images = self.image_db.read_disk_cache_content()
+        visible, hidden, unknown = self.card_db.get_all_cards_from_image_cache(images)
+        for card, key in visible:
+            self.card_image_model.add_row(card, key, False)
+        for card, key in hidden:
+            self.card_image_model.add_row(card, key, True)
+        for key in unknown:
+            self.unknown_image_model.add_row(key)
         self._apply_filter()
 
     def _apply_filter(self):
         self._select_unknown_cards_if_enabled()
         if self.field("remove-everything-enabled"):
-            self._select_indices(range(self.card_image_model.rowCount()))
+            self._select_rows(range(self.card_image_model.rowCount()))
         else:
             keys = self.card_image_model.all_keys()
             if self.field("time-filter-enabled"):
                 date = datetime.date.today() - datetime.timedelta(days=self.field("time-filter-value"))
                 logger.debug(f"Select for deletion all images not used since {date.isoformat()}")
                 indices = self.card_db.cards_not_used_since(keys, date)
-                self._select_indices(indices)
+                self._select_rows(indices)
             if self.field("count-filter-enabled"):
                 logger.debug(f"Select for deletion all images used less that {self.field('count-filter-value')} times")
                 indices = self.card_db.cards_used_less_often_then(keys, self.field("count-filter-value"))
-                self._select_indices(indices)
+                self._select_rows(indices)
+            if self.field("remove-unknown-cards-enabled"):
+                selection_model = self.ui.card_image_view.selectionModel()
+                for row in range(self.card_image_sort_model.rowCount()):
+                    index = self.card_image_sort_model.index(row, KnownCardColumns.IsHidden)
+                    if index.data(Qt.ItemDataRole.EditRole):
+                        selection_model.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
     def _select_unknown_cards_if_enabled(self):
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
+            selection_model = self.ui.unknown_image_view.selectionModel()
             for row in range(self.unknown_image_model.rowCount()):
-                self.ui.unknown_image_view.selectionModel().select(
-                    self.unknown_image_model.createIndex(row, UnknownCardColumns.ScryfallId),
-                    QItemSelectionModel.Select | QItemSelectionModel.Rows
-                )
+                index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
+                selection_model.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
 
-    def _select_indices(self, indices: typing.Iterable[int]):
+    def _select_rows(self, indices: typing.Iterable[int]):
         selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
-                self.card_image_model.createIndex(index, KnownCardColumns.Name),
+                self.card_image_model.index(index, KnownCardColumns.Name),
                 QItemSelectionModel.Select | QItemSelectionModel.Rows
             )
 
@@ -403,40 +419,23 @@ class SummaryPage(QWizardPage):
         logger.debug(f"{self.__class__.__name__} populated.")
 
 
-class CacheCleanupWizard(QWizard):
+class CacheCleanupWizard(WizardBase):
+    BUTTON_ICONS = {
+        QWizard.WizardButton.FinishButton: "edit-delete",
+        QWizard.WizardButton.CancelButton: "dialog-cancel",
+        QWizard.WizardButton.HelpButton: "help-contents",
+    }
 
-    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
-        super(CacheCleanupWizard, self).__init__(*args, **kwargs)
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
+                 parent: QWidget = None, flags=Qt.WindowFlags()):
+        super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.addPage(SummaryPage(self))
         self.setWindowTitle("Cleanup locally stored card images")
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
-        self._setup_button_icons()
-        self._set_default_size()
         logger.info(f"Created {self.__class__.__name__} instance.")
-
-    def _set_default_size(self):
-        new_width, new_height = 1024, 768
-        if (parent := self.parent()) is not None:
-            parent_pos = parent.mapToGlobal(parent.pos())
-            self.setGeometry(
-                parent_pos.x() + parent.width()//2 - new_width//2,
-                parent_pos.y() + parent.height()//2 - new_height//2,
-                new_width, new_height
-            )
-        else:
-            self.resize(new_width, new_height)
-
-    def _setup_button_icons(self):
-        buttons_with_icons: typing.List[typing.Tuple[QWizard.WizardButton, str]] = [
-            (QWizard.CancelButton, "dialog-cancel"),
-            (QWizard.HelpButton, "help-contents"),
-            (QWizard.FinishButton, "edit-delete"),
-        ]
-        for button, icon_name in buttons_with_icons:
-            self.button(button).setIcon(QIcon.fromTheme(icon_name))
 
     def accept(self) -> None:
         super(CacheCleanupWizard, self).accept()

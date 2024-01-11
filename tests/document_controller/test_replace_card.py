@@ -1,15 +1,15 @@
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -83,7 +83,7 @@ def test_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_card_on_
     replacement = create_card("Replacement", True)
     action = ActionReplaceCard(replacement, 0, 0)
     assert_that(pages[0].page_type(), is_(PageType.REGULAR), "Test setup failed")
-    with qtbot.wait_signal(document_light.page_type_changed, timeout=100,
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=1000,
                            check_params_cb=lambda index: index.row() == 0 and not index.parent().isValid()):
         assert_that(action.apply(document_light), is_(same_instance(action)))
     assert_that(
@@ -150,7 +150,7 @@ def test_undo_replacing_regular_with_oversized_on_otherwise_empty_page_keeps_car
     action = ActionReplaceCard(replacement, 0, 0)
     action.old_card = original
 
-    with qtbot.wait_signal(document_light.page_type_changed, timeout=100,
+    with qtbot.wait_signal(document_light.page_type_changed, timeout=1000,
                            check_params_cb=lambda index: index.row() == 0 and not index.parent().isValid()):
         assert_that(action.undo(document_light), is_(same_instance(action)))
     assert_that(

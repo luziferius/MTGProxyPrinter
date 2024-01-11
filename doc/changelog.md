@@ -4,10 +4,182 @@
 
 ## Changed features
 
+- Lifted restriction on the allowed actions while the card data update runs. It is now possible to print documents,
+  export PDFs, and edit the application settings.
+
+## Fixed issues
+
+- Fixed crash when adding multiple copies of a card distributes those cards on the current and next page.
+- Fixed multiple crashes that may have occurred in 0.26.0 when trying to run multiple actions in parallel,
+  like exporting a PDF, while updating the printing filter settings runs simultaneously.
+
+# Version 0.26.0 (2023-12-19)  <a name="v0_26_0"></a>
+
+## New features
+
+- Added option to disable borderless printing to improve printer compatibility with printer drivers that refuse to
+  accept borderless printing, and force-downscale prints in borderless mode.  
+    - If your printer driver refuses to print to-size in borderless mode,
+      you can now use an alternative mode, which explicitly sets the page margins in the printer configuration.
+    - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
+      printers physical printing area.
+- Added card filters for
+    - cards banned in Oathbreaker
+    - cards with extended art
+    - Add ability to hide specific sets you don't like.
+        - Filters are entered using set codes (e.g. `LEA DBL SLD`), as listed by Scryfall.
+        - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
+          tab in the Settings window.
+        - All cards in all entered sets are hidden.
+        - Please note that Scryfall uses a different set code for promotional printings and tokens,
+          typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
+          too, you have to explicitly do that. Also note that promotional cards have a lower priority
+          when the app has to choose a printing on its own, so hiding them is generally not required.
+- Added support for direct downloads of cube lists from [cubecobra.com](https://cubecobra.com).
+    - The application cannot fetch custom cards from there.
+
+## Changed features
+
+- Centered printing: The printing area is now centered on the page, and no longer depends on the margins.
+    - The margins thus no longer affect the location of the printing area, and are only used to determine how many
+      images fit on a page.
+    - Note that only the printing area itself is centered. Printings are still added from top-left to bottom-right
+      within the printing area.
+    - Entering very large top/left margins may shift the printing area off-center.
+- The default page margins for new installations are now set to 5mm in all directions.
+- Reworded the image spacing document settings. These are now named "Row spacing" and "Column spacing", which should
+  be easier to understand.
+- Improved progress reporting for longer running actions: Importing deck lists and loading documents
+  now also shows an overall progress, in addition to the download progress for individual card images. 
+- The card data update no longer locks the entire user interface. It is now possible to continue working while the
+  update runs in the background.
+    - For now, some actions (printing, PDF export, deleting downloaded card images via the in-app wizard, 
+      and accessing the application settings) remain unavailable during the update.
+      (This restriction may be lifted in future versions. If you manage to circumvent the lock, expect crashes.)
+
+## Fixed issues
+
+- Fixed broken card filter for [reversible cards](https://scryfall.com/search?q=is:reversible). The filter now works as expected.
+- Fixed crash when loading a document that was saved with a numerical document title, for example "`1`"
+- Fixed default suggested PDF file name when exporting a loaded document as a PDF. 
+  The export dialog now suggests a valid file name with correct file extension.
+- Fixed crash when the system color palette changes (for example by enabling/disabling
+  system-wide application dark mode), while a document title is set or printing page numbers is enabled.
+- Fixed crashes when trying to download a deck list fails. An error message is shown, if deck list downloads fail.
+- Fixed potential crash when quitting the application while it is loading a document.
+
+## Optimizations
+
+- Improved performance of the image cache cleanup wizard with a lot of downloaded images:
+  Reduced loading time of the second wizard page from potentially multiple minutes to a second or two.
+- Reduced CPU usage and disk writes during card data updates.
+- Minor performance optimizations in the document loader and deck list importer.
+
+# Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
+
+## New features
+
+- It is now possible to set a document name in the document settings.
+  If set, it is printed below the card images on each page.
+  This can help distinguish multiple stacks of uncut printed sheets.
+  (Long names may be truncated, if they do not fit on the page.)
+- Added option to print page numbers on each page. It is printed as `page-number / total-pages`, e.g. `2/3`.
+  You can use this to verify that a stack of uncut printed sheets is complete.
+  - This can be enabled by default for all documents in the application settings.
+- Translate cards already added to the document.
+    - You can now double-click the language cells in the table showing the cards on the current page to 
+      translate card in the document to another language.
+    - The opened drop-down menu will only show languages for which a printing is available.
+    - The translation tries to keep the same set and collector number, if available in the desired language,
+      otherwise falls back to a printing in another set. 
+
+## Changed features
+
+- Updated the print guessing heuristic in the deck import wizard that is used when it has to choose a printing
+  among multiple choices (for example, when requesting “`1 Island`”).
+  Now, it prefers slightly older printings with high-resolution 
+  images over the absolutely newest printings that do not yet have high-resolution scans available.
+  This should get better results for reprinted cards during “spoiler season”.
+- The Undo and Redo actions now have keyboard shortcuts assigned. They use the system-default shortcuts for
+  those actions, which are Ctrl+Z and Ctrl+Y on most systems and locales.  
+
+## Fixed issues
+
+- Fixed wrong cards being deleted when cards were selected from bottom to top and then deleted. Now, the selected cards
+  are removed regardless of selection order.
+- It is now possible to save and load documents containing DFC check cards. 
+  Those are no longer implicitly converted to the card front face in the saved document.
+  Loading documents containing DFC check cards with older program versions will fail.
+- Improvements/fixes for the multi-page wizards, like the deck import wizards
+    - Wizards now have a consistent style on Windows (7) and are properly centered above the main window
+    - Wizards are no longer placed partially out of the screen under some edge cases.  
+      The window title bar is now always visible.
+
+# Version 0.24.1 (2023-06-27)  <a name="v0_24_1"></a>
+
+## Fixed issues
+
+- Fixed broken check card generation and addition of related cards. Both features failed to fetch the required images,
+  rendering the cards as white rectangles, instead of the expected card images.
+- Fixed display of the 5th column in the table showing the cards on the current page. It shows whether the image is
+  a front or back side of a (double-faced) card. It now has a proper header ("Side") and human-readable content.  
+
+# Version 0.24.0 (2023-06-26)  <a name="v0_24_0"></a>
+
+## New features
+
+- Added basic support for printing custom cards. You can drag & drop image files onto the application window,
+  which are then added to the document as regular-sized cards
+    - Importing most common image formats is supported
+    - For best results, use images with size 745px×1040px, others will be scaled to that size
+    - As of now, there are a few limitations, which may be lifted in future updates:
+        - Custom cards cannot be saved. They are removed from saved documents
+        - Only regular-sized cards are supported. You can not add custom over-sized cards, i.e. no custom Planes or Schemes
+        - You cannot set the card name
+        - They cannot be defined as being double-faced, thus you cannot generate check cards for them (see point below)
+- Generation of check cards for double faced cards. Check cards render both sides of a double-faced card next to each
+  other on a single card side, like a split card. They can be used to represent double-faced cards in the library or
+  hand, in case you prefer playing DFCs with fully transparent sleeves.
+    - Check cards can be added by right-clicking any side of a DFC card. Additional ways may be added in the future.
+- Export of individual card images as files, including generated check cards. Right-click a card and select the export
+  option to save the image file to a location of your choice.
+- Loading documents via drag & drop. The application now supports loading saved documents
+  (with `.mtgproxies` file extension) dropped onto the main window. 
+
+# Version 0.23.0 (2023-06-08)  <a name="v0_23_0"></a>
+
+## New features
+
+- Added context menu to the table that shows the cards on the current page. You can now:
+    - Right-click a card to add additional copies of that card to the document
+    - Right-click a card to add specific or all related cards, like cards referenced by name or created tokens.
+      For example, right-click a Swan Song to add the 2/2 Bird token created by that spell.
+- Added additional card filters to hide potentially unwanted printings in the settings.
+    - Borderless cards, i.e. cards without a defined, solid border.
+    [Scryfall search](https://scryfall.com/search?q=border%3Aborderless)
+    - Reversible cards. Some Secret Lair double-sided printings of otherwise single-sided cards.
+    [Scryfall search](https://scryfall.com/search?q=is%3Areversible)
+
+The new card filters and adding related cards via the new context menu require re-downloading the card data 
+from Scryfall once to start working, as previous versions did not store the required information in the local
+card database.
+
+## Changed features
+
 - Redesigned the document save file format. Older versions will not be able to load documents saved with this version,
   and it is not possible to save documents in the old format.
-  - Loading older documents (format versions 2 to 5) is still supported.
-    Older documents will be automatically converted to version 6 when saved over.
+    - Loading older documents (internal format versions 2 to 5) is still supported.
+      Older documents will be automatically converted to version 6 when saved over.
+- Improved display of hidden printings hidden in the downloaded image cleanup wizard.
+    - It now shows full information for hidden printings, instead of identifying them as "unknown garbage".
+
+## Fixed issues
+
+- Handle the back sides of Secret Lair reversible cards when switching card printings. The application no longer offers
+  alternative printings for the back sides of those cards and then silently fails to switch the printing. 
+- Subsequent card data download attempts no longer always fail, if the first attempt 
+  failed due to receiving invalid data from the Scryfall API.
+    - This also prevents entering an invalid state with partially imported card data. 
 - Restored displaying the download progress when using the “Download card data as file” option in the Debug settings.
 
 # Version 0.22.0 (2023-04-18)  <a name="v0_22_0"></a>
@@ -16,11 +188,11 @@
 
 - Added support for importing Magic Workstation Deck Data (`.mwDeck`) deck lists
 - Support for direct downloads from additional card list database websites:
-  - MTG Arena Zone ([mtgazone.com](https://mtgazone.com))
-  - MTGTop8 ([mtgtop8.com](http://mtgtop8.com))
-  - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
-  - Archidekt ([archidekt.com](https://archidekt.com/))
-  - TCGPlayer Infinite ([infinite.tcgplayer.com](https://infinite.tcgplayer.com/magic-the-gathering))
+    - MTG Arena Zone ([mtgazone.com](https://mtgazone.com))
+    - MTGTop8 ([mtgtop8.com](http://mtgtop8.com))
+    - MTGDecks ([mtgdecks.net](https://mtgdecks.net/))
+    - Archidekt ([archidekt.com](https://archidekt.com/))
+    - TCGPlayer Infinite ([infinite.tcgplayer.com](https://infinite.tcgplayer.com/magic-the-gathering))
 
 ## Changed features
 
@@ -38,15 +210,15 @@
 ## New features
 
 - Added Undo and Redo actions. It is now possible to undo changes to the document, and also redo undone changes.
-  - The undo and redo button tooltip shows a short description
-    of the change that is performed when the button is clicked.
+    - The undo and redo button tooltip shows a short description
+      of the change that is performed when the button is clicked.
 
 ## Changed features
 
 - Temporarily disable automatic dark mode rendering on Windows 10, if dark mode rendering for applications is active,
   because of rendering issues in the deck import wizard and card image cleanup wizard.
   The feature will return with better rendering at some point in the future.
-  - Linux is unaffected by this change, as following the system color scheme generally just works there.
+    - Linux is unaffected by this change, as following the system color scheme generally just works there.
 
 ## Fixed issues
 
@@ -59,9 +231,9 @@
   for which hiding banned cards is enabled in the settings. This prevents potential crashes when trying to add
   these cards to the document. (Cards already added to the document are unaffected by such a card data update)
 - Optimized the document renderer and improved rendering quality
-  - Fixed location of horizontal cut helper lines for over-sized cards, which were off by one pixel
-  - Fixed a sub-pixel overlap of card images when image spacing is set to zero (the default).
-  - Images are now always placed on full pixels, avoiding aliasing artifacts.
+    - Fixed location of horizontal cut helper lines for over-sized cards, which were off by one pixel
+    - Fixed a sub-pixel overlap of card images when image spacing is set to zero (the default).
+    - Images are now always placed on full pixels, avoiding aliasing artifacts.
 
 # Version 0.20.1 (2022-10-27)  <a name="v0_20_1"></a>
 
@@ -78,7 +250,7 @@
 
 - Automatic deck list downloads. The deck list import wizard now has an input field that accepts
   links to deck lists on various deck list database websites. 
-  - Currently supported are [Scryfall](https://scryfall.com),
+    - Currently supported are [Scryfall](https://scryfall.com),
     [MTGGoldfish](https://www.mtggoldfish.com/),
     [mtg.wtf](https://mtg.wtf/), [TappedOut](https://tappedout.net/),
     [Moxfield](https://www.moxfield.com/) and
@@ -111,10 +283,10 @@
 
 - Proper, full support for oversized cards, like Archenemy schemes or Planechase plane cards. Regular cards and larger
   cards are always kept on separate pages to ensure that drawn cut marker lines (if enabled) are always 100% accurate.
-  - Note: Some cards, like the Legacy Championship winner rewards, are tagged as being oversized, but are then served
-    with regular-size images by Scryfall.
-    When the image is downloaded, it will be treated as a regular card, even if the deck import wizard warns
-    about it being potentially oversized.
+    - Note: Some cards, like the Legacy Championship winner rewards, are tagged as being oversized, but are then served
+      with regular-size images by Scryfall.
+      When the image is downloaded, it will be treated as a regular card, even if the deck import wizard warns
+      about it being potentially oversized.
 
 ## Fixed issues
 
@@ -140,10 +312,10 @@
 
 - The “New” document button will now ask for confirmation, before replacing the currently edited document with a new one.
 - Improved the advanced deck list parser that allows defining a custom regular expression to parse the deck list:
-  - Added buttons that insert preset regular expression building blocks. This reduces typing effort required to build
-    a working RE.
-  - The wizard only accepts the input regular expression, if it deems it being able to extract sufficient information
-    for card identification.
+    - Added buttons that insert preset regular expression building blocks. This reduces typing effort required to build
+      a working RE.
+    - The wizard only accepts the input regular expression, if it deems it being able to extract sufficient information
+      for card identification.
 
 ## Fixed issues
 
@@ -186,9 +358,9 @@ capabilities.
 ## Changed features
 
 - Card download filters are now filters used to hide printings.
-  - Updating the settings no longer requires re-downloading the data from Scryfall.
-  - Inverted the display: Instead of specifying which cards or printings are included,
-    the settings now state which printings are hidden. (Settings saved with previous versions are migrated.)
+    - Updating the settings no longer requires re-downloading the data from Scryfall.
+    - Inverted the display: Instead of specifying which cards or printings are included,
+      the settings now state which printings are hidden. (Settings saved with previous versions are migrated.)
 - The deck list import wizard now shows only matching files when browsing the file system for a deck list to load.
   The filtering can be disabled by switching to the “All files” filter.
 - When the deck list import wizard has the freedom of printing choice, it will now prefer the newest, regular,
@@ -205,11 +377,11 @@ capabilities.
 
 - Added potentially missing icons to buttons in the document settings dialog.
 - Fixed the incomplete Magic Arena deck list parser.
-  - Added support for the simple and more common card list format that does not specify the exact printing.
+    - Added support for the simple and more common card list format that does not specify the exact printing.
     (I.e. the parser now accept valid entries like `5 Island` instead of only accepting `5 Island (SNC) 265`)
-  - Also recognizes the segment headers that may be present in the deck list, 
-    that are “Deck”, “Commander”, “Companion” and “Sideboard”,
-    and will no longer complain that these are unidentified cards.
+    - Also recognizes the segment headers that may be present in the deck list, 
+      that are “Deck”, “Commander”, “Companion” and “Sideboard”,
+      and will no longer complain that these are unidentified cards.
 - Mitigate crashes when using the wrong CSV deck list parser with a given CSV file. An error message is now shown in
   this case.
 
@@ -242,8 +414,8 @@ capabilities.
 
 - Document settings, like paper size, margins, spacings are now stored in saved documents. When loading a document,
   the stored settings overwrite the default values set in the application settings.
-  - The Edit menu in the main window has a new option to edit these document settings for the current document only.
-  - Older save files do not contain the relevant data and have to be saved explicitly to perform a save file migration.
+    - The Edit menu in the main window has a new option to edit these document settings for the current document only.
+    - Older save files do not contain the relevant data and have to be saved explicitly to perform a save file migration.
 - Added new card download filter that allows excluding digital cards.
   The new filter matches both digital “reprints” of existing cards
   (for example Magic Online-exclusive promotional card versions)
@@ -403,11 +575,11 @@ capabilities.
 - Suggest a PDF document file name based on the loaded document’s file name, if the current document was saved to
   or loaded from disk.
 - Added optional, automatic update checks, both for MTGProxyPrinter itself and the card data from Scryfall.
-  - The application asks for consent for both when starting the application for the first time or
-    when updating from prior versions
-  - For now, the application update check only notifies about updates, and does not perform any automatic update.
+    - The application asks for consent for both when starting the application for the first time or
+      when updating from prior versions
+    - For now, the application update check only notifies about updates, and does not perform any automatic update.
 - Integrated the changelog into the application, as a new tab in the About dialog.
-  - Automatically show the changelog once after each application update.
+    - Automatically show the changelog once after each application update.
 
 ## Changed Features
 
@@ -418,10 +590,10 @@ capabilities.
 ## Fixed issues
 
 - The application now handles offline operation and network outages during download processes.
-  - Shows a message box whenever a download fails
-  - The card database will revert to the last state, if downloading fresh card data fails.
-  - When downloading card images fails, the card will be added to the document using a blank placeholder.
-    The user can save the document and load it the next time network access is available to fetch the missing images.
+    - Shows a message box whenever a download fails
+    - The card database will revert to the last state, if downloading fresh card data fails.
+    - When downloading card images fails, the card will be added to the document using a blank placeholder.
+      The user can save the document and load it the next time network access is available to fetch the missing images.
 
 # Version 0.10.0 (2021-04-21) <a name="v0_10_0"></a>
 
@@ -519,8 +691,8 @@ capabilities.
   computer. It uses the systems native printing support, where available.
 - Added command line arguments: The application now accepts a document path as a positional argument.
   This allows opening documents when starting the application.
-  - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file, and it can be used
-    to associate the file type with the program and then automatically open saved documents by clicking on them.
+    - On Windows, this can be used to drag&drop saved documents onto the EXE and load the file, and it can be used
+      to associate the file type with the program and then automatically open saved documents by clicking on them.
 - When changing download filter settings, ask the user if they want to re-download the card data. The user can do so
   when asked or any time later.
 - Implemented a way to trim down the locally stored images: Added a wizard to the Settings menu that allows deletion
@@ -584,14 +756,14 @@ capabilities.
   including basic wildcard support. When a card name is selected from the suggestion list,
   a specific printing can be selected. The search selects a random printing as a suggestion by default 
   to speed up the process,  if the user doesn’t care about the specific printing used.
-  - The new search displays sets using their human-readable English name.
-  - The search does not reset itself anymore, when adding a card.
+    - The new search displays sets using their human-readable English name.
+    - The search does not reset itself anymore, when adding a card.
 - Added a setting to choose between a horizontal search area layout above the currently edited page and a
   vertical search area that sits between the page list and the currently edited page.
-  - The horizontal layout resembles a traditional search bar, as used in other programs, looking more familiar
-  - The vertical layout makes better use of the available screen space, requires less mouse movement
-    and works better on widescreen monitors
-  - Switching the layout requires an application restart.
+    - The horizontal layout resembles a traditional search bar, as used in other programs, looking more familiar
+    - The vertical layout makes better use of the available screen space, requires less mouse movement
+      and works better on widescreen monitors
+    - Switching the layout requires an application restart.
 - The overview table showing the cards of the current page now shows the full, 
   human-readable English set name plus the short, three(-or-more)-letter set code,
   instead of showing only the cryptic set code.
@@ -618,11 +790,11 @@ capabilities.
 ## Implemented features
 
 - Implemented automatic deck list imports
-  - Implemented as a multi-page wizard that guides the user through the process.
-    Accessible via an entry in the File menu.
-  - Supports Magic Online, MTG Arena and XMage deck files (And Websites that export compatible files)
-  - Appends the imported list to the currently edited document or optionally completely replaces it.
-  - Current limitation: Cards have to be matched exactly. Cards that do not specify a unique printing are not imported.
+    - Implemented as a multi-page wizard that guides the user through the process.
+      Accessible via an entry in the File menu.
+    - Supports Magic Online, MTG Arena and XMage deck files (And Websites that export compatible files)
+    - Appends the imported list to the currently edited document or optionally completely replaces it.
+    - Current limitation: Cards have to be matched exactly. Cards that do not specify a unique printing are not imported.
   
 ## Fixed issues
 
