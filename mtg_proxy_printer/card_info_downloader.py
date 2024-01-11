@@ -635,7 +635,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _insert_card_back_id(self, card_back_id: typing.Optional[str]) -> typing.Optional[int]:
         if card_back_id is None:
             return None
-        db = self.model.db
+        db = self.db
         parameters = card_back_id,
         if result := db.execute(
                 "SELECT back_face_id FROM BackFace WHERE scryfall_card_back_id = ?\n",
