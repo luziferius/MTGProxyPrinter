@@ -70,6 +70,15 @@ def blank_pixmap() -> QPixmap:
     return pixmap
 
 
+def read_from_url_raising(exception: Exception) -> MagicMock:
+    """Set up a Mock for read_from_url that raises the given url during __enter__()"""
+    function_mock = MagicMock()
+    file_mock = MagicMock()
+    file_mock.__enter__.side_effect = exception
+    function_mock.return_value = (file_mock, MagicMock())
+    return function_mock
+
+
 @pytest.mark.parametrize("action", [
     ActionAddCard(create_card_in_cache()),
     ActionReplaceCard(create_card_in_cache(), 1, 1),
@@ -211,13 +220,38 @@ def test_obtain_missing_images(
     (urllib.error.URLError, "Test reason"),
     (socket.timeout, "Test error"),
 ])
-def test_error_during_single_download_relays_error_message(
+def test_error_before_single_download_relays_error_message(
         qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction,
         exception_class: ExceptionType, reason: str):
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
     with patch.object(image_downloader, "read_from_url", side_effect=exception), \
             qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param), \
+            qtbot.assert_not_emitted(image_downloader.download_begins), \
+            qtbot.assert_not_emitted(image_downloader.download_finished):
+        image_downloader.fill_document_action_image(action)
+    assert_that(
+        action.card.image_file,
+        is_(same_instance(blank)),
+    )
+    assert_that(image_downloader.last_error_message, is_(empty()))
+
+
+@pytest.mark.parametrize("action", [
+    ActionAddCard(create_card_not_in_cache()),
+    ActionReplaceCard(create_card_not_in_cache(), 1, 1),
+])
+@pytest.mark.parametrize("exception_class, reason", [
+    (urllib.error.URLError, "Test reason"),
+    (socket.timeout, "Test error"),
+])
+def test_error_during_single_download_relays_error_message(
+        qtbot: QtBot, image_downloader: ImageDownloader, action: DocumentAction,
+        exception_class: ExceptionType, reason: str):
+    blank = image_downloader.image_database.blank_image
+    exception = exception_class(reason)
+    with patch.object(image_downloader, "read_from_url", read_from_url_raising(exception)), \
+            qtbot.wait_signal(image_downloader.network_error_occurred), \
             qtbot.wait_signal(image_downloader.download_finished):
         image_downloader.fill_document_action_image(action)
     assert_that(
@@ -239,7 +273,7 @@ def test_error_during_batch_process_relays_error_message(
         exception_class: ExceptionType, reason: str):
     blank = image_downloader.image_database.blank_image
     exception = exception_class(reason)
-    with patch.object(image_downloader, "read_from_url", side_effect=exception), \
+    with patch.object(image_downloader, "read_from_url", read_from_url_raising(exception)), \
             qtbot.wait_signal(image_downloader.network_error_occurred, check_params_cb=lambda param: reason in param), \
             qtbot.wait_signal(image_downloader.download_finished):
         image_downloader.fill_batch_document_action_images(action)
@@ -270,7 +304,7 @@ def test_obtain_missing_images_handles_network_error(
         image_downloader.network_error_occurred, image_downloader.missing_images_obtained,
         image_downloader.download_finished]
     with qtbot.wait_signals(expected_signals), \
-            patch.object(image_downloader, "read_from_url", side_effect=exception):
+            patch.object(image_downloader, "read_from_url", read_from_url_raising(exception)):
         image_downloader.obtain_missing_images(card_indices)
     assert_that(
         document_light.pages[0],

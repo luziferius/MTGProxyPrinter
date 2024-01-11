@@ -450,14 +450,17 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         except Exception as e:
             logger.exception(e)
             logger.info("Download aborted, not moving potentially incomplete download into the cache.")
+            # TODO: handle batch processing
+            self.network_error_occurred.emit(f"{e}")
             download_path.unlink(missing_ok=True)
         else:
             logger.debug(f"Moving downloaded image into the image cache at {image_path}")
             shutil.move(download_path, image_path)
         finally:
             self.currently_opened_file = None
-            download_path.unlink(missing_ok=True)
+            logger.warning("emitting download_finished signal")
             self.download_finished.emit()
+            logger.warning("Signal sent")
         return pixmap
 
 
