@@ -930,6 +930,9 @@ class CardDatabase(QObject):
         if target_language is None or target_language == to_translate.language:
             return to_translate
         if isinstance(to_translate, CheckCard):
+            # FIXME: This looks like a bug. This may result in a None result for check card fronts.
+            #  It should check if front is not None, before constructing a translated check card.
+            #  If it is None, return the original, just like with regular cards.
             return CheckCard(
                 (front := self.translate_card(to_translate.front, target_language)),
                 self.get_opposing_face(front)
