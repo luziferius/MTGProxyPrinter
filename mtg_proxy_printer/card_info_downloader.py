@@ -526,24 +526,6 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         self.set_code_cache.clear()
         self._db = None
 
-    def _update_printing_display_filters(self):
-        db = self.db
-        db.execute(textwrap.dedent("""\
-            DELETE FROM PrintingDisplayFilter 
-              WHERE (printing_id, filter_id)
-              IN (
-                SELECT printing_id, filter_id FROM PrintingDisplayFilter
-                EXCEPT
-                SELECT printing_id, filter_id FROM Updated_PrintingDisplayFilter
-           )"""))
-        db.execute(textwrap.dedent("""\
-            INSERT INTO FROM PrintingDisplayFilter (printing_id, filter_id)
-                SELECT (
-                SELECT printing_id, filter_id FROM Updated_PrintingDisplayFilter
-                EXCEPT
-                SELECT printing_id, filter_id FROM PrintingDisplayFilter
-           )"""))
-
     def _clean_unused_data(self, new_face_ids: IntTuples):
         """Purges all excess data, like printings that are no longer in the import data."""
         # Note: No cleanup for RelatedPrintings needed, as that is cleaned automatically by the database engine
