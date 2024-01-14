@@ -156,10 +156,14 @@ class Card:
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
 
+# TODO: Replace this assignment with distinct Card and CardFace classes
+CardFace = Card
+
+
 @dataclasses.dataclass(unsafe_hash=True)
 class CheckCard:
     front: Card
-    back: Card
+    back: CardFace
 
     @property
     def name(self) -> str:
@@ -260,17 +264,17 @@ class CheckCard:
 
 
 class ImageDatabaseCards(typing.NamedTuple):
-    visible: typing.List[typing.Tuple[Card, "CacheContent"]] = []
-    hidden: typing.List[typing.Tuple[Card, "CacheContent"]] = []
+    visible: typing.List[typing.Tuple[CardFace, "CacheContent"]] = []
+    hidden: typing.List[typing.Tuple[CardFace, "CacheContent"]] = []
     unknown: typing.List["CacheContent"] = []
 
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
-AnyCardType = typing.Union[Card, CheckCard]
+AnyCardType = typing.Union[Card, CheckCard, CardFace]
 # Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
 AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)
-T = typing.TypeVar("T", Card, CheckCard)
+T = typing.TypeVar("T", Card, CheckCard, CardFace)
 write_semaphore = threading.BoundedSemaphore()
 
 
