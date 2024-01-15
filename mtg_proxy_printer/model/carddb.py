@@ -271,6 +271,7 @@ class ImageDatabaseCards(typing.NamedTuple):
 
 OptionalCard = typing.Optional[Card]
 CardList = typing.List[Card]
+CardFaceList = typing.List[CardFace]
 AnyCardType = typing.Union[Card, CheckCard, CardFace]
 # Py3.8 compatibility hack, because isinstance(a, AnyCardType) fails on 3.8
 AnyCardTypeForTypeCheck = typing.get_args(AnyCardType)
@@ -461,7 +462,7 @@ class CardDatabase(QObject):
         result = self._read_optional_scalar_from_db(query, parameters)
         return bool(result)
 
-    def get_cards_from_data(self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
+    def get_cards_from_data(self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardFaceList:
         """
         Called with some card identification data and returns all matching cards.
         Returns a list with Card objects, each containing complete information, except for the image pixmap.
@@ -513,7 +514,7 @@ class CardDatabase(QObject):
         return result
 
     def get_replacement_card_for_unknown_printing(
-            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
+            self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardFaceList:
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         query = cached_dedent('''\
         -- get_replacement_card_for_unknown_printing()
@@ -539,10 +540,10 @@ class CardDatabase(QObject):
         query += '        , VisiblePrintings.highres_image DESC\n'
         return self._get_cards_from_data(query, [card.scryfall_id, card.is_front, preferred_language])
 
-    def _get_cards_from_data(self, query, parameters) -> CardList:
+    def _get_cards_from_data(self, query, parameters) -> CardFaceList:
         cursor = self.db.execute(query, parameters)
         result = [
-            Card(
+            CardFace(
                 name, MTGSet(set_code, set_name), collector_number,
                 language, scryfall_id, bool(is_front), oracle_id, image_uri,
                 bool(highres_image), bool(is_oversized), face_number, bool(is_dfc),
