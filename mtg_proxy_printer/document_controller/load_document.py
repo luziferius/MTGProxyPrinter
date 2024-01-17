@@ -51,12 +51,11 @@ class ActionLoadDocument(DocumentAction):
             raise IllegalStateError("Cannot apply action twice")
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
-        if page_count := len(self.loaded_cards)-1:
-            self.actions.append(ActionNewPage(count=page_count).apply(document))
-        for page_index, page, cards_on_page in zip(range(len(document.pages)), document.pages, self.loaded_cards):
-            for card in cards_on_page:
-                self.actions.append(ActionAddCard(card, target_page=page_index).apply(document))
         document.set_currently_edited_page(document.pages[0])
+        for card in self.loaded_cards[0]:
+            self.actions.append(ActionAddCard(card).apply(document))
+        if page_count := len(self.loaded_cards)-1:
+            self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
         return super().apply(document)
 
     def undo(self, document: "Document") -> Self:
