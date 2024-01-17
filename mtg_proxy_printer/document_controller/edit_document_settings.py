@@ -18,11 +18,11 @@ import typing
 
 from ._interface import DocumentAction, ActionList, Self
 from .move_cards import ActionMoveCards
-from .page_actions import ActionNewPage
+from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
 
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings, DuplexMode
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -47,14 +47,19 @@ class ActionEditDocumentSettings(DocumentAction):
         self.reflow_actions: ActionList = []
 
     def apply(self, document: "Document") -> Self:
-        self.old_settings = document.page_layout
-        document.page_layout = self.new_settings
-        if self.old_settings != self.new_settings:
-            document.page_layout_changed.emit(self.new_settings)
-        old_capacities = self.old_settings.compute_page_card_capacity(PageType.REGULAR), \
-            self.old_settings.compute_page_card_capacity(PageType.OVERSIZED)
-        new_capacities = self.new_settings.compute_page_card_capacity(PageType.REGULAR), \
-            self.new_settings.compute_page_card_capacity(PageType.OVERSIZED)
+        self.old_settings = old_settings = document.page_layout
+        document.page_layout = new_settings = self.new_settings
+        if old_settings != new_settings:
+            document.page_layout_changed.emit(new_settings)
+        off = DuplexMode.OFF
+        if old_settings.duplex_mode is off and new_settings.duplex_mode is not off:
+            self._enable_duplex_mode(document, new_settings.duplex_mode)
+        elif old_settings.duplex_mode is not off and new_settings.duplex_mode is off:
+            self._disable_duplex_mode(document)
+        old_capacities = old_settings.compute_page_card_capacity(PageType.REGULAR), \
+            old_settings.compute_page_card_capacity(PageType.OVERSIZED)
+        new_capacities = new_settings.compute_page_card_capacity(PageType.REGULAR), \
+            new_settings.compute_page_card_capacity(PageType.OVERSIZED)
         if new_capacities < old_capacities:
             self._reflow_document(document)
         return super().apply(document)
@@ -107,3 +112,13 @@ class ActionEditDocumentSettings(DocumentAction):
     @property
     def as_str(self):
         return "Update document settings"
+
+    def _enable_duplex_mode(self, document: "Document", mode: DuplexMode):
+        logger.info(f"Enabling duplex printing mode {mode}")
+        for page in range(document.rowCount(), 0, -1):
+            self.reflow_actions.append((ActionNewPage(page).apply(document)))
+
+    def _disable_duplex_mode(self, document: "Document"):
+        logger.info("Disabling duplex printing mode")
+        for page in range(document.rowCount()-1, -1, -2):
+            self.reflow_actions.append((ActionRemovePage(page).apply(document)))
