@@ -20,12 +20,11 @@ import typing
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, QItemSelection
 from PyQt5.QtGui import QIcon
 
-from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType
+from mtg_proxy_printer.model.carddb import Card, CardIdentificationData, CardDatabase, AnyCardType, CardList
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
-CardList = typing.List[Card]
 
 __all__ = [
     "CardListModel",
