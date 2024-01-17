@@ -19,6 +19,7 @@ import typing
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.model.carddb import CardList
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -38,9 +39,10 @@ class ActionNewPage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["position", "count"]
 
-    def __init__(self, position: int = None, *, count: int = 1):
+    def __init__(self, position: int = None, *, count: int = 1, content: typing.List[CardList] = None):
         self.position = position
         self.count = count
+        self.content = content or []
 
     def apply(self, document: "Document") -> Self:
         self.position = document.rowCount() if self.position is None \

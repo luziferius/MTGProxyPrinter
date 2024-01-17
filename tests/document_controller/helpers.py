@@ -16,6 +16,8 @@
 """
 This module contains an assortment of small helper functions used in the tests for the document controller
 """
+import itertools
+
 from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
@@ -66,14 +68,10 @@ def card_container_with(card: AnyCardType, parent: Page):
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
     """Appends a new card with the given name and size to the given page, returning the Card"""
     new_card = create_card(name, oversized)
-    page.append(CardContainer(
-        page,
-        new_card
-    ))
+    page.append(new_card)
     return new_card
 
 
 def insert_card_in_page(page: Page, card: Card, count: int = 1):
     """Inserts the given card count times into the given page."""
-    for _ in range(count):
-        page.append(CardContainer(page, card))
+    page += itertools.repeat(card, count)

@@ -31,7 +31,7 @@ def insert_mock_in_page(page: Page, count: int = 1):
     Inserts the given amount of mock cards into the given page to make it distinguishable from other pages.
     """
     for _ in range(count):
-        page.append(CardContainer(page, MagicMock(spec=Card)))
+        page.append(MagicMock(spec=Card))
         
 
 def test_apply_without_position_appends_new_page(qtbot, document_light):
