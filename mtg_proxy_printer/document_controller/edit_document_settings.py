@@ -116,6 +116,9 @@ class ActionEditDocumentSettings(DocumentAction):
     def _enable_duplex_mode(self, document: "Document", mode: DuplexMode):
         logger.info(f"Enabling duplex printing mode {mode}")
         for page in range(document.rowCount(), 0, -1):
+            # TODO: Evaluate, if it is useful to add a "content" parameter to ActionNewPage that takes a
+            #  CardList or list[CardList] and internally populates the new page(s) with the given content
+            #  This should reduce complexity and Qt model overhead
             self.reflow_actions.append((ActionNewPage(page).apply(document)))
 
     def _disable_duplex_mode(self, document: "Document"):
