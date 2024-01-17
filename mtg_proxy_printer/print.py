@@ -61,8 +61,8 @@ def create_printer(renderer: "Renderer") -> QPrinter:
             f"margins={layout.margin_left, layout.margin_top, layout.margin_right, layout.margin_bottom}")
     # magnitude returns a float by default, so round to int to avoid a TypeError
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-    printer.setDoubleSidedPrinting(document.page_layout.duplex_mode.is_duplex())
-    printer.setDuplex(document.page_layout.duplex_mode.qt_duplex_mode())
+    printer.setDoubleSidedPrinting(layout.duplex_mode.is_duplex())
+    printer.setDuplex(layout.duplex_mode.qt_duplex_mode())
     printer.setOutputFormat(QPrinter.NativeFormat)
     if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
         printer.setFullPage(True)
