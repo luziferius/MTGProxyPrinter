@@ -35,28 +35,28 @@ class ActionNewPage(DocumentAction):
     """
     Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
     If given None for the position, append the page to the document end instead. Page count defaults to 1.
+    if content is given, it must be a list of length equal to count, and contain List[AnyCardType].
+    Individual lists in content may be empty. If content is given, the cards in content are placed on the created pages.
     """
 
-    COMPARISON_ATTRIBUTES = ["position", "count"]
+    COMPARISON_ATTRIBUTES = ["position", "count", "content",]
 
     def __init__(self, position: int = None, *, count: int = 1, content: typing.List[CardList] = None):
+        if count <= 0:
+            raise ValueError(f"Invalid page count given: {count}")
         self.position = position
         self.count = count
-        self.content = content or []
+        self.content: typing.List[CardList] = content or [[]] * count
+        self._validate_content_does_not_create_mixed_pages(self.content)
+        if len(self.content) != count:
+            raise ValueError("Page content given, but not enough to supply all pages")
 
     def apply(self, document: "Document") -> Self:
         self.position = document.rowCount() if self.position is None \
             else max(0, min(self.position, document.rowCount()))
         document.beginInsertRows(document.INVALID_INDEX, self.position, self.position+self.count-1)
-        if self.position == document.rowCount():
-            for _ in range(self.count):
-                new_page = Page()
-                document.pages.append(new_page)
-                document.page_index_cache[id(new_page)] = len(document.pages) - 1
-        else:
-            for _ in range(self.count):
-                document.pages.insert(self.position, Page())
-            document.recreate_page_index_cache()
+        document.pages[self.position:self.position] = map(Page, self.content)
+        document.recreate_page_index_cache()
         document.endInsertRows()
         return super().apply(document)
 
@@ -72,6 +72,13 @@ class ActionNewPage(DocumentAction):
             return f"Add page {self.position+1}"
         return f"Add pages {self.position+1}-{self.position+self.count}"
 
+    @staticmethod
+    def _validate_content_does_not_create_mixed_pages(content: typing.List[CardList]):
+        for index, page in enumerate(content):
+            types_on_page = {card.requested_page_type() for card in page}
+            if len(types_on_page) > 1:
+                raise ValueError(f"Mixed-size content on page {index}. Requested: {types_on_page}, cards: {page}")
+
 
 class ActionRemovePage(DocumentAction):
     """
@@ -85,7 +92,7 @@ class ActionRemovePage(DocumentAction):
         self.position = position
         self.count = count
         self.removed_pages: typing.List[Page] = []
-        self.currently_edited_page = None  # Set, if the currently edited page is removed
+        self.currently_edited_page: typing.Optional[Page] = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 
     def apply(self, document: "Document") -> Self:
