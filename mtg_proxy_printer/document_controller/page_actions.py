@@ -19,7 +19,7 @@ import typing
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
-from mtg_proxy_printer.model.carddb import CardList
+from mtg_proxy_printer.model.carddb import AnyCardType
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -29,6 +29,7 @@ __all__ = [
     "ActionNewPage",
     "ActionRemovePage",
 ]
+ContentType = typing.List[typing.Iterable[AnyCardType]]
 
 
 class ActionNewPage(DocumentAction):
@@ -41,12 +42,12 @@ class ActionNewPage(DocumentAction):
 
     COMPARISON_ATTRIBUTES = ["position", "count", "content",]
 
-    def __init__(self, position: int = None, *, count: int = 1, content: typing.List[CardList] = None):
+    def __init__(self, position: int = None, *, count: int = 1, content: ContentType = None):
         if count <= 0:
             raise ValueError(f"Invalid page count given: {count}")
         self.position = position
         self.count = count
-        self.content: typing.List[CardList] = content or [[]] * count
+        self.content: ContentType = content or [[]] * count
         self._validate_content_does_not_create_mixed_pages(self.content)
         if len(self.content) != count:
             raise ValueError("Page content given, but not enough to supply all pages")
@@ -73,7 +74,7 @@ class ActionNewPage(DocumentAction):
         return f"Add pages {self.position+1}-{self.position+self.count}"
 
     @staticmethod
-    def _validate_content_does_not_create_mixed_pages(content: typing.List[CardList]):
+    def _validate_content_does_not_create_mixed_pages(content: ContentType):
         for index, page in enumerate(content):
             types_on_page = {card.requested_page_type() for card in page}
             if len(types_on_page) > 1:
