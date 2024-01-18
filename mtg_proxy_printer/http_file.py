@@ -154,10 +154,6 @@ class MeteredSeekableHTTPFile(QObject):
             else:
                 buffer_length = len(buffer)
                 self._store_and_report_read_progress(buffer_length)
-                if count is not None and buffer_length < count:
-                    logger.warning(
-                        f"read() failed to provide the requested {count} bytes, returning {buffer_length}. "
-                    )
                 return buffer
         if last_error is not None:
             raise last_error
