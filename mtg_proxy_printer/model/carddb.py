@@ -690,6 +690,7 @@ class CardDatabase(QObject):
         """
         from mtg_proxy_printer.model.imagedb import CacheContent
         db = self.db
+        db.execute("SAVEPOINT 'partition_image_cache'")
         db.execute(cached_dedent('''\
             CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
               scryfall_id TEXT NOT NULL,
@@ -744,8 +745,7 @@ class CardDatabase(QObject):
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
-        db.execute("ROLLBACK")
-        db.execute("BEGIN TRANSACTION")
+        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache'")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
