@@ -32,6 +32,13 @@ __all__ = [
     "ActionAddCard",
     "ActionRemoveCards",
 ]
+T = typing.TypeVar("T")
+
+
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
+    iterable = iter(iterable)
+    return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
 
 
 class ActionAddCard(DocumentAction):
@@ -80,14 +87,9 @@ class ActionAddCard(DocumentAction):
             logger.debug(
                 f"No further empty slots found. Appending {self.added_new_pages} new pages to the document, "
                 f"to fit the remaining {copies} copies.")
-            ActionNewPage(count=self.added_new_pages).apply(document)
-        if copies > 0:
+            content = split_iterable(itertools.repeat(self.card, copies), page_capacity_for_card)
+            ActionNewPage(count=self.added_new_pages, content=content).apply(document)
             self.first_added_page = current_page_position
-        while copies > 0:
-            # Here, the individual cards don’t need to be tracked, as the whole pages get deleted on undo.
-            copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
-            current_page_position += 1
         return super().apply(document)
 
     @staticmethod
