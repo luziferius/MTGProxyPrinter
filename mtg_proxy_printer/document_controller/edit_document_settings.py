@@ -67,11 +67,7 @@ class ActionEditDocumentSettings(DocumentAction):
         pages = document.pages
         layout = document.page_layout
         page_capacity = layout.compute_page_card_capacity(page_type)
-
-        current_index = -1
-        while current_index < document.rowCount()-1:
-            current_index += 1
-            current_page = pages[current_index]
+        for current_index, current_page in enumerate(pages):
             if not current_page.accepts_card(page_type):
                 continue
             cards_on_page = len(current_page)
