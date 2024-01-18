@@ -36,6 +36,7 @@ __all__ = [
     "ActionList",
     "split_iterable",
 ]
+T = typing.TypeVar("T")
 
 
 def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
