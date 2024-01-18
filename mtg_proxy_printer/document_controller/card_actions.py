@@ -22,7 +22,7 @@ from mtg_proxy_printer.model.carddb import Card, AnyCardType
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
-from ._interface import DocumentAction, IllegalStateError, Self
+from ._interface import DocumentAction, IllegalStateError, Self, split_iterable
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
 
@@ -33,12 +33,6 @@ __all__ = [
     "ActionRemoveCards",
 ]
 T = typing.TypeVar("T")
-
-
-def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
-    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
-    iterable = iter(iterable)
-    return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
 
 
 class ActionAddCard(DocumentAction):
