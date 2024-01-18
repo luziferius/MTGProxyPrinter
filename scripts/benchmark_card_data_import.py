@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -17,9 +19,11 @@ import argparse
 from pathlib import Path
 import dataclasses
 import sys
+import types
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import mtg_proxy_printer.printing_filter_updater
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
 
@@ -53,7 +57,7 @@ to_be_profiled_functions = {
         "_parse_single_printing",
         "_insert_set",
         "_insert_card_faces",
-        "_insert_card_filters",
+        "_update_card_filters",
         "_clean_unused_data",
         "_insert_card",
         "_handle_printing",
@@ -105,7 +109,13 @@ if __name__ == "__main__":
     elif args.keep:
         print("Re-use existing database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
+    fup = mtg_proxy_printer.printing_filter_updater.PrintingFilterUpdater(cdb)
     cid = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(cdb)
+    # Remove the semaphore protection, because it also checks the QApplication instance to determine if tasks should
+    # start. That does not exist in this context, and thus needs to be removed.
+    cid.import_card_data_from_local_file = types.MethodType(cid.import_card_data_from_local_file.__wrapped__, cid)
+
     print("Starting benchmark…")
+    fup._store_current_printing_filters()
     cid.import_card_data_from_local_file(args.card_data)
     print("Done")

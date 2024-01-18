@@ -18,6 +18,7 @@ import functools
 import gzip
 import math
 import shutil
+import textwrap
 from pathlib import Path
 import re
 import sqlite3
@@ -451,11 +452,6 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         face_ids: IntTuples = []
         related_printings: typing.List[RelatedPrintingData] = []
         db = self.db
-        # PrintingDisplayFilter will be re-populated while iterating over the card data.
-        # Axing the previous data is far cheaper than trying
-        # to update it in-place by removing up to number-of-available-filters entries per each individual card,
-        # just to make sure that rare un-banned cards are updated properly.
-        db.execute("DELETE FROM PrintingDisplayFilter\n")
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -548,7 +544,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         back_face_id = self._insert_card_back_id(card.get("card_back_id"))
         printing_id = self._handle_printing(card, card_id, set_id, back_face_id)
         filter_data = _get_card_filter_data(card)
-        self._insert_card_filters(printing_id, filter_data)
+        self._update_card_filters(printing_id, filter_data)
         new_face_ids = self._insert_card_faces(card, language_id, printing_id)
         return new_face_ids
 
@@ -770,14 +766,28 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 face_ids.append(card_face_id)
         return face_ids
 
-    def _insert_card_filters(
+    def _update_card_filters(
             self, printing_id: int, filter_data: typing.Dict[str, bool]):
         printing_filter_ids = self._read_printing_filters_from_db()
-        self.db.executemany(
-            "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)\n",
-            ((printing_id, printing_filter_ids[filter_name])
-             for filter_name, filter_applies in filter_data.items() if filter_applies)
+        db = self.db
+        active_printing_filters = set(
+            (printing_id, printing_filter_ids[filter_name])
+            for filter_name, filter_applies in filter_data.items() if filter_applies
         )
+        stored_printing_filters: typing.Set[typing.Tuple[int, int]] = set(db.execute(
+            "SELECT printing_id, filter_id FROM PrintingDisplayFilter WHERE printing_id = ?",
+            (printing_id,)
+        ))
+        if new := (active_printing_filters - stored_printing_filters):
+            db.executemany(
+                "INSERT INTO PrintingDisplayFilter (printing_id, filter_id) VALUES (?, ?)",
+                new
+            )
+        if removed := (stored_printing_filters - active_printing_filters):
+            db.executemany(
+                "DELETE FROM PrintingDisplayFilter WHERE printing_id = ? AND filter_id = ?",
+                removed
+            )
 
 
 def _get_related_cards(card: CardDataType):

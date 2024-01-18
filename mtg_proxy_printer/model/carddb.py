@@ -581,7 +581,7 @@ class CardDatabase(QObject):
           FROM Card
           JOIN related_oracle_ids ON Card.card_id = related_oracle_ids.related_id
         """)
-        related_card_ids = self.db.execute(query, (card.oracle_id,)).fetchall()  # TODO: fetchall() not required
+        related_card_ids = self.db.execute(query, (card.oracle_id,))
         cards = []
         for related_oracle_id, in related_card_ids:
             # Prefer same set over other sets, which is important for multi-component cards like Meld cards. If it

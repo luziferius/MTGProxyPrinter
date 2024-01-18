@@ -199,8 +199,9 @@ def test_valid_data_loads_correctly(
         with qtbot.waitSignals([loader.loading_state_changed]*2,
                                check_params_cbs=[(lambda value: value), (lambda value: not value)]):
             loader.load_document(save_path)
+    page_count = 1 + (document.page_layout.duplex_mode != document.page_layout.duplex_mode.OFF)
     mock.assert_called_once()
-    assert_that(document.rowCount(), is_(equal_to(1)))
+    assert_that(document.rowCount(), is_(equal_to(page_count)))
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
     assert_that(document.rowCount(page_index), is_(2))

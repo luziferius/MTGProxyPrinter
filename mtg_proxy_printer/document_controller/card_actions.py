@@ -21,7 +21,7 @@ import typing
 from mtg_proxy_printer.model.carddb import Card, AnyCardType
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_page import CardContainer
+from mtg_proxy_printer.model.document_page import Page
 from ._interface import DocumentAction, IllegalStateError, Self
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
@@ -32,6 +32,13 @@ __all__ = [
     "ActionAddCard",
     "ActionRemoveCards",
 ]
+T = typing.TypeVar("T")
+
+
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
+    iterable = iter(iterable)
+    return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
 
 
 class ActionAddCard(DocumentAction):
@@ -80,14 +87,9 @@ class ActionAddCard(DocumentAction):
             logger.debug(
                 f"No further empty slots found. Appending {self.added_new_pages} new pages to the document, "
                 f"to fit the remaining {copies} copies.")
-            ActionNewPage(count=self.added_new_pages).apply(document)
-        if copies > 0:
+            content = split_iterable(itertools.repeat(self.card, copies), page_capacity_for_card)
+            ActionNewPage(count=self.added_new_pages, content=content).apply(document)
             self.first_added_page = current_page_position
-        while copies > 0:
-            # Here, the individual cards don’t need to be tracked, as the whole pages get deleted on undo.
-            copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
-            current_page_position += 1
         return super().apply(document)
 
     @staticmethod
@@ -112,7 +114,7 @@ class ActionAddCard(DocumentAction):
             return 0
         document.beginInsertRows(page_index, first_index, last_index)
         old_page_type = page.page_type()
-        page += (CardContainer(page, card) for _ in range(cards_inserted))
+        page += (card for _ in range(cards_inserted))
         logger.debug(f"After insert, page contains {len(page)} images.")
         document.endInsertRows()
         if old_page_type != (new_page_type := page.page_type()):
@@ -175,7 +177,7 @@ class ActionRemoveCards(DocumentAction):
         # if the user selects cards from bottom to top, the rows have to be sorted.
         self.card_ranges_to_remove = to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
-        self.removed_cards: typing.List[typing.List[CardContainer]] = []
+        self.removed_cards: typing.List[Page] = []
 
     def apply(self, document: "Document") -> Self:
         if self.page_number is None:
@@ -198,7 +200,7 @@ class ActionRemoveCards(DocumentAction):
             raise IllegalStateError("page_number is None")
         page = document.pages[self.page_number]
         page_index = document.index(self.page_number, 0)
-        for (begin, end), cards in zip(self.card_ranges_to_remove, self.removed_cards):
+        for (begin, end), cards in zip(self.card_ranges_to_remove, self.removed_cards):  # type: (int, int), Page
             document.beginInsertRows(page_index, begin, end)
             for card in reversed(cards):
                 page.insert(begin, card)
