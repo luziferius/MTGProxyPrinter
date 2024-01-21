@@ -23,6 +23,7 @@ import pathlib
 import threading
 import typing
 
+import delegateto
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
@@ -110,25 +111,18 @@ class CardCorner(enum.Enum):
     BOTTOM_RIGHT = (1-25/745, 1-25/1040)
 
 
-@dataclasses.dataclass(unsafe_hash=True)
-class Card:
-    name: str = dataclasses.field(compare=True)
-    set: MTGSet = dataclasses.field(compare=True)
-    collector_number: str = dataclasses.field(compare=True)
-    language: str = dataclasses.field(compare=True)
-    scryfall_id: str = dataclasses.field(compare=True)
-    is_front: bool = dataclasses.field(compare=True)
-    oracle_id: str = dataclasses.field(compare=True)
-    image_uri: str = dataclasses.field(compare=False)
-    highres_image: bool = dataclasses.field(compare=False)
-    is_oversized: bool = dataclasses.field(compare=False)
-    face_number: int = dataclasses.field(compare=False)
-    is_dfc: bool = dataclasses.field(compare=False)
-    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
-
-    def set_image_file(self, image: QPixmap):
-        self.image_file = image
-        self.corner_color.cache_clear()
+class CardViewInterface:
+    """These attributes must be present, as they are shown by the UI"""
+    name: str
+    set: MTGSet
+    collector_number: str
+    language: str
+    scryfall_id: str
+    is_front: bool
+    image_uri: str
+    highres_image: bool
+    is_oversized: bool
+    image_file: typing.Optional[QPixmap]
 
     def requested_page_type(self) -> PageType:
         if self.image_file is None:
@@ -155,15 +149,54 @@ class Card:
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
+@dataclasses.dataclass(unsafe_hash=True)
+class CardFace(CardViewInterface):
+    name: str = dataclasses.field(compare=True)
+    set: MTGSet = dataclasses.field(compare=True)
+    collector_number: str = dataclasses.field(compare=True)
+    language: str = dataclasses.field(compare=True)
+    scryfall_id: str = dataclasses.field(compare=True)
+    is_front: bool = dataclasses.field(compare=True)
+    oracle_id: str = dataclasses.field(compare=True)
+    image_uri: str = dataclasses.field(compare=False)
+    highres_image: bool = dataclasses.field(compare=False)
+    is_oversized: bool = dataclasses.field(compare=False)
+    face_number: int = dataclasses.field(compare=False)
+    is_dfc: bool = dataclasses.field(compare=False)
+    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
 
-# TODO: Replace this assignment with distinct Card and CardFace classes
-CardFace = Card
+    def set_image_file(self, image: QPixmap):
+        self.image_file = image
+        self.corner_color.cache_clear()
 
 
 @dataclasses.dataclass(unsafe_hash=True)
-class CheckCard:
+@delegateto.delegate(
+    "front", [
+        "name", "set", "collector_number", "language", "scryfall_id", "oracle_id", "image_uri", "highres_image",
+        "is_oversized", "is_dfc", "image_file", "display_string"])
+class Card(CardViewInterface):
+    front: CardFace = dataclasses.field(compare=True)
+    back: CardFace = dataclasses.field(compare=True)
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class BackFace(CardViewInterface):
+    name: str = dataclasses.field(compare=True)
+    set: MTGSet = dataclasses.field(compare=True)
+    collector_number: str = dataclasses.field(compare=True)
+    language: str = dataclasses.field(compare=True)
+    scryfall_id: str = dataclasses.field(compare=True)
+    is_front: bool = dataclasses.field(compare=True)
+    image_uri: str = dataclasses.field(compare=False)
+    highres_image: bool = dataclasses.field(compare=False)
+    image_file: typing.Optional[QPixmap] = dataclasses.field(default=None, compare=False)
+
+
+@dataclasses.dataclass(unsafe_hash=True)
+class CheckCard(CardViewInterface):
     front: Card
-    back: CardFace
+    back: BackFace
 
     @property
     def name(self) -> str:
@@ -261,6 +294,8 @@ class CheckCard:
 
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
+
+
 
 
 class ImageDatabaseCards(typing.NamedTuple):
