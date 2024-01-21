@@ -165,7 +165,10 @@ class ActionAddCard(DocumentAction):
 
 
 class ActionRemoveCards(DocumentAction):
-    """Deletes one or more cards from a page. The cards are given as an ascendingly sorted sequence of array indices."""
+    """
+    Deletes one or more cards from a page.
+    The cards are given as a sorted, inclusive sequence of ascending array indices.
+    """
 
     COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
