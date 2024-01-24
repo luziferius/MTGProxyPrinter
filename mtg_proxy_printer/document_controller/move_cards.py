@@ -101,7 +101,7 @@ class ActionMoveCards(DocumentAction):
 
         # During apply(), all cards were appended to the target page. During undo, the ranges are extracted in order
         # from the source page. Thus, the first source row is now constant across all ranges
-        source_row_first = len(source_page) - self._total_moved_cards()
+        source_row_first = len(source_page) - self._total_moved_cards() if self.target_row is None else self.target_row
         for target_row_first, target_row_last in self.card_ranges_to_move:
             source_row_last = source_row_first + target_row_last - target_row_first
             self._move_cards_to_target_page(

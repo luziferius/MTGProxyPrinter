@@ -465,7 +465,7 @@ def test_undo_with_target_at_front_from_front(qtbot, document_light):
     c2 = append_new_card_in_page(pages[0], "C2")
     c1 = append_new_card_in_page(pages[1], "C1")
     c3 = append_new_card_in_page(pages[1], "C3")
-    action = ActionMoveCards(0, [1], 1, 0)
+    action = ActionMoveCards(0, [0], 1, 0)
     row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 0, 0, 0, 0)
     with qtbot.assert_not_emitted(document_light.page_type_changed), \
             qtbot.wait_signals(
