@@ -35,35 +35,43 @@ __all__ = [
 
 class ActionMoveCards(DocumentAction):
     """
-    Moves a sequence of cards from a source page to a target page.
+    Moves a sequence of cards from a source page to a target page. By default, cards are appended.
     Values of consecutive card ranges are inclusive.
     """
 
     COMPARISON_ATTRIBUTES = ["source_page", "target_page", "card_ranges_to_move"]
 
-    def __init__(self, source: int, cards_to_move: typing.Sequence[int], target_page: int):
+    def __init__(self, source: int, cards_to_move: typing.Sequence[int], target_page: int, target_row: int = None):
+        """
+        :param source: The source page, as integer page number (0-indexed)
+        :param cards_to_move: The cards to move, as indices into the source Page. May be in any order. (0-indexed)
+        :param target_page: The target page, as integer page number. (0-indexed)
+        :param target_row: If given, the cards_to_move are inserted at that array index (0-indexed).
+                           Existing cards in the target page at that index are pushed back.
+        """
         self.source_page = source
         self.target_page = target_page
+        self.target_row = target_row
         self.card_ranges_to_move = self._to_list_of_ranges(cards_to_move)
 
     def apply(self, document: "Document") -> Self:
         source_page = document.pages[self.source_page]
         target_page = document.pages[self.target_page]
-        if not target_page.accepts_card(source_page[0].card.requested_page_type()):
+        source_page_type = source_page.page_type()
+        target_page_type = target_page.page_type()
+        if not target_page.accepts_card(source_page_type):
             raise IllegalStateError(
-                f"Can not move card requesting page type {source_page.page_type()} "
-                f"onto a page with type {target_page.page_type()}"
+                f"Can not move card requesting page type {source_page_type} "
+                f"onto a page with type {target_page_type}"
             )
         source_index = document.index(self.source_page, 0)
         target_index = document.index(self.target_page, 0)
-        source_page_type = source_page.page_type()
-        target_page_type = target_page.page_type()
 
-        destination_row = len(target_page)
+        target_row = len(target_page) if self.target_row is None else self.target_row
         for source_row_first, source_row_last in reversed(self.card_ranges_to_move):
             self._move_cards_to_target_page(
                 document, source_index, source_page, source_row_first, source_row_last, target_index,
-                target_page, destination_row
+                target_page, target_row
             )
         if source_page.page_type() != source_page_type:
             document.page_type_changed.emit(source_index)
