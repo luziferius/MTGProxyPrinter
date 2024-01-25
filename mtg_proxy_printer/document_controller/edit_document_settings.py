@@ -82,7 +82,7 @@ class ActionEditDocumentSettings(DocumentAction):
 
     @staticmethod
     def _filter_enumerate_pages_accepting_type(
-            document: "Document", page_type: PageType) -> typing.Generator["Page", None, None]:
+            document: "Document", page_type: PageType) -> typing.Generator[typing.Tuple[int, "Page"], None, None]:
         for index, page in enumerate(document.pages):
             if page.accepts_card(page_type):
                 yield index, page
