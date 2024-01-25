@@ -25,6 +25,7 @@ from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 
 if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document_page import Page
     from mtg_proxy_printer.model.document import Document
 
 logger = get_logger(__name__)
@@ -64,12 +65,9 @@ class ActionEditDocumentSettings(DocumentAction):
         self._reflow_pages_of_type(document, PageType.OVERSIZED)
 
     def _reflow_pages_of_type(self, document: "Document", page_type: PageType):
-        pages = document.pages
         layout = document.page_layout
         page_capacity = layout.compute_page_card_capacity(page_type)
-        for current_index, current_page in enumerate(pages):
-            if not current_page.accepts_card(page_type):
-                continue
+        for current_index, current_page in self._filter_enumerate_pages_accepting_type(document, page_type):
             cards_on_page = len(current_page)
             if (excess_cards := cards_on_page - page_capacity) > 0:
                 target_index = self._find_next_page_accepting(document, page_type, current_index)
@@ -81,6 +79,13 @@ class ActionEditDocumentSettings(DocumentAction):
 
                 action = ActionMoveCards(current_index, range(page_capacity, cards_on_page), target_index)
                 self.reflow_actions.append(action.apply(document))
+
+    @staticmethod
+    def _filter_enumerate_pages_accepting_type(
+            document: "Document", page_type: PageType) -> typing.Generator["Page", None, None]:
+        for index, page in enumerate(document.pages):
+            if page.accepts_card(page_type):
+                yield index, page
 
     @staticmethod
     def _find_next_page_accepting(document: "Document", page_type: PageType, index: int) -> typing.Optional[int]:
