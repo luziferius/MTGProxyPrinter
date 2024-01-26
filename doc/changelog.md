@@ -9,6 +9,7 @@
 
 ## Fixed issues
 
+- Fixed broken rendering/printing when entering large row or column spacings in the document settings.
 - Fixed crash when adding multiple copies of a card distributes those cards on the current and next page.
 - Fixed multiple crashes that may have occurred in 0.26.0 when trying to run multiple actions in parallel,
   like exporting a PDF, while updating the printing filter settings runs simultaneously.
