@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.26.1 (2024-01-27)   <a name="v0_26_1"></a>
 
 ## Changed features
 
