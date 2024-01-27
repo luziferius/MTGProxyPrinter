@@ -107,13 +107,13 @@ class ActionEditDocumentSettings(DocumentAction):
         # TODO: The algorithm currently isn't very optimized. This loop should insert new pages,
         #  if the excess exceeds some threshold.
         for page_index, page in enumerate(partition.pages[:-1], start=start_index):
-            if len(page) > page_capacity:
-                action = ActionMoveCards(page_index, range(page_capacity, len(page)), page_index+1, 0)
+            if (page_length := len(page)) > page_capacity:
+                action = ActionMoveCards(page_index, range(page_capacity, page_length), page_index+1, 0)
                 self.reflow_actions.append(action.apply(document))
         last_page = partition.pages[-1]
-        if (last_page_size := len(last_page)) > page_capacity:
+        if (page_length := len(last_page)) > page_capacity:
             excess = split_iterable((c.card for c in last_page[page_capacity:]), page_capacity)
-            self.reflow_actions.append(ActionRemoveCards(range(page_capacity, last_page_size), end_index-1).apply(document))
+            self.reflow_actions.append(ActionRemoveCards(range(page_capacity, page_length), end_index-1).apply(document))
             self.reflow_actions.append(ActionNewPage(end_index, count=len(excess), content=excess).apply(document))
 
     def undo(self, document: "Document") -> Self:
