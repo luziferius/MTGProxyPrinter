@@ -34,10 +34,15 @@ ContentType = typing.List[typing.Iterable[AnyCardType]]
 
 class ActionNewPage(DocumentAction):
     """
-    Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
-    If given None for the position, append the page to the document end instead. Page count defaults to 1.
-    if content is given, it must be a list of length equal to count, and contain List[AnyCardType].
-    Individual lists in content may be empty. If content is given, the cards in content are placed on the created pages.
+    Insert count new, empty pages at the given index or at the document end.
+    If the position is None, append the page at the end.
+    Otherwise, insert it at the given index, pushing the page at and after the position behind the new pages.
+    Positions are clamped into the range [0, page_count].
+
+    Page count defaults to 1.
+    If content is given, it must be a list of length equal to count, and contain List[AnyCardType].
+    Individual lists in content may be empty. If content is given, the cards in content are placed on the
+    created pages in the order given.
     """
 
     COMPARISON_ATTRIBUTES = ["position", "count", "content",]

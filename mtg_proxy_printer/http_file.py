@@ -147,13 +147,13 @@ class MeteredSeekableHTTPFile(QObject):
             except (ConnectionAbortedError, socket.timeout) as e:
                 last_error = e
                 self.file = self._urlopen(self.tell(), outer_retries=retry)
+            except AttributeError as e:
+                # underlying file deleted, probably because the app force-deleted it during shutdown.
+                self.close()
+                raise ValueError("I/o operation on deleted file.") from e
             else:
                 buffer_length = len(buffer)
                 self._store_and_report_read_progress(buffer_length)
-                if count is not None and buffer_length < count:
-                    logger.warning(
-                        f"read() failed to provide the requested {count} bytes, returning {buffer_length}. "
-                    )
                 return buffer
         if last_error is not None:
             raise last_error

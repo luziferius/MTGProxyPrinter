@@ -75,13 +75,34 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
     assert_that(page_layout.compute_page_card_capacity(), is_(equal_to(9)))
 
 
-@pytest.mark.parametrize("page_type, expected", [
-    (PageType.OVERSIZED, 2),
-    (PageType.REGULAR, 3),
-    (PageType.MIXED, 3),
-    (PageType.UNDETERMINED, 3),
+@pytest.mark.parametrize("row_spacing, expected, page_type", [
+    (0, 3, PageType.REGULAR),
+    (0, 3, PageType.UNDETERMINED),
+
+    (11, 3, PageType.REGULAR),
+    (11, 3, PageType.UNDETERMINED),
+    (12, 2, PageType.REGULAR),
+    (12, 2, PageType.UNDETERMINED),
+
+    (111, 2, PageType.REGULAR),
+    (111, 2, PageType.UNDETERMINED),
+    (112, 1, PageType.REGULAR),
+    (112, 1, PageType.UNDETERMINED),
+
+    (0, 2, PageType.OVERSIZED),
+
+    (35, 2, PageType.OVERSIZED),
+    (36, 1, PageType.OVERSIZED),
+
+    # Spacing is between multiple rows. So any large value should result in at least 1 row,
+    # because there is no spacing with one row
+    (1000, 1, PageType.REGULAR),
+    (1000, 1, PageType.UNDETERMINED),
+    (1000, 1, PageType.OVERSIZED),
 ])
-def test_page_layout_compute_page_row_count(page_layout: PageLayoutSettings, page_type: PageType, expected: int):
+def test_page_layout_compute_page_row_count(
+        page_layout: PageLayoutSettings, page_type: PageType, row_spacing: int, expected: int):
+    page_layout.row_spacing = row_spacing
     assert_that(page_layout.compute_page_row_count(page_type), is_(equal_to(expected)))
 
 
@@ -89,14 +110,34 @@ def test_page_layout_compute_compute_page_row_count_default_value(page_layout: P
     assert_that(page_layout.compute_page_row_count(), is_(equal_to(3)))
 
 
-@pytest.mark.parametrize("page_type, expected", [
-    (PageType.OVERSIZED, 2),
-    (PageType.REGULAR, 3),
-    (PageType.MIXED, 3),
-    (PageType.UNDETERMINED, 3),
+@pytest.mark.parametrize("column_spacing, expected, page_type", [
+    (0, 3, PageType.REGULAR),
+    (0, 3, PageType.UNDETERMINED),
+
+    (5, 3, PageType.REGULAR),
+    (5, 3, PageType.UNDETERMINED),
+    (6, 2, PageType.REGULAR),
+    (6, 2, PageType.UNDETERMINED),
+
+    (74, 2, PageType.REGULAR),
+    (74, 2, PageType.UNDETERMINED),
+    (75, 1, PageType.REGULAR),
+    (75, 1, PageType.UNDETERMINED),
+
+    (0, 2, PageType.OVERSIZED),
+
+    (24, 2, PageType.OVERSIZED),
+    (25, 1, PageType.OVERSIZED),
+
+    # Spacing is between multiple columns. So any large value should result in at least 1 column,
+    # because there is no spacing with only one column
+    (1000, 1, PageType.REGULAR),
+    (1000, 1, PageType.UNDETERMINED),
+    (1000, 1, PageType.OVERSIZED),
 ])
 def test_page_layout_compute_page_column_count(
-        page_layout: PageLayoutSettings, page_type: PageType, expected: int):
+        page_layout: PageLayoutSettings, page_type: PageType, column_spacing: int, expected: int):
+    page_layout.column_spacing = column_spacing
     assert_that(page_layout.compute_page_column_count(page_type), is_(equal_to(expected)))
 
 

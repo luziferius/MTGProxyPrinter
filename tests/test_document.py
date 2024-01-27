@@ -651,22 +651,6 @@ def test_update_page_layout_copies_the_passed_in_instance(document_light: Docume
     assert_that(document_light.page_layout, has_property("row_spacing", equal_to(1)))
 
 
-@pytest.mark.parametrize("page_type, column_spacing, row_spacing, expected", [
-    (PageType.REGULAR, 0, 0, 9),
-    (PageType.REGULAR, 17, 0, 6),
-    (PageType.REGULAR, 0, 10, 6),
-    (PageType.OVERSIZED, 0, 0, 4),
-    (PageType.OVERSIZED, 0, 10, 4),
-    (PageType.OVERSIZED, 0, 25, 2),
-])
-def test_page_layout_compute_page_card_capacity(
-        page_type: PageType, column_spacing: int, row_spacing: int, expected: int):
-    layout = PageLayoutSettings.create_from_settings()
-    layout.row_spacing = row_spacing
-    layout.column_spacing = column_spacing
-    assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
-
-
 @pytest.mark.parametrize("invalid_page_row", [2])
 def test_document__data_page_logs_error_on_invalid_index(document_light, invalid_page_row: int):
     index = document_light.createIndex(invalid_page_row, 0, None)

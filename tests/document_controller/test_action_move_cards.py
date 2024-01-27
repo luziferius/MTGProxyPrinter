@@ -25,7 +25,7 @@ from mtg_proxy_printer.document_controller import IllegalStateError
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 
-from .helpers import card_container_with, append_new_card_in_page
+from .helpers import card_container_with, append_new_card_in_page, card_container_with_name
 
 
 def validate_qt_model_move_signal_parameter(
@@ -249,6 +249,118 @@ def test_apply_move_two_separate_cards(qtbot, document_light):
     )
 
 
+def test_apply_move_card_with_target_inserts_at_front(qtbot, document_light):
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    card_1 = append_new_card_in_page(pages[0], "Move1")
+    not_moved = append_new_card_in_page(pages[0], "Stay on 0")
+    card_2 = append_new_card_in_page(pages[1], "After")
+    action = ActionMoveCards(0, [0], 1, 0)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 0, 0, 0, 1, 0)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.apply(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(not_moved, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with(card_1, pages[1]),
+                card_container_with(card_2, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
+
+
+def test_apply_move_card_with_target_inserts_between_cards(qtbot, document_light):
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    card_1 = append_new_card_in_page(pages[0], "Move1")
+    not_moved = append_new_card_in_page(pages[0], "Stay on 0")
+    card_2 = append_new_card_in_page(pages[1], "Before")
+    card_3 = append_new_card_in_page(pages[1], "After")
+    action = ActionMoveCards(0, [0], 1, 1)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 0, 0, 0, 1, 1)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.apply(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(not_moved, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with(card_2, pages[1]),
+                card_container_with(card_1, pages[1]),
+                card_container_with(card_3, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
+
+
+@pytest.mark.parametrize("target_row", [None, 1])  # Because the target has 1 card, both should give the same result
+def test_apply_move_card_with_target_appends_to_page(qtbot, document_light, target_row):
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    card_1 = append_new_card_in_page(pages[0], "Move1")
+    not_moved = append_new_card_in_page(pages[0], "Stay on 0")
+    card_2 = append_new_card_in_page(pages[1], "Before")
+    action = ActionMoveCards(0, [0], 1, target_row)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 0, 0, 0, 1, 1)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.apply(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(not_moved, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with(card_2, pages[1]),
+                card_container_with(card_1, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
+
+
+@pytest.mark.parametrize("target_row", [0, 1, None])
+def test_apply_without_indices_does_nothing(qtbot, document_light, target_row):
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    card_1 = append_new_card_in_page(pages[0], "Move1")
+    card_2 = append_new_card_in_page(pages[1], "After")
+    action = ActionMoveCards(0, [], 1, target_row)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.assert_not_emitted(document_light.rowsAboutToBeMoved), \
+            qtbot.assert_not_emitted(document_light.rowsMoved):
+        action.apply(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(card_1, pages[0])
+            ),
+            contains_exactly(
+                card_container_with(card_2, pages[1]),
+            )
+        ),
+        "Unexpected card move"
+    )
+
+
 @pytest.mark.parametrize("indices", [[], [0], [1], [0, 1], [0, 2], [0, 1, 2], [0, 1, 3, 4]])
 def test___total_moved_cards(indices):
     action = ActionMoveCards(0, indices, 0)
@@ -343,3 +455,130 @@ def test_undo_separates_two_source_ranges(qtbot, document_light):
         f": {[c.card.name for c in pages[0]]} + {[c.card.name for c in pages[1]]}"
     )
 
+
+def test_undo_with_target_at_front_from_front(qtbot, document_light):
+    """
+    test Undo [[C1, C2], [C3]] → [[C2], [C1, C3]]
+    """
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    c2 = append_new_card_in_page(pages[0], "C2")
+    c1 = append_new_card_in_page(pages[1], "C1")
+    c3 = append_new_card_in_page(pages[1], "C3")
+    action = ActionMoveCards(0, [0], 1, 0)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 0, 0, 0, 0)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.undo(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with_name(c1.name, pages[0]),
+                card_container_with_name(c2.name, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with_name(c3.name, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
+
+
+def test_undo_with_target_within_page(qtbot, document_light):
+    """
+    test Undo [[C1, C2], [C3, C4]] → [[C2], [C3, C1, C4]]
+    """
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    c2 = append_new_card_in_page(pages[0], "C2")
+    c3 = append_new_card_in_page(pages[1], "C3")
+    c1 = append_new_card_in_page(pages[1], "C1")
+    c4 = append_new_card_in_page(pages[1], "C4")
+    action = ActionMoveCards(0, [0], 1, 1)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 0)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.undo(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(c1, pages[0]),
+                card_container_with(c2, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with(c3, pages[1]),
+                card_container_with(c4, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
+
+
+@pytest.mark.parametrize("target_row", [None, 1])
+def test_undo_with_target_at_end_from_begin(qtbot, document_light, target_row):
+    """
+    test Undo [[C1, C2], [C3]] → [[C2], [C3, C1]]
+    """
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    c2 = append_new_card_in_page(pages[0], "C2")
+    c3 = append_new_card_in_page(pages[1], "C3")
+    c1 = append_new_card_in_page(pages[1], "C1")
+    action = ActionMoveCards(0, [0], 1, target_row)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 0)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.undo(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(c1, pages[0]),
+                card_container_with(c2, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with(c3, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
+
+
+@pytest.mark.parametrize("target_row", [None, 1])
+def test_undo_with_target_at_end_from_end(qtbot, document_light, target_row):
+    """
+    test Undo [[C1, C2], [C3]] → [[C1], [C3, C2]]
+    """
+    pages = document_light.pages
+    ActionNewPage().apply(document_light)
+    c1 = append_new_card_in_page(pages[0], "C1")
+    c3 = append_new_card_in_page(pages[1], "C3")
+    c2 = append_new_card_in_page(pages[1], "C2")
+    action = ActionMoveCards(0, [1], 1, target_row)
+    row_move_validator = partial(validate_qt_model_move_signal_parameter, 1, 1, 1, 0, 1)
+    with qtbot.assert_not_emitted(document_light.page_type_changed), \
+            qtbot.wait_signals(
+                [document_light.rowsAboutToBeMoved, document_light.rowsMoved],
+                timeout=1000, check_params_cbs=[row_move_validator] * 2):
+        action.undo(document_light)
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(
+                card_container_with(c1, pages[0]),
+                card_container_with(c2, pages[0]),
+            ),
+            contains_exactly(
+                card_container_with(c3, pages[1]),
+            )
+        ),
+        "Incorrect card move"
+    )
