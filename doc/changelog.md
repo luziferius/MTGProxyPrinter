@@ -6,6 +6,9 @@
 
 - Lifted restriction on the allowed actions while the card data update runs. It is now possible to print documents,
   export PDFs, and edit the application settings.
+- When editing document settings decreases the maximum amount of cards that can fit on a page and requires moving cards
+  that no longer fit to new locations, the applied re-flow now preserves the document order,
+  instead of shuffling cards around wildly. 
 
 ## Fixed issues
 
@@ -13,7 +16,8 @@
 - Fixed crash when adding multiple copies of a card distributes those cards on the current and next page.
 - Fixed multiple crashes that may have occurred in 0.26.0 when trying to run multiple actions in parallel,
   like exporting a PDF, while updating the printing filter settings runs simultaneously.
-- Fixed crash in the application update checker, if the connected network redirects to an authentication page.
+- Fixed crash in the application update checker, that occurred if the connected network redirects to a login page, 
+  like public Wi-Fi hotspots. The update check is skipped completely in that case.
 
 # Version 0.26.0 (2023-12-19)  <a name="v0_26_0"></a>
 
