@@ -6,9 +6,8 @@
 
 - Lifted restriction on the allowed actions while the card data update runs. It is now possible to print documents,
   export PDFs, and edit the application settings.
-- When editing document settings decreases the maximum amount of cards that can fit on a page and requires moving cards
-  that no longer fit to new locations, the applied re-flow now preserves the document order,
-  instead of shuffling cards around wildly. 
+- Improved behavior when editing document settings decreases the maximum amount of cards that fit on each page.
+  Now, the overflowing cards are moved in a way that preserves the card order within the document.
 
 ## Fixed issues
 
