@@ -14,9 +14,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import copy
+import itertools
 import typing
 
-from ._interface import DocumentAction, ActionList, Self
+from ._interface import DocumentAction, ActionList, Self, split_iterable
+from .card_actions import ActionRemoveCards
 from .move_cards import ActionMoveCards
 from .page_actions import ActionNewPage
 from mtg_proxy_printer.logger import get_logger
@@ -25,6 +27,7 @@ from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 
 if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document_page import Page
     from mtg_proxy_printer.model.document import Document
 
 logger = get_logger(__name__)
@@ -32,6 +35,14 @@ del get_logger
 __all__ = [
     "ActionEditDocumentSettings",
 ]
+
+
+class PagePartition(typing.NamedTuple):
+    page_type: PageType
+    pages: typing.List["Page"]
+
+    def size(self):
+        return len(self.pages)
 
 
 class ActionEditDocumentSettings(DocumentAction):
@@ -60,39 +71,50 @@ class ActionEditDocumentSettings(DocumentAction):
         return super().apply(document)
 
     def _reflow_document(self, document: "Document"):
-        self._reflow_pages_of_type(document, PageType.REGULAR)
-        self._reflow_pages_of_type(document, PageType.OVERSIZED)
-
-    def _reflow_pages_of_type(self, document: "Document", page_type: PageType):
-        pages = document.pages
-        layout = document.page_layout
-        page_capacity = layout.compute_page_card_capacity(page_type)
-
-        current_index = -1
-        while current_index < document.rowCount()-1:
-            current_index += 1
-            current_page = pages[current_index]
-            if not current_page.accepts_card(page_type):
-                continue
-            cards_on_page = len(current_page)
-            if (excess_cards := cards_on_page - page_capacity) > 0:
-                target_index = self._find_next_page_accepting(document, page_type, current_index)
-                if target_index is None or excess_cards >= page_capacity:
-                    # There is no fitting page or there are enough cards to fill at least an entire page.
-                    # In both cases, insert a blank page to take these cards
-                    target_index = current_index + 1
-                    self.reflow_actions.append(ActionNewPage(target_index).apply(document))
-
-                action = ActionMoveCards(current_index, range(page_capacity, cards_on_page), target_index)
-                self.reflow_actions.append(action.apply(document))
+        page_partitions = self._partition_pages_by_accepting_card_size(document)
+        for partition in page_partitions:  # type: int, PageType, typing.List[Page]
+            self._reflow_partition(document, partition)
 
     @staticmethod
-    def _find_next_page_accepting(document: "Document", page_type: PageType, index: int) -> typing.Optional[int]:
-        index += 1
-        for found_index, page in enumerate(document.pages[index:], start=index):
-            if page.accepts_card(page_type):
-                return found_index
-        return None
+    def _partition_pages_by_accepting_card_size(document: "Document") -> typing.List[PagePartition]:
+        """
+        Partitions the document pages into consecutive lists of pages.
+        Each partition only contains pages with exactly one page type (REGULAR or OVERSIZED) plus empty pages.
+        Leading empty pages are ignored.
+        """
+        pages = document.pages
+        first_populated_page = sum(1 for _ in itertools.takewhile(lambda page: not page, pages))
+        if first_populated_page == len(pages):
+            return []
+
+        current_page_type = pages[first_populated_page].page_type()
+        result: typing.List[PagePartition] = [PagePartition(current_page_type, [])]
+
+        for page_index, page in enumerate(pages[first_populated_page:], start=first_populated_page):
+            if page.accepts_card(current_page_type):
+                # Empty pages accept any type of card, thus will be included in any partition
+                result[-1].pages.append(page)
+            else:
+                # Here, the page type must have flipped between REGULAR and OVERSIZED, thus page_type() is safe to use
+                current_page_type = page.page_type()
+                result.append(PagePartition(current_page_type, [page]))
+        return result
+
+    def _reflow_partition(self, document: "Document", partition: PagePartition):
+        start_index = document.find_page_list_index(partition.pages[0])
+        end_index = start_index + partition.size()
+        page_capacity = document.page_layout.compute_page_card_capacity(partition.page_type)
+        # TODO: The algorithm currently isn't very optimized. This loop should insert new pages,
+        #  if the excess exceeds some threshold.
+        for page_index, page in enumerate(partition.pages[:-1], start=start_index):
+            if (page_length := len(page)) > page_capacity:
+                action = ActionMoveCards(page_index, range(page_capacity, page_length), page_index+1, 0)
+                self.reflow_actions.append(action.apply(document))
+        last_page = partition.pages[-1]
+        if (page_length := len(last_page)) > page_capacity:
+            excess = split_iterable((c.card for c in last_page[page_capacity:]), page_capacity)
+            self.reflow_actions.append(ActionRemoveCards(range(page_capacity, page_length), end_index-1).apply(document))
+            self.reflow_actions.append(ActionNewPage(end_index, count=len(excess), content=excess).apply(document))
 
     def undo(self, document: "Document") -> Self:
         document.page_layout = self.old_settings

@@ -15,6 +15,7 @@
 
 from abc import abstractmethod
 from functools import partial
+import itertools
 import operator
 import typing
 
@@ -32,8 +33,16 @@ __all__ = [
     "DocumentAction",
     "IllegalStateError",
     "Self",
-    "ActionList"
+    "ActionList",
+    "split_iterable",
 ]
+T = typing.TypeVar("T")
+
+
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
+    iterable = iter(iterable)
+    return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
 
 
 class IllegalStateError(RuntimeError):

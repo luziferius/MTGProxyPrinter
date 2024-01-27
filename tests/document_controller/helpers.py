@@ -18,7 +18,8 @@ This module contains an assortment of small helper functions used in the tests f
 """
 import itertools
 
-from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to
+import hamcrest.core.base_matcher
+from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.document_page import CardContainer, Page
@@ -28,6 +29,7 @@ __all__ = [
     "verify_page_index_cache_is_valid",
     "create_card",
     "card_container_with",
+    "card_container_with_name",
     "append_new_card_in_page",
     "insert_card_in_page",
 
@@ -56,11 +58,23 @@ def create_card(name: str, oversized: bool = False) -> Card:
 
 def card_container_with(card: AnyCardType, parent: Page):
     """Hamcrest matcher for a CardContainer."""
+    if not isinstance(card, hamcrest.core.base_matcher.BaseMatcher):
+        card = same_instance(card)
     return all_of(
         instance_of(CardContainer),
         has_properties({
-            "card": same_instance(card),
+            "card": card,
             "parent": same_instance(parent)
+        })
+    )
+
+
+def card_container_with_name(name: str, parent: Page):
+    """Hamcrest matcher for a CardContainer, validating the card only via the given name."""
+    return all_of(
+        instance_of(CardContainer),
+        has_properties({
+            "card": has_property("name", equal_to(name)),
         })
     )
 
