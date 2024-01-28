@@ -68,7 +68,7 @@ class CardItem(QGraphicsItemGroup):
         card_height, card_width = image.height(), image.width()
         corner_height, corner_width = self.corner_area.height(), self.corner_area.width()
         card_width = image.width()
-        opacity = 255 if draw_corners else 0
+        opacity = 255 * draw_corners
         return itertools.starmap(
             self._create_corner, (
                 (CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
@@ -88,9 +88,9 @@ class CardItem(QGraphicsItemGroup):
         return rect
 
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
-        value = 255 if new_page_layout.draw_sharp_corners else 0
+        opacity = 255 * new_page_layout.draw_sharp_corners
         for corner in self.corners:
-            corner.setOpacity(value)
+            corner.setOpacity(opacity)
 
     def _draw_content(self):
         for item in self.corners:
