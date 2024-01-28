@@ -7,7 +7,7 @@ import typing
 import pint
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
     QPersistentModelIndex, QModelIndex
-from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics
+from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
 
@@ -56,6 +56,7 @@ class CardItem(QGraphicsItemGroup):
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
+        self.bleeds: typing.List[QGraphicsPixmapItem] = []
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
         self.corners: typing.List[QGraphicsRectItem] = list(
@@ -78,6 +79,10 @@ class CardItem(QGraphicsItemGroup):
             )
         )
 
+    def create_bleeds(self, pixmap: QPixmap) -> typing.List[QGraphicsPixmapItem]:
+        
+        return []
+
     def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(QRectF(QPointF(0, 0), self.corner_area))
         color = self.card.corner_color(corner)
@@ -88,12 +93,15 @@ class CardItem(QGraphicsItemGroup):
         return rect
 
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
-        opacity = 255 * new_page_layout.draw_sharp_corners
+        corner_opacity = 255 * new_page_layout.draw_sharp_corners
         for corner in self.corners:
-            corner.setOpacity(opacity)
+            corner.setOpacity(corner_opacity)
+        bleed_opacity = 255 * True  # TODO: Replace with page layout value
+        for bleed in self.bleeds:
+            bleed.setOpacity(bleed_opacity)
 
     def _draw_content(self):
-        for item in self.corners:
+        for item in itertools.chain(self.corners, self.bleeds):
             self.addToGroup(item)
         self.addToGroup(self.card_pixmap_item)
 
