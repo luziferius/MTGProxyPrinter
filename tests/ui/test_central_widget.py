@@ -21,6 +21,7 @@ from pytestqt.qtbot import QtBot
 from PyQt5.QtCore import Qt
 from hamcrest import *
 
+from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
@@ -33,8 +34,12 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
     document = main_window.document
     central_widget = main_window.ui.central_widget
     main_window.document.apply(ActionAddCard(card, 9))
+    assert_that(
+        document.pages,
+        only_contains(instance_of(Page))
+    )
     central_widget.ui.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
-    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.LeftButton)
+    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.MouseButton.LeftButton)
 
 
 @pytest.mark.parametrize("name, expected", [

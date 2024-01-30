@@ -155,11 +155,11 @@ class LoadListPage(QWizardPage):
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
         default_path: str = mtg_proxy_printer.settings.settings["default-filesystem-paths"]["deck-list-search-path"]
-        if not self.ui.deck_list.toPlainText() \
-                or QMessageBox.question(
-                        self, "Overwrite existing deck list?",
-                        "Selecting a file will overwrite the existing deck list. Continue?",
-                        QMessageBox.StandardButton.Yes | QMessageBox.No) == QMessageBox.Yes:
+        if not self.ui.deck_list.toPlainText() or QMessageBox.question(
+                self, "Overwrite existing deck list?",
+                "Selecting a file will overwrite the existing deck list. Continue?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        ) == QMessageBox.StandardButton.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             file_extension_filter = self.get_file_extension_filter()
             selected_file, _ = QFileDialog.getOpenFileName(
@@ -540,7 +540,7 @@ class SummaryPage(QWizardPage):
             self.card_list.remove_all_basic_lands(
                 decklist_import_section.getboolean("remove-basic-wastes"),
                 decklist_import_section.getboolean("remove-snow-basics"))
-        elif button == QWizard.CustomButton2:
+        elif button == WizardButton.CustomButton2:
             self._remove_selected_cards()
             self.selected_cells_count = 0
 

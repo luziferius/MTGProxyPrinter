@@ -39,7 +39,7 @@ class PrettySetListModel(QAbstractListModel):
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
+    def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
             -> typing.Optional[str]:
         if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
