@@ -26,7 +26,7 @@ import typing
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QSize, QModelIndex, Qt, QThreadPool
-from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtGui import QPixmap, QColorConstants
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
@@ -149,7 +149,7 @@ class ImageDatabase(QObject):
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
         pixmap = QPixmap(IMAGE_SIZE)
-        pixmap.fill(QColor("white"))
+        pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
