@@ -38,6 +38,8 @@ from tests.helpers import fill_card_database_with_json_cards
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
+Key = Qt.Key
+MouseButton = Qt.MouseButton
 WizardButton = QWizard.WizardButton
 
 
@@ -88,9 +90,9 @@ def test_remove_basic_lands_button_works(
     list_model = wizard.summary_page.card_list
     assert_that(list_model.rowCount(), is_(3))
     with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["decklist-import"], removal_settings):
-        wizard.button(wizard.WizardButton.CustomButton1).click()
+        wizard.button(WizardButton.CustomButton1).click()
     assert_that(
-        wizard.button(wizard.WizardButton.CustomButton1).isEnabled(),
+        wizard.button(WizardButton.CustomButton1).isEnabled(),
         is_(False)
     )
     card_names_in_model: StringList = [
@@ -236,22 +238,22 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
         table_view.rowViewportPosition(0) + 5
     )
     # Select cell
-    QTest.mouseClick(table_view.viewport(), Qt.MouseButton.LeftButton, pos=cell_position)
+    QTest.mouseClick(table_view.viewport(), MouseButton.LeftButton, pos=cell_position)
     # Enter edit mode
-    QTest.mouseDClick(table_view.viewport(), Qt.MouseButton.LeftButton, pos=cell_position)
+    QTest.mouseDClick(table_view.viewport(), MouseButton.LeftButton, pos=cell_position)
     # Now get the editor and select a different set to get another printing
     editor: QComboBox = table_view.viewport().childAt(cell_position)
     assert_that(editor, is_(instance_of(QComboBox)))
     # Select the second entry in the editor’s item list
-    QTest.keyClick(editor, Qt.Key.Key_Down)
+    QTest.keyClick(editor, Key.Key_Down)
     with qtbot.wait_signal(table_view.model().dataChanged):
         # Wait until the editor saved the data in the model
-        QTest.keyClick(editor, Qt.Key.Key_Enter)
+        QTest.keyClick(editor, Key.Key_Enter)
     # Now accept the dialog and capture the emitted deck
     deck_receiver = CardListReceiver()
     wizard.request_action.connect(deck_receiver.on_import_action_received)
     with qtbot.wait_signal(wizard.request_action, timeout=1000):
-        QTest.keyClick(wizard, Qt.Key.Key_Enter)
+        QTest.keyClick(wizard, Key.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),
         has_length(2),

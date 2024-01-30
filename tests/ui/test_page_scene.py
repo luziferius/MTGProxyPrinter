@@ -22,6 +22,7 @@ from unittest.mock import patch
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
+
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PySide6.QtGui import QPalette
 

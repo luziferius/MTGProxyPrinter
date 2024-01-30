@@ -88,7 +88,7 @@ class PDFPrinter(QPdfWriter):
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
         self.setPageSize(QPageSize(
             QSizeF(document.page_layout.page_width, document.page_layout.page_height),
-            QPageSize.Millimeter
+            QPageSize.Unit.Millimeter
         ))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))

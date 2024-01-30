@@ -207,7 +207,7 @@ class AboutMTGProxyPrinterDialog(QDialog):
 
     def _set_text_browser_with_markdown_file_content(self, file_path: str, text_browser: QTextBrowser):
         file = QFile(file_path, self)
-        file.open(QFile.ReadOnly)
+        file.open(QFile.OpenModeFlag.ReadOnly)
         try:
             content = file.readAll().toStdString()
         finally:

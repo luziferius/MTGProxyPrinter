@@ -42,6 +42,7 @@ Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 el
 JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool]]
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
+State = QValidator.State
 
 
 class IsIdentifyingDeckUrlValidator(QValidator):
@@ -56,8 +57,8 @@ class IsIdentifyingDeckUrlValidator(QValidator):
         for downloader_class in AVAILABLE_DOWNLOADERS.values():
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
                 logger.debug(f"Input is valid URL for {downloader_class.APPLICABLE_WEBSITES}")
-                return QValidator.State.Acceptable, input_string, pos
-        return QValidator.State.Intermediate, input_string, pos
+                return State.Acceptable, input_string, pos
+        return State.Intermediate, input_string, pos
 
 
 class DecklistDownloader(DownloaderBase):

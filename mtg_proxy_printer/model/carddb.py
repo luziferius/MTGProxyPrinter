@@ -47,6 +47,7 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
 ItemDataRole = Qt.ItemDataRole
+RenderHint = QPainter.RenderHint
 SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
@@ -224,7 +225,7 @@ class CheckCard:
         combined_image = QPixmap(card_size)
         combined_image.fill(QColor.fromRgb(255, 255, 255, 0))  # Fill with fully transparent white
         painter = QPainter(combined_image)
-        painter.setRenderHints(QPainter.RenderHint.SmoothPixmapTransform | QPainter.RenderHint.Antialiasing)
+        painter.setRenderHints(RenderHint.SmoothPixmapTransform | RenderHint.Antialiasing)
         transformation = QTransform()
         transformation.rotate(90)
         transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)

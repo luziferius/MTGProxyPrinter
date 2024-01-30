@@ -141,7 +141,10 @@ class CardListModel(QAbstractTableModel):
             bottom_right = top_left.siblingAtColumn(len(PageColumns)-2)
             old_card = self.cards[index.row()]
             self.cards[index.row()] = new_card
-            self.dataChanged.emit(top_left, bottom_right, (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole))
+            self.dataChanged.emit(
+                top_left, bottom_right,
+                (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)
+            )
             # Oversized card count changes, iff the flags differ
             if old_card.is_oversized and not new_card.is_oversized:
                 self._remove_card_handle_oversized_flag(old_card)

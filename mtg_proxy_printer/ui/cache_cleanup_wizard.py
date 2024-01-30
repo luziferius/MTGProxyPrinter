@@ -46,7 +46,7 @@ __all__ = [
     "CacheCleanupWizard",
 ]
 INVALID_INDEX = QModelIndex()
-SelectionFlag = QItemSelectionModel.SelectionFlag
+SelectRows = QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
 ItemDataRole = Qt.ItemDataRole
 Orientation = Qt.Orientation
 
@@ -153,7 +153,9 @@ class KnownCardImageModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.header_data)
 
     def headerData(self, section: KnownCardColumns, orientation: Orientation, role: ItemDataRole = None) -> str:
-        if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal and 0 <= section < self.columnCount():
+        if role == ItemDataRole.DisplayRole \
+                and orientation == Orientation.Horizontal \
+                and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(KnownCardImageModel, self).headerData(section, orientation, role)
 
@@ -226,7 +228,8 @@ class UnknownCardRow:
             data = format_size(self.size)
         elif column == UnknownCardColumns.Size and role == ItemDataRole.EditRole:
             data = self.size
-        elif column == UnknownCardColumns.FilesystemPath and role in {ItemDataRole.DisplayRole, ItemDataRole.ToolTipRole}:
+        elif column == UnknownCardColumns.FilesystemPath \
+                and role in {ItemDataRole.DisplayRole, ItemDataRole.ToolTipRole}:
             data = str(self.path)
         elif column == UnknownCardColumns.FilesystemPath and role == ItemDataRole.EditRole:
             data = self.path
@@ -256,7 +259,9 @@ class UnknownCardImageModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.header_data)
 
     def headerData(self, section: UnknownCardColumns, orientation: Orientation, role: ItemDataRole = None) -> str:
-        if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal and 0 <= section < self.columnCount():
+        if role == ItemDataRole.DisplayRole \
+                and orientation == Orientation.Horizontal \
+                and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(UnknownCardImageModel, self).headerData(section, orientation, role)
 
@@ -342,7 +347,7 @@ class CardFilterPage(QWizardPage):
         for card, key in hidden:
             self.card_image_model.add_row(card, key, True)
         for key in unknown:
-           self.unknown_image_model.add_row(key)
+            self.unknown_image_model.add_row(key)
         self._apply_filter()
 
     def _apply_filter(self):
@@ -365,7 +370,7 @@ class CardFilterPage(QWizardPage):
                 for row in range(self.card_image_sort_model.rowCount()):
                     index = self.card_image_sort_model.index(row, KnownCardColumns.IsHidden)
                     if index.data(ItemDataRole.EditRole):
-                        selection_model.select(index, SelectionFlag.Select | SelectionFlag.Rows)
+                        selection_model.select(index, SelectRows)
 
     def _select_unknown_cards_if_enabled(self):
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
@@ -373,14 +378,14 @@ class CardFilterPage(QWizardPage):
             for row in range(self.unknown_image_model.rowCount()):
 
                 index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
-                selection_model.select(index, SelectionFlag.Select | SelectionFlag.Rows)
+                selection_model.select(index, SelectRows)
 
     def _select_rows(self, indices: typing.Iterable[int]):
         selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
                 self.card_image_model.index(index, KnownCardColumns.Name),
-                SelectionFlag.Select | SelectionFlag.Rows
+                SelectRows
             )
 
     def cleanupPage(self) -> None:

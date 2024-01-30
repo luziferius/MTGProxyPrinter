@@ -27,7 +27,7 @@ def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:
     buffer = QBuffer()
     buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
-    image = bytes(buffer.data().data())
+    image = buffer.data().data()
     return io.BytesIO(image)
 
 
@@ -54,4 +54,3 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
     image_db.delete_disk_cache_entries([keys[1]])
     assert_that((image_db.db_path / keys[1].format_relative_path()).is_file(), is_(False))
     assert_that((image_db.db_path / keys[0].format_relative_path()).parent.is_dir(), is_(False))
-

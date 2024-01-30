@@ -43,12 +43,13 @@ del get_logger
 __all__ = [
     "SettingsWindow",
 ]
-bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
-    True: Qt.CheckState.Checked,
-    False: Qt.CheckState.Unchecked,
-    None: Qt.CheckState.PartiallyChecked
+CheckState = Qt.CheckState
+bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
+    True: CheckState.Checked,
+    False: CheckState.Unchecked,
+    None: CheckState.PartiallyChecked,
 }
-check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
+check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 
@@ -83,14 +84,15 @@ class SettingsWindow(QDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
+        StandardButton = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(QDialogButtonBox.StandardButton.RestoreDefaults).clicked.connect(self.restore_defaults)
-        button_box.button(QDialogButtonBox.StandardButton.Reset).clicked.connect(self.reset)
+        button_box.button(StandardButton.RestoreDefaults).clicked.connect(self.restore_defaults)
+        button_box.button(StandardButton.Reset).clicked.connect(self.reset)
         buttons_with_icons = [
-            (QDialogButtonBox.StandardButton.Reset, "edit-undo"),
-            (QDialogButtonBox.StandardButton.Save, "document-save"),
-            (QDialogButtonBox.StandardButton.Cancel, "dialog-cancel"),
-            (QDialogButtonBox.StandardButton.RestoreDefaults, "document-revert"),
+            (StandardButton.Reset, "edit-undo"),
+            (StandardButton.Save, "document-save"),
+            (StandardButton.Cancel, "dialog-cancel"),
+            (StandardButton.RestoreDefaults, "document-revert"),
         ]
         for role, icon in buttons_with_icons:
             button = button_box.button(role)

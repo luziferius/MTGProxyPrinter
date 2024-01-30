@@ -31,7 +31,7 @@ del get_logger
 __all__ = [
     "PageRenderer",
 ]
-
+DragMode = QGraphicsView.DragMode
 
 @enum.unique
 class ZoomDirection(enum.Enum):
@@ -96,8 +96,7 @@ class PageRenderer(QGraphicsView):
         if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
             return
         self.automatic_scaling = self.scene_fully_visible(scaling_factor)
-        drag_mode = QGraphicsView.DragMode.NoDrag if self.automatic_scaling else QGraphicsView.DragMode.ScrollHandDrag
-        self.setDragMode(drag_mode)
+        self.setDragMode(DragMode.NoDrag if self.automatic_scaling else DragMode.ScrollHandDrag)
         if self.automatic_scaling:
             self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         else:
@@ -120,7 +119,7 @@ class PageRenderer(QGraphicsView):
     def resizeEvent(self, event: QResizeEvent = None) -> None:
         if self.automatic_scaling or self.scene_fully_visible():
             self.automatic_scaling = True
-            self.setDragMode(QGraphicsView.DragMode.NoDrag)
+            self.setDragMode(DragMode.NoDrag)
             self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         if event is not None:
             super().resizeEvent(event)

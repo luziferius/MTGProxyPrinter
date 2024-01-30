@@ -34,6 +34,7 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
@@ -62,12 +63,11 @@ class PageConfigWidget(QGroupBox):
         # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
         # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
         self.ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.CheckState.Checked.value))
+            lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked.value))
         self.ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked.value))
-
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == CheckState.Checked.value))
         self.ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked.value))
+            lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked.value))
         self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 

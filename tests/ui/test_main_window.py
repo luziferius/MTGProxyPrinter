@@ -38,6 +38,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
 from tests.helpers import fill_card_database_with_json_cards
 from tests.document_controller.helpers import insert_card_in_page
+StandardButton = QMessageBox.StandardButton
 
 
 @pytest.fixture(params=[Ui_CentralWidget_Columnar, Ui_CentralWidget_Grouped, Ui_CentralWidget_Tabbed])
@@ -131,7 +132,7 @@ def test_declining_card_data_update_offer_results_in_no_action(qtbot: QtBot, mai
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No), \
         unittest.mock.patch(
             "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
         unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
@@ -146,7 +147,7 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
         mtg_proxy_printer.ui.main_window.QMessageBox,
-            "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
+            "question", return_value=StandardButton.Yes) as message_box, \
             unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
@@ -157,7 +158,7 @@ def test_action_download_card_data_is_enabled_after_network_error(qtbot: QtBot, 
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=QMessageBox.StandardButton.Yes
+        mtg_proxy_printer.ui.main_window.QMessageBox, "warning", return_value=StandardButton.Ok
     ) as warning_box:
         main_window.card_data_downloader.network_error_occurred.emit("Test reason")
     warning_box.assert_called_once()
@@ -168,7 +169,7 @@ def test_action_download_card_data_is_enabled_after_other_error(qtbot: QtBot, ma
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(False)
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "critical", return_value=QMessageBox.StandardButton.Ok
+        mtg_proxy_printer.ui.main_window.QMessageBox, "critical", return_value=StandardButton.Ok
     ) as warning_box:
         main_window.card_data_downloader.other_error_occurred.emit("Test reason")
     warning_box.assert_called_once()
@@ -179,7 +180,7 @@ def test_declining_ask_user_about_empty_database_results_in_no_action(qtbot: QtB
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
         unittest.mock.patch(
             "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.import_card_data_from_online_api") as import_from_api, \
             unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start, \
@@ -195,7 +196,7 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes
     ) as message_box, \
         unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
         main_window.ask_user_about_empty_database()
@@ -205,7 +206,7 @@ def test_accepting_ask_user_about_empty_database_results_in_performed_action(qtb
 
 def test_accepting_application_update_offer_opens_website_in_default_browser(main_window: MainWindow):
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes) as message_box, \
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes) as message_box, \
         unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
         main_window.show_application_update_available_message_box("1.0.0-test")
@@ -215,7 +216,7 @@ def test_accepting_application_update_offer_opens_website_in_default_browser(mai
 
 def test_declining_application_update_offer_does_nothing(main_window: MainWindow):
     with unittest.mock.patch.object(
-        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as message_box, \
+        mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.No) as message_box, \
         unittest.mock.patch.object(
             mtg_proxy_printer.ui.main_window.QDesktopServices, "openUrl") as open_url_service:
         main_window.show_application_update_available_message_box("1.0.0-test")
@@ -242,7 +243,7 @@ def test_creating_new_document_with_second_page_selected_works_without_raising_e
     with qtbot.waitSignal(document.current_page_changed):
         ui.central_widget.ui.document_view.setCurrentIndex(document.index(1, 0))  # Condition 3
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes), \
+            mtg_proxy_printer.ui.main_window.QMessageBox, "question", return_value=StandardButton.Yes), \
             qtbot.waitSignal(document.current_page_changed):
         # Condition 4. This triggered the exception
         ui.action_new_document.trigger()

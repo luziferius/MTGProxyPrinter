@@ -93,7 +93,9 @@ class ActionShuffleDocument(DocumentAction):
             container: CardContainer = model_index.internalPointer()
             container.card = card
             document.dataChanged.emit(
-                model_index, bottom_right, (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole))
+                model_index, bottom_right,
+                (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)
+            )
 
     @property
     def as_str(self):
