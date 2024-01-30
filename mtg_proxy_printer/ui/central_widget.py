@@ -44,7 +44,6 @@ except ModuleNotFoundError:
     Ui_CentralWidget_Grouped = load_ui_from_file("central_widget/grouped")
     Ui_CentralWidget_Tabbed = load_ui_from_file("central_widget/tabbed_vertical")
 
-
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -279,7 +278,7 @@ class CentralWidget(QWidget):
         if not loading_in_progress:
             logger.info("Loading finished. Selecting first page.")
             new_selection = self.document.index(0, 0)
-            self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.SelectionFlag.Select)
             self.document.on_ui_selects_new_page(new_selection)
 
 

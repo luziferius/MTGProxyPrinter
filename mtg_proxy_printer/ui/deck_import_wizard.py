@@ -52,6 +52,10 @@ del get_logger
 __all__ = [
     "DeckImportWizard",
 ]
+WizardButton = QWizard.WizardButton
+WizardOption = QWizard.WizardOption
+State = QValidator.State
+StandardButton = QMessageBox.StandardButton
 
 
 class IsDecklistParserRegularExpressionValidator(QValidator):
@@ -64,16 +68,16 @@ class IsDecklistParserRegularExpressionValidator(QValidator):
     has_named_groups_re = re.compile(
         rf"\(\?P<({'|'.join(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES)})>.+?\)")
 
-    def validate(self, input_string: str, pos: int) -> typing.Tuple[QValidator.State, str, int]:
+    def validate(self, input_string: str, pos: int) -> typing.Tuple[State, str, int]:
         try:
             re.compile(input_string)
         except re.error:
-            return QValidator.Intermediate, input_string, pos
+            return State.Intermediate, input_string, pos
         except RecursionError:
             # An input like the evaluated result of the expression '('*10000+'z'+')'*10000  will throw a RecursionError.
             # (Depending on the recursion limit)
             # Deem this invalid, as it cannot be parsed at all and allowing the user to append more will not help
-            return QValidator.Invalid, input_string, pos
+            return State.Invalid, input_string, pos
         else:
             return self._validate_content(input_string), input_string, pos
 
@@ -85,8 +89,8 @@ class IsDecklistParserRegularExpressionValidator(QValidator):
         found_groups = self.has_named_groups_re.findall(input_string)
         for identifying_groups in re_parsers.GenericRegularExpressionDeckParser.IDENTIFYING_GROUP_COMBINATIONS:
             if identifying_groups.issubset(found_groups):
-                return QValidator.Acceptable
-        return QValidator.Intermediate
+                return State.Acceptable
+        return State.Intermediate
 
 
 class LoadListPage(QWizardPage):
@@ -101,7 +105,8 @@ class LoadListPage(QWizardPage):
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
         self._deck_list_downloader: typing.Optional[str] = None
         self.ui.deck_list_download_url_line_edit.textChanged.connect(
-            lambda text: self.ui.deck_list_download_button.setEnabled(self.deck_list_url_validator.validate(text)[0] == QValidator.Acceptable))
+            lambda text: self.ui.deck_list_download_button.setEnabled(
+                self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
         self.ui.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
         self.ui.translate_deck_list_target_language.setModel(language_model)
@@ -154,7 +159,7 @@ class LoadListPage(QWizardPage):
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
                         "Selecting a file will overwrite the existing deck list. Continue?",
-                        QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                        QMessageBox.StandardButton.Yes | QMessageBox.No) == QMessageBox.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             file_extension_filter = self.get_file_extension_filter()
             selected_file, _ = QFileDialog.getOpenFileName(
@@ -192,7 +197,7 @@ class LoadListPage(QWizardPage):
                 or QMessageBox.question(
                         self, "Overwrite existing deck list?",
                         "Downloading a deck list will overwrite the existing content. Continue?",
-                        QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                        StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
             url = self.ui.deck_list_download_url_line_edit.text()
             logger.info(f"User requests to download a deck list from the internet: {url}")
             downloader_class = get_downloader_class(url)
@@ -202,14 +207,14 @@ class LoadListPage(QWizardPage):
                 try:
                     deck_list = downloader.download(url)
                 except urllib.error.HTTPError as e:
-                    btn = QMessageBox.StandardButton.Ok
+                    btn = StandardButton.Ok
                     msg = f"Download failed with HTTP error {e.code}.\n\n" \
                           f"Verify that the URL is valid, reachable, and that the deck list is set to public.\n" \
                           f"This program cannot download private deck lists. Please note, that setting deck lists to\n"\
                           f"public may take a minute or two to apply."
                     QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
                 except Exception:
-                    btn = QMessageBox.StandardButton.Ok
+                    btn = StandardButton.Ok
                     msg = f"Download failed.\n\n" \
                           f"Check your internet connection, verify that the URL is valid, reachable, " \
                           f"and that the deck list is set to public. " \
@@ -240,8 +245,8 @@ class LoadListPage(QWizardPage):
         should_load = not too_large or QMessageBox.question(
             self, "Load large file?",
             f"The selected file {file_path} is unexpectedly large ({format_size(size)}). Load anyways?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        ) == QMessageBox.Yes
+            StandardButton.Yes | StandardButton.No, StandardButton.No
+        ) == StandardButton.Yes
         logger.debug(f"File size: {size}, {too_large=}, {should_load=}")
         return should_load
 
@@ -419,12 +424,12 @@ class SummaryPage(QWizardPage):
     def _create_sort_model(self, source_model: CardListModel) -> NaturallySortedSortFilterProxyModel:
         proxy_model = NaturallySortedSortFilterProxyModel(self)
         proxy_model.setSourceModel(source_model)
-        proxy_model.setSortRole(Qt.EditRole)
+        proxy_model.setSortRole(Qt.ItemDataRole.EditRole)
         return proxy_model
 
     @Slot(int)
     def _update_accept_button_on_oversized_card_count_changed(self, oversized_cards: int):
-        accept_button = self.wizard().button(QWizard.FinishButton)
+        accept_button = self.wizard().button(WizardButton.FinishButton)
         if oversized_cards:
             accept_button.setIcon(QIcon.fromTheme("data-warning"))
             accept_button.setToolTip(
@@ -440,7 +445,7 @@ class SummaryPage(QWizardPage):
 
     @Slot(bool)
     def _update_accept_button_on_replace_document_option_toggled(self, enabled: bool):
-        accept_button = self.wizard().button(QWizard.FinishButton)
+        accept_button = self.wizard().button(WizardButton.FinishButton)
         if accept_button.icon().name() == "data-warning":
             return
         if enabled:
@@ -489,17 +494,17 @@ class SummaryPage(QWizardPage):
     def _initialize_custom_buttons(self):
         wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
-        wizard.setOption(QWizard.HaveCustomButton1, True)
+        wizard.setOption(WizardOption.HaveCustomButton1, True)
         decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
-        remove_basic_lands_button = wizard.button(QWizard.CustomButton1)
+        remove_basic_lands_button = wizard.button(WizardButton.CustomButton1)
         remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
             decklist_import_section.getboolean("remove-basic-wastes"),
             decklist_import_section.getboolean("remove-snow-basics")))
         remove_basic_lands_button.setText("Remove basic lands")
         remove_basic_lands_button.setToolTip("Remove all basic lands in the deck list above")
         remove_basic_lands_button.setIcon(QIcon.fromTheme("edit-delete"))
-        wizard.setOption(QWizard.HaveCustomButton2, True)
-        remove_selected_cards_button = wizard.button(QWizard.CustomButton2)
+        wizard.setOption(WizardOption.HaveCustomButton2, True)
+        remove_selected_cards_button = wizard.button(WizardButton.CustomButton2)
         remove_selected_cards_button.setEnabled(False)
         remove_selected_cards_button.setText("Remove selected")
         remove_selected_cards_button.setToolTip("Remove all selected cards in the deck list above")
@@ -510,8 +515,8 @@ class SummaryPage(QWizardPage):
         super(SummaryPage, self).cleanupPage()
         wizard = self.wizard()
         wizard.customButtonClicked.disconnect(self.custom_button_clicked)
-        wizard.setOption(QWizard.HaveCustomButton1, False)
-        wizard.setOption(QWizard.HaveCustomButton2, False)
+        wizard.setOption(WizardOption.HaveCustomButton1, False)
+        wizard.setOption(WizardOption.HaveCustomButton2, False)
         logger.debug(f"Cleaned up {self.__class__.__name__}")
 
     @Slot()
@@ -523,22 +528,21 @@ class SummaryPage(QWizardPage):
         self.selected_cells_count += selected.count() - deselected.count()
         logger.debug(f"Selection changed: Currently selected cells: {self.selected_cells_count}")
         wizard = self.wizard()
-        wizard.button(QWizard.CustomButton2).setEnabled(self.selected_cells_count > 0)
+        wizard.button(WizardButton.CustomButton2).setEnabled(self.selected_cells_count > 0)
 
     @Slot(int)
     def custom_button_clicked(self, button_id: int):
-        wizard = self.wizard()
-        if button_id == QWizard.CustomButton1:
-            wizard.button(button_id).setEnabled(False)
+        button = WizardButton(button_id)
+        self.wizard().button(button).setEnabled(False)
+        if button == WizardButton.CustomButton1:
             logger.info("User requests to remove all basic lands")
             decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
             self.card_list.remove_all_basic_lands(
                 decklist_import_section.getboolean("remove-basic-wastes"),
                 decklist_import_section.getboolean("remove-snow-basics"))
-        elif button_id == QWizard.CustomButton2:
+        elif button == QWizard.CustomButton2:
             self._remove_selected_cards()
             self.selected_cells_count = 0
-            self.wizard().button(QWizard.CustomButton2).setEnabled(False)
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")
@@ -593,7 +597,7 @@ class DeckImportWizard(WizardBase):
                 self, "Oversized cards present",
                 f"There are {oversized_count} possibly oversized cards in the deck list that "
                 f"may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.No:
+                StandardButton.Yes | StandardButton.No, StandardButton.No) == StandardButton.No:
             return False
         return True
 
@@ -602,5 +606,5 @@ class DeckImportWizard(WizardBase):
             self, "Incompatible file selected",
             "Unable to parse the given deck list, no results were obtained.\n"
             "Maybe you selected the wrong deck list type?",
-            QMessageBox.Ok, QMessageBox.Ok
+            StandardButton.Ok, StandardButton.Ok
         )

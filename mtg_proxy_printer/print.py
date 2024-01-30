@@ -50,7 +50,7 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 
 def create_printer(renderer: "Renderer") -> QPrinter:
-    printer = QPrinter(QPrinter.HighResolution)
+    printer = QPrinter(QPrinter.PrinterMode.HighResolution)
     layout = renderer.document.page_layout
     page_layout = layout.to_page_layout(renderer.render_mode)
     if not printer.setPageLayout(page_layout):
@@ -63,8 +63,8 @@ def create_printer(renderer: "Renderer") -> QPrinter:
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     # Disable duplex printing by default
     printer.setDoubleSidedPrinting(False)
-    printer.setDuplex(QPrinter.DuplexNone)
-    printer.setOutputFormat(QPrinter.NativeFormat)
+    printer.setDuplex(QPrinter.DuplexMode.DuplexNone)
+    printer.setOutputFormat(QPrinter.OutputFormat.NativeFormat)
     if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
         printer.setFullPage(True)
     return printer
@@ -87,7 +87,10 @@ class PDFPrinter(QPdfWriter):
         self.painter = QPainter()
         # magnitude returns a float by default, so round to int to avoid a TypeError
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-        self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
+        self.setPageSize(QPageSize(
+            QSizeF(document.page_layout.page_width, document.page_layout.page_height),
+            QPageSize.Unit.Millimeter
+        ))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)

@@ -25,9 +25,9 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 
 def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:
     buffer = QBuffer()
-    buffer.open(QIODevice.WriteOnly)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
-    image = bytes(buffer.data())
+    image = buffer.data().data()
     return io.BytesIO(image)
 
 

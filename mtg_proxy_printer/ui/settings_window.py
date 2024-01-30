@@ -43,12 +43,13 @@ del get_logger
 __all__ = [
     "SettingsWindow",
 ]
-bool_to_check_state: typing.Dict[typing.Optional[bool], Qt.CheckState] = {
-    True: Qt.Checked,
-    False: Qt.Unchecked,
-    None: Qt.PartiallyChecked
+CheckState = Qt.CheckState
+bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
+    True: CheckState.Checked,
+    False: CheckState.Unchecked,
+    None: CheckState.PartiallyChecked
 }
-check_state_to_bool_str: typing.Dict[Qt.CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
+check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 
@@ -83,14 +84,15 @@ class SettingsWindow(QDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
+        StandardButton = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(self.restore_defaults)
-        button_box.button(QDialogButtonBox.Reset).clicked.connect(self.reset)
+        button_box.button(StandardButton.RestoreDefaults).clicked.connect(self.restore_defaults)
+        button_box.button(StandardButton.Reset).clicked.connect(self.reset)
         buttons_with_icons = [
-            (QDialogButtonBox.Reset, "edit-undo"),
-            (QDialogButtonBox.Save, "document-save"),
-            (QDialogButtonBox.Cancel, "dialog-cancel"),
-            (QDialogButtonBox.RestoreDefaults, "document-revert"),
+            (StandardButton.Reset, "edit-undo"),
+            (StandardButton.Save, "document-save"),
+            (StandardButton.Cancel, "dialog-cancel"),
+            (StandardButton.RestoreDefaults, "document-revert"),
         ]
         for role, icon in buttons_with_icons:
             button = button_box.button(role)
@@ -224,7 +226,8 @@ class SettingsWindow(QDialog):
                 self, "Apply settings to the current document?",
                 "The new default settings differ from the settings used by the current document.\n"
                 "Apply the new settings to the current document?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
+        ) == QMessageBox.StandardButton.Yes:
             logger.info("User applies changed document settings to the current document")
             self.document_settings_updated.emit(ActionEditDocumentSettings(new_layout))
         self.save()
@@ -264,7 +267,8 @@ class SettingsWindow(QDialog):
 
     def _save_look_and_feel_settings(self):
         gui_section = mtg_proxy_printer.settings.settings["gui"]
-        gui_section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(Qt.UserRole)
+        gui_section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(
+            Qt.ItemDataRole.UserRole)
 
     def _save_images_settings(self):
         images_section = mtg_proxy_printer.settings.settings["images"]
@@ -360,7 +364,7 @@ class SettingsWindow(QDialog):
             QMessageBox.critical(
                 self, "Selected location is not a directory",
                 f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
-                QMessageBox.Ok, QMessageBox.Ok)
+                QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
         self.requested_card_download.emit(path)
@@ -380,7 +384,7 @@ class SettingsWindow(QDialog):
             QMessageBox.critical(
                 self, "Selected location is not a file",
                 f"Cannot find the selected file:\n{location}",
-                QMessageBox.Ok, QMessageBox.Ok)
+                QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
         QApplication.instance().card_info_downloader.import_from_file(path)

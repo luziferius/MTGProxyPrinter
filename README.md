@@ -64,6 +64,7 @@ MTGProxyPrinter can directly fetch public deck lists from these websites.
 - [TCGPlayer Infinite](https://infinite.tcgplayer.com/magic-the-gathering)
 - [TappedOut](https://tappedout.net/)
 - [mtg.wtf](https://mtg.wtf/)
+- [MTGDecks](https://mtgdecks.net)
 
 Except for Scryfall, these websites do not offer a stable, public Web API. Support is offered on a
 “best effort” base and may break at any time, if a website decides to re-design their code.

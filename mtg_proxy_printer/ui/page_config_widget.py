@@ -34,6 +34,7 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
@@ -59,11 +60,11 @@ class PageConfigWidget(QGroupBox):
         self.ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
         self.ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
         self.ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.CheckState.Checked))
+            lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
         self.ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.CheckState.Checked))
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == CheckState.Checked))
         self.ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked))
+            lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
         self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 

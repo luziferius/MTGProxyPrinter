@@ -111,7 +111,6 @@ class ImageDatabase(QObject):
     This class manages the on-disk PNG image cache. It can asynchronously fetch images from disk or from the Scryfall
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
-
     card_download_starting = Signal(int, str)
     card_download_finished = Signal()
     card_download_progress = Signal(int)
@@ -283,7 +282,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
     missing_image_obtained = Signal(QModelIndex)
-
     batch_processing_state_changed = Signal(bool)
 
     batch_process_starting = Signal(int, str)

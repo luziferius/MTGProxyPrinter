@@ -211,8 +211,7 @@ def test_undo_deletes_pages_created_during_apply(qtbot, card, document_light):
     assert_that(
         pages,
         contains_exactly(
-            contains_exactly(card_container_with(card, pages[0])
-            )
+            contains_exactly(card_container_with(card, pages[0])),
         )
     )
     assert_that(action.added_new_pages, is_(0))
