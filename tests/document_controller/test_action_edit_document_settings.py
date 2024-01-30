@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import copy
+import itertools
 from unittest.mock import patch
 
 import pytest
@@ -26,7 +27,7 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.move_cards import ActionMoveCards
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .helpers import create_card, card_container_with
+from .helpers import create_card, card_container_with, append_new_card_in_page
 
 
 def test_create_action_raises_value_error_on_zero_page_capacity():
@@ -48,21 +49,61 @@ def test_apply_emits_settings_changed_signal(qtbot, document_light):
     assert_that(document_light.page_layout, is_(equal_to(new_settings)))
 
 
-@pytest.mark.parametrize("initial_h_spacing, new_h_spacing", [
-    (0, 10),  # Regular cards overflow, oversized do not
+@pytest.mark.parametrize("initial_row_spacing, new_row_spacing", [
+    (0, 15),  # Regular cards overflow, oversized do not
     (10, 25),  # Oversized cards overflow, regular do not
     (0, 30),  # Both sizes overflow
 ])
-def test_page_capacity_reduction_reflows_document(qtbot, document_light, initial_h_spacing: int, new_h_spacing: int):
-    document_light.page_layout.row_spacing = initial_h_spacing
+def test_page_capacity_reduction_reflows_document(
+        qtbot, document_light, initial_row_spacing: int, new_row_spacing: int):
+    document_light.page_layout.row_spacing = initial_row_spacing
+    initial_capacity = (document_light.page_layout.compute_page_card_capacity(PageType.REGULAR),
+                        document_light.page_layout.compute_page_card_capacity(PageType.OVERSIZED))
     new_settings = copy.copy(document_light.page_layout)
-    new_settings.row_spacing = new_h_spacing
+    new_settings.row_spacing = new_row_spacing
+    new_capacity = (new_settings.compute_page_card_capacity(PageType.REGULAR),
+                    new_settings.compute_page_card_capacity(PageType.OVERSIZED))
+    assert_that(new_capacity, is_(less_than(initial_capacity)), "Setup failed, capacity not decreased")
     action = ActionEditDocumentSettings(copy.copy(new_settings))
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
             ) as reflow_mock, qtbot.wait_signals([document_light.page_layout_changed], timeout=1000):
         action.apply(document_light)
         reflow_mock.assert_called_once()
+
+
+@pytest.mark.parametrize("initial_row_spacing, new_row_spacing", [
+    (0, 10),  # Regular cards overflow, oversized do not
+    (10, 25),  # Oversized cards overflow, regular do not
+    (0, 30),  # Both sizes overflow
+])
+def test_reflow_keeps_total_card_order(
+        qtbot, document_light, initial_row_spacing: int, new_row_spacing: int):
+    document_light.page_layout.row_spacing = initial_row_spacing
+    ActionNewPage(count=2).apply(document_light)
+    names = []
+    for num in range(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)):
+        names.append(name := f"A{num+1}")
+        append_new_card_in_page(document_light.pages[0], name)
+    for num in range(document_light.page_layout.compute_page_card_capacity(PageType.OVERSIZED)):
+        names.append(name := f"B{num+1}")
+        append_new_card_in_page(document_light.pages[1], name, True)
+    for num in range(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)):
+        names.append(name := f"C{num+1}")
+        append_new_card_in_page(document_light.pages[2], name)
+    new_settings = copy.copy(document_light.page_layout)
+    new_settings.row_spacing = new_row_spacing
+    action = ActionEditDocumentSettings(copy.copy(new_settings))
+    action.apply(document_light)
+    names_after_action = [c.card.name for c in itertools.chain.from_iterable(document_light.pages)]
+    assert_that(
+        names_after_action, contains_exactly(*names), f"Order not kept: {names_after_action}"
+    )
+    for index, page in enumerate(document_light.pages):
+        assert_that(
+            page.page_type(),
+            is_in((PageType.REGULAR, PageType.OVERSIZED)),
+            f"Page {index} has unexpected page type")
 
 
 def test_reflow_moves_card_on_later_page(qtbot, document_light):
@@ -80,54 +121,6 @@ def test_reflow_moves_card_on_later_page(qtbot, document_light):
     new_layout = copy.copy(document_light.page_layout)
     new_layout.row_spacing = 30
     assert_that(new_layout.compute_page_card_capacity(PageType.REGULAR), is_(6), "Test setup failed")
-
-    action = ActionEditDocumentSettings(new_layout)
-    action.apply(document_light)
-    assert_that(
-        document_light.pages,
-        contains_exactly(
-            contains_exactly(*stay_on_0),
-            contains_exactly(*move_to_1),
-        ),
-        "Reflow failed"
-    )
-
-
-def test_reflow_moves_card_on_later_page_stepping_over_different_card_size_page(qtbot, document_light):
-    ActionNewPage(count=2).apply(document_light)
-    ActionAddCard(create_card("Stays on 0"), 6).apply(document_light)
-    ActionAddCard(create_card("Moves to 2"), 3).apply(document_light)
-    document_light.set_currently_edited_page(document_light.pages[1])
-    ActionAddCard(create_card("Stays on 1", oversized=True)).apply(document_light)
-
-    stay_on_0 = document_light.pages[0][:6]
-    stay_on_1 = document_light.pages[1][:]
-    move_to_2 = document_light.pages[0][6:]
-
-    new_layout = copy.copy(document_light.page_layout)
-    new_layout.row_spacing = 30
-
-    action = ActionEditDocumentSettings(new_layout)
-    action.apply(document_light)
-    assert_that(
-        document_light.pages,
-        contains_exactly(
-            contains_exactly(*stay_on_0),
-            contains_exactly(*stay_on_1),
-            contains_exactly(*move_to_2),
-        ),
-        "Reflow failed"
-    )
-
-
-def test_reflow_appends_new_page_if_required(qtbot, document_light):
-    ActionAddCard(create_card("Stays on 0"), 6).apply(document_light)
-    ActionAddCard(create_card("Moves to 1"), 3).apply(document_light)
-    stay_on_0 = document_light.pages[0][:6]
-    move_to_1 = document_light.pages[0][6:]
-
-    new_layout = copy.copy(document_light.page_layout)
-    new_layout.row_spacing = 30
 
     action = ActionEditDocumentSettings(new_layout)
     action.apply(document_light)

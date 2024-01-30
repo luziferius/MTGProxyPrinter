@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import urllib.error
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.sqlite_helpers import _read_current_database_schema_version
+from mtg_proxy_printer.sqlite_helpers import _get_target_database_schema_version
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.carddb_migrations import migrate_card_database, MIGRATION_SCRIPTS, _migrate_21_to_22
 
@@ -91,7 +91,7 @@ def test_migrated_card_database_contains_expected_tables_and_views(card_db: Card
     migrate_card_database(migrated_db)
     assert_that(
         migrated_db.execute("PRAGMA user_version").fetchone()[0],
-        is_(equal_to(_read_current_database_schema_version("carddb"))),
+        is_(equal_to(_get_target_database_schema_version("carddb"))),
     )
     # Query the table and view definitions.
     tables_and_views_query = textwrap.dedent("""\
@@ -121,7 +121,7 @@ def test_migrated_card_database_contains_expected_indices(card_db: CardDatabase)
     migrate_card_database(migrated_db)
     assert_that(
         migrated_db.execute("PRAGMA user_version").fetchone()[0],
-        is_(equal_to(_read_current_database_schema_version("carddb"))),
+        is_(equal_to(_get_target_database_schema_version("carddb"))),
     )
     # Note: Also include the “sqlite_autoindex*” indices that are
     # automatically created for UNIQUE and PRIMARY KEY constraints.

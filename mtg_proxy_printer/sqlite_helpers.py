@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -120,16 +120,16 @@ def check_database_schema_version(db: sqlite3.Connection, schema_name: str) -> i
               - Negative integer, if the database was created by a later version that created a newer schema.
 
     """
-    database_user_version: int = db.execute("PRAGMA user_version\n").fetchone()[0]
-    latest_user_version = _read_current_database_schema_version(schema_name)
-    if database_user_version != latest_user_version:
+    connected_database_schema_version: int = db.execute("PRAGMA user_version\n").fetchone()[0]
+    target_schema_version = _get_target_database_schema_version(schema_name)
+    if connected_database_schema_version != target_schema_version:
         message = f"Schema version mismatch in the opened database. " \
-                  f"Expected schema version {latest_user_version}, got {database_user_version}."
+                  f"Expected schema version {target_schema_version}, got {connected_database_schema_version}."
         logger.warning(message)
-    return latest_user_version - database_user_version
+    return target_schema_version - connected_database_schema_version
 
 
-def _read_current_database_schema_version(schema_name: str) -> int:
+def _get_target_database_schema_version(schema_name: str) -> int:
     schema = read_resource_text("mtg_proxy_printer.model", f"{schema_name}.sql")
     latest_user_version = int(SCHEMA_PRAGMA_USER_VERSION_MATCHER.search(schema)["version"])
     return latest_user_version

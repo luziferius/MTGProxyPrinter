@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -345,7 +345,6 @@ def generate_test_cases_for_test_get_cards_from_data():
     case = TestCaseData("oversized_card")
     yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id), [case.as_card(),]
     yield CardIdentificationData(scryfall_id=case.scryfall_id), [case.as_card(),]
-
     # Tests effect of is_front on double-faced cards
     case = TestCaseData("english_double_faced_card")
     yield CardIdentificationData(scryfall_id=case.scryfall_id), [
@@ -607,7 +606,6 @@ def test_allow_updating_card_data_on_stale_populated_database_returns_true(
             card_db.allow_updating_card_data(),
             is_(delta_days >= 0)
         )
-
 
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, "missing_image_double_faced_card")

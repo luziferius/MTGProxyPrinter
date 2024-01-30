@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ def test_error_reported_when_overshooting(progress_meter: ProgressMeter, count, 
             progress_meter.advance(step)
     logger.error.assert_called()
 
+
 @pytest.mark.parametrize("initial_value, step", [
     (0, -1),
     (1, -2),
@@ -50,7 +51,7 @@ def test_negative_step_to_negative_total_progress_raises_exception(progress_mete
     # Negative step
     (1, -1), (2, -1), (2, -2),
     # Positive step
-    (0, 1),(0, 2), (1, 2),
+    (0, 1), (0, 2), (1, 2),
     # Overshooting works
     (1, 10),
 ])

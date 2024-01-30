@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@ __all__ = [
     "OLD_DATABASE_LOCATION",
     "DEFAULT_DATABASE_LOCATION",
     "with_database_write_lock",
+    "SCHEMA_NAME",
 ]
 
 
@@ -577,7 +578,7 @@ class CardDatabase(QObject):
           FROM Card
           JOIN related_oracle_ids ON Card.card_id = related_oracle_ids.related_id
         """)
-        related_card_ids = self.db.execute(query, (card.oracle_id,)).fetchall()  # TODO: fetchall() not required
+        related_card_ids = self.db.execute(query, (card.oracle_id,))
         cards = []
         for related_oracle_id, in related_card_ids:
             # Prefer same set over other sets, which is important for multi-component cards like Meld cards. If it
@@ -691,6 +692,7 @@ class CardDatabase(QObject):
         """
         from mtg_proxy_printer.model.imagedb import CacheContent
         db = self.db
+        db.execute("SAVEPOINT 'partition_image_cache'")
         db.execute(cached_dedent('''\
             CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
               scryfall_id TEXT NOT NULL,
@@ -745,8 +747,7 @@ class CardDatabase(QObject):
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
-        db.execute("ROLLBACK")
-        db.execute("BEGIN TRANSACTION")
+        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache'")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:

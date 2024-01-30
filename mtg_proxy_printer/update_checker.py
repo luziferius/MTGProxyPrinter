@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -145,7 +145,7 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
             try:
                 if tags := self._read_available_application_versions_from_mirror(mirror):
                     break
-            except (urllib.error.URLError, socket.timeout) as e:
+            except (urllib.error.URLError, socket.timeout, ijson.IncompleteJSONError) as e:
                 logger.warning(f"Failed to read update from mirror {mirror}. Reason: {e}")
                 continue
         return tags

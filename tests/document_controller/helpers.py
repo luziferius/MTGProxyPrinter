@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,9 +16,10 @@
 """
 This module contains an assortment of small helper functions used in the tests for the document controller
 """
-import typing
+import itertools
 
-from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to
+import hamcrest.core.base_matcher
+from hamcrest import has_properties, same_instance, all_of, instance_of, assert_that, is_, equal_to, has_property
 
 from mtg_proxy_printer.model.carddb import Card, MTGSet, AnyCardType
 from mtg_proxy_printer.model.document_page import CardContainer, Page
@@ -28,6 +29,7 @@ __all__ = [
     "verify_page_index_cache_is_valid",
     "create_card",
     "card_container_with",
+    "card_container_with_name",
     "append_new_card_in_page",
     "insert_card_in_page",
 
@@ -56,11 +58,23 @@ def create_card(name: str, oversized: bool = False) -> Card:
 
 def card_container_with(card: AnyCardType, parent: Page):
     """Hamcrest matcher for a CardContainer."""
+    if not isinstance(card, hamcrest.core.base_matcher.BaseMatcher):
+        card = same_instance(card)
     return all_of(
         instance_of(CardContainer),
         has_properties({
-            "card": same_instance(card),
+            "card": card,
             "parent": same_instance(parent)
+        })
+    )
+
+
+def card_container_with_name(name: str, parent: Page):
+    """Hamcrest matcher for a CardContainer, validating the card only via the given name."""
+    return all_of(
+        instance_of(CardContainer),
+        has_properties({
+            "card": has_property("name", equal_to(name)),
         })
     )
 
@@ -68,14 +82,10 @@ def card_container_with(card: AnyCardType, parent: Page):
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
     """Appends a new card with the given name and size to the given page, returning the Card"""
     new_card = create_card(name, oversized)
-    page.append(CardContainer(
-        page,
-        new_card
-    ))
+    page.append(new_card)
     return new_card
 
 
 def insert_card_in_page(page: Page, card: Card, count: int = 1):
     """Inserts the given card count times into the given page."""
-    for _ in range(count):
-        page.append(CardContainer(page, card))
+    page += itertools.repeat(card, count)

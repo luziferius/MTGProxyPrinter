@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@ import typing
 from mtg_proxy_printer.model.carddb import Card, AnyCardType
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.document_page import CardContainer
-from ._interface import DocumentAction, IllegalStateError, Self
+from mtg_proxy_printer.model.document_page import Page
+from ._interface import DocumentAction, IllegalStateError, Self, split_iterable
 from .page_actions import ActionNewPage, ActionRemovePage
 from mtg_proxy_printer.logger import get_logger
 
@@ -32,6 +32,7 @@ __all__ = [
     "ActionAddCard",
     "ActionRemoveCards",
 ]
+T = typing.TypeVar("T")
 
 
 class ActionAddCard(DocumentAction):
@@ -80,14 +81,9 @@ class ActionAddCard(DocumentAction):
             logger.debug(
                 f"No further empty slots found. Appending {self.added_new_pages} new pages to the document, "
                 f"to fit the remaining {copies} copies.")
-            ActionNewPage(count=self.added_new_pages).apply(document)
-        if copies > 0:
+            content = split_iterable(itertools.repeat(self.card, copies), page_capacity_for_card)
+            ActionNewPage(count=self.added_new_pages, content=content).apply(document)
             self.first_added_page = current_page_position
-        while copies > 0:
-            # Here, the individual cards don’t need to be tracked, as the whole pages get deleted on undo.
-            copies -= (added_cards := self.add_card_to_page(document, current_page_position, self.card, copies))
-            logger.debug(f"Added {added_cards} cards to page {current_page_position}. Remaining to add: {copies}")
-            current_page_position += 1
         return super().apply(document)
 
     @staticmethod
@@ -112,7 +108,7 @@ class ActionAddCard(DocumentAction):
             return 0
         document.beginInsertRows(page_index, first_index, last_index)
         old_page_type = page.page_type()
-        page += (CardContainer(page, card) for _ in range(cards_inserted))
+        page += (card for _ in range(cards_inserted))
         logger.debug(f"After insert, page contains {len(page)} images.")
         document.endInsertRows()
         if old_page_type != (new_page_type := page.page_type()):
@@ -149,11 +145,11 @@ class ActionAddCard(DocumentAction):
             target = f"to page {self.first_added_page+1}"
         else:
             # Cards added to multiple existing and/or new pages
-            pages = itertools.chain(
-                ((page + 1) for page, _ in self.added_cards_to_existing_pages),  # Existing pages, can be empty
-                range(self.first_added_page, self.first_added_page+self.added_new_pages)  # New pages, can be empty
-            )
-            page_ranges = ActionRemoveCards.to_list_of_ranges(pages)
+            existing_pages = ((page + 1) for page, _ in self.added_cards_to_existing_pages)
+            new_pages = range(self.first_added_page, self.first_added_page+self.added_new_pages) \
+                if self.first_added_page else []
+            all_pages = itertools.chain(existing_pages, new_pages)
+            page_ranges = to_list_of_ranges(all_pages)
             # Human-readable representation: pages are comma-separated,
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
             formatted_pages = ", ".join(
@@ -163,7 +159,10 @@ class ActionAddCard(DocumentAction):
 
 
 class ActionRemoveCards(DocumentAction):
-    """Deletes one or more cards from a page. The cards are given as an ascendingly sorted sequence of array indices."""
+    """
+    Deletes one or more cards from a page.
+    The cards are given as a sorted, inclusive sequence of ascending array indices.
+    """
 
     COMPARISON_ATTRIBUTES = ["card_ranges_to_remove", "page_number", "removed_cards"]
 
@@ -173,10 +172,9 @@ class ActionRemoveCards(DocumentAction):
         # The source of the input row sequence is a Qt multi-selection, which is unordered.
         # The individual selections are ordered, but the selection groups are not. To not break the algorithm,
         # if the user selects cards from bottom to top, the rows have to be sorted.
-        cards_to_remove = sorted(cards_to_remove)
-        self.card_ranges_to_remove = self.to_list_of_ranges(cards_to_remove)
+        self.card_ranges_to_remove = to_list_of_ranges(cards_to_remove)
         self.page_number = page_number
-        self.removed_cards: typing.List[typing.List[CardContainer]] = []
+        self.removed_cards: typing.List[Page] = []
 
     def apply(self, document: "Document") -> Self:
         if self.page_number is None:
@@ -199,7 +197,7 @@ class ActionRemoveCards(DocumentAction):
             raise IllegalStateError("page_number is None")
         page = document.pages[self.page_number]
         page_index = document.index(self.page_number, 0)
-        for (begin, end), cards in zip(self.card_ranges_to_remove, self.removed_cards):
+        for (begin, end), cards in zip(self.card_ranges_to_remove, self.removed_cards):  # type: (int, int), Page
             document.beginInsertRows(page_index, begin, end)
             for card in reversed(cards):
                 page.insert(begin, card)
@@ -207,20 +205,21 @@ class ActionRemoveCards(DocumentAction):
         self.removed_cards.clear()
         return self
 
-    @staticmethod
-    def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
-        ranges: typing.List[typing.Tuple[int, int]] = []
-        sequence = itertools.chain(sequence, (sentinel := object(),))
-        lower = upper = next(sequence)
-        for item in sequence:
-            if item is sentinel or upper != item-1:
-                ranges.append((lower, upper))
-                lower = upper = item
-            else:
-                upper = item
-        return ranges
-
     @functools.cached_property
     def as_str(self):
         return f"Remove {sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)} " \
                f"from page {self.page_number+1}"
+
+
+def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:
+    sequence = sorted(sequence)
+    ranges: typing.List[typing.Tuple[int, int]] = []
+    sequence = itertools.chain(sequence, (sentinel := object(),))
+    lower = upper = next(sequence)
+    for item in sequence:
+        if item is sentinel or upper != item-1:
+            ranges.append((lower, upper))
+            lower = upper = item
+        else:
+            upper = item
+    return ranges

@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 
 from abc import abstractmethod
 from functools import partial
+import itertools
 import operator
 import typing
 
@@ -32,8 +33,16 @@ __all__ = [
     "DocumentAction",
     "IllegalStateError",
     "Self",
-    "ActionList"
+    "ActionList",
+    "split_iterable",
 ]
+T = typing.TypeVar("T")
+
+
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
+    iterable = iter(iterable)
+    return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
 
 
 class IllegalStateError(RuntimeError):

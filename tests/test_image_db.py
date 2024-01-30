@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,15 +14,13 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import io
-from unittest.mock import MagicMock, patch
 
 from PySide6.QtCore import QBuffer, QIODevice
 from PySide6.QtGui import QPixmap
 from hamcrest import *
 from pytestqt.qtbot import QtBot
 
-from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, ImageDownloader
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 
 
 def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:

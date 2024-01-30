@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -385,7 +385,7 @@ def elementwise_repeat(items: typing.Iterable, times: int) -> list:
     (PageType.OVERSIZED, 1, 0, RenderMode(0), [258, 1760]),
     (PageType.OVERSIZED, 1, 5, RenderMode(0), [258, 1760]),
 
-    (PageType.REGULAR, 0, 0, RenderMode.IMPLICIT_MARGINS, [194, 1234,2274]),
+    (PageType.REGULAR, 0, 0, RenderMode.IMPLICIT_MARGINS, [194, 1234, 2274]),
     (PageType.REGULAR, 0, 5, RenderMode.IMPLICIT_MARGINS, [135, 1175, 2215]),
     (PageType.OVERSIZED, 0, 0, RenderMode.IMPLICIT_MARGINS, [264, 1754]),
     (PageType.OVERSIZED, 0, 5, RenderMode.IMPLICIT_MARGINS, [205, 1695]),

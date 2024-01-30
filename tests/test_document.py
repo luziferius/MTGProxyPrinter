@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ import typing
 import unittest.mock
 from tempfile import TemporaryDirectory
 import textwrap
-import time
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
@@ -39,7 +38,7 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
-from mtg_proxy_printer.model.document_page import Page, CardContainer
+from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings, CardType
 from mtg_proxy_printer.model.imagedb import ImageKey
@@ -74,10 +73,7 @@ class DummyAction(DocumentAction):
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
     card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
-    page.append(CardContainer(
-        page,
-        card
-    ))
+    page.append(card)
     return card
 
 
@@ -588,7 +584,8 @@ def _validate_saved_document_settings(document: Document):
                 page_layout.page_height,
                 page_layout.page_width,
                 page_layout.row_spacing,
-            ))
+            )
+        )
 
 
 def test_get_missing_image_cards(document_light: Document):
@@ -651,22 +648,6 @@ def test_update_page_layout_copies_the_passed_in_instance(document_light: Docume
     document_light.apply(ActionEditDocumentSettings(layout))
     layout.row_spacing = 2
     assert_that(document_light.page_layout, has_property("row_spacing", equal_to(1)))
-
-
-@pytest.mark.parametrize("page_type, column_spacing, row_spacing, expected", [
-    (PageType.REGULAR, 0, 0, 9),
-    (PageType.REGULAR, 17, 0, 6),
-    (PageType.REGULAR, 0, 10, 6),
-    (PageType.OVERSIZED, 0, 0, 4),
-    (PageType.OVERSIZED, 0, 10, 4),
-    (PageType.OVERSIZED, 0, 25, 2),
-])
-def test_page_layout_compute_page_card_capacity(
-        page_type: PageType, column_spacing: int, row_spacing: int, expected: int):
-    layout = PageLayoutSettings.create_from_settings()
-    layout.row_spacing = row_spacing
-    layout.column_spacing = column_spacing
-    assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
 
 
 @pytest.mark.parametrize("invalid_page_row", [2])

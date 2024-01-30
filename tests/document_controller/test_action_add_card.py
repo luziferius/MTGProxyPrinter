@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -100,7 +100,7 @@ def test_apply_with_check_card_adds_card_to_current_page(qtbot, card, check_card
     )
 
 
-@pytest.mark.parametrize("count", [1, 3])
+@pytest.mark.parametrize("count", [1, 3, 9])
 def test_apply_with_count_adds_that_many_copies(qtbot, card, document_light, count: int):
     action = ActionAddCard(card, count)
     page = document_light.pages[0]
@@ -160,6 +160,28 @@ def test_apply_with_count_overflowing_page_adds_new_page(qtbot, card, document_l
         )
     assert_that(action.added_cards_to_existing_pages, contains_exactly((0, capacity)))
     assert_that(action.added_new_pages, is_(2))
+
+
+def test_apply_with_count_overflowing_page_adds_cards_to_next_page_with_empty_slots(qtbot, card, document_light_3):
+    capacity = document_light_3.page_layout.compute_page_card_capacity()
+    count = capacity + 1
+    pages = document_light_3.pages
+    action = ActionAddCard(card, count)
+    assert_that(action.apply(document_light_3), is_(same_instance(action)))
+    assert_that(
+        pages,
+        contains_exactly(
+            contains_exactly(*[card_container_with(card, pages[0])]*capacity),
+            contains_exactly(card_container_with(card, pages[1])),
+            is_(empty()),
+        )
+    )
+    assert_that(
+        action.added_cards_to_existing_pages, contains_exactly(
+            (0, capacity),
+            (1, 1),
+        ))
+    assert_that(action.added_new_pages, is_(0))
 
 
 def test_apply_emits_page_type_changed_when_page_type_changes(qtbot, card, document_light):

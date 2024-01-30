@@ -1,4 +1,4 @@
-# Copyright (C) 2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2023-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ def http_file():
         file.getheader.return_value = -1
         file.isclosed.return_value = False
         yield mtg_proxy_printer.http_file.MeteredSeekableHTTPFile("")
+    file.__dict__.clear()
 
 
 def set_file_size(http_file: MeteredSeekableHTTPFile, size: int):

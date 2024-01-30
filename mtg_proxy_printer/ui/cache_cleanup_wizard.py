@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -342,7 +342,7 @@ class CardFilterPage(QWizardPage):
         for card, key in hidden:
             self.card_image_model.add_row(card, key, True)
         for key in unknown:
-            self.unknown_image_model.add_row(key)
+           self.unknown_image_model.add_row(key)
         self._apply_filter()
 
     def _apply_filter(self):
