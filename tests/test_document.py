@@ -1,15 +1,15 @@
-# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -20,11 +20,10 @@ import typing
 import unittest.mock
 from tempfile import TemporaryDirectory
 import textwrap
-import time
 
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
-
 
 try:
     from hamcrest import contains_exactly
@@ -37,9 +36,10 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
-from mtg_proxy_printer.model.carddb import Card, MTGSet
-from mtg_proxy_printer.model.document import Document, Page, CardContainer
-from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
+from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
+from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings, CardType
 from mtg_proxy_printer.model.imagedb import ImageKey
 
 from mtg_proxy_printer.document_controller import DocumentAction
@@ -48,7 +48,9 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
-from .document_controller.helpers import insert_card_in_page, create_card, card_container_with
+from .document_controller.helpers import insert_card_in_page, create_card
+
+ItemDataRole = Qt.ItemDataRole
 
 
 class DummyAction(DocumentAction):
@@ -63,13 +65,14 @@ class DummyAction(DocumentAction):
         self.apply = unittest.mock.MagicMock(return_value=self)
         self.undo = unittest.mock.MagicMock(return_value=self)
 
+    @property
+    def as_str(self):
+        return f"Value: {self.value}"
+
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
-    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, None)
-    page.append(CardContainer(
-        page,
-        card
-    ))
+    card = Card(name, MTGSet("", ""), "", "", "", True, "", "", True, oversized, 0, False, None)
+    page.append(card)
     return card
 
 
@@ -102,7 +105,7 @@ def assert_undone(action: DummyAction, document: Document):
 
 def test_apply_on_empty_undo_stack_empty_redo_stack(qtbot: QtBot, document_light: Document):
     action = DummyAction()
-    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=100), \
+    with qtbot.wait_signals([document_light.undo_available_changed, document_light.action_applied], timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -119,7 +122,7 @@ def test_apply_on_empty_undo_stack_filled_redo_stack(qtbot: QtBot, document_ligh
     with qtbot.wait_signals([
                 document_light.undo_available_changed,
                 document_light.redo_available_changed,
-                document_light.action_applied], timeout=100), \
+                document_light.action_applied], timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
 
@@ -136,7 +139,7 @@ def test_apply_on_filled_undo_stack_empty_redo_stack(qtbot: QtBot, document_ligh
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone), \
-            qtbot.wait_signal(document_light.action_applied, timeout=100):
+            qtbot.wait_signal(document_light.action_applied, timeout=1000):
         document_light.apply(action)
 
     assert_that(document_light.redo_stack, is_(empty()))
@@ -151,7 +154,7 @@ def test_apply_on_filled_undo_stack_filled_redo_stack(qtbot: QtBot, document_lig
     document_light.redo_stack.append(redo_dummy := DummyAction(1))
     action = DummyAction(0)
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -169,7 +172,7 @@ def test_apply_same_action_as_on_redo_stack_does_keep_remaining_redo_stack(qtbot
     document_light.redo_stack.append(DummyAction(1))
     action = DummyAction(1)
     expected_signals = [document_light.undo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.apply(action)
@@ -181,7 +184,7 @@ def test_undo_on_empty_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, documen
     document_light.undo_stack.append(first := DummyAction())
     document_light.undo_stack.append(second := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=100),\
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -198,7 +201,7 @@ def test_undo_on_empty_redo_stack_1_element_on_undo_stack(qtbot: QtBot, document
     expected_signals = [
         document_light.redo_available_changed, document_light.undo_available_changed, document_light.action_undone,
     ]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
 
@@ -212,7 +215,7 @@ def test_undo_on_filled_redo_stack_1_element_on_undo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(redo_dummy := DummyAction())
     document_light.undo_stack.append(first := DummyAction())
     expected_signals = [document_light.undo_available_changed, document_light.action_undone,]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied):
         document_light.undo()
@@ -232,7 +235,7 @@ def test_undo_on_filled_redo_stack_2_elements_on_undo_stack(qtbot: QtBot, docume
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_applied), \
-            qtbot.wait_signal(document_light.action_undone, timeout=100):
+            qtbot.wait_signal(document_light.action_undone, timeout=1000):
         document_light.undo()
 
     assert_that(document_light.undo_stack, contains_exactly(first))
@@ -249,7 +252,7 @@ def test_redo_on_empty_undo_stack_1_element_on_redo_stack(qtbot: QtBot, document
         document_light.undo_available_changed, document_light.redo_available_changed, document_light.action_applied
     ]
     with qtbot.wait_signals(
-            expected_signals, timeout=100), \
+            expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
 
@@ -264,7 +267,7 @@ def test_redo_on_empty_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(second := DummyAction())
 
     expected_signals = [document_light.undo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100), \
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -280,7 +283,7 @@ def test_redo_on_filled_undo_stack_1_element_on_redo_stack(qtbot: QtBot, documen
     document_light.redo_stack.append(first := DummyAction())
     document_light.undo_stack.append(undo_dummy := DummyAction())
     expected_signals = [document_light.redo_available_changed, document_light.action_applied]
-    with qtbot.wait_signals(expected_signals, timeout=100),\
+    with qtbot.wait_signals(expected_signals, timeout=1000), \
             qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone):
         document_light.redo()
@@ -300,7 +303,7 @@ def test_redo_on_filled_undo_stack_2_elements_on_redo_stack(qtbot: QtBot, docume
     with qtbot.assert_not_emitted(document_light.undo_available_changed), \
             qtbot.assert_not_emitted(document_light.redo_available_changed), \
             qtbot.assert_not_emitted(document_light.action_undone), \
-            qtbot.wait_signal(document_light.action_applied, timeout=100):
+            qtbot.wait_signal(document_light.action_applied, timeout=1000):
         document_light.redo()
 
     assert_that(document_light.undo_stack, contains_exactly(undo_dummy, second))
@@ -349,15 +352,21 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
     for index, expected_row in zip(indices, child_rows):
         assert_that(index.row(), is_(expected_row))
         assert_that(index.parent().row(), is_(parent_row))
-        card: Card = index.internalPointer().card
+        card: Card = index.data(ItemDataRole.UserRole)
         assert_that(card.requested_page_type(), is_(page_type))
 
 
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
-    custom_layout = PageLayoutSettings(300, 200, 20, 19, 18, 17, 3, 2, True)
+    custom_layout = PageLayoutSettings(
+        page_height=300, page_width=200,
+        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
+        row_spacing=3, column_spacing=2,
+        draw_cut_markers=True, draw_sharp_corners=False,
+    )
     document.apply(ActionEditDocumentSettings(custom_layout))
     yield document
+    document.__dict__.clear()
 
 
 def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custom_layout: Document):
@@ -380,22 +389,6 @@ def test_document_reset_clears_modified_page_layout(qtbot: QtBot, document_custo
     )
 
 
-def test_clear_database_not_clearing_last_image_use_timestamps(document: Document):
-    card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
-    # Add two copies. Should only count as one usage
-    document.apply(ActionAddCard(card, 2))
-    document.store_image_usage()
-    usages = document.card_db.db.execute(
-        "SELECT scryfall_id, is_front, usage_count, CAST(strftime('%s', last_use_date) AS INT) "
-        "FROM LastImageUseTimestamps").fetchall()
-    end = int(time.time())
-    assert_that(
-        usages,
-        contains_exactly(
-            contains_exactly("0000579f-7b35-4ed3-b44c-db2a538066fe", True, 1, close_to(end, 1)))
-    )
-
-
 def test_document_is_created_empty(document_light: Document):
     capacity = document_light.page_layout.compute_page_card_capacity()
     assert_that(capacity, is_(greater_than_or_equal_to(1)))
@@ -414,7 +407,7 @@ def test_document_is_created_empty(document_light: Document):
     )
 
 
-@pytest.mark.parametrize("source_version", [2, 3, 4])
+@pytest.mark.parametrize("source_version", [2, 3, 4, 5])
 def test_save_migration(document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -429,11 +422,6 @@ def test_save_migration(document: Document, source_version: int):
 
 def test_create_save(document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
-    assert_that(
-        set(dataclasses.astuple(document_custom_layout.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
-        "Setup failed. Duplicate values in page layout settings"
-    )
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     capacity = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, capacity))
@@ -444,13 +432,50 @@ def test_create_save(document_custom_layout: Document):
         _validate_saved_document_settings(document_custom_layout)
 
 
-def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: Document):
-    """Tests that saving a new document uses the newest database schema version"""
+@pytest.mark.parametrize("is_front", [True, False])
+def test_save_as_saves_regular_card(document: Document, is_front: bool):
+    card = document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
+    document.apply(ActionAddCard(card))
+    with TemporaryDirectory() as temp_dir:
+        save_file = pathlib.Path(temp_dir)/"test.mtgproxies"
+        document.save_as(save_file)
+        with open_database(
+                save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+            content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+        # Deleting the connection is required on Windows. It releases the file lock that otherwise prevents the
+        # temp_dir context manager from cleaning up the disk
+        del con
     assert_that(
-        set(dataclasses.astuple(document_custom_layout.page_layout)),
-        contains_inanyorder(*dataclasses.astuple(document_custom_layout.page_layout)),
-        "Setup failed. Duplicate values in page layout settings"
+        content, contains_exactly(
+            contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front, CardType.REGULAR.value)
+        )
     )
+
+
+def test_save_as_saves_check_card(document: Document):
+    card = CheckCard(
+        document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
+        document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", False),
+    )
+    document.apply(ActionAddCard(card))
+    with TemporaryDirectory() as temp_dir:
+        save_file = pathlib.Path(temp_dir)/"test.mtgproxies"
+        document.save_as(save_file)
+        with open_database(
+                save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+            content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+        # Deleting the connection is required on Windows. It releases the file lock that otherwise prevents the
+        # temp_dir context manager from cleaning up the disk
+        del con
+    assert_that(
+        content, contains_exactly(
+            contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True, CardType.CHECK_CARD.value)
+        )
+    )
+
+
+def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, document_custom_layout: Document):
+    """Tests that saving a new document uses the newest database schema version"""
     layout = copy.copy(document_custom_layout.page_layout)
     layout.page_height = 1000
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
@@ -459,18 +484,18 @@ def test_subsequent_save_updates_settings(qtbot: QtBot, document_custom_layout: 
         ImageKey(card.scryfall_id, card.is_front, card.highres_image)] = document_custom_layout.image_db.blank_image
     cards_per_page = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, cards_per_page))
-    with TemporaryDirectory() as temp_dir:
-        save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
-        document_custom_layout.save_as(save_dir)
-        _validate_database_schema(save_dir)
-        _validate_saved_document_settings(document_custom_layout)
-        with qtbot.waitSignal(document_custom_layout.page_layout_changed):
-            document_custom_layout.apply(ActionEditDocumentSettings(layout))
-        document_custom_layout.save_to_disk()
-        with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
-                               check_params_cbs=[lambda value: value, lambda value: not value]):
-            document_custom_layout.loader.load_document(save_dir)
-        assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
+
+    save_dir = pathlib.Path(tmp_path)/"test.mtgproxies"
+    document_custom_layout.save_as(save_dir)
+    _validate_database_schema(save_dir)
+    _validate_saved_document_settings(document_custom_layout)
+    with qtbot.waitSignal(document_custom_layout.page_layout_changed):
+        document_custom_layout.apply(ActionEditDocumentSettings(layout))
+    document_custom_layout.save_to_disk()
+    with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
+                           check_params_cbs=[lambda value: value, lambda value: not value]):
+        document_custom_layout.loader.load_document(save_dir)
+    assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
 
 
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
@@ -487,7 +512,7 @@ def _validate_database_schema(db_path: pathlib.Path):
     :raises AssertionError: If the provided file contains an invalid schema
     :returns: Database schema version
     """
-    target_schema_version = 5
+    target_schema_version = 6
     db_unsafe = open_database(
         db_path, f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
     if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
@@ -531,26 +556,36 @@ def _validate_database_schema(db_path: pathlib.Path):
 
 
 def _validate_saved_document_settings(document: Document):
-    with open_database(document.save_file_path, "document-v4", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
-        assert_that(save.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(), contains_exactly(1))
-        assert_that(save.execute(
-            textwrap.dedent("""\
-                SELECT page_height, page_width,
-                       margin_top, margin_bottom, margin_left, margin_right,
-                       image_spacing_horizontal, image_spacing_vertical, draw_cut_markers
-                FROM DocumentSettings
-                WHERE rowid == 1""")).fetchone(),
+    with open_database(document.save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save:
+        assert_that(
+            save.execute("SELECT COUNT(*) FROM DocumentSettings").fetchone(),
+            contains_exactly(len(dataclasses.astuple(document.page_layout)))
+        )
+        keys = ", ".join(map("'{}'".format, document.page_layout.__annotations__.keys()))
+        query = textwrap.dedent(f"""\
+            SELECT value
+              FROM DocumentSettings
+              WHERE key IN ({keys})
+              ORDER BY key ASC
+            """)
+        page_layout: PageLayoutSettings = document.page_layout
+        assert_that(
+            [value for value, in save.execute(query).fetchall()],
             contains_exactly(
-                document.page_layout.page_height,
-                document.page_layout.page_width,
-                document.page_layout.margin_top,
-                document.page_layout.margin_bottom,
-                document.page_layout.margin_left,
-                document.page_layout.margin_right,
-                document.page_layout.image_spacing_horizontal,
-                document.page_layout.image_spacing_vertical,
-                document.page_layout.draw_cut_markers,
-        ))
+                page_layout.column_spacing,
+                page_layout.document_name,
+                int(page_layout.draw_cut_markers),
+                int(page_layout.draw_sharp_corners),
+                int(page_layout.draw_page_numbers),
+                page_layout.margin_bottom,
+                page_layout.margin_left,
+                page_layout.margin_right,
+                page_layout.margin_top,
+                page_layout.page_height,
+                page_layout.page_width,
+                page_layout.row_spacing,
+            )
+        )
 
 
 def test_get_missing_image_cards(document_light: Document):
@@ -565,7 +600,7 @@ def test_get_missing_image_cards(document_light: Document):
         result := list(document_light.get_missing_image_cards()),
         has_length(2)
     )
-    cards = [i.internalPointer().card for i in result]
+    cards = [i.data(ItemDataRole.UserRole) for i in result]
     assert_that(cards, only_contains(expected))
 
 
@@ -609,25 +644,10 @@ def test_compute_pages_saved_by_compacting(
 
 def test_update_page_layout_copies_the_passed_in_instance(document_light: Document):
     layout = copy.copy(document_light.page_layout)
-    layout.image_spacing_horizontal = 1
+    layout.row_spacing = 1
     document_light.apply(ActionEditDocumentSettings(layout))
-    layout.image_spacing_horizontal = 2
-    assert_that(document_light.page_layout, has_property("image_spacing_horizontal", equal_to(1)))
-
-
-@pytest.mark.parametrize("page_type, v_spacing, h_spacing, expected", [
-    (PageType.REGULAR, 0, 0, 9),
-    (PageType.REGULAR, 10, 0, 6),
-    (PageType.REGULAR, 0, 10, 6),
-    (PageType.OVERSIZED, 0, 0, 4),
-    (PageType.OVERSIZED, 0, 10, 4),
-    (PageType.OVERSIZED, 0, 25, 2),
-])
-def test_page_layout_compute_page_card_capacity(page_type:PageType, v_spacing: int, h_spacing: int, expected: int):
-    layout = PageLayoutSettings.create_from_settings()
-    layout.image_spacing_horizontal = h_spacing
-    layout.image_spacing_vertical = v_spacing
-    assert_that(layout.compute_page_card_capacity(page_type), is_(expected))
+    layout.row_spacing = 2
+    assert_that(document_light.page_layout, has_property("row_spacing", equal_to(1)))
 
 
 @pytest.mark.parametrize("invalid_page_row", [2])

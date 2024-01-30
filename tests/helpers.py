@@ -1,24 +1,24 @@
-# Copyright (C) 2019-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import dataclasses
 import functools
 import json
+import os
 import typing
 from unittest.mock import patch, MagicMock
-import pkg_resources
 
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of
@@ -28,8 +28,25 @@ from pytestqt.qtbot import QtBot
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
+from mtg_proxy_printer.units_and_sizes import CardDataType
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.sqlite_helpers import read_resource_text
+
+
+def _should_skip_network_tests() -> bool:
+    result = os.getenv("MTGPROXYPRINTER_RUN_NETWORK_TESTS", "0")
+    try:
+        result = int(result)
+    except ValueError:
+        result = True
+    else:
+        result = bool(result)
+    return not result
+
+
+SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
 
 
 def setup_logging_for_testing():
@@ -56,19 +73,21 @@ def setup_settings_for_testing():
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    dw._db = card_db.db  # Explicitly share the in-memory database connection
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
-        card_db.store_current_printing_filters()
-        card_db.db.commit()
+        filter_updater = PrintingFilterUpdater(card_db, card_db.db)
+        filter_updater.run()
         dw.populate_database(data)
 
 
 @functools.lru_cache()
-def load_json(name: str) -> mtg_proxy_printer.card_info_downloader.JSONType:
-    return json.loads(pkg_resources.resource_string("tests.json_samples", f"{name}.json").decode("utf-8"))
+def load_json(name: str) -> CardDataType:
+    data = read_resource_text("tests.json_samples", f"{name}.json")
+    return json.loads(data)
 
 
 def load_multiple_json_cards(
-        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]]):
+        json_files_or_names: typing.List[typing.Union[str, CardDataType]]):
     return [
         load_json(json_file_or_name) if isinstance(json_file_or_name, str) else json_file_or_name
         for json_file_or_name in json_files_or_names
@@ -78,7 +97,7 @@ def load_multiple_json_cards(
 def fill_card_database_with_json_cards(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_files_or_names: typing.List[typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType]],
+        json_files_or_names: typing.List[typing.Union[str, CardDataType]],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     section = mtg_proxy_printer.settings.settings["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
@@ -93,7 +112,7 @@ def fill_card_database_with_json_cards(
 def fill_card_database_with_json_card(
         qtbot: QtBot,
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
-        json_file_or_name: typing.Union[str, mtg_proxy_printer.card_info_downloader.JSONType],
+        json_file_or_name: typing.Union[str, CardDataType],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
     return fill_card_database_with_json_cards(qtbot, card_db, [json_file_or_name], filter_settings)
 

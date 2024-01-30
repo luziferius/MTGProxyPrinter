@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>central_widget</class>
- <widget class="QWidget" name="central_widget">
+ <class>CentralWidget_Tabbed</class>
+ <widget class="QWidget" name="CentralWidget_Tabbed">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -62,6 +62,9 @@
            <horstretch>5</horstretch>
            <verstretch>10</verstretch>
           </sizepolicy>
+         </property>
+         <property name="contextMenuPolicy">
+          <enum>Qt::CustomContextMenu</enum>
          </property>
          <property name="lineWidth">
           <number>0</number>

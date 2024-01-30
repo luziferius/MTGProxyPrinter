@@ -1,15 +1,15 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,6 +33,7 @@ del get_logger
 __all__ = [
     "ActionReplaceCard",
 ]
+ItemDataRole = Qt.ItemDataRole
 
 
 class ActionReplaceCard(DocumentAction):
@@ -84,7 +85,10 @@ class ActionReplaceCard(DocumentAction):
             self.size_change_actions.append(ActionAddCard(replacement).apply(document))
         else:
             container.card = replacement
-            document.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            document.dataChanged.emit(
+                top_left, bottom_right,
+                (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)
+            )
             if previous_card_page_type != new_card_page_type:
                 logger.info("New card has different size, but page is otherwise empty, changing page type…")
                 document.page_type_changed.emit(page_index)

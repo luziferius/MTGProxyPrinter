@@ -1,19 +1,25 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import random
+from random import Random
+try:
+    from random import randbytes
+except ImportError:
+    # Compatibility with Py 3.8
+    from secrets import token_bytes as randbytes
+
 import typing
 
 from PyQt5.QtCore import Qt, QModelIndex
@@ -28,9 +34,9 @@ from mtg_proxy_printer.units_and_sizes import PageType
 __all__ = [
     "ActionShuffleDocument",
 ]
-
 IndexedCards = typing.List[typing.Tuple[int, Card]]
 ModelIndexList = typing.List[QModelIndex]
+ItemDataRole = Qt.ItemDataRole
 
 
 class ActionShuffleDocument(DocumentAction):
@@ -42,21 +48,21 @@ class ActionShuffleDocument(DocumentAction):
     def __init__(self):
         # The seed is created at instantiation time and ensures that two runs of apply() return a deterministic
         # order. This ensures that redoing the same action always returns the same result
-        self.random_seed = random.randbytes(64)
+        self.random_seed = randbytes(64)
         self.shuffle_order: typing.Dict[PageType, typing.List[int]] = {}
 
     def apply(self, document: Document) -> Self:
         if self.shuffle_order:
             raise IllegalStateError("Cannot apply(). A previous shuffle order is already set")
-        shuffler = random.Random(self.random_seed)
+        shuffler = Random(self.random_seed)
         for page_type in (PageType.REGULAR, PageType.OVERSIZED):
             self._shuffle_pages_of_type(document, shuffler, page_type)
         return super().apply(document)
 
-    def _shuffle_pages_of_type(self, document: Document, shuffler: random.Random, page_type: PageType):
+    def _shuffle_pages_of_type(self, document: Document, shuffler: Random, page_type: PageType):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(
-            enumerate(index.internalPointer().card for index in model_indices)  # The index holds the card container
+            enumerate(index.data(ItemDataRole.UserRole) for index in model_indices)
         )
         shuffler.shuffle(cards)
         self._swap_cards(document, model_indices, cards)
@@ -73,7 +79,7 @@ class ActionShuffleDocument(DocumentAction):
         model_indices = list(document.get_card_indices_of_type(page_type))
         cards: IndexedCards = list(zip(
             self.shuffle_order[page_type],
-            (index.internalPointer().card for index in model_indices)  # The index holds the card container
+            (index.data(ItemDataRole.UserRole) for index in model_indices)  # The index holds the card container
         ))
         cards.sort()
         self._swap_cards(document, model_indices, cards)
@@ -85,7 +91,10 @@ class ActionShuffleDocument(DocumentAction):
             bottom_right = model_index.siblingAtColumn(rightmost_column)
             container: CardContainer = model_index.internalPointer()
             container.card = card
-            document.dataChanged.emit(model_index, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            document.dataChanged.emit(
+                model_index, bottom_right,
+                (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)
+            )
 
     @property
     def as_str(self):

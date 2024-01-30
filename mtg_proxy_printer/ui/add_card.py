@@ -1,19 +1,19 @@
-# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import typing
+from typing import Union, Type, Optional
 
 from PyQt5.QtCore import QStringListModel, pyqtSlot as Slot, pyqtSignal as Signal, Qt, QItemSelectionModel, QItemSelection
 from PyQt5.QtWidgets import QWidget, QDialogButtonBox
@@ -31,11 +31,11 @@ logger = get_logger(__name__)
 del get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget as Ui_vertical
-    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget as Ui_horizontal
+    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget_Vertical
+    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget_Horizontal
 except ModuleNotFoundError:
-    Ui_vertical = load_ui_from_file("add_card_widget/vertical")
-    Ui_horizontal = load_ui_from_file("add_card_widget/horizontal")
+    Ui_AddCardWidget_Vertical = load_ui_from_file("add_card_widget/vertical")
+    Ui_AddCardWidget_Horizontal = load_ui_from_file("add_card_widget/horizontal")
 
 
 __all__ = [
@@ -44,7 +44,9 @@ __all__ = [
     "HorizontalAddCardWidget",
 ]
 
-UiTypes = typing.Union[typing.Type[Ui_horizontal], typing.Type[Ui_horizontal]]
+UiTypes = Union[Type[Ui_AddCardWidget_Vertical], Type[Ui_AddCardWidget_Horizontal]]
+StandardButton = QDialogButtonBox.StandardButton
+ItemDataRole = Qt.ItemDataRole
 
 
 class AddCardWidget(QWidget):
@@ -66,14 +68,14 @@ class AddCardWidget(QWidget):
 
     def _setup_button_box(self):
         box = self.ui.button_box
-        ok_button = box.button(QDialogButtonBox.Ok)
-        reset_button = box.button(QDialogButtonBox.Reset)
+        ok_button = box.button(StandardButton.Ok)
+        reset_button = box.button(StandardButton.Reset)
         ok_button.setEnabled(False)
         ok_button.clicked.connect(self.ok_button_triggered)
         reset_button.clicked.connect(self.reset)
         buttons_with_icons = [
-            (QDialogButtonBox.Reset, "edit-undo"),
-            (QDialogButtonBox.Ok, "dialog-ok"),
+            (StandardButton.Reset, "edit-undo"),
+            (StandardButton.Ok, "dialog-ok"),
         ]
         for role, icon in buttons_with_icons:
             button = box.button(role)
@@ -125,7 +127,7 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.set_name_box.setEnabled(valid)
         if valid:
-            card_name = current_model_index.data(Qt.DisplayRole)
+            card_name = current_model_index.data(ItemDataRole.DisplayRole)
             sets = self.card_database.find_sets_matching(card_name, self.current_language)
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
@@ -143,7 +145,7 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
-            set_abbr = current_model_index.data(Qt.EditRole)
+            set_abbr = current_model_index.data(ItemDataRole.EditRole)
             collector_numbers = self.card_database.find_collector_numbers_matching(
                 self.current_card_name, set_abbr, self.current_language
             )
@@ -155,7 +157,7 @@ class AddCardWidget(QWidget):
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):
-        self.ui.button_box.button(QDialogButtonBox.Ok).setEnabled(bool(current.indexes()))
+        self.ui.button_box.button(StandardButton.Ok).setEnabled(bool(current.indexes()))
 
     @Slot(str)
     def card_name_filter_updated(self, card_name_filter: str):
@@ -192,7 +194,7 @@ class AddCardWidget(QWidget):
     def set_card_database(self, card_db: mtg_proxy_printer.model.carddb.CardDatabase):
         logger.debug("About to set the card database")
         self.card_database = card_db
-        card_db.card_filter_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
+        card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         languages = self.card_database.get_all_languages()
         if not languages:
@@ -215,6 +217,7 @@ class AddCardWidget(QWidget):
             )
         self.language_combo_box_changed(new_preferred_language)
 
+    @Slot()
     def ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
         card_data = self._read_card_data_from_ui()
@@ -252,26 +255,26 @@ class AddCardWidget(QWidget):
         return self.ui.language_combo_box.currentText()
 
     @property
-    def current_card_name(self) -> typing.Optional[str]:
+    def current_card_name(self) -> Optional[str]:
         selected = self.ui.card_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(Qt.DisplayRole)
+            return selected[0].data(ItemDataRole.DisplayRole)
         else:
             return None
 
     @property
-    def current_set_name(self) -> typing.Optional[str]:
+    def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(Qt.EditRole)
+            return selected[0].data(ItemDataRole.EditRole)
         else:
             return None
 
     @property
-    def current_collector_number(self) -> typing.Optional[str]:
+    def current_collector_number(self) -> Optional[str]:
         selected = self.ui.collector_number_list.selectedIndexes()
         if selected:
-            return selected[0].data(Qt.DisplayRole)
+            return selected[0].data(ItemDataRole.DisplayRole)
         else:
             return None
 
@@ -279,9 +282,9 @@ class AddCardWidget(QWidget):
 class VerticalAddCardWidget(AddCardWidget):
 
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_vertical, parent)
+        super().__init__(Ui_AddCardWidget_Vertical, parent)
 
 
 class HorizontalAddCardWidget(AddCardWidget):
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_horizontal, parent)
+        super().__init__(Ui_AddCardWidget_Horizontal, parent)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ to_be_profiled_functions = {
         "_translate_card",
         "store_current_printing_filters",
         "_update_cached_data",
+        "get_all_cards_from_image_cache",
     ],
 }
 

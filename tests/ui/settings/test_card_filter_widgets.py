@@ -1,15 +1,15 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -44,7 +44,9 @@ general_printing_widget_mapping = {
     "hide-gold-bordered": "hide_gold_bordered_cards",
     "hide-oversized-cards": "hide_oversized_cards",
     "hide-token": "hide_token",
-    "hide-white-bordered": "hide_white_bordered_cards"
+    "hide-white-bordered": "hide_white_bordered_cards",
+    "hide-borderless": "hide_borderless_cards",
+    "hide-extended-art": "hide_extended_art_cards",
 }
 
 
@@ -78,6 +80,7 @@ format_printing_widget_mapping = {
     "hide-banned-in-historic": "hide_banned_in_historic",
     "hide-banned-in-legacy": "hide_banned_in_legacy",
     "hide-banned-in-modern": "hide_banned_in_modern",
+    "hide-banned-in-oathbreaker": "hide_banned_in_oathbreaker",
     "hide-banned-in-pauper": "hide_banned_in_pauper",
     "hide-banned-in-penny": "hide_banned_in_penny",
     "hide-banned-in-pioneer": "hide_banned_in_pioneer",
@@ -120,3 +123,4 @@ def test_format_printing_filter_saves_correctly(qtbot, download_section, setting
         has_entry(setting, equal_to(str(value))),
         f"Key not saved correctly: {setting}"
     )
+

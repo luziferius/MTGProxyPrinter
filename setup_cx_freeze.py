@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2021-2023 Thomas Hess <thomas.hess@udo.edu>
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -44,8 +44,8 @@ setup_py.setup_parameters["executables"] = [
     Executable(
         f"{setup_py.main_package}/__main__.py",
         base=base,
-        target_name='MTGProxyPrinter',
-        shortcut_name='MTGProxyPrinter',
+        target_name=project_name,
+        shortcut_name=project_name,
         shortcut_dir='StartMenuFolder',
     ),
 ]
@@ -74,7 +74,6 @@ setup_py.setup_parameters["options"] = {
             "pydoc_data",
             "tkinter",
             "toml",
-            "unittest",
             "sqlite3.test",  # Ignore the internal test suite
             "pint.testsuite",  # Ignore the internal test suite
             "importlib_metadata",

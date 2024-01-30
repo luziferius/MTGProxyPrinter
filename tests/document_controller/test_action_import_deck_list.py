@@ -1,15 +1,15 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -26,7 +26,7 @@ from mtg_proxy_printer.document_controller.import_deck_list import ActionImportD
 import pytest
 from hamcrest import *
 
-from .helpers import append_new_card_in_page, create_card, card_container_with, append_new_pages, insert_card_in_page
+from .helpers import append_new_card_in_page, create_card, card_container_with
 
 T = typing.TypeVar("T")
 
@@ -37,7 +37,7 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
     return iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ())
 
 
-@pytest.mark.parametrize("card_count", [1, 9, 10, 100])
+@pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
 def test_apply_appends_cards(document_light, card_count: int):
     page_capacity = document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)
     expected_pages = math.ceil(card_count/page_capacity)
@@ -110,7 +110,7 @@ def test_apply_clears_document_if_enabled(qtbot, document_light, new_card_is_ove
     )
 
 
-@pytest.mark.parametrize("card_count", [1, 9, 10, 100])
+@pytest.mark.parametrize("card_count", [1, 9, 10, 11, 100])
 def test_undo_removes_created_pages(document_light, card_count):
     pages = document_light.pages
     cards = [create_card(f"Card {number}") for number in range(1, card_count+1)]

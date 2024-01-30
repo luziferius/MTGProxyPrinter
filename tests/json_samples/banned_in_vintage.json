@@ -1,37 +1,37 @@
 {
   "object": "card",
-  "id": "f2b9983e-20d4-4d12-9e2c-ec6d9a345787",
-  "oracle_id": "f5ca7b13-8003-4361-b827-7095c89f2750",
+  "id": "0014def3-4063-4929-ac51-76aef1bb2a68",
+  "oracle_id": "fc04f621-338b-4d4c-bf57-5e5a00d990f0",
   "multiverse_ids": [
-    1571
+    980
   ],
-  "tcgplayer_id": 3863,
-  "cardmarket_id": 299971,
-  "name": "Falling Star",
+  "tcgplayer_id": 3240,
+  "cardmarket_id": 6846,
+  "name": "Shahrazad",
   "lang": "en",
-  "released_at": "1994-06-01",
-  "uri": "https://api.scryfall.com/cards/f2b9983e-20d4-4d12-9e2c-ec6d9a345787",
-  "scryfall_uri": "https://scryfall.com/card/leg/145/falling-star?utm_source=api",
+  "released_at": "1993-12-17",
+  "uri": "https://api.scryfall.com/cards/0014def3-4063-4929-ac51-76aef1bb2a68",
+  "scryfall_uri": "https://scryfall.com/card/arn/10/shahrazad?utm_source=api",
   "layout": "normal",
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.png?1562861838",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/f/2/f2b9983e-20d4-4d12-9e2c-ec6d9a345787.jpg?1562861838"
+    "small": "https://cards.scryfall.io/small/front/0/0/0014def3-4063-4929-ac51-76aef1bb2a68.jpg?1562895012",
+    "normal": "https://cards.scryfall.io/normal/front/0/0/0014def3-4063-4929-ac51-76aef1bb2a68.jpg?1562895012",
+    "large": "https://cards.scryfall.io/large/front/0/0/0014def3-4063-4929-ac51-76aef1bb2a68.jpg?1562895012",
+    "png": "https://cards.scryfall.io/png/front/0/0/0014def3-4063-4929-ac51-76aef1bb2a68.png?1562895012",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/0/0/0014def3-4063-4929-ac51-76aef1bb2a68.jpg?1562895012",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/0/0/0014def3-4063-4929-ac51-76aef1bb2a68.jpg?1562895012"
   },
-  "mana_cost": "{2}{R}",
-  "cmc": 3.0,
+  "mana_cost": "{W}{W}",
+  "cmc": 2.0,
   "type_line": "Sorcery",
-  "oracle_text": "Flip Falling Star onto the playing area from a height of at least one foot. Falling Star deals 3 damage to each creature it lands on. Tap all creatures dealt damage by Falling Star. If Falling Star doesn't turn completely over at least once during the flip, it has no effect.",
+  "oracle_text": "Players play a Magic subgame, using their libraries as their decks. Each player who doesn't win the subgame loses half their life, rounded up.",
   "colors": [
-    "R"
+    "W"
   ],
   "color_identity": [
-    "R"
+    "W"
   ],
   "keywords": [
 
@@ -42,16 +42,22 @@
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "not_legal",
     "legacy": "banned",
     "pauper": "not_legal",
     "vintage": "banned",
     "penny": "not_legal",
     "commander": "banned",
+    "oathbreaker": "banned",
     "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "banned",
     "oldschool": "legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "banned"
   },
   "games": [
     "paper"
@@ -59,27 +65,31 @@
   "reserved": true,
   "foil": false,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
   "oversized": false,
   "promo": false,
   "reprint": false,
   "variation": false,
-  "set": "leg",
-  "set_name": "Legends",
+  "set_id": "856f63eb-e056-43e5-8a56-7a58e1608940",
+  "set": "arn",
+  "set_name": "Arabian Nights",
   "set_type": "expansion",
-  "set_uri": "https://api.scryfall.com/sets/78c50b4b-b220-455b-a2d5-cee458fa56f3",
-  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aleg&unique=prints",
-  "scryfall_set_uri": "https://scryfall.com/sets/leg?utm_source=api",
-  "rulings_uri": "https://api.scryfall.com/cards/f2b9983e-20d4-4d12-9e2c-ec6d9a345787/rulings",
-  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Af5ca7b13-8003-4361-b827-7095c89f2750&unique=prints",
-  "collector_number": "145",
+  "set_uri": "https://api.scryfall.com/sets/856f63eb-e056-43e5-8a56-7a58e1608940",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aarn&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/arn?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/0014def3-4063-4929-ac51-76aef1bb2a68/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Afc04f621-338b-4d4c-bf57-5e5a00d990f0&unique=prints",
+  "collector_number": "10",
   "digital": false,
   "rarity": "rare",
   "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
-  "artist": "Douglas Shuler",
+  "artist": "Kaja Foglio",
   "artist_ids": [
-    "a9ddb513-51c7-455c-ab8f-5b90aae9f75b"
+    "e8b85539-756a-4eac-ac66-a2258d7cf547"
   ],
-  "illustration_id": "65abb51c-2c69-40e1-a904-236e0730974e",
+  "illustration_id": "dcf24b76-d492-4539-883e-630c61113670",
   "border_color": "black",
   "frame": "1993",
   "full_art": false,
@@ -87,22 +97,22 @@
   "booster": true,
   "story_spotlight": false,
   "prices": {
-    "usd": "126.99",
+    "usd": "586.50",
     "usd_foil": null,
-    "eur": "59.95",
+    "usd_etched": null,
+    "eur": "329.00",
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=1571",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Falling+Star&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Falling+Star&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Falling+Star",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Falling+Star"
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=980&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DShahrazad",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DShahrazad",
+    "edhrec": "https://edhrec.com/route/?cc=Shahrazad"
   },
   "purchase_uris": {
-    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=3863&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Falling+Star&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
-    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Falling+Star&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F3240%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Shahrazad&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Shahrazad&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
 }
