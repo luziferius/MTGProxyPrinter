@@ -158,8 +158,8 @@ class LoadListPage(QWizardPage):
         if not self.ui.deck_list.toPlainText() or QMessageBox.question(
                 self, "Overwrite existing deck list?",
                 "Selecting a file will overwrite the existing deck list. Continue?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        ) == QMessageBox.StandardButton.Yes:
+                StandardButton.Yes | StandardButton.No
+        ) == StandardButton.Yes:
             logger.debug("User opted to replace the current, non-empty deck list with the file content")
             file_extension_filter = self.get_file_extension_filter()
             selected_file, _ = QFileDialog.getOpenFileName(

@@ -47,7 +47,7 @@ CheckState = Qt.CheckState
 bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
     True: CheckState.Checked,
     False: CheckState.Unchecked,
-    None: CheckState.PartiallyChecked
+    None: CheckState.PartiallyChecked,
 }
 check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection

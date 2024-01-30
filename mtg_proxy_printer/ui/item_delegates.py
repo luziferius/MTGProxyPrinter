@@ -44,6 +44,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         column = index.column()
         while hasattr(source_model, "sourceModel"):  # Resolve the source model to gain access to the card database.
             source_model = source_model.sourceModel()
+
         if column == PageColumns.Set:
             matching_sets = source_model.card_db.find_sets_matching(
                 index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),

@@ -164,8 +164,8 @@ class Document(QAbstractItemModel):
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
-            orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
-        if orientation == Qt.Orientation.Horizontal:
+            orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
+        if orientation == Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
                 return Document.page_header.get(section)
             elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:

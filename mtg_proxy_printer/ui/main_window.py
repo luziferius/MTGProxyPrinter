@@ -305,8 +305,8 @@ class MainWindow(QMainWindow):
                 self, "Saving pages possible",
                 f"It is possible to save {savable_pages} pages when printing this document.\n"
                 f"Do you want to compact the document now to minimize the page count prior to {action}?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-            )) == QMessageBox.StandardButton.Yes:
+                StandardButton.Yes | StandardButton.No | StandardButton.Cancel
+            )) == StandardButton.Yes:
                 self.document.apply(ActionCompactDocument())
             return result
         return StandardButton.No  # No pages can be saved, assume "No" for this case
@@ -397,16 +397,16 @@ class MainWindow(QMainWindow):
                 f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
                 f"to download the new version?",
                 StandardButton.Yes | StandardButton.No, StandardButton.No
-                ) == QMessageBox.Yes:
-            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.StrictMode)
+                ) == StandardButton.Yes:
+            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
             QDesktopServices.openUrl(url)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
-                    self, "New card data available",
-                    f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
-                    StandardButton.Yes | StandardButton.No, StandardButton.Yes
-                ) == StandardButton.Yes:
+                self, "New card data available",
+                f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
+                StandardButton.Yes | StandardButton.No, StandardButton.Yes
+        ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.ui.action_download_card_data.trigger()
         else:
@@ -440,8 +440,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
                 )) in {StandardButton.Yes, StandardButton.No}:
             logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings["application"][settings_key] = str(
-                result == StandardButton.Yes)
+            mtg_proxy_printer.settings.settings["application"][settings_key] = str(result == StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
 

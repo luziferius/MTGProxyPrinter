@@ -150,9 +150,9 @@ def test_accepting_card_data_update_offer_results_in_performed_action(qtbot: QtB
     ui = main_window.ui
     ui.action_download_card_data.setEnabled(True)
     with unittest.mock.patch.object(
-            mtg_proxy_printer.ui.main_window.QMessageBox,
+        mtg_proxy_printer.ui.main_window.QMessageBox,
             "question", return_value=StandardButton.Yes) as message_box, \
-        unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
+            unittest.mock.patch.object(QThreadPool.globalInstance(), "start") as thread_pool_start:
         main_window.show_card_data_update_available_message_box(10000)
     message_box.assert_called_once()
     thread_pool_start.assert_called_once()
