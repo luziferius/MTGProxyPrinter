@@ -34,7 +34,6 @@ class Namespace:
     database_path: Path
     card_data: Path
     keep: bool
-    log_db_path: Path
 
 
 def parse_args() -> Namespace:
@@ -49,12 +48,6 @@ def parse_args() -> Namespace:
         "-k", "--keep", action="store_true",
         help="Re-use an existing database, performing an in-place card data update, "
              "instead of populating an empty, new database.")
-    parser.add_argument(
-        "--log-db", type=Path, default=Path(__file__).parent.parent/"benchmark-logs.db",
-        dest="log_db_path",
-        help="Database location used to store benchmark results. Stores overall time usage, "
-             "Python platform and other basic metrics. Defaults to '%(default)s'."
-    )
     return parser.parse_args()
 
 

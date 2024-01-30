@@ -1,4 +1,5 @@
 # Main dependencies
+
 PySide6-Essentials >= 6.5.0
 pint < 0.22; platform_system == 'windows'  # 0.22 dropped Py 3.8 support, thus Win7 support
 pint; platform_system != 'windows'

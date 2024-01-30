@@ -42,6 +42,7 @@ except ModuleNotFoundError:
     Ui_CentralWidget_Columnar = load_ui_from_file("central_widget/columnar")
     Ui_CentralWidget_Grouped = load_ui_from_file("central_widget/grouped")
     Ui_CentralWidget_Tabbed = load_ui_from_file("central_widget/tabbed_vertical")
+
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger

@@ -143,6 +143,7 @@ class TestCaseData:
 
     def db_print_language(self):
         return [(self.language,)]
+
     def db_face_name(self) -> typing.List[typing.Tuple[str]]:
         # De-duplicate face names, in case both sides of a double-faced card have the same name. This is true for
         # art series cards, certain double-faced tokens (for example the C16 Saproling token) and similar.

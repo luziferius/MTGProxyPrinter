@@ -263,6 +263,7 @@ class MainWindow(QMainWindow):
             return
         self.current_dialog = PrintDialog(self.document, self)
         self.current_dialog.finished.connect(self.on_dialog_finished)
+        # Use the QDialog base class open() method, because QPrintDialog.open() performs additional, unwanted actions.
         self.missing_images_manager.obtain_missing_images(super(QPrintDialog, self.current_dialog).open)
 
     @Slot()

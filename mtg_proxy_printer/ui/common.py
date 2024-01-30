@@ -86,7 +86,6 @@ def load_ui_from_file(name: str):
     :param name: Path to the UI file
     :return: class implementing the requested Ui
     :raises FileNotFoundError: If the given ui file does not exist
-    :raises FileNotFoundError: If the given ui file does not exist
     """
     file_path = f"{RESOURCE_PATH_PREFIX}/ui/{name}.ui"
     if not QFile.exists(file_path):

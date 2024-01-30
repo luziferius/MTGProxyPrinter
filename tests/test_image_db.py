@@ -46,6 +46,7 @@ def test_delete_disk_cache_entries_removes_empty_parent_directories(qtbot: QtBot
         path.parent.mkdir(exist_ok=True, parents=True)
         path.write_bytes(blank_image_file.read())
     image_db.images_on_disk.update(keys)
+
     # Test
     image_db.delete_disk_cache_entries([keys[0]])
     assert_that((image_db.db_path / keys[0].format_relative_path()).is_file(), is_(False))

@@ -376,7 +376,6 @@ class CardFilterPage(QWizardPage):
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
             selection_model = self.ui.unknown_image_view.selectionModel()
             for row in range(self.unknown_image_model.rowCount()):
-
                 index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
                 selection_model.select(index, SelectRows)
 
