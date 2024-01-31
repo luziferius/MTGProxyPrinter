@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,9 +25,9 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 
 def qpixmap_to_bytes_io(pixmap: QPixmap) -> io.BytesIO:
     buffer = QBuffer()
-    buffer.open(QIODevice.WriteOnly)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
-    image = bytes(buffer.data())
+    image = buffer.data().data()
     return io.BytesIO(image)
 
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ del get_logger
 __all__ = [
     "ComboBoxItemDelegate",
 ]
+ItemDataRole = Qt.ItemDataRole
 
 
 class ComboBoxItemDelegate(QStyledItemDelegate):
@@ -43,42 +44,43 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         column = index.column()
         while hasattr(source_model, "sourceModel"):  # Resolve the source model to gain access to the card database.
             source_model = source_model.sourceModel()
+
         if column == PageColumns.Set:
             matching_sets = source_model.card_db.find_sets_matching(
-                index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
-                index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
-                is_front=index.siblingAtColumn(PageColumns.IsFront).data(Qt.EditRole),
+                index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
+                index.siblingAtColumn(PageColumns.Language).data(ItemDataRole.EditRole),
+                is_front=index.siblingAtColumn(PageColumns.IsFront).data(ItemDataRole.EditRole),
             )
-            current_set_code = index.data(Qt.EditRole)
+            current_set_code = index.data(ItemDataRole.EditRole)
             current_set_position = 0
             for position, set_data in enumerate(matching_sets):
-                editor.addItem(set_data.data(Qt.DisplayRole), set_data.data(Qt.EditRole))
+                editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data.data(ItemDataRole.EditRole))
                 if set_data.code == current_set_code:
                     current_set_position = position
             editor.setCurrentIndex(current_set_position)
 
         elif column == PageColumns.CollectorNumber:
             matching_collector_numbers = source_model.card_db.find_collector_numbers_matching(
-                index.siblingAtColumn(PageColumns.CardName).data(Qt.EditRole),
-                index.siblingAtColumn(PageColumns.Set).data(Qt.EditRole),
-                index.siblingAtColumn(PageColumns.Language).data(Qt.EditRole),
+                index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
+                index.siblingAtColumn(PageColumns.Set).data(ItemDataRole.EditRole),
+                index.siblingAtColumn(PageColumns.Language).data(ItemDataRole.EditRole),
             )
             for collector_number in matching_collector_numbers:
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
             if matching_collector_numbers:
-                editor.setCurrentIndex(matching_collector_numbers.index(index.data(Qt.EditRole)))
+                editor.setCurrentIndex(matching_collector_numbers.index(index.data(ItemDataRole.EditRole)))
 
         elif column == PageColumns.Language:
-            card = index.data(Qt.UserRole)
+            card = index.data(ItemDataRole.UserRole)
             matching_languages = source_model.card_db.get_available_languages_for_card(card)
             for language in matching_languages:
                 editor.addItem(language, language)
             if matching_languages:
-                editor.setCurrentIndex(matching_languages.index(index.data(Qt.EditRole)))
+                editor.setCurrentIndex(matching_languages.index(index.data(ItemDataRole.EditRole)))
 
     def setModelData(self, editor: QComboBox, model: QAbstractItemModel, index: QModelIndex) -> None:
-        new_value = editor.currentData(Qt.UserRole)
-        previous_value = index.data(Qt.EditRole)
+        new_value = editor.currentData(ItemDataRole.UserRole)
+        previous_value = index.data(ItemDataRole.EditRole)
         if new_value != previous_value:
             logger.debug(f"Setting data for column {index.column()} to {new_value}")
-            model.setData(index, new_value, Qt.EditRole)
+            model.setData(index, new_value, ItemDataRole.EditRole)

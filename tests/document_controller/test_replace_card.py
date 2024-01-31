@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,8 @@ from hamcrest import *
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
-from mtg_proxy_printer.model.document import Document, CardContainer
+from mtg_proxy_printer.model.document_page import CardContainer
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
 
 from .helpers import card_container_with, create_card, append_new_card_in_page, append_new_pages

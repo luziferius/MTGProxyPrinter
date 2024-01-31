@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,6 +45,8 @@ __all__ = [
 ]
 
 UiTypes = Union[Type[Ui_AddCardWidget_Vertical], Type[Ui_AddCardWidget_Horizontal]]
+StandardButton = QDialogButtonBox.StandardButton
+ItemDataRole = Qt.ItemDataRole
 
 
 class AddCardWidget(QWidget):
@@ -66,14 +68,14 @@ class AddCardWidget(QWidget):
 
     def _setup_button_box(self):
         box = self.ui.button_box
-        ok_button = box.button(QDialogButtonBox.Ok)
-        reset_button = box.button(QDialogButtonBox.Reset)
+        ok_button = box.button(StandardButton.Ok)
+        reset_button = box.button(StandardButton.Reset)
         ok_button.setEnabled(False)
         ok_button.clicked.connect(self.ok_button_triggered)
         reset_button.clicked.connect(self.reset)
         buttons_with_icons = [
-            (QDialogButtonBox.Reset, "edit-undo"),
-            (QDialogButtonBox.Ok, "dialog-ok"),
+            (StandardButton.Reset, "edit-undo"),
+            (StandardButton.Ok, "dialog-ok"),
         ]
         for role, icon in buttons_with_icons:
             button = box.button(role)
@@ -125,7 +127,7 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.set_name_box.setEnabled(valid)
         if valid:
-            card_name = current_model_index.data(Qt.DisplayRole)
+            card_name = current_model_index.data(ItemDataRole.DisplayRole)
             sets = self.card_database.find_sets_matching(card_name, self.current_language)
             logger.debug(f'Selected: "{card_name}", language: {self.current_language}, matching {len(sets)} sets')
             self.set_name_model.set_set_data(sets)
@@ -143,7 +145,7 @@ class AddCardWidget(QWidget):
         valid = current_model_index.isValid()
         self.ui.collector_number_box.setEnabled(valid)
         if valid:
-            set_abbr = current_model_index.data(Qt.EditRole)
+            set_abbr = current_model_index.data(ItemDataRole.EditRole)
             collector_numbers = self.card_database.find_collector_numbers_matching(
                 self.current_card_name, set_abbr, self.current_language
             )
@@ -155,7 +157,7 @@ class AddCardWidget(QWidget):
 
     @Slot(QItemSelection)
     def collector_number_list_selection_changed(self, current: QItemSelection):
-        self.ui.button_box.button(QDialogButtonBox.Ok).setEnabled(bool(current.indexes()))
+        self.ui.button_box.button(StandardButton.Ok).setEnabled(bool(current.indexes()))
 
     @Slot(str)
     def card_name_filter_updated(self, card_name_filter: str):
@@ -215,6 +217,7 @@ class AddCardWidget(QWidget):
             )
         self.language_combo_box_changed(new_preferred_language)
 
+    @Slot()
     def ok_button_triggered(self):
         logger.info("User clicked OK and adds a new card to the current page.")
         card_data = self._read_card_data_from_ui()
@@ -255,7 +258,7 @@ class AddCardWidget(QWidget):
     def current_card_name(self) -> Optional[str]:
         selected = self.ui.card_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(Qt.DisplayRole)
+            return selected[0].data(ItemDataRole.DisplayRole)
         else:
             return None
 
@@ -263,7 +266,7 @@ class AddCardWidget(QWidget):
     def current_set_name(self) -> Optional[str]:
         selected = self.ui.set_name_list.selectedIndexes()
         if selected:
-            return selected[0].data(Qt.EditRole)
+            return selected[0].data(ItemDataRole.EditRole)
         else:
             return None
 
@@ -271,7 +274,7 @@ class AddCardWidget(QWidget):
     def current_collector_number(self) -> Optional[str]:
         selected = self.ui.collector_number_list.selectedIndexes()
         if selected:
-            return selected[0].data(Qt.DisplayRole)
+            return selected[0].data(ItemDataRole.DisplayRole)
         else:
             return None
 

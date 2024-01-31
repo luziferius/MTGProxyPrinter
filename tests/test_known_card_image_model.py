@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,6 +65,6 @@ def test_add_row_identifies_low_resolution_images(environment: Environment, is_f
     image_under_test = disk_cache[0] if disk_cache[0].is_front == is_front else disk_cache[1]
     model.add_row(card, image_under_test, is_hidden)
     assert_that(
-        model.index(0, KnownCardColumns.HasHighResolution).data(Qt.EditRole),
+        model.index(0, KnownCardColumns.HasHighResolution).data(Qt.ItemDataRole.EditRole),
         is_(False)
     )

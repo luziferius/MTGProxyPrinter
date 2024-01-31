@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -64,6 +64,7 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
         previous = checkbox_widget.isChecked()
         new_value = not previous
         checkbox_widget.setChecked(new_value)
+    assert_that(checkbox_widget.isChecked(), is_(new_value))
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
     # Test second time to ensure both ways (enable & disable) work
     with qtbot.waitSignal(checkbox_widget.stateChanged):

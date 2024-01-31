@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
-DuplexMode = mtg_proxy_printer.settings.DuplexMode
 CheckState = Qt.CheckState
+DuplexMode = mtg_proxy_printer.settings.DuplexMode
 
 
 class PageConfigWidget(QGroupBox):

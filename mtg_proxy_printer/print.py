@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
 
 
 def create_printer(renderer: "Renderer") -> QPrinter:
-    printer = QPrinter(QPrinter.HighResolution)
+    printer = QPrinter(QPrinter.PrinterMode.HighResolution)
     layout = renderer.document.page_layout
     page_layout = layout.to_page_layout(renderer.render_mode)
     if not printer.setPageLayout(page_layout):
@@ -63,7 +63,7 @@ def create_printer(renderer: "Renderer") -> QPrinter:
     printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     printer.setDoubleSidedPrinting(layout.duplex_mode.is_duplex())
     printer.setDuplex(layout.duplex_mode.qt_duplex_mode())
-    printer.setOutputFormat(QPrinter.NativeFormat)
+    printer.setOutputFormat(QPrinter.OutputFormat.NativeFormat)
     if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
         printer.setFullPage(True)
     return printer
@@ -86,7 +86,10 @@ class PDFPrinter(QPdfWriter):
         self.painter = QPainter()
         # magnitude returns a float by default, so round to int to avoid a TypeError
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-        self.setPageSizeMM(document.page_layout.paper_size())
+        self.setPageSize(QPageSize(
+            document.page_layout.paper_size(),
+            QPageSize.Unit.Millimeter
+        ))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)

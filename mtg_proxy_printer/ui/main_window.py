@@ -16,7 +16,7 @@
 import pathlib
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, QStringListModel, QUrl, Qt, QSize
 from PyQt5.QtGui import QCloseEvent, QKeySequence, QDesktopServices, QDragEnterEvent, QDropEvent, QPixmap
 from PyQt5.QtWidgets import QApplication, QMessageBox, QAction, QWidget, QMainWindow, QDialog
 
@@ -53,6 +53,9 @@ del get_logger
 __all__ = [
     "MainWindow",
 ]
+TransformationMode = Qt.TransformationMode
+StandardButton = QMessageBox.StandardButton
+StandardKey = QKeySequence.StandardKey
 UiElements = typing.List[typing.Union[QWidget, QAction]]
 
 
@@ -107,16 +110,16 @@ class MainWindow(QMainWindow):
         return about_dialog
 
     def _setup_platform_dependent_default_shortcuts(self):
-        actions_with_shortcuts: typing.List[typing.Tuple[QAction, QKeySequence.StandardKey]] = [
-            (self.ui.action_new_document, QKeySequence.New),
-            (self.ui.action_load_document, QKeySequence.Open),
-            (self.ui.action_save_document, QKeySequence.Save),
-            (self.ui.action_save_as, QKeySequence.SaveAs),
-            (self.ui.action_show_settings, QKeySequence.Preferences),
-            (self.ui.action_print, QKeySequence.Print),
-            (self.ui.action_quit, QKeySequence.Quit),
-            (self.ui.action_undo, QKeySequence.Undo),
-            (self.ui.action_redo, QKeySequence.Redo),
+        actions_with_shortcuts: typing.List[typing.Tuple[QAction, StandardKey]] = [
+            (self.ui.action_new_document, StandardKey.New),
+            (self.ui.action_load_document, StandardKey.Open),
+            (self.ui.action_save_document, StandardKey.Save),
+            (self.ui.action_save_as, StandardKey.SaveAs),
+            (self.ui.action_show_settings, StandardKey.Preferences),
+            (self.ui.action_print, StandardKey.Print),
+            (self.ui.action_quit, StandardKey.Quit),
+            (self.ui.action_undo, StandardKey.Undo),
+            (self.ui.action_redo, StandardKey.Redo),
         ]
         for action, shortcut in actions_with_shortcuts:
             action.setShortcut(shortcut)
@@ -224,11 +227,10 @@ class MainWindow(QMainWindow):
         the window.
         """
         logger.debug("User closed the main window, closing application…")
-        event.ignore()
+        event.accept()
         # Triggering the quit action implicitly closes all windows, thus causes this event to fire during application
         # quit. This check prevents the quit logic from running twice.
         if self.is_running:
-            event.ignore()
             self.on_action_quit_triggered()
 
     @Slot()
@@ -257,7 +259,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
-        if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
+        if self._ask_user_about_compacting_document("printing") == StandardButton.Cancel:
             return
         self.current_dialog = PrintDialog(self.document, self)
         self.current_dialog.finished.connect(self.on_dialog_finished)
@@ -266,7 +268,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
-        if self._ask_user_about_compacting_document("printing") == QMessageBox.Cancel:
+        if self._ask_user_about_compacting_document("printing") == StandardButton.Cancel:
             return
         self.current_dialog = PrintPreviewDialog(self.document, self)
         self.current_dialog.finished.connect(self.on_dialog_finished)
@@ -275,7 +277,7 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
-        if self._ask_user_about_compacting_document("exporting as a PDF") == QMessageBox.Cancel:
+        if self._ask_user_about_compacting_document("exporting as a PDF") == StandardButton.Cancel:
             return
         self.current_dialog = SavePDFDialog(self, self.document)
         self.current_dialog.finished.connect(self.on_dialog_finished)
@@ -286,7 +288,7 @@ class MainWindow(QMainWindow):
             self, "Network error",
             f"Operation failed, because a network error occurred.\n"
             f"Check your internet connection. Reported error message:\n\n{message}",
-            QMessageBox.Ok, QMessageBox.Ok)
+            StandardButton.Ok, StandardButton.Ok)
         self.loading_state_changed.emit(False)
 
     def on_error_occurred(self, message: str):
@@ -294,20 +296,20 @@ class MainWindow(QMainWindow):
             self, "Error",
             f"Operation failed, because an internal error occurred.\n"
             f"Reported error message:\n{message}",
-            QMessageBox.Ok, QMessageBox.Ok)
+            StandardButton.Ok, StandardButton.Ok)
         self.loading_state_changed.emit(False)
 
-    def _ask_user_about_compacting_document(self, action: str) -> QMessageBox.ButtonRole:
+    def _ask_user_about_compacting_document(self, action: str) -> StandardButton:
         if savable_pages := self.document.compute_pages_saved_by_compacting():
             if (result := QMessageBox.question(
                 self, "Saving pages possible",
                 f"It is possible to save {savable_pages} pages when printing this document.\n"
                 f"Do you want to compact the document now to minimize the page count prior to {action}?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-            )) == QMessageBox.Yes:
+                StandardButton.Yes | StandardButton.No | StandardButton.Cancel
+            )) == StandardButton.Yes:
                 self.document.apply(ActionCompactDocument())
             return result
-        return QMessageBox.No  # No pages can be saved, assume "No" for this case
+        return StandardButton.No  # No pages can be saved, assume "No" for this case
 
     def ask_user_about_empty_database(self):
         """
@@ -320,7 +322,7 @@ class MainWindow(QMainWindow):
                 "Download the required data from Scryfall now?\n"
                 "Without the data, you can only print custom cards by drag&dropping "
                 "the image files onto the main window.",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
+                StandardButton.Yes | StandardButton.No, StandardButton.Yes) == StandardButton.Yes:
             self.ui.action_download_card_data.trigger()
 
     @Slot()
@@ -366,7 +368,7 @@ class MainWindow(QMainWindow):
             f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
             f"\"{self.ui.action_import_deck_list.text()}\" function instead.\n"
             f"Reported failure reason: {reason}",
-            QMessageBox.Ok, QMessageBox.Ok
+            StandardButton.Ok, StandardButton.Ok
         )
 
     def on_document_loading_found_unknown_scryfall_ids(self, unknown: int, replaced: int):
@@ -375,7 +377,8 @@ class MainWindow(QMainWindow):
                 self, "Unavailable printings replaced",
                 f"The document contained {replaced} unavailable printings of cards that were automatically replaced "
                 f"with other printings. The replaced printings are unavailable, "
-                f"because they match a configured download filter."
+                f"because they match a configured download filter.",
+                StandardButton.Ok, StandardButton.Ok
             )
         if unknown:
             QMessageBox.warning(
@@ -383,7 +386,7 @@ class MainWindow(QMainWindow):
                 f"Skipped {unknown} unrecognized cards in the loaded document. "
                 f"Saving the document will remove these entries permanently.\n\nThe locally stored card "
                 f"data may be outdated or the document was tampered with.",
-                QMessageBox.Ok, QMessageBox.Ok
+                StandardButton.Ok, StandardButton.Ok
             )
 
     def show_application_update_available_message_box(self, newer_version: str):
@@ -393,17 +396,17 @@ class MainWindow(QMainWindow):
                 f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
                 f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
                 f"to download the new version?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-                ) == QMessageBox.Yes:
-            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.StrictMode)
+                StandardButton.Yes | StandardButton.No, StandardButton.No
+                ) == StandardButton.Yes:
+            url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
             QDesktopServices.openUrl(url)
 
     def show_card_data_update_available_message_box(self, estimated_card_count: int):
         if QMessageBox.question(
-                    self, "New card data available",
-                    f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-                ) == QMessageBox.Yes:
+                self, "New card data available",
+                f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
+                StandardButton.Yes | StandardButton.No, StandardButton.Yes
+        ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
             self.ui.action_download_card_data.trigger()
         else:
@@ -434,11 +437,10 @@ class MainWindow(QMainWindow):
         if (result := QMessageBox.question(
                 self, title,
                 f"{question}\nYou can change this later in the settings.",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel
-                )) in {QMessageBox.Yes, QMessageBox.No}:
-            logger.info(f"{logger_message} User choice: {'Yes' if result == QMessageBox.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings["application"][settings_key] = str(
-                result == QMessageBox.Yes)
+                StandardButton.Yes | StandardButton.No | StandardButton.Cancel
+                )) in {StandardButton.Yes, StandardButton.No}:
+            logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")
+            mtg_proxy_printer.settings.settings["application"][settings_key] = str(result == StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
 
@@ -491,6 +493,7 @@ class MainWindow(QMainWindow):
             pixmap = QPixmap(url.toLocalFile())
             if not pixmap.isNull():
                 if pixmap.width() != width or pixmap.height() != height:
-                    pixmap = pixmap.scaled(width, height, transformMode=Qt.TransformationMode.SmoothTransformation)
+                    new_size = QSize(width, height)
+                    pixmap = pixmap.scaled(new_size, transformMode=TransformationMode.SmoothTransformation)
                 result.append(pixmap)
         return result

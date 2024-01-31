@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QPixmap, QPalette
 from pytestqt.qtbot import QtBot
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
+from PyQt5.QtGui import QPalette
 
 from mtg_proxy_printer.settings import DuplexMode
 from mtg_proxy_printer.units_and_sizes import PageType

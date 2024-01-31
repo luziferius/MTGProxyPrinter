@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -205,7 +205,10 @@ def test_valid_data_loads_correctly(
     page_index = document.index(0, 0)
     assert_that(page_index.isValid())
     assert_that(document.rowCount(page_index), is_(2))
-    assert_that(page_index.child(0, mtg_proxy_printer.model.document.PageColumns.CardName).data(), is_("Fury Sliver"))
+    assert_that(
+        document.index(0, mtg_proxy_printer.model.document.PageColumns.CardName, page_index).data(),
+        is_("Fury Sliver")
+    )
     assert_that(document.save_file_path, is_(equal_to(save_path)))
     assert_that(
         document.page_layout, has_properties({

@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,9 +68,9 @@ class SavePDFDialog(QFileDialog):
         if default_path := read_path("pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.setAcceptMode(QFileDialog.AcceptSave)
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setDefaultSuffix("pdf")
-        self.setFileMode(QFileDialog.AnyFile)
+        self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
         self._print_count_updater = PrintCountUpdater(document)
@@ -106,9 +106,9 @@ class SaveDocumentAsDialog(QFileDialog):
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.setAcceptMode(QFileDialog.AcceptSave)
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
-        self.setFileMode(QFileDialog.AnyFile)
+        self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -136,9 +136,9 @@ class LoadDocumentDialog(QFileDialog):
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
         self.document = document
-        self.setAcceptMode(QFileDialog.AcceptOpen)
+        self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
-        self.setFileMode(QFileDialog.ExistingFile)
+        self.setFileMode(QFileDialog.FileMode.ExistingFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -207,9 +207,9 @@ class AboutMTGProxyPrinterDialog(QDialog):
 
     def _set_text_browser_with_markdown_file_content(self, file_path: str, text_browser: QTextBrowser):
         file = QFile(file_path, self)
-        file.open(QFile.ReadOnly)
+        file.open(QFile.OpenModeFlag.ReadOnly)
         try:
-            content = bytes(file.readAll()).decode("utf-8")
+            content = file.readAll().data().decode("utf-8")
         finally:
             file.close()
         text_browser.setMarkdown(content)
@@ -255,24 +255,25 @@ class DocumentSettingsDialog(QDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _setup_button_box(self):
+        button_roles = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
+        button_box.button(button_roles.RestoreDefaults).clicked.connect(
             lambda: logger.info("User reverts the document settings to the values from the global configuration")
         )
-        button_box.button(QDialogButtonBox.RestoreDefaults).clicked.connect(
+        button_box.button(button_roles.RestoreDefaults).clicked.connect(
             lambda: self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
         )
-        button_box.button(QDialogButtonBox.Reset).clicked.connect(
+        button_box.button(button_roles.Reset).clicked.connect(
             lambda: logger.info("User resets made changes")
         )
-        button_box.button(QDialogButtonBox.Reset).clicked.connect(
+        button_box.button(button_roles.Reset).clicked.connect(
             lambda: self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
         )
         buttons_with_icons = [
-            (QDialogButtonBox.Reset, "edit-undo"),
-            (QDialogButtonBox.Save, "document-save"),
-            (QDialogButtonBox.Cancel, "dialog-cancel"),
-            (QDialogButtonBox.RestoreDefaults, "document-revert"),
+            (button_roles.Reset, "edit-undo"),
+            (button_roles.Save, "document-save"),
+            (button_roles.Cancel, "dialog-cancel"),
+            (button_roles.RestoreDefaults, "document-revert"),
         ]
         for role, icon in buttons_with_icons:
             button = button_box.button(role)

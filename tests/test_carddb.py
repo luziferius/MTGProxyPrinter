@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -293,9 +293,13 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
         ],
     )
     document = Document(card_db, MagicMock())
-    document.apply(ActionAddCard(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
+    document.apply(ActionAddCard(
+        _get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
+    )
     PrintCountUpdater(document, card_db.db).run()
-    document.apply(ActionAddCard(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
+    document.apply(ActionAddCard(
+        _get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1)
+    )
     PrintCountUpdater(document, card_db.db).run()
     # Test
     assert_that(
@@ -692,13 +696,13 @@ def test_get_basic_land_oracle_ids(
 def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: StringList):
     fill_card_database_with_json_cards(
         qtbot, card_db, [
-        "The_Underworld_Cookbook",
-        "Food_Token",
-        "Asmoranomardicadaistinaculdacar",
-        "Bake_into_a_Pie",
-        "Asmoranomardicadaistinaculdacar_2",
-        "Food_Token_2",
-    ])
+            "The_Underworld_Cookbook",
+            "Food_Token",
+            "Asmoranomardicadaistinaculdacar",
+            "Bake_into_a_Pie",
+            "Asmoranomardicadaistinaculdacar_2",
+            "Food_Token_2",
+        ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
     assert_that(source_card, is_(not_none()))
     related = card_db.find_related_cards(source_card)

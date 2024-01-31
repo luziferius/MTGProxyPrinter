@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -80,7 +80,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
             # Convert the Match instance to a dict, in order to have the get() method with a default.
-            # The default is used, if the used RE doesn’t contain named groups for some of the defined attributes.
+            # The default is used, if the used RE doesn't contain named groups for some of the defined attributes.
             if match := self.parser.match(line):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
@@ -134,7 +134,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
         """
-        If the used RE doesn’t provide a language, try to guess the language based on the card name.
+        If the used RE doesn't provide a language, try to guess the language based on the card name.
         If neither language nor card name are given, default to English printings.
         """
         language = match_dict.get("language")

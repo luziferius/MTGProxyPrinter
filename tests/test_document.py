@@ -1,4 +1,4 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,8 +37,8 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
-from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings, CardType
 from mtg_proxy_printer.model.imagedb import ImageKey
 
@@ -67,7 +67,7 @@ class DummyAction(DocumentAction):
 
     @property
     def as_str(self):
-        return f"{self.__class__.__name__}"
+        return f"Value: {self.value}"
 
 
 def append_new_card_in_page(page: Page, name: str, oversized: bool = False) -> Card:
