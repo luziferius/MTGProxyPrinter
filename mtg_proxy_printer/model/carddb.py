@@ -46,6 +46,8 @@ del get_logger
 QueuedConnection = Qt.ConnectionType.QueuedConnection
 OLD_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_cache_path / "CardDataCache.sqlite3"
 DEFAULT_DATABASE_LOCATION = mtg_proxy_printer.app_dirs.data_directories.user_data_path / "CardDatabase.sqlite3"
+ItemDataRole = Qt.ItemDataRole
+RenderHint = QPainter.RenderHint
 SCHEMA_NAME = "carddb"
 # The card data is mostly stable, Scryfall recommends fetching the card bulk data only in larger intervals, like
 # once per month or so.
@@ -83,13 +85,13 @@ class MTGSet:
     code: str
     name: str
 
-    def data(self, role: int):
+    def data(self, role: ItemDataRole):
         """data getter used for Qt Model API based access"""
-        if role == Qt.EditRole:
+        if role == ItemDataRole.EditRole:
             return self.code
-        elif role == Qt.DisplayRole:
+        elif role == ItemDataRole.DisplayRole:
             return f"{self.name} ({self.code.upper()})"
-        elif role == Qt.ToolTipRole:
+        elif role == ItemDataRole.ToolTipRole:
             return self.name
         else:
             return None
@@ -149,7 +151,8 @@ class Card:
                 round(self.image_file.height() * corner.value[1])),
             QSize(10, 10)
         ))
-        average_color = sample_area.scaled(1, 1, transformMode=Qt.SmoothTransformation).toImage().pixelColor(0, 0)
+        average_color = sample_area.scaled(
+            1, 1, transformMode=Qt.TransformationMode.SmoothTransformation).toImage().pixelColor(0, 0)
         return average_color
 
     def display_string(self):
@@ -222,7 +225,7 @@ class CheckCard:
         combined_image = QPixmap(card_size)
         combined_image.fill(QColor.fromRgb(255, 255, 255, 0))  # Fill with fully transparent white
         painter = QPainter(combined_image)
-        painter.setRenderHints(QPainter.SmoothPixmapTransform | QPainter.HighQualityAntialiasing)
+        painter.setRenderHints(RenderHint.SmoothPixmapTransform | RenderHint.HighQualityAntialiasing)
         transformation = QTransform()
         transformation.rotate(90)
         transformation.scale(horizontal_scaling_factor, vertical_scaling_factor)

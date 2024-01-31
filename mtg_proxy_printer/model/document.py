@@ -58,6 +58,10 @@ class DocumentColumns(enum.IntEnum):
 
 INVALID_INDEX = QModelIndex()
 ActionStack = typing.Deque[DocumentAction]
+AnyIndex = typing.Union[QModelIndex, QPersistentModelIndex]
+ItemDataRole = Qt.ItemDataRole
+Orientation = Qt.Orientation
+ItemFlag = Qt.ItemFlag
 
 
 class Document(QAbstractItemModel):
@@ -160,19 +164,20 @@ class Document(QAbstractItemModel):
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
-            orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        if orientation == Qt.Horizontal:
-            if role == Qt.DisplayRole:
+            orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
+        if orientation == Orientation.Horizontal:
+            if role == ItemDataRole.DisplayRole:
                 return Document.page_header.get(section)
-            elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
+            elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
 
-    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
+    def rowCount(self, parent: AnyIndex = INVALID_INDEX) -> int:
         """
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
         Otherwise, returns the number of pages.
         """
+        parent = self._to_index(parent)
         if isinstance(parent.internalPointer(), CardContainer):
             return 0  # child rowCount of a Card instance. Always zero.
         if parent.isValid():
@@ -180,7 +185,8 @@ class Document(QAbstractItemModel):
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
-    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
+    def columnCount(self, parent: AnyIndex = INVALID_INDEX) -> int:
+        parent = self._to_index(parent)
         if isinstance(parent.internalPointer(), CardContainer):
             return 0  # child columnCount of a Card instance. Always zero.
         elif parent.isValid():
@@ -188,24 +194,25 @@ class Document(QAbstractItemModel):
         else:
             return len(DocumentColumns)  # columnCount of an invalid index.
 
-    def parent(self, child: QModelIndex) -> QModelIndex:
-        data: typing.Union[Page, CardContainer] = child.internalPointer()
+    def parent(self, child: AnyIndex) -> QModelIndex:
+        data: typing.Union[Page, CardContainer] = self._to_index(child).internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
             page_index = self.find_page_list_index(page)
             return self.createIndex(page_index, 0, page)
         return INVALID_INDEX  # Pages have no parent
 
-    def index(self, row: int, column: int, parent: QModelIndex = INVALID_INDEX) -> QModelIndex:
-        data = parent.internalPointer()
-        if isinstance(data, list):
+    def index(self, row: int, column: int, parent: AnyIndex = INVALID_INDEX) -> QModelIndex:
+        data = self._to_index(parent).internalPointer()
+        if isinstance(data, Page):
             card_container = data[row]
             return self.createIndex(row, column, card_container)
         else:
             page = self.pages[row]
             return self.createIndex(row, column, page)
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+    def data(self, index: AnyIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
+        index = self._to_index(index)
         if not index.isValid():
             return None
         if isinstance(index.internalPointer(), CardContainer):  # Card
@@ -213,16 +220,20 @@ class Document(QAbstractItemModel):
         else:  # Page
             return self._data_page(index, role)
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index: AnyIndex) -> Qt.ItemFlags:
+        index = self._to_index(index)
         data = index.internalPointer()
         flags = super(Document, self).flags(index)
         if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
-            flags |= Qt.ItemIsEditable
+            flags |= ItemFlag.ItemIsEditable
         return flags
 
-    def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
+    def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
+        index = self._to_index(index)
         data = index.internalPointer()
-        if isinstance(data, CardContainer) and role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
+        if isinstance(data, CardContainer) \
+                and role == ItemDataRole.EditRole \
+                and index.column() in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting model data for column {index.column()} to {value}")
             card = data.card
             column = index.column()
@@ -243,6 +254,10 @@ class Document(QAbstractItemModel):
             return self._request_replacement_card(index, card_data)
         return False
 
+    @staticmethod
+    def _to_index(other: QPersistentModelIndex) -> QModelIndex:
+        return QModelIndex(other) if isinstance(other, QPersistentModelIndex) else other
+
     def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
         if result := self.card_db.get_cards_from_data(card_data):
             logger.debug(f"Requesting replacement for card '{card_data.name}' in set {card_data.set_code}")
@@ -254,22 +269,22 @@ class Document(QAbstractItemModel):
             return True
         return False
 
-    def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+    def _data_page(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
         if index.row() >= self.rowCount():
             logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
         item = self.pages[index.row()]
-        if role == Qt.DisplayRole:
+        if role == ItemDataRole.DisplayRole:
             return self._get_page_preview(item)
-        elif role == Qt.ToolTipRole:
+        elif role == ItemDataRole.ToolTipRole:
             return f"Page {index.row()+1}/{self.rowCount()}"
-        elif role == Qt.EditRole:
+        elif role == ItemDataRole.EditRole:
             return item
-        elif role == Qt.UserRole:
+        elif role == ItemDataRole.UserRole:
             return item.page_type()
 
-    def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+    def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
         parent = index.parent()
         if index.row() >= self.rowCount(parent) or index.column() >= self.columnCount(parent):
@@ -278,9 +293,9 @@ class Document(QAbstractItemModel):
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
         card: AnyCardType = index.internalPointer().card
-        if role == Qt.ItemDataRole.UserRole:
+        if role == ItemDataRole.UserRole:
             return card
-        if role in {Qt.DisplayRole, Qt.EditRole}:
+        if role in {ItemDataRole.DisplayRole, ItemDataRole.EditRole}:
             if index.column() == PageColumns.CardName:
                 return card.name
             elif index.column() == PageColumns.Set:
@@ -292,9 +307,7 @@ class Document(QAbstractItemModel):
             elif index.column() == PageColumns.Image:
                 return card.image_file
             elif index.column() == PageColumns.IsFront:
-                if role == Qt.EditRole:
-                    return card.is_front
-                return "Front" if card.is_front else "Back"
+                return card.is_front if role == ItemDataRole.EditRole else ("Front" if card.is_front else "Back")
 
     @staticmethod
     def _get_page_preview(page: Page):
@@ -306,7 +319,7 @@ class Document(QAbstractItemModel):
     @Slot(QModelIndex)
     def on_missing_image_obtained(self, index: QModelIndex):
         column_index = index.siblingAtColumn(PageColumns.Image)
-        self.dataChanged.emit(column_index, column_index, [Qt.DisplayRole])
+        self.dataChanged.emit(column_index, column_index, [ItemDataRole.DisplayRole])
 
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""

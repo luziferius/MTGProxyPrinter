@@ -30,7 +30,7 @@ del get_logger
 __all__ = [
     "PageRenderer",
 ]
-
+DragMode = QGraphicsView.DragMode
 
 @enum.unique
 class ZoomDirection(enum.Enum):
@@ -52,7 +52,7 @@ class PageRenderer(QGraphicsView):
         super(PageRenderer, self).__init__(parent=parent)
         self.document: Document = None
         self.automatic_scaling = True
-        self.setCursor(Qt.SizeAllCursor)
+        self.setCursor(Qt.CursorShape.SizeAllCursor)
         self.zoom_in_action = QAction(self)
         self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
         self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
@@ -95,20 +95,20 @@ class PageRenderer(QGraphicsView):
         if scaling_factor * self.transform().m11() > self.MAX_UI_ZOOM:
             return
         self.automatic_scaling = self.scene_fully_visible(scaling_factor)
-        self.setDragMode(QGraphicsView.NoDrag if self.automatic_scaling else QGraphicsView.ScrollHandDrag)
+        self.setDragMode(DragMode.NoDrag if self.automatic_scaling else DragMode.ScrollHandDrag)
         if self.automatic_scaling:
-            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         else:
             # The initial tooltip text showing the zoom options is rather large, so clear it once the user triggered a
             # zoom action for the first time. This is done to un-clutter the area around the mouse cursor.
             self.setToolTip("")
             old_anchor = self.transformationAnchor()
-            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
+            self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
             self.scale(scaling_factor, scaling_factor)
             self.setTransformationAnchor(old_anchor)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
-        if event.modifiers() & Qt.ControlModifier:
+        if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             direction = ZoomDirection.from_bool(event.angleDelta().y() > 0)
             self._perform_zoom_step(direction)
             event.accept()
@@ -118,8 +118,8 @@ class PageRenderer(QGraphicsView):
     def resizeEvent(self, event: QResizeEvent = None) -> None:
         if self.automatic_scaling or self.scene_fully_visible():
             self.automatic_scaling = True
-            self.setDragMode(QGraphicsView.NoDrag)
-            self.fitInView(self.scene().sceneRect(), Qt.KeepAspectRatio)
+            self.setDragMode(DragMode.NoDrag)
+            self.fitInView(self.scene().sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
         if event is not None:
             super().resizeEvent(event)
 

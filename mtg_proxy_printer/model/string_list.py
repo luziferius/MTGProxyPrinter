@@ -24,6 +24,8 @@ __all__ = [
     "PrettySetListModel",
 ]
 INVALID_INDEX = QModelIndex()
+ItemDataRole = Qt.ItemDataRole
+Orientation = Qt.Orientation
 
 
 class PrettySetListModel(QAbstractListModel):
@@ -37,8 +39,9 @@ class PrettySetListModel(QAbstractListModel):
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> typing.Optional[str]:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+    def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
+            -> typing.Optional[str]:
+        if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
             return PrettySetListModel.header.get(section)
         return super(PrettySetListModel, self).headerData(section, orientation, role)
@@ -59,6 +62,6 @@ class PrettySetListModel(QAbstractListModel):
             self.set_data[:] = data
             self.endInsertRows()
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Optional[str]:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
         if index.isValid():
             return self.set_data[index.row()].data(role)

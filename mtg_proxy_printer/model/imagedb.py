@@ -26,7 +26,7 @@ import typing
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QSize, QModelIndex, Qt, QThreadPool
-from PyQt5.QtGui import QPixmap, QColor
+from PyQt5.QtGui import QPixmap, QColorConstants
 
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
@@ -111,7 +111,6 @@ class ImageDatabase(QObject):
     This class manages the on-disk PNG image cache. It can asynchronously fetch images from disk or from the Scryfall
     servers, as needed, provides an in-memory cache, and allows deletion of images on disk.
     """
-
     card_download_starting = Signal(int, str)
     card_download_finished = Signal()
     card_download_progress = Signal(int)
@@ -149,7 +148,7 @@ class ImageDatabase(QObject):
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
         pixmap = QPixmap(IMAGE_SIZE)
-        pixmap.fill(QColor("white"))
+        pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
     def filter_already_downloaded(self, possible_matches: typing.List[Card]) -> typing.List[Card]:
@@ -283,7 +282,6 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     request_action = Signal(DocumentAction)
     missing_images_obtained = Signal()
     missing_image_obtained = Signal(QModelIndex)
-
     batch_processing_state_changed = Signal(bool)
 
     batch_process_starting = Signal(int, str)

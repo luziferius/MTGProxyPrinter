@@ -355,7 +355,7 @@ class PageScene(QGraphicsScene):
             self.draw_card(row, page_type)
 
     def draw_card(self, row: int, page_type: PageType, next_item: CardItem = None):
-        index = self.selected_page.child(row, PageColumns.Image)
+        index = self.document.index(row, PageColumns.Image, self.selected_page)
         position = self._compute_position_for_image(row, page_type)
         if index.data(ItemDataRole.DisplayRole) is not None:  # Card has a QPixmap set
             card: Card = index.data(ItemDataRole.UserRole)
@@ -401,7 +401,7 @@ class PageScene(QGraphicsScene):
             inserted_cards = last-first+1
             needs_reorder = first + inserted_cards < self.document.rowCount(parent)
             next_item = self.card_items[first] if needs_reorder else None
-            page_type: PageType = self.selected_page.data(ItemDataRole.EditRole).page_type()
+            page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
             logger.debug(f"Added {inserted_cards} cards to the currently shown page, drawing them.")
             for new in range(first, last+1):
                 self.draw_card(new, page_type, next_item)
@@ -497,7 +497,7 @@ class PageScene(QGraphicsScene):
 
     def draw_cut_markers(self):
         """Draws the optional cut markers that extend to the paper border"""
-        page_type: PageType = self.selected_page.data(ItemDataRole.EditRole).page_type()
+        page_type: PageType = self.selected_page.data(ItemDataRole.UserRole)
         if page_type == PageType.MIXED:
             logger.warning("Not drawing cut markers for page with mixed image sizes")
             return

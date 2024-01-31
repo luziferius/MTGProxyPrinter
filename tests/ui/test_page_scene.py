@@ -22,8 +22,8 @@ from unittest.mock import patch
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
-from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
+from PyQt5.QtGui import QPalette
 
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene

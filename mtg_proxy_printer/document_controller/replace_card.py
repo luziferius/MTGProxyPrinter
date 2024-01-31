@@ -33,6 +33,7 @@ del get_logger
 __all__ = [
     "ActionReplaceCard",
 ]
+ItemDataRole = Qt.ItemDataRole
 
 
 class ActionReplaceCard(DocumentAction):
@@ -84,7 +85,10 @@ class ActionReplaceCard(DocumentAction):
             self.size_change_actions.append(ActionAddCard(replacement).apply(document))
         else:
             container.card = replacement
-            document.dataChanged.emit(top_left, bottom_right, (Qt.DisplayRole, Qt.EditRole, Qt.ToolTipRole))
+            document.dataChanged.emit(
+                top_left, bottom_right,
+                (ItemDataRole.DisplayRole, ItemDataRole.EditRole, ItemDataRole.ToolTipRole)
+            )
             if previous_card_page_type != new_card_page_type:
                 logger.info("New card has different size, but page is otherwise empty, changing page type…")
                 document.page_type_changed.emit(page_index)
