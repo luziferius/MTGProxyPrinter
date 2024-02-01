@@ -55,6 +55,37 @@ class CardBleeds(typing.NamedTuple):
     right: QGraphicsPixmapItem
 
 
+class BleedTransformations(typing.NamedTuple):
+    top: QTransform
+    bottom: QTransform
+    left: QTransform
+    right: QTransform
+
+    @staticmethod
+    def scale_to_pixel(bleed_width: float) -> float:
+        bleed_px: float = (RESOLUTION*bleed_width*unit_registry.millimeter).to("pixel").magnitude
+        return bleed_px
+
+    @classmethod
+    def from_page_layout(cls, page_layout: PageLayoutSettings) -> "BleedTransformations":
+        bleed_px = cls.scale_to_pixel(page_layout.card_bleed)
+        return cls(
+            QTransform.fromScale(1, -bleed_px),
+            QTransform.fromScale(1, bleed_px),
+            QTransform.fromScale(-bleed_px, 1),
+            QTransform.fromScale(bleed_px, 1)
+        )
+
+    def update(self, page_layout: PageLayoutSettings) -> None:
+        bleed_px = self.scale_to_pixel(page_layout.card_bleed)
+        for transform in self:
+            transform.reset()
+        self.top.scale(1, -bleed_px)
+        self.bottom.scale(1, bleed_px)
+        self.left.scale(-bleed_px, 1)
+        self.right.scale(bleed_px, 1)
+
+
 class CardItem(QGraphicsItemGroup):
 
     def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
@@ -64,7 +95,8 @@ class CardItem(QGraphicsItemGroup):
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
-        self.bleeds = self.create_bleeds(card.image_file, document.page_layout)
+        self.bleed_transformations = BleedTransformations.from_page_layout(document.page_layout)
+        self.bleeds = self.create_bleeds(card.image_file, self.bleed_transformations)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
         self.corners: typing.List[QGraphicsRectItem] = list(
@@ -96,17 +128,16 @@ class CardItem(QGraphicsItemGroup):
         rect.setOpacity(opacity)
         return rect
 
-    def create_bleeds(self, pixmap: QPixmap, layout: PageLayoutSettings) -> CardBleeds:
-        bleed_px: float = (RESOLUTION*layout.card_bleed*unit_registry.millimeter).to("pixel").magnitude
+    def create_bleeds(self, pixmap: QPixmap, transformations: BleedTransformations) -> CardBleeds:
         width = pixmap.width()
         height = pixmap.height()
         h_size = QSize(width, 1)
         v_size = QSize(1, height)
         bleeds = CardBleeds(
-            self._create_bleed(pixmap, QTransform.fromScale(1, -bleed_px), QRect(QPoint(0, 2), h_size)),
-            self._create_bleed(pixmap, QTransform.fromScale(1, bleed_px), QRect(QPoint(0, height-2), h_size)),
-            self._create_bleed(pixmap, QTransform.fromScale(-bleed_px, 1), QRect(QPoint(2, 0), v_size)),
-            self._create_bleed(pixmap, QTransform.fromScale(bleed_px, 1), QRect(QPoint(width-2, 0), v_size))
+            self._create_bleed(pixmap, transformations.top, QRect(QPoint(0, 2), h_size)),
+            self._create_bleed(pixmap, transformations.bottom, QRect(QPoint(0, height - 2), h_size)),
+            self._create_bleed(pixmap, transformations.left, QRect(QPoint(2, 0), v_size)),
+            self._create_bleed(pixmap, transformations.right, QRect(QPoint(width - 2, 0), v_size))
         )
         bleeds.bottom.setPos(0, height)
         bleeds.right.setPos(width, 0)
@@ -124,9 +155,12 @@ class CardItem(QGraphicsItemGroup):
         corner_opacity = 255 * new_page_layout.draw_sharp_corners
         for corner in self.corners:
             corner.setOpacity(corner_opacity)
-        bleed_opacity = 255 * True  # TODO: Replace with page layout value
-        for bleed in self.bleeds:
-            bleed.setOpacity(bleed_opacity)
+        self.bleed_transformations.update(new_page_layout)
+        self.update_bleed_rendering()
+
+    def update_bleed_rendering(self):
+        for bleed, transform in zip(self.bleeds, self.bleed_transformations):  # type: QGraphicsPixmapItem, QTransform
+            bleed.setTransform(transform, False)
 
     def _draw_content(self):
         for item in itertools.chain(self.corners, self.bleeds):
