@@ -6,8 +6,8 @@ import typing
 
 import pint
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
-    QPersistentModelIndex, QModelIndex
-from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap
+    QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
+from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
 
@@ -26,8 +26,9 @@ ItemDataRole = Qt.ItemDataRole
 
 @enum.unique
 class RenderLayers(enum.Enum):
-    BACKGROUND = -3
-    CUT_LINES = -2
+    BACKGROUND = -4
+    CUT_LINES = -3
+    BLEEDS = -2
     TEXT = -1
     CARDS = 0
 
@@ -47,6 +48,13 @@ class CutMarkerParameters(typing.NamedTuple):
     image_spacing: int
 
 
+class CardBleeds(typing.NamedTuple):
+    top: QGraphicsPixmapItem
+    bottom: QGraphicsPixmapItem
+    left: QGraphicsPixmapItem
+    right: QGraphicsPixmapItem
+
+
 class CardItem(QGraphicsItemGroup):
 
     def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
@@ -56,7 +64,7 @@ class CardItem(QGraphicsItemGroup):
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
-        self.bleeds: typing.List[QGraphicsPixmapItem] = []
+        self.bleeds = self.create_bleeds(card.image_file, document.page_layout)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
         self.corners: typing.List[QGraphicsRectItem] = list(
@@ -79,10 +87,6 @@ class CardItem(QGraphicsItemGroup):
             )
         )
 
-    def create_bleeds(self, pixmap: QPixmap) -> typing.List[QGraphicsPixmapItem]:
-        
-        return []
-
     def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(QRectF(QPointF(0, 0), self.corner_area))
         color = self.card.corner_color(corner)
@@ -91,6 +95,34 @@ class CardItem(QGraphicsItemGroup):
         rect.setBrush(color)
         rect.setOpacity(opacity)
         return rect
+
+    def create_bleeds(self, pixmap: QPixmap, layout: PageLayoutSettings) -> CardBleeds:
+        bleed_px: float = (RESOLUTION*layout.card_bleed*unit_registry.millimeter).to("pixel").magnitude
+        h_transform = QTransform.fromScale(1, bleed_px)
+        v_transform = QTransform.fromScale(bleed_px, 1)
+        width = pixmap.width()
+        height = pixmap.height()
+        h_size = QSize(width, 1)
+        v_size = QSize(1, height)
+        bleeds = CardBleeds(
+            self._create_bleed(pixmap, h_transform, QRect(QPoint(0, 1), h_size)),
+            self._create_bleed(pixmap, h_transform, QRect(QPoint(0, height-1), h_size)),
+            self._create_bleed(pixmap, v_transform, QRect(QPoint(1, 0), v_size)),
+            self._create_bleed(pixmap, v_transform, QRect(QPoint(width-1, 0), v_size))
+        )
+        bleeds.top.setPos(0, -bleed_px)
+        bleeds.bottom.setPos(0, height)
+        bleeds.left.setPos(-bleed_px, 0)
+        bleeds.right.setPos(width, 0)
+        return bleeds
+
+    @staticmethod
+    def _create_bleed(pixmap: QPixmap, transformation: QTransform, source_rect: QRectF) -> QGraphicsPixmapItem:
+        line = pixmap.copy(source_rect)
+        item = QGraphicsPixmapItem(line)
+        item.setTransform(transformation, False)
+        item.setZValue(RenderLayers.BLEEDS.value)
+        return item
 
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
         corner_opacity = 255 * new_page_layout.draw_sharp_corners
