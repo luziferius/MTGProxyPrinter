@@ -98,21 +98,17 @@ class CardItem(QGraphicsItemGroup):
 
     def create_bleeds(self, pixmap: QPixmap, layout: PageLayoutSettings) -> CardBleeds:
         bleed_px: float = (RESOLUTION*layout.card_bleed*unit_registry.millimeter).to("pixel").magnitude
-        h_transform = QTransform.fromScale(1, bleed_px)
-        v_transform = QTransform.fromScale(bleed_px, 1)
         width = pixmap.width()
         height = pixmap.height()
         h_size = QSize(width, 1)
         v_size = QSize(1, height)
         bleeds = CardBleeds(
-            self._create_bleed(pixmap, h_transform, QRect(QPoint(0, 1), h_size)),
-            self._create_bleed(pixmap, h_transform, QRect(QPoint(0, height-1), h_size)),
-            self._create_bleed(pixmap, v_transform, QRect(QPoint(1, 0), v_size)),
-            self._create_bleed(pixmap, v_transform, QRect(QPoint(width-1, 0), v_size))
+            self._create_bleed(pixmap, QTransform.fromScale(1, -bleed_px), QRect(QPoint(0, 1), h_size)),
+            self._create_bleed(pixmap, QTransform.fromScale(1, bleed_px), QRect(QPoint(0, height-1), h_size)),
+            self._create_bleed(pixmap, QTransform.fromScale(-bleed_px, 1), QRect(QPoint(1, 0), v_size)),
+            self._create_bleed(pixmap, QTransform.fromScale(bleed_px, 1), QRect(QPoint(width-1, 0), v_size))
         )
-        bleeds.top.setPos(0, -bleed_px)
         bleeds.bottom.setPos(0, height)
-        bleeds.left.setPos(-bleed_px, 0)
         bleeds.right.setPos(width, 0)
         return bleeds
 
