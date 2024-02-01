@@ -134,10 +134,10 @@ class CardItem(QGraphicsItemGroup):
         h_size = QSize(width, 1)
         v_size = QSize(1, height)
         bleeds = CardBleeds(
-            self._create_bleed(pixmap, transformations.top, QRect(QPoint(0, 2), h_size)),
-            self._create_bleed(pixmap, transformations.bottom, QRect(QPoint(0, height - 2), h_size)),
-            self._create_bleed(pixmap, transformations.left, QRect(QPoint(2, 0), v_size)),
-            self._create_bleed(pixmap, transformations.right, QRect(QPoint(width - 2, 0), v_size))
+            self._create_bleed(pixmap, transformations.top, QRect(QPoint(0, 1), h_size)),
+            self._create_bleed(pixmap, transformations.bottom, QRect(QPoint(0, height - 1), h_size)),
+            self._create_bleed(pixmap, transformations.left, QRect(QPoint(1, 0), v_size)),
+            self._create_bleed(pixmap, transformations.right, QRect(QPoint(width - 1, 0), v_size))
         )
         bleeds.bottom.setPos(0, height)
         bleeds.right.setPos(width, 0)
