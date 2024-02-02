@@ -25,12 +25,12 @@ ItemDataRole = Qt.ItemDataRole
 
 
 @enum.unique
-class RenderLayers(enum.Enum):
+class RenderLayers(enum.IntEnum):
     BACKGROUND = -4
-    CUT_LINES = -3
-    BLEEDS = -2
-    TEXT = -1
-    CARDS = 0
+    CUT_LINES = enum.auto()
+    BLEEDS = enum.auto()
+    TEXT = enum.auto()
+    CARDS = enum.auto()
 
 
 @enum.unique
