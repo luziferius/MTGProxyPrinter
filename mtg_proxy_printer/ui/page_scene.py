@@ -300,7 +300,7 @@ class PageScene(QGraphicsScene):
 
     def _update_page_text_y(self):
         # Put the text labels below the
-        y = 2 + round(max(
+        y = 2 + scale_to_pixel(self.document.page_layout.card_bleed) + round(max(
             self.horizontal_cut_line_locations[PageType.REGULAR][-1],
             self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
         ))
