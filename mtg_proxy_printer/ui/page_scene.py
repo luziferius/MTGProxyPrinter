@@ -560,8 +560,8 @@ class PageScene(QGraphicsScene):
 
     def update_card_bleeds(self):
         full_bleed = self.document.page_layout.card_bleed
-        inner_bleed_h = self.document.page_layout.row_spacing/2
-        inner_bleed_v = self.document.page_layout.column_spacing/2
+        inner_bleed_h = min(self.document.page_layout.row_spacing/2, full_bleed)
+        inner_bleed_v = min(self.document.page_layout.column_spacing/2, full_bleed)
         for item in self.card_items:
             neighbors = self._has_neighbors(item)
             item.bleeds.update_bleeds(
