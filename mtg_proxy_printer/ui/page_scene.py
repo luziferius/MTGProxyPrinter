@@ -26,9 +26,10 @@ ItemDataRole = Qt.ItemDataRole
 
 @enum.unique
 class RenderLayers(enum.IntEnum):
-    BACKGROUND = -4
+    BACKGROUND = -5
     CUT_LINES = enum.auto()
     BLEEDS = enum.auto()
+    CORNERS = enum.auto()
     TEXT = enum.auto()
     CARDS = enum.auto()
 
@@ -161,6 +162,7 @@ class CardItem(QGraphicsItemGroup):
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
         rect.setOpacity(opacity)
+        rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
