@@ -7,7 +7,7 @@ import typing
 import pint
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
-from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap
+from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
 
@@ -76,8 +76,8 @@ class CardBleedItem(QGraphicsPixmapItem):
         self.setPos(pos)
         self.setZValue(RenderLayers.BLEEDS.value)
 
-    def update_bleed_size(self, page_layout: PageLayoutSettings):
-        size_px = scale_to_pixel(page_layout.card_bleed)
+    def update_bleed_size(self, bleed_width_mm: float):
+        size_px = scale_to_pixel(bleed_width_mm)
         transformation = self.transform()
         transformation.reset()
         scale = (self.sign*size_px, 1.0) \
@@ -85,6 +85,13 @@ class CardBleedItem(QGraphicsPixmapItem):
             else (1.0, self.sign*size_px)
         transformation.scale(*scale)
         self.setTransform(transformation, False)
+
+
+class NeighborsPresent(typing.NamedTuple):
+    top: bool
+    bottom: bool
+    left: bool
+    right: bool
 
 
 class CardBleeds(typing.NamedTuple):
@@ -105,7 +112,14 @@ class CardBleeds(typing.NamedTuple):
             CardBleedItem(pixmap, QRect(QPoint(1, 0), v_size)),
             CardBleedItem(pixmap, QRect(QPoint(width - 1, 0), v_size), QPoint(width, 0)),
         )
+        bleeds.update_bleeds(0, 0, 0, 0)
         return bleeds
+
+    def update_bleeds(self, top: float, bottom: float, left: float, right: float):
+        self.top.update_bleed_size(top)
+        self.bottom.update_bleed_size(bottom)
+        self.left.update_bleed_size(left)
+        self.right.update_bleed_size(right)
 
 
 class CardItem(QGraphicsItemGroup):
@@ -118,8 +132,6 @@ class CardItem(QGraphicsItemGroup):
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
         self.bleeds = CardBleeds.from_image(card.image_file)
-        for bleed in self.bleeds:  # type: CardBleedItem
-            bleed.update_bleed_size(document.page_layout)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
         self.corners: typing.List[QGraphicsRectItem] = list(
@@ -155,8 +167,6 @@ class CardItem(QGraphicsItemGroup):
         corner_opacity = 255 * new_page_layout.draw_sharp_corners
         for corner in self.corners:
             corner.setOpacity(corner_opacity)
-        for bleed in self.bleeds:  # type: CardBleedItem
-            bleed.update_bleed_size(new_page_layout)
 
     def _draw_content(self):
         for item in itertools.chain(self.corners, self.bleeds):
@@ -286,6 +296,7 @@ class PageScene(QGraphicsScene):
             self._update_page_text_x()
             self._update_page_text_y()
             self._draw_cards()
+            self.update_card_bleeds()
 
     def _update_page_text_y(self):
         # Put the text labels below the
@@ -334,6 +345,7 @@ class PageScene(QGraphicsScene):
             self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
+        self.update_card_bleeds()
         self._update_text_items(new_page_layout)
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
@@ -466,6 +478,7 @@ class PageScene(QGraphicsScene):
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
+            self.update_card_bleeds()
         elif not parent.isValid():
             # Page inserted. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
@@ -481,6 +494,7 @@ class PageScene(QGraphicsScene):
             for item in self.card_items[first:last+1]:
                 self.removeItem(item)
             self.update_card_positions()
+            self.update_card_bleeds()
         elif not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
@@ -499,7 +513,6 @@ class PageScene(QGraphicsScene):
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout
-
         page_width = self._mm_to_rounded_px(page_layout.page_width)
         page_height = self._mm_to_rounded_px(page_layout.page_height)
 
@@ -543,6 +556,35 @@ class PageScene(QGraphicsScene):
         return QPointF(
             x,
             y,
+        )
+
+    def update_card_bleeds(self):
+        full_bleed = self.document.page_layout.card_bleed
+        inner_bleed_h = self.document.page_layout.row_spacing/2
+        inner_bleed_v = self.document.page_layout.column_spacing/2
+        for item in self.card_items:
+            neighbors = self._has_neighbors(item)
+            item.bleeds.update_bleeds(
+                inner_bleed_h if neighbors.top else full_bleed,
+                inner_bleed_h if neighbors.bottom else full_bleed,
+                inner_bleed_v if neighbors.left else full_bleed,
+                inner_bleed_v if neighbors.right else full_bleed,
+            )
+
+    def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
+        item_rect = item.boundingRect()
+        center_pos = item.pos() + QPointF(item_rect.width(), item_rect.height())/2
+        identity = QTransform()  # TODO: Is this okay to do?
+        vertical = QPointF(0, item_rect.height())
+        horizontal = QPointF(item_rect.width(), 0)
+        # Values to ignore by itemAt(). ON_PAPER, or outside the scene rect, results are None.
+        # ON_SCREEN, the background is returned for empty spaces, so ignore both.
+        nothing = (self.background, None)
+        return NeighborsPresent(
+            self.itemAt(center_pos - vertical, identity) not in nothing,
+            self.itemAt(center_pos + vertical, identity) not in nothing,
+            self.itemAt(center_pos-horizontal, identity) not in nothing,
+            self.itemAt(center_pos+horizontal, identity) not in nothing,
         )
 
     @staticmethod
