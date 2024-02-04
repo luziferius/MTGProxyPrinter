@@ -102,7 +102,8 @@ class CardBleeds(typing.NamedTuple):
     right: CardBleedItem
 
     @classmethod
-    def from_image(cls, pixmap: QPixmap) -> "CardBleeds":
+    def from_card(cls, card: Card) -> "CardBleeds":
+        pixmap = card.image_file
         width = pixmap.width()
         height = pixmap.height()
         h_size = QSize(width, 1)
@@ -133,7 +134,7 @@ class CardItem(QGraphicsItemGroup):
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
-        self.bleeds = CardBleeds.from_image(card.image_file)
+        self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
         self.corners = self.create_corners(document.page_layout.draw_sharp_corners)
