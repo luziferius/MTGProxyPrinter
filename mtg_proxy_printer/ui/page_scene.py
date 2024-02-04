@@ -81,10 +81,10 @@ class CardBleedItem(QGraphicsPixmapItem):
         size_px = scale_to_pixel(bleed_width_mm)
         transformation = self.transform()
         transformation.reset()
-        scale = (self.sign*size_px, 1.0) \
+        sx, sy = (self.sign*size_px, 1.0) \
             if self.orientation == BleedOrientation.VERTICAL \
             else (1.0, self.sign*size_px)
-        transformation.scale(*scale)
+        transformation.scale(sx, sy)
         self.setTransform(transformation, False)
 
 
