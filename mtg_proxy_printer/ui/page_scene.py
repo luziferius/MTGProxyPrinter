@@ -135,25 +135,22 @@ class CardItem(QGraphicsItemGroup):
         self.bleeds = CardBleeds.from_image(card.image_file)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
-        self.corners: typing.List[QGraphicsRectItem] = list(
-            self.create_corners(document.page_layout.draw_sharp_corners))
+        self.corners = self.create_corners(document.page_layout.draw_sharp_corners)
         self._draw_content()
         self.setZValue(RenderLayers.CARDS.value)
 
-    def create_corners(self, draw_corners: bool):
+    def create_corners(self, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
         image = self.card.image_file
         card_height, card_width = image.height(), image.width()
         corner_height, corner_width = self.corner_area.height(), self.corner_area.width()
         card_width = image.width()
         opacity = 255 * draw_corners
-        return itertools.starmap(
-            self._create_corner, (
-                (CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
-                (CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0), opacity),
-                (CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height), opacity),
-                (CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height), opacity),
-            )
-        )
+        return [
+            self._create_corner(CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
+            self._create_corner(CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0), opacity),
+            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height), opacity),
+            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height), opacity),
+        ]
 
     def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(QRectF(QPointF(0, 0), self.corner_area))
