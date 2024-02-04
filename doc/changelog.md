@@ -2,6 +2,13 @@
 
 # Next version (in development)
 
+## New features
+
+- Draw bleeds (thick outlines) with configurable width around cards. (The default width of zero disables them.)
+    - Combine with the "Draw 90° corners" option to also fill the remaining triangles.
+    - The outline color is sampled from the card images, so that it works with any border color, 
+      and somewhat plausible with extended-art or full-art cards.
+
 ## Changed features
 
 - The placeholder image used when image downloads fail is now transparent instead of pure white,
