@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.27.0 (2024-02-04)  <a name="v0_27_0"></a>
 
 ## New features
 
