@@ -95,6 +95,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hidden-sets": "",
 }
 DEFAULT_SETTINGS["documents"] = {
+    "card-bleed-mm": "0",
     "paper-height-mm": "297",
     "paper-width-mm": "210",
     "margin-top-mm": "5",
@@ -284,12 +285,12 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
         (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
-
+    # FIXME: This looks like a dimensional error. Validate and test!
     if section.getint("column-spacing-mm") > (available_spacing_vertical := available_height - card_height):
-        # Prevent vertical spacing from overlapping with bottom margin
+        # Prevent column spacing from overlapping with bottom margin
         section["column-spacing-mm"] = str(available_spacing_vertical)
     if section.getint("row-spacing-mm") > (available_spacing_horizontal := available_width - card_width):
-        # Prevent horizontal spacing from overlapping with right margin
+        # Prevent row spacing from overlapping with right margin
         section["row-spacing-mm"] = str(available_spacing_horizontal)
 
 

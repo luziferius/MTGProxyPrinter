@@ -52,6 +52,7 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
+        ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
         ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
         ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
         ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
@@ -136,6 +137,7 @@ class PageConfigWidget(QGroupBox):
     def _get_integer_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
+            (ui.card_bleed, "card-bleed-mm"),
             (ui.page_height, "paper-height-mm"),
             (ui.page_width, "paper-width-mm"),
             (ui.margin_top, "margin-top-mm"),
