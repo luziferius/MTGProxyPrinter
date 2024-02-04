@@ -223,7 +223,7 @@ class CardInfoFileDownloadRunner(Runnable):
         self.download_path = download_path
         self.worker: typing.Optional[CardInfoFileDownloadWorker] = None
 
-    @with_database_write_lock  # While it technically does not access the card db, it still shares the progress meter
+    @with_database_write_lock()  # While it technically does not access the card db, it still shares the progress meter
     def run(self):
         signals = self.signals
         # Implementation note: The actual download worker uses Qt signals, and thus is encapsulated in a class
@@ -350,7 +350,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.debug(f"Total cards currently available: {total_cards_available}")
         return total_cards_available
 
-    @with_database_write_lock
+    @with_database_write_lock()
     def import_card_data_from_local_file(self, path: Path):
         try:
             data = self.read_json_card_data_from_file(path)
@@ -362,7 +362,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         finally:
             self.download_finished.emit()
 
-    @with_database_write_lock
+    @with_database_write_lock()
     def import_card_data_from_online_api(self):
         logger.info("About to import card data from Scryfall")
         try:

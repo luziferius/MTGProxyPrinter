@@ -7,6 +7,10 @@
 - The placeholder image used when image downloads fail is now transparent instead of pure white,
   which improves rendering when a dark application theme is used.
 
+## Fixed issues
+
+- Fixed broken image download for double faced cards.
+
 # Version 0.26.1 (2024-01-27)   <a name="v0_26_1"></a>
 
 ## Changed features

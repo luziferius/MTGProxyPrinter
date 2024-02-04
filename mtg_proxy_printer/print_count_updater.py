@@ -47,7 +47,7 @@ class PrintCountUpdater(Runnable):
                 source_model.db_path, SCHEMA_NAME, source_model.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 
-    @with_database_write_lock
+    @with_database_write_lock()
     def run(self):
         """
         Increments the usage count of all cards used in the document and updates the last use timestamps.
