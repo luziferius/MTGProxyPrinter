@@ -7,9 +7,9 @@ import typing
 import pint
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
-from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform
+from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
-    QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
+    QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.carddb import Card, CardCorner
@@ -88,6 +88,44 @@ class CardBleedItem(QGraphicsPixmapItem):
         self.setTransform(transformation, False)
 
 
+class CardBleedCornerItem(QGraphicsPolygonItem):
+    PEN = QPen(QColorConstants.Transparent)
+
+    def __init__(self, card: Card, corner: CardCorner):
+        super().__init__()
+        self.corner_length = 50 if card.is_oversized else 32
+        transform = QTransform()
+        width = card.image_file.width()
+        height = card.image_file.height()
+        if corner == CardCorner.TOP_RIGHT:
+            transform.scale(-1, 1)
+            self.setPos(width, 0)
+        elif corner == CardCorner.BOTTOM_LEFT:
+            transform.scale(1, -1)
+            self.setPos(0, height)
+        elif corner == CardCorner.BOTTOM_RIGHT:
+            transform.scale(-1, -1)
+            self.setPos(width, height)
+        self.setTransform(transform, False)
+        self.setPen(self.PEN)
+        self.setBrush(card.corner_color(corner))
+        self.setZValue(RenderLayers.BLEEDS.value+0.1)
+
+    def update_bleed_size(self, h_width_mm: float, v_width_mm: float):
+        h_px = scale_to_pixel(h_width_mm)
+        v_px = scale_to_pixel(v_width_mm)
+        left = -v_px
+        top = -h_px
+        bottom = self.corner_length
+        right = self.corner_length
+        self.setPolygon(QPolygonF((
+            QPointF(left, top), QPointF(right, top), QPointF(right, top+h_px),
+            QPointF(left+v_px, top+h_px),
+            QPointF(left+v_px, bottom),
+            QPointF(left, bottom), QPointF(left, top)
+        )))
+
+
 class NeighborsPresent(typing.NamedTuple):
     top: bool
     bottom: bool
@@ -101,6 +139,11 @@ class CardBleeds(typing.NamedTuple):
     left: CardBleedItem
     right: CardBleedItem
 
+    top_left: CardBleedCornerItem
+    top_right: CardBleedCornerItem
+    bottom_left: CardBleedCornerItem
+    bottom_right: CardBleedCornerItem
+
     @classmethod
     def from_card(cls, card: Card) -> "CardBleeds":
         pixmap = card.image_file
@@ -113,6 +156,11 @@ class CardBleeds(typing.NamedTuple):
             CardBleedItem(pixmap, QRect(QPoint(0, height - 1), h_size), QPoint(0, height)),
             CardBleedItem(pixmap, QRect(QPoint(1, 0), v_size)),
             CardBleedItem(pixmap, QRect(QPoint(width - 1, 0), v_size), QPoint(width, 0)),
+
+            CardBleedCornerItem(card, CardCorner.TOP_LEFT),
+            CardBleedCornerItem(card, CardCorner.TOP_RIGHT),
+            CardBleedCornerItem(card, CardCorner.BOTTOM_LEFT),
+            CardBleedCornerItem(card, CardCorner.BOTTOM_RIGHT),
         )
         bleeds.update_bleeds(0, 0, 0, 0)
         return bleeds
@@ -122,6 +170,11 @@ class CardBleeds(typing.NamedTuple):
         self.bottom.update_bleed_size(bottom)
         self.left.update_bleed_size(left)
         self.right.update_bleed_size(right)
+
+        self.top_left.update_bleed_size(top, left)
+        self.top_right.update_bleed_size(top, right)
+        self.bottom_left.update_bleed_size(bottom, left)
+        self.bottom_right.update_bleed_size(bottom, right)
 
 
 class CardItem(QGraphicsItemGroup):
