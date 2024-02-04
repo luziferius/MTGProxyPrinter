@@ -145,11 +145,13 @@ class CardItem(QGraphicsItemGroup):
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
         opacity = 255 * draw_corners
+        left, right = 0, card_width-self.CORNER_SIZE_PX
+        top, bottom = 0, card_height-self.CORNER_SIZE_PX
         return [
-            self._create_corner(CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
-            self._create_corner(CardCorner.TOP_RIGHT, QPointF(card_width-self.CORNER_SIZE_PX, 0), opacity),
-            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(0, card_height-self.CORNER_SIZE_PX), opacity),
-            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(card_width-self.CORNER_SIZE_PX, card_height-self.CORNER_SIZE_PX), opacity),
+            self._create_corner(CardCorner.TOP_LEFT, QPointF(left, top), opacity),
+            self._create_corner(CardCorner.TOP_RIGHT, QPointF(right, top), opacity),
+            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(left, bottom), opacity),
+            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), opacity),
         ]
 
     def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
