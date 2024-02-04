@@ -125,10 +125,11 @@ class CardBleeds(typing.NamedTuple):
 
 class CardItem(QGraphicsItemGroup):
 
+    CORNER_SIZE_PX = 50
+
     def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
-        self.corner_area = QSizeF(50, 50)
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
@@ -142,18 +143,17 @@ class CardItem(QGraphicsItemGroup):
     def create_corners(self, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
         image = self.card.image_file
         card_height, card_width = image.height(), image.width()
-        corner_height, corner_width = self.corner_area.height(), self.corner_area.width()
         card_width = image.width()
         opacity = 255 * draw_corners
         return [
             self._create_corner(CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
-            self._create_corner(CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0), opacity),
-            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height), opacity),
-            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height), opacity),
+            self._create_corner(CardCorner.TOP_RIGHT, QPointF(card_width-self.CORNER_SIZE_PX, 0), opacity),
+            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(0, card_height-self.CORNER_SIZE_PX), opacity),
+            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(card_width-self.CORNER_SIZE_PX, card_height-self.CORNER_SIZE_PX), opacity),
         ]
 
     def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
-        rect = QGraphicsRectItem(QRectF(QPointF(0, 0), self.corner_area))
+        rect = QGraphicsRectItem(0, 0, self.CORNER_SIZE_PX, self.CORNER_SIZE_PX)
         color = self.card.corner_color(corner)
         rect.setPos(position)
         rect.setPen(self.corner_pen)
