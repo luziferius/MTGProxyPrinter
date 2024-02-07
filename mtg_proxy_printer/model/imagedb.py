@@ -22,12 +22,14 @@ import pathlib
 import shutil
 import socket
 import string
+import threading
 import typing
 import urllib.error
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
 from PyQt5.QtGui import QPixmap, QColorConstants
 
+from mtg_proxy_printer.model.carddb import with_database_write_lock
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.replace_card import ActionReplaceCard
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
@@ -84,6 +86,7 @@ BatchActions = typing.Union[ActionImportDeckList]
 SingleActions = typing.Union[ActionAddCard, ActionReplaceCard]
 IndexList = typing.List[QModelIndex]
 OptionalPixmap = typing.Optional[QPixmap]
+download_semaphore = threading.BoundedSemaphore()
 
 
 class InitOnDiskDataRunner(Runnable):
@@ -234,6 +237,7 @@ class ObtainMissingImagesRunner(ImageDbRunnable):
         super().__init__(parent)
         self.indices = indices
 
+    @with_database_write_lock(download_semaphore)
     def run(self):
         try:
             self.downloader = downloader = ImageDownloader(self.parent)
@@ -248,6 +252,7 @@ class SingleDownloadRunner(ImageDbRunnable):
         super().__init__(parent)
         self.action = action
 
+    @with_database_write_lock(download_semaphore)
     def run(self):
         try:
             self.downloader = downloader = ImageDownloader(self.parent)
@@ -262,6 +267,7 @@ class BatchDownloadRunner(ImageDbRunnable):
         super().__init__(parent)
         self.action = action
 
+    @with_database_write_lock(download_semaphore)
     def run(self):
         try:
             self.downloader = downloader = ImageDownloader(self.parent)
@@ -433,7 +439,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         download_uri = card.image_uri
         # Download to the root of the image database directory, not into the target directory. If something goes wrong,
         # the incomplete image can be deleted. Once loading the image succeeds, it can be moved to the final location.
-        download_path = self.image_database.db_path / image_path.name
+        # Append the side, so that concurrent downloads of both sides of a DFC do not collide.
+        side = 'Front' if card.is_front else 'Back'
+        download_path = self.image_database.db_path / f"{image_path.stem}-{side}{image_path.suffix}"
         self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
             download_uri, f"Downloading '{card.name}'")
         self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)

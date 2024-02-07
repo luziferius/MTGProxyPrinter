@@ -95,6 +95,7 @@ class PageLayoutSettings:
     """
     Stores all page layout attributes, like paper size, margins and spacings.
     """
+    card_bleed: int = 0
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
@@ -113,6 +114,7 @@ class PageLayoutSettings:
     def create_from_settings(cls):
         document_settings = mtg_proxy_printer.settings.settings["documents"]
         return cls(
+            document_settings.getint("card-bleed-mm"),
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
@@ -520,6 +522,7 @@ class Worker(LoaderSignals):
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
+        # TODO: Although not required (source is trustworthy), replace with a parametrized query
         document_settings_query = textwrap.dedent(f"""\
             SELECT key, value
                 FROM DocumentSettings
@@ -530,6 +533,7 @@ class Worker(LoaderSignals):
         assert_that(
             default_settings,
             has_properties(
+                card_bleed=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 page_height=all_of(instance_of(int), greater_than(0)),
                 page_width=all_of(instance_of(int), greater_than(0)),
                 margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
@@ -718,10 +722,12 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
             "PRAGMA user_version = 6",
     ]:
         db.execute(f"{statement}\n")
-    db.execute(
-        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        ("document_name", settings.document_name)
-    )
+    db.executemany(
+        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", [
+            ("document_name", settings.document_name),
+            ("card_bleed", settings.card_bleed),
+            ("draw_page_numbers", settings.draw_page_numbers),
+    ])
 
 
 def migrate_image_spacing_settings(db: sqlite3.Connection):

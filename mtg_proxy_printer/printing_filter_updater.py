@@ -112,7 +112,7 @@ class PrintingFilterUpdater(Runnable):
                 self.model.db_path, SCHEMA_NAME, self.model.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 
-    @with_database_write_lock
+    @with_database_write_lock()
     def run(self):
         logger.debug(f"Called {self.__class__.__name__}.run()")
         try:
