@@ -5,10 +5,10 @@ import itertools
 import typing
 
 import pint
-from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, QPersistentModelIndex, QModelIndex
-from PySide6.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics
+from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
+from PySide6.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
-    QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene
+    QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.carddb import Card, CardCorner
@@ -24,11 +24,13 @@ ItemDataRole = Qt.ItemDataRole
 
 
 @enum.unique
-class RenderLayers(enum.Enum):
-    BACKGROUND = -3
-    CUT_LINES = -2
-    TEXT = -1
-    CARDS = 0
+class RenderLayers(enum.IntEnum):
+    BACKGROUND = -5
+    CUT_LINES = enum.auto()
+    BLEEDS = enum.auto()
+    CORNERS = enum.auto()
+    TEXT = enum.auto()
+    CARDS = enum.auto()
 
 
 @enum.unique
@@ -36,6 +38,12 @@ class RenderMode(enum.Flag):
     ON_SCREEN = enum.auto()
     ON_PAPER = enum.auto()
     IMPLICIT_MARGINS = enum.auto()
+
+
+@enum.unique
+class BleedOrientation(enum.Enum):
+    HORIZONTAL = enum.auto()
+    VERTICAL = enum.auto()
 
 
 class CutMarkerParameters(typing.NamedTuple):
@@ -46,53 +54,176 @@ class CutMarkerParameters(typing.NamedTuple):
     image_spacing: int
 
 
+def scale_to_pixel(value: float) -> float:
+    value: float = (RESOLUTION*value*unit_registry.millimeter).to("pixel").magnitude
+    return value
+
+
+class CardBleedItem(QGraphicsPixmapItem):
+
+    def __init__(self, image: QPixmap, rect: QRect, pos: QPoint = QPoint(0, 0), parent=None):
+        self._image = pixmap = image.copy(rect)
+        super().__init__(pixmap, parent)
+        self.orientation = BleedOrientation.HORIZONTAL \
+            if rect.height() < rect.width() \
+            else BleedOrientation.VERTICAL
+        self.sign = 1 - 2 * (
+            # Grow up, if a horizontal bleed is at the top
+            (self.orientation == BleedOrientation.HORIZONTAL and rect.top() < image.height() / 2)
+            or  # Grow left, if a vertical bleed is at the left image side
+            (self.orientation == BleedOrientation.VERTICAL and rect.left() < image.width() / 2)
+        )
+        self.setPos(pos)
+        self.setZValue(RenderLayers.BLEEDS.value)
+
+    def update_bleed_size(self, bleed_width_mm: float):
+        size_px = scale_to_pixel(bleed_width_mm)
+        transformation = self.transform()
+        transformation.reset()
+        sx, sy = (self.sign*size_px, 1.0) \
+            if self.orientation == BleedOrientation.VERTICAL \
+            else (1.0, self.sign*size_px)
+        transformation.scale(sx, sy)
+        self.setTransform(transformation, False)
+
+
+class CardBleedCornerItem(QGraphicsPolygonItem):
+    PEN = QPen(QColorConstants.Transparent)
+
+    def __init__(self, card: Card, corner: CardCorner):
+        super().__init__()
+        self.corner_length = 50 if card.is_oversized else 32
+        transform = QTransform()
+        width = card.image_file.width()
+        height = card.image_file.height()
+        if corner == CardCorner.TOP_RIGHT:
+            transform.scale(-1, 1)
+            self.setPos(width, 0)
+        elif corner == CardCorner.BOTTOM_LEFT:
+            transform.scale(1, -1)
+            self.setPos(0, height)
+        elif corner == CardCorner.BOTTOM_RIGHT:
+            transform.scale(-1, -1)
+            self.setPos(width, height)
+        self.setTransform(transform, False)
+        self.setPen(self.PEN)
+        self.setBrush(card.corner_color(corner))
+        self.setZValue(RenderLayers.BLEEDS.value+0.1)
+
+    def update_bleed_size(self, h_width_mm: float, v_width_mm: float):
+        h_px = scale_to_pixel(h_width_mm)
+        v_px = scale_to_pixel(v_width_mm)
+        left = -v_px
+        top = -h_px
+        bottom = self.corner_length
+        right = self.corner_length
+        self.setPolygon(QPolygonF((
+            QPointF(left, top), QPointF(right, top), QPointF(right, top+h_px),
+            QPointF(left+v_px, top+h_px),
+            QPointF(left+v_px, bottom),
+            QPointF(left, bottom), QPointF(left, top)
+        )))
+
+
+class NeighborsPresent(typing.NamedTuple):
+    top: bool
+    bottom: bool
+    left: bool
+    right: bool
+
+
+class CardBleeds(typing.NamedTuple):
+    top: CardBleedItem
+    bottom: CardBleedItem
+    left: CardBleedItem
+    right: CardBleedItem
+
+    top_left: CardBleedCornerItem
+    top_right: CardBleedCornerItem
+    bottom_left: CardBleedCornerItem
+    bottom_right: CardBleedCornerItem
+
+    @classmethod
+    def from_card(cls, card: Card) -> "CardBleeds":
+        pixmap = card.image_file
+        width = pixmap.width()
+        height = pixmap.height()
+        h_size = QSize(width, 1)
+        v_size = QSize(1, height)
+        bleeds = cls(
+            CardBleedItem(pixmap, QRect(QPoint(0, 1), h_size)),
+            CardBleedItem(pixmap, QRect(QPoint(0, height - 1), h_size), QPoint(0, height)),
+            CardBleedItem(pixmap, QRect(QPoint(1, 0), v_size)),
+            CardBleedItem(pixmap, QRect(QPoint(width - 1, 0), v_size), QPoint(width, 0)),
+
+            CardBleedCornerItem(card, CardCorner.TOP_LEFT),
+            CardBleedCornerItem(card, CardCorner.TOP_RIGHT),
+            CardBleedCornerItem(card, CardCorner.BOTTOM_LEFT),
+            CardBleedCornerItem(card, CardCorner.BOTTOM_RIGHT),
+        )
+        bleeds.update_bleeds(0, 0, 0, 0)
+        return bleeds
+
+    def update_bleeds(self, top: float, bottom: float, left: float, right: float):
+        self.top.update_bleed_size(top)
+        self.bottom.update_bleed_size(bottom)
+        self.left.update_bleed_size(left)
+        self.right.update_bleed_size(right)
+
+        self.top_left.update_bleed_size(top, left)
+        self.top_right.update_bleed_size(top, right)
+        self.bottom_left.update_bleed_size(bottom, left)
+        self.bottom_right.update_bleed_size(bottom, right)
+
+
 class CardItem(QGraphicsItemGroup):
+
+    CORNER_SIZE_PX = 50
 
     def __init__(self, card: Card, document: Document, parent: QGraphicsItem = None):
         super().__init__(parent)
         document.page_layout_changed.connect(self.on_page_layout_changed)
-        self.corner_area = QSizeF(50, 50)
         self.card = card
         self.card_pixmap_item = QGraphicsPixmapItem(card.image_file)
         self.card_pixmap_item.setTransformationMode(Qt.SmoothTransformation)
+        self.bleeds = CardBleeds.from_card(card)
         # A transparent pen reduces the corner size by 0.5 pixels around, lining it up with the pixmap outline
         self.corner_pen = QPen(QColorConstants.Transparent)
-        self.corners: typing.List[QGraphicsRectItem] = list(
-            self.create_corners(document.page_layout.draw_sharp_corners))
+        self.corners = self.create_corners(document.page_layout.draw_sharp_corners)
         self._draw_content()
         self.setZValue(RenderLayers.CARDS.value)
 
-    def create_corners(self, draw_corners: bool):
+    def create_corners(self, draw_corners: bool) -> typing.List[QGraphicsRectItem]:
         image = self.card.image_file
         card_height, card_width = image.height(), image.width()
-        corner_height, corner_width = self.corner_area.height(), self.corner_area.width()
         card_width = image.width()
-        opacity = 255 if draw_corners else 0
-        return itertools.starmap(
-            self._create_corner, (
-                (CardCorner.TOP_LEFT, QPointF(0, 0), opacity),
-                (CardCorner.TOP_RIGHT, QPointF(card_width-corner_width, 0), opacity),
-                (CardCorner.BOTTOM_LEFT, QPointF(0, card_height-corner_height), opacity),
-                (CardCorner.BOTTOM_RIGHT, QPointF(card_width-corner_width, card_height-corner_height), opacity),
-            )
-        )
+        opacity = 255 * draw_corners
+        left, right = 0, card_width-self.CORNER_SIZE_PX
+        top, bottom = 0, card_height-self.CORNER_SIZE_PX
+        return [
+            self._create_corner(CardCorner.TOP_LEFT, QPointF(left, top), opacity),
+            self._create_corner(CardCorner.TOP_RIGHT, QPointF(right, top), opacity),
+            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(left, bottom), opacity),
+            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), opacity),
+        ]
 
     def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
-        rect = QGraphicsRectItem(QRectF(QPointF(0, 0), self.corner_area))
+        rect = QGraphicsRectItem(0, 0, self.CORNER_SIZE_PX, self.CORNER_SIZE_PX)
         color = self.card.corner_color(corner)
         rect.setPos(position)
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
         rect.setOpacity(opacity)
+        rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
-        value = 255 if new_page_layout.draw_sharp_corners else 0
+        corner_opacity = 255 * new_page_layout.draw_sharp_corners
         for corner in self.corners:
-            corner.setOpacity(value)
+            corner.setOpacity(corner_opacity)
 
     def _draw_content(self):
-        for item in self.corners:
+        for item in itertools.chain(self.corners, self.bleeds):
             self.addToGroup(item)
         self.addToGroup(self.card_pixmap_item)
 
@@ -219,10 +350,11 @@ class PageScene(QGraphicsScene):
             self._update_page_text_x()
             self._update_page_text_y()
             self._draw_cards()
+            self.update_card_bleeds()
 
     def _update_page_text_y(self):
         # Put the text labels below the
-        y = 2 + round(max(
+        y = 2 + scale_to_pixel(self.document.page_layout.card_bleed) + round(max(
             self.horizontal_cut_line_locations[PageType.REGULAR][-1],
             self.horizontal_cut_line_locations[PageType.OVERSIZED][-1]
         ))
@@ -267,6 +399,7 @@ class PageScene(QGraphicsScene):
             self.draw_cut_markers()
         self._compute_position_for_image.cache_clear()
         self.update_card_positions()
+        self.update_card_bleeds()
         self._update_text_items(new_page_layout)
         if size_changed:
             # Changed paper dimensions very likely caused the page aspect ratio to change. It may no longer fit
@@ -399,6 +532,7 @@ class PageScene(QGraphicsScene):
             if needs_reorder:
                 logger.debug("Cards added in the middle of the page, re-order existing cards.")
                 self.update_card_positions()
+            self.update_card_bleeds()
         elif not parent.isValid():
             # Page inserted. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
@@ -414,6 +548,7 @@ class PageScene(QGraphicsScene):
             for item in self.card_items[first:last+1]:
                 self.removeItem(item)
             self.update_card_positions()
+            self.update_card_bleeds()
         elif not parent.isValid():
             # Page removed. Update the page number text, as it contains the total number of pages
             self._update_page_number_text()
@@ -432,7 +567,6 @@ class PageScene(QGraphicsScene):
     def _compute_position_for_image(self, index_row: int, page_type: PageType) -> QPointF:
         """Returns the page-absolute position of the top-left pixel of the given image."""
         page_layout: PageLayoutSettings = self.document.page_layout
-
         page_width = self._mm_to_rounded_px(page_layout.page_width)
         page_height = self._mm_to_rounded_px(page_layout.page_height)
 
@@ -476,6 +610,35 @@ class PageScene(QGraphicsScene):
         return QPointF(
             x,
             y,
+        )
+
+    def update_card_bleeds(self):
+        full_bleed = self.document.page_layout.card_bleed
+        inner_bleed_h = min(self.document.page_layout.row_spacing/2, full_bleed)
+        inner_bleed_v = min(self.document.page_layout.column_spacing/2, full_bleed)
+        for item in self.card_items:
+            neighbors = self._has_neighbors(item)
+            item.bleeds.update_bleeds(
+                inner_bleed_h if neighbors.top else full_bleed,
+                inner_bleed_h if neighbors.bottom else full_bleed,
+                inner_bleed_v if neighbors.left else full_bleed,
+                inner_bleed_v if neighbors.right else full_bleed,
+            )
+
+    def _has_neighbors(self, item: CardItem) -> NeighborsPresent:
+        item_rect = item.boundingRect()
+        center_pos = item.pos() + QPointF(item_rect.width(), item_rect.height())/2
+        identity = QTransform()  # TODO: Is this okay to do?
+        vertical = QPointF(0, item_rect.height())
+        horizontal = QPointF(item_rect.width(), 0)
+        # Values to ignore by itemAt(). ON_PAPER, or outside the scene rect, results are None.
+        # ON_SCREEN, the background is returned for empty spaces, so ignore both.
+        nothing = (self.background, None)
+        return NeighborsPresent(
+            self.itemAt(center_pos - vertical, identity) not in nothing,
+            self.itemAt(center_pos + vertical, identity) not in nothing,
+            self.itemAt(center_pos-horizontal, identity) not in nothing,
+            self.itemAt(center_pos+horizontal, identity) not in nothing,
         )
 
     @staticmethod

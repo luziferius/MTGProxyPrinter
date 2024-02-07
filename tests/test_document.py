@@ -572,6 +572,7 @@ def _validate_saved_document_settings(document: Document):
         assert_that(
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
+                page_layout.card_bleed,
                 page_layout.column_spacing,
                 page_layout.document_name,
                 int(page_layout.draw_cut_markers),

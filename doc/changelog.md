@@ -1,11 +1,22 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.27.0 (2024-02-04)  <a name="v0_27_0"></a>
+
+## New features
+
+- Draw bleeds (thick outlines) with configurable width around cards. (The default width of zero disables them.)
+    - Combine with the "Draw 90° corners" option to also fill the remaining triangles.
+    - The outline color is sampled from the card images, so that it works with any border color, 
+      and somewhat plausible with extended-art or full-art cards.
 
 ## Changed features
 
 - The placeholder image used when image downloads fail is now transparent instead of pure white,
   which improves rendering when a dark application theme is used.
+
+## Fixed issues
+
+- Fixed broken image download for double faced cards.
 
 # Version 0.26.1 (2024-01-27)   <a name="v0_26_1"></a>
 
