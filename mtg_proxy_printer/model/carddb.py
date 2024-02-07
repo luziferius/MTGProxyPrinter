@@ -277,24 +277,26 @@ T = typing.TypeVar("T", Card, CheckCard)
 write_semaphore = threading.BoundedSemaphore()
 
 
-def with_database_write_lock(func):
+def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semaphore):
     """Decorator managing the database lock. Used to serialize database write transactions."""
-    @functools.wraps(func)
-    def wrapped(*args, **kwargs):
-        write_semaphore.acquire()
-        logger.debug(f"Obtained database write lock")
-        try:
-            app: "Application" = QApplication.instance()
-            # The instance used by unit tests does not have the should_run attribute.
-            # Skip the second condition in that case
-            if app and (not hasattr(app, "should_run") or app.should_run):
-                return func(*args, **kwargs)
-            else:
-                logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
-        finally:
-            logger.debug("Releasing database write lock")
-            write_semaphore.release()
-    return wrapped
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            semaphore.acquire()
+            logger.debug(f"Obtained database write lock")
+            try:
+                app: "Application" = QApplication.instance()
+                # The instance used by unit tests does not have the should_run attribute.
+                # Skip the second condition in that case
+                if app and (not hasattr(app, "should_run") or app.should_run):
+                    return func(*args, **kwargs)
+                else:
+                    logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
+            finally:
+                logger.debug("Releasing database write lock")
+                semaphore.release()
+        return wrapped
+    return decorator
 
 
 class CardDatabase(QObject):
