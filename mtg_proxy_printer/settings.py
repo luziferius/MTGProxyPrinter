@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,6 +23,7 @@ from PyQt5.QtCore import QStandardPaths
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
+import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 __all__ = [
@@ -31,11 +32,13 @@ __all__ = [
     "read_settings_from_file",
     "write_settings_to_file",
     "validate_settings",
-    "update_version_string",
+    "update_stored_version_string",
+    "get_boolean_card_filter_keys",
+    "parse_card_set_filters",
 ]
 
 
-config_file_path = pathlib.Path(mtg_proxy_printer.app_dirs.data_directories.user_config_dir, "MTGProxyPrinter.ini")
+config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.
@@ -75,6 +78,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-banned-in-historic": "False",
     "hide-banned-in-legacy": "False",
     "hide-banned-in-modern": "False",
+    "hide-banned-in-oathbreaker": "False",
     "hide-banned-in-pauper": "False",
     "hide-banned-in-penny": "False",
     "hide-banned-in-pioneer": "False",
@@ -82,22 +86,29 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-banned-in-vintage": "False",
     "hide-white-bordered": "False",
     "hide-gold-bordered": "False",
+    "hide-borderless": "False",
+    "hide-extended-art": "False",
     "hide-funny-cards": "False",
     "hide-token": "False",
     "hide-digital-cards": "True",
+    "hide-reversible-cards": "False",
+    "hidden-sets": "",
 }
 DEFAULT_SETTINGS["documents"] = {
+    "card-bleed-mm": "0",
     "paper-height-mm": "297",
     "paper-width-mm": "210",
-    "margin-top-mm": "10",
-    "margin-bottom-mm": "10",
-    "margin-left-mm": "7",
-    "margin-right-mm": "7",
-    "image-spacing-horizontal-mm": "0",
-    "image-spacing-vertical-mm": "0",
+    "margin-top-mm": "5",
+    "margin-bottom-mm": "5",
+    "margin-left-mm": "5",
+    "margin-right-mm": "5",
+    "row-spacing-mm": "0",
+    "column-spacing-mm": "0",
     "print-cut-marker": "False",
     "pdf-page-count-limit": "0",
     "print-sharp-corners": "False",
+    "print-page-numbers": "False",
+    "default-document-name": "",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
@@ -127,6 +138,25 @@ DEFAULT_SETTINGS["application"] = {
     "check-for-application-updates": "None",
     "check-for-card-data-updates": "None",
 }
+DEFAULT_SETTINGS["printer"] = {
+    "borderless-printing": "True"
+}
+MAX_DOCUMENT_NAME_LENGTH = 200
+
+
+def get_boolean_card_filter_keys():
+    """Returns all keys for boolean card filter settings."""
+    keys = DEFAULT_SETTINGS["card-filter"].keys()
+    keys = [item for item in keys if item.startswith("hide-")]
+    return keys
+
+
+def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.Set[str]:
+    """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
+    raw = settings["card-filter"]["hidden-sets"]
+    raw = raw.lower()
+    deduplicated = set(raw.split())
+    return deduplicated
 
 
 def read_settings_from_file():
@@ -163,8 +193,20 @@ def write_settings_to_file():
         settings.write(config_file)
 
 
-def update_version_string():
+def update_stored_version_string():
+    """Sets the version string stored in the configuration file to the version of the currently running instance."""
     settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
+
+
+def was_application_updated() -> bool:
+    """
+    Returns True, if the application was updated since last start, i.e. if the internal version number
+    is greater than the version string stored in the configuration file. Returns False otherwise.
+    """
+    return mtg_proxy_printer.natsort.str_less_than(
+        settings["application"]["last-used-version"],
+        mtg_proxy_printer.meta_data.__version__
+    )
 
 
 def validate_settings(read_settings: configparser.ConfigParser):
@@ -181,12 +223,14 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_debug_section(read_settings)
     _validate_decklist_import_section(read_settings)
     _validate_default_filesystem_paths_section(read_settings)
+    _validate_printer_section(read_settings)
 
 
 def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    for key in section.keys():
+    boolean_keys = get_boolean_card_filter_keys()
+    for key in boolean_keys:
         _validate_boolean(section, defaults, key)
 
 
@@ -202,14 +246,21 @@ def _validate_images_section(settings: configparser.ConfigParser, section_name: 
 
 
 def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
-    sizes: mtg_proxy_printer.units_and_sizes.CardSize = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED.value
+    card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
+    card_height = card_size.as_mm(card_size.height)
+    card_width = card_size.as_mm(card_size.width)
     section = settings[section_name]
+    if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
+        section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
-    boolean_settings = {"print-cut-marker", "print-sharp-corners"}
+    boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
+    string_settings = {"default-document-name", }
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
+        elif key in string_settings:
+            pass
         else:
             _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties
@@ -218,12 +269,12 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
 
-    if available_height < sizes.height:
+    if available_height < card_height:
         # Can not fit a single card on a page
         section["paper-height-mm"] = defaults["paper-height-mm"]
-        section["margin-top-mm"] = defaults["marginop--tmm"]
+        section["margin-top-mm"] = defaults["margin-top-mm"]
         section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
-    if available_width < sizes.width:
+    if available_width < card_width:
         # Can not fit a single card on a page
         section["paper-width-mm"] = defaults["paper-width-mm"]
         section["margin-left-mm"] = defaults["margin-left-mm"]
@@ -234,13 +285,13 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
         (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
     available_width = section.getint("paper-width-mm") - \
         (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
-
-    if section.getint("image-spacing-vertical-mm") > (available_spacing_vertical := available_height - sizes.height):
-        # Prevent vertical spacing from overlapping with bottom margin
-        section["image-spacing-vertical-mm"] = str(available_spacing_vertical)
-    if section.getint("image-spacing-horizontal-mm") > (available_spacing_horizontal := available_width - sizes.width):
-        # Prevent horizontal spacing from overlapping with right margin
-        section["image-spacing-horizontal-mm"] = str(available_spacing_horizontal)
+    # FIXME: This looks like a dimensional error. Validate and test!
+    if section.getint("column-spacing-mm") > (available_spacing_vertical := available_height - card_height):
+        # Prevent column spacing from overlapping with bottom margin
+        section["column-spacing-mm"] = str(available_spacing_vertical)
+    if section.getint("row-spacing-mm") > (available_spacing_horizontal := available_width - card_width):
+        # Prevent row spacing from overlapping with right margin
+        section["row-spacing-mm"] = str(available_spacing_horizontal)
 
 
 def _validate_application_section(settings: configparser.ConfigParser, section_name: str = "application"):
@@ -280,6 +331,12 @@ def _validate_default_filesystem_paths_section(
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
+
+
+def _validate_printer_section(settings: configparser.ConfigParser, section_name: str = "printer"):
+    section = settings[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
+    _validate_boolean(section, defaults, "borderless-printing")
 
 
 def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
@@ -329,6 +386,8 @@ def migrate_settings(settings: configparser.ConfigParser):
     _migrate_layout_setting(settings)
     _migrate_download_settings(settings)
     _migrate_default_save_paths_settings(settings)
+    _migrate_print_guessing_settings(settings)
+    _migrate_image_spacing_settings(settings)
 
 
 def _migrate_layout_setting(settings: configparser.ConfigParser):
@@ -382,6 +441,16 @@ def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
     target["enable-print-guessing-by-default"] = "True"
     target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
     target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+
+
+def _migrate_image_spacing_settings(settings: configparser.ConfigParser):
+    section = settings["documents"]
+    if "image-spacing-horizontal-mm" not in section:
+        return
+    section["row-spacing-mm"] = section["image-spacing-horizontal-mm"]
+    section["column-spacing-mm"] = section["image-spacing-vertical-mm"]
+    del section["image-spacing-horizontal-mm"]
+    del section["image-spacing-vertical-mm"]
 
 
 # Read the settings from file during module import

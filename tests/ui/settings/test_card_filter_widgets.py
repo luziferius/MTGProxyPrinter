@@ -1,15 +1,15 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -22,8 +22,8 @@ import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.settings_window import GeneralPrintingFilterWidget, FormatPrintingFilterWidget,\
-    AbstractPrintingFilterWidget
+from mtg_proxy_printer.ui.printing_filter_widgets import AbstractPrintingFilterWidget, GeneralPrintingFilterWidget, \
+    FormatPrintingFilterWidget
 
 T = typing.TypeVar("T")
 
@@ -44,7 +44,9 @@ general_printing_widget_mapping = {
     "hide-gold-bordered": "hide_gold_bordered_cards",
     "hide-oversized-cards": "hide_oversized_cards",
     "hide-token": "hide_token",
-    "hide-white-bordered": "hide_white_bordered_cards"
+    "hide-white-bordered": "hide_white_bordered_cards",
+    "hide-borderless": "hide_borderless_cards",
+    "hide-extended-art": "hide_extended_art_cards",
 }
 
 
@@ -53,8 +55,9 @@ general_printing_widget_mapping = {
 def test_general_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
     download_section[setting] = str(value)
     widget = _create_widget_with_loaded_settings(qtbot, GeneralPrintingFilterWidget, download_section)
+    ui = widget.ui
     for key, widget_name in general_printing_widget_mapping.items():
-        checkbox = getattr(widget, widget_name)
+        checkbox = getattr(ui, widget_name)
         assert_that(
             checkbox.isChecked(),
             is_(equal_to(download_section.getboolean(key))),
@@ -77,6 +80,7 @@ format_printing_widget_mapping = {
     "hide-banned-in-historic": "hide_banned_in_historic",
     "hide-banned-in-legacy": "hide_banned_in_legacy",
     "hide-banned-in-modern": "hide_banned_in_modern",
+    "hide-banned-in-oathbreaker": "hide_banned_in_oathbreaker",
     "hide-banned-in-pauper": "hide_banned_in_pauper",
     "hide-banned-in-penny": "hide_banned_in_penny",
     "hide-banned-in-pioneer": "hide_banned_in_pioneer",
@@ -90,13 +94,14 @@ format_printing_widget_mapping = {
 def test_format_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
     download_section[setting] = str(value)
     widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilterWidget, download_section)
-    checkbox: QCheckBox = getattr(widget, format_printing_widget_mapping[setting])
+    ui = widget.ui
+    checkbox: QCheckBox = getattr(ui, format_printing_widget_mapping[setting])
     assert_that(
         checkbox.isChecked(),
         is_(equal_to(value))
     )
     for key, widget_name in format_printing_widget_mapping.items():
-        checkbox: QCheckBox = getattr(widget, widget_name)
+        checkbox: QCheckBox = getattr(ui, widget_name)
         assert_that(checkbox, is_(instance_of(QCheckBox)))
         assert_that(
             checkbox.isChecked(),
@@ -109,7 +114,7 @@ def test_format_printing_filter_loads_correctly(qtbot, download_section, setting
 @pytest.mark.parametrize("setting", format_printing_widget_mapping.keys())
 def test_format_printing_filter_saves_correctly(qtbot, download_section, setting: str, value: bool):
     widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilterWidget, download_section)
-    checkbox: QCheckBox = getattr(widget, format_printing_widget_mapping[setting])
+    checkbox: QCheckBox = getattr(widget.ui, format_printing_widget_mapping[setting])
     assert_that(checkbox, is_(instance_of(QCheckBox)))
     checkbox.setChecked(value)
     widget.save_settings(download_section)
@@ -118,3 +123,4 @@ def test_format_printing_filter_saves_correctly(qtbot, download_section, setting
         has_entry(setting, equal_to(str(value))),
         f"Key not saved correctly: {setting}"
     )
+

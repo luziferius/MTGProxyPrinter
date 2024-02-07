@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>main_window</class>
- <widget class="QMainWindow" name="main_window">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -16,16 +16,14 @@
   <property name="toolButtonStyle">
    <enum>Qt::ToolButtonFollowStyle</enum>
   </property>
-  <widget class="QWidget" name="central_widget">
-   <layout class="QGridLayout" name="gridLayout"/>
-  </widget>
+  <widget class="CentralWidget" name="central_widget"/>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
      <width>1050</width>
-     <height>29</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -60,6 +58,9 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <addaction name="action_undo"/>
+    <addaction name="action_redo"/>
+    <addaction name="separator"/>
     <addaction name="action_edit_document_settings"/>
     <addaction name="action_compact_document"/>
     <addaction name="action_shuffle_document"/>
@@ -75,7 +76,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QToolBar" name="toolBar">
    <property name="windowTitle">
-    <string>toolBar</string>
+    <string>Show toolbar</string>
    </property>
    <property name="toolButtonStyle">
     <enum>Qt::ToolButtonTextBesideIcon</enum>
@@ -86,9 +87,11 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_new_document"/>
    <addaction name="action_load_document"/>
    <addaction name="action_save_document"/>
+   <addaction name="separator"/>
+   <addaction name="action_undo"/>
+   <addaction name="action_redo"/>
    <addaction name="separator"/>
    <addaction name="action_print_preview"/>
    <addaction name="action_print"/>
@@ -96,8 +99,6 @@
    <addaction name="separator"/>
    <addaction name="action_new_page"/>
    <addaction name="action_discard_page"/>
-   <addaction name="separator"/>
-   <addaction name="action_compact_document"/>
   </widget>
   <action name="action_quit">
    <property name="icon">
@@ -323,7 +324,37 @@ If you want to quickly print a full deck for playing,
 use this to reduce the initial deck shuffling required</string>
    </property>
   </action>
+  <action name="action_undo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="edit-undo"/>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+  </action>
+  <action name="action_redo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset theme="edit-redo"/>
+   </property>
+   <property name="text">
+    <string>Redo</string>
+   </property>
+  </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CentralWidget</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.central_widget</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections>
   <connection>

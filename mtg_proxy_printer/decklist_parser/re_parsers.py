@@ -1,15 +1,15 @@
-# Copyright (C) 2021-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 import copy
@@ -30,6 +30,7 @@ MatchType = typing.Dict[str, str]
 
 __all__ = [
     "GenericRegularExpressionDeckParser",
+    "MagicWorkstationDeckDataFormatParser",
     "MTGArenaParser",
     "MTGOnlineParser",
     "XMageParser",
@@ -62,6 +63,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
     ))
 
     LINES_TO_SKIP = frozenset()
+    PREFIXES_TO_SKIP = frozenset()
 
     def __init__(
             self, card_db: CardDatabase, image_db: ImageDatabase, regular_expression: typing.Union[re.Pattern, str],
@@ -78,7 +80,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
         unmatched_lines = []
         for line in self.line_splitter(deck_list):
             # Convert the Match instance to a dict, in order to have the get() method with a default.
-            # The default is used, if the used RE doesn’t contain named groups for some of the defined attributes.
+            # The default is used, if the used RE doesn't contain named groups for some of the defined attributes.
             if match := self.parser.match(line):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
@@ -132,7 +134,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
         """
-        If the used RE doesn’t provide a language, try to guess the language based on the card name.
+        If the used RE doesn't provide a language, try to guess the language based on the card name.
         If neither language nor card name are given, default to English printings.
         """
         language = match_dict.get("language")
@@ -158,12 +160,27 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
         """
-        Split the input deck list into individual lines, omitting empty lines.
+        Split the input deck list into individual lines, omitting empty lines,
+        lines that only contain
         Subclasses can overwrite this method to provide custom filtering for unrelated meta-data.
         """
         for line in deck_list.splitlines():
-            if line and line not in self.LINES_TO_SKIP:
+            if line and line not in self.LINES_TO_SKIP and not any(map(line.startswith, self.PREFIXES_TO_SKIP)):
                 yield line
+
+
+class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
+
+    SUPPORTED_FILE_TYPES = {
+        "Magic Workstation Deck Data Format": ["mwDeck"],
+    }
+    PREFIXES_TO_SKIP = frozenset({"//"})
+
+    def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
+        super().__init__(
+            card_db, image_db,
+            re.compile(r"(SB: {2})?(?P<copies>\d+) \[(?P<set_code>\w+)?] (?P<name>.+)"), parent
+        )
 
 
 class MTGArenaParser(GenericRegularExpressionDeckParser):
@@ -227,15 +244,10 @@ class XMageParser(GenericRegularExpressionDeckParser):
     SUPPORTED_FILE_TYPES = {
         "XMage Deck file": ["dck"],
     }
+    PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
             card_db, image_db,
             re.compile(r"(SB: )?(?P<copies>\d+) \[(?P<set_code>\w+):(?P<collector_number>[^]]+)] (?P<name>.+)"), parent
         )
-
-    def line_splitter(self, deck_list: str) -> typing.Generator[str, None, None]:
-        # Skip the deck name, if set, and the deck/sideboard layout
-        for line in super().line_splitter(deck_list):
-            if not line.startswith("NAME") and not line.startswith("LAYOUT"):
-                yield line

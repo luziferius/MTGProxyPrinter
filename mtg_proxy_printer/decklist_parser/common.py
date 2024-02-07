@@ -1,19 +1,18 @@
 # Copyright (C) 2021, 2022 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import collections
 from abc import abstractmethod
 import typing
 
@@ -77,7 +76,7 @@ class ParserBase(QObject):
         logger.info("About to parse deck")
         # Implementation note: If a language is given, force print_guessing_prefer_already_downloaded to False,
         # Because it would operate on the cards in the source language. The card choice gets overwritten by the
-        # translation step, so performs unnecessary work that gets thrown away anyways.
+        # translation step, so performs unnecessary work that gets thrown away anyway.
         self.print_guessing_prefer_already_downloaded = print_guessing_prefer_already_downloaded \
             if language_override is None else False
         parsed_deck, unmatched_lines = self.parse_deck_internal(deck, print_guessing, language_override)

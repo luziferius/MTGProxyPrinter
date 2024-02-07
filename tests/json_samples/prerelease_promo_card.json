@@ -2,7 +2,9 @@
   "object": "card",
   "id": "dee0d6d4-321e-456d-9040-42f7845ff6a1",
   "oracle_id": "046add85-952f-46ac-974a-463d2a7d3fd4",
-  "multiverse_ids": [],
+  "multiverse_ids": [
+
+  ],
   "tcgplayer_id": 247195,
   "cardmarket_id": 574599,
   "name": "The Book of Exalted Deeds",
@@ -14,15 +16,15 @@
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.png?1630012475",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475"
+    "small": "https://cards.scryfall.io/small/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "normal": "https://cards.scryfall.io/normal/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "large": "https://cards.scryfall.io/large/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "png": "https://cards.scryfall.io/png/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.png?1630012475",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/d/e/dee0d6d4-321e-456d-9040-42f7845ff6a1.jpg?1630012475"
   },
   "mana_cost": "{W}{W}{W}",
-  "cmc": 3,
+  "cmc": 3.0,
   "type_line": "Legendary Artifact",
   "oracle_text": "At the beginning of your end step, if you gained 3 or more life this turn, create a 3/3 white Angel creature token with flying.\n{W}{W}{W}, {T}, Exile The Book of Exalted Deeds: Put an enlightened counter on target Angel. It gains \"You can't lose the game and your opponents can't win the game.\" Activate only as a sorcery.",
   "colors": [
@@ -31,15 +33,17 @@
   "color_identity": [
     "W"
   ],
-  "keywords": [],
+  "keywords": [
+
+  ],
   "all_parts": [
     {
       "object": "related_card",
-      "id": "a1899bb1-dd8e-4437-8ea3-4ad637eabf2b",
+      "id": "8b34a9ad-3198-4ff6-b27b-62d97a7ca743",
       "component": "combo_piece",
       "name": "The Book of Exalted Deeds",
       "type_line": "Legendary Artifact",
-      "uri": "https://api.scryfall.com/cards/a1899bb1-dd8e-4437-8ea3-4ad637eabf2b"
+      "uri": "https://api.scryfall.com/cards/8b34a9ad-3198-4ff6-b27b-62d97a7ca743"
     },
     {
       "object": "related_card",
@@ -51,8 +55,8 @@
     }
   ],
   "legalities": {
-    "standard": "legal",
-    "future": "legal",
+    "standard": "not_legal",
+    "future": "not_legal",
     "historic": "legal",
     "gladiator": "legal",
     "pioneer": "legal",
@@ -63,13 +67,15 @@
     "vintage": "legal",
     "penny": "not_legal",
     "commander": "legal",
-    "brawl": "legal",
+    "oathbreaker": "legal",
+    "brawl": "not_legal",
     "historicbrawl": "legal",
-    "alchemy": "legal",
+    "alchemy": "not_legal",
     "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "paper"
@@ -112,23 +118,25 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 3552,
+  "promo_types": [
+    "embossed"
+  ],
+  "edhrec_rank": 2538,
   "prices": {
     "usd": null,
-    "usd_foil": "88.14",
+    "usd_foil": "32.28",
     "usd_etched": null,
     "eur": null,
-    "eur_foil": "39.99",
+    "eur_foil": "20.98",
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=The+Book+of+Exalted+Deeds&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=The+Book+of+Exalted+Deeds&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=The+Book+of+Exalted+Deeds",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=The+Book+of+Exalted+Deeds"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DThe%2BBook%2Bof%2BExalted%2BDeeds",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DThe%2BBook%2Bof%2BExalted%2BDeeds",
+    "edhrec": "https://edhrec.com/route/?cc=The+Book+of+Exalted+Deeds"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/247195?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F247195%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=The+Book+of+Exalted+Deeds&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=The+Book+of+Exalted+Deeds&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

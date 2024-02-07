@@ -1,15 +1,15 @@
-# Copyright (C) 2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -33,15 +33,16 @@ import mtg_proxy_printer.ui.page_config_widget
     "margin_bottom",
     "margin_left",
     "margin_right",
-    "image_spacing_horizontal",
-    "image_spacing_vertical",
+    "row_spacing",
+    "column_spacing",
 ])
 def test_set_integer_spin_boxes(qtbot: QtBot, attribute_name: str):
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+    ui = widget.ui
     qtbot.addWidget(widget)
-    assert_that(widget, has_property(attribute_name, instance_of(QSpinBox)))
+    assert_that(ui, has_property(attribute_name, instance_of(QSpinBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(int)))
-    spinbox_widget: QSpinBox = getattr(widget, attribute_name)
+    spinbox_widget: QSpinBox = getattr(ui, attribute_name)
     with qtbot.waitSignal(spinbox_widget.valueChanged):
         previous = spinbox_widget.value()
         new_value = previous + 1
@@ -54,14 +55,16 @@ def test_set_integer_spin_boxes(qtbot: QtBot, attribute_name: str):
 ])
 def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
     widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+    ui = widget.ui
     qtbot.addWidget(widget)
-    assert_that(widget, has_property(attribute_name, instance_of(QCheckBox)))
+    assert_that(ui, has_property(attribute_name, instance_of(QCheckBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(bool)))
-    checkbox_widget: QCheckBox = getattr(widget, attribute_name)
+    checkbox_widget: QCheckBox = getattr(ui, attribute_name)
     with qtbot.waitSignal(checkbox_widget.stateChanged):
         previous = checkbox_widget.isChecked()
         new_value = not previous
         checkbox_widget.setChecked(new_value)
+    assert_that(checkbox_widget.isChecked(), is_(new_value))
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
     # Test second time to ensure both ways (enable & disable) work
     with qtbot.waitSignal(checkbox_widget.stateChanged):
@@ -73,14 +76,14 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
 
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
-    ("paper-height-mm", "page_height", 146),
-    ("paper-width-mm", "page_width", 95),
+    ("paper-height-mm", "page_height", 136),
+    ("paper-width-mm", "page_width", 93),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
     ("margin-right-mm", "margin_right", 0),
-    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
-    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+    ("row-spacing-mm", "row_spacing", 0),
+    ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_load_integer_document_settings_from_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
@@ -95,7 +98,7 @@ def test_load_integer_document_settings_from_config(
         expected = max(min_value, value)
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
         assert_that(widget.page_layout, has_property(attribute_name, equal_to(expected)))
-        spinbox_widget: QSpinBox = getattr(widget, attribute_name)
+        spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
         assert_that(spinbox_widget.value(), is_(equal_to(expected)))
 
 
@@ -110,20 +113,20 @@ def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, a
     with unittest.mock.patch.dict(document_settings, {settings_name: str(value)}):
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
         assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
-    checkbox_widget: QCheckBox = getattr(widget, attribute_name)
+    checkbox_widget: QCheckBox = getattr(widget.ui, attribute_name)
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
 
 
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
-    ("paper-height-mm", "page_height", 146),
-    ("paper-width-mm", "page_width", 102),
+    ("paper-height-mm", "page_height", 136),
+    ("paper-width-mm", "page_width", 98),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
     ("margin-right-mm", "margin_right", 0),
-    ("image-spacing-horizontal-mm", "image_spacing_horizontal", 0),
-    ("image-spacing-vertical-mm", "image_spacing_vertical", 0),
+    ("row-spacing-mm", "row_spacing", 0),
+    ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_save_integer_document_settings_to_config(
         qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
@@ -138,9 +141,9 @@ def test_save_integer_document_settings_to_config(
     original_value = document_settings[settings_name]
     with unittest.mock.patch.dict(document_settings, {settings_name: original_value}):
         expected = str(max(min_value, value))
-        spinbox_widget: QSpinBox = getattr(widget, attribute_name)
+        spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
         spinbox_widget.setValue(spinbox_widget.value()+10000)
-        with qtbot.waitSignal(spinbox_widget.valueChanged, timeout=100):
+        with qtbot.waitSignal(spinbox_widget.valueChanged, timeout=1000):
             spinbox_widget.setValue(value)
         widget.save_document_settings_to_config()
         assert_that(document_settings, has_entry(settings_name, equal_to(expected)))
@@ -163,7 +166,7 @@ def test_save_boolean_document_settings_to_config(
     widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
     original_value = document_settings[settings_name]
     with unittest.mock.patch.dict(document_settings, {settings_name: original_value}):
-        checkbox_widget: QCheckBox = getattr(widget, attribute_name)
+        checkbox_widget: QCheckBox = getattr(widget.ui, attribute_name)
         checkbox_widget.setChecked(value)
         widget.save_document_settings_to_config()
         assert_that(document_settings, has_entry(settings_name, equal_to(str(value))))
@@ -172,14 +175,14 @@ def test_save_boolean_document_settings_to_config(
 
 @pytest.mark.parametrize("value", [0, 1, 200, 1000])
 @pytest.mark.parametrize("attribute_name, min_value", [
-    ("page_height", 146),
-    ("page_width", 102),
+    ("page_height", 136),
+    ("page_width", 98),
     ("margin_top", 0),
     ("margin_bottom", 0),
     ("margin_left", 0),
     ("margin_right", 0),
-    ("image_spacing_horizontal", 0),
-    ("image_spacing_vertical", 0),
+    ("row_spacing", 0),
+    ("column_spacing", 0),
 ])
 def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_value: int, value: int):
     """
@@ -193,7 +196,7 @@ def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_v
     expected = max(min_value, value)
     widget.load_from_page_layout(other)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(expected)))
-    spinbox_widget: QSpinBox = getattr(widget, attribute_name)
+    spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
     assert_that(spinbox_widget.value(), is_(equal_to(expected)))
 
 
@@ -208,5 +211,5 @@ def test_load_booleans_from_page_layout(qtbot: QtBot, attribute_name: str, value
     setattr(other, attribute_name, value)
     widget.load_from_page_layout(other)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
-    checkbox_widget: QCheckBox = getattr(widget, attribute_name)
+    checkbox_widget: QCheckBox = getattr(widget.ui, attribute_name)
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))

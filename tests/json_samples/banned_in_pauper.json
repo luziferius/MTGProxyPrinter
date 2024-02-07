@@ -1,33 +1,33 @@
 {
   "object": "card",
-  "id": "551c0a45-9515-4e51-84e5-79703832a661",
-  "oracle_id": "8fcf50cd-e6d0-4516-850f-d42ee75dcc3a",
+  "id": "c2462fdf-a594-47d0-8e10-b55901e350d9",
+  "oracle_id": "ec463bde-dadf-4044-8e41-71338fd4d62f",
   "multiverse_ids": [
-    489928
+    464169
   ],
-  "mtgo_id": 82544,
-  "tcgplayer_id": 218259,
-  "cardmarket_id": 482654,
-  "name": "Expedition Map",
+  "mtgo_id": 72812,
+  "tcgplayer_id": 191281,
+  "cardmarket_id": 375357,
+  "name": "Arcum's Astrolabe",
   "lang": "en",
-  "released_at": "2020-08-07",
-  "uri": "https://api.scryfall.com/cards/551c0a45-9515-4e51-84e5-79703832a661",
-  "scryfall_uri": "https://scryfall.com/card/2xm/255/expedition-map?utm_source=api",
+  "released_at": "2019-06-14",
+  "uri": "https://api.scryfall.com/cards/c2462fdf-a594-47d0-8e10-b55901e350d9",
+  "scryfall_uri": "https://scryfall.com/card/mh1/220/arcums-astrolabe?utm_source=api",
   "layout": "normal",
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.png?1599709184",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/5/5/551c0a45-9515-4e51-84e5-79703832a661.jpg?1599709184"
+    "small": "https://cards.scryfall.io/small/front/c/2/c2462fdf-a594-47d0-8e10-b55901e350d9.jpg?1613386977",
+    "normal": "https://cards.scryfall.io/normal/front/c/2/c2462fdf-a594-47d0-8e10-b55901e350d9.jpg?1613386977",
+    "large": "https://cards.scryfall.io/large/front/c/2/c2462fdf-a594-47d0-8e10-b55901e350d9.jpg?1613386977",
+    "png": "https://cards.scryfall.io/png/front/c/2/c2462fdf-a594-47d0-8e10-b55901e350d9.png?1613386977",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/c/2/c2462fdf-a594-47d0-8e10-b55901e350d9.jpg?1613386977",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/c/2/c2462fdf-a594-47d0-8e10-b55901e350d9.jpg?1613386977"
   },
-  "mana_cost": "{1}",
+  "mana_cost": "{S}",
   "cmc": 1.0,
-  "type_line": "Artifact",
-  "oracle_text": "{2}, {T}, Sacrifice Expedition Map: Search your library for a land card, reveal it, and put it into your hand. Then shuffle your library.",
+  "type_line": "Snow Artifact",
+  "oracle_text": "({S} can be paid with one mana from a snow source.)\nWhen Arcum's Astrolabe enters the battlefield, draw a card.\n{1}, {T}: Add one mana of any color.",
   "colors": [
 
   ],
@@ -37,22 +37,35 @@
   "keywords": [
 
   ],
+  "produced_mana": [
+    "B",
+    "G",
+    "R",
+    "U",
+    "W"
+  ],
   "legalities": {
     "standard": "not_legal",
     "future": "not_legal",
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
-    "modern": "legal",
-    "legacy": "legal",
+    "explorer": "not_legal",
+    "modern": "banned",
+    "legacy": "banned",
     "pauper": "banned",
     "vintage": "legal",
-    "penny": "legal",
+    "penny": "not_legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "paper",
@@ -61,56 +74,63 @@
   "reserved": false,
   "foil": true,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
   "oversized": false,
   "promo": false,
-  "reprint": true,
+  "reprint": false,
   "variation": false,
-  "set": "2xm",
-  "set_name": "Double Masters",
-  "set_type": "masters",
-  "set_uri": "https://api.scryfall.com/sets/372dafe8-b5d1-4b81-998f-3ae96b59498a",
-  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3A2xm&unique=prints",
-  "scryfall_set_uri": "https://scryfall.com/sets/2xm?utm_source=api",
-  "rulings_uri": "https://api.scryfall.com/cards/551c0a45-9515-4e51-84e5-79703832a661/rulings",
-  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A8fcf50cd-e6d0-4516-850f-d42ee75dcc3a&unique=prints",
-  "collector_number": "255",
+  "set_id": "d7efccd6-55bc-4fb8-9138-e72577510a99",
+  "set": "mh1",
+  "set_name": "Modern Horizons",
+  "set_type": "draft_innovation",
+  "set_uri": "https://api.scryfall.com/sets/d7efccd6-55bc-4fb8-9138-e72577510a99",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Amh1&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/mh1?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/c2462fdf-a594-47d0-8e10-b55901e350d9/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Aec463bde-dadf-4044-8e41-71338fd4d62f&unique=prints",
+  "collector_number": "220",
   "digital": false,
   "rarity": "common",
-  "flavor_text": "\"I use maps to find out where explorers have already been. Then I go the other way.\"\n—Javad Nasrin, Ondu relic hunter",
+  "flavor_text": "Though the Time of Ice has ended, its relics still slumber in New Argive.",
   "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
-  "artist": "Franz Vohwinkel",
+  "artist": "Igor Kieryluk",
   "artist_ids": [
-    "3a243c17-3baa-4b53-9599-645311cd7d3d"
+    "9c3e9d17-509f-485c-9360-46d897ce716b"
   ],
-  "illustration_id": "031d068b-7591-47fd-87cc-4828324efc33",
+  "illustration_id": "19c9015f-c583-45c8-a550-6c7556d85b34",
   "border_color": "black",
   "frame": "2015",
   "full_art": false,
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 185,
+  "edhrec_rank": 4216,
+  "penny_rank": 16,
   "preview": {
-    "source": "Blake Rasmussen",
-    "source_uri": "https://twitter.com/blakepr/status/1285230266231877633",
-    "previewed_at": "2020-07-20"
+    "source": "Game Legends",
+    "source_uri": "https://www.gamelegends.it/301906/magic-the-gathering-modern-horizons-introduzione-alla-nuova-espansione/",
+    "previewed_at": "2019-05-28"
   },
   "prices": {
-    "usd": "1.11",
-    "usd_foil": "1.24",
-    "eur": "0.54",
-    "eur_foil": "0.50",
-    "tix": "0.02"
+    "usd": "0.10",
+    "usd_foil": "2.45",
+    "usd_etched": null,
+    "eur": "0.17",
+    "eur_foil": "2.49",
+    "tix": "0.03"
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=489928",
-    "tcgplayer_decks": "https://decks.tcgplayer.com/magic/deck/search?contains=Expedition+Map&page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Expedition+Map",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Expedition+Map"
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=464169&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DArcum%2527s%2BAstrolabe",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DArcum%2527s%2BAstrolabe",
+    "edhrec": "https://edhrec.com/route/?cc=Arcum%27s+Astrolabe"
   },
   "purchase_uris": {
-    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=218259&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Expedition+Map&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
-    "cardhoarder": "https://www.cardhoarder.com/cards/82544?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F191281%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Arcum%27s+Astrolabe&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/72812?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }
 }

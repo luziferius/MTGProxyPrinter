@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -17,13 +17,13 @@ import math
 from pathlib import Path
 
 from PyQt5.QtCore import QObject, QMarginsF, QSizeF, pyqtSlot as Slot, QPersistentModelIndex
-from PyQt5.QtGui import QPainter, QPdfWriter, QPageLayout
+from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.ui.page_renderer import PageScene, RenderMode
+from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
 logger = get_logger(__name__)
@@ -31,7 +31,7 @@ del get_logger
 
 __all__ = [
     "export_pdf",
-    "create_qprinter",
+    "create_printer",
     "Renderer",
 ]
 
@@ -47,30 +47,26 @@ def export_pdf(document: Document, file_path: str, parent: QObject = None):
         logger.info(f"Creating PDF ({document_index+1}/{total_documents}) with up to {pages_to_print} pages.")
         printer = PDFPrinter(document, file_path, parent, document_index, pages_to_print)
         printer.print_document()
-    document.store_image_usage()
 
 
-def create_qprinter(document: Document) -> QPrinter:
-    printer = QPrinter(QPrinter.HighResolution)
-    page_width = document.page_layout.page_width
-    page_height = document.page_layout.page_height
-    if page_width > page_height:
-        logger.debug(f"Document width ({page_width}mm) > height ({page_height}mm): Printing in landscape mode.")
-        printer.setPageOrientation(QPageLayout.Landscape)
-        # Swap width and height. Setting Landscape mode causes Qt to swap these values internally again,
-        # resulting in correct values.
-        page_size = QSizeF(page_height, page_width)
-    else:
-        page_size = QSizeF(page_width, page_height)
-    printer.setPageSizeMM(page_size)
-    printer.setResolution(mtg_proxy_printer.units_and_sizes.DPI.magnitude)
+def create_printer(renderer: "Renderer") -> QPrinter:
+    printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+    layout = renderer.document.page_layout
+    page_layout = layout.to_page_layout(renderer.render_mode)
+    if not printer.setPageLayout(page_layout):
+        logger.error(
+            f"Setting page layout failed! "
+            f"Layout: page_size={page_layout.pageSize().size(QPageSize.Unit.Millimeter)}, "
+            f"orientation={page_layout.orientation()}, "
+            f"margins={layout.margin_left, layout.margin_top, layout.margin_right, layout.margin_bottom}")
+    # magnitude returns a float by default, so round to int to avoid a TypeError
+    printer.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
     # Disable duplex printing by default
     printer.setDoubleSidedPrinting(False)
-    printer.setDuplex(QPrinter.DuplexNone)
-    printer.setOutputFormat(QPrinter.NativeFormat)
-    # Setting both the margins to zero and FullPage to True is important for full page printing without downscaling
-    printer.setFullPage(True)
-    printer.setPageMargins(0, 0, 0, 0, QPrinter.Millimeter)
+    printer.setDuplex(QPrinter.DuplexMode.DuplexNone)
+    printer.setOutputFormat(QPrinter.OutputFormat.NativeFormat)
+    if RenderMode.IMPLICIT_MARGINS not in renderer.render_mode:
+        printer.setFullPage(True)
     return printer
 
 
@@ -89,8 +85,12 @@ class PDFPrinter(QPdfWriter):
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
-        self.setResolution(mtg_proxy_printer.units_and_sizes.DPI.magnitude)
-        self.setPageSizeMM(QSizeF(document.page_layout.page_width, document.page_layout.page_height))
+        # magnitude returns a float by default, so round to int to avoid a TypeError
+        self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
+        self.setPageSize(QPageSize(
+            QSizeF(document.page_layout.page_width, document.page_layout.page_height),
+            QPageSize.Unit.Millimeter
+        ))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
@@ -110,8 +110,7 @@ class PDFPrinter(QPdfWriter):
 
         for index in range(first_index, last_index):
             logger.debug(f"Rendering page {index+1}/{self.document.rowCount()}")
-            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            self.scene.redraw()
+            self.scene.on_current_page_changed(QPersistentModelIndex(self.document.index(index, 0)))
             self.scene.render(self.painter)
             if index + 1 < last_index:  # Avoid including a trailing, empty page
                 self.newPage()
@@ -124,7 +123,10 @@ class Renderer(QObject):
     def __init__(self, document: Document, parent: QObject = None):
         super(Renderer, self).__init__(parent)
         self.document = document
-        self.scene = PageScene(document, RenderMode.ON_PAPER, self)
+        self.render_mode = RenderMode.ON_PAPER
+        if not settings["printer"].getboolean("borderless-printing"):
+            self.render_mode |= RenderMode.IMPLICIT_MARGINS
+        self.scene = PageScene(document, self.render_mode, self)
 
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
@@ -134,8 +136,7 @@ class Renderer(QObject):
         page_count = self.document.rowCount()
         for index in range(page_count):
             logger.debug(f"Printing page {index+1}/{page_count}")
-            self.scene.selected_page = QPersistentModelIndex(self.document.index(index, 0))
-            self.scene.redraw()
+            self.scene.on_current_page_changed(QPersistentModelIndex(self.document.index(index, 0)))
             self.scene.render(painter)
             if index+1 < page_count:
                 printer.newPage()

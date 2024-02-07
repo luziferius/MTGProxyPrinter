@@ -1,15 +1,17 @@
-# Copyright (C) 2020-2022 Thomas Hess <thomas.hess@udo.edu>
+#!/usr/bin/env python
 
+# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -17,16 +19,18 @@ import argparse
 from pathlib import Path
 import dataclasses
 import sys
+import types
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import mtg_proxy_printer.printing_filter_updater
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.model.carddb
 
 
-
 @dataclasses.dataclass()
 class Namespace:
+    """Mock argparse Namespace used for type hinting."""
     database_path: Path
     card_data: Path
     keep: bool
@@ -51,37 +55,31 @@ to_be_profiled_functions = {
     mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker: [
         "_populate_database",
         "_parse_single_printing",
-    ],
-    mtg_proxy_printer.card_info_downloader: [
         "_insert_set",
         "_insert_card_faces",
-        "_get_card_filter_data",
-        "_insert_card_filters",
+        "_update_card_filters",
         "_clean_unused_data",
         "_insert_card",
-        "_insert_printing",
+        "_handle_printing",
         "_insert_face_name",
-        "_get_set_wackiness_score",
     ],
+    mtg_proxy_printer.card_info_downloader: [
+        "_get_card_filter_data",
+    ]
 }
 
 
 def is_running_with_kernprof() -> bool:
-    """Determine if the script was called using kernprof."""
-    # Implementation detail: On the author’s machine, kernprof not only injects the profiler
-    # with name 'profile" into the globals, but also changes the type of __builtins__ from 'module' to 'dict'…!
-    if isinstance(__builtins__, dict):
-        running_with_kernprof = "profile" in __builtins__.keys()
+    """Determine if the script was called using kernprof. It is, if "profile" is present in the global scope."""
+    try:
+        profile
+    except (AttributeError, NameError):
+        return False
     else:
-        running_with_kernprof = hasattr(__builtins__, "profile")
-    return running_with_kernprof
+        return True
 
 
 def inject_line_profiler():
-    if isinstance(__builtins__, dict):
-        profile = __builtins__["profile"]
-    else:
-        profile = __builtins__.profile
     for module_, function_list in to_be_profiled_functions.items():
         for func_name in function_list:
             try:
@@ -111,7 +109,13 @@ if __name__ == "__main__":
     elif args.keep:
         print("Re-use existing database…")
     cdb = mtg_proxy_printer.model.carddb.CardDatabase(args.database_path)
+    fup = mtg_proxy_printer.printing_filter_updater.PrintingFilterUpdater(cdb)
     cid = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(cdb)
+    # Remove the semaphore protection, because it also checks the QApplication instance to determine if tasks should
+    # start. That does not exist in this context, and thus needs to be removed.
+    cid.import_card_data_from_local_file = types.MethodType(cid.import_card_data_from_local_file.__wrapped__, cid)
+
     print("Starting benchmark…")
-    cid.import_card_data(args.card_data)
+    fup._store_current_printing_filters()
+    cid.import_card_data_from_local_file(args.card_data)
     print("Done")

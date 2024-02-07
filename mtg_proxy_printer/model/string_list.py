@@ -1,15 +1,15 @@
-# Copyright (C) 2021 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -24,6 +24,8 @@ __all__ = [
     "PrettySetListModel",
 ]
 INVALID_INDEX = QModelIndex()
+ItemDataRole = Qt.ItemDataRole
+Orientation = Qt.Orientation
 
 
 class PrettySetListModel(QAbstractListModel):
@@ -37,8 +39,9 @@ class PrettySetListModel(QAbstractListModel):
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> typing.Optional[str]:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+    def headerData(self, section: int, orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) \
+            -> typing.Optional[str]:
+        if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
             return PrettySetListModel.header.get(section)
         return super(PrettySetListModel, self).headerData(section, orientation, role)
@@ -59,6 +62,6 @@ class PrettySetListModel(QAbstractListModel):
             self.set_data[:] = data
             self.endInsertRows()
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Optional[str]:
+    def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Optional[str]:
         if index.isValid():
             return self.set_data[index.row()].data(role)

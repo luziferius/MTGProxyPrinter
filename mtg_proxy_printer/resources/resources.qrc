@@ -1,29 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource prefix="/">
-    <!-- UI files -->
-    <file>ui/about_dialog.ui</file>
-    <file>ui/main_window.ui</file>
-    <file>ui/central_widget/columnar.ui</file>
-    <file>ui/central_widget/grouped.ui</file>
-    <file>ui/central_widget/tabbed_vertical.ui</file>
-
-    <file>ui/add_card_widget/horizontal.ui</file>
-    <file>ui/add_card_widget/vertical.ui</file>
-
-    <file>ui/settings_window/format_printing_filter.ui</file>
-    <file>ui/settings_window/general_printing_filter.ui</file>
-    <file>ui/settings_window/settings_window.ui</file>
-
-    <file>ui/deck_import_wizard/load_list_page.ui</file>
-    <file>ui/deck_import_wizard/select_deck_parser_page.ui</file>
-    <file>ui/deck_import_wizard/parser_result_page.ui</file>
-
-    <file>ui/cache_cleanup_wizard/filter_setup_page.ui</file>
-    <file>ui/cache_cleanup_wizard/card_filter_page.ui</file>
-    <file>ui/cache_cleanup_wizard/summary_page.ui</file>
-    <file>ui/page_config_widget.ui</file>
-    <file>ui/page_config_dialog.ui</file>
-
     <!-- Changelog -->
     <file alias="changelog.md">../../doc/changelog.md</file>
     <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
@@ -61,8 +37,10 @@
     <file>icons/breeze/actions/16/go-next.svg</file>
     <file>icons/breeze/actions/16/go-previous.svg</file>
     <file>icons/breeze/actions/16/help-contents.svg</file>
+    <file>icons/breeze/actions/16/list-add.svg</file>
     <file>icons/breeze/actions/16/shuffle.svg</file>
     <file>icons/breeze/actions/16/viewpdf.svg</file>
+    
     <!-- 22x22 -->
     <file>icons/breeze/actions/22/application-exit.svg</file>
     <file>icons/breeze/actions/22/configure.svg</file>
@@ -90,8 +68,10 @@
     <file>icons/breeze/actions/22/go-next.svg</file>
     <file>icons/breeze/actions/22/go-previous.svg</file>
     <file>icons/breeze/actions/22/help-contents.svg</file>
+    <file>icons/breeze/actions/22/list-add.svg</file>
     <file>icons/breeze/actions/22/shuffle.svg</file>
     <file>icons/breeze/actions/22/viewpdf.svg</file>
+    
     <!-- 24x24 -->
     <file>icons/breeze/actions/24/application-exit.svg</file>
     <file>icons/breeze/actions/24/configure.svg</file>
@@ -119,8 +99,10 @@
     <file>icons/breeze/actions/24/go-next.svg</file>
     <file>icons/breeze/actions/24/go-previous.svg</file>
     <file>icons/breeze/actions/24/help-contents.svg</file>
+    <file>icons/breeze/actions/24/list-add.svg</file>
     <file>icons/breeze/actions/24/shuffle.svg</file>
     <file>icons/breeze/actions/24/viewpdf.svg</file>
+    
     <!-- 32x32, not all icons are available at this resolution! -->
     <file>icons/breeze/actions/32/application-exit.svg</file>
     <file>icons/breeze/actions/32/configure.svg</file>

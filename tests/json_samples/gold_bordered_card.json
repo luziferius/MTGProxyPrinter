@@ -16,12 +16,12 @@
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104"
+    "small": "https://cards.scryfall.io/small/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
+    "normal": "https://cards.scryfall.io/normal/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
+    "large": "https://cards.scryfall.io/large/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
+    "png": "https://cards.scryfall.io/png/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.png?1562904104",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/2/a/2afb04a3-2940-4860-a4be-223aca0bac4b.jpg?1562904104"
   },
   "mana_cost": "{2}{U}{U}",
   "cmc": 4.0,
@@ -42,27 +42,37 @@
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "not_legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
     "penny": "not_legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "legal"
+    "premodern": "legal",
+    "predh": "legal"
   },
   "games": [
-
+    "paper"
   ],
   "reserved": false,
   "foil": false,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
   "oversized": false,
   "promo": false,
   "reprint": true,
   "variation": false,
+  "set_id": "8b791ead-c9b5-42fa-9ffb-43f178af5ac8",
   "set": "wc97",
   "set_name": "World Championship Decks 1997",
   "set_type": "memorabilia",
@@ -86,22 +96,22 @@
   "textless": false,
   "booster": false,
   "story_spotlight": false,
-  "edhrec_rank": 10915,
+  "edhrec_rank": 13817,
   "prices": {
-    "usd": "0.21",
+    "usd": "0.29",
     "usd_foil": null,
-    "eur": null,
+    "usd_etched": null,
+    "eur": "0.20",
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Abduction&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Abduction&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Abduction",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Abduction"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAbduction",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAbduction",
+    "edhrec": "https://edhrec.com/route/?cc=Abduction"
   },
   "purchase_uris": {
-    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=162446&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F162446%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Abduction&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Abduction&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

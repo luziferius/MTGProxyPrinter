@@ -1,22 +1,25 @@
-# Copyright (C) 2018-2022 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import pathlib
+import platform
+import typing
 
-from PyQt5.QtCore import QFile, QUrl, QObject
-from PyQt5.QtWidgets import QLabel
+from PyQt5.QtCore import QFile, QUrl, QObject, QSize
+from PyQt5.QtWidgets import QLabel, QWizard, QWidget
+from PyQt5.QtGui import QIcon
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
 
@@ -30,8 +33,9 @@ __all__ = [
     "HAS_COMPILED_RESOURCES",
     "BlockedSignals",
     "set_url_label",
-    "inherits_from_ui_file_with_name",
+    "load_ui_from_file",
     "format_size",
+    "WizardBase",
 ]
 
 try:
@@ -79,35 +83,19 @@ def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
 
 def load_ui_from_file(name: str):
     """
-    Returns a tuple from uic.loadUiType(), loading the ui file with the given name.
-    :param name:
-    :return:
+    Returns the Ui class type from uic.loadUiType(), loading the ui file with the given name.
+
+    :param name:Path to the UI file
+    :return: class implementing the requested Ui
+    :raises FileNotFoundError: If the given ui file does not exist
     """
     file_path = f"{RESOURCE_PATH_PREFIX}/ui/{name}.ui"
-    ui_file = QFile(file_path)
-    if not ui_file.exists():
+    if not QFile.exists(file_path):
         error_message = f"UI file not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    try:
-        ui_file.open(QFile.ReadOnly)
-        base_type = uic.loadUiType(ui_file, from_imports=True)
-    finally:
-        ui_file.close()
+    base_type, _ = uic.loadUiType(file_path, from_imports=True)
     return base_type
-
-
-"""
-This renamed function is supposed to be used during class definition to make the intention clear.
-Usage example:
-
-class SomeWidget(*inherits_from_ui_file_with_name("SomeWidgetUiFileName")):
-    def __init__(self, parent):
-        super(SomeWidget, self).__init__(parent)
-        self.setupUi(self)
-
-"""
-inherits_from_ui_file_with_name = load_ui_from_file
 
 
 def format_size(size: float) -> str:
@@ -116,3 +104,46 @@ def format_size(size: float) -> str:
             return f"{size:3.2f} {unit}"
         size /= 1024
     return f"{size:.2f} YiB"
+
+
+class WizardBase(QWizard):
+    """Base class for wizards based on QWizard"""
+    BUTTON_ICONS: typing.Dict[QWizard.WizardButton, str] = {}
+
+    def __init__(self, window_size: QSize, parent: QWidget, flags):
+        super().__init__(parent, flags)
+        if platform.system() == "Windows":
+            # Avoid Aero style on Windows, which does not support dark mode
+            target_style = QWizard.WizardStyle.ModernStyle
+            logger.debug(f"Creating a QWizard on Windows, explicitly setting style to {target_style}")
+            self.setWizardStyle(target_style)
+        self._set_default_size(window_size)
+        self._setup_dialog_button_icons()
+
+    def _set_default_size(self, size: QSize):
+        new_width = size.width()
+        new_height = size.height()
+        if (parent := self.parent()) is not None:
+            parent_pos = parent.pos()
+            available_space = self.screen().availableGeometry()
+            new_width = min(available_space.width(), new_width)
+            new_height = min(available_space.height(), new_height)
+            # Clamp the window position to the screen so that it avoids
+            # positioning the window decoration above the screen border.
+            target_x = max(0, min(
+                available_space.x()+available_space.width()-new_width,
+                parent_pos.x() + (parent.width() - new_width)//2))
+            target_y = max(0, min(  # This excludes the window decoration title bar
+                available_space.y()+available_space.height()-new_height,
+                parent_pos.y() + (parent.height() - new_height)//2))
+            style = self.style()
+            target_y += style.pixelMetric(style.PixelMetric.PM_TitleBarHeight)
+            self.setGeometry(target_x, target_y, new_width, new_height)
+        else:
+            self.resize(new_width, new_height)
+
+    def _setup_dialog_button_icons(self):
+        for role, icon in self.BUTTON_ICONS.items():
+            button = self.button(role)
+            if button.icon().isNull():
+                button.setIcon(QIcon.fromTheme(icon))
