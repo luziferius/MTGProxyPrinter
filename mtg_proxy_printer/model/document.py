@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ import sys
 import textwrap
 import typing
 
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal,\
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt, pyqtSlot as Slot, pyqtSignal as Signal, \
     QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
@@ -32,7 +32,7 @@ from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import AnyCardType, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_loader import DocumentLoader, DocumentSaveFormat, PageLayoutSettings, \
-    CardType
+    CardType, migrate_database
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.logger import get_logger
 
@@ -58,6 +58,10 @@ class DocumentColumns(enum.IntEnum):
 
 INVALID_INDEX = QModelIndex()
 ActionStack = typing.Deque[DocumentAction]
+AnyIndex = typing.Union[QModelIndex, QPersistentModelIndex]
+ItemDataRole = Qt.ItemDataRole
+Orientation = Qt.Orientation
+ItemFlag = Qt.ItemFlag
 
 
 class Document(QAbstractItemModel):
@@ -95,7 +99,7 @@ class Document(QAbstractItemModel):
         self.save_file_path: typing.Optional[pathlib.Path] = None
         self.card_db = card_db
         self.image_db = image_db
-        self.loader = DocumentLoader(card_db, image_db, self)
+        self.loader = DocumentLoader(self)
         self.loader.loading_state_changed.connect(self.loading_state_changed)
         self.loader.load_requested.connect(self.apply)
         self.pages: PageList = [first_page := Page()]
@@ -160,19 +164,20 @@ class Document(QAbstractItemModel):
 
     def headerData(
             self, section: typing.Union[int, PageColumns],
-            orientation: Qt.Orientation, role: int = Qt.DisplayRole) -> str:
-        if orientation == Qt.Horizontal:
-            if role == Qt.DisplayRole:
+            orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
+        if orientation == Orientation.Horizontal:
+            if role == ItemDataRole.DisplayRole:
                 return Document.page_header.get(section)
-            elif role == Qt.ToolTipRole and section in self.EDITABLE_COLUMNS:
+            elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
         return super(Document, self).headerData(section, orientation, role)
 
-    def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
+    def rowCount(self, parent: AnyIndex = INVALID_INDEX) -> int:
         """
         If parent is valid index, i.e. points to a page, returns the number of cards in that page.
         Otherwise, returns the number of pages.
         """
+        parent = self._to_index(parent)
         if isinstance(parent.internalPointer(), CardContainer):
             return 0  # child rowCount of a Card instance. Always zero.
         if parent.isValid():
@@ -180,7 +185,8 @@ class Document(QAbstractItemModel):
         else:
             return len(self.pages)  # rowCount of an invalid index. Number of pages in the document.
 
-    def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
+    def columnCount(self, parent: AnyIndex = INVALID_INDEX) -> int:
+        parent = self._to_index(parent)
         if isinstance(parent.internalPointer(), CardContainer):
             return 0  # child columnCount of a Card instance. Always zero.
         elif parent.isValid():
@@ -188,24 +194,25 @@ class Document(QAbstractItemModel):
         else:
             return len(DocumentColumns)  # columnCount of an invalid index.
 
-    def parent(self, child: QModelIndex) -> QModelIndex:
-        data: typing.Union[Page, CardContainer] = child.internalPointer()
+    def parent(self, child: AnyIndex) -> QModelIndex:
+        data: typing.Union[Page, CardContainer] = self._to_index(child).internalPointer()
         if isinstance(data, CardContainer):
             page = data.parent
             page_index = self.find_page_list_index(page)
             return self.createIndex(page_index, 0, page)
         return INVALID_INDEX  # Pages have no parent
 
-    def index(self, row: int, column: int, parent: QModelIndex = INVALID_INDEX) -> QModelIndex:
-        data = parent.internalPointer()
-        if isinstance(data, list):
+    def index(self, row: int, column: int, parent: AnyIndex = INVALID_INDEX) -> QModelIndex:
+        data = self._to_index(parent).internalPointer()
+        if isinstance(data, Page):
             card_container = data[row]
             return self.createIndex(row, column, card_container)
         else:
             page = self.pages[row]
             return self.createIndex(row, column, page)
 
-    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+    def data(self, index: AnyIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
+        index = self._to_index(index)
         if not index.isValid():
             return None
         if isinstance(index.internalPointer(), CardContainer):  # Card
@@ -213,16 +220,20 @@ class Document(QAbstractItemModel):
         else:  # Page
             return self._data_page(index, role)
 
-    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
+    def flags(self, index: AnyIndex) -> Qt.ItemFlags:
+        index = self._to_index(index)
         data = index.internalPointer()
         flags = super(Document, self).flags(index)
         if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
-            flags |= Qt.ItemIsEditable
+            flags |= ItemFlag.ItemIsEditable
         return flags
 
-    def setData(self, index: QModelIndex, value: typing.Any, role: int = Qt.EditRole) -> bool:
+    def setData(self, index: AnyIndex, value: typing.Any, role: ItemDataRole = ItemDataRole.EditRole) -> bool:
+        index = self._to_index(index)
         data = index.internalPointer()
-        if isinstance(data, CardContainer) and role == Qt.EditRole and index.column() in self.EDITABLE_COLUMNS:
+        if isinstance(data, CardContainer) \
+                and role == ItemDataRole.EditRole \
+                and index.column() in self.EDITABLE_COLUMNS:
             logger.debug(f"Setting model data for column {index.column()} to {value}")
             card = data.card
             column = index.column()
@@ -243,6 +254,10 @@ class Document(QAbstractItemModel):
             return self._request_replacement_card(index, card_data)
         return False
 
+    @staticmethod
+    def _to_index(other: QPersistentModelIndex) -> QModelIndex:
+        return QModelIndex(other) if isinstance(other, QPersistentModelIndex) else other
+
     def _request_replacement_card(self, index: QModelIndex, card_data: CardIdentificationData):
         if result := self.card_db.get_cards_from_data(card_data):
             logger.debug(f"Requesting replacement for card '{card_data.name}' in set {card_data.set_code}")
@@ -254,22 +269,22 @@ class Document(QAbstractItemModel):
             return True
         return False
 
-    def _data_page(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+    def _data_page(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a page of Cards."""
         if index.row() >= self.rowCount():
             logger.error(f"Invalid index: {index.row()=}, {index.column()=}, {self.rowCount()=}, {index.isValid()=}")
             return None
         item = self.pages[index.row()]
-        if role == Qt.DisplayRole:
+        if role == ItemDataRole.DisplayRole:
             return self._get_page_preview(item)
-        elif role == Qt.ToolTipRole:
+        elif role == ItemDataRole.ToolTipRole:
             return f"Page {index.row()+1}/{self.rowCount()}"
-        elif role == Qt.EditRole:
+        elif role == ItemDataRole.EditRole:
             return item
-        elif role == Qt.UserRole:
+        elif role == ItemDataRole.UserRole:
             return item.page_type()
 
-    def _data_card(self, index: QModelIndex, role: int = Qt.DisplayRole) -> typing.Any:
+    def _data_card(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         """Returns the requested data for an index pointing to a single Card."""
         parent = index.parent()
         if index.row() >= self.rowCount(parent) or index.column() >= self.columnCount(parent):
@@ -278,9 +293,9 @@ class Document(QAbstractItemModel):
                 f"{self.rowCount(index.parent())=}, {index.isValid()=}")
             return None
         card: AnyCardType = index.internalPointer().card
-        if role == Qt.ItemDataRole.UserRole:
+        if role == ItemDataRole.UserRole:
             return card
-        if role in {Qt.DisplayRole, Qt.EditRole}:
+        if role in {ItemDataRole.DisplayRole, ItemDataRole.EditRole}:
             if index.column() == PageColumns.CardName:
                 return card.name
             elif index.column() == PageColumns.Set:
@@ -292,9 +307,7 @@ class Document(QAbstractItemModel):
             elif index.column() == PageColumns.Image:
                 return card.image_file
             elif index.column() == PageColumns.IsFront:
-                if role == Qt.EditRole:
-                    return card.is_front
-                return "Front" if card.is_front else "Back"
+                return card.is_front if role == ItemDataRole.EditRole else ("Front" if card.is_front else "Back")
 
     @staticmethod
     def _get_page_preview(page: Page):
@@ -306,7 +319,7 @@ class Document(QAbstractItemModel):
     @Slot(QModelIndex)
     def on_missing_image_obtained(self, index: QModelIndex):
         column_index = index.siblingAtColumn(PageColumns.Image)
-        self.dataChanged.emit(column_index, column_index, [Qt.DisplayRole])
+        self.dataChanged.emit(column_index, column_index, [ItemDataRole.DisplayRole])
 
     def save_as(self, path: pathlib.Path):
         """Save the document at the given path, overwriting any previously stored save path."""
@@ -334,7 +347,7 @@ class Document(QAbstractItemModel):
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
             db.execute("BEGIN TRANSACTION")
-            _migrate_database(db)
+            migrate_database(db, self.page_layout)
             db.execute("DELETE FROM Card")
             db.executemany(
                 "INSERT INTO Card (page, slot, scryfall_id, is_front, type) VALUES (?, ?, ?, ?, ?)",
@@ -389,27 +402,6 @@ class Document(QAbstractItemModel):
             for card_number in range(len(page)):
                 yield self.index(card_number, 0, page_index)
 
-    def store_image_usage(self):
-        """
-        Increments the usage count of all cards used in the document and updates the last use timestamps.
-        Should be called after a successful PDF export and direct printing.
-        """
-        logger.info("Updating image usage for all cards in the document.")
-        data = set(itertools.chain.from_iterable(
-            map(self._get_page_content_as_scryfall_ids, self.pages)
-        ))
-        self.card_db.begin_transaction()
-        self.card_db.db.executemany(
-            r"""
-            INSERT INTO LastImageUseTimestamps (scryfall_id, is_front)
-              VALUES (?, ?)
-              ON CONFLICT (scryfall_id, is_front)
-              DO UPDATE SET usage_count = usage_count + 1, last_use_date = CURRENT_TIMESTAMP;
-            """,
-            data
-        )
-        self.card_db.commit()
-
     def has_missing_images(self) -> bool:
         try:
             next(self.get_missing_image_cards())
@@ -434,105 +426,13 @@ class Document(QAbstractItemModel):
     def _get_page_content_as_scryfall_ids(page: Page) -> typing.Iterable[typing.Tuple[str, bool]]:
         return ((container.card.scryfall_id, container.card.is_front) for container in page)
 
+    def get_all_card_keys_in_document(self) -> typing.Set[typing.Tuple[str, bool]]:
+        return set(itertools.chain.from_iterable(
+            map(self._get_page_content_as_scryfall_ids, self.pages)
+        ))
+
     def recreate_page_index_cache(self):
         self.page_index_cache.clear()
         self.page_index_cache.update(
             (id(page), index) for index, page in enumerate(self.pages)
         )
-
-
-def _migrate_database(db):
-    if db.execute("PRAGMA user_version\n").fetchone()[0] == 2:
-        for statement in [
-            "ALTER TABLE Card RENAME TO Card_old",
-            textwrap.dedent("""\
-            CREATE TABLE Card (
-              page INTEGER NOT NULL CHECK (page > 0),
-              slot INTEGER NOT NULL CHECK (slot > 0),
-              is_front INTEGER NOT NULL CHECK (is_front IN (0, 1)) DEFAULT 1,
-              scryfall_id TEXT NOT NULL,
-              PRIMARY KEY(page, slot)
-            ) WITHOUT ROWID"""),
-            textwrap.dedent("""\
-            INSERT INTO Card (page, slot, scryfall_id, is_front)
-                SELECT page, slot, scryfall_id, 1 AS is_front
-                FROM Card_old"""),
-            "DROP TABLE Card_old",
-            "PRAGMA user_version = 3",
-        ]:
-            db.execute(f"{statement};\n")
-    if db.execute("PRAGMA user_version\n").fetchone()[0] == 3:
-        db.execute(textwrap.dedent("""\
-        CREATE TABLE DocumentSettings (
-          rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
-          page_height INTEGER NOT NULL CHECK (page_height > 0),
-          page_width INTEGER NOT NULL CHECK (page_width > 0),
-          margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
-          margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
-          margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
-          margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
-          image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
-          image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
-          draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (0, 1))
-        );"""))
-        db.execute(f"PRAGMA user_version = 4")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 4:
-        for statement in [
-            "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
-            textwrap.dedent("""\
-            CREATE TABLE DocumentSettings (
-              rowid INTEGER NOT NULL PRIMARY KEY CHECK (rowid == 1),
-              page_height INTEGER NOT NULL CHECK (page_height > 0),
-              page_width INTEGER NOT NULL CHECK (page_width > 0),
-              margin_top INTEGER NOT NULL CHECK (margin_top >= 0),
-              margin_bottom INTEGER NOT NULL CHECK (margin_bottom >= 0),
-              margin_left INTEGER NOT NULL CHECK (margin_left >= 0),
-              margin_right INTEGER NOT NULL CHECK (margin_right >= 0),
-              image_spacing_horizontal INTEGER NOT NULL CHECK (image_spacing_horizontal >= 0),
-              image_spacing_vertical INTEGER NOT NULL CHECK (image_spacing_vertical >= 0),
-              draw_cut_markers INTEGER NOT NULL CHECK (draw_cut_markers in (TRUE, FALSE)),
-              draw_sharp_corners INTEGER NOT NULL CHECK (draw_sharp_corners in (TRUE, FALSE))
-            )"""),
-            "INSERT INTO DocumentSettings SELECT *, FALSE FROM DocumentSettings_Old",
-            "DROP TABLE DocumentSettings_Old",
-            "PRAGMA user_version = 5",
-        ]:
-            db.execute(f"{statement}\n")
-    if db.execute("PRAGMA user_version").fetchone()[0] == 5:
-        for statement in [
-                "ALTER TABLE Card RENAME TO Card_old",
-                textwrap.dedent("""\
-                CREATE TABLE Card (
-                  page INTEGER NOT NULL CHECK (page > 0),
-                  slot INTEGER NOT NULL CHECK (slot > 0),
-                  is_front INTEGER NOT NULL CHECK (is_front IN (TRUE, FALSE)),
-                  scryfall_id TEXT NOT NULL,
-                  type TEXT NOT NULL CHECK (type <> ''),
-                  PRIMARY KEY(page, slot)
-                ) WITHOUT ROWID;"""),
-                textwrap.dedent("""\
-                INSERT INTO Card (page, slot, scryfall_id, is_front, type)
-                    SELECT page, slot, scryfall_id, 1 AS is_front, 'r' AS type
-                    FROM Card_old"""),
-                "DROP TABLE Card_old",
-                "ALTER TABLE DocumentSettings RENAME TO DocumentSettings_Old",
-                textwrap.dedent("""\
-                CREATE TABLE DocumentSettings (
-                  key TEXT NOT NULL UNIQUE CHECK (key <> ''),
-                  value INTEGER NOT NULL CHECK (value >= 0)
-                )"""),
-                textwrap.dedent("""INSERT INTO DocumentSettings (key, value) 
-                  SELECT 'page_height', "page_height" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'page_width', "page_width" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_top', "margin_top" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_bottom', "margin_bottom" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_left', "margin_left" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'margin_right', "margin_right" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'image_spacing_horizontal', "image_spacing_horizontal" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'image_spacing_vertical', "image_spacing_vertical" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'draw_cut_markers', "draw_cut_markers" FROM DocumentSettings_Old UNION ALL
-                  SELECT 'draw_sharp_corners', "draw_sharp_corners" FROM DocumentSettings_Old
-                  """),
-                "DROP TABLE DocumentSettings_Old",
-                "PRAGMA user_version = 6",]:
-            db.execute(f"{statement}\n")

@@ -1,15 +1,15 @@
 # Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -331,15 +331,11 @@ def _migrate_20_to_21(db: sqlite3.Connection):
 def _migrate_21_to_22(db: sqlite3.Connection):
     # Full edit procedure not needed here, because the table has no indices or foreign keys associated
 
-    class CardDatabaseMock(typing.NamedTuple):
-        db: sqlite3.Connection
-
-        def commit_transaction(self):
-            self.db.commit()
-
     # Import locally to break a cyclic dependency
     import mtg_proxy_printer.card_info_downloader
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabaseMock(db))
+    from mtg_proxy_printer.model.carddb import CardDatabase
+    # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
+    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabase(":memory:"))
     updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
     data = []
     for id_, timestamp in updates:
@@ -513,7 +509,8 @@ def _migrate_26_to_27(db: sqlite3.Connection):
         textwrap.dedent("""\
         CREATE VIEW VisiblePrintings AS
           SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
-                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
+                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id,
+                 release_date, wackiness_score
           FROM Card
           JOIN Printing USING (card_id)
           JOIN MTGSet   USING (set_id)
@@ -664,6 +661,27 @@ def _migrate_30_to_31(db: sqlite3.Connection):
         db.execute(statement)
 
 
+def _migrate_31_to_32(db: sqlite3.Connection):
+    for statement in [
+        textwrap.dedent("""\
+        CREATE VIEW CurrentlyEnabledSetCodeFilters AS
+          -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
+          SELECT DISTINCT set_code
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN PrintingDisplayFilter USING (printing_id)
+          JOIN DisplayFilters USING (filter_id)
+          WHERE filter_name = 'hidden-sets'
+        ;
+        """),
+        "CREATE INDEX LookupPrintingBySet ON Printing(set_id);\n",
+        "COMMIT\n",
+        "PRAGMA journal_mode = 'wal';\n",
+        "BEGIN TRANSACTION\n",
+    ]:
+        db.execute(statement)
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -689,6 +707,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (28, _migrate_28_to_29),
     (29, _migrate_29_to_30),
     (30, _migrate_30_to_31),
+    (31, _migrate_31_to_32),
 )
 
 
@@ -727,7 +746,7 @@ def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationSc
     for source_version, migration_script in migration_scripts:
         if db.execute("PRAGMA user_version\n").fetchone()[0] == source_version:
             logger.info(f"Running migration task for schema version {source_version}")
-            db.execute("BEGIN TRANSACTION\n")
+            db.execute("BEGIN IMMEDIATE TRANSACTION\n")
             migration_script(db)
             db.execute(f"PRAGMA user_version = {source_version + 1}\n")
             db.commit()

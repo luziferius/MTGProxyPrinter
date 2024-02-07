@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -71,7 +71,7 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/"
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
-    #MTGTop8
+    # MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345"
 
@@ -197,7 +197,7 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield MTGAZoneDownloader, "https://mtgazone.com/"
     yield MTGAZoneDownloader, "https://mtgazone.com/orzhov-phyrexians-march-of-the-machine-theorycraft"
 
-    #MTGTop8
+    # MTGTop8
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&f=BL"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?d=251345&"
@@ -315,7 +315,7 @@ def test_decklists_net_post_process(deck_list: bytes, expected: str):
     """
     downloader = MtgDecksNetDownloader()
     stream = MagicMock()
-    stream.read.return_value=deck_list
+    stream.read.return_value = deck_list
     with patch("mtg_proxy_printer.decklist_downloader.MtgDecksNetDownloader.read_from_url") as reader:
         reader.return_value = stream, MagicMock()
         result = downloader.download("")

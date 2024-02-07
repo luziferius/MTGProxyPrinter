@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -38,6 +38,9 @@ from tests.helpers import fill_card_database_with_json_cards
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
+Key = Qt.Key
+MouseButton = Qt.MouseButton
+WizardButton = QWizard.WizardButton
 
 
 def create_and_show_wizard(qtbot: QtBot, card_db: CardDatabase, cards: StringList) -> DeckImportWizard:
@@ -87,9 +90,9 @@ def test_remove_basic_lands_button_works(
     list_model = wizard.summary_page.card_list
     assert_that(list_model.rowCount(), is_(3))
     with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["decklist-import"], removal_settings):
-        wizard.button(wizard.WizardButton.CustomButton1).click()
+        wizard.button(WizardButton.CustomButton1).click()
     assert_that(
-        wizard.button(wizard.WizardButton.CustomButton1).isEnabled(),
+        wizard.button(WizardButton.CustomButton1).isEnabled(),
         is_(False)
     )
     card_names_in_model: StringList = [
@@ -177,7 +180,7 @@ def _select_generic_re_parser(qtbot: QtBot, wizard: DeckImportWizard, re: str, i
     assert_that(page.selected_parser, is_(instance_of(GenericRegularExpressionDeckParser)))
     assert_that(wizard.field("custom_re"), is_(equal_to(re)))
     assert_that(page.selected_parser.parser.pattern, is_(equal_to(re)))
-    assert_that(wizard.button(QWizard.NextButton).isEnabled(), is_(is_identifying_re))
+    assert_that(wizard.button(WizardButton.NextButton).isEnabled(), is_(is_identifying_re))
 
 
 def _input_deck_list(qtbot: QtBot, wizard: DeckImportWizard, deck_list: str, *, enable_print_guessing: bool = False):
@@ -207,8 +210,8 @@ def _validate_model_content(list_model):
         "language": equal_to("en"),
         "is_front": is_(True),
         "image_uri": equal_to(
-            "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-            "0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+            "https://cards.scryfall.io/png/front/0/0/"
+            "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
         "image_file": is_(none()),
     }))
 
@@ -235,22 +238,22 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
         table_view.rowViewportPosition(0) + 5
     )
     # Select cell
-    QTest.mouseClick(table_view.viewport(), Qt.LeftButton, pos=cell_position)
+    QTest.mouseClick(table_view.viewport(), MouseButton.LeftButton, pos=cell_position)
     # Enter edit mode
-    QTest.mouseDClick(table_view.viewport(), Qt.LeftButton, pos=cell_position)
+    QTest.mouseDClick(table_view.viewport(), MouseButton.LeftButton, pos=cell_position)
     # Now get the editor and select a different set to get another printing
     editor: QComboBox = table_view.viewport().childAt(cell_position)
     assert_that(editor, is_(instance_of(QComboBox)))
     # Select the second entry in the editor’s item list
-    QTest.keyClick(editor, Qt.Key_Down)
+    QTest.keyClick(editor, Key.Key_Down)
     with qtbot.wait_signal(table_view.model().dataChanged):
         # Wait until the editor saved the data in the model
-        QTest.keyClick(editor, Qt.Key_Enter)
+        QTest.keyClick(editor, Key.Key_Enter)
     # Now accept the dialog and capture the emitted deck
     deck_receiver = CardListReceiver()
     wizard.request_action.connect(deck_receiver.on_import_action_received)
     with qtbot.wait_signal(wizard.request_action, timeout=1000):
-        QTest.keyClick(wizard, Qt.Key_Enter)
+        QTest.keyClick(wizard, Key.Key_Enter)
     assert_that(deck_receiver.deck, all_of(
         is_(not_none()),
         has_length(2),
@@ -267,8 +270,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "language": equal_to("en"),
             "is_front": is_(True),
             "image_uri": equal_to(
-                "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-                "0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
+                "https://cards.scryfall.io/png/front/0/0/"
+                "0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979"),
             "image_file": is_(none()),
         }),
         has_properties({
@@ -282,8 +285,8 @@ def test_selecting_different_printing_works(qtbot: QtBot, card_db: CardDatabase)
             "language": equal_to("en"),
             "is_front": is_(True),
             "image_uri": equal_to(
-                "https://c1.scryfall.com/file/scryfall-cards/png/front/"
-                "a/8/a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
+                "https://cards.scryfall.io/png/front/a/8/"
+                "a8a64329-09fc-4e0d-b7d1-378635f2801a.png?1619396979"),
             "image_file": is_(none()),
         }),
     ))
@@ -302,7 +305,7 @@ def test_complete_button_disabled_if_zero_cards_identified(qtbot: QtBot, card_db
     table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
-    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
+    assert_that(wizard.button(WizardButton.FinishButton).isEnabled(), is_(False))
 
 
 def test_complete_button_enabled_if_one_card_identified(qtbot: QtBot, card_db: CardDatabase):
@@ -318,7 +321,7 @@ def test_complete_button_enabled_if_one_card_identified(qtbot: QtBot, card_db: C
     table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
-    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
+    assert_that(wizard.button(WizardButton.FinishButton).isEnabled(), is_(True))
 
 
 def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: QtBot, card_db: CardDatabase):
@@ -336,7 +339,7 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
     table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
-    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
+    assert_that(wizard.button(WizardButton.FinishButton).isEnabled(), is_(False))
 
     # Transition from invalid to valid state
     _move_wizard_backward(qtbot, wizard)
@@ -347,7 +350,7 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
     _move_wizard_forward(qtbot, wizard)
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
-    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
+    assert_that(wizard.button(WizardButton.FinishButton).isEnabled(), is_(True))
 
     # Transition from valid to invalid state
     _move_wizard_backward(qtbot, wizard)
@@ -358,7 +361,7 @@ def test_complete_state_updates_when_deck_list_updated_to_contain_cards(qtbot: Q
     _move_wizard_forward(qtbot, wizard)
     assert_that(table_view.model().rowCount(), is_(0), "Setup failed: Parsed deck model must be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(False))
-    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(False))
+    assert_that(wizard.button(WizardButton.FinishButton).isEnabled(), is_(False))
 
 
 def test_custom_re_parser_works(qtbot: QtBot, card_db: CardDatabase):
@@ -374,7 +377,7 @@ def test_custom_re_parser_works(qtbot: QtBot, card_db: CardDatabase):
     table_view: QTableView = wizard.summary_page.ui.parsed_cards_table
     assert_that(table_view.model().rowCount(), is_(1), "Setup failed: Parsed deck model must not be empty!")
     assert_that(wizard.summary_page.isComplete(), is_(True))
-    assert_that(wizard.button(QWizard.FinishButton).isEnabled(), is_(True))
+    assert_that(wizard.button(WizardButton.FinishButton).isEnabled(), is_(True))
 
 
 def generate_test_cases_for_test_custom_re_parser_accepts_valid_re():

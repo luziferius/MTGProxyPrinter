@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel, QThreadPool
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -33,12 +33,16 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.update_checker import UpdateChecker
 import mtg_proxy_printer.card_info_downloader
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
+import mtg_proxy_printer.progress_meter
+from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -61,6 +65,7 @@ class Application(QApplication):
             argv.append("-platform")
             argv.append("windows:darkmode=1")
         super(Application, self).__init__(argv)
+        self.should_run = True
         self._setup_icons()
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
@@ -71,6 +76,9 @@ class Application(QApplication):
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
+        runner = PrintingFilterUpdater(self.card_db)
+        runner.connect_main_window_signals(self.main_window)
+        QThreadPool.globalInstance().start(runner)
         self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
@@ -98,10 +106,10 @@ class Application(QApplication):
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-        QTimer.singleShot(100, self.update_checker.check_for_updates)
+        self.update_checker.check_for_updates()
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
-            self.card_info_downloader.request_import_from_file.emit(args.card_data)
+            self.card_info_downloader.import_from_file(args.card_data)
         elif not self.card_db.has_data():
             logger.info("Card database is empty. Will ask the user, if they choose to download the data now.")
             self.main_window.ask_user_about_empty_database()
@@ -139,10 +147,10 @@ class Application(QApplication):
         settings_window.document_settings_updated.connect(document.apply)
         settings_window.preferred_language_changed.connect(
             main_window.ui.central_widget.ui.add_card_widget.on_settings_preferred_language_changed)
-        settings_window.requested_card_download.connect(card_info_downloader.request_download_to_file)
-        settings_window.long_running_process_begins.connect(main_window.show_progress_bar)
-        settings_window.process_updated.connect(main_window.progress_bar.setValue)
-        settings_window.process_finished.connect(main_window.hide_progress_bar)
+        settings_window.requested_card_download.connect(card_info_downloader.download_to_file)
+        settings_window.long_running_process_begins.connect(main_window.progress_bars.begin_outer_progress)
+        settings_window.process_updated.connect(main_window.progress_bars.set_outer_progress)
+        settings_window.process_finished.connect(main_window.progress_bars.end_outer_progress)
         settings_window.error_occurred.connect(main_window.on_error_occurred)
         main_window.ui.action_show_settings.triggered.connect(settings_window.show)
         return settings_window
@@ -152,7 +160,7 @@ class Application(QApplication):
             card_db: mtg_proxy_printer.model.carddb.CardDatabase,
             image_db: mtg_proxy_printer.model.imagedb.ImageDatabase) -> mtg_proxy_printer.model.document.Document:
         document = mtg_proxy_printer.model.document.Document(card_db, image_db, self)
-        document.request_fill_image_for_action.connect(image_db.download_worker.fill_document_action_image)
+        document.request_fill_image_for_action.connect(image_db.fill_document_action_image)
         image_db.request_action.connect(document.apply)
         image_db.download_worker.missing_image_obtained.connect(document.on_missing_image_obtained)
         return document
@@ -207,7 +215,10 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
-        self.update_checker.stop_background_worker()
+        self.should_run = False
         self.closeAllWindows()
+        MeteredSeekableHTTPFile.close_all_instances()
+        Runnable.cancel_all_runners()
         logger.debug("All windows closed. Calling quit()")
+        QThreadPool.globalInstance().waitForDone()
         super().quit()

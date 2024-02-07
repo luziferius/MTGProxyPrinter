@@ -1,11 +1,11 @@
 #!/bin/bash
-
+ENVIRONMENT_NAME="venv"
 # Generate an application bundle using cx_Freeze for Linux.
 
-if [ ! -e "venv" ]; then
+if [ ! -e "${ENVIRONMENT_NAME}" ]; then
   ./create_development_environment.sh
 fi
 
-source venv/bin/activate
+source "${ENVIRONMENT_NAME}/bin/activate"
 tox -e py3-package-linux
 

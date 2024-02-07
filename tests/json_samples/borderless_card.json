@@ -108,23 +108,23 @@
   "promo_types": [
     "boosterfun"
   ],
-  "edhrec_rank": 4164,
+  "edhrec_rank": 4006,
   "prices": {
-    "usd": "0.84",
-    "usd_foil": "1.22",
+    "usd": "0.37",
+    "usd_foil": "0.67",
     "usd_etched": null,
     "eur": null,
     "eur_foil": null,
-    "tix": "0.65"
+    "tix": "0.30"
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=600994",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Absorb&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Absorb&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=600994&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAbsorb",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAbsorb",
     "edhrec": "https://edhrec.com/route/?cc=Absorb"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/product/458026?page=1&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F458026%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Absorb&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards/108115?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -18,7 +18,6 @@ Tests the KnownCardImageModel used internally by the CacheCleanupWizard.
 """
 
 import pathlib
-import tempfile
 import typing
 
 from PyQt5.QtCore import Qt
@@ -42,21 +41,18 @@ class Environment(typing.NamedTuple):
     back_image: pathlib.Path
 
 
-@pytest.fixture()
-def environment(qtbot, card_db: CardDatabase):
+@pytest.fixture
+def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
     fill_card_database_with_json_card(qtbot, card_db, "english_double_faced_card")
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = pathlib.Path(temp_dir)
-        image_db = ImageDatabase(temp_path)
-        front_image = image_db.db_path/"lowres_front"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
-        back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
-        front_image.parent.mkdir(parents=True)
-        back_image.parent.mkdir(parents=True)
-        image_db.blank_image.save(str(front_image), "PNG")
-        image_db.blank_image.save(str(back_image), "PNG")
-        yield Environment(card_db, image_db, front_image, back_image)
-        logger.info("Stopping ImageDatabase background downloader thread.")
-        image_db.quit_background_thread()
+    image_db = ImageDatabase(tmp_path)
+    front_image = image_db.db_path/"lowres_front"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
+    back_image = image_db.db_path/"lowres_back"/"b3"/"b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png"
+    front_image.parent.mkdir(parents=True)
+    back_image.parent.mkdir(parents=True)
+    image_db.blank_image.save(str(front_image), "PNG")
+    image_db.blank_image.save(str(back_image), "PNG")
+    yield Environment(card_db, image_db, front_image, back_image)
+    image_db.__dict__.clear()
 
 
 @pytest.mark.parametrize("is_hidden", [True, False])
@@ -69,6 +65,6 @@ def test_add_row_identifies_low_resolution_images(environment: Environment, is_f
     image_under_test = disk_cache[0] if disk_cache[0].is_front == is_front else disk_cache[1]
     model.add_row(card, image_under_test, is_hidden)
     assert_that(
-        model.index(0, KnownCardColumns.HasHighResolution).data(Qt.EditRole),
+        model.index(0, KnownCardColumns.HasHighResolution).data(Qt.ItemDataRole.EditRole),
         is_(False)
     )

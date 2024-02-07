@@ -14,27 +14,76 @@
    <string>General printing filters</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="5" column="0">
-    <widget class="QCheckBox" name="hide_gold_bordered_cards">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders. Many also have printed signatures of the involved players in the text box.&lt;/p&gt;&lt;p&gt;These are not tournament legal.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   <item row="5" column="3">
+    <widget class="QPushButton" name="view_digital_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <property name="text">
-      <string>Hide gold-bordered cards</string>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QCheckBox" name="hide_cards_depicting_racism">
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   <item row="2" column="1">
+    <widget class="QPushButton" name="view_cards_without_images">
+     <property name="enabled">
+      <bool>false</bool>
      </property>
-     <property name="text">
-      <string>Hide cards depicting racism</string>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
-   <item row="7" column="1">
+   <item row="6" column="3">
+    <widget class="QPushButton" name="view_reversible_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QCheckBox" name="hide_borderless_cards">
+     <property name="toolTip">
+      <string>Hide cards without a defined, solid-color border.
+Those require higher cutting precision to get right.</string>
+     </property>
+     <property name="text">
+      <string>Hide borderless cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="2">
+    <widget class="QCheckBox" name="hide_token">
+     <property name="text">
+      <string>Hide Token cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
     <widget class="QPushButton" name="view_funny_cards">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -46,12 +95,64 @@
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
-   <item row="7" column="0">
+   <item row="6" column="2">
+    <widget class="QCheckBox" name="hide_reversible_cards">
+     <property name="toolTip">
+      <string>Some single-sided cards are re-printed as two-sided, reversible cards in some Secret Lair releases.
+This filter hides those.</string>
+     </property>
+     <property name="text">
+      <string>Hide reversible cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="3">
+    <widget class="QPushButton" name="view_token">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QPushButton" name="view_oversized_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="2">
+    <widget class="QCheckBox" name="hide_digital_cards">
+     <property name="toolTip">
+      <string>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</string>
+     </property>
+     <property name="text">
+      <string>Hide digital cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
     <widget class="QCheckBox" name="hide_funny_cards">
      <property name="toolTip">
       <string>“Funny” cards, not legal in any constructed format.
@@ -62,6 +163,64 @@ and all silver-bordered cards.</string>
      </property>
      <property name="text">
       <string>Hide “funny” cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QCheckBox" name="hide_oversized_cards">
+     <property name="toolTip">
+      <string>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
+     </property>
+     <property name="text">
+      <string>Hide oversized cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QCheckBox" name="hide_gold_bordered_cards">
+     <property name="toolTip">
+      <string>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+Many also have printed signatures of the involved players in the text box.
+
+These are not tournament legal</string>
+     </property>
+     <property name="text">
+      <string>Hide gold-bordered cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QCheckBox" name="hide_white_bordered_cards">
+     <property name="text">
+      <string>Hide white-bordered cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QCheckBox" name="hide_cards_depicting_racism">
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide cards banned for depicting racism.&lt;/p&gt;&lt;p&gt;Background:&lt;/p&gt;&lt;p&gt;Some cards were banned by Wizards of the Coast, because they depict references to controversial real-world events, religion or contain combinations of card effect, name and artwork that, when viewed together, depict racism. These cards are banned in all sanctioned tournament formats and several community formats like Commander, Oathbreaker and others.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Hide cards depicting racism</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QPushButton" name="view_cards_depicting_racism">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
@@ -77,144 +236,6 @@ English placeholder images with an overlay text stating
      </property>
     </widget>
    </item>
-   <item row="4" column="1">
-    <widget class="QPushButton" name="view_white_bordered_cards">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
-     </property>
-     <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="2">
-    <widget class="QCheckBox" name="hide_token">
-     <property name="text">
-      <string>Hide Token cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="1">
-    <widget class="QPushButton" name="view_cards_depicting_racism">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
-     </property>
-     <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="1" column="3">
-    <widget class="QPushButton" name="view_token">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
-     </property>
-     <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="2">
-    <widget class="QCheckBox" name="hide_digital_cards">
-     <property name="toolTip">
-      <string>Hide cards and printings that are only available on digital platforms. This includes all kinds of digital printings.</string>
-     </property>
-     <property name="text">
-      <string>Hide digital cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QCheckBox" name="hide_oversized_cards">
-     <property name="toolTip">
-      <string>These cards are larger than regular Magic cards and can’t be included in decks.
-Includes Archenemy schemes, Planechase planes and
-oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</string>
-     </property>
-     <property name="text">
-      <string>Hide oversized cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="QCheckBox" name="hide_white_bordered_cards">
-     <property name="text">
-      <string>Hide white-bordered cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="3">
-    <widget class="QPushButton" name="view_digital_cards">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
-     </property>
-     <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="1">
-    <widget class="QPushButton" name="view_cards_without_images">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
-    <widget class="QPushButton" name="view_oversized_cards">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
-     </property>
-     <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
    <item row="5" column="1">
     <widget class="QPushButton" name="view_gold_bordered_cards">
      <property name="sizePolicy">
@@ -227,15 +248,23 @@ oversized commander creature or Planeswalker cards included in some pre-construc
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
-   <item row="6" column="0">
-    <widget class="QCheckBox" name="hide_borderless_cards">
-     <property name="text">
-      <string>Hide borderless cards</string>
+   <item row="4" column="1">
+    <widget class="QPushButton" name="view_white_bordered_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
@@ -251,36 +280,28 @@ oversized commander creature or Planeswalker cards included in some pre-construc
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="globe"/>
      </property>
     </widget>
    </item>
-   <item row="3" column="2">
-    <widget class="QCheckBox" name="hide_reversible_cards">
-     <property name="toolTip">
-      <string>Some single-sided cards are re-printed as two-sided, reversible cards in some Secret Lair releases.
-This filter hides those.</string>
-     </property>
-     <property name="text">
-      <string>Hide reversible cards</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="3">
-    <widget class="QPushButton" name="view_reversible_cards">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
+   <item row="7" column="1">
+    <widget class="QPushButton" name="view_extended_art_cards">
      <property name="toolTip">
       <string>View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
-      <iconset theme="globe">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QCheckBox" name="hide_extended_art_cards">
+     <property name="toolTip">
+      <string>Hide cards with artwork extending to the left and right card border.
+Similar to borderless cards, these require higher precision during the cutting process.</string>
+     </property>
+     <property name="text">
+      <string>Hide extended art cards</string>
      </property>
     </widget>
    </item>

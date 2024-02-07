@@ -1,15 +1,15 @@
 # Copyright (C) 2020, 2021 Thomas Hess <thomas.hess@udo.edu>
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -43,7 +43,6 @@ except ModuleNotFoundError:
     Ui_CentralWidget_Columnar = load_ui_from_file("central_widget/columnar")
     Ui_CentralWidget_Grouped = load_ui_from_file("central_widget/grouped")
     Ui_CentralWidget_Tabbed = load_ui_from_file("central_widget/tabbed_vertical")
-
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -87,7 +86,7 @@ class CentralWidget(QWidget):
         self.document = document
         self.card_db = card_db
         self.image_db = image_db
-        self.obtain_card_image.connect(image_db.download_worker.fill_document_action_image)
+        self.obtain_card_image.connect(image_db.fill_document_action_image)  # TODO: Why here?
         document.rowsAboutToBeRemoved.connect(self.on_document_rows_about_to_be_removed)
         document.loading_state_changed.connect(self.select_first_page)
         document.current_page_changed.connect(self.on_current_page_changed)
@@ -102,7 +101,7 @@ class CentralWidget(QWidget):
 
     def _setup_add_card_widget(self, card_db: CardDatabase, image_db: ImageDatabase):
         self.ui.add_card_widget.set_card_database(card_db)
-        self.ui.add_card_widget.request_action.connect(image_db.download_worker.fill_document_action_image)
+        self.ui.add_card_widget.request_action.connect(image_db.fill_document_action_image)
 
     def _setup_document_view(self, document: Document):
         self.ui.document_view.setModel(document)
@@ -279,7 +278,7 @@ class CentralWidget(QWidget):
         if not loading_in_progress:
             logger.info("Loading finished. Selecting first page.")
             new_selection = self.document.index(0, 0)
-            self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.Select)
+            self.ui.document_view.selectionModel().select(new_selection, QItemSelectionModel.SelectionFlag.Select)
             self.document.on_ui_selects_new_page(new_selection)
 
 

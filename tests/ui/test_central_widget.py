@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -21,6 +21,7 @@ from pytestqt.qtbot import QtBot
 from PyQt5.QtCore import Qt
 from hamcrest import *
 
+from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
@@ -33,15 +34,19 @@ def test_deleting_last_card_of_current_page_does_not_raise_exception(qtbot: QtBo
     document = main_window.document
     central_widget = main_window.ui.central_widget
     main_window.document.apply(ActionAddCard(card, 9))
+    assert_that(
+        document.pages,
+        only_contains(instance_of(Page))
+    )
     central_widget.ui.page_card_table_view.setCurrentIndex(document.index(8, 0, document.index(0, 0)))
-    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.LeftButton)
+    qtbot.mouseClick(central_widget.ui.delete_selected_images_button, Qt.MouseButton.LeftButton)
 
 
 @pytest.mark.parametrize("name, expected", [
     ('"Quoted"', 'Quoted'),
     ('New\nline', 'Newline'),
-    ('Ends with dot and space. ','Ends with dot and space'),
-    ('Ends with dot and space .','Ends with dot and space'),
+    ('Ends with dot and space. ', 'Ends with dot and space'),
+    ('Ends with dot and space .', 'Ends with dot and space'),
     ('\tTab\t', 'Tab')
 ])
 def test__get_default_image_save_path(qtbot, main_window, name: str, expected: str):

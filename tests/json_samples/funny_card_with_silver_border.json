@@ -16,12 +16,12 @@
   "highres_image": true,
   "image_status": "highres_scan",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441"
+    "small": "https://cards.scryfall.io/small/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
+    "normal": "https://cards.scryfall.io/normal/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
+    "large": "https://cards.scryfall.io/large/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
+    "png": "https://cards.scryfall.io/png/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.png?1562487441",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/0/4/0464a507-20e5-42d5-8aca-12504a869f21.jpg?1562487441"
   },
   "mana_cost": "{B}",
   "cmc": 1.0,
@@ -42,16 +42,22 @@
     "historic": "not_legal",
     "gladiator": "not_legal",
     "pioneer": "not_legal",
+    "explorer": "not_legal",
     "modern": "not_legal",
     "legacy": "not_legal",
     "pauper": "not_legal",
     "vintage": "not_legal",
     "penny": "not_legal",
     "commander": "not_legal",
+    "oathbreaker": "not_legal",
     "brawl": "not_legal",
+    "historicbrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "not_legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "paper"
@@ -59,10 +65,14 @@
   "reserved": false,
   "foil": false,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
   "oversized": false,
   "promo": false,
   "reprint": false,
   "variation": false,
+  "set_id": "4c8bc76a-05a5-43db-aaf0-34deb347b871",
   "set": "unh",
   "set_name": "Unhinged",
   "set_type": "funny",
@@ -87,21 +97,21 @@
   "booster": true,
   "story_spotlight": false,
   "prices": {
-    "usd": "0.41",
+    "usd": "0.34",
     "usd_foil": null,
-    "eur": "0.20",
+    "usd_etched": null,
+    "eur": "0.24",
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
-    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=74284",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Aesthetic+Consultation&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Aesthetic+Consultation&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Aesthetic+Consultation",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Aesthetic+Consultation"
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=74284&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAesthetic%2BConsultation",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAesthetic%2BConsultation",
+    "edhrec": "https://edhrec.com/route/?cc=Aesthetic+Consultation"
   },
   "purchase_uris": {
-    "tcgplayer": "https://shop.tcgplayer.com/product/productsearch?id=37818&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F37818%3Fpage%3D1",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Aesthetic+Consultation&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Aesthetic+Consultation&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

@@ -1,11 +1,102 @@
 # Changelog
 
-# Next version (in development)
+# Version 0.27.0 (2024-02-04)  <a name="v0_27_0"></a>
 
 ## New features
 
-- Support for direct downloads from additional card list database websites:
-    - Import cube lists from [cubecobra.com](cubecobra.com)
+- Draw bleeds (thick outlines) with configurable width around cards. (The default width of zero disables them.)
+    - Combine with the "Draw 90° corners" option to also fill the remaining triangles.
+    - The outline color is sampled from the card images, so that it works with any border color, 
+      and somewhat plausible with extended-art or full-art cards.
+
+## Changed features
+
+- The placeholder image used when image downloads fail is now transparent instead of pure white,
+  which improves rendering when a dark application theme is used.
+
+## Fixed issues
+
+- Fixed broken image download for double faced cards.
+
+# Version 0.26.1 (2024-01-27)   <a name="v0_26_1"></a>
+
+## Changed features
+
+- Lifted restriction on the allowed actions while the card data update runs. It is now possible to print documents,
+  export PDFs, and edit the application settings.
+- Improved behavior when editing document settings decreases the maximum amount of cards that fit on each page.
+  Now, the overflowing cards are moved in a way that preserves the card order within the document.
+
+## Fixed issues
+
+- Fixed broken rendering/printing when entering large row or column spacings in the document settings.
+- Fixed crash when adding multiple copies of a card distributes those cards on the current and next page.
+- Fixed multiple crashes that may have occurred in 0.26.0 when trying to run multiple actions in parallel,
+  like exporting a PDF, while updating the printing filter settings runs simultaneously.
+- Fixed crash in the application update checker, that occurred if the connected network redirects to a login page, 
+  like public Wi-Fi hotspots. The update check is skipped completely in that case.
+
+# Version 0.26.0 (2023-12-19)  <a name="v0_26_0"></a>
+
+## New features
+
+- Added option to disable borderless printing to improve printer compatibility with printer drivers that refuse to
+  accept borderless printing, and force-downscale prints in borderless mode.  
+    - If your printer driver refuses to print to-size in borderless mode,
+      you can now use an alternative mode, which explicitly sets the page margins in the printer configuration.
+    - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
+      printers physical printing area.
+- Added card filters for
+    - cards banned in Oathbreaker
+    - cards with extended art
+    - Add ability to hide specific sets you don't like.
+        - Filters are entered using set codes (e.g. `LEA DBL SLD`), as listed by Scryfall.
+        - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
+          tab in the Settings window.
+        - All cards in all entered sets are hidden.
+        - Please note that Scryfall uses a different set code for promotional printings and tokens,
+          typically prefixing the set code of the main set they belong with P/T, respectively. If you want to hide those
+          too, you have to explicitly do that. Also note that promotional cards have a lower priority
+          when the app has to choose a printing on its own, so hiding them is generally not required.
+- Added support for direct downloads of cube lists from [cubecobra.com](https://cubecobra.com).
+    - The application cannot fetch custom cards from there.
+
+## Changed features
+
+- Centered printing: The printing area is now centered on the page, and no longer depends on the margins.
+    - The margins thus no longer affect the location of the printing area, and are only used to determine how many
+      images fit on a page.
+    - Note that only the printing area itself is centered. Printings are still added from top-left to bottom-right
+      within the printing area.
+    - Entering very large top/left margins may shift the printing area off-center.
+- The default page margins for new installations are now set to 5mm in all directions.
+- Reworded the image spacing document settings. These are now named "Row spacing" and "Column spacing", which should
+  be easier to understand.
+- Improved progress reporting for longer running actions: Importing deck lists and loading documents
+  now also shows an overall progress, in addition to the download progress for individual card images. 
+- The card data update no longer locks the entire user interface. It is now possible to continue working while the
+  update runs in the background.
+    - For now, some actions (printing, PDF export, deleting downloaded card images via the in-app wizard, 
+      and accessing the application settings) remain unavailable during the update.
+      (This restriction may be lifted in future versions. If you manage to circumvent the lock, expect crashes.)
+
+## Fixed issues
+
+- Fixed broken card filter for [reversible cards](https://scryfall.com/search?q=is:reversible). The filter now works as expected.
+- Fixed crash when loading a document that was saved with a numerical document title, for example "`1`"
+- Fixed default suggested PDF file name when exporting a loaded document as a PDF. 
+  The export dialog now suggests a valid file name with correct file extension.
+- Fixed crash when the system color palette changes (for example by enabling/disabling
+  system-wide application dark mode), while a document title is set or printing page numbers is enabled.
+- Fixed crashes when trying to download a deck list fails. An error message is shown, if deck list downloads fail.
+- Fixed potential crash when quitting the application while it is loading a document.
+
+## Optimizations
+
+- Improved performance of the image cache cleanup wizard with a lot of downloaded images:
+  Reduced loading time of the second wizard page from potentially multiple minutes to a second or two.
+- Reduced CPU usage and disk writes during card data updates.
+- Minor performance optimizations in the document loader and deck list importer.
 
 # Version 0.25.0 (2023-07-21)  <a name="v0_25_0"></a>
 

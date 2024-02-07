@@ -14,12 +14,12 @@
   "highres_image": false,
   "image_status": "lowres",
   "image_uris": {
-    "small": "https://c1.scryfall.com/file/scryfall-cards/small/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
-    "normal": "https://c1.scryfall.com/file/scryfall-cards/normal/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
-    "large": "https://c1.scryfall.com/file/scryfall-cards/large/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
-    "png": "https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200",
-    "art_crop": "https://c1.scryfall.com/file/scryfall-cards/art_crop/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
-    "border_crop": "https://c1.scryfall.com/file/scryfall-cards/border_crop/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200"
+    "small": "https://cards.scryfall.io/small/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
+    "normal": "https://cards.scryfall.io/normal/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
+    "large": "https://cards.scryfall.io/large/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
+    "png": "https://cards.scryfall.io/png/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.png?1540283200",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/0/0/00031562-3818-49f9-b45c-ab28a521284c.jpg?1540283200"
   },
   "mana_cost": "{1}{R} // {X}{B}{B}",
   "cmc": 4.0,
@@ -52,6 +52,7 @@
     {
       "object": "card_face",
       "name": "Ribbons",
+      "flavor_name": "",
       "printed_name": "띠",
       "mana_cost": "{X}{B}{B}",
       "type_line": "Sorcery",
@@ -68,16 +69,22 @@
     "historic": "legal",
     "gladiator": "legal",
     "pioneer": "legal",
+    "explorer": "legal",
     "modern": "legal",
     "legacy": "legal",
     "pauper": "not_legal",
     "vintage": "legal",
     "penny": "legal",
     "commander": "legal",
+    "oathbreaker": "legal",
     "brawl": "not_legal",
+    "historicbrawl": "legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
     "duel": "legal",
     "oldschool": "not_legal",
-    "premodern": "not_legal"
+    "premodern": "not_legal",
+    "predh": "not_legal"
   },
   "games": [
     "paper",
@@ -86,10 +93,15 @@
   "reserved": false,
   "foil": true,
   "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
   "oversized": false,
   "promo": false,
   "reprint": false,
   "variation": false,
+  "set_id": "02d1c536-68bc-4208-9b65-7741ef1f9da8",
   "set": "akh",
   "set_name": "Amonkhet",
   "set_type": "expansion",
@@ -109,27 +121,29 @@
   "illustration_id": "4acf8e25-40bb-484f-972f-eae19863a877",
   "border_color": "black",
   "frame": "2015",
+  "security_stamp": "oval",
   "full_art": false,
   "textless": false,
   "booster": true,
   "story_spotlight": false,
-  "edhrec_rank": 17265,
+  "edhrec_rank": 4285,
+  "penny_rank": 1174,
   "prices": {
     "usd": null,
     "usd_foil": null,
+    "usd_etched": null,
     "eur": null,
     "eur_foil": null,
     "tix": null
   },
   "related_uris": {
     "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=428539&printed=true",
-    "tcgplayer_infinite_articles": "https://infinite.tcgplayer.com/search?contentMode=article&game=magic&partner=scryfall&q=Cut+%2F%2F+Ribbons&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "tcgplayer_infinite_decks": "https://infinite.tcgplayer.com/search?contentMode=deck&game=magic&partner=scryfall&q=Cut+%2F%2F+Ribbons&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
-    "edhrec": "https://edhrec.com/route/?cc=Cut+%2F%2F+Ribbons",
-    "mtgtop8": "https://mtgtop8.com/search?MD_check=1&SB_check=1&cards=Cut+%2F%2F+Ribbons"
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DCut%2B%252F%252F%2BRibbons",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DCut%2B%252F%252F%2BRibbons",
+    "edhrec": "https://edhrec.com/route/?cc=Cut+%2F%2F+Ribbons"
   },
   "purchase_uris": {
-    "tcgplayer": "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Cut+%2F%2F+Ribbons&utm_campaign=affiliate&utm_medium=api&utm_source=scryfall",
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DCut%2B%252F%252F%2BRibbons%26view%3Dgrid",
     "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Cut+%2F%2F+Ribbons&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
     "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Cut+%2F%2F+Ribbons&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
   }

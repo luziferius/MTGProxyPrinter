@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -19,6 +19,7 @@ import typing
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_page import Page
+from mtg_proxy_printer.model.carddb import AnyCardType
 from ._interface import DocumentAction, IllegalStateError, Self
 from mtg_proxy_printer.logger import get_logger
 
@@ -28,33 +29,40 @@ __all__ = [
     "ActionNewPage",
     "ActionRemovePage",
 ]
+ContentType = typing.List[typing.Iterable[AnyCardType]]
 
 
 class ActionNewPage(DocumentAction):
     """
-    Insert count new, empty pages at the given index. Positions are clamped into the range [0, page_count].
-    If given None for the position, append the page to the document end instead. Page count defaults to 1.
+    Insert count new, empty pages at the given index or at the document end.
+    If the position is None, append the page at the end.
+    Otherwise, insert it at the given index, pushing the page at and after the position behind the new pages.
+    Positions are clamped into the range [0, page_count].
+
+    Page count defaults to 1.
+    If content is given, it must be a list of length equal to count, and contain List[AnyCardType].
+    Individual lists in content may be empty. If content is given, the cards in content are placed on the
+    created pages in the order given.
     """
 
-    COMPARISON_ATTRIBUTES = ["position", "count"]
+    COMPARISON_ATTRIBUTES = ["position", "count", "content",]
 
-    def __init__(self, position: int = None, *, count: int = 1):
+    def __init__(self, position: int = None, *, count: int = 1, content: ContentType = None):
+        if count <= 0:
+            raise ValueError(f"Invalid page count given: {count}")
         self.position = position
         self.count = count
+        self.content: ContentType = content or [[]] * count
+        self._validate_content_does_not_create_mixed_pages(self.content)
+        if len(self.content) != count:
+            raise ValueError("Page content given, but not enough to supply all pages")
 
     def apply(self, document: "Document") -> Self:
         self.position = document.rowCount() if self.position is None \
             else max(0, min(self.position, document.rowCount()))
         document.beginInsertRows(document.INVALID_INDEX, self.position, self.position+self.count-1)
-        if self.position == document.rowCount():
-            for _ in range(self.count):
-                new_page = Page()
-                document.pages.append(new_page)
-                document.page_index_cache[id(new_page)] = len(document.pages) - 1
-        else:
-            for _ in range(self.count):
-                document.pages.insert(self.position, Page())
-            document.recreate_page_index_cache()
+        document.pages[self.position:self.position] = map(Page, self.content)
+        document.recreate_page_index_cache()
         document.endInsertRows()
         return super().apply(document)
 
@@ -70,6 +78,13 @@ class ActionNewPage(DocumentAction):
             return f"Add page {self.position+1}"
         return f"Add pages {self.position+1}-{self.position+self.count}"
 
+    @staticmethod
+    def _validate_content_does_not_create_mixed_pages(content: ContentType):
+        for index, page in enumerate(content):
+            types_on_page = {card.requested_page_type() for card in page}
+            if len(types_on_page) > 1:
+                raise ValueError(f"Mixed-size content on page {index}. Requested: {types_on_page}, cards: {page}")
+
 
 class ActionRemovePage(DocumentAction):
     """
@@ -83,7 +98,7 @@ class ActionRemovePage(DocumentAction):
         self.position = position
         self.count = count
         self.removed_pages: typing.List[Page] = []
-        self.currently_edited_page = None  # Set, if the currently edited page is removed
+        self.currently_edited_page: typing.Optional[Page] = None  # Set, if the currently edited page is removed
         self.removed_all_pages: bool = False
 
     def apply(self, document: "Document") -> Self:

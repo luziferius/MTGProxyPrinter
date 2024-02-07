@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -20,7 +20,8 @@ from hamcrest import *
 
 from mtg_proxy_printer.progress_meter import ProgressMeter
 
-@pytest.fixture()
+
+@pytest.fixture
 def progress_meter():
     return ProgressMeter(3, "Test Message", MagicMock(), MagicMock(), MagicMock())
 
@@ -34,6 +35,7 @@ def test_error_reported_when_overshooting(progress_meter: ProgressMeter, count, 
         for i in range(count):
             progress_meter.advance(step)
     logger.error.assert_called()
+
 
 @pytest.mark.parametrize("initial_value, step", [
     (0, -1),
@@ -49,7 +51,7 @@ def test_negative_step_to_negative_total_progress_raises_exception(progress_mete
     # Negative step
     (1, -1), (2, -1), (2, -2),
     # Positive step
-    (0, 1),(0, 2), (1, 2),
+    (0, 1), (0, 2), (1, 2),
     # Overshooting works
     (1, 10),
 ])

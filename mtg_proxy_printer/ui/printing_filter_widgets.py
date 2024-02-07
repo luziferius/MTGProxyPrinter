@@ -1,22 +1,21 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
 
-
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
 import configparser
-import functools
 from functools import partial
 from typing import Union, Type, List, Tuple
 
@@ -62,6 +61,9 @@ class AbstractPrintingFilterWidget(QGroupBox):
 
 
 class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
+    """
+    Manages settings for all printing filters that are not related to bans in specific formats
+    """
     def __init__(self, parent: QWidget = None):
         super().__init__(Ui_GeneralPrintingFilter, parent)
         ui = self.ui
@@ -71,6 +73,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         ui.view_white_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:white"))
         ui.view_gold_bordered_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:gold"))
         ui.view_borderless_cards.clicked.connect(partial(self.view_query_on_scryfall, "border:borderless"))
+        ui.view_extended_art_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:extended"))
         ui.view_funny_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:funny"))
         ui.view_token.clicked.connect(partial(self.view_query_on_scryfall, "is:token"))
         ui.view_digital_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:digital"))
@@ -85,6 +88,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_white_bordered_cards, "hide-white-bordered"),
             (ui.hide_gold_bordered_cards, "hide-gold-bordered"),
             (ui.hide_borderless_cards, "hide-borderless"),
+            (ui.hide_extended_art_cards, "hide-extended-art"),
             (ui.hide_funny_cards, "hide-funny-cards"),
             (ui.hide_token, "hide-token"),
             (ui.hide_digital_cards, "hide-digital-cards"),
@@ -94,7 +98,12 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
 
 
 class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
-
+    """
+    Manages printing filters for bans in specific formats. An enabled filter for a given format hides
+    all cards that are banned in that format.
+    """
+    # TODO 1: Refactor to generate the checkbox list and button list from the format list in the settings
+    # TODO 2: Write test that ensures that there is a bijection between settings keys and widgets
     def __init__(self, parent: QWidget = None):
         super().__init__(Ui_FormatPrintingFilter, parent)
         ui = self.ui
@@ -113,6 +122,7 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_banned_in_historic, "hide-banned-in-historic"),
             (ui.hide_banned_in_legacy, "hide-banned-in-legacy"),
             (ui.hide_banned_in_modern, "hide-banned-in-modern"),
+            (ui.hide_banned_in_oathbreaker, "hide-banned-in-oathbreaker"),
             (ui.hide_banned_in_pauper, "hide-banned-in-pauper"),
             (ui.hide_banned_in_penny, "hide-banned-in-penny"),
             (ui.hide_banned_in_pioneer, "hide-banned-in-pioneer"),

@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -34,38 +34,40 @@ from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
 del get_logger
+CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
     def __init__(self, parent: QWidget = None):
         super(PageConfigWidget, self).__init__(parent)
-        self.ui = Ui_PageConfigWidget()
-        self.ui.setupUi(self)
-        self.page_layout = self._setup_page_layout()
+        self.ui = ui = Ui_PageConfigWidget()
+        ui.setupUi(self)
+        self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_page_layout(self) -> PageLayoutSettings:
+    @staticmethod
+    def _setup_page_layout(ui: Ui_PageConfigWidget) -> PageLayoutSettings:
         # Implementation note: The signal connections below will also trigger
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        self.ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
-        self.ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
-        self.ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
-        self.ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
-        self.ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
-        self.ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        self.ui.image_spacing_horizontal.valueChanged[int].connect(
-            partial(setattr, page_layout, "image_spacing_horizontal"))
-        self.ui.image_spacing_vertical.valueChanged[int].connect(partial(setattr, page_layout, "image_spacing_vertical"))
-        self.ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == Qt.Checked))
-        self.ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == Qt.Checked))
-        self.ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == Qt.CheckState.Checked))
-        self.ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
+        ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
+        ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
+        ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
+        ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
+        ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
+        ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
+        ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
+        ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
+        ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
+        ui.draw_cut_markers.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
+        ui.draw_sharp_corners.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_sharp_corners", new == CheckState.Checked))
+        ui.draw_page_numbers.stateChanged.connect(
+            lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
+        ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 
     @Slot()
@@ -133,28 +135,32 @@ class PageConfigWidget(QGroupBox):
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
+        ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
-            (self.ui.page_height, "paper-height-mm"),
-            (self.ui.page_width, "paper-width-mm"),
-            (self.ui.margin_top, "margin-top-mm"),
-            (self.ui.margin_bottom, "margin-bottom-mm"),
-            (self.ui.margin_left, "margin-left-mm"),
-            (self.ui.margin_right, "margin-right-mm"),
-            (self.ui.image_spacing_horizontal, "image-spacing-horizontal-mm"),
-            (self.ui.image_spacing_vertical, "image-spacing-vertical-mm"),
+            (ui.card_bleed, "card-bleed-mm"),
+            (ui.page_height, "paper-height-mm"),
+            (ui.page_width, "paper-width-mm"),
+            (ui.margin_top, "margin-top-mm"),
+            (ui.margin_bottom, "margin-bottom-mm"),
+            (ui.margin_left, "margin-left-mm"),
+            (ui.margin_right, "margin-right-mm"),
+            (ui.row_spacing, "row-spacing-mm"),
+            (ui.column_spacing, "column-spacing-mm"),
         ]
         return widgets_with_settings
 
     def _get_boolean_settings_widgets(self):
+        ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (self.ui.draw_cut_markers, "print-cut-marker"),
-            (self.ui.draw_sharp_corners, "print-sharp-corners"),
-            (self.ui.draw_page_numbers, "print-page-numbers"),
+            (ui.draw_cut_markers, "print-cut-marker"),
+            (ui.draw_sharp_corners, "print-sharp-corners"),
+            (ui.draw_page_numbers, "print-page-numbers"),
         ]
         return widgets_with_settings
 
     def _get_string_settings_widgets(self):
+        ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
-            (self.ui.document_name, "default-document-name")
+            (ui.document_name, "default-document-name")
         ]
         return widgets_with_settings

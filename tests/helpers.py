@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -28,6 +28,7 @@ from pytestqt.qtbot import QtBot
 import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
+from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.units_and_sizes import CardDataType
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
@@ -72,9 +73,10 @@ def setup_settings_for_testing():
 
 def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
+    dw._db = card_db.db  # Explicitly share the in-memory database connection
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
-        card_db.store_current_printing_filters()
-        card_db.db.commit()
+        filter_updater = PrintingFilterUpdater(card_db, card_db.db)
+        filter_updater.run()
         dw.populate_database(data)
 
 

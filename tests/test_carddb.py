@@ -1,19 +1,20 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import itertools
 from pathlib import Path
 import textwrap
 import typing
@@ -23,15 +24,15 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-import mtg_proxy_printer.settings
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card,\
-    MTGSet
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card
 from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation
+from .test_card_info_downloader import TestCaseData
 
 StringList = typing.List[str]
 OptString = typing.Optional[str]
@@ -166,7 +167,7 @@ def test_is_known_language(qtbot, card_db: CardDatabase, language: str, expected
     )
 
 
-@pytest.fixture()
+@pytest.fixture
 def card_db_with_cards(qtbot, card_db: CardDatabase):
     fill_card_database_with_json_cards(
         qtbot, card_db,
@@ -195,6 +196,7 @@ def card_db_with_cards(qtbot, card_db: CardDatabase):
         ],
     )
     yield card_db
+    card_db.__dict__.clear()
 
 
 def generate_test_cases_for_test_translate_card_name():
@@ -291,10 +293,14 @@ def test_cards_used_less_often_then(qtbot, card_db: CardDatabase, usage_count: i
         ],
     )
     document = Document(card_db, MagicMock())
-    document.apply(ActionAddCard(_get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1))
-    document.store_image_usage()
-    document.apply(ActionAddCard(_get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1))
-    document.store_image_usage()
+    document.apply(ActionAddCard(
+        _get_card_from_model(card_db, "e2ef9b74-481b-424b-8e33-f0b910f66370", True), 1)
+    )
+    PrintCountUpdater(document, card_db.db).run()
+    document.apply(ActionAddCard(
+        _get_card_from_model(card_db, "ffa13d4c-6c5e-44bd-859e-38e79d47a916", True), 1)
+    )
+    PrintCountUpdater(document, card_db.db).run()
     # Test
     assert_that(
         result := card_db.cards_used_less_often_then([
@@ -332,49 +338,51 @@ def test_card_is_oversized(qtbot, card_db: CardDatabase, json_name: str, scryfal
 
 
 def generate_test_cases_for_test_get_cards_from_data():
-    yield CardIdentificationData("en", scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe"), [
-        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, False, None),
-    ]
-    yield CardIdentificationData("en", scryfall_id="650722b4-d72b-4745-a1a5-00a34836282b"), [
-        Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, False, None),
-    ]
-    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe"), [
-        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, False, None),
-    ]
-    yield CardIdentificationData(scryfall_id="650722b4-d72b-4745-a1a5-00a34836282b"), [
-        Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, False, None),
-    ]
+    case = TestCaseData("regular_english_card")
+    yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id), [case.as_card(),]
+    yield CardIdentificationData(scryfall_id=case.scryfall_id), [case.as_card(),]
+
+    case = TestCaseData("oversized_card")
+    yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id), [case.as_card(),]
+    yield CardIdentificationData(scryfall_id=case.scryfall_id), [case.as_card(),]
+
     # Tests effect of is_front on double-faced cards
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d"), [
-        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, True, None),
-        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, True, None),
+    case = TestCaseData("english_double_faced_card")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id), [
+        case.as_card(1),
+        case.as_card(2),
     ]
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=True), [
-        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, True, None),
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), [
+        case.as_card(1),
     ]
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), [
-        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, True, None),
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), [
+        case.as_card(2),
     ]
+
     # Tests identification based on oracle_id alone. Also tests highres_image boolean
+    forest_en_1 = TestCaseData("english_basic_Forest")
+    forest_en_2 = TestCaseData("english_basic_Forest_2")
+    forest_de = TestCaseData("german_basic_Forest")
+    forest_es = TestCaseData("spanish_basic_Forest")
     yield CardIdentificationData(oracle_id="b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6"), [
-        Card('Forest', MTGSet('anb', 'Arena Beginner Set'), '112', 'en', '7ef83f4c-d3ff-4905-a16d-f2bae673a5b2', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.png?1597375433', True, False, 0, False, None),
-        Card('Forest', MTGSet('znr', 'Zendikar Rising'), '280', 'en', 'e2ef9b74-481b-424b-8e33-f0b910f66370', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/e/2/e2ef9b74-481b-424b-8e33-f0b910f66370.png?1604202251', True, False, 0, False, None),
-        Card('Wald', MTGSet('znr', 'Zendikar Rising'), '384', 'de', 'cd4cf73d-a408-48f1-9931-54707553c5d5', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/c/d/cd4cf73d-a408-48f1-9931-54707553c5d5.png?1602136077', False, False, 0, False, None),
-        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, False, None),
+        forest_en_1.as_card(),
+        forest_en_2.as_card(),
+        forest_de.as_card(),
+        forest_es.as_card(),
     ]
     # Tests other attribute combinations
     yield CardIdentificationData(name="Bosque"), [
-        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, False, None),
+        forest_es.as_card()
     ]
     yield CardIdentificationData(set_code="anb"), [
-        Card('Forest', MTGSet('anb', 'Arena Beginner Set'), '112', 'en', '7ef83f4c-d3ff-4905-a16d-f2bae673a5b2', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.png?1597375433', True, False, 0, False, None),
+        forest_en_1.as_card()
     ]
     yield CardIdentificationData("de", set_code="znr"), [
-        Card('Wald', MTGSet('znr', 'Zendikar Rising'), '384', 'de', 'cd4cf73d-a408-48f1-9931-54707553c5d5', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/c/d/cd4cf73d-a408-48f1-9931-54707553c5d5.png?1602136077', False, False, 0, False, None),
+       forest_de.as_card()
     ]
     yield CardIdentificationData(set_code="znr", collector_number="280"), [
-        Card('Forest', MTGSet('znr', 'Zendikar Rising'), '280', 'en', 'e2ef9b74-481b-424b-8e33-f0b910f66370', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/e/2/e2ef9b74-481b-424b-8e33-f0b910f66370.png?1604202251', True, False, 0, False, None),
-        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, False, None),
+        forest_en_2.as_card(),
+        forest_es.as_card(),
     ]
     # Empty result set
     yield CardIdentificationData(scryfall_id="invalid"), []
@@ -398,36 +406,34 @@ def test_get_cards_from_data(
 def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
         typing.Generator[typing.Tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
     # Regular card
-    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
-        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, False, None),
+    case = TestCaseData("regular_english_card")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
     # Back side of regular card returns None
-    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=False), \
-        None,
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), None
     # Unknown scryfall_id returns None
-    yield CardIdentificationData(scryfall_id="ueueueue-abcd-1234-5678-abcdefabcdef", is_front=True), \
-        None,
-    # Oversized card
-    yield CardIdentificationData(scryfall_id="650722b4-d72b-4745-a1a5-00a34836282b", is_front=True), \
-        Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, False, None),
-    # German Forest
-    yield CardIdentificationData(scryfall_id="cd4cf73d-a408-48f1-9931-54707553c5d5", is_front=True), \
-        Card('Wald', MTGSet('znr', 'Zendikar Rising'), '384', 'de', 'cd4cf73d-a408-48f1-9931-54707553c5d5', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/c/d/cd4cf73d-a408-48f1-9931-54707553c5d5.png?1602136077', False, False, 0, False, None),
-    # Spanish Forest
-    yield CardIdentificationData(scryfall_id="ffa13d4c-6c5e-44bd-859e-38e79d47a916", is_front=True), \
-        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, False, None),
+    yield CardIdentificationData(scryfall_id="ueueueue-abcd-1234-5678-abcdefabcdef", is_front=True), None
+
+    case = TestCaseData("oversized_card")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
+
+    case = TestCaseData("german_basic_Forest")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
+
+    case = TestCaseData("spanish_basic_Forest")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
+
     # Double-faced with high-res image
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=True), \
-        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, True, None),
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), \
-        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, True, None),
+    case = TestCaseData("english_double_faced_card")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card(1)
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), case.as_card(2)
+
     # Art series card
-    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, True, None),
-    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, True, None),
+    case = TestCaseData("english_double_faced_art_series_card")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card(1)
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), case.as_card(2)
     # Digital card
-    yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
-        Card('Forest', MTGSet('anb', 'Arena Beginner Set'), '112', 'en', '7ef83f4c-d3ff-4905-a16d-f2bae673a5b2', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.png?1597375433', True, False, 0, False, None),
+    case = TestCaseData("english_basic_Forest")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card()
 
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_card_with_scryfall_id())
@@ -497,34 +503,28 @@ def test_get_replacement_card(
 
 
 def generate_test_cases_for_test__translate_card():
-    # Regular card
-    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
-        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, False, None),
-    # Oversized card
-    yield CardIdentificationData(scryfall_id="650722b4-d72b-4745-a1a5-00a34836282b", is_front=True), \
-        Card("Atraxa, Praetors' Voice", MTGSet('oc16', 'Commander 2016 Oversized'), '28', 'en', '650722b4-d72b-4745-a1a5-00a34836282b', True, '7e6b9b59-cd68-4e3c-827b-38833c92d6eb', 'https://c1.scryfall.com/file/scryfall-cards/png/front/6/5/650722b4-d72b-4745-a1a5-00a34836282b.png?1561757296', True, True, 0, False, None),
-    # Translate Forest to German. Also tests is_highres==False
-    yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
-        Card('Wald', MTGSet('znr', 'Zendikar Rising'), '384', 'de', 'cd4cf73d-a408-48f1-9931-54707553c5d5', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/c/d/cd4cf73d-a408-48f1-9931-54707553c5d5.png?1602136077', False, False, 0, False, None),
-    # Translate Forest to Spanish. Also tests is_highres==False
-    yield CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), \
-        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, False, None),
-    # Translate German Forest to Spanish
-    yield CardIdentificationData(scryfall_id="cd4cf73d-a408-48f1-9931-54707553c5d5", is_front=True), \
-        Card('Bosque', MTGSet('znr', 'Zendikar Rising'), '280', 'es', 'ffa13d4c-6c5e-44bd-859e-38e79d47a916', True, 'b34bb2dc-c1af-4d77-b0b3-a0fb342a5fc6', 'https://c1.scryfall.com/file/scryfall-cards/png/front/f/f/ffa13d4c-6c5e-44bd-859e-38e79d47a916.png?1615068408', False, False, 0, False, None),
-    # Double-faced with high-res image
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=True), \
-        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, True, None),
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), \
-        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, True, None),
-    # Art series card
-    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, True, None),
-    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, True, None),
+    # Same-language translation
+    for case in (TestCaseData("regular_english_card"), TestCaseData("regular_english_card")):
+        yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id, is_front=True), case.as_card()
+    for case in (TestCaseData("english_double_faced_card"), TestCaseData("english_double_faced_art_series_card")):
+        yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id, is_front=True), case.as_card(1)
+        yield CardIdentificationData(case.language, scryfall_id=case.scryfall_id, is_front=False), case.as_card(2)
+
+    # Translate single-faced card
+    forests = TestCaseData("english_basic_Forest_2"), TestCaseData("german_basic_Forest"), TestCaseData("spanish_basic_Forest")
+    for source, target in itertools.product(forests, repeat=2):  # type: TestCaseData, TestCaseData
+        yield CardIdentificationData(target.language, scryfall_id=source.scryfall_id, is_front=True), target.as_card()
+    #
+    treefolk = (
+        (TestCaseData("german_Ironroot_Treefolk_1"), TestCaseData("english_Ironroot_Treefolk_1")),
+        (TestCaseData("german_Ironroot_Treefolk_2"), TestCaseData("english_Ironroot_Treefolk_2")),
+        (TestCaseData("german_Ironroot_Treefolk_3"), TestCaseData("english_Ironroot_Treefolk_3")),
+    )
+    for card_1, card_2 in treefolk:
+        yield CardIdentificationData(card_2.language, scryfall_id=card_1.scryfall_id, is_front=True), card_2.as_card()
+        yield CardIdentificationData(card_1.language, scryfall_id=card_2.scryfall_id, is_front=True), card_1.as_card()
 
 
-# Re-use the test cases for test_find_all_translated_printings. Both should return the same data
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test__translate_card())
 def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: Card):
     is_front = card_data.is_front is None or card_data.is_front
@@ -543,40 +543,33 @@ def test__translate_card(card_db_with_cards: CardDatabase, card_data: CardIdenti
 
 def generate_test_cases_for_test_get_opposing_face() -> \
         typing.Generator[typing.Tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
-    # The back side of a regular card does not exist, Expect None
-    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=True), \
-        None,
-    # The other side of a non-existing back side of a regular card returns the existing front
-    yield CardIdentificationData(scryfall_id="0000579f-7b35-4ed3-b44c-db2a538066fe", is_front=False), \
-        Card('Fury Sliver', MTGSet('tsp', 'Time Spiral'), '157', 'en', '0000579f-7b35-4ed3-b44c-db2a538066fe', True, '44623693-51d6-49ad-8cd7-140505caf02f', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/0000579f-7b35-4ed3-b44c-db2a538066fe.png?1562894979', True, False, 0, False, None),
-    # Unknown scryfall_id returns None
-    yield CardIdentificationData(scryfall_id="ueueueue-abcd-1234-5678-abcdefabcdef", is_front=True), \
-        None,
-    yield CardIdentificationData(scryfall_id="ueueueue-abcd-1234-5678-abcdefabcdef", is_front=False), \
-        None,
-    # Double-faced with high-res image
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=True), \
-        Card('Itlimoc, Cradle of the Sun', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', False, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/back/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 1, True, None),
-    yield CardIdentificationData(scryfall_id="b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front=False), \
-        Card('Growing Rites of Itlimoc', MTGSet('xln', 'Ixalan'), '191', 'en', 'b3b87bfc-f97f-4734-94f6-e3e2f335fc4d', True, 'ea9c459a-6047-43aa-968f-a582be4000e8', 'https://c1.scryfall.com/file/scryfall-cards/png/front/b/3/b3b87bfc-f97f-4734-94f6-e3e2f335fc4d.png?1562562539', True, False, 0, True, None),
-    # Art series card
-    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=True), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', False, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/back/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 1, True, None),
-    yield CardIdentificationData(scryfall_id="002ad179-ddf4-4f48-9504-cfa02e11a52e", is_front=False), \
-        Card('Clearwater Pathway', MTGSet('aznr', 'Zendikar Rising Art Series'), '25', 'en', '002ad179-ddf4-4f48-9504-cfa02e11a52e', True, 'a755add5-04ec-4e37-9eb6-152d52cfa46d', 'https://c1.scryfall.com/file/scryfall-cards/png/front/0/0/002ad179-ddf4-4f48-9504-cfa02e11a52e.png?1600982859', False, False, 0, True, None),
+    # Single-faced cards
+    for case in (TestCaseData("regular_english_card"), TestCaseData("oversized_card")):
+        # The back side of a regular card does not exist, Expect None
+        yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), None
+        # The other side of a non-existing back side of a regular card returns the existing front
+        yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), case.as_card()
+    case = TestCaseData("split_card")
+    yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), None
+    # FIXME: This returns None, but should return the first face of the front
+    # yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), case.as_card(1)
+
+    # Double-faced cards
+    for case in (TestCaseData("english_double_faced_card"), TestCaseData("english_double_faced_art_series_card")):
+        yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=True), case.as_card(2)
+        yield CardIdentificationData(scryfall_id=case.scryfall_id, is_front=False), case.as_card(1)
 
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_opposing_face())
 def test_get_opposing_face(
         card_db_with_cards: CardDatabase, card_data: CardIdentificationData, expected: typing.Optional[Card]):
-    assert_that(
-        card_db_with_cards.get_opposing_face(card_data),
-        is_(any_of(
-            all_of(
-                none(),
-                instance_of(type(expected))  # None if and only if expected is None
-            ),
-            all_of(
+    result = card_db_with_cards.get_opposing_face(card_data)
+    if expected is None:
+        assert_that(result, is_(none()))
+    else:
+        assert_that(
+            result,
+            is_(all_of(
                 is_(instance_of(Card)),
                 matches_type_annotation(),
                 has_properties({
@@ -586,8 +579,8 @@ def test_get_opposing_face(
                     "is_front": not card_data.is_front,  # Negation here
                 }),
                 is_dataclass_equal_to(expected),
-            )))
-    )
+            ))
+        )
 
 
 def test_allow_updating_card_data_on_empty_database_returns_true(card_db: CardDatabase):
@@ -603,24 +596,17 @@ def test_allow_updating_card_data_on_freshly_populated_database_returns_false(qt
 def test_allow_updating_card_data_on_stale_populated_database_returns_true(
         qtbot, card_db: CardDatabase, delta_days: int):
     fill_card_database_with_json_card(qtbot, card_db, "regular_english_card")
-    today = datetime.date.today()
+    today = datetime.datetime.today()
     now = today + MINIMUM_REFRESH_DELAY + datetime.timedelta(delta_days)
-    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.date") as mock_date:
+    fromisoformat = datetime.datetime.fromisoformat
+    with unittest.mock.patch("mtg_proxy_printer.model.carddb.datetime.datetime") as mock_date:
         mock_date.today.return_value = now
-        assert_that(datetime.date.today(), is_not(today))
+        mock_date.fromisoformat = fromisoformat
+        assert_that(datetime.datetime.today(), is_not(today))
         assert_that(
             card_db.allow_updating_card_data(),
             is_(delta_days >= 0)
         )
-
-
-def test_get_total_cards_in_last_update(qtbot, card_db: CardDatabase):
-    card_data = ["regular_english_card"]
-    fill_card_database_with_json_cards(qtbot, card_db, card_data)
-    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
-    card_data.append("english_basic_Forest")
-    fill_card_database_with_json_cards(qtbot, card_db, card_data)
-    assert_that(card_db.get_total_cards_in_last_update(), is_(len(card_data)))
 
 
 def test_is_removed_printing_with_removed_printing_returns_true(qtbot, card_db: CardDatabase):
@@ -638,70 +624,6 @@ def test_is_removed_printing_with_included_printing_returns_false(qtbot, card_db
         card_db.is_removed_printing("650722b4-d72b-4745-a1a5-00a34836282b"),
         is_(filter_value)
     )
-
-
-@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
-def test_filters_in_db_differ_from_settings_with_changed_settings_returns_true(
-        card_db: CardDatabase, settings_key: str):
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
-    settings_to_use[settings_key] = str(not section.getboolean(settings_key))
-    with unittest.mock.patch.dict(section, settings_to_use):
-        assert_that(
-            card_db._filters_in_db_differ_from_settings(section),
-            is_(True)
-        )
-
-
-def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_false(card_db: CardDatabase):
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
-    with unittest.mock.patch.dict(section, settings_to_use):
-        assert_that(
-            card_db._filters_in_db_differ_from_settings(section),
-            is_(False)
-        )
-
-
-def test__remove_old_printing_filters_with_unaltered_settings_does_nothing(card_db: CardDatabase):
-    query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    old_settings = card_db.db.execute(query).fetchall()
-    assert_that(
-        card_db._remove_old_printing_filters(section),
-        is_(False)
-    )
-    new_settings = card_db.db.execute(query).fetchall()
-    assert_that(
-        new_settings,
-        contains_exactly(*old_settings)
-    )
-
-
-def test__remove_old_printing_filters_with_removed_settings_removes_database_rows(card_db: CardDatabase):
-    query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    with unittest.mock.patch.dict(section, {}, clear=True):
-        assert_that(
-            card_db._remove_old_printing_filters(section),
-            is_(True)
-        )
-    new_settings = card_db.db.execute(query).fetchall()
-    assert_that(
-        new_settings,
-        is_(empty())
-    )
-
-
-@pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.settings["card-filter"].keys())
-def test_store_current_printing_filters_updates_value_in_database(card_db: CardDatabase, settings_key: str):
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
-    settings_to_use[settings_key] = str(not section.getboolean(settings_key))
-    with unittest.mock.patch.dict(section, settings_to_use):
-        assert_that(card_db._filters_in_db_differ_from_settings(section), is_(True))
-        card_db.store_current_printing_filters(True)
-        assert_that(card_db._filters_in_db_differ_from_settings(section), is_(False))
 
 
 @pytest.mark.parametrize("order_printings", [True, False])
@@ -774,13 +696,13 @@ def test_get_basic_land_oracle_ids(
 def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: StringList):
     fill_card_database_with_json_cards(
         qtbot, card_db, [
-        "The_Underworld_Cookbook",
-        "Food_Token",
-        "Asmoranomardicadaistinaculdacar",
-        "Bake_into_a_Pie",
-        "Asmoranomardicadaistinaculdacar_2",
-        "Food_Token_2",
-    ])
+            "The_Underworld_Cookbook",
+            "Food_Token",
+            "Asmoranomardicadaistinaculdacar",
+            "Bake_into_a_Pie",
+            "Asmoranomardicadaistinaculdacar_2",
+            "Food_Token_2",
+        ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
     assert_that(source_card, is_(not_none()))
     related = card_db.find_related_cards(source_card)

@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -51,12 +51,11 @@ class ActionLoadDocument(DocumentAction):
             raise IllegalStateError("Cannot apply action twice")
         self.actions.append(ActionNewDocument().apply(document))
         self.actions.append(ActionEditDocumentSettings(self.page_layout).apply(document))
-        self.actions.append(ActionNewPage(count=len(self.loaded_cards)-1).apply(document))
-        for page, cards_on_page in zip(document.pages, self.loaded_cards):
-            document.set_currently_edited_page(page)
-            for card in cards_on_page:
-                self.actions.append(ActionAddCard(card).apply(document))
         document.set_currently_edited_page(document.pages[0])
+        for card in self.loaded_cards[0]:
+            self.actions.append(ActionAddCard(card).apply(document))
+        if page_count := len(self.loaded_cards)-1:
+            self.actions.append(ActionNewPage(count=page_count, content=self.loaded_cards[1:]).apply(document))
         return super().apply(document)
 
     def undo(self, document: "Document") -> Self:

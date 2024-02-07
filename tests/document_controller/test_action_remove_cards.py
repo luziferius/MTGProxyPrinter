@@ -1,18 +1,18 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import unittest.mock
 from typing import List
 
 import pytest
@@ -20,7 +20,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.document_page import CardContainer, PageType
 from mtg_proxy_printer.document_controller import IllegalStateError, DocumentAction
-from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
+from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards, to_list_of_ranges
 
 from .helpers import append_new_card_in_page, card_container_with, create_card
 
@@ -31,6 +31,9 @@ def test___init___raises_exception_with_epty_cards_to_remove_parameter():
 
 @pytest.mark.parametrize("sequence, expected", [
     ([1], [(1, 1)]),
+    ([0], [(0, 0)]),
+    ([-10], [(-10, -10)]),
+    ([1, -1, 0], [(-1, 1)]),
     ([1, 2], [(1, 2)]),
     ([2, 1], [(1, 2)]),
     ([1, 2, 3], [(1, 3)]),
@@ -41,9 +44,16 @@ def test___init___raises_exception_with_epty_cards_to_remove_parameter():
     ([3, 1], [(1, 1), (3, 3)]),
     ([1, 3, 4], [(1, 1), (3, 4)]),
 ])
-def test___init___correctly_converts_index_list_to_ranges_list(sequence, expected):
+def test_to_list_of_ranges(sequence, expected):
+    assert_that(to_list_of_ranges(sequence), is_(equal_to(expected)))
+
+
+@unittest.mock.patch("mtg_proxy_printer.document_controller.card_actions.to_list_of_ranges")
+def test___init___converts_index_list_to_ranges_list(mock_to_list_of_ranges: unittest.mock.MagicMock):
+    sequence = [0]
     action = ActionRemoveCards(sequence)
-    assert_that(action.card_ranges_to_remove, is_(equal_to(expected)))
+    mock_to_list_of_ranges.assert_called_once_with(sequence)
+    assert_that(action.card_ranges_to_remove, is_(same_instance(mock_to_list_of_ranges.return_value)))
 
 
 def test_apply_removes_two_1_card_ranges(qtbot, document_light):
@@ -71,6 +81,7 @@ def test_apply_removes_two_1_card_ranges(qtbot, document_light):
             ),
         )
     )
+
 
 @pytest.mark.parametrize("row_selection", [[0, 1], [1, 0]])
 def test_apply_removes_one_2_card_range(qtbot, document_light, row_selection: List[int]):

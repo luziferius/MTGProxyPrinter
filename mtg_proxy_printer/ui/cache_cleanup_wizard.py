@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -23,7 +23,7 @@ import typing
 
 from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer, QIODevice, QItemSelectionModel, QSize
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtWidgets import QWidget, QWizard, QTableView, QWizardPage
+from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
@@ -46,6 +46,9 @@ __all__ = [
     "CacheCleanupWizard",
 ]
 INVALID_INDEX = QModelIndex()
+SelectRows = QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows
+ItemDataRole = Qt.ItemDataRole
+Orientation = Qt.Orientation
 
 
 @functools.lru_cache(maxsize=256)
@@ -54,11 +57,11 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
     source = QPixmap(str(path))
     pixmap = source.scaled(
         source.width() // scaling_factor, source.height() // scaling_factor,
-        Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
     buffer = QBuffer()
-    buffer.open(QIODevice.WriteOnly)
+    buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
-    image = bytes(buffer.data().toBase64()).decode()
+    image = buffer.data().toBase64().data().decode()
     tooltip_text = f'<img src="data:image/png;base64,{image}">'
     return tooltip_text
 
@@ -87,38 +90,38 @@ class KnownCardRow:
     scryfall_id: str
     path: pathlib.Path
 
-    def data(self, column: int, role: int):
-        if column == KnownCardColumns.Name and role in (Qt.DisplayRole, Qt.EditRole):
+    def data(self, column: int, role: ItemDataRole):
+        if column == KnownCardColumns.Name and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.name
-        elif column == KnownCardColumns.Name and role == Qt.ToolTipRole:
+        elif column == KnownCardColumns.Name and role == ItemDataRole.ToolTipRole:
             data = get_image_for_tooltip_display(self.path)
         elif column == KnownCardColumns.Set:
             data = self.set.data(role)
-        elif column == KnownCardColumns.CollectorNumber and role in (Qt.DisplayRole, Qt.EditRole):
+        elif column == KnownCardColumns.CollectorNumber and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.collector_number
-        elif column == KnownCardColumns.IsHidden and role == Qt.DisplayRole:
+        elif column == KnownCardColumns.IsHidden and role == ItemDataRole.DisplayRole:
             data = "Yes" if self.is_hidden else "No"
-        elif column == KnownCardColumns.IsHidden and role == Qt.ToolTipRole and self.is_hidden:
+        elif column == KnownCardColumns.IsHidden and role == ItemDataRole.ToolTipRole and self.is_hidden:
             data = "This printing is hidden by an enabled card filter\nand is thus unavailable for printing."
-        elif column == KnownCardColumns.IsHidden and role == Qt.EditRole:
+        elif column == KnownCardColumns.IsHidden and role == ItemDataRole.EditRole:
             data = self.is_hidden
-        elif column == KnownCardColumns.IsFront and role == Qt.DisplayRole:
+        elif column == KnownCardColumns.IsFront and role == ItemDataRole.DisplayRole:
             data = "Front" if self.is_front else "Back"
-        elif column == KnownCardColumns.IsFront and role == Qt.EditRole:
+        elif column == KnownCardColumns.IsFront and role == ItemDataRole.EditRole:
             data = self.is_front
-        elif column == KnownCardColumns.HasHighResolution and role == Qt.EditRole:
+        elif column == KnownCardColumns.HasHighResolution and role == ItemDataRole.EditRole:
             data = self.has_high_resolution
-        elif column == KnownCardColumns.HasHighResolution and role == Qt.DisplayRole:
+        elif column == KnownCardColumns.HasHighResolution and role == ItemDataRole.DisplayRole:
             data = "Yes" if self.has_high_resolution else "No"
-        elif column == KnownCardColumns.Size and role == Qt.DisplayRole:
+        elif column == KnownCardColumns.Size and role == ItemDataRole.DisplayRole:
             data = format_size(self.size)
-        elif column == KnownCardColumns.Size and role == Qt.EditRole:
+        elif column == KnownCardColumns.Size and role == ItemDataRole.EditRole:
             data = self.size
-        elif column == KnownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
+        elif column == KnownCardColumns.ScryfallId and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.scryfall_id
-        elif column == KnownCardColumns.FilesystemPath and role in {Qt.DisplayRole, Qt.ToolTipRole}:
+        elif column == KnownCardColumns.FilesystemPath and role in {ItemDataRole.DisplayRole, ItemDataRole.ToolTipRole}:
             data = str(self.path)
-        elif column == KnownCardColumns.FilesystemPath and role == Qt.EditRole:
+        elif column == KnownCardColumns.FilesystemPath and role == ItemDataRole.EditRole:
             data = self.path
         else:
             data = None
@@ -149,12 +152,14 @@ class KnownCardImageModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
-    def headerData(self, section: KnownCardColumns, orientation: Qt.Orientation, role: int = None) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal and 0 <= section < self.columnCount():
+    def headerData(self, section: KnownCardColumns, orientation: Orientation, role: ItemDataRole = None) -> str:
+        if role == ItemDataRole.DisplayRole \
+                and orientation == Orientation.Horizontal \
+                and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(KnownCardImageModel, self).headerData(section, orientation, role)
 
-    def data(self, index: QModelIndex, role: int = None) -> typing.Any:
+    def data(self, index: QModelIndex, role: ItemDataRole = None) -> typing.Any:
         if 0 <= index.row() <= self.rowCount() and 0 <= index.column() < self.columnCount():
             row = self._data[index.row()]
             return row.data(index.column(), role)
@@ -206,26 +211,27 @@ class UnknownCardRow:
             image.absolute_path.stat().st_size, image.absolute_path
         )
 
-    def data(self, column: int, role: int):
-        if column == UnknownCardColumns.ScryfallId and role in (Qt.DisplayRole, Qt.EditRole):
+    def data(self, column: int, role: ItemDataRole):
+        if column == UnknownCardColumns.ScryfallId and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.scryfall_id
-        elif column == UnknownCardColumns.ScryfallId and role == Qt.ToolTipRole:
+        elif column == UnknownCardColumns.ScryfallId and role == ItemDataRole.ToolTipRole:
             data = get_image_for_tooltip_display(self.path)
-        elif column == UnknownCardColumns.IsFront and role == Qt.DisplayRole:
+        elif column == UnknownCardColumns.IsFront and role == ItemDataRole.DisplayRole:
             data = "Front" if self.is_front else "Back"
-        elif column == UnknownCardColumns.IsFront and role == Qt.EditRole:
+        elif column == UnknownCardColumns.IsFront and role == ItemDataRole.EditRole:
             data = self.is_front
-        elif column == UnknownCardColumns.HasHighResolution and role == Qt.EditRole:
+        elif column == UnknownCardColumns.HasHighResolution and role == ItemDataRole.EditRole:
             data = self.has_high_resolution
-        elif column == UnknownCardColumns.HasHighResolution and role == Qt.DisplayRole:
+        elif column == UnknownCardColumns.HasHighResolution and role == ItemDataRole.DisplayRole:
             data = "Yes" if self.has_high_resolution else "No"
-        elif column == UnknownCardColumns.Size and role == Qt.DisplayRole:
+        elif column == UnknownCardColumns.Size and role == ItemDataRole.DisplayRole:
             data = format_size(self.size)
-        elif column == UnknownCardColumns.Size and role == Qt.EditRole:
+        elif column == UnknownCardColumns.Size and role == ItemDataRole.EditRole:
             data = self.size
-        elif column == UnknownCardColumns.FilesystemPath and role in {Qt.DisplayRole, Qt.ToolTipRole}:
+        elif column == UnknownCardColumns.FilesystemPath \
+                and role in {ItemDataRole.DisplayRole, ItemDataRole.ToolTipRole}:
             data = str(self.path)
-        elif column == UnknownCardColumns.FilesystemPath and role == Qt.EditRole:
+        elif column == UnknownCardColumns.FilesystemPath and role == ItemDataRole.EditRole:
             data = self.path
         else:
             data = None
@@ -252,12 +258,14 @@ class UnknownCardImageModel(QAbstractTableModel):
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header_data)
 
-    def headerData(self, section: UnknownCardColumns, orientation: Qt.Orientation, role: int = None) -> str:
-        if role == Qt.DisplayRole and orientation == Qt.Horizontal and 0 <= section < self.columnCount():
+    def headerData(self, section: UnknownCardColumns, orientation: Orientation, role: ItemDataRole = None) -> str:
+        if role == ItemDataRole.DisplayRole \
+                and orientation == Orientation.Horizontal \
+                and 0 <= section < self.columnCount():
             return self.header_data[section]
         return super(UnknownCardImageModel, self).headerData(section, orientation, role)
 
-    def data(self, index: QModelIndex, role: int = None) -> typing.Any:
+    def data(self, index: QModelIndex, role: ItemDataRole = None) -> typing.Any:
         if 0 <= index.row() < self.rowCount():
             row = self._data[index.row()]
             return row.data(index.column(), role)
@@ -312,14 +320,14 @@ class CardFilterPage(QWizardPage):
         sort_model.setSourceModel(card_image_model)
         # Use the EditRole for sorting, as this returns the raw data.
         # Makes it possible to sort the file sizes correctly.
-        sort_model.setSortRole(Qt.EditRole)
+        sort_model.setSortRole(ItemDataRole.EditRole)
         return sort_model
 
     def _setup_card_image_view(self, model: NaturallySortedSortFilterProxyModel):
         view = self.ui.card_image_view
         view.setModel(model)
         view.setSortingEnabled(True)
-        view.sortByColumn(KnownCardColumns.Name, Qt.AscendingOrder)
+        view.sortByColumn(KnownCardColumns.Name, Qt.SortOrder.AscendingOrder)
         view.setColumnHidden(KnownCardColumns.ScryfallId, True)
         for column, scaling_factor in (
                 (KnownCardColumns.Name, 2),
@@ -339,7 +347,7 @@ class CardFilterPage(QWizardPage):
         for card, key in hidden:
             self.card_image_model.add_row(card, key, True)
         for key in unknown:
-             self.unknown_image_model.add_row(key)
+            self.unknown_image_model.add_row(key)
         self._apply_filter()
 
     def _apply_filter(self):
@@ -361,22 +369,22 @@ class CardFilterPage(QWizardPage):
                 selection_model = self.ui.card_image_view.selectionModel()
                 for row in range(self.card_image_sort_model.rowCount()):
                     index = self.card_image_sort_model.index(row, KnownCardColumns.IsHidden)
-                    if index.data(Qt.ItemDataRole.EditRole):
-                        selection_model.select(index, QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                    if index.data(ItemDataRole.EditRole):
+                        selection_model.select(index, SelectRows)
 
     def _select_unknown_cards_if_enabled(self):
         if self.field("remove-unknown-cards-enabled") or self.field("remove-everything-enabled"):
             selection_model = self.ui.unknown_image_view.selectionModel()
             for row in range(self.unknown_image_model.rowCount()):
                 index = self.unknown_image_model.index(row, UnknownCardColumns.ScryfallId)
-                selection_model.select(index,QItemSelectionModel.Select | QItemSelectionModel.Rows)
+                selection_model.select(index, SelectRows)
 
     def _select_rows(self, indices: typing.Iterable[int]):
         selection_model = self.ui.card_image_view.selectionModel()
         for index in indices:
             selection_model.select(
                 self.card_image_model.index(index, KnownCardColumns.Name),
-                QItemSelectionModel.Select | QItemSelectionModel.Rows
+                SelectRows
             )
 
     def cleanupPage(self) -> None:
@@ -387,16 +395,16 @@ class CardFilterPage(QWizardPage):
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
         selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
-            (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(Qt.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.IsFront).data(Qt.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(Qt.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.Size).data(Qt.EditRole))
+            (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(ItemDataRole.EditRole),
+             index.siblingAtColumn(UnknownCardColumns.IsFront).data(ItemDataRole.EditRole),
+             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(ItemDataRole.EditRole),
+             index.siblingAtColumn(UnknownCardColumns.Size).data(ItemDataRole.EditRole))
             for index in self.ui.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
-            (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(Qt.EditRole),
-             index.siblingAtColumn(KnownCardColumns.IsFront).data(Qt.EditRole),
-             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(Qt.EditRole),
-             index.siblingAtColumn(KnownCardColumns.Size).data(Qt.EditRole))
+            (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(ItemDataRole.EditRole),
+             index.siblingAtColumn(KnownCardColumns.IsFront).data(ItemDataRole.EditRole),
+             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(ItemDataRole.EditRole),
+             index.siblingAtColumn(KnownCardColumns.Size).data(ItemDataRole.EditRole))
             for index in self.ui.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
@@ -427,7 +435,7 @@ class CacheCleanupWizard(WizardBase):
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
-                 parent: QWidget = None, flags = Qt.WindowFlags()):
+                 parent: QWidget = None, flags=Qt.WindowFlags()):
         super().__init__(QSize(1024, 768), parent, flags)
         self.image_db = image_db
         self.addPage(FilterSetupPage(self))

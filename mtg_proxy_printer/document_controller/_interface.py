@@ -1,22 +1,25 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from abc import abstractmethod
 from functools import partial
+import itertools
 import operator
 import typing
+
+from mtg_proxy_printer.units_and_sizes import StringList
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document import Document
@@ -26,14 +29,20 @@ try:
 except ImportError:  # Compatibility with Python < 3.11
     Self = typing.TypeVar("Self", bound="DocumentAction")
 
-StringList = typing.List[str]
-
 __all__ = [
     "DocumentAction",
     "IllegalStateError",
     "Self",
-    "ActionList"
+    "ActionList",
+    "split_iterable",
 ]
+T = typing.TypeVar("T")
+
+
+def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.List[typing.Tuple[T, ...]]:
+    """Split the given iterable into chunks of size chunk_size. Does not add padding values to the last item."""
+    iterable = iter(iterable)
+    return list(iter(lambda: tuple(itertools.islice(iterable, chunk_size)), ()))
 
 
 class IllegalStateError(RuntimeError):

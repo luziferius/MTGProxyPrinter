@@ -1,15 +1,15 @@
-# Copyright (C) 2020-2023 Thomas Hess <thomas.hess@udo.edu>
-
+# Copyright (C) 2020-2024 Thomas Hess <thomas.hess@udo.edu>
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-
+#
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
@@ -44,6 +44,8 @@ Counter = collections.Counter if int(platform.python_version_tuple()[1]) >= 9 el
 JSONType = typing.Dict[str, typing.Union[str, int, list, "JSONType", float, bool]]
 JSONKeyValueType = typing.Iterable[typing.Tuple[str, JSONType]]
 HTMLAttributeType = typing.List[typing.Tuple[str, typing.Optional[str]]]
+State = QValidator.State
+
 
 class IsIdentifyingDeckUrlValidator(QValidator):
     """
@@ -57,8 +59,8 @@ class IsIdentifyingDeckUrlValidator(QValidator):
         for downloader_class in AVAILABLE_DOWNLOADERS.values():
             if downloader_class.DECKLIST_PATH_RE.match(input_string) is not None:
                 logger.debug(f"Input is valid URL for {downloader_class.APPLICABLE_WEBSITES}")
-                return QValidator.Acceptable, input_string, pos
-        return QValidator.Intermediate, input_string, pos
+                return State.Acceptable, input_string, pos
+        return State.Intermediate, input_string, pos
 
 
 class DecklistDownloader(DownloaderBase):
@@ -449,12 +451,10 @@ class CubeCobraDownloader(DecklistDownloader):
     PARSER_CLASS = XMageParser
     APPLICABLE_WEBSITES = "CubeCobra (cubecobra.com)"
 
-
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
         cube_name = match.group("cube_name")
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
-
 
 
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {

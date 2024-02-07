@@ -126,7 +126,7 @@ def has_getters(*keys_valuematchers, **kv_args):
     """Matches if an object has callable getters satisfying all of a dictionary
     of string getter names and corresponding value matchers.
 
-    :param matcher_dict: A dictionary mapping keys to associated value matchers,
+    :param keys_valuematchers: A dictionary mapping keys to associated value matchers,
         or to expected values for
         :py:func:`~hamcrest.core.core.isequal.equal_to` matching.
 
