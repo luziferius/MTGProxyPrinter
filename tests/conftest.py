@@ -22,7 +22,7 @@ import sqlite3
 import unittest.mock
 from pathlib import Path
 
-from PyQt5.QtGui import QColor, QPixmap
+from PyQt5.QtGui import QColorConstants, QPixmap
 import pytest
 
 import mtg_proxy_printer.sqlite_helpers
@@ -30,7 +30,8 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.document import Document
-from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey, IMAGE_SIZE
+from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.model.imagedb import ImageDatabase, ImageKey
 from tests.helpers import fill_card_database_with_json_cards
 
 
@@ -89,8 +90,8 @@ def document(qtbot, card_db: CardDatabase, image_db: ImageDatabase) -> Document:
 def document_light(qtbot) -> Document:
     mock_card_db = unittest.mock.NonCallableMagicMock()
     mock_image_db = unittest.mock.NonCallableMagicMock(spec=ImageDatabase)
-    mock_image_db.blank_image = QPixmap(IMAGE_SIZE)
-    mock_image_db.blank_image.fill(QColor("white"))
+    mock_image_db.blank_image = QPixmap(CardSizes.REGULAR.as_qsize_px())
+    mock_image_db.blank_image.fill(QColorConstants.Transparent)
     mock_card_db.db = mtg_proxy_printer.sqlite_helpers.create_in_memory_database(
         "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=False)
     document = Document(mock_card_db, mock_image_db)

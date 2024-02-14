@@ -37,6 +37,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
+from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
@@ -81,7 +82,6 @@ class CacheContent(ImageKey):
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 ImageKeySet = typing.Set[ImageKey]
-IMAGE_SIZE = QSize(745, 1040)
 BatchActions = typing.Union[ActionImportDeckList]
 SingleActions = typing.Union[ActionAddCard, ActionReplaceCard]
 IndexList = typing.List[QModelIndex]
@@ -150,7 +150,7 @@ class ImageDatabase(QObject):
     @functools.lru_cache(maxsize=1)
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
-        pixmap = QPixmap(IMAGE_SIZE)
+        pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
         pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
