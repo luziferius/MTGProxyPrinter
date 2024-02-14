@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (In development)
+
+## Changed features
+
+- The card image tooltips shown by the image cleanup wizard now shows the translated card name for 
+  cards not in the preferred language.  
+
 # Version 0.27.0 (2024-02-04)  <a name="v0_27_0"></a>
 
 ## New features

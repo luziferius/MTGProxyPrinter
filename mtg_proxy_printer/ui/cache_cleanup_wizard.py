@@ -25,10 +25,12 @@ from PyQt5.QtCore import QAbstractTableModel, Qt, QModelIndex, QObject, QBuffer,
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtWidgets import QWidget, QWizard, QWizardPage
 
+import mtg_proxy_printer.settings
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, MTGSet
 from mtg_proxy_printer.model.imagedb import ImageDatabase, CacheContent as ImageCacheContent, ImageKey
 from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
+from mtg_proxy_printer.units_and_sizes import OptStr
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -52,7 +54,7 @@ Orientation = Qt.Orientation
 
 
 @functools.lru_cache(maxsize=256)
-def get_image_for_tooltip_display(path: pathlib.Path) -> str:
+def get_image_for_tooltip_display(path: pathlib.Path, card_name: OptStr = None) -> str:
     scaling_factor = 3
     source = QPixmap(str(path))
     pixmap = source.scaled(
@@ -62,7 +64,8 @@ def get_image_for_tooltip_display(path: pathlib.Path) -> str:
     buffer.open(QIODevice.OpenModeFlag.WriteOnly)
     pixmap.save(buffer, "PNG", quality=100)
     image = buffer.data().toBase64().data().decode()
-    tooltip_text = f'<img src="data:image/png;base64,{image}">'
+    card_name = f'<p style="text-align:center">{card_name}</p><br>' if card_name else ""
+    tooltip_text = f'{card_name}<img src="data:image/png;base64,{image}">'
     return tooltip_text
 
 
@@ -89,12 +92,13 @@ class KnownCardRow:
     size: int
     scryfall_id: str
     path: pathlib.Path
+    preferred_language_name: OptStr
 
     def data(self, column: int, role: ItemDataRole):
         if column == KnownCardColumns.Name and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.name
         elif column == KnownCardColumns.Name and role == ItemDataRole.ToolTipRole:
-            data = get_image_for_tooltip_display(self.path)
+            data = get_image_for_tooltip_display(self.path, self.preferred_language_name)
         elif column == KnownCardColumns.Set:
             data = self.set.data(role)
         elif column == KnownCardColumns.CollectorNumber and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
@@ -142,8 +146,10 @@ class KnownCardImageModel(QAbstractTableModel):
         KnownCardColumns.FilesystemPath: "Path",
     }
 
-    def __init__(self, parent: QObject = None):
+    def __init__(self, card_db: CardDatabase, parent: QObject = None):
         super(KnownCardImageModel, self).__init__(parent)
+        self.card_db = card_db
+        self.preferred_language: str = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self._data: typing.List[KnownCardRow] = []
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
@@ -169,9 +175,14 @@ class KnownCardImageModel(QAbstractTableModel):
         position = self.rowCount()
         self.beginInsertRows(INVALID_INDEX, position, position)
         size_bytes = image.absolute_path.stat().st_size
+        if card.language != self.preferred_language:
+            preferred_name = self.card_db.translate_card_name(card, self.preferred_language, True)
+        else:
+            preferred_name = None
         row = KnownCardRow(
             card.name, card.set, card.collector_number, is_hidden,
             image.is_front, image.is_high_resolution, size_bytes, card.scryfall_id, image.absolute_path,
+            preferred_name
         )
         self._data.append(row)
         self.endInsertRows()
@@ -307,7 +318,7 @@ class CardFilterPage(QWizardPage):
         self.ui.setupUi(self)
         self.card_db = card_db
         self.image_db = image_db
-        self.card_image_model = KnownCardImageModel(parent=self)
+        self.card_image_model = KnownCardImageModel(card_db, self)
         self.card_image_sort_model = self._setup_card_image_sort_model(self.card_image_model)
         self._setup_card_image_view(self.card_image_sort_model)
         self.unknown_image_model = UnknownCardImageModel(parent=self)
