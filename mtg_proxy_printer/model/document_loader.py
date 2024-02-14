@@ -234,7 +234,8 @@ class DocumentLoader(LoaderSignals):
         logger.info(f"Loading document from {file_path} successful.")
         self.document.save_file_path = file_path
 
-    def cancel(self):
+    @staticmethod
+    def cancel():
         for instance in LoaderRunner.INSTANCES:
             if isinstance(instance, LoaderRunner):
                 instance.cancel()
@@ -705,7 +706,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
             ("document_name", settings.document_name),
             ("card_bleed", settings.card_bleed),
             ("draw_page_numbers", settings.draw_page_numbers),
-    ])
+        ])
 
 
 def migrate_image_spacing_settings(db: sqlite3.Connection):

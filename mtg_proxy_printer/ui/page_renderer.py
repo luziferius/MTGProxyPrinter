@@ -32,6 +32,7 @@ __all__ = [
 ]
 DragMode = QGraphicsView.DragMode
 
+
 @enum.unique
 class ZoomDirection(enum.Enum):
     IN = enum.auto()
