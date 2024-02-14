@@ -81,7 +81,7 @@ class PDFPrinter(QPdfWriter):
             path = Path(file_path)
             # Add one to the document_index for human-readable counting starting at 1. suffix includes the separator
             file_path = str(path.parent / f"{path.stem}-{document_index+1}{path.suffix}")
-        super(PDFPrinter, self).__init__(file_path)
+        super().__init__(file_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
@@ -121,7 +121,7 @@ class PDFPrinter(QPdfWriter):
 class Renderer(QObject):
 
     def __init__(self, document: Document, parent: QObject = None):
-        super(Renderer, self).__init__(parent)
+        super().__init__(parent)
         self.document = document
         self.render_mode = RenderMode.ON_PAPER
         if not settings["printer"].getboolean("borderless-printing"):

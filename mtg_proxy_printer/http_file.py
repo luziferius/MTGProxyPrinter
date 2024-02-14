@@ -75,7 +75,7 @@ class MeteredSeekableHTTPFile(QObject):
         :param ui_hint: Carried verbatim by the io_begin signal. A connected progress meter UI can use this as display text.
         :param retry_limit: The downloader will re-establish the connection this many times before failing
         """
-        super(MeteredSeekableHTTPFile, self).__init__(parent)
+        super().__init__(parent)
         self.INSTANCES.append(self)
         self.retry_limit = retry_limit
         self.ui_hint = ui_hint

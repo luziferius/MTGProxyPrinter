@@ -63,7 +63,7 @@ def read_path(setting: str) -> str:
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
-        super(SavePDFDialog, self).__init__(
+        super().__init__(
             parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
         if default_path := read_path("pdf-export-path"):
             self.setDirectory(default_path)
@@ -101,7 +101,7 @@ class SavePDFDialog(QFileDialog):
 class SaveDocumentAsDialog(QFileDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
-        super(SaveDocumentAsDialog, self).__init__(
+        super().__init__(
             parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
@@ -130,7 +130,7 @@ class LoadDocumentDialog(QFileDialog):
     def __init__(
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
-        super(LoadDocumentDialog, self).__init__(
+        super().__init__(
             parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
             **kwargs)
         if default_path := read_path("document-save-path"):
@@ -220,7 +220,7 @@ class PrintPreviewDialog(QPrintPreviewDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super(PrintPreviewDialog, self).__init__(self.qprinter, parent)
+        super().__init__(self.qprinter, parent)
         self.renderer.setParent(self)
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -231,7 +231,7 @@ class PrintDialog(QPrintDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super(PrintDialog, self).__init__(self.qprinter, parent)
+        super().__init__(self.qprinter, parent)
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
@@ -243,7 +243,7 @@ class PrintDialog(QPrintDialog):
 class DocumentSettingsDialog(QDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
-        super(DocumentSettingsDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_DocumentSettingsDialog()
         self.ui.setupUi(self)
         self.setModal(True)

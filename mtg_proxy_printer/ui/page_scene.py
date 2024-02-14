@@ -255,7 +255,7 @@ class PageScene(QGraphicsScene):
         :param parent: Optional Qt parent object
         """
         self.render_mode = render_mode
-        super(PageScene, self).__init__(self.get_document_page_size(document.page_layout), parent)
+        super().__init__(self.get_document_page_size(document.page_layout), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)

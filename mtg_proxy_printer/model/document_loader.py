@@ -220,7 +220,7 @@ class DocumentLoader(LoaderSignals):
     MIN_SUPPORTED_SQLITE_VERSION = (3, 31, 0)
 
     def __init__(self, document: "Document", db: sqlite3.Connection = None):  # db parameter used by test code
-        super(DocumentLoader, self).__init__(None)
+        super().__init__(None)
         self.document = document
         self.db = db
         self.finished.connect(functools.partial(self.loading_state_changed.emit, False), Qt.ConnectionType.DirectConnection)

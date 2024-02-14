@@ -49,7 +49,7 @@ class ParserBase(QObject):
     incompatible_file_format = Signal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
-        super(ParserBase, self).__init__(parent)
+        super().__init__(parent)
         self.card_db = card_db
         self.image_db = image_db
         self.add_opposing_face = mtg_proxy_printer.settings.settings["images"].getboolean(

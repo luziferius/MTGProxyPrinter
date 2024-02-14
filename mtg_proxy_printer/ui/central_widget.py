@@ -63,7 +63,7 @@ class CentralWidget(QWidget):
 
     def __init__(self, parent: QWidget = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
-        super(CentralWidget, self).__init__(parent)
+        super().__init__(parent)
         ui_class = get_configured_central_widget_layout_class()
         logger.debug(f"Using central widget class {ui_class.__name__}")
         self.ui = ui_class()

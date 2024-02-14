@@ -37,7 +37,7 @@ UiTypes = Union[Type[Ui_FormatPrintingFilter], Type[Ui_GeneralPrintingFilter]]
 class AbstractPrintingFilterWidget(QGroupBox):
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
-        super(AbstractPrintingFilterWidget, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_class()
         self.ui.setupUi(self)
 

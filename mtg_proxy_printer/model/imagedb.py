@@ -133,7 +133,7 @@ class ImageDatabase(QObject):
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
-        super(ImageDatabase, self).__init__(parent)
+        super().__init__(parent)
         self.read_disk_cache_content = functools.partial(read_disk_cache_content, db_path)
         self.db_path = db_path
         _migrate_database(db_path)
@@ -295,7 +295,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     batch_process_finished = Signal()
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
-        super(ImageDownloader, self).__init__(parent)
+        super().__init__(parent)
         self.image_database = image_db
         self.should_run = True
         self.batch_processing_state: bool = False

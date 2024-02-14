@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
                  document: Document,
                  language_model: QStringListModel,
                  *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         self.is_running = True
         self.ui = Ui_MainWindow()

@@ -102,7 +102,7 @@ class SettingsWindow(QDialog):
     def show(self):
         logger.info("Show the settings window.")
         self.load_settings(mtg_proxy_printer.settings.settings)
-        super(SettingsWindow, self).show()
+        super().show()
 
     def load_settings(self, settings: configparser.ConfigParser):
         logger.debug("Loading the settings")
@@ -231,7 +231,7 @@ class SettingsWindow(QDialog):
             logger.info("User applies changed document settings to the current document")
             self.document_settings_updated.emit(ActionEditDocumentSettings(new_layout))
         self.save()
-        super(SettingsWindow, self).accept()
+        super().accept()
 
     def reset(self):
         logger.info("User reverts the made changes.")
@@ -241,7 +241,7 @@ class SettingsWindow(QDialog):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
         logger.info("User closes the settings dialog. This will reset any made changes.")
         self.reset()
-        super(SettingsWindow, self).reject()
+        super().reject()
 
     def save(self):
         logger.info("User saves the configuration to disk.")

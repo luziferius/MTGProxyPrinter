@@ -64,7 +64,7 @@ class Application(QApplication):
             # present as parameters nor environment variables.
             argv.append("-platform")
             argv.append("windows:darkmode=1")
-        super(Application, self).__init__(argv)
+        super().__init__(argv)
         self.should_run = True
         self._setup_icons()
         self.args: Namespace = args

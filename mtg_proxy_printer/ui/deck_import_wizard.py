@@ -99,7 +99,7 @@ class LoadListPage(QWizardPage):
     deck_list_downloader_changed = Signal(str)
 
     def __init__(self, language_model: QStringListModel, *args, **kwargs):
-        super(LoadListPage, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ui = Ui_LoadListPage()
         self.ui.setupUi(self)
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
@@ -132,7 +132,7 @@ class LoadListPage(QWizardPage):
         self._deck_list_downloader = value
 
     def initializePage(self) -> None:
-        super(LoadListPage, self).initializePage()
+        super().initializePage()
         language_model: QStringListModel = self.ui.translate_deck_list_target_language.model()
         preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         preferred_language_index = language_model.stringList().index(preferred_language)
@@ -144,7 +144,7 @@ class LoadListPage(QWizardPage):
         logger.debug(f"Initialized {self.__class__.__name__}")
 
     def cleanupPage(self):
-        super(LoadListPage, self).cleanupPage()
+        super().cleanupPage()
         self.ui.translate_deck_list_enable.setChecked(False)
         self.ui.print_guessing_enable.setEnabled(True)
         self.ui.print_guessing_enable.setChecked(False)
@@ -281,7 +281,7 @@ class SelectDeckParserPage(QWizardPage):
         return self._selected_parser
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
-        super(SelectDeckParserPage, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ui = Ui_SelectDeckParserPage()
         self.ui.setupUi(self)
         self.card_db = card_db
@@ -406,7 +406,7 @@ class SelectDeckParserPage(QWizardPage):
 
 class SummaryPage(QWizardPage):
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
-        super(SummaryPage, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.ui = Ui_SummaryPage()
         self.ui.setupUi(self)
         self.setCommitPage(True)
@@ -471,7 +471,7 @@ class SummaryPage(QWizardPage):
         return delegate
 
     def initializePage(self) -> None:
-        super(SummaryPage, self).initializePage()
+        super().initializePage()
         self.selected_cells_count = 0
         parser: common.ParserBase = self.field("selected_parser")
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
@@ -512,7 +512,7 @@ class SummaryPage(QWizardPage):
 
     def cleanupPage(self):
         self.card_list.clear()
-        super(SummaryPage, self).cleanupPage()
+        super().cleanupPage()
         wizard = self.wizard()
         wizard.customButtonClicked.disconnect(self.custom_button_clicked)
         wizard.setOption(WizardOption.HaveCustomButton1, False)
@@ -580,7 +580,7 @@ class DeckImportWizard(WizardBase):
             logger.info("Aborting accept(), because oversized cards are present "
                         "in the deck list and the user chose to go back.")
             return
-        super(DeckImportWizard, self).accept()
+        super().accept()
         logger.info("User finished the import wizard, performing the requested actions")
         if replace_document := self.field("should_replace_document"):
             logger.info("User chose to replace the current document content, clearing it")

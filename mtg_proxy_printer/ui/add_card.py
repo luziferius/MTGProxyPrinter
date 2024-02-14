@@ -54,7 +54,7 @@ class AddCardWidget(QWidget):
     request_action = Signal(ActionAddCard)
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
-        super(AddCardWidget, self).__init__(parent)
+        super().__init__(parent)
         logger.debug(f"Creating {self.__class__.__name__} instance")
         self.ui = ui_class()
         self.ui.setupUi(self)

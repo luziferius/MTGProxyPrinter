@@ -147,7 +147,7 @@ class KnownCardImageModel(QAbstractTableModel):
     }
 
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
-        super(KnownCardImageModel, self).__init__(parent)
+        super().__init__(parent)
         self.card_db = card_db
         self.preferred_language: str = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
         self._data: typing.List[KnownCardRow] = []
@@ -163,7 +163,7 @@ class KnownCardImageModel(QAbstractTableModel):
                 and orientation == Orientation.Horizontal \
                 and 0 <= section < self.columnCount():
             return self.header_data[section]
-        return super(KnownCardImageModel, self).headerData(section, orientation, role)
+        return super().headerData(section, orientation, role)
 
     def data(self, index: QModelIndex, role: ItemDataRole = None) -> typing.Any:
         if 0 <= index.row() <= self.rowCount() and 0 <= index.column() < self.columnCount():
@@ -260,7 +260,7 @@ class UnknownCardImageModel(QAbstractTableModel):
     }
 
     def __init__(self, parent: QObject = None):
-        super(UnknownCardImageModel, self).__init__(parent)
+        super().__init__(parent)
         self._data: typing.List[UnknownCardRow] = []
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
@@ -274,7 +274,7 @@ class UnknownCardImageModel(QAbstractTableModel):
                 and orientation == Orientation.Horizontal \
                 and 0 <= section < self.columnCount():
             return self.header_data[section]
-        return super(UnknownCardImageModel, self).headerData(section, orientation, role)
+        return super().headerData(section, orientation, role)
 
     def data(self, index: QModelIndex, role: ItemDataRole = None) -> typing.Any:
         if 0 <= index.row() < self.rowCount():
@@ -298,7 +298,7 @@ class UnknownCardImageModel(QAbstractTableModel):
 class FilterSetupPage(QWizardPage):
 
     def __init__(self, parent: QWidget = None):
-        super(FilterSetupPage, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_FilterSetupPage()
         self.ui.setupUi(self)
         self.registerField("remove-everything-enabled", self.ui.delete_everything_checkbox)
@@ -313,7 +313,7 @@ class FilterSetupPage(QWizardPage):
 class CardFilterPage(QWizardPage):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QWidget = None):
-        super(CardFilterPage, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_CardFilterPage()
         self.ui.setupUi(self)
         self.card_db = card_db
@@ -350,7 +350,7 @@ class CardFilterPage(QWizardPage):
             view.setColumnWidth(column, new_size)
 
     def initializePage(self) -> None:
-        super(CardFilterPage, self).initializePage()
+        super().initializePage()
         images = self.image_db.read_disk_cache_content()
         visible, hidden, unknown = self.card_db.get_all_cards_from_image_cache(images)
         for card, key in visible:
@@ -399,7 +399,7 @@ class CardFilterPage(QWizardPage):
             )
 
     def cleanupPage(self) -> None:
-        super(CardFilterPage, self).cleanupPage()
+        super().cleanupPage()
         self.card_image_model.clear()
         self.unknown_image_model.clear()
 
@@ -419,13 +419,13 @@ class CardFilterPage(QWizardPage):
             for index in self.ui.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
-        return super(CardFilterPage, self).validatePage()
+        return super().validatePage()
 
 
 class SummaryPage(QWizardPage):
 
     def __init__(self, parent: QWidget = None):
-        super(SummaryPage, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_SummaryPage()
         self.ui.setupUi(self)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -457,7 +457,7 @@ class CacheCleanupWizard(WizardBase):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self) -> None:
-        super(CacheCleanupWizard, self).accept()
+        super().accept()
         logger.info("User accepted the wizard, deleting entries from the cache.")
         self.image_db.delete_disk_cache_entries((
             ImageKey(scryfall_id, is_front, is_high_resolution)
@@ -466,7 +466,7 @@ class CacheCleanupWizard(WizardBase):
         self._clear_tooltip_cache()
 
     def reject(self) -> None:
-        super(CacheCleanupWizard, self).reject()
+        super().reject()
         logger.info("User canceled the cache cleanup.")
         self._clear_tooltip_cache()
 

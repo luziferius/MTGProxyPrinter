@@ -39,7 +39,7 @@ CheckState = Qt.CheckState
 
 class PageConfigWidget(QGroupBox):
     def __init__(self, parent: QWidget = None):
-        super(PageConfigWidget, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
         ui.setupUi(self)
         self.page_layout = self._setup_page_layout(ui)

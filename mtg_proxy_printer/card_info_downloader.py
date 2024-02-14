@@ -122,7 +122,7 @@ class CardInfoDownloader(ProgressSignalContainer):
     card_data_updated = Signal()
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
-        super(CardInfoDownloader, self).__init__(parent)
+        super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
