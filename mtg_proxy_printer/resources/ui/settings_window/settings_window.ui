@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>4</number>
      </property>
      <widget class="GeneralSettingsPage" name="general_settings_page">
       <attribute name="title">
@@ -32,17 +32,17 @@
        <string>Deck list import</string>
       </attribute>
      </widget>
-     <widget class="PageSizePrintingSettingsPage" name="tab_page_sizes">
+     <widget class="PageSizePrintingSettingsPage" name="page_size_page">
       <attribute name="title">
        <string>Page size &amp;&amp; Printing</string>
       </attribute>
      </widget>
-     <widget class="HidePrintingsPage" name="tab_printing_filters">
+     <widget class="HidePrintingsPage" name="hide_printings_page">
       <attribute name="title">
        <string>Hide printings</string>
       </attribute>
      </widget>
-     <widget class="DebugSettingsPage" name="tab_debug">
+     <widget class="DebugSettingsPage" name="debug_settings_page">
       <attribute name="title">
        <string>Debug settings</string>
       </attribute>
@@ -62,31 +62,31 @@
   <customwidget>
    <class>GeneralSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings.general_settings_page</header>
+   <header>mtg_proxy_printer.ui.settings_window</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>DecklistImportSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings.decklist_import_settings_page</header>
+   <header>mtg_proxy_printer.ui.settings_window</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PageSizePrintingSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings.page_size_printing_page</header>
+   <header>mtg_proxy_printer.ui.settings_window</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>HidePrintingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.u.settings.hide_printings_page</header>
+   <header>mtg_proxy_printer.ui.settings_window</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>DebugSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings.debug_settings_page</header>
+   <header>mtg_proxy_printer.ui.settings_window</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
