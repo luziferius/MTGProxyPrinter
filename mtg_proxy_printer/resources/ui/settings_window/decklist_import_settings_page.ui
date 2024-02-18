@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DecklistImportSettingsPage</class>
+ <widget class="QWidget" name="DecklistImportSettingsPage">
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="2">
+    <widget class="QPushButton" name="deck_list_search_path_browse_button">
+     <property name="toolTip">
+      <string>Browse…</string>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="deck_list_search_path_label">
+     <property name="text">
+      <string>Deck list search path</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="3">
+    <widget class="QGroupBox" name="basic_land_removal_group_box">
+     <property name="title">
+      <string>Control the one-click basic land removal</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QLabel" name="basic_land_removal_label">
+        <property name="text">
+         <string>These options control, if the automatic removal should also include Wastes or Snow-Covered basic lands.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="remove_basic_wastes_enable">
+        <property name="whatsThis">
+         <string>Include Wastes when removing basic lands.</string>
+        </property>
+        <property name="text">
+         <string>Enable removal of Basic Wastes</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="remove_snow_basics_enable">
+        <property name="whatsThis">
+         <string>Include Snow-Covered basic lands when removing basic lands.</string>
+        </property>
+        <property name="text">
+         <string>Enable removal of Snow-Covered Basic lands</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="3">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>These options control the deck list import function.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="3">
+    <widget class="QGroupBox" name="print_guessing_group_box">
+     <property name="toolTip">
+      <string>Not all deck list formats always contain complete data.
+These options set the default behaviour when encountering ambiguous card</string>
+     </property>
+     <property name="title">
+      <string>Control print guessing in ambiguous cases</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_6">
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
+        <property name="toolTip">
+         <string>When guessing a printing, prefer printings with already downloaded images over other possible printings.</string>
+        </property>
+        <property name="text">
+         <string>Prefer printings with already downloaded images</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="automatic_deck_list_translation_enable">
+        <property name="toolTip">
+         <string>Always enable automatic deck list translation when importing deck lists.
+This avoids adding foreign language cards, if the deck list happens to contain some.</string>
+        </property>
+        <property name="text">
+         <string>Enable translating imported deck lists by default</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="print_guessing_enable">
+        <property name="toolTip">
+         <string>Not all deck list formats always contain complete data to identify exact printings.
+If enabled, choose an arbitrary printing, instead of failing to identify such cards.
+With some deck list formats, this option is always enabled.</string>
+        </property>
+        <property name="text">
+         <string>Enable print guessing by default</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="deck_list_search_path">
+     <property name="toolTip">
+      <string>If set, use this as the default location for loading deck lists. Your webbrowser’s download directory is a good choice.</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhNoAutoUppercase</set>
+     </property>
+     <property name="placeholderText">
+      <string>Path to a directory</string>
+     </property>
+     <property name="clearButtonEnabled">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="3">
+    <spacer name="spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
