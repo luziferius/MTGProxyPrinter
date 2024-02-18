@@ -22,6 +22,7 @@ from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.settings
 
+from mtg_proxy_printer.ui.settings_window_pages import HidePrintingsPage
 from mtg_proxy_printer.ui.settings_window import SettingsWindow
 
 FILTER_VALUES = [
@@ -31,30 +32,31 @@ FILTER_VALUES = [
 
 
 @pytest.fixture()
-def settings_window(qtbot: QtBot, document):
-    language_model = QStringListModel(["en"])
-    window = SettingsWindow(language_model, document)
-    qtbot.add_widget(window)
-    yield window
+def hide_printings_page(qtbot: QtBot, document) -> HidePrintingsPage:
+    page = HidePrintingsPage()
+    qtbot.add_widget(page)
+    return page
 
 
 @pytest.mark.parametrize("filter_content", FILTER_VALUES)
-def test_loads_set_code_filter(qtbot: QtBot, settings_window: SettingsWindow, filter_content: str):
+def test_loads_set_code_filter(qtbot: QtBot, hide_printings_page: HidePrintingsPage, filter_content: str):
     with patch.dict(mtg_proxy_printer.settings.settings["card-filter"], {"hidden-sets": filter_content}), \
-         qtbot.wait_exposed(settings_window):
-        settings_window.show()
+         qtbot.wait_exposed(hide_printings_page):
+        hide_printings_page.load(mtg_proxy_printer.settings.settings)
+        hide_printings_page.show()
     assert_that(
-        settings_window.ui.set_filter_settings.toPlainText(), is_(equal_to(filter_content))
+        hide_printings_page.ui.set_filter_settings.toPlainText(), is_(equal_to(filter_content))
     )
 
 
 @pytest.mark.parametrize("filter_content", FILTER_VALUES)
 @patch("mtg_proxy_printer.settings.write_settings_to_file")
-def test_saves_set_code_filter(qtbot: QtBot, settings_window: SettingsWindow, filter_content: str):
-    with qtbot.wait_exposed(settings_window):
-        settings_window.show()
-    settings_window.ui.set_filter_settings.setPlainText(filter_content)
+def test_saves_set_code_filter(qtbot: QtBot, hide_printings_page: HidePrintingsPage, card_db, filter_content: str):
+    hide_printings_page.card_db = card_db
+    with qtbot.wait_exposed(hide_printings_page):
+        hide_printings_page.ui.set_filter_settings.setPlainText(filter_content)
+        hide_printings_page.show()
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with patch.dict(section, {"hide-sets": ""}):
-        settings_window.save()
+        hide_printings_page.save()
         assert_that(section, has_entry("hidden-sets", equal_to(filter_content)))
