@@ -20,7 +20,7 @@
    <item>
     <widget class="QTabWidget" name="tab_widget">
      <property name="currentIndex">
-      <number>4</number>
+      <number>0</number>
      </property>
      <widget class="GeneralSettingsPage" name="general_settings_page">
       <attribute name="title">
@@ -62,31 +62,31 @@
   <customwidget>
    <class>GeneralSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>DecklistImportSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>PageSizePrintingSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>HidePrintingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>DebugSettingsPage</class>
    <extends>QWidget</extends>
-   <header>mtg_proxy_printer.ui.settings_window</header>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
