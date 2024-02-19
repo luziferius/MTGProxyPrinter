@@ -16,7 +16,7 @@ import configparser
 import pathlib
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel
 from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QResizeEvent
 
@@ -40,6 +40,7 @@ except ModuleNotFoundError:
 logger = get_logger(__name__)
 del get_logger
 ItemDataRole = Qt.ItemDataRole
+Select = QItemSelectionModel.SelectionFlag.Select
 TALL_LAYOUT_THRESHOLD = 750
 
 __all__ = [
@@ -90,6 +91,8 @@ class SettingsWindow(QDialog):
         model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
         model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
         ui.page_selection_list_view.setModel(model)
+        first_page = model.index(0, 0)
+        ui.page_selection_list_view.selectionModel().select(first_page, Select)
         ui.page_selection_combo_box.setModel(model)
         ui.page_selection_list_view.setSelectionMode(ui.page_selection_list_view.SelectionMode.SingleSelection)
         return model
