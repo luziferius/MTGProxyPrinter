@@ -30,7 +30,20 @@
     <widget class="QComboBox" name="page_selection_combo_box"/>
    </item>
    <item row="0" column="0" rowspan="2">
-    <widget class="QListView" name="page_selection_list_view"/>
+    <widget class="QListView" name="page_selection_list_view">
+     <property name="editTriggers">
+      <set>QAbstractItemView::NoEditTriggers</set>
+     </property>
+     <property name="iconSize">
+      <size>
+       <width>22</width>
+       <height>22</height>
+      </size>
+     </property>
+     <property name="uniformItemSizes">
+      <bool>false</bool>
+     </property>
+    </widget>
    </item>
    <item row="2" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="button_box">
