@@ -16,40 +16,23 @@
   <property name="windowTitle">
    <string>Settings</string>
   </property>
-  <layout class="QVBoxLayout" name="dialog_layout">
-   <item>
-    <widget class="QTabWidget" name="tab_widget">
-     <property name="currentIndex">
-      <number>0</number>
-     </property>
-     <widget class="GeneralSettingsPage" name="general_settings_page">
-      <attribute name="title">
-       <string>General</string>
-      </attribute>
-     </widget>
-     <widget class="DecklistImportSettingsPage" name="decklist_import_settings_page">
-      <attribute name="title">
-       <string>Deck list import</string>
-      </attribute>
-     </widget>
-     <widget class="PageSizePrintingSettingsPage" name="page_size_page">
-      <attribute name="title">
-       <string>Page size &amp;&amp; Printing</string>
-      </attribute>
-     </widget>
-     <widget class="HidePrintingsPage" name="hide_printings_page">
-      <attribute name="title">
-       <string>Hide printings</string>
-      </attribute>
-     </widget>
-     <widget class="DebugSettingsPage" name="debug_settings_page">
-      <attribute name="title">
-       <string>Debug settings</string>
-      </attribute>
-     </widget>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="1">
+    <widget class="QStackedWidget" name="stacked_pages">
+     <widget class="GeneralSettingsPage" name="general_settings_page"/>
+     <widget class="DecklistImportSettingsPage" name="decklist_import_settings_page"/>
+     <widget class="PageSizePrintingSettingsPage" name="page_size_page"/>
+     <widget class="HidePrintingsPage" name="hide_printings_page"/>
+     <widget class="DebugSettingsPage" name="debug_settings_page"/>
     </widget>
    </item>
-   <item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="page_selection_combo_box"/>
+   </item>
+   <item row="0" column="0" rowspan="2">
+    <widget class="QListView" name="page_selection_list_view"/>
+   </item>
+   <item row="2" column="0" colspan="2">
     <widget class="QDialogButtonBox" name="button_box">
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Reset|QDialogButtonBox::RestoreDefaults|QDialogButtonBox::Save</set>
