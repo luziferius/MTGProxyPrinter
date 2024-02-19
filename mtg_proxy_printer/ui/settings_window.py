@@ -40,7 +40,7 @@ except ModuleNotFoundError:
 logger = get_logger(__name__)
 del get_logger
 ItemDataRole = Qt.ItemDataRole
-Select = QItemSelectionModel.SelectionFlag.Select
+ClearAndSelect = QItemSelectionModel.SelectionFlag.ClearAndSelect
 TALL_LAYOUT_THRESHOLD = 750
 
 __all__ = [
@@ -85,21 +85,30 @@ class SettingsWindow(QDialog):
 
     def _setup_pages_model(self, ui: Ui_SettingsWindow) -> QStandardItemModel:
         model = QStandardItemModel(self)
+        # Create the model entries for each page, in the order they are stacked.
         model.appendRow(item_factory("General settings", "configure"))
         model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
         model.appendRow(item_factory("Page size & Printing", "document-print", "Configure page size and printing options"))
         model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
         model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
+        # Set the models
         ui.page_selection_list_view.setModel(model)
-        first_page = model.index(0, 0)
         ui.page_selection_combo_box.setModel(model)
         ui.page_selection_list_view.setSelectionMode(ui.page_selection_list_view.SelectionMode.SingleSelection)
+        first_page = model.index(0, 0)
         selection_model = ui.page_selection_list_view.selectionModel()
-        selection_model.select(first_page, Select)
+        selection_model.select(first_page, ClearAndSelect)
+        # Connect the list view selection model and the combo box with the page stack
         selection_model.currentRowChanged.connect(lambda current, _: ui.stacked_pages.setCurrentIndex(current.row()))
+        ui.page_selection_combo_box.currentIndexChanged.connect(ui.stacked_pages.setCurrentIndex)
+
+        # Sync selections of both page list views
+        selection_model.currentRowChanged.connect(
+            lambda current, _: ui.page_selection_combo_box.setCurrentIndex(current.row()))
+        ui.page_selection_combo_box.currentIndexChanged.connect(
+            lambda row: selection_model.setCurrentIndex(model.index(row, 0), ClearAndSelect))
+
         return model
-
-
 
     def _setup_hide_printing_page(self, page: HidePrintingsPage, card_db):
         page.card_db = card_db
