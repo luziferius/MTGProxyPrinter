@@ -17,13 +17,11 @@ from unittest.mock import patch
 import pytest
 from hamcrest import *
 
-from PyQt5.QtCore import QStringListModel
 from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.settings
 
 from mtg_proxy_printer.ui.settings_window_pages import HidePrintingsPage
-from mtg_proxy_printer.ui.settings_window import SettingsWindow
 
 FILTER_VALUES = [
     "", " ", "\n",
