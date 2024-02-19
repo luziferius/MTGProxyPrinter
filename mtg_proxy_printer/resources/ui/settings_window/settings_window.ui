@@ -41,7 +41,7 @@
       </size>
      </property>
      <property name="uniformItemSizes">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
     </widget>
    </item>
