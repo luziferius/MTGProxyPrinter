@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>612</width>
-    <height>734</height>
+    <width>800</width>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,6 +19,12 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="1">
     <widget class="QStackedWidget" name="stacked_pages">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>25</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <widget class="GeneralSettingsPage" name="general_settings_page"/>
      <widget class="DecklistImportSettingsPage" name="decklist_import_settings_page"/>
      <widget class="PageSizePrintingSettingsPage" name="page_size_page"/>
@@ -31,6 +37,12 @@
    </item>
    <item row="0" column="0" rowspan="2">
     <widget class="QListView" name="page_selection_list_view">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>10</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="editTriggers">
       <set>QAbstractItemView::NoEditTriggers</set>
      </property>

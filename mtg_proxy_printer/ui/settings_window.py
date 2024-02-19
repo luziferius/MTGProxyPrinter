@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
-from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
@@ -40,6 +40,7 @@ except ModuleNotFoundError:
 logger = get_logger(__name__)
 del get_logger
 ItemDataRole = Qt.ItemDataRole
+TALL_LAYOUT_THRESHOLD = 750
 
 __all__ = [
     "SettingsWindow",
@@ -119,7 +120,17 @@ class SettingsWindow(QDialog):
     def show(self):
         logger.info("Show the settings window.")
         self.load_settings(mtg_proxy_printer.settings.settings)
+        self._adapt_layout_to_size(self.size())
         super().show()
+
+    def resizeEvent(self, a0: QResizeEvent):
+        self._adapt_layout_to_size(a0.size())
+        super().resizeEvent(a0)
+
+    def _adapt_layout_to_size(self, size):
+        is_narrow = size.width() < TALL_LAYOUT_THRESHOLD
+        self.ui.page_selection_list_view.setHidden(is_narrow)
+        self.ui.page_selection_combo_box.setVisible(is_narrow)
 
     def _get_pages(self) -> typing.Sequence[Page]:
         ui = self.ui
