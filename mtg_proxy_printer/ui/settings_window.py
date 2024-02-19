@@ -83,7 +83,7 @@ class SettingsWindow(QDialog):
         model.appendRow(item_factory("General settings", "configure"))
         model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
         model.appendRow(item_factory("Page size & Printing", "document-print", "Configure page size and printing options"))
-        model.appendRow(item_factory("Hide printings", None, "Hide unwanted printings"))
+        model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
         model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
         ui.page_selection_list_view.setModel(model)
         ui.page_selection_combo_box.setModel(model)
