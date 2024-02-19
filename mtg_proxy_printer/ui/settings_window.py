@@ -16,9 +16,9 @@ import configparser
 import pathlib
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt
 from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
@@ -38,9 +38,21 @@ except ModuleNotFoundError:
 
 logger = get_logger(__name__)
 del get_logger
+ItemDataRole = Qt.ItemDataRole
+
 __all__ = [
     "SettingsWindow",
 ]
+
+
+def item_factory(text: str, icon_name: str, tooltip_text: str = None) -> typing.Sequence[QStandardItem]:
+    item = QStandardItem(QIcon.fromTheme(icon_name), text)
+    if tooltip_text:
+        item.setToolTip(tooltip_text)
+    size = item.sizeHint()
+    size.setHeight(32)
+    item.setSizeHint(size)
+    return item,
 
 
 class SettingsWindow(QDialog):
@@ -58,13 +70,25 @@ class SettingsWindow(QDialog):
         super().__init__(parent)
         self.language_model = language_model
         self.document = document
-
         self.ui = ui = Ui_SettingsWindow()
         self.ui.setupUi(self)
+        self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def _setup_pages_model(self, ui: Ui_SettingsWindow) -> QStandardItemModel:
+        model = QStandardItemModel(self)
+        model.appendRow(item_factory("General settings", "configure"))
+        model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
+        model.appendRow(item_factory("Page size & Printing", "document-print", "Configure page size and printing options"))
+        model.appendRow(item_factory("Hide printings", None, "Hide unwanted printings"))
+        model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
+        ui.page_selection_list_view.setModel(model)
+        ui.page_selection_combo_box.setModel(model)
+        ui.page_selection_list_view.setSelectionMode(ui.page_selection_list_view.SelectionMode.SingleSelection)
+        return model
 
     def _setup_hide_printing_page(self, page: HidePrintingsPage, card_db):
         page.card_db = card_db
