@@ -28,6 +28,7 @@ from mtg_proxy_printer.document_controller.edit_document_settings import ActionE
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.settings_window_pages import Page, HidePrintingsPage
+from mtg_proxy_printer.units_and_sizes import OptStr
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_SettingsWindow
@@ -45,8 +46,10 @@ __all__ = [
 ]
 
 
-def item_factory(text: str, icon_name: str, tooltip_text: str = None) -> typing.Sequence[QStandardItem]:
-    item = QStandardItem(QIcon.fromTheme(icon_name), text)
+def item_factory(text: str, icon_name: OptStr, tooltip_text: OptStr = None) -> typing.Sequence[QStandardItem]:
+    item = QStandardItem(text)
+    if icon_name:
+        item.setIcon(QIcon.fromTheme(icon_name))
     if tooltip_text:
         item.setToolTip(tooltip_text)
     size = item.sizeHint()
