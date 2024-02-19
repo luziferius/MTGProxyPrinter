@@ -155,12 +155,14 @@ class LoadListPage(QWizardPage):
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
         default_path: str = mtg_proxy_printer.settings.settings["default-filesystem-paths"]["deck-list-search-path"]
-        if not self.ui.deck_list.toPlainText() or QMessageBox.question(
+        current_deck_list = self.ui.deck_list.toPlainText()
+        if not current_deck_list or QMessageBox.question(
                 self, "Overwrite existing deck list?",
                 "Selecting a file will overwrite the existing deck list. Continue?",
                 StandardButton.Yes | StandardButton.No
         ) == StandardButton.Yes:
-            logger.debug("User opted to replace the current, non-empty deck list with the file content")
+            if current_deck_list:
+                logger.debug("User opted to replace the current, non-empty deck list with the file content")
             file_extension_filter = self.get_file_extension_filter()
             selected_file, _ = QFileDialog.getOpenFileName(
                 self, "Select deck file", default_path, file_extension_filter)
