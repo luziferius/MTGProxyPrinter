@@ -92,10 +92,14 @@ class SettingsWindow(QDialog):
         model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
         ui.page_selection_list_view.setModel(model)
         first_page = model.index(0, 0)
-        ui.page_selection_list_view.selectionModel().select(first_page, Select)
         ui.page_selection_combo_box.setModel(model)
         ui.page_selection_list_view.setSelectionMode(ui.page_selection_list_view.SelectionMode.SingleSelection)
+        selection_model = ui.page_selection_list_view.selectionModel()
+        selection_model.select(first_page, Select)
+        selection_model.currentRowChanged.connect(lambda current, _: ui.stacked_pages.setCurrentIndex(current.row()))
         return model
+
+
 
     def _setup_hide_printing_page(self, page: HidePrintingsPage, card_db):
         page.card_db = card_db
