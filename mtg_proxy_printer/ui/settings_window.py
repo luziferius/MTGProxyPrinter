@@ -39,6 +39,8 @@ except ModuleNotFoundError:
 
 logger = get_logger(__name__)
 del get_logger
+MessageBoxButton = QMessageBox.StandardButton
+DialogBoxButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
 ClearAndSelect = QItemSelectionModel.SelectionFlag.ClearAndSelect
 TALL_LAYOUT_THRESHOLD = 750
@@ -118,15 +120,14 @@ class SettingsWindow(QDialog):
         page.process_finished.connect(self.process_finished)
 
     def _setup_button_box(self):
-        StandardButton = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(StandardButton.RestoreDefaults).clicked.connect(self.restore_defaults)
-        button_box.button(StandardButton.Reset).clicked.connect(self.reset)
+        button_box.button(DialogBoxButton.RestoreDefaults).clicked.connect(self.restore_defaults)
+        button_box.button(DialogBoxButton.Reset).clicked.connect(self.reset)
         buttons_with_icons = [
-            (StandardButton.Reset, "edit-undo"),
-            (StandardButton.Save, "document-save"),
-            (StandardButton.Cancel, "dialog-cancel"),
-            (StandardButton.RestoreDefaults, "document-revert"),
+            (DialogBoxButton.Reset, "edit-undo"),
+            (DialogBoxButton.Save, "document-save"),
+            (DialogBoxButton.Cancel, "dialog-cancel"),
+            (DialogBoxButton.RestoreDefaults, "document-revert"),
         ]
         for role, icon in buttons_with_icons:
             button = button_box.button(role)
@@ -177,8 +178,8 @@ class SettingsWindow(QDialog):
                 self, "Apply settings to the current document?",
                 "The new default settings differ from the settings used by the current document.\n"
                 "Apply the new settings to the current document?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes
-        ) == QMessageBox.StandardButton.Yes:
+                MessageBoxButton.Yes | MessageBoxButton.No, MessageBoxButton.Yes
+        ) == MessageBoxButton.Yes:
             logger.info("User applies changed document settings to the current document")
             self.document_settings_updated.emit(ActionEditDocumentSettings(new_default_layout))
         self.save()
