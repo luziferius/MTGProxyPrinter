@@ -186,8 +186,21 @@ class SettingsWindow(QDialog):
         super().accept()
 
     def reset(self):
-        logger.info("User reverts the made changes.")
-        self.load_settings(mtg_proxy_printer.settings.settings)
+        logger.debug("User clicked the reset button.")
+        scope_question = QMessageBox(
+            QMessageBox.Icon.Question,
+            "Reset current page or everything?",
+            "Reset changes made in the current page or on all pages?",
+            MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
+            self)
+        scope_question.button(MessageBoxButton.YesToAll).setText("Reset all pages")
+        scope_question.button(MessageBoxButton.Yes).setText("Reset current page")
+        if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
+            logger.info("User resets changes made on all pages.")
+            self.load_settings(mtg_proxy_printer.settings.settings)
+        elif result == MessageBoxButton.Yes:
+            logger.info("User resets changes made on the current page.")
+            self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.settings)
 
     def reject(self):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
@@ -205,6 +218,19 @@ class SettingsWindow(QDialog):
         logger.debug("Save finished.")
 
     def restore_defaults(self):
-        logger.info("User resets the configuration to the default settings.")
-        self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+        logger.debug("User clicked the 'Restore Defaults' button.")
+        scope_question = QMessageBox(
+            QMessageBox.Icon.Question,
+            "Restore defaults for the current page or everything?",
+            "Restore the settings on the current page or on all pages to their default values?",
+            MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
+            self)
+        scope_question.button(MessageBoxButton.YesToAll).setText("Restore everything")
+        scope_question.button(MessageBoxButton.Yes).setText("Current page only")
+        if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
+            logger.info("User reverts all pages to their default values.")
+            self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+        elif result == MessageBoxButton.Yes:
+            logger.info("User reverts the current page to the default values.")
+            self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
         logger.debug("Loaded DEFAULT_SETTINGS.")

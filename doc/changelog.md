@@ -4,7 +4,9 @@
 
 ## Changed features
 
-- Reworked the layout of the application settings window.
+- Major rework of the application settings window:
+    - Reworked the layout of the application settings window. It now uses a page list instead of tabs
+    - The "Reset" and "Revert to Defaults" buttons now ask if they should apply to the currently shown page or all pages. 
 - The card image tooltips shown by the image cleanup wizard now show the translated card names for 
   cards not in the preferred language.
 
