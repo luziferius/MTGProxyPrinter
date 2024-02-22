@@ -192,7 +192,7 @@ class SettingsWindow(QDialog):
     def reject(self):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
         logger.info("User closes the settings dialog. This will reset any made changes.")
-        self.reset()
+        self.load_settings(mtg_proxy_printer.settings.settings)
         super().reject()
 
     def save(self):
