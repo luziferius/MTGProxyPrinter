@@ -193,7 +193,7 @@ class SettingsWindow(QDialog):
             "Reset changes made in the current page or on all pages?",
             MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
             self)
-        scope_question.button(MessageBoxButton.YesToAll).setText("Reset all pages")
+        scope_question.button(MessageBoxButton.YesToAll).setText("Reset everything")
         scope_question.button(MessageBoxButton.Yes).setText("Reset current page")
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User resets changes made on all pages.")
@@ -226,7 +226,7 @@ class SettingsWindow(QDialog):
             MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
             self)
         scope_question.button(MessageBoxButton.YesToAll).setText("Restore everything")
-        scope_question.button(MessageBoxButton.Yes).setText("Current page only")
+        scope_question.button(MessageBoxButton.Yes).setText("Restore current page")
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User reverts all pages to their default values.")
             self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
