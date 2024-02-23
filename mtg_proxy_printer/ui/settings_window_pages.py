@@ -15,13 +15,12 @@
 
 
 import configparser
-import itertools
 import logging
 import pathlib
 import typing
 from abc import abstractmethod
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool, QObject
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QGraphicsColorizeEffect
 
@@ -326,20 +325,45 @@ class GeneralSettingsPage(Page):
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
-        gui_section = mtg_proxy_printer.settings.settings["gui"]
-        gui_section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(
+        section = mtg_proxy_printer.settings.settings["gui"]
+        section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(
             Qt.ItemDataRole.UserRole)
 
     def _save_images_settings(self):
-        images_section = mtg_proxy_printer.settings.settings["images"]
-        images_section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
-        images_section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
+        section = mtg_proxy_printer.settings.settings["images"]
+        section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
+        section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
     def _save_path_settings(self):
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
+
+    def set_highlight(self, settings: configparser.ConfigParser):
+        ui = self.ui
+
+        section = settings["application"]
+        for widget, setting in self._get_update_check_settings_widgets():
+            if section[setting] != check_state_to_bool_str[widget.checkState()]:
+                self.highlight_widget(widget)
+
+        section = settings["gui"]
+        if section["central-widget-layout"] != ui.add_card_widget_style_combo_box.currentData(
+                Qt.ItemDataRole.UserRole):
+            self.highlight_widget(ui.add_card_widget_style_combo_box)
+
+        section = settings["images"]
+        if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
+            self.highlight_widget(ui.preferred_language_combo_box)
+        if section.getboolean("automatically-add-opposing-faces") is not ui.automatically_add_opposing_faces.isChecked():
+            self.highlight_widget(ui.automatically_add_opposing_faces)
+
+        section = settings["default-filesystem-paths"]
+        widgets_and_settings = self._get_save_path_settings_widgets()
+        for widget, setting in widgets_and_settings:
+            if section[setting] != widget.text():
+                self.highlight_widget(widget)
 
     def _get_save_path_settings_widgets(self):
         ui = self.ui
@@ -372,13 +396,21 @@ class HidePrintingsPage(Page):
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["card-filter"]
-        self.ui.card_filter_general_settings.save_settings(section)
-        self.ui.card_filter_format_settings.save_settings(section)
-        section["hidden-sets"] = self.ui.set_filter_settings.toPlainText()
+        ui = self.ui
+        ui.card_filter_general_settings.save_settings(section)
+        ui.card_filter_format_settings.save_settings(section)
+        section["hidden-sets"] = ui.set_filter_settings.toPlainText()
         updater = PrintingFilterUpdater(self.card_db)
         updater.connect_progress_signals(self.long_running_process_begins, self.process_updated, self.process_finished)
         updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
         QThreadPool.globalInstance().start(updater)
+
+    def set_highlight(self, settings: configparser.ConfigParser):
+        section = settings["card-filter"]
+        ui = self.ui
+        if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
+            self.highlight_widget(ui.set_filter_settings)
+        # FIXME: Implement for filter settings!
 
 
 class PageSizePrintingSettingsPage(Page):
@@ -418,3 +450,14 @@ class PageSizePrintingSettingsPage(Page):
             (ui.printer_use_borderless_printing, "borderless-printing")
         ]
         return widgets_with_settings
+
+    def set_highlight(self, settings: configparser.ConfigParser):
+        ui = self.ui
+        section = settings["printer"]
+        for widget, setting in self._get_printer_settings_widgets():
+            if section.getboolean(setting) != widget.isChecked():
+                self.highlight_widget(widget)
+        section = settings["documents"]
+        if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
+            self.highlight_widget(ui.pdf_page_count_limit)
+
