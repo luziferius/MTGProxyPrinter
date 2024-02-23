@@ -56,7 +56,10 @@ else:
 
 def highlight_widget(widget: QWidget) -> None:
     """Sets a visual highlight on the given widget to make it stand out"""
+    palette = widget.palette()
+    highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
     effect = QGraphicsColorizeEffect(widget)
+    effect.setColor(highlight_color)
     widget.setGraphicsEffect(effect)
 
 
