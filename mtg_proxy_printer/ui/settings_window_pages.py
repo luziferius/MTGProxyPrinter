@@ -15,6 +15,7 @@
 
 
 import configparser
+import itertools
 import logging
 import pathlib
 import typing
@@ -55,6 +56,7 @@ logger = get_logger(__name__)
 del get_logger
 
 
+
 class Page(QWidget):
 
     @abstractmethod
@@ -65,9 +67,11 @@ class Page(QWidget):
     def load(self, settings: configparser.ConfigParser):
         pass
 
+    @abstractmethod
     def set_highlight(self, settings: configparser.ConfigParser):
         pass
 
+    @abstractmethod
     def clear_highlight(self):
         pass
 
@@ -109,9 +113,10 @@ class DebugSettingsPage(Page):
 
     def clear_highlight(self):
         ui = self.ui
-        ui.enable_cutelog_integration.setGraphicsEffect(None)
-        ui.enable_write_log_file.setGraphicsEffect(None)
-        ui.log_level_combo_box.setGraphicsEffect(None)
+        for item in [
+            ui.enable_cutelog_integration, ui.enable_write_log_file, ui.log_level_combo_box,
+        ]:
+            item.setGraphicsEffect(None)
 
     def _get_debug_settings_checkbox_widgets(self):
         ui = self.ui
@@ -183,7 +188,7 @@ class DecklistImportSettingsPage(Page):
 
     def load(self, settings: configparser.ConfigParser):
         section = settings["decklist-import"]
-        for widget, setting in self._get_print_guessing_checkbox_widgets():
+        for widget, setting in self._get_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
 
         section = settings["default-filesystem-paths"]
@@ -193,19 +198,21 @@ class DecklistImportSettingsPage(Page):
 
     def save(self):
         section = mtg_proxy_printer.settings.settings["decklist-import"]
-        for widget, setting in self._get_print_guessing_checkbox_widgets():
+        for widget, setting in self._get_checkbox_widgets():
             section[setting] = str(widget.isChecked())
 
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         for widget, setting in self._get_save_path_settings_widgets():
             section[setting] = widget.text()
 
-    def _get_print_guessing_checkbox_widgets(self):
+    def _get_checkbox_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
             (ui.print_guessing_enable, "enable-print-guessing-by-default"),
             (ui.print_guessing_prefer_already_downloaded, "prefer-already-downloaded-images"),
             (ui.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
+            (ui.remove_basic_wastes_enable, "remove-basic-wastes"),
+            (ui.remove_snow_basics_enable, "remove-snow-basics"),
         ]
         return widgets_with_settings
 
@@ -215,6 +222,26 @@ class DecklistImportSettingsPage(Page):
             (ui.deck_list_search_path, "deck-list-search-path"),
         ]
         return widgets_with_settings
+
+    def set_highlight(self, settings: configparser.ConfigParser):
+        section = mtg_proxy_printer.settings.settings["decklist-import"]
+        for widget, setting in self._get_checkbox_widgets():
+            if widget.isChecked() != section.getboolean(setting):
+                effect = QGraphicsColorizeEffect(widget)
+                widget.setGraphicsEffect(effect)
+
+        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
+        for widget, setting in self._get_save_path_settings_widgets():
+            if widget.text() != section[setting]:
+                effect = QGraphicsColorizeEffect(widget)
+                widget.setGraphicsEffect(effect)
+
+    def clear_highlight(self):
+        for widget, _ in itertools.chain(
+                self._get_save_path_settings_widgets(),
+                self._get_checkbox_widgets(),
+        ):
+            widget.setGraphicsEffect(None)
 
 
 class GeneralSettingsPage(Page):
