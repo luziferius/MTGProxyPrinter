@@ -56,27 +56,32 @@ logger = get_logger(__name__)
 del get_logger
 
 
-
 class Page(QWidget):
+    """The base class for settings page widgets. Defines the API used by the settings window"""
 
     @abstractmethod
     def save(self):
+        """Saves the GUI state into the global application settings"""
         pass
 
     @abstractmethod
     def load(self, settings: configparser.ConfigParser):
+        """Loads the GUI state based on the given settings. This is used to load, reset, and revert settings."""
         pass
 
     @abstractmethod
     def set_highlight(self, settings: configparser.ConfigParser):
+        """Highlights GUI widgets with a state different from the given settings"""
         pass
 
     @abstractmethod
     def clear_highlight(self):
+        """Clears all GUI widget highlights."""
         pass
 
     @staticmethod
     def highlight_widget(widget: QWidget) -> None:
+        """Sets a visual highlight on the given widget to make it stand out"""
         effect = QGraphicsColorizeEffect(widget)
         widget.setGraphicsEffect(effect)
 
