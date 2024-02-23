@@ -77,7 +77,7 @@ class HoverEventFilter(QObject):
         if event_type == QEvent.HoverEnter:
             logger.debug("Hover enter")
             for page in pages:
-                page.set_highlight(self.settings)
+                page.highlight_differing_settings(self.settings)
         elif event_type == QEvent.HoverLeave:
             logger.debug("Hover leave")
             for page in pages:

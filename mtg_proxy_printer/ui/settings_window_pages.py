@@ -69,7 +69,7 @@ class Page(QWidget):
         pass
 
     @abstractmethod
-    def set_highlight(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
         """Highlights GUI widgets with a state different from the given settings"""
         pass
 
@@ -109,7 +109,7 @@ class DebugSettingsPage(Page):
             debug_section[setting] = str(widget.isChecked())
         debug_section["log-level"] = self.ui.log_level_combo_box.currentText()
 
-    def set_highlight(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
@@ -223,7 +223,7 @@ class DecklistImportSettingsPage(Page):
         ]
         return widgets_with_settings
 
-    def set_highlight(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
         section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
@@ -340,7 +340,7 @@ class GeneralSettingsPage(Page):
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
 
-    def set_highlight(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
 
         section = settings["application"]
@@ -405,7 +405,7 @@ class HidePrintingsPage(Page):
         updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
         QThreadPool.globalInstance().start(updater)
 
-    def set_highlight(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
         section = settings["card-filter"]
         ui = self.ui
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
@@ -451,7 +451,7 @@ class PageSizePrintingSettingsPage(Page):
         ]
         return widgets_with_settings
 
-    def set_highlight(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
