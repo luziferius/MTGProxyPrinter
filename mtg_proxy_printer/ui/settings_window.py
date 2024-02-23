@@ -16,7 +16,7 @@ import configparser
 import pathlib
 import typing
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel, QEvent, QObject
 from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QResizeEvent
 
@@ -60,6 +60,29 @@ def item_factory(text: str, icon_name: OptStr, tooltip_text: OptStr = None) -> t
     size.setHeight(32)
     item.setSizeHint(size)
     return item,
+
+
+class HoverEventFilter(QObject):
+    def __init__(self, settings: configparser.ConfigParser, parent: "SettingsWindow"):
+        super().__init__(parent)
+        self.settings = settings
+
+    def eventFilter(self, object_, event: QEvent):
+        event_type = event.type()
+        # This check avoids a crash during application shutdown
+        if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
+            return False
+        parent: "SettingsWindow" = self.parent()
+        pages = parent._get_pages()
+        if event_type == QEvent.HoverEnter:
+            logger.debug("Hover enter")
+            for page in pages:
+                page.set_highlight(self.settings)
+        elif event_type == QEvent.HoverLeave:
+            logger.debug("Hover leave")
+            for page in pages:
+                page.clear_highlight()
+        return False
 
 
 class SettingsWindow(QDialog):
@@ -121,8 +144,15 @@ class SettingsWindow(QDialog):
 
     def _setup_button_box(self):
         button_box = self.ui.button_box
-        button_box.button(DialogBoxButton.RestoreDefaults).clicked.connect(self.restore_defaults)
-        button_box.button(DialogBoxButton.Reset).clicked.connect(self.reset)
+
+        restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
+        restore_defaults.clicked.connect(self.restore_defaults)
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
+
+        reset = button_box.button(DialogBoxButton.Reset)
+        reset.clicked.connect(self.reset)
+        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+
         buttons_with_icons = [
             (DialogBoxButton.Reset, "edit-undo"),
             (DialogBoxButton.Save, "document-save"),

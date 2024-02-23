@@ -22,7 +22,7 @@ from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QGraphicsColorizeEffect
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
@@ -65,6 +65,12 @@ class Page(QWidget):
     def load(self, settings: configparser.ConfigParser):
         pass
 
+    def set_highlight(self, settings: configparser.ConfigParser):
+        pass
+
+    def clear_highlight(self):
+        pass
+
 
 class DebugSettingsPage(Page):
 
@@ -89,6 +95,23 @@ class DebugSettingsPage(Page):
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             debug_section[setting] = str(widget.isChecked())
         debug_section["log-level"] = self.ui.log_level_combo_box.currentText()
+
+    def set_highlight(self, settings: configparser.ConfigParser):
+        section = settings["debug"]
+        for widget, setting in self._get_debug_settings_checkbox_widgets():
+            if widget.isChecked() != section.getboolean(setting):
+                effect = QGraphicsColorizeEffect(widget)
+                widget.setGraphicsEffect(effect)
+        debug_combo_box = self.ui.log_level_combo_box
+        if debug_combo_box.currentText() != section["log-level"]:
+            effect = QGraphicsColorizeEffect(debug_combo_box)
+            debug_combo_box.setGraphicsEffect(effect)
+
+    def clear_highlight(self):
+        ui = self.ui
+        ui.enable_cutelog_integration.setGraphicsEffect(None)
+        ui.enable_write_log_file.setGraphicsEffect(None)
+        ui.log_level_combo_box.setGraphicsEffect(None)
 
     def _get_debug_settings_checkbox_widgets(self):
         ui = self.ui
