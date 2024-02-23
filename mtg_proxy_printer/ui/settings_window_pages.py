@@ -21,7 +21,7 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool, QObject
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QGraphicsColorizeEffect
 
@@ -74,10 +74,10 @@ class Page(QWidget):
         """Highlights GUI widgets with a state different from the given settings"""
         pass
 
-    @abstractmethod
     def clear_highlight(self):
         """Clears all GUI widget highlights."""
-        pass
+        for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+            item.setGraphicsEffect(None)
 
     @staticmethod
     def highlight_widget(widget: QWidget) -> None:
@@ -118,13 +118,6 @@ class DebugSettingsPage(Page):
         debug_combo_box = self.ui.log_level_combo_box
         if debug_combo_box.currentText() != section["log-level"]:
             self.highlight_widget(debug_combo_box)
-
-    def clear_highlight(self):
-        ui = self.ui
-        for item in [
-            ui.enable_cutelog_integration, ui.enable_write_log_file, ui.log_level_combo_box,
-        ]:
-            item.setGraphicsEffect(None)
 
     def _get_debug_settings_checkbox_widgets(self):
         ui = self.ui
@@ -241,13 +234,6 @@ class DecklistImportSettingsPage(Page):
         for widget, setting in self._get_save_path_settings_widgets():
             if widget.text() != section[setting]:
                 self.highlight_widget(widget)
-
-    def clear_highlight(self):
-        for widget, _ in itertools.chain(
-                self._get_save_path_settings_widgets(),
-                self._get_checkbox_widgets(),
-        ):
-            widget.setGraphicsEffect(None)
 
 
 class GeneralSettingsPage(Page):
