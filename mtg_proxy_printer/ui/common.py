@@ -18,7 +18,7 @@ import platform
 import typing
 
 from PyQt5.QtCore import QFile, QUrl, QObject, QSize
-from PyQt5.QtWidgets import QLabel, QWizard, QWidget
+from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect
 from PyQt5.QtGui import QIcon
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
@@ -31,6 +31,7 @@ __all__ = [
     "RESOURCE_PATH_PREFIX",
     "ICON_PATH_PREFIX",
     "HAS_COMPILED_RESOURCES",
+    "highlight_widget",
     "BlockedSignals",
     "set_url_label",
     "load_ui_from_file",
@@ -51,6 +52,12 @@ else:
     ICON_PATH_PREFIX = ":/icons"
     HAS_COMPILED_RESOURCES = True
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+
+def highlight_widget(widget: QWidget) -> None:
+    """Sets a visual highlight on the given widget to make it stand out"""
+    effect = QGraphicsColorizeEffect(widget)
+    widget.setGraphicsEffect(effect)
 
 
 class BlockedSignals:

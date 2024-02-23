@@ -22,12 +22,13 @@ from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit, QGraphicsColorizeEffect
+from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.ui.common import highlight_widget
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.debug_settings_page import Ui_DebugSettingsPage
@@ -78,12 +79,6 @@ class Page(QWidget):
         for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
             item.setGraphicsEffect(None)
 
-    @staticmethod
-    def highlight_widget(widget: QWidget) -> None:
-        """Sets a visual highlight on the given widget to make it stand out"""
-        effect = QGraphicsColorizeEffect(widget)
-        widget.setGraphicsEffect(effect)
-
 
 class DebugSettingsPage(Page):
 
@@ -113,10 +108,10 @@ class DebugSettingsPage(Page):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
-                self.highlight_widget(widget)
+                highlight_widget(widget)
         debug_combo_box = self.ui.log_level_combo_box
         if debug_combo_box.currentText() != section["log-level"]:
-            self.highlight_widget(debug_combo_box)
+            highlight_widget(debug_combo_box)
 
     def _get_debug_settings_checkbox_widgets(self):
         ui = self.ui
@@ -227,12 +222,12 @@ class DecklistImportSettingsPage(Page):
         section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
-                self.highlight_widget(widget)
+                highlight_widget(widget)
 
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         for widget, setting in self._get_save_path_settings_widgets():
             if widget.text() != section[setting]:
-                self.highlight_widget(widget)
+                highlight_widget(widget)
 
 
 class GeneralSettingsPage(Page):
@@ -346,24 +341,24 @@ class GeneralSettingsPage(Page):
         section = settings["application"]
         for widget, setting in self._get_update_check_settings_widgets():
             if section[setting] != check_state_to_bool_str[widget.checkState()]:
-                self.highlight_widget(widget)
+                highlight_widget(widget)
 
         section = settings["gui"]
         if section["central-widget-layout"] != ui.add_card_widget_style_combo_box.currentData(
                 Qt.ItemDataRole.UserRole):
-            self.highlight_widget(ui.add_card_widget_style_combo_box)
+            highlight_widget(ui.add_card_widget_style_combo_box)
 
         section = settings["images"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
-            self.highlight_widget(ui.preferred_language_combo_box)
+            highlight_widget(ui.preferred_language_combo_box)
         if section.getboolean("automatically-add-opposing-faces") is not ui.automatically_add_opposing_faces.isChecked():
-            self.highlight_widget(ui.automatically_add_opposing_faces)
+            highlight_widget(ui.automatically_add_opposing_faces)
 
         section = settings["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             if section[setting] != widget.text():
-                self.highlight_widget(widget)
+                highlight_widget(widget)
 
     def _get_save_path_settings_widgets(self):
         ui = self.ui
@@ -411,7 +406,7 @@ class HidePrintingsPage(Page):
         ui.card_filter_general_settings.highlight_differing_settings(settings)
         ui.card_filter_general_settings.highlight_differing_settings(settings)
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
-            self.highlight_widget(ui.set_filter_settings)
+            highlight_widget(ui.set_filter_settings)
 
 
 class PageSizePrintingSettingsPage(Page):
@@ -458,8 +453,8 @@ class PageSizePrintingSettingsPage(Page):
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             if section.getboolean(setting) != widget.isChecked():
-                self.highlight_widget(widget)
+                highlight_widget(widget)
         section = settings["documents"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
-            self.highlight_widget(ui.pdf_page_count_limit)
+            highlight_widget(ui.pdf_page_count_limit)
 

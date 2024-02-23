@@ -21,7 +21,9 @@ from typing import Union, Type, List, Tuple
 
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton, QGraphicsColorizeEffect
+from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
+
+from mtg_proxy_printer.ui.common import highlight_widget
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.format_printing_filter import Ui_FormatPrintingFilter
@@ -64,12 +66,6 @@ class AbstractPrintingFilterWidget(QGroupBox):
         """Highlights GUI widgets with a state different from the given settings"""
         pass
 
-    @staticmethod
-    def highlight_widget(widget: QWidget) -> None:
-        """Sets a visual highlight on the given widget to make it stand out"""
-        effect = QGraphicsColorizeEffect(widget)
-        widget.setGraphicsEffect(effect)
-
 
 class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
     """
@@ -111,7 +107,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         section = settings["card-filter"]
         for widget, setting in self._get_widgets_with_keys():
             if widget.isChecked() is not section.getboolean(setting):
-                self.highlight_widget(widget)
+                highlight_widget(widget)
 
 
 class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
@@ -152,4 +148,4 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
         section = settings["card-filter"]
         for widget, setting in self._get_widgets_with_keys():
             if widget.isChecked() is not section.getboolean(setting):
-                self.highlight_widget(widget)
+                highlight_widget(widget)
