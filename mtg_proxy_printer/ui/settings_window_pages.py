@@ -75,6 +75,11 @@ class Page(QWidget):
     def clear_highlight(self):
         pass
 
+    @staticmethod
+    def highlight_widget(widget: QWidget) -> None:
+        effect = QGraphicsColorizeEffect(widget)
+        widget.setGraphicsEffect(effect)
+
 
 class DebugSettingsPage(Page):
 
@@ -104,12 +109,10 @@ class DebugSettingsPage(Page):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
-                effect = QGraphicsColorizeEffect(widget)
-                widget.setGraphicsEffect(effect)
+                self.highlight_widget(widget)
         debug_combo_box = self.ui.log_level_combo_box
         if debug_combo_box.currentText() != section["log-level"]:
-            effect = QGraphicsColorizeEffect(debug_combo_box)
-            debug_combo_box.setGraphicsEffect(effect)
+            self.highlight_widget(debug_combo_box)
 
     def clear_highlight(self):
         ui = self.ui
@@ -227,14 +230,12 @@ class DecklistImportSettingsPage(Page):
         section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
-                effect = QGraphicsColorizeEffect(widget)
-                widget.setGraphicsEffect(effect)
+                self.highlight_widget(widget)
 
         section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
         for widget, setting in self._get_save_path_settings_widgets():
             if widget.text() != section[setting]:
-                effect = QGraphicsColorizeEffect(widget)
-                widget.setGraphicsEffect(effect)
+                self.highlight_widget(widget)
 
     def clear_highlight(self):
         for widget, _ in itertools.chain(
