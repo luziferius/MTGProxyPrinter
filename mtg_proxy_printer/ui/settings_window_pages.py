@@ -408,9 +408,10 @@ class HidePrintingsPage(Page):
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         section = settings["card-filter"]
         ui = self.ui
+        ui.card_filter_general_settings.highlight_differing_settings(settings)
+        ui.card_filter_general_settings.highlight_differing_settings(settings)
         if section["hidden-sets"] != ui.set_filter_settings.toPlainText():
             self.highlight_widget(ui.set_filter_settings)
-        # FIXME: Implement for filter settings!
 
 
 class PageSizePrintingSettingsPage(Page):

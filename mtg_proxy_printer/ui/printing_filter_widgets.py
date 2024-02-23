@@ -21,7 +21,7 @@ from typing import Union, Type, List, Tuple
 
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices
-from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
+from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton, QGraphicsColorizeEffect
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.format_printing_filter import Ui_FormatPrintingFilter
@@ -58,6 +58,17 @@ class AbstractPrintingFilterWidget(QGroupBox):
     @abc.abstractmethod
     def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
         pass
+
+    @abc.abstractmethod
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        """Highlights GUI widgets with a state different from the given settings"""
+        pass
+
+    @staticmethod
+    def highlight_widget(widget: QWidget) -> None:
+        """Sets a visual highlight on the given widget to make it stand out"""
+        effect = QGraphicsColorizeEffect(widget)
+        widget.setGraphicsEffect(effect)
 
 
 class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
@@ -96,6 +107,12 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         ]
         return widgets_with_settings
 
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        section = settings["card-filter"]
+        for widget, setting in self._get_widgets_with_keys():
+            if widget.isChecked() is not section.getboolean(setting):
+                self.highlight_widget(widget)
+
 
 class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
     """
@@ -130,3 +147,9 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_banned_in_vintage, "hide-banned-in-vintage"),
         ]
         return widgets_with_settings
+
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        section = settings["card-filter"]
+        for widget, setting in self._get_widgets_with_keys():
+            if widget.isChecked() is not section.getboolean(setting):
+                self.highlight_widget(widget)
