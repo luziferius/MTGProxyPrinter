@@ -60,6 +60,7 @@ def highlight_widget(widget: QWidget) -> None:
     highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
     effect = QGraphicsColorizeEffect(widget)
     effect.setColor(highlight_color)
+    effect.setStrength(0.75)
     widget.setGraphicsEffect(effect)
 
 
