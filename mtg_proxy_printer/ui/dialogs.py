@@ -57,7 +57,13 @@ __all__ = [
 
 
 def read_path(setting: str) -> str:
-    return mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+    stored = mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+    if not stored:
+        return ""
+    resolved = str(pathlib.Path(stored).resolve())
+    if not resolved:
+        logger.warning(f"File system path stored in setting {setting} does not resolve to an existing path")
+    return resolved
 
 
 class SavePDFDialog(QFileDialog):
