@@ -454,6 +454,7 @@ class PageSizePrintingSettingsPage(Page):
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
+        ui.page_configuration_group_box.highlight_differing_settings(settings)
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             if section.getboolean(setting) != widget.isChecked():

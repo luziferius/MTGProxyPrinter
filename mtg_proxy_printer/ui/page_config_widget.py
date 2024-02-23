@@ -18,7 +18,7 @@ from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QGraphicsColorizeEffect
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
@@ -164,3 +164,21 @@ class PageConfigWidget(QGroupBox):
             (ui.document_name, "default-document-name")
         ]
         return widgets_with_settings
+
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        section = settings["documents"]
+        for widget, setting in self._get_string_settings_widgets():
+            if widget.text() != section[setting]:
+                self.highlight_widget(widget)
+        for widget, setting in self._get_boolean_settings_widgets():
+            if widget.isChecked() is not section.getboolean(setting):
+                self.highlight_widget(widget)
+        for widget, setting in self._get_integer_settings_widgets():
+            if widget.value() != section.getint(setting):
+                self.highlight_widget(widget)
+
+    @staticmethod
+    def highlight_widget(widget: QWidget) -> None:
+        """Sets a visual highlight on the given widget to make it stand out"""
+        effect = QGraphicsColorizeEffect(widget)
+        widget.setGraphicsEffect(effect)
