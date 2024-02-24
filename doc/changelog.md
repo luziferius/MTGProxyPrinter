@@ -59,8 +59,8 @@
     - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
       printers physical printing area.
 - Added card filters for
-    - cards banned in Oathbreaker
-    - cards with extended art
+    - cards banned in Oathbreaker: [Scryfall search](https://scryfall.com/search?q=banned%3Aoathbreaker)
+    - cards with extended art:  [Scryfall search](https://scryfall.com/search?q=is%3Aextended)
     - Add ability to hide specific sets you don't like.
         - Filters are entered using set codes (e.g. `LEA DBL SLD`), as listed by Scryfall.
         - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter
