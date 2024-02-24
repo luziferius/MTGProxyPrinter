@@ -5,7 +5,7 @@
 ## Changed features
 
 - Major rework of the application settings window:
-    - Reworked the layout of the application settings window. It now uses a page list instead of tabs
+    - The dialog now shows the individual settings pages using a list instead of tabs.
     - The "Reset" and "Revert Defaults" buttons now ask if they should apply to the currently shown page or all pages.
     - Hovering the mouse over the "Reset" and "Revert Defaults" buttons highlights the settings that will 
       be reset/reverted.
