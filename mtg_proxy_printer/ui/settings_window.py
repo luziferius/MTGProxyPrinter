@@ -73,15 +73,10 @@ class HoverEventFilter(QObject):
         if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
             return False
         parent: "SettingsWindow" = self.parent()
-        pages = parent._get_pages()
         if event_type == QEvent.HoverEnter:
-            logger.debug("Hover enter")
-            for page in pages:
-                page.highlight_differing_settings(self.settings)
+            parent.highlight_differing_settings(self.settings)
         elif event_type == QEvent.HoverLeave:
-            logger.debug("Hover leave")
-            for page in pages:
-                page.clear_highlight()
+            parent.clear_highlight()
         return False
 
 
@@ -174,6 +169,14 @@ class SettingsWindow(QDialog):
         self._adapt_layout_to_size(a0.size())
         super().resizeEvent(a0)
 
+    def highlight_differing_settings(self, setting: configparser.ConfigParser):
+        for page in self._get_pages():
+            page.highlight_differing_settings(setting)
+
+    def clear_highlight(self):
+        for page in self._get_pages():
+            page.clear_highlight()
+
     def _adapt_layout_to_size(self, size):
         is_narrow = size.width() < TALL_LAYOUT_THRESHOLD
         self.ui.page_selection_list_view.setHidden(is_narrow)
@@ -228,9 +231,11 @@ class SettingsWindow(QDialog):
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User resets changes made on all pages.")
             self.load_settings(mtg_proxy_printer.settings.settings)
+            self.clear_highlight()
         elif result == MessageBoxButton.Yes:
             logger.info("User resets changes made on the current page.")
             self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.settings)
+            self.clear_highlight()
 
     def reject(self):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
@@ -260,7 +265,9 @@ class SettingsWindow(QDialog):
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User reverts all pages to their default values.")
             self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+            self.clear_highlight()
         elif result == MessageBoxButton.Yes:
             logger.info("User reverts the current page to the default values.")
             self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+            self.clear_highlight()
         logger.debug("Loaded DEFAULT_SETTINGS.")
