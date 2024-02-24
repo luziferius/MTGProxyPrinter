@@ -4,8 +4,13 @@
 
 ## Changed features
 
-- The card image tooltips shown by the image cleanup wizard now shows the translated card name for 
-  cards not in the preferred language.  
+- Major rework of the application settings window:
+    - The dialog now shows the individual settings pages using a list instead of tabs.
+    - The "Reset" and "Revert Defaults" buttons now ask if they should apply to the currently shown page or all pages.
+    - Hovering the mouse over the "Reset" and "Revert Defaults" buttons highlights the settings that will 
+      be reset/reverted.
+- The card image tooltips shown by the image cleanup wizard now show the translated card names for 
+  cards not in the preferred language.
 
 # Version 0.27.0 (2024-02-04)  <a name="v0_27_0"></a>
 
@@ -54,8 +59,8 @@
     - This may result in shorter printed cut helper lines, that do not extend all the way up to the border of the
       printers physical printing area.
 - Added card filters for
-    - cards banned in Oathbreaker
-    - cards with extended art
+    - cards banned in Oathbreaker: [Scryfall search](https://scryfall.com/search?q=banned%3Aoathbreaker)
+    - cards with extended art:  [Scryfall search](https://scryfall.com/search?q=is%3Aextended)
     - Add ability to hide specific sets you don't like.
         - Filters are entered using set codes (e.g. `LEA DBL SLD`), as listed by Scryfall.
         - Added a text field to enter any number of those set codes (separated by any whitespace) to the card filter

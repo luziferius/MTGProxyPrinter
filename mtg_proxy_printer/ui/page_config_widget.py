@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import functools
 from functools import partial
 import typing
 
@@ -21,7 +22,7 @@ from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals
+from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
@@ -164,3 +165,32 @@ class PageConfigWidget(QGroupBox):
             (ui.document_name, "default-document-name")
         ]
         return widgets_with_settings
+
+    @functools.singledispatchmethod
+    def highlight_differing_settings(self, settings):
+        pass
+
+    @highlight_differing_settings.register
+    def _(self, settings: configparser.ConfigParser):
+        section = settings["documents"]
+        for widget, setting in self._get_string_settings_widgets():
+            if widget.text() != section[setting]:
+                highlight_widget(widget)
+        for widget, setting in self._get_boolean_settings_widgets():
+            if widget.isChecked() is not section.getboolean(setting):
+                highlight_widget(widget)
+        for widget, setting in self._get_integer_settings_widgets():
+            if widget.value() != section.getint(setting):
+                highlight_widget(widget)
+
+    @highlight_differing_settings.register
+    def _(self, settings: PageLayoutSettings):
+        for widget, _ in self._get_string_settings_widgets():
+            if widget.text() != getattr(settings, widget.objectName()):
+                highlight_widget(widget)
+        for widget, _ in self._get_boolean_settings_widgets():
+            if widget.isChecked() is not getattr(settings, widget.objectName()):
+                highlight_widget(widget)
+        for widget, _ in self._get_integer_settings_widgets():
+            if widget.value() != getattr(settings, widget.objectName()):
+                highlight_widget(widget)

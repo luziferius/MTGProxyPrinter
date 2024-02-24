@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GeneralSettingsPage</class>
+ <widget class="QWidget" name="GeneralSettingsPage">
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="1" column="0" colspan="2">
+    <widget class="QGroupBox" name="look_and_feel_settings_group_box">
+     <property name="title">
+      <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="add_card_widget_style_label">
+        <property name="text">
+         <string>Main window layout</string>
+        </property>
+        <property name="buddy">
+         <cstring>add_card_widget_style_combo_box</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="add_card_widget_style_combo_box">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
+Columnar organizes the main window content in four columns, and is best for (ultra-)wide screens.
+Tabbed uses tabs to only show parts of the main window at a time. Best used with small screens in portrait mode (i.e. 9:16), otherwise not recommended.</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QComboBox" name="preferred_language_combo_box">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Language choices will default to the chosen language here.
+
+Entries use the language codes as listed on Scryfall.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QGroupBox" name="double_faced_cards_group_box">
+     <property name="title">
+      <string>Double-faced cards</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <item>
+       <widget class="QCheckBox" name="automatically_add_opposing_faces">
+        <property name="toolTip">
+         <string>When adding double-faced cards, automatically add the same number of copies of the other side.
+Uses the appropriate, matching other card side.
+Uncheck to disable this automatism.</string>
+        </property>
+        <property name="text">
+         <string>Automatically add the other side of double-faced cards</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="preferred_language_label">
+     <property name="text">
+      <string>Preferred card language:</string>
+     </property>
+     <property name="buddy">
+      <cstring>preferred_language_combo_box</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QGroupBox" name="update_check_group_box">
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="title">
+      <string>Automatic update checks</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_9">
+      <item>
+       <widget class="QLabel" name="update_check_label">
+        <property name="text">
+         <string>Update checks are performed at application start, if enabled.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="check_application_updates_enabled">
+        <property name="toolTip">
+         <string>If enabled, check for application updates, and notify if new updates are available for installation.</string>
+        </property>
+        <property name="text">
+         <string>Check for application updates</string>
+        </property>
+        <property name="tristate">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="check_card_data_updates_enabled">
+        <property name="toolTip">
+         <string>If enabled, query the Scryfall API if new cards are available. If so, offer to update the local card data.</string>
+        </property>
+        <property name="text">
+         <string>Check for new card data</string>
+        </property>
+        <property name="tristate">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QGroupBox" name="default_paths_group_box">
+     <property name="toolTip">
+      <string>These paths are selected by default when browsing the file system for files</string>
+     </property>
+     <property name="title">
+      <string>Default save paths</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_4">
+      <item row="0" column="0">
+       <widget class="QLabel" name="document_save_path_label">
+        <property name="text">
+         <string>Document save path</string>
+        </property>
+        <property name="buddy">
+         <cstring>document_save_path</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="pdf_save_path_label">
+        <property name="text">
+         <string>PDF export path</string>
+        </property>
+        <property name="buddy">
+         <cstring>pdf_save_path</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="pdf_save_path">
+        <property name="toolTip">
+         <string>If set, use this as the default location for saving exported PDF documents.</string>
+        </property>
+        <property name="inputMethodHints">
+         <set>Qt::ImhNoAutoUppercase</set>
+        </property>
+        <property name="placeholderText">
+         <string>Path to a directory</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="document_save_path">
+        <property name="toolTip">
+         <string>If set, use this as the default location for saving documents.</string>
+        </property>
+        <property name="inputMethodHints">
+         <set>Qt::ImhNoAutoUppercase</set>
+        </property>
+        <property name="placeholderText">
+         <string>Path to a directory</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QPushButton" name="document_save_path_browse_button">
+        <property name="toolTip">
+         <string>Browse…</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset theme="document-open">
+          <normaloff>.</normaloff>.</iconset>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="pdf_save_path_browse_button">
+        <property name="toolTip">
+         <string>Browse…</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset theme="document-open">
+          <normaloff>.</normaloff>.</iconset>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="2">
+    <spacer name="spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
