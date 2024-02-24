@@ -106,11 +106,16 @@ class SettingsWindow(QDialog):
     def _setup_pages_model(self, ui: Ui_SettingsWindow) -> QStandardItemModel:
         model = QStandardItemModel(self)
         # Create the model entries for each page, in the order they are stacked.
-        model.appendRow(item_factory("General settings", "configure"))
-        model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
-        model.appendRow(item_factory("Page size & Printing", "document-print", "Configure page size and printing options"))
-        model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
-        model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
+        model.appendRow(item_factory(
+            self.tr("General settings"), "configure"))
+        model.appendRow(item_factory(
+            self.tr("Deck list import"), "edit-download", self.tr("Configure the deck list importer")))
+        model.appendRow(item_factory(
+            self.tr("Page size & Printing"), "document-print", self.tr("Configure page size and printing options")))
+        model.appendRow(item_factory(
+            self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings")))
+        model.appendRow(item_factory(
+            self.tr("Debug settings"), None, self.tr("Things useful for investigating bugs in the application")))
         # Set the models
         ui.page_selection_list_view.setModel(model)
         ui.page_selection_combo_box.setModel(model)
@@ -208,9 +213,9 @@ class SettingsWindow(QDialog):
         current_document_layout = self.document.page_layout
         new_default_layout = self.ui.page_size_page.ui.page_configuration_group_box.page_layout
         if current_document_layout != new_default_layout and QMessageBox.question(
-                self, "Apply settings to the current document?",
-                "The new default settings differ from the settings used by the current document.\n"
-                "Apply the new settings to the current document?",
+                self, self.tr("Apply settings to the current document?"),
+                self.tr("The new default settings differ from the settings used by the current document.\n"
+                        "Apply the new settings to the current document?"),
                 MessageBoxButton.Yes | MessageBoxButton.No, MessageBoxButton.Yes
         ) == MessageBoxButton.Yes:
             logger.info("User applies changed document settings to the current document")
@@ -222,12 +227,12 @@ class SettingsWindow(QDialog):
         logger.debug("User clicked the reset button.")
         scope_question = QMessageBox(
             QMessageBox.Icon.Question,
-            "Reset current page or everything?",
-            "Reset changes made in the current page or on all pages?",
+            self.tr("Reset current page or everything?"),
+            self.tr("Reset changes made in the current page or on all pages?"),
             MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
             self)
-        scope_question.button(MessageBoxButton.YesToAll).setText("Reset everything")
-        scope_question.button(MessageBoxButton.Yes).setText("Reset current page")
+        scope_question.button(MessageBoxButton.YesToAll).setText(self.tr("Reset everything"))
+        scope_question.button(MessageBoxButton.Yes).setText(self.tr("Reset current page"))
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User resets changes made on all pages.")
             self.load_settings(mtg_proxy_printer.settings.settings)
@@ -256,12 +261,12 @@ class SettingsWindow(QDialog):
         logger.debug("User clicked the 'Restore Defaults' button.")
         scope_question = QMessageBox(
             QMessageBox.Icon.Question,
-            "Restore defaults for the current page or everything?",
-            "Restore the settings on the current page or on all pages to their default values?",
+            self.tr("Restore defaults for the current page or everything?"),
+            self.tr("Restore the settings on the current page or on all pages to their default values?"),
             MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
             self)
-        scope_question.button(MessageBoxButton.YesToAll).setText("Restore everything")
-        scope_question.button(MessageBoxButton.Yes).setText("Restore current page")
+        scope_question.button(MessageBoxButton.YesToAll).setText(self.tr("Restore everything"))
+        scope_question.button(MessageBoxButton.Yes).setText(self.tr("Restore current page"))
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User reverts all pages to their default values.")
             self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
