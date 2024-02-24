@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import configparser
 import pathlib
 import sys
 
-from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool
+from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -240,6 +241,24 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
+class HoverEventFilter(QObject):
+    def __init__(self, settings: configparser.ConfigParser, parent: "DocumentSettingsDialog"):
+        super().__init__(parent)
+        self.settings = settings
+
+    def eventFilter(self, object_, event: QEvent):
+        event_type = event.type()
+        # This check avoids a crash during application shutdown
+        if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
+            return False
+        parent: "DocumentSettingsDialog" = self.parent()
+        if event_type == QEvent.HoverEnter:
+            parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
+        elif event_type == QEvent.HoverLeave:
+            parent.clear_highlight()
+        return False
+
+
 class DocumentSettingsDialog(QDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
@@ -257,18 +276,15 @@ class DocumentSettingsDialog(QDialog):
     def _setup_button_box(self):
         button_roles = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(button_roles.RestoreDefaults).clicked.connect(
-            lambda: logger.info("User reverts the document settings to the values from the global configuration")
-        )
-        button_box.button(button_roles.RestoreDefaults).clicked.connect(
-            lambda: self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
-        )
-        button_box.button(button_roles.Reset).clicked.connect(
-            lambda: logger.info("User resets made changes")
-        )
-        button_box.button(button_roles.Reset).clicked.connect(
-            lambda: self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
-        )
+
+        restore_defaults = button_box.button(button_roles.RestoreDefaults)
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
+
+        reset = button_box.button(button_roles.Reset)
+        reset.installEventFilter(HoverEventFilter(self.document.page_layout, self))
+        reset.clicked.connect(self.reset_button_clicked)
+
         buttons_with_icons = [
             (button_roles.Reset, "edit-undo"),
             (button_roles.Save, "document-save"),
@@ -281,8 +297,25 @@ class DocumentSettingsDialog(QDialog):
                 button.setIcon(QIcon.fromTheme(icon))
 
     @Slot()
+    def restore_defaults_button_clicked(self):
+        logger.info("User reverts the document settings to the values from the global configuration")
+        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        self.clear_highlight()
+
+    @Slot()
+    def reset_button_clicked(self):
+        logger.info("User resets made changes")
+        self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
+        self.clear_highlight()
+
+    @Slot()
     def on_accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
         action = ActionEditDocumentSettings(self.ui.page_config_groupbox.page_layout)
         self.document.apply(action)
         logger.debug("Saving settings in the document done.")
+
+    def clear_highlight(self):
+        """Clears all GUI widget highlights."""
+        for item in self.findChildren((QWidget,), options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+            item.setGraphicsEffect(None)
