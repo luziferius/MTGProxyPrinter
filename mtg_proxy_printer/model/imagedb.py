@@ -37,6 +37,7 @@ from mtg_proxy_printer.document_controller import DocumentAction
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.downloader_base
 import mtg_proxy_printer.http_file
+from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.carddb import Card, CheckCard, AnyCardType
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
@@ -81,7 +82,6 @@ class CacheContent(ImageKey):
 
 PathSizeList = typing.List[typing.Tuple[pathlib.Path, int]]
 ImageKeySet = typing.Set[ImageKey]
-IMAGE_SIZE = QSize(745, 1040)
 BatchActions = typing.Union[ActionImportDeckList]
 SingleActions = typing.Union[ActionAddCard, ActionReplaceCard]
 IndexList = typing.List[QModelIndex]
@@ -133,7 +133,7 @@ class ImageDatabase(QObject):
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
-        super(ImageDatabase, self).__init__(parent)
+        super().__init__(parent)
         self.read_disk_cache_content = functools.partial(read_disk_cache_content, db_path)
         self.db_path = db_path
         _migrate_database(db_path)
@@ -150,7 +150,7 @@ class ImageDatabase(QObject):
     @functools.lru_cache(maxsize=1)
     def blank_image(self):
         """Returns a static, empty QPixmap in the size of a regular magic card."""
-        pixmap = QPixmap(IMAGE_SIZE)
+        pixmap = QPixmap(CardSizes.REGULAR.as_qsize_px())
         pixmap.fill(QColorConstants.Transparent)
         return pixmap
 
@@ -295,7 +295,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
     batch_process_finished = Signal()
 
     def __init__(self, image_db: ImageDatabase, parent: QObject = None):
-        super(ImageDownloader, self).__init__(parent)
+        super().__init__(parent)
         self.image_database = image_db
         self.should_run = True
         self.batch_processing_state: bool = False

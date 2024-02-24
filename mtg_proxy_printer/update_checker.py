@@ -189,7 +189,7 @@ class UpdateChecker(QObject):
 
     def __init__(self, card_db: CardDatabase, args: Namespace, parent: QObject = None):
         logger.info(f"Creating {self.__class__.__name__} instance.")
-        super(UpdateChecker, self).__init__(parent)
+        super().__init__(parent)
         self.card_db = card_db
         self.card_data_parameter_passed = bool(args.card_data and args.card_data.is_file())
         logger.info(f"Created {self.__class__.__name__} instance.")

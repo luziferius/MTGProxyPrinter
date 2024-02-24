@@ -158,6 +158,10 @@ class Card:
     def display_string(self):
         return f'"{self.name}" [{self.set.code.upper()}:{self.collector_number}]'
 
+    @property
+    def set_code(self):
+        return self.set.code
+
 
 @dataclasses.dataclass(unsafe_hash=True)
 class CheckCard:
@@ -793,7 +797,8 @@ class CardDatabase(QObject):
         ''')
         return bool(self._read_optional_scalar_from_db(query, (scryfall_id,)))
 
-    def translate_card_name(self, card_data: CardIdentificationData, target_language: str) -> OptStr:
+    def translate_card_name(self, card_data: CardIdentificationData, target_language: str,
+                            include_hidden_names: bool = False) -> OptStr:
         """
         Translates a card into the target_language. Uses the language in the card data as the source language, if given.
         If not, card names across all languages are searched.
@@ -807,7 +812,8 @@ class CardDatabase(QObject):
         # So if no context is given, this query performs a majority vote, because that is the most likely expected
         # result. But if context is given, either by the scryfall id or the set code, the exact, set-specific
         # translation is returned.
-        query = cached_dedent("""\
+        card_view = "AllPrintings" if include_hidden_names else "VisiblePrintings"
+        query = cached_dedent(f"""\
         WITH  -- translate_card_name()
           source_context (source_scryfall_id, source_set_code) AS (SELECT ?, ?),
           source_oracle_id (oracle_id, face_number, source_score, source_set_code) AS (
@@ -831,7 +837,7 @@ class CardDatabase(QObject):
             )
         SELECT card_name
           FROM source_oracle_id
-          JOIN VisiblePrintings USING (oracle_id, face_number)
+          JOIN {card_view} USING (oracle_id, face_number)
           WHERE language = ?
           GROUP BY card_name
           -- Some localized names were updated to fix typos and similar, so prefer the newest, matched name

@@ -35,7 +35,7 @@ class PrettySetListModel(QAbstractListModel):
     }
 
     def __init__(self, parent: QObject = None):
-        super(PrettySetListModel, self).__init__(parent)
+        super().__init__(parent)
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
@@ -44,7 +44,7 @@ class PrettySetListModel(QAbstractListModel):
         if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
             return PrettySetListModel.header.get(section)
-        return super(PrettySetListModel, self).headerData(section, orientation, role)
+        return super().headerData(section, orientation, role)
 
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
         return 0 if parent.isValid() else len(self.header)

@@ -92,7 +92,7 @@ class Document(QAbstractItemModel):
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
-        super(Document, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.undo_stack: ActionStack = collections.deque()
         self.redo_stack: ActionStack = collections.deque()
         self.save_file_path: typing.Optional[pathlib.Path] = None
@@ -169,7 +169,7 @@ class Document(QAbstractItemModel):
                 return Document.page_header.get(section)
             elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
-        return super(Document, self).headerData(section, orientation, role)
+        return super().headerData(section, orientation, role)
 
     def rowCount(self, parent: AnyIndex = INVALID_INDEX) -> int:
         """
@@ -222,7 +222,7 @@ class Document(QAbstractItemModel):
     def flags(self, index: AnyIndex) -> Qt.ItemFlags:
         index = self._to_index(index)
         data = index.internalPointer()
-        flags = super(Document, self).flags(index)
+        flags = super().flags(index)
         if isinstance(data, CardContainer) and index.column() in self.EDITABLE_COLUMNS:
             flags |= ItemFlag.ItemIsEditable
         return flags

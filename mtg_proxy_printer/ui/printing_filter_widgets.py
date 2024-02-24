@@ -23,6 +23,8 @@ from PySide6.QtCore import QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
 
+from mtg_proxy_printer.ui.common import highlight_widget
+
 try:
     from mtg_proxy_printer.ui.generated.settings_window.format_printing_filter import Ui_FormatPrintingFilter
     from mtg_proxy_printer.ui.generated.settings_window.general_printing_filter import Ui_GeneralPrintingFilter
@@ -37,7 +39,7 @@ UiTypes = Union[Type[Ui_FormatPrintingFilter], Type[Ui_GeneralPrintingFilter]]
 class AbstractPrintingFilterWidget(QGroupBox):
 
     def __init__(self, ui_class: UiTypes, parent: QWidget = None):
-        super(AbstractPrintingFilterWidget, self).__init__(parent)
+        super().__init__(parent)
         self.ui = ui_class()
         self.ui.setupUi(self)
 
@@ -57,6 +59,11 @@ class AbstractPrintingFilterWidget(QGroupBox):
 
     @abc.abstractmethod
     def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
+        pass
+
+    @abc.abstractmethod
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        """Highlights GUI widgets with a state different from the given settings"""
         pass
 
 
@@ -96,6 +103,12 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
         ]
         return widgets_with_settings
 
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        section = settings["card-filter"]
+        for widget, setting in self._get_widgets_with_keys():
+            if widget.isChecked() is not section.getboolean(setting):
+                highlight_widget(widget)
+
 
 class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
     """
@@ -130,3 +143,9 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
             (ui.hide_banned_in_vintage, "hide-banned-in-vintage"),
         ]
         return widgets_with_settings
+
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        section = settings["card-filter"]
+        for widget, setting in self._get_widgets_with_keys():
+            if widget.isChecked() is not section.getboolean(setting):
+                highlight_widget(widget)

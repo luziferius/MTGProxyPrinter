@@ -33,6 +33,7 @@ __all__ = [
 ]
 DragMode = QGraphicsView.DragMode
 
+
 @enum.unique
 class ZoomDirection(enum.Enum):
     IN = enum.auto()
@@ -50,7 +51,7 @@ class PageRenderer(QGraphicsView):
     MAX_UI_ZOOM = 16.0
 
     def __init__(self, parent: QWidget = None):
-        super(PageRenderer, self).__init__(parent=parent)
+        super().__init__(parent=parent)
         self.document: Document = None
         self.automatic_scaling = True
         self.setCursor(Qt.CursorShape.SizeAllCursor)

@@ -57,7 +57,7 @@ def environment(tmp_path: pathlib.Path, qtbot, card_db: CardDatabase):
 @pytest.mark.parametrize("is_hidden", [True, False])
 @pytest.mark.parametrize("is_front", [True, False])
 def test_add_row_identifies_low_resolution_images(environment: Environment, is_front: bool, is_hidden: bool):
-    model = KnownCardImageModel()
+    model = KnownCardImageModel(environment.card_db)
     card = environment.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
     disk_cache = environment.image_db.read_disk_cache_content()
     assert_that(disk_cache, has_length(2))

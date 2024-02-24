@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DebugSettingsPage</class>
+ <widget class="QWidget" name="DebugSettingsPage">
+  <layout class="QGridLayout">
+   <item row="1" column="0" colspan="2">
+    <widget class="Line" name="debug_settings_header_line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1">
+    <widget class="QPushButton" name="open_debug_log_location">
+     <property name="text">
+      <string>Open debug log directory</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QComboBox" name="log_level_combo_box">
+     <property name="toolTip">
+      <string>Only write events with the given severity level and higher to the log file.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QCheckBox" name="enable_write_log_file">
+     <property name="text">
+      <string>Enable writing a log file to disk</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0" colspan="2">
+    <widget class="QLabel" name="debug_settings_headerlabel">
+     <property name="text">
+      <string>Debug settings (Changing these require an application restart)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1">
+    <widget class="QPushButton" name="debug_import_card_data_from_file">
+     <property name="text">
+      <string>Import card data from file</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-import">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1">
+    <widget class="QPushButton" name="debug_download_card_data_as_file">
+     <property name="text">
+      <string>Download card data as file</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-download">
+       <normaloff>.</normaloff>.</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="2">
+    <widget class="QCheckBox" name="enable_cutelog_integration">
+     <property name="toolTip">
+      <string>Cutelog is a live log event viewer that can be used to monitor events in real-time.</string>
+     </property>
+     <property name="whatsThis">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;See &lt;a href=&quot;https://github.com/busimus/cutelog&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://github.com/busimus/cutelog&lt;/span&gt;&lt;/a&gt; for details about Cutelog.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="text">
+      <string>Enable Cutelog integration</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0" colspan="2">
+    <spacer name="spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>32</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="log_level_label">
+     <property name="text">
+      <string>Event severity that gets logged to file:</string>
+     </property>
+     <property name="buddy">
+      <cstring>log_level_combo_box</cstring>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

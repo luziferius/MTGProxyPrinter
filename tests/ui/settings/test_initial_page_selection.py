@@ -21,7 +21,7 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.ui.settings_window import SettingsWindow
 
 
-def test_first_tab_is_selected_when_shown(qtbot: QtBot, document):
+def test_first_page_is_selected_when_shown(qtbot: QtBot, document):
     language_model = QStringListModel(["en"])
     dialog = SettingsWindow(language_model, document)
     ui = dialog.ui
@@ -29,6 +29,6 @@ def test_first_tab_is_selected_when_shown(qtbot: QtBot, document):
     with qtbot.waitExposed(dialog):
         dialog.show()
     assert_that(
-        ui.tab_widget.currentIndex(), is_(0),
-        "Wrong initial tab selected. Fix the settings window UI file."
+        ui.stacked_pages.currentIndex(), is_(0),
+        "Wrong initial page selected. Fix the settings window UI file."
     )

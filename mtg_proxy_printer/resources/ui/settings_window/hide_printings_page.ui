@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HidePrintingsPage</class>
+ <widget class="QWidget" name="HidePrintingsPage">
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QLabel" name="card_filter_settings_header_label">
+     <property name="text">
+      <string>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="GeneralPrintingFilterWidget" name="card_filter_general_settings"/>
+   </item>
+   <item>
+    <widget class="FormatPrintingFilterWidget" name="card_filter_format_settings"/>
+   </item>
+   <item>
+    <widget class="QLabel" name="set_filter_label">
+     <property name="text">
+      <string>Hide specific sets: Add set codes as listed on Scryfall, for example LEA or 2X2. Separate multiple entries with spaces or line breaks. All words not matching an exact set code are ignored.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPlainTextEdit" name="set_filter_settings">
+     <property name="toolTip">
+      <string>Example:
+
+LEA DDU TC13 J21</string>
+     </property>
+     <property name="placeholderText">
+      <string>No sets currently hidden.</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>GeneralPrintingFilterWidget</class>
+   <extends>QGroupBox</extends>
+   <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>FormatPrintingFilterWidget</class>
+   <extends>QGroupBox</extends>
+   <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

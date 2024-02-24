@@ -18,7 +18,6 @@ import functools
 import gzip
 import math
 import shutil
-import textwrap
 from pathlib import Path
 import re
 import sqlite3
@@ -122,7 +121,7 @@ class CardInfoDownloader(ProgressSignalContainer):
     card_data_updated = Signal()
 
     def __init__(self, model: mtg_proxy_printer.model.carddb.CardDatabase, parent: QObject = None):
-        super(CardInfoDownloader, self).__init__(parent)
+        super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
         logger.info(f"Using ijson backend: {ijson.backend}")
         self.model = model
@@ -684,7 +683,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
                 "SELECT card_face_id FROM CardFace WHERE face_name_id = ? AND printing_id = ? AND is_front = ?\n",
                 (face_name_id, printing_id, face.is_front)).fetchone()
             if card_face_id is None:
-                card_face_id = db.execute(cached_dedent("""\
+                card_face_id = db.execute(
+                    cached_dedent("""\
                     INSERT INTO CardFace(printing_id, face_name_id, is_front, png_image_uri, face_number)
                         VALUES (?, ?, ?, ?, ?)
                     """),

@@ -18,7 +18,7 @@ import platform
 import typing
 
 from PySide6.QtCore import QFile, QUrl, QObject, QSize
-from PySide6.QtWidgets import QLabel, QWizard, QWidget
+from PySide6.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect
 from PySide6.QtGui import QIcon
 from PySide6.QtUiTools import loadUiType
 
@@ -30,6 +30,7 @@ __all__ = [
     "RESOURCE_PATH_PREFIX",
     "ICON_PATH_PREFIX",
     "HAS_COMPILED_RESOURCES",
+    "highlight_widget",
     "BlockedSignals",
     "set_url_label",
     "load_ui_from_file",
@@ -50,6 +51,16 @@ else:
     ICON_PATH_PREFIX = ":/icons"
     HAS_COMPILED_RESOURCES = True
     atexit.register(mtg_proxy_printer.ui.compiled_resources.qCleanupResources)
+
+
+def highlight_widget(widget: QWidget) -> None:
+    """Sets a visual highlight on the given widget to make it stand out"""
+    palette = widget.palette()
+    highlight_color = palette.color(palette.currentColorGroup(), palette.ColorRole.Highlight)
+    effect = QGraphicsColorizeEffect(widget)
+    effect.setColor(highlight_color)
+    effect.setStrength(0.75)
+    widget.setGraphicsEffect(effect)
 
 
 class BlockedSignals:

@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import configparser
 import pathlib
 import sys
 
-from PySide6.QtCore import QFile, Slot, QThreadPool
+from PySide6.QtCore import QFile, Slot, QThreadPool, QObject, QEvent, Qt
 from PySide6.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -57,13 +58,19 @@ __all__ = [
 
 
 def read_path(setting: str) -> str:
-    return mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+    stored = mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+    if not stored:
+        return ""
+    resolved = str(pathlib.Path(stored).resolve())
+    if not resolved:
+        logger.warning(f"File system path stored in setting {setting} does not resolve to an existing path")
+    return resolved
 
 
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
-        super(SavePDFDialog, self).__init__(
+        super().__init__(
             parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
         if default_path := read_path("pdf-export-path"):
             self.setDirectory(default_path)
@@ -101,7 +108,7 @@ class SavePDFDialog(QFileDialog):
 class SaveDocumentAsDialog(QFileDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
-        super(SaveDocumentAsDialog, self).__init__(
+        super().__init__(
             parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
         if default_path := read_path("document-save-path"):
             self.setDirectory(default_path)
@@ -130,7 +137,7 @@ class LoadDocumentDialog(QFileDialog):
     def __init__(
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
-        super(LoadDocumentDialog, self).__init__(
+        super().__init__(
             parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
             **kwargs)
         if default_path := read_path("document-save-path"):
@@ -220,7 +227,7 @@ class PrintPreviewDialog(QPrintPreviewDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super(PrintPreviewDialog, self).__init__(self.qprinter, parent)
+        super().__init__(self.qprinter, parent)
         self.renderer.setParent(self)
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -231,7 +238,7 @@ class PrintDialog(QPrintDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
         self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super(PrintDialog, self).__init__(self.qprinter, parent)
+        super().__init__(self.qprinter, parent)
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
@@ -240,10 +247,28 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
+class HoverEventFilter(QObject):
+    def __init__(self, settings: configparser.ConfigParser, parent: "DocumentSettingsDialog"):
+        super().__init__(parent)
+        self.settings = settings
+
+    def eventFilter(self, object_, event: QEvent):
+        event_type = event.type()
+        # This check avoids a crash during application shutdown
+        if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
+            return False
+        parent: "DocumentSettingsDialog" = self.parent()
+        if event_type == QEvent.HoverEnter:
+            parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
+        elif event_type == QEvent.HoverLeave:
+            parent.clear_highlight()
+        return False
+
+
 class DocumentSettingsDialog(QDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
-        super(DocumentSettingsDialog, self).__init__(parent)
+        super().__init__(parent)
         self.ui = Ui_DocumentSettingsDialog()
         self.ui.setupUi(self)
         self.setModal(True)
@@ -257,18 +282,15 @@ class DocumentSettingsDialog(QDialog):
     def _setup_button_box(self):
         button_roles = QDialogButtonBox.StandardButton
         button_box = self.ui.button_box
-        button_box.button(button_roles.RestoreDefaults).clicked.connect(
-            lambda: logger.info("User reverts the document settings to the values from the global configuration")
-        )
-        button_box.button(button_roles.RestoreDefaults).clicked.connect(
-            lambda: self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
-        )
-        button_box.button(button_roles.Reset).clicked.connect(
-            lambda: logger.info("User resets made changes")
-        )
-        button_box.button(button_roles.Reset).clicked.connect(
-            lambda: self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
-        )
+
+        restore_defaults = button_box.button(button_roles.RestoreDefaults)
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
+
+        reset = button_box.button(button_roles.Reset)
+        reset.installEventFilter(HoverEventFilter(self.document.page_layout, self))
+        reset.clicked.connect(self.reset_button_clicked)
+
         buttons_with_icons = [
             (button_roles.Reset, "edit-undo"),
             (button_roles.Save, "document-save"),
@@ -281,8 +303,25 @@ class DocumentSettingsDialog(QDialog):
                 button.setIcon(QIcon.fromTheme(icon))
 
     @Slot()
+    def restore_defaults_button_clicked(self):
+        logger.info("User reverts the document settings to the values from the global configuration")
+        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        self.clear_highlight()
+
+    @Slot()
+    def reset_button_clicked(self):
+        logger.info("User resets made changes")
+        self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
+        self.clear_highlight()
+
+    @Slot()
     def on_accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
         action = ActionEditDocumentSettings(self.ui.page_config_groupbox.page_layout)
         self.document.apply(action)
         logger.debug("Saving settings in the document done.")
+
+    def clear_highlight(self):
+        """Clears all GUI widget highlights."""
+        for item in self.findChildren(QWidget, options=Qt.FindChildOption.FindChildrenRecursively):  # type: QWidget
+            item.setGraphicsEffect(None)

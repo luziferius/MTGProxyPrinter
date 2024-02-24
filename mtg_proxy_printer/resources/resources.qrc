@@ -39,6 +39,7 @@
     <file>icons/breeze/actions/16/help-contents.svg</file>
     <file>icons/breeze/actions/16/list-add.svg</file>
     <file>icons/breeze/actions/16/shuffle.svg</file>
+    <file>icons/breeze/actions/16/view-hidden.svg</file>
     <file>icons/breeze/actions/16/viewpdf.svg</file>
     
     <!-- 22x22 -->
@@ -70,6 +71,7 @@
     <file>icons/breeze/actions/22/help-contents.svg</file>
     <file>icons/breeze/actions/22/list-add.svg</file>
     <file>icons/breeze/actions/22/shuffle.svg</file>
+    <file>icons/breeze/actions/22/view-hidden.svg</file>
     <file>icons/breeze/actions/22/viewpdf.svg</file>
     
     <!-- 24x24 -->
@@ -101,6 +103,7 @@
     <file>icons/breeze/actions/24/help-contents.svg</file>
     <file>icons/breeze/actions/24/list-add.svg</file>
     <file>icons/breeze/actions/24/shuffle.svg</file>
+    <file>icons/breeze/actions/24/view-hidden.svg</file>
     <file>icons/breeze/actions/24/viewpdf.svg</file>
     
     <!-- 32x32, not all icons are available at this resolution! -->

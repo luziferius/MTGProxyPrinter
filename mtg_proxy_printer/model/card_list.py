@@ -62,7 +62,7 @@ class CardListModel(QAbstractTableModel):
     oversized_card_count_changed = Signal(int)
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
-        super(CardListModel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.card_db = card_db
         self.cards: CardList = []
         self.oversized_card_count = 0
@@ -101,7 +101,7 @@ class CardListModel(QAbstractTableModel):
                 return self._oversized_icon
 
     def flags(self, index: QModelIndex) -> ItemFlag:
-        flags = super(CardListModel, self).flags(index)
+        flags = super().flags(index)
         if index.column() in self.EDITABLE_COLUMNS:
             flags |= ItemFlag.ItemIsEditable
         return flags
@@ -235,7 +235,7 @@ class CardListModel(QAbstractTableModel):
                 return CardListModel.header.get(section)
             elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
                 return "Double-click on entries to\nswitch the selected printing."
-        return super(CardListModel, self).headerData(section, orientation, role)
+        return super().headerData(section, orientation, role)
 
     def clear(self):
         logger.debug(f"About to clear {self.__class__.__name__} instance. Removing {self.rowCount()} entries.")

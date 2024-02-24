@@ -23,6 +23,7 @@ except ImportError:  # Compatibility with Python < 3.11
     from typing import Optional as NotRequired
 
 import pint
+from PySide6.QtCore import QSize
 
 unit_registry = pint.UnitRegistry()
 RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
@@ -55,6 +56,9 @@ class CardSize(typing.NamedTuple):
     def as_mm(value: pint.Quantity) -> int:
         size: pint.Quantity = (value/RESOLUTION).to("mm")
         return round(size.magnitude)
+
+    def as_qsize_px(self):
+        return QSize(round(self.width.magnitude), round(self.height.magnitude))
 
 
 @enum.unique

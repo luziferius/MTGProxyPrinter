@@ -47,7 +47,7 @@ class MeteredFile(QObject):
 
     def __init__(self, file: WrappedIoType, expected_size_bytes: int = 0, parent: QObject = None):
         logger.debug(f"Creating {self.__class__.__name__} instance.")
-        super(MeteredFile, self).__init__(parent)
+        super().__init__(parent)
         self.file = file
         self._total_bytes_processed = 0
         self.expected_size_bytes = expected_size_bytes
