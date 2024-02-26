@@ -75,8 +75,8 @@ def verify_crowdin_cli_present():
 def register_new_raw_strings():
     subprocess.call([
         "pyside6-lupdate",
-        "-source-language", "en-US",
-        "-recursive",
+        "-source-language", "en_US",
+        "-recursive", "-no-obsolete",
         "-extensions", "py,ui",
         "mtg_proxy_printer",
         "-ts", "mtg_proxy_printer/resources/translations/mtgproxyprinter_en-US.ts"
