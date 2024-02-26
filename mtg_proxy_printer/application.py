@@ -23,7 +23,7 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel, QThreadPool
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -66,6 +66,7 @@ class Application(QApplication):
             argv.append("windows:darkmode=1")
         super().__init__(argv)
         self.should_run = True
+        self._setup_translations()
         self._setup_icons()
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
@@ -185,6 +186,22 @@ class Application(QApplication):
         if section.getboolean("check-for-card-data-updates") is None:
             logger.info("No user setting for card data updates set. About to ask.")
             self.main_window.ask_user_about_card_data_update_policy()
+
+    def _setup_translations(self):
+        system_locale = QLocale.system()
+        logger.info(
+            f"Loading localisations. System locale: {system_locale.name()}, "
+            f"possible display languages are: {system_locale.uiLanguages()}")
+        path = ":" if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES \
+            else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
+        path += "/translations"
+        logger.debug(f"Locale search path is '{path}'")
+        translator = QTranslator(self)
+        if translator.load(system_locale, 'mtgproxyprinter', '_', path):
+            logger.debug("Translation loaded successfully, installing it.")
+            self.installTranslator(translator)
+        else:
+            logger.warning("Translation failed to load. No translation available?")
 
     def _setup_icons(self):
         # The current icon theme name is empty by default, which causes the system-default theme, returned by

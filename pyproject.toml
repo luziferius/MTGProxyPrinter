@@ -190,6 +190,7 @@ passenv =
 
 commands =
     python scripts{/}compile_ui_files.py --full --purge-existing
+    python scripts{/}update_translations.py compile
     python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
     {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
@@ -204,6 +205,7 @@ deps =
 
 commands =
     python scripts{/}compile_ui_files.py --full --purge-existing
+    python scripts{/}update_translations.py compile
     python -m build
     python setup_cx_freeze.py build_exe
     windows: {toxinidir}{/}scripts{/}clean_windows_build.bat

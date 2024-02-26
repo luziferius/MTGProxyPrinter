@@ -7,6 +7,10 @@
     <file alias="ThirdPartyLicenses.md">../../ThirdPartyLicenses.md</file>
     <file alias="License.md">../../LICENSE.md</file>
 
+    <!-- Localisations -->
+    <file>translations/mtgproxyprinter_de.qm</file>
+    <file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_US.qm</file>
+
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
     <!-- actions -->

@@ -23,20 +23,22 @@ import argparse
 import subprocess
 from typing import Callable, NamedTuple
 
-LOCALES = [
-    "de-DE",
-    "en-GB",
-    "en-US",
-    "es-ES",
-    "fr-FR",
-    "it-IT",
-    "ja-JP",
-    "ko-KR",
-    "pt-PT",
-    "ru-RU",
-    "zh-CN",
-    "zh-TW",
-]
+# Mapping between source locales, as provided by Crowdin, and the target, as expected/loaded by Qt.
+# TODO: Investigate, how systems behave in locales requiring the country as disambiguation, like en or zh.
+LOCALES = {
+    "de-DE": "de",
+    "en-GB": "en_GB",
+    "en-US": "en_US",
+    "es-ES": "es",
+    "fr-FR": "fr",
+    "it-IT": "it",
+    "ja-JP": "ja",
+    "ko-KR": "ko",
+    "pt-PT": "pt",
+    "ru-RU": "ru",
+    "zh-CN": "zh_CN",
+    "zh-TW": "zh_TW",
+}
 
 
 class Namespace(NamedTuple):
@@ -52,8 +54,8 @@ def parse_args() -> Namespace:
     }
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(required=True, dest="command", help="Action to perform")
-    upload_parser = commands.add_parser("upload", help="Run Qt lupdate to extract new strings and upload them to Crowdin.")
-    download_parser = commands.add_parser("download", help="Download translations from Crowdin")
+    upload_parser = commands.add_parser("upload", help="Run Qt lupdate to extract new strings and upload them to Crowdin. Requires an API key")
+    download_parser = commands.add_parser("download", help="Download translation updates from Crowdin")
     compile_parser = commands.add_parser("compile", help="Compile translations into the importable binary format")
     args = parser.parse_args()
     # It seems that it is not possible to set the subcommand entry function directly,
@@ -98,11 +100,13 @@ def download_new_translations(args: Namespace):
 
 
 def compile_translations(args: Namespace):
-    language_files = [f"mtg_proxy_printer/resources/translations/mtgproxyprinter_{locale}.ts" for locale in LOCALES]
-    subprocess.call([
-        "lrelease", "-compress",
-        *language_files
-    ])
+    for source_name, target_name in LOCALES.items():
+        source = f"mtg_proxy_printer/resources/translations/mtgproxyprinter_{source_name}.ts"
+        target = f"mtg_proxy_printer/resources/translations/mtgproxyprinter_{target_name}.qm"
+        subprocess.call([
+            "lrelease", "-compress",
+            source, "-qm", target
+        ])
 
 
 def main():
