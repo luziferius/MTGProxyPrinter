@@ -29,6 +29,9 @@
       <layout class="QGridLayout" name="tab_about_layout">
        <item row="3" column="1" colspan="2">
         <widget class="QLabel" name="python_version_label">
+         <property name="text">
+          <string notr="true"/>
+         </property>
          <property name="textInteractionFlags">
           <set>Qt::TextSelectableByMouse</set>
          </property>
@@ -37,7 +40,7 @@
        <item row="0" column="1">
         <widget class="QLabel" name="mtg_proxy_printer_name">
          <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          <string notr="true">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::NoTextInteraction</set>
@@ -47,14 +50,14 @@
        <item row="0" column="0">
         <widget class="QLabel" name="mtg_proxy_printer_icon">
          <property name="text">
-          <string/>
+          <string notr="true"/>
          </property>
         </widget>
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="mtg_proxy_printer_version_header_label">
          <property name="text">
-          <string>Version:</string>
+          <string extracomment="Label next to the application version string">Version:</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::NoTextInteraction</set>
@@ -77,7 +80,7 @@
        <item row="3" column="0">
         <widget class="QLabel" name="python_version_header_label">
          <property name="text">
-          <string>Python Version:</string>
+          <string extracomment="Label for the Python version used to run">Python Version:</string>
          </property>
         </widget>
        </item>
@@ -103,10 +106,12 @@ Under the Fan Content Policy, you may neither sell the data downloaded using
 this program, including the card database content and downloaded card images,
 nor any documents created, both in digital and physical form.
 
-Project Website: 
-[{application_name} home page]({application_home_page})
+Project Website: [{application_name} home page]({application_home_page})
 
 </string>
+         </property>
+         <property name="tabStopWidth">
+          <number>84</number>
          </property>
          <property name="openExternalLinks">
           <bool>true</bool>
@@ -116,7 +121,7 @@ Project Website:
        <item row="2" column="1" colspan="2">
         <widget class="QLabel" name="mtg_proxy_printer_version_label">
          <property name="text">
-          <string/>
+          <string notr="true"/>
          </property>
          <property name="textFormat">
           <enum>Qt::PlainText</enum>
