@@ -133,7 +133,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Language:</string>
+      <string extracomment="Card language. Next to the language selection widget">Language:</string>
      </property>
      <property name="buddy">
       <cstring>language_combo_box</cstring>
@@ -149,7 +149,7 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Copies:</string>
+      <string extracomment="Number of copies to add. Next to the number input field">Copies:</string>
      </property>
      <property name="buddy">
       <cstring>copies_input</cstring>
