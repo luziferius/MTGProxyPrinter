@@ -48,6 +48,7 @@ dynamic = [
 Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
 "Bug tracker" = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/ticket"
 Changelog = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/doc/trunk/doc/changelog.md"
+Translations = "https://crowdin.com/project/mtgproxyprinter"
 
 [project.gui-scripts]
 mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
