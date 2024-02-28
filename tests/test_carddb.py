@@ -691,6 +691,18 @@ def test_get_basic_land_oracle_ids(
     ("2879f780-e17f-4e68-931e-6e45f9df28e1", ["The Underworld Cookbook", "Food"]),
     # The Underworld Cookbook
     ("4f24504e-b397-4b98-b8e8-8166457f7a2e", ["Asmoranomardicadaistinaculdacar", "Food"]),
+    # Ring
+    ("7215460e-8c06-47d0-94e5-d1832d0218af", []),  # The Ring itself
+    ("e3bb16a8-b248-4ad5-ba45-1ed499ca1411", ["The Ring"]),  # Elrond
+    ("fbc88c94-adf6-4699-a11e-24ebd16aac0c", ["The Ring"]),  # Samwise
+    # Venture
+    ("6f509dbe-6ec7-4438-ab36-e20be46c9922", []),  # Dungeon of the Mad Mage
+    ("d4dbed36-190c-4748-b282-409a2fb5d134", ["Dungeon of the Mad Mage"]),  # Zombie Ogre
+    ("b9b1e53f-1384-4860-9944-e68922afc65c", ["Dungeon of the Mad Mage"]),  # Bar the Gate
+    # Initiative
+    ("2c65185b-6cf0-451d-985e-56aa45d9a57d", []),  # The Undercity
+    ("0c4f76ae-e93b-4ca1-ac62-753707f6319e", ["Undercity"]),  # Trailblazer's Torch
+    ("0cbf06f5-d1c7-474c-8f09-72f5ad0c8120", ["Undercity"]),  # Explore the Underdark
 
 ])
 def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, expected_cards_names: StringList):
@@ -702,6 +714,18 @@ def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, ex
             "Bake_into_a_Pie",
             "Asmoranomardicadaistinaculdacar_2",
             "Food_Token_2",
+            # The Ring emblem and "The Ring tempts you"
+            "The_Ring",
+            "Samwise_the_Stouthearted",
+            "Elrond_Lord_of_Rivendell",
+            # A Dungeon and "Venture into the dungeon"
+            "Dungeon_of_the_Mad_Mage",
+            "Bar_the_Gate",
+            "Zombie_Ogre",
+            # The "Undercity" dungeon and "Take the initiative."
+            "Undercity",
+            "Explore_the_Underdark",
+            "Trailblazers_Torch",
         ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
     assert_that(source_card, is_(not_none()))
@@ -709,7 +733,8 @@ def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, ex
     assert_that(
         related, contains_inanyorder(
             *[has_property("name", equal_to(expected)) for expected in expected_cards_names]
-        )
+        ),
+        f"Found cards do not match {expected_cards_names}"
     )
 
 

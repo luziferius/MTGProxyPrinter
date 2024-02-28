@@ -336,6 +336,9 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
     yield TestCaseData("funny_card_with_silver_border"), "hide-funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
     yield TestCaseData("funny_card_with_acorn_security_stamp"), "hide-funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+    yield TestCaseData("Food_Token"), "hide-token"
+    yield TestCaseData("Undercity"), "hide-token"   # Double-faced token
+    yield TestCaseData("The_Ring"), "hide-token"   # Double-faced token
     yield TestCaseData("gold_bordered_card"), "hide-gold-bordered"
     yield TestCaseData("white_bordered_card"), "hide-white-bordered"
     yield TestCaseData("banned_in_brawl"), "hide-banned-in-brawl"

@@ -1,0 +1,147 @@
+{
+  "object": "card",
+  "id": "0cbf06f5-d1c7-474c-8f09-72f5ad0c8120",
+  "oracle_id": "13bad22a-6ba3-4197-8658-e47049a1cf1f",
+  "multiverse_ids": [
+    563115
+  ],
+  "mtgo_id": 100500,
+  "tcgplayer_id": 273056,
+  "cardmarket_id": 660280,
+  "name": "Explore the Underdark",
+  "lang": "en",
+  "released_at": "2022-06-10",
+  "uri": "https://api.scryfall.com/cards/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120",
+  "scryfall_uri": "https://scryfall.com/card/clb/232/explore-the-underdark?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/0/c/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120.jpg?1674137108",
+    "normal": "https://cards.scryfall.io/normal/front/0/c/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120.jpg?1674137108",
+    "large": "https://cards.scryfall.io/large/front/0/c/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120.jpg?1674137108",
+    "png": "https://cards.scryfall.io/png/front/0/c/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120.png?1674137108",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/0/c/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120.jpg?1674137108",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/0/c/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120.jpg?1674137108"
+  },
+  "mana_cost": "{4}{G}",
+  "cmc": 5.0,
+  "type_line": "Sorcery",
+  "oracle_text": "Search your library for up to two basic land cards and/or Gate cards, put them onto the battlefield tapped, then shuffle.\nYou take the initiative.",
+  "colors": [
+    "G"
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [
+
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "0cbf06f5-d1c7-474c-8f09-72f5ad0c8120",
+      "component": "combo_piece",
+      "name": "Explore the Underdark",
+      "type_line": "Sorcery",
+      "uri": "https://api.scryfall.com/cards/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120"
+    },
+    {
+      "object": "related_card",
+      "id": "2c65185b-6cf0-451d-985e-56aa45d9a57d",
+      "component": "combo_piece",
+      "name": "Undercity // The Initiative",
+      "type_line": "Dungeon — Undercity // Card",
+      "uri": "https://api.scryfall.com/cards/2c65185b-6cf0-451d-985e-56aa45d9a57d"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "5e4c3fe8-fd57-4b20-ad56-c03790a16cea",
+  "set": "clb",
+  "set_name": "Commander Legends: Battle for Baldur's Gate",
+  "set_type": "draft_innovation",
+  "set_uri": "https://api.scryfall.com/sets/5e4c3fe8-fd57-4b20-ad56-c03790a16cea",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aclb&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/clb?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/0cbf06f5-d1c7-474c-8f09-72f5ad0c8120/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A13bad22a-6ba3-4197-8658-e47049a1cf1f&unique=prints",
+  "collector_number": "232",
+  "digital": false,
+  "rarity": "uncommon",
+  "flavor_text": "\"Careful near those pretty glowing plants. What do you think they feed on?\"\n—Talin, Underdark guide",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Piotr Dura",
+  "artist_ids": [
+    "aff176e8-1d15-432e-ad1d-207a474decba"
+  ],
+  "illustration_id": "23c75aed-0a00-4cb5-b620-517b44e8750c",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 3195,
+  "preview": {
+    "source": "Deerstalker Pictures",
+    "source_uri": "",
+    "previewed_at": "2022-05-24"
+  },
+  "prices": {
+    "usd": "0.16",
+    "usd_foil": "1.21",
+    "usd_etched": null,
+    "eur": "0.16",
+    "eur_foil": "0.22",
+    "tix": "0.52"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=563115&printed=false",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DExplore%2Bthe%2BUnderdark",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DExplore%2Bthe%2BUnderdark",
+    "edhrec": "https://edhrec.com/route/?cc=Explore+the+Underdark"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F273056%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Explore+the+Underdark&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/100500?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

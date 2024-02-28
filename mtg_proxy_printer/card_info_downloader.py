@@ -726,7 +726,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
 
 def _get_related_cards(card: CardDataType):
-    if card["layout"] == "token":
+    if card["layout"].endswith("token") or card.get("type_line") == "Dungeon":
         # A token is never a source, as that would pull all cards creating that token
         return
     card_id = UUID(card["id"])
@@ -754,7 +754,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
         # Token cards
-        "hide-token": card["layout"] == "token",
+        "hide-token": card["layout"].endswith("token") or card.get("type_line") == "Dungeon",
         "hide-digital-cards": card["digital"],
         # Specific format legality. Use .get() with a default instead of [] to not fail
         # if Scryfall removes one of the listed formats in the future.
