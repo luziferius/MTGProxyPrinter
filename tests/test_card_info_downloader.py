@@ -322,6 +322,9 @@ def generate_test_cases_for_test_card_import():
     yield TestCaseData("english_double_faced_art_series_card")  # English art series card "Clearwater Pathway // Clearwater Pathway"
     yield TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
     yield TestCaseData("reversible_card")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("The_Ring")
+    yield TestCaseData("Undercity")
+    yield TestCaseData("Dungeon_of_the_Mad_Mage")
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
