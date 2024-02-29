@@ -559,10 +559,10 @@ class CardDatabase(QObject):
 
     def find_related_cards(self, card: Card) -> CardList:
         """
-        Recursively finds all cards related to the given non-token card.
+        Recursively finds all cards related to the given non-token, non-emblem, non-dungeon card.
         This may be cards referenced by name in either direction, or token cards created.
-        Tokens cannot have outgoing related cards, as that would create potentially huge graphs
-        due to evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, etc.
+        Tokens, Emblems and Dungeons cannot have outgoing related cards, as that would create potentially huge graphs
+        due to evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, The Ring emblem, etc.
         """
         query = cached_dedent("""\
         WITH RECURSIVE 

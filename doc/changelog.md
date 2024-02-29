@@ -12,6 +12,14 @@
 - The card image tooltips shown by the image cleanup wizard now show the translated card names for 
   cards not in the preferred language.
 
+## Fixed issues
+
+- Fixed hiding double-faced tokens and Dungeon cards when the token card filter is active.
+- The related card search now also handles double-faced tokens, the Ring emblem, and Dungeon cards.
+    - With this change, cards that create double-faced tokens, 
+      or have "Venture into the Dungeon", "The Ring tempts you.", or 
+      "You take the initiative." no longer show an excessively large list of related cards.
+
 # Version 0.27.0 (2024-02-04)  <a name="v0_27_0"></a>
 
 ## New features

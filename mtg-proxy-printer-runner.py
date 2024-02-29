@@ -42,6 +42,7 @@ to_be_profiled_functions = {
         "_get_cards_from_data",
         "find_collector_numbers_matching",
         "find_sets_matching",
+        "find_related_cards",
         "get_card_with_scryfall_id",
         "get_opposing_face",
         "guess_language_from_name",
