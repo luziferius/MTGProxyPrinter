@@ -321,7 +321,7 @@ def generate_test_cases_for_test_card_import():
     yield TestCaseData("split_card")  # Korean "Cut // Ribbons"
     yield TestCaseData("english_double_faced_art_series_card")  # English art series card "Clearwater Pathway // Clearwater Pathway"
     yield TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
-    yield TestCaseData("double_faced_card_without_top_level_oracle_id")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("reversible_card")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
@@ -356,7 +356,7 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("digital_reprint"), "hide-digital-cards"
     yield TestCaseData("borderless_card"), "hide-borderless"
     yield TestCaseData("extended_art"), "hide-extended-art"
-    yield TestCaseData("double_faced_card_without_top_level_oracle_id"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
@@ -481,7 +481,7 @@ DataPath = typing.List[typing.Union[str, int]]
 @pytest.mark.parametrize("test_case, dict_path, value", [
     (TestCaseData("regular_english_card"), ["lang"], "pl"),  # English "Fury Sliver" from Time Spiral
     (TestCaseData("regular_english_card"), ["oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
-    (TestCaseData("double_faced_card_without_top_level_oracle_id"), ["card_faces", 0, "oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
+    (TestCaseData("reversible_card"), ["card_faces", 0, "oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
     (TestCaseData("regular_english_card"), ["set"], "tsa"),
     (TestCaseData("regular_english_card"), ["set_name"], "Time Spiral Altered"),
     (TestCaseData("regular_english_card"), ["scryfall_set_uri"], "https://scryfall.com/sets/tsa"),
