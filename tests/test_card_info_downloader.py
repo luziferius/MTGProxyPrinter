@@ -321,7 +321,10 @@ def generate_test_cases_for_test_card_import():
     yield TestCaseData("split_card")  # Korean "Cut // Ribbons"
     yield TestCaseData("english_double_faced_art_series_card")  # English art series card "Clearwater Pathway // Clearwater Pathway"
     yield TestCaseData("regular_english_card")  # English "Fury Sliver" from Time Spiral
-    yield TestCaseData("double_faced_card_without_top_level_oracle_id")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("reversible_card")  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("The_Ring")
+    yield TestCaseData("Undercity")
+    yield TestCaseData("Dungeon_of_the_Mad_Mage")
 
 
 @pytest.mark.parametrize("test_case", generate_test_cases_for_test_card_import())
@@ -336,6 +339,9 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
     yield TestCaseData("funny_card_with_silver_border"), "hide-funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
     yield TestCaseData("funny_card_with_acorn_security_stamp"), "hide-funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
+    yield TestCaseData("Food_Token"), "hide-token"
+    yield TestCaseData("Undercity"), "hide-token"   # Double-faced token
+    yield TestCaseData("The_Ring"), "hide-token"   # Double-faced token
     yield TestCaseData("gold_bordered_card"), "hide-gold-bordered"
     yield TestCaseData("white_bordered_card"), "hide-white-bordered"
     yield TestCaseData("banned_in_brawl"), "hide-banned-in-brawl"
@@ -353,7 +359,7 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("digital_reprint"), "hide-digital-cards"
     yield TestCaseData("borderless_card"), "hide-borderless"
     yield TestCaseData("extended_art"), "hide-extended-art"
-    yield TestCaseData("double_faced_card_without_top_level_oracle_id"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
@@ -478,7 +484,7 @@ DataPath = typing.List[typing.Union[str, int]]
 @pytest.mark.parametrize("test_case, dict_path, value", [
     (TestCaseData("regular_english_card"), ["lang"], "pl"),  # English "Fury Sliver" from Time Spiral
     (TestCaseData("regular_english_card"), ["oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
-    (TestCaseData("double_faced_card_without_top_level_oracle_id"), ["card_faces", 0, "oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
+    (TestCaseData("reversible_card"), ["card_faces", 0, "oracle_id"], "59b2a90e-542f-4fb0-b290-000000000000"),
     (TestCaseData("regular_english_card"), ["set"], "tsa"),
     (TestCaseData("regular_english_card"), ["set_name"], "Time Spiral Altered"),
     (TestCaseData("regular_english_card"), ["scryfall_set_uri"], "https://scryfall.com/sets/tsa"),
@@ -564,6 +570,32 @@ def test_related_printings(qtbot, card_db: CardDatabase):
             (1, 2),  # Card mentions Food token
             (4, 2),  # Card mentions Food token
         )
+    )
+
+
+@pytest.mark.parametrize("cards", [
+    ["Undercity", "Explore_the_Underdark", "Trailblazers_Torch"],
+    ["Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Bar_the_Gate"],
+    ["The_Ring", "Samwise_the_Stouthearted", "Elrond_Lord_of_Rivendell"],
+])
+def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: typing.List[str]):
+    db = card_db.db
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder((2, 1), (3, 1)),
+        "Test setup failed"
+    )
+    db.executemany(
+        # This inserts the back relation (token → card). These should not exist, and get purged during the next update
+        "INSERT INTO RelatedPrintings (card_id, related_id) VALUES (?, ?)",
+        [(1, 2), (1, 3)]
+    )
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder((2, 1), (3, 1)),
+        "Old related printings not cleaned up"
     )
 
 

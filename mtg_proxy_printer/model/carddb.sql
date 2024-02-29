@@ -51,7 +51,7 @@ CREATE TABLE Printing (
 );
 
 CREATE TABLE RelatedPrintings (
-  card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  card_id    INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
   PRIMARY KEY (card_id, related_id),
   CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)

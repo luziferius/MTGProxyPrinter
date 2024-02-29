@@ -437,13 +437,13 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
     def _populate_database(self, card_data: CardStream, *, total_count: int) -> int:
         logger.info(f"About to populate the database with card data. Expected cards: {total_count or 'unknown'}")
-        self.db.execute("BEGIN IMMEDIATE TRANSACTION")  # Acquire the write lock immediately
+        db = self.db
+        db.execute("BEGIN IMMEDIATE TRANSACTION")  # Acquire the write lock immediately
         progress_report_step = total_count // 1000
         skipped_cards = 0
         index = 0
         face_ids: IntTuples = []
         related_printings: typing.List[RelatedPrintingData] = []
-        db = self.db
         for index, card in enumerate(card_data, start=1):
             if not self.should_run:
                 logger.info(f"Aborting card import after {index} cards due to user request.")
@@ -548,6 +548,15 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _insert_related_printings(self, related_printings: typing.List[RelatedPrintingData]):
         db = self.db
         logger.debug(f"Inserting related printings data. {len(related_printings)} entries")
+        db.execute("DELETE FROM RelatedPrintings")
+        # Implementation note on "OR IGNORE below":
+        # On all cards with related printings, the related cards array also includes the identity/self reference.
+        # For the relation, Scryfall uses the print-identifying scryfall id.
+        # But on some cards, the self-reference is given by another printing.
+        # So for example, the etched foil printing refers to itself in the related cards list by the regular printing.
+        # And because the related card object only contains the scryfall id as the identification, the parser step
+        # cannot identify these cases.
+        # If it happens, the entry should be ignored during the insert.
         db.executemany(cached_dedent("""\
         INSERT OR IGNORE INTO RelatedPrintings (card_id, related_id)
           SELECT card_id, related_id
@@ -726,12 +735,14 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
 
 def _get_related_cards(card: CardDataType):
-    if card["layout"] == "token":
-        # A token is never a source, as that would pull all cards creating that token
+    if card["layout"].endswith("token") or card.get("type_line") == "Dungeon":
+        # Tokens and Dungeons are never sources, as that would pull all cards
+        # creating that token or entering that Dungeon
         return
     card_id = UUID(card["id"])
     for related_card in card.get("all_parts", []):
-        if card_id != (related_id := UUID(related_card["id"])):
+        related_id = UUID(related_card["id"])
+        if card_id != related_id:
             yield RelatedPrintingData(card_id, related_id)
 
 
@@ -754,7 +765,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         # black-bordered promotional cards, in addition to silver-bordered cards.
         "hide-funny-cards": card["set_type"] == "funny" and "legal" not in legalities.values(),
         # Token cards
-        "hide-token": card["layout"] == "token",
+        "hide-token": card["layout"].endswith("token") or card.get("type_line") == "Dungeon",
         "hide-digital-cards": card["digital"],
         # Specific format legality. Use .get() with a default instead of [] to not fail
         # if Scryfall removes one of the listed formats in the future.
