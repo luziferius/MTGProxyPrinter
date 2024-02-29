@@ -728,7 +728,7 @@ def test_find_related_printings(qtbot, card_db: CardDatabase, source_id: str, ex
             "Trailblazers_Torch",
         ])
     source_card = card_db.get_card_with_scryfall_id(source_id, True)
-    assert_that(source_card, is_(not_none()))
+    assert_that(source_card, is_(not_none()), "Setup failed")
     related = card_db.find_related_cards(source_card)
     assert_that(
         related, contains_inanyorder(
