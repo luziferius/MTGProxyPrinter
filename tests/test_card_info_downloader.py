@@ -573,6 +573,32 @@ def test_related_printings(qtbot, card_db: CardDatabase):
     )
 
 
+@pytest.mark.parametrize("cards", [
+    ["Undercity", "Explore_the_Underdark", "Trailblazers_Torch"],
+    ["Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Bar_the_Gate"],
+    ["The_Ring", "Samwise_the_Stouthearted", "Elrond_Lord_of_Rivendell"],
+])
+def test_update_deletes_outdated_related_printing(qtbot, card_db: CardDatabase, cards: typing.List[str]):
+    db = card_db.db
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder((2, 1), (3, 1)),
+        "Test setup failed"
+    )
+    db.executemany(
+        # This inserts the back relation (token → card). These should not exist, and get purged during the next update
+        "INSERT INTO RelatedPrintings (card_id, related_id) VALUES (?, ?)",
+        [(1, 2), (1, 3)]
+    )
+    fill_card_database_with_json_cards(qtbot, card_db, cards)
+    assert_that(
+        db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
+        contains_inanyorder((2, 1), (3, 1)),
+        "Old related printings not cleaned up"
+    )
+
+
 @pytest.mark.parametrize("exception", [sqlite3.Error, Exception])
 def test_import_works_after_network_error_during_first_try(qtbot, card_db, exception):
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
