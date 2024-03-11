@@ -16,8 +16,8 @@
 import enum
 
 from PySide6.QtCore import Qt, QEvent
-from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAction
 from PySide6.QtWidgets import QGraphicsView, QWidget
+from PySide6.QtGui import QWheelEvent, QKeySequence, QPalette, QResizeEvent, QAction
 
 
 from mtg_proxy_printer.model.document import Document

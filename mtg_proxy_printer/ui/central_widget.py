@@ -19,7 +19,8 @@ import operator
 import pathlib
 from typing import Union, Type, Optional
 
-from PySide6.QtCore import Signal, Slot, QPersistentModelIndex, QItemSelectionModel, QModelIndex, QPoint, Qt
+from PySide6.QtCore import Signal, Slot, QPersistentModelIndex, QItemSelectionModel, \
+    QModelIndex, QPoint, Qt
 from PySide6.QtGui import QIcon, QAction
 from PySide6.QtWidgets import QWidget, QMenu, QInputDialog, QFileDialog
 

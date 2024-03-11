@@ -5,7 +5,8 @@ import itertools
 import typing
 
 import pint
-from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
+from PySide6.QtCore import Qt, QSizeF, QPointF, QRectF, Signal, QObject, Slot, \
+    QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
 from PySide6.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
 from PySide6.QtWidgets import QGraphicsItemGroup, QGraphicsItem, QGraphicsPixmapItem, QGraphicsRectItem, \
     QGraphicsLineItem, QGraphicsSimpleTextItem, QGraphicsScene, QGraphicsPolygonItem

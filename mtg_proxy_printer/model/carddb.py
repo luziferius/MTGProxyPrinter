@@ -24,8 +24,8 @@ import threading
 import typing
 
 from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QPixmap, QColor, QColorConstants, QPainter, QTransform
-from PySide6.QtCore import Qt, QPoint, QRect, QSize, QObject, Signal, QPointF
+from PySide6.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
+from PySide6.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, Signal
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent

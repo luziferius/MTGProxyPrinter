@@ -23,7 +23,8 @@ import sys
 import textwrap
 import typing
 
-from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, QPersistentModelIndex
+from PySide6.QtCore import QAbstractItemModel, QModelIndex, Qt, Slot, Signal, \
+    QPersistentModelIndex
 
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.document_page import CardContainer, Page, PageList

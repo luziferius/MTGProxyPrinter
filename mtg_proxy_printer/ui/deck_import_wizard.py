@@ -20,7 +20,8 @@ import re
 import typing
 import urllib.error
 
-from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, QItemSelection, QSize
+from PySide6.QtCore import Slot, Signal, Property, QStringListModel, Qt, SIGNAL, \
+    QItemSelection, QSize
 from PySide6.QtGui import QValidator, QIcon
 from PySide6.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
 
