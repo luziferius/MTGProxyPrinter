@@ -128,6 +128,7 @@ class CardInfoDownloader(ProgressSignalContainer):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def download_to_file(self, download_path: Path):
+        logger.debug(f"Called download_to_file({download_path}). About to fetch the card data")
         runner = CardInfoFileDownloadRunner(download_path, self)
         signals = runner.signals
         signals.download_begins.connect(self.download_begins, QueuedConnection)
