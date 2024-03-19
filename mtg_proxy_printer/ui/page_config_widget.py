@@ -24,7 +24,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, PageType
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -77,8 +77,11 @@ class PageConfigWidget(QGroupBox):
         Recomputes and updates the page capacity value, whenever any page layout widget changes.
         Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
-        new_capacity = self.page_layout.compute_page_card_capacity()
-        self.ui.page_capacity.setText(str(new_capacity))
+
+        regular_capacity = self.page_layout.compute_page_card_capacity(PageType.REGULAR)
+        oversized_capacity = self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
+        capacity_text = f"{regular_capacity} regular cards, {oversized_capacity} oversized cards"
+        self.ui.page_capacity.setText(capacity_text)
 
     @Slot()
     def validate_paper_size_settings(self):

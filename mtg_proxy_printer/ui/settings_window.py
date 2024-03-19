@@ -96,7 +96,8 @@ class SettingsWindow(QDialog):
         self.language_model = language_model
         self.document = document
         self.ui = ui = Ui_SettingsWindow()
-        self.ui.setupUi(self)
+        ui.setupUi(self)
+        ui.debug_settings_page.requested_card_download.connect(self.requested_card_download)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
@@ -111,7 +112,8 @@ class SettingsWindow(QDialog):
         model.appendRow(item_factory(
             self.tr("Deck list import"), "edit-download", self.tr("Configure the deck list importer")))
         model.appendRow(item_factory(
-            self.tr("Page size & Printing"), "document-print", self.tr("Configure page size and printing options")))
+            self.tr("Document & print settings"), "document-print",
+            self.tr("Configure document settings, page size and printing options")))
         model.appendRow(item_factory(
             self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings")))
         model.appendRow(item_factory(
@@ -227,8 +229,8 @@ class SettingsWindow(QDialog):
         logger.debug("User clicked the reset button.")
         scope_question = QMessageBox(
             QMessageBox.Icon.Question,
-            self.tr("Reset current page or everything?"),
-            self.tr("Reset changes made in the current page or on all pages?"),
+            self.tr("Reset unsaved changes?"),
+            self.tr("Reset unsaved changes on the current page or on all pages?"),
             MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
             self)
         scope_question.button(MessageBoxButton.YesToAll).setText(self.tr("Reset everything"))
