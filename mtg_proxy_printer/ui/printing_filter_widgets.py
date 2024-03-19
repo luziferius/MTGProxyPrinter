@@ -34,6 +34,7 @@ except ModuleNotFoundError:
     Ui_GeneralPrintingFilter = load_ui_from_file("settings_window/general_printing_filter")
 
 UiTypes = Union[Type[Ui_FormatPrintingFilter], Type[Ui_GeneralPrintingFilter]]
+ParsingMode = QUrl.ParsingMode
 
 
 class AbstractPrintingFilterWidget(QGroupBox):
@@ -53,8 +54,8 @@ class AbstractPrintingFilterWidget(QGroupBox):
 
     @staticmethod
     def view_query_on_scryfall(query: str):
-        query_url = QUrl("https://scryfall.com/search", QUrl.StrictMode)
-        query_url.setQuery(f"q={query}", QUrl.StrictMode)
+        query_url = QUrl("https://scryfall.com/search", ParsingMode.StrictMode)
+        query_url.setQuery(f"q={query}", ParsingMode.StrictMode)
         QDesktopServices.openUrl(query_url)
 
     @abc.abstractmethod

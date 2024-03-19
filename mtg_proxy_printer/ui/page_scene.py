@@ -86,6 +86,8 @@ class CardBleedItem(QGraphicsPixmapItem):
             else (1.0, self.sign*size_px)
         transformation.scale(sx, sy)
         self.setTransform(transformation, False)
+        # Some renderers do draw zero-width elements as faint lines, so set zero-width bleeds to be transparent
+        self.setOpacity(size_px > 0)
 
 
 class CardBleedCornerItem(QGraphicsPolygonItem):
@@ -124,6 +126,8 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
             QPointF(left+v_px, bottom),
             QPointF(left, bottom), QPointF(left, top)
         )))
+        # Some renderers do draw zero-width elements as faint lines, so set zero-width bleeds to be transparent
+        self.setOpacity(h_px > 0 < v_px)
 
 
 class NeighborsPresent(typing.NamedTuple):
@@ -198,30 +202,28 @@ class CardItem(QGraphicsItemGroup):
         image = self.card.image_file
         card_height, card_width = image.height(), image.width()
         card_width = image.width()
-        opacity = 255 * draw_corners
         left, right = 0, card_width-self.CORNER_SIZE_PX
         top, bottom = 0, card_height-self.CORNER_SIZE_PX
         return [
-            self._create_corner(CardCorner.TOP_LEFT, QPointF(left, top), opacity),
-            self._create_corner(CardCorner.TOP_RIGHT, QPointF(right, top), opacity),
-            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(left, bottom), opacity),
-            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), opacity),
+            self._create_corner(CardCorner.TOP_LEFT, QPointF(left, top), draw_corners),
+            self._create_corner(CardCorner.TOP_RIGHT, QPointF(right, top), draw_corners),
+            self._create_corner(CardCorner.BOTTOM_LEFT, QPointF(left, bottom), draw_corners),
+            self._create_corner(CardCorner.BOTTOM_RIGHT, QPointF(right, bottom), draw_corners),
         ]
 
-    def _create_corner(self, corner: CardCorner, position: QPointF, opacity: float) -> QGraphicsRectItem:
+    def _create_corner(self, corner: CardCorner, position: QPointF, opaque: bool) -> QGraphicsRectItem:
         rect = QGraphicsRectItem(0, 0, self.CORNER_SIZE_PX, self.CORNER_SIZE_PX)
         color = self.card.corner_color(corner)
         rect.setPos(position)
         rect.setPen(self.corner_pen)
         rect.setBrush(color)
-        rect.setOpacity(opacity)
+        rect.setOpacity(opaque)
         rect.setZValue(RenderLayers.CORNERS.value)
         return rect
 
     def on_page_layout_changed(self, new_page_layout: PageLayoutSettings):
-        corner_opacity = 255 * new_page_layout.draw_sharp_corners
         for corner in self.corners:
-            corner.setOpacity(corner_opacity)
+            corner.setOpacity(new_page_layout.draw_sharp_corners)
 
     def _draw_content(self):
         for item in itertools.chain(self.corners, self.bleeds):

@@ -5,8 +5,12 @@ Print Magic: The Gathering cards for play-testing purposes.
 
 ## Feature overview
 
-- Create, save and load documents
-- Multi-level undo & redo
+The application supports importing deck lists from locally stored files or various deck list building websites, automatically fetches high-quality card images from [Scryfall](https://scryfall.com), and aranges the fetched images
+in a paged document suitable for printing or PDF export.
+
+- The standard document editing features:
+  - Create, save and load documents
+  - Multi-level undo & redo, even across the "New document" and "Load document"
 - Export documents as PDFs
   - Optional, automatic splitting into configurable chunks to accommodate file size limits present in various printers.
 - Direct printing using your operating system’s printing support. Can use any available and suitable printer
@@ -26,17 +30,22 @@ Print Magic: The Gathering cards for play-testing purposes.
 - Hide cards using various card and printing filters. Hidden cards are treated as though they do not exist.
   - Bans in various formats supported by Scryfall
   - Border color (white-bordered, gold-bordered)
+  - Full-art, or extended-art cards
   - Funny cards (Silver-bordered and other black-bordered promotional cards, like the “Heroes of the Realm” cards. Also cards from Un-sets with acorn-shaped security stamp.)
   - Image availability (for non-English cards)
   - Being oversized
   - Digital printings (includes both Magic Online promotional card versions, MTG Arena digital-only cards and other digital printings)
 - Supports cards in all languages supported by Scryfall
 - Supports the official tokens (As offered by Scryfall, which is currently English only. If Scryfall starts to offer localized tokens, these will be become available, too.)
-- Adjustable paper size, page margins, image spacing
-- Optional printing of cut helper lines to aid machine-cutting printed sheets
+- Adjustable document appearance
+  - Adjustable paper size, page margins, spacing between card images
+  - Optional printing of cut helper lines to aid machine-cutting printed sheets
+  - Optionally render sharp image corners, instead of the default round ones
+  - Optionally draw a bleed (a thick outline of configurable width) around the images. The bleed color is sampled from the images to ensure compatibility with arbitrary border colors
+  - Optionally print a document title and page numbers on all pages, to ease identifying loose sheets of printed cards
 - Full support for oversized cards, like Archenemy Scheme cards or Planechase Planes. 
   - Regular-size cards and oversized cards are kept on separate pages to ensure consistent image spacing and proper rendering of cut helper lines.
-- Ability to add “related cards” of cards added to the document. These are cards referenced by name or tokens created.
+- Ability to add “related cards” of cards in the document. These are cards referenced by name or tokens created.
 
 ### Supported deck list formats
 
@@ -51,7 +60,7 @@ Print Magic: The Gathering cards for play-testing purposes.
 
 ### Supported deck list database sites
 
-MTGProxyPrinter can directly fetch public deck lists from these websites.
+MTGProxyPrinter can directly fetch public deck lists from these websites:
 
 - [Archidekt](https://archidekt.com/)
 - [Deckstats](https://deckstats.net/)
@@ -66,8 +75,11 @@ MTGProxyPrinter can directly fetch public deck lists from these websites.
 - [mtg.wtf](https://mtg.wtf/)
 - [MTGDecks](https://mtgdecks.net)
 
+If you want to print your own lists, ensure that deck lists are accessible without any login, i.e. set to be "public". MTGProxyPrinter does not support logging into an account on those sites, thus cannot fetch any decks behind a login-wall. When setting a deck list to public, it may take a few minutes for the site to update the availability, so give it a few minutes. Alternatively, if the website offers to download or export the deck list, export it in one of the supported formats and manually load or paste it into the deck import wizard.
+
 Except for Scryfall, these websites do not offer a stable, public Web API. Support is offered on a
 “best effort” base and may break at any time, if a website decides to re-design their code.
+
 
 ## Requirements
 
@@ -99,7 +111,7 @@ These libraries are required to run the unit tests.
 ## Install
 
 To install from a fossil checkout or a downloaded and unpacked source code archive, execute `pip install .` 
-from the repository root directory (where `setup.py` and `pyproject.toml` are located).
+from the repository root directory (where `pyproject.toml` is located).
 
 
 ## Usage
@@ -107,7 +119,7 @@ from the repository root directory (where `setup.py` and `pyproject.toml` are lo
 Execute `mtg-proxy-printer` to start the GUI. The Windows MSI package places a starter in the Start menu.
 
 At first start and at somewhat regular intervals, MTGProxyPrinter requires downloading the MTG card data
-from the Scryfall API. This dataset containing the information about the available 380k+ printings is roughly 250-300 MiB large.
+from the Scryfall API. This dataset containing the information about the available 400k+ printings is roughly 250-300 MiB large.
 
 When starting, an empty document is created. You can add any number of pages, if you need more than one page to print.
 The left-most panel in the main window shows an overview over all pages with a summary of what is on each page.

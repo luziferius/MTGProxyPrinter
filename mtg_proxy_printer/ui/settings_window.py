@@ -96,7 +96,8 @@ class SettingsWindow(QDialog):
         self.language_model = language_model
         self.document = document
         self.ui = ui = Ui_SettingsWindow()
-        self.ui.setupUi(self)
+        ui.setupUi(self)
+        ui.debug_settings_page.requested_card_download.connect(self.requested_card_download)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
@@ -108,7 +109,7 @@ class SettingsWindow(QDialog):
         # Create the model entries for each page, in the order they are stacked.
         model.appendRow(item_factory("General settings", "configure"))
         model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
-        model.appendRow(item_factory("Page size & Printing", "document-print", "Configure page size and printing options"))
+        model.appendRow(item_factory("Document & print settings", "document-print", "Configure document settings, page size and printing options"))
         model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
         model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
         # Set the models
@@ -222,8 +223,8 @@ class SettingsWindow(QDialog):
         logger.debug("User clicked the reset button.")
         scope_question = QMessageBox(
             QMessageBox.Icon.Question,
-            "Reset current page or everything?",
-            "Reset changes made in the current page or on all pages?",
+            "Reset unsaved changes?",
+            "Reset unsaved changes on the current page or on all pages?",
             MessageBoxButton.YesToAll | MessageBoxButton.Yes | MessageBoxButton.Cancel,
             self)
         scope_question.button(MessageBoxButton.YesToAll).setText("Reset everything")

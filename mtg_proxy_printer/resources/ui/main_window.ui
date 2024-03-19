@@ -177,7 +177,7 @@
     <iconset theme="edit-download"/>
    </property>
    <property name="text">
-    <string>Download card data</string>
+    <string>Update card data</string>
    </property>
   </action>
   <action name="action_new_page">
@@ -234,7 +234,7 @@
   </action>
   <action name="action_show_about_dialog">
    <property name="text">
-    <string>About…</string>
+    <string>About …</string>
    </property>
    <property name="menuRole">
     <enum>QAction::AboutRole</enum>
