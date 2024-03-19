@@ -6,14 +6,13 @@
    <item row="1" column="2">
     <widget class="QPushButton" name="deck_list_search_path_browse_button">
      <property name="toolTip">
-      <string>Browse…</string>
+      <string>Browse …</string>
      </property>
      <property name="text">
       <string/>
      </property>
      <property name="icon">
-      <iconset theme="document-open">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="document-open"/>
      </property>
     </widget>
    </item>

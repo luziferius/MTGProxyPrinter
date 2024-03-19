@@ -2,9 +2,6 @@
 <ui version="4.0">
  <class>GeneralSettingsPage</class>
  <widget class="QWidget" name="GeneralSettingsPage">
-  <property name="windowTitle">
-   <string>Form</string>
-  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0" colspan="2">
     <widget class="QGroupBox" name="look_and_feel_settings_group_box">
