@@ -14,6 +14,7 @@
 
 ## Fixed issues
 
+- Likely fixed faint square corners drawn around cards
 - Fixed hiding double-faced tokens and Dungeon cards when the token card filter is active.
 - The related card search now also handles double-faced tokens, the Ring emblem, and Dungeon cards.
     - With this change, cards that create double-faced tokens, 
