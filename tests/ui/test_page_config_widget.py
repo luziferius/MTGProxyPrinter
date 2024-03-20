@@ -213,3 +213,19 @@ def test_load_booleans_from_page_layout(qtbot: QtBot, attribute_name: str, value
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
     checkbox_widget: QCheckBox = getattr(widget.ui, attribute_name)
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
+
+
+def test_flip_page_dimensions_button(qtbot: QtBot):
+    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+    qtbot.addWidget(widget)
+    widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+    assert_that(widget.page_layout, has_properties({
+        "page_height": equal_to(297),
+        "page_width": equal_to(210),
+    }), "Setup failed")
+    widget.ui.flip_page_dimensions.click()
+
+    assert_that(widget.page_layout, has_properties({
+        "page_height": equal_to(210),
+        "page_width": equal_to(297),
+    }), "Values not correctly flipped")
