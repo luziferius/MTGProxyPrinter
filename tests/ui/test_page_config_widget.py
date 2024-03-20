@@ -23,7 +23,14 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 import mtg_proxy_printer.settings
-import mtg_proxy_printer.ui.page_config_widget
+from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
+
+
+@pytest.fixture()
+def widget(qtbot: QtBot) -> PageConfigWidget:
+    widget = PageConfigWidget()
+    qtbot.addWidget(widget)
+    return widget
 
 
 @pytest.mark.parametrize("attribute_name", [
@@ -36,10 +43,8 @@ import mtg_proxy_printer.ui.page_config_widget
     "row_spacing",
     "column_spacing",
 ])
-def test_set_integer_spin_boxes(qtbot: QtBot, attribute_name: str):
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+def test_set_integer_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     ui = widget.ui
-    qtbot.addWidget(widget)
     assert_that(ui, has_property(attribute_name, instance_of(QSpinBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(int)))
     spinbox_widget: QSpinBox = getattr(ui, attribute_name)
@@ -53,10 +58,8 @@ def test_set_integer_spin_boxes(qtbot: QtBot, attribute_name: str):
 @pytest.mark.parametrize("attribute_name", [
     "draw_cut_markers",
 ])
-def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
+def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     ui = widget.ui
-    qtbot.addWidget(widget)
     assert_that(ui, has_property(attribute_name, instance_of(QCheckBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(bool)))
     checkbox_widget: QCheckBox = getattr(ui, attribute_name)
@@ -86,13 +89,11 @@ def test_boolean_check_boxes(qtbot: QtBot, attribute_name: str):
     ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_load_integer_document_settings_from_config(
-        qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
+        widget: PageConfigWidget, settings_name: str, attribute_name: str, min_value: int, value: int):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     with unittest.mock.patch.dict(document_settings, {settings_name: str(value)}):
         expected = max(min_value, value)
@@ -106,9 +107,7 @@ def test_load_integer_document_settings_from_config(
 @pytest.mark.parametrize("settings_name, attribute_name", [
     ("print-cut-marker", "draw_cut_markers"),
 ])
-def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, attribute_name: str, value: bool):
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
+def test_load_boolean_checkboxes_from_config(widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     with unittest.mock.patch.dict(document_settings, {settings_name: str(value)}):
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
@@ -129,13 +128,11 @@ def test_load_boolean_checkboxes_from_config(qtbot: QtBot, settings_name: str, a
     ("column-spacing-mm", "column_spacing", 0),
 ])
 def test_save_integer_document_settings_to_config(
-        qtbot: QtBot, settings_name: str, attribute_name: str, min_value: int, value: int):
+        qtbot: QtBot, widget: PageConfigWidget, settings_name: str, attribute_name: str, min_value: int, value: int):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
     original_value = document_settings[settings_name]
@@ -155,13 +152,11 @@ def test_save_integer_document_settings_to_config(
     ("print-cut-marker", "draw_cut_markers"),
 ])
 def test_save_boolean_document_settings_to_config(
-        qtbot: QtBot, settings_name: str, attribute_name: str, value: bool):
+        widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
     original_value = document_settings[settings_name]
@@ -184,13 +179,11 @@ def test_save_boolean_document_settings_to_config(
     ("row_spacing", 0),
     ("column_spacing", 0),
 ])
-def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_value: int, value: int):
+def test_load_integers_from_page_layout(widget: PageConfigWidget, attribute_name: str, min_value: int, value: int):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
     other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     expected = max(min_value, value)
@@ -204,9 +197,7 @@ def test_load_integers_from_page_layout(qtbot: QtBot, attribute_name: str, min_v
 @pytest.mark.parametrize("attribute_name", [
     "draw_cut_markers",
 ])
-def test_load_booleans_from_page_layout(qtbot: QtBot, attribute_name: str, value: bool):
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
+def test_load_booleans_from_page_layout(widget: PageConfigWidget, attribute_name: str, value: bool):
     other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     widget.load_from_page_layout(other)
@@ -215,9 +206,7 @@ def test_load_booleans_from_page_layout(qtbot: QtBot, attribute_name: str, value
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
 
 
-def test_flip_page_dimensions_button(qtbot: QtBot):
-    widget = mtg_proxy_printer.ui.page_config_widget.PageConfigWidget()
-    qtbot.addWidget(widget)
+def test_flip_page_dimensions_button(widget: PageConfigWidget):
     widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
     assert_that(widget.page_layout, has_properties({
         "page_height": equal_to(297),
