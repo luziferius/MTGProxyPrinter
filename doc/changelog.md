@@ -2,6 +2,10 @@
 
 # Next version (In development)
 
+## New features
+
+- Added a button to the document settings to toggle between portrait and landscape mode. 
+
 ## Changed features
 
 - Major rework of the application settings window:

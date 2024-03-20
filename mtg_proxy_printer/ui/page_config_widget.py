@@ -84,6 +84,15 @@ class PageConfigWidget(QGroupBox):
         self.ui.page_capacity.setText(capacity_text)
 
     @Slot()
+    def on_flip_page_dimensions_clicked(self):
+        """Toggles between landscape/portrait mode by flipping the page height and page width values."""
+        logger.debug("User flips paper dimensions")
+        ui = self.ui
+        width = ui.page_width.value()
+        ui.page_width.setValue(ui.page_height.value())
+        ui.page_height.setValue(width)
+
+    @Slot()
     def validate_paper_size_settings(self):
         """
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
