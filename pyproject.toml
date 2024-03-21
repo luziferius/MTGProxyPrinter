@@ -176,7 +176,7 @@ setenv =
 
 deps =
     {[testenv]deps}
-    cx_Freeze >= 6.11.1
+    cx-Freeze >= 6.11.1
     {[testenv]build_deps}
 
 # Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
@@ -200,7 +200,7 @@ commands =
 
 deps =
     {[testenv]deps}
-    cx_Freeze >= 6.11.1
+    cx-Freeze >= 6.11.1
 
 commands =
     python scripts{/}compile_ui_files.py --full --purge-existing
