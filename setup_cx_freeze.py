@@ -77,6 +77,10 @@ setup_py.setup_parameters["options"] = {
             "sqlite3.test",  # Ignore the internal test suite
             "pint.testsuite",  # Ignore the internal test suite
             "importlib_metadata",
+            "platformdirs.android",
+            "platformdirs.macos",
+            "platformdirs.unix",
+
             # All unused PyQt components
             "PyQt5.QtXmlPatterns",
             "PyQt5.QtNfc",
@@ -112,6 +116,7 @@ setup_py.setup_parameters["options"] = {
             "PyQt5.QtWebKit",
             "PyQt5.QtWebKitWidgets",
             "PyQt5.QtWebSockets",
+            "PyQt5.uic.port_v2",
         ],
         "optimize": 2,
     },
