@@ -37,12 +37,14 @@ del Qt*Qml* Qt*Quick* Qt*Labs*
 del Qt6Designer.dll QtDesigner.pyi QtDesigner.pyd
 del Qt*Test*
 :: Unused OpenGL bindings. The Qt6OpenGL DLLs are required and thus not removed
-del QtOpenGL.* QtOpenGLWidgets.*
+del QtOpenGL.pyd QtOpenGLWidgets.pyd opengl32sw.dll
 del Qt*DBus*
 del Qt*JsonRpc*
 del Qt*Sql*
 del Qt*Network*
 del Qt*LanguageServer*
+:: Delete all typing stubs
+del *.pyi
 
 pushd translations
 :: Remove translations for unused/removed components
