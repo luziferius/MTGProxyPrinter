@@ -18,7 +18,7 @@ import functools
 from functools import partial
 import typing
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
