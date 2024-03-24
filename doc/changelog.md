@@ -1,6 +1,6 @@
 # Changelog
 
-# Next version (In development)
+# 0.28.0 (2024-03-24)  <a name="v0_28_0"></a>
 
 ## New features
 
@@ -21,7 +21,6 @@
       be reset/reverted. This also applies to the document settings dialog.
 - The card image tooltips shown by the image cleanup wizard now show the translated card names for 
   cards not in the preferred language.
-
 
 ## Fixed issues
 
