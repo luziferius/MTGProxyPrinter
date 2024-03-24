@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import configparser
 import dataclasses
 import enum
 import functools
@@ -104,8 +105,8 @@ class PageLayoutSettings:
     page_width: int = 0
 
     @classmethod
-    def create_from_settings(cls):
-        document_settings = mtg_proxy_printer.settings.settings["documents"]
+    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
+        document_settings = settings["documents"]
         return cls(
             document_settings.getint("card-bleed-mm"),
             document_settings["default-document-name"],

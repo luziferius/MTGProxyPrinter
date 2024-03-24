@@ -2,21 +2,36 @@
 
 # Next version (In development)
 
+## New features
+
+- Added a button to the document settings to toggle between portrait and landscape mode. 
+- Support automatic deck list downloads from [ManaBox.app](https://manabox.app).
+
 ## Changed features
 
+- Rework of the document settings:
+    - Now, the paper size imposes an upper bound for the margins. Increasing the margins to extremely high values no 
+      longer automatically increases the configured paper size. Margins are now capped at values that 
+      guarantee fitting at least one card row and column per page.
+    - The page capacity display also shows how many oversized cards fit on a page, in addition to regular cards.
 - Major rework of the application settings window:
     - The dialog now shows the individual settings pages using a list instead of tabs.
     - The "Reset" and "Revert Defaults" buttons now ask if they should apply to the currently shown page or all pages.
     - Hovering the mouse over the "Reset" and "Revert Defaults" buttons highlights the settings that will 
-      be reset/reverted.
+      be reset/reverted. This also applies to the document settings dialog.
 - The card image tooltips shown by the image cleanup wizard now show the translated card names for 
   cards not in the preferred language.
 
+
 ## Fixed issues
 
+- Fixed weirdness with the page capacity display: Previously, the displayed capacity always lagged one change behind. 
+  Now, it updates immediately.
+- Likely fixed faint square corners lines drawn around cards. This issue was introduced by the addition of card bleeds
+  in version 0.27.0
 - Fixed hiding double-faced tokens and Dungeon cards when the token card filter is active.
-- The related card search now also handles double-faced tokens, the Ring emblem, and Dungeon cards.
-    - With this change, cards that create double-faced tokens, 
+- The related card search now also stops at double-faced tokens, the Ring emblem, and Dungeon cards.
+    - With this change, right-clicking cards that create double-faced tokens, 
       or have "Venture into the Dungeon", "The Ring tempts you.", or 
       "You take the initiative." no longer show an excessively large list of related cards.
 
