@@ -46,13 +46,14 @@ class PageConfigWidget(QGroupBox):
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    @staticmethod
-    def _setup_page_layout(ui: Ui_PageConfigWidget) -> PageLayoutSettings:
+    def _setup_page_layout(self, ui: Ui_PageConfigWidget) -> PageLayoutSettings:
         # Implementation note: The signal connections below will also trigger
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
+        ui.column_spacing.valueChanged[int].connect(lambda value: logger.debug(f"Column spacing now {value}"))
+        ui.page_width.valueChanged[int].connect(lambda value: logger.debug(f"Page width now {value}"))
         ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
         ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
         ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
@@ -62,6 +63,12 @@ class PageConfigWidget(QGroupBox):
         ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
         ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
         ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
+        for spinbox in (
+                ui.page_height, ui.page_width,
+                ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
+                ui.row_spacing, ui.column_spacing):
+            spinbox.valueChanged[int].connect(self.validate_paper_size_settings)
+            spinbox.valueChanged[int].connect(self.page_layout_setting_changed)
         ui.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
         ui.draw_sharp_corners.stateChanged.connect(
@@ -74,8 +81,7 @@ class PageConfigWidget(QGroupBox):
     @Slot()
     def page_layout_setting_changed(self):
         """
-        Recomputes and updates the page capacity value, whenever any page layout widget changes.
-        Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
+        Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
 
         regular_capacity = self.page_layout.compute_page_card_capacity(PageType.REGULAR)
@@ -96,7 +102,6 @@ class PageConfigWidget(QGroupBox):
     def validate_paper_size_settings(self):
         """
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
-        Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
         oversized = CardSizes.OVERSIZED
         pl = self.page_layout

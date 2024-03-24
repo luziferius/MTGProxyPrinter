@@ -15,13 +15,18 @@
       be reset/reverted.
 - The card image tooltips shown by the image cleanup wizard now show the translated card names for 
   cards not in the preferred language.
+- The page capacity display in the document settings now also shows how many oversized cards fit on a page, 
+  in addition to regular cards.
 
 ## Fixed issues
 
-- Likely fixed faint square corners drawn around cards
+- Fixed weirdness with the page capacity display: Previously, the displayed capacity always lagged one change behind. 
+  Now, it updates immediately.
+- Likely fixed faint square corners lines drawn around cards. This issue was introduced by the addition of card bleeds
+  in version 0.27.0
 - Fixed hiding double-faced tokens and Dungeon cards when the token card filter is active.
-- The related card search now also handles double-faced tokens, the Ring emblem, and Dungeon cards.
-    - With this change, cards that create double-faced tokens, 
+- The related card search now also stops at double-faced tokens, the Ring emblem, and Dungeon cards.
+    - With this change, right-clicking cards that create double-faced tokens, 
       or have "Venture into the Dungeon", "The Ring tempts you.", or 
       "You take the initiative." no longer show an excessively large list of related cards.
 

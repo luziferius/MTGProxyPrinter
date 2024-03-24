@@ -25,6 +25,8 @@ from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
+from tests.hasgetter import has_getter
+
 
 @pytest.fixture()
 def widget(qtbot: QtBot) -> PageConfigWidget:
@@ -44,6 +46,7 @@ def widget(qtbot: QtBot) -> PageConfigWidget:
     "column_spacing",
 ])
 def test_set_integer_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
+    widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QSpinBox)))
     assert_that(widget.page_layout, has_property(attribute_name, instance_of(int)))
@@ -80,7 +83,7 @@ def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_n
 @pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value", [
     ("paper-height-mm", "page_height", 136),
-    ("paper-width-mm", "page_width", 93),
+    ("paper-width-mm", "page_width", 98),
     ("margin-top-mm", "margin_top", 0),
     ("margin-bottom-mm", "margin_bottom", 0),
     ("margin-left-mm", "margin_left", 0),
@@ -218,3 +221,40 @@ def test_flip_page_dimensions_button(widget: PageConfigWidget):
         "page_height": equal_to(210),
         "page_width": equal_to(297),
     }), "Values not correctly flipped")
+
+
+def test_flip_page_dimensions_updates_capacity(widget: PageConfigWidget):
+    widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+    assert_that(widget.page_layout, has_properties({
+        "page_height": equal_to(297),
+        "page_width": equal_to(210),
+    }), "Setup failed")
+    widget.ui.flip_page_dimensions.click()
+    assert_that(widget.ui.page_capacity, has_getter("text", all_of(
+        contains_string("8"),
+        contains_string("3"),
+    )))
+    widget.ui.flip_page_dimensions.click()
+    assert_that(widget.ui.page_capacity, has_getter("text", all_of(
+        contains_string("9"),
+        contains_string("4"),
+    )))
+
+
+def test_page_capacity_updates_correctly(widget: PageConfigWidget):
+    widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
+    page_layout = widget.page_layout
+    row_spacing = widget.ui.row_spacing
+    page_capacity = widget.ui.page_capacity
+
+    row_spacing.setValue(11)
+    assert_that(page_layout.compute_page_card_capacity(), is_(9))
+    assert_that(page_capacity, has_getter("text", contains_string("9")))
+
+    row_spacing.setValue(12)
+    assert_that(page_layout.compute_page_card_capacity(), is_(6))
+    assert_that(page_capacity, has_getter("text", contains_string("6")))
+
+    row_spacing.setValue(11)
+    assert_that(page_layout.compute_page_card_capacity(), is_(9))
+    assert_that(page_capacity, has_getter("text", contains_string("9")))
