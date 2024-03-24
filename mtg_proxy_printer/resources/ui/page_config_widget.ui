@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>458</width>
-    <height>509</height>
+    <width>481</width>
+    <height>539</height>
    </rect>
   </property>
   <property name="title">
@@ -166,6 +166,9 @@ Otherwise, scaling may be applied by the printer driver.</string>
      <property name="suffix">
       <string> mm</string>
      </property>
+     <property name="minimum">
+      <number>126</number>
+     </property>
      <property name="maximum">
       <number>10000</number>
      </property>
@@ -186,6 +189,9 @@ Otherwise, scaling may be applied by the printer driver.</string>
      </property>
      <property name="suffix">
       <string> mm</string>
+     </property>
+     <property name="minimum">
+      <number>88</number>
      </property>
      <property name="maximum">
       <number>10000</number>

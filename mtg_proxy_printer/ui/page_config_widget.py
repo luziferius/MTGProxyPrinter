@@ -18,7 +18,7 @@ import functools
 from functools import partial
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
@@ -39,6 +39,7 @@ CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
+
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
@@ -103,22 +104,36 @@ class PageConfigWidget(QGroupBox):
         """
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
         """
+        ui = self.ui
         oversized = CardSizes.OVERSIZED
-        pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + oversized.as_mm(oversized.height)
-        min_page_width = pl.margin_left + pl.margin_right + oversized.as_mm(oversized.width)
-        self.ui.page_height.setMinimum(min_page_height)
-        self.ui.page_width.setMinimum(min_page_width)
+        available_width = ui.page_width.value() - oversized.as_mm(oversized.width)
+        available_height = ui.page_height.value() - oversized.as_mm(oversized.height)
+        ui.margin_left.setMaximum(
+            max(0, available_width - ui.margin_right.value())
+        )
+        ui.margin_right.setMaximum(
+            max(0, available_width - ui.margin_left.value())
+        )
+        ui.margin_top.setMaximum(
+            max(0, available_height - ui.margin_bottom.value())
+        )
+        ui.margin_bottom.setMaximum(
+            max(0, available_height - ui.margin_top.value())
+        )
 
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         documents_section = settings["documents"]
         for spinbox, setting in self._get_integer_settings_widgets():
-            spinbox.setValue(documents_section.getint(setting))
+            value = documents_section.getint(setting)
+            spinbox.setValue(value)
+            setattr(self.page_layout, spinbox.objectName(), spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
+        self.validate_paper_size_settings()
+        self.page_layout_setting_changed()
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -128,15 +143,17 @@ class PageConfigWidget(QGroupBox):
         layout = self.page_layout
         for key in layout.__annotations__.keys():
             value = getattr(other, key)
-            setattr(self.page_layout, key, value)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QSpinBox):
                     widget.setValue(value)
+                    setattr(self.page_layout, key, widget.value())
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
+                    setattr(self.page_layout, key, widget.text())
                 else:
                     widget.setChecked(value)
+                    setattr(self.page_layout, key, widget.isChecked())
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")

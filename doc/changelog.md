@@ -8,15 +8,19 @@
 
 ## Changed features
 
+- Rework of the document settings:
+    - Now, the paper size imposes an upper bound for the margins. Increasing the margins to extremely high values no 
+      longer automatically increases the configured paper size. Margins are now capped at values that 
+      guarantee fitting at least one card row and column per page.
+    - The page capacity display also shows how many oversized cards fit on a page, in addition to regular cards.
 - Major rework of the application settings window:
     - The dialog now shows the individual settings pages using a list instead of tabs.
     - The "Reset" and "Revert Defaults" buttons now ask if they should apply to the currently shown page or all pages.
     - Hovering the mouse over the "Reset" and "Revert Defaults" buttons highlights the settings that will 
-      be reset/reverted.
+      be reset/reverted. This also applies to the document settings dialog.
 - The card image tooltips shown by the image cleanup wizard now show the translated card names for 
   cards not in the preferred language.
-- The page capacity display in the document settings now also shows how many oversized cards fit on a page, 
-  in addition to regular cards.
+
 
 ## Fixed issues
 
