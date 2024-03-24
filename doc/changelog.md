@@ -5,6 +5,7 @@
 ## New features
 
 - Added a button to the document settings to toggle between portrait and landscape mode. 
+- Support automatic deck list downloads from [ManaBox.app](https://manabox.app).
 
 ## Changed features
 
