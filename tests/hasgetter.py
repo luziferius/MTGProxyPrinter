@@ -38,7 +38,7 @@ class IsObjectWithGetter(BaseMatcher[object]):
     def describe_to(self, description: Description) -> None:
         description.append_text("an object with a getter '").append_text(
             self.property_name
-        ).append_text("' matching ").append_description_of(self.value_matcher)
+        ).append_text("' returning ").append_description_of(self.value_matcher)
 
     def describe_mismatch(self, item: object, mismatch_description: Description) -> None:
         if item is None:
@@ -58,9 +58,9 @@ class IsObjectWithGetter(BaseMatcher[object]):
             ).append_description_of(self.property_name).append_text(" is not callable")
             return
 
-        mismatch_description.append_text("getter ").append_description_of(
+        mismatch_description.append_text("result of getter ").append_description_of(
             self.property_name
-        ).append_text(" ")
+        ).append_text(" expected to return ")
         value = getter()
         self.value_matcher.describe_mismatch(value, mismatch_description)
 
