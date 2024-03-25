@@ -35,14 +35,18 @@ try:
     from mtg_proxy_printer.ui.generated.settings_window.decklist_import_settings_page import Ui_DecklistImportSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.general_settings_page import Ui_GeneralSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.hide_printings_page import Ui_HidePrintingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.page_size_printing_page import Ui_PageSizePrintingSettings
+    from mtg_proxy_printer.ui.generated.settings_window.default_document_layout_settings_page import Ui_DefaultDocumentLayoutSettingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.printer_settings_page import Ui_PrinterSettingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.pdf_settings_page import Ui_PDFSettingsPage
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
     Ui_DebugSettingsPage = load_ui_from_file("settings_window/debug_settings_page")
     Ui_DecklistImportSettingsPage = load_ui_from_file("settings_window/decklist_import_settings_page")
     Ui_GeneralSettingsPage = load_ui_from_file("settings_window/general_settings_page")
     Ui_HidePrintingsPage = load_ui_from_file("settings_window/hide_printings_page")
-    Ui_PageSizePrintingSettings = load_ui_from_file("settings_window/page_size_printing_page")
+    Ui_DefaultDocumentLayoutSettingsPage = load_ui_from_file("settings_window/default_document_layout_settings_page")
+    Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
+    Ui_PDFSettingsPage = load_ui_from_file("settings_window/pdf_settings_page")
 
 CheckState = Qt.CheckState
 bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
@@ -409,36 +413,29 @@ class HidePrintingsPage(Page):
             highlight_widget(ui.set_filter_settings)
 
 
-class PageSizePrintingSettingsPage(Page):
+class DefaultDocumentLayoutSettingsPage(Page):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.ui = ui = Ui_PageSizePrintingSettings()
+        self.ui = ui = Ui_DefaultDocumentLayoutSettingsPage()
         ui.setupUi(self)
         ui.page_configuration_group_box.setTitle("Default settings for new documents")
 
     def load(self, settings: configparser.ConfigParser):
-        ui = self.ui
-        ui.pdf_page_count_limit.setValue(settings["documents"].getint("pdf-page-count-limit"))
-        ui.page_configuration_group_box.load_document_settings_from_config(settings)
-        self._load_printer_settings(settings)
-
-    def _load_printer_settings(self, settings: configparser.ConfigParser):
-        section = settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            widget.setChecked(section.getboolean(setting))
+        self.ui.page_configuration_group_box.load_document_settings_from_config(settings)
 
     def save(self):
-        ui = self.ui
-        ui.page_configuration_group_box.save_document_settings_to_config()
-        mtg_proxy_printer.settings.settings["documents"]["pdf-page-count-limit"] = str(
-            ui.pdf_page_count_limit.value())
-        self._save_printer_settings()
+        self.ui.page_configuration_group_box.save_document_settings_to_config()
 
-    def _save_printer_settings(self):
-        section = mtg_proxy_printer.settings.settings["printer"]
-        for widget, setting in self._get_printer_settings_widgets():
-            section[setting] = str(widget.isChecked())
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        self.ui.page_configuration_group_box.highlight_differing_settings(settings)
+
+
+class PrinterSettingsPage(Page):
+    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent, flags)
+        self.ui = ui = Ui_PrinterSettingsPage()
+        ui.setupUi(self)
 
     def _get_printer_settings_widgets(self):
         ui = self.ui
@@ -447,13 +444,41 @@ class PageSizePrintingSettingsPage(Page):
         ]
         return widgets_with_settings
 
+    def load(self, settings: configparser.ConfigParser):
+        section = settings["printer"]
+        for widget, setting in self._get_printer_settings_widgets():
+            widget.setChecked(section.getboolean(setting))
+
+    def save(self):
+        section = mtg_proxy_printer.settings.settings["printer"]
+        for widget, setting in self._get_printer_settings_widgets():
+            section[setting] = str(widget.isChecked())
+
+
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
-        ui.page_configuration_group_box.highlight_differing_settings(settings)
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             if section.getboolean(setting) != widget.isChecked():
                 highlight_widget(widget)
+
+class PDFSettingsPage(Page):
+    def __init__(self, parent=None, flags=Qt.WindowFlags()):
+        super().__init__(parent, flags)
+        self.ui = ui = Ui_PDFSettingsPage()
+        ui.setupUi(self)
+
+    def load(self, settings: configparser.ConfigParser):
+        ui = self.ui
+        ui.pdf_page_count_limit.setValue(settings["documents"].getint("pdf-page-count-limit"))
+
+    def save(self):
+        mtg_proxy_printer.settings.settings["documents"]["pdf-page-count-limit"] = str(
+            self.ui.pdf_page_count_limit.value()
+        )
+
+    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+        ui = self.ui
         section = settings["documents"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
             highlight_widget(ui.pdf_page_count_limit)

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PDFSettingsPage</class>
+ <widget class="QWidget" name="PDFSettingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>331</width>
+    <height>96</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="1">
+    <widget class="QSpinBox" name="pdf_page_count_limit">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</string>
+     </property>
+     <property name="suffix">
+      <string> pages</string>
+     </property>
+     <property name="maximum">
+      <number>2000000000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="pdf_page_count_limit_label">
+     <property name="toolTip">
+      <string>Automatically split PDF documents, if they get longer than this many pages.
+Set to zero to disable splitting.
+
+
+When printing PDFs using a USB flash drive directly connected to the printer,
+the printer may refuse to print documents exceeding some arbitrary size limit.
+To work around this limitation, you can enable this option,
+and limit the number of pages per PDF. If the document has more pages,
+it will be exported into multiple PDF documents automatically.</string>
+     </property>
+     <property name="text">
+      <string>Split PDF documents longer than</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <spacer name="vertical_spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

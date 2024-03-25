@@ -109,7 +109,9 @@ class SettingsWindow(QDialog):
         # Create the model entries for each page, in the order they are stacked.
         model.appendRow(item_factory("General settings", "configure"))
         model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
-        model.appendRow(item_factory("Document & print settings", "document-print", "Configure document settings, page size and printing options"))
+        model.appendRow(item_factory("PDF export settings", "viewpdf", "Configure the PDF export"))
+        model.appendRow(item_factory("Printer settings", "document-print", "Configure the printer"))
+        model.appendRow(item_factory("Default document settings", "document-properties", "Set the default document settings used for new documents,\nlike page size, margins, spacings, etc."))
         model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
         model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
         # Set the models
@@ -185,13 +187,8 @@ class SettingsWindow(QDialog):
 
     def _get_pages(self) -> typing.Sequence[Page]:
         ui = self.ui
-        return (
-            ui.debug_settings_page,
-            ui.decklist_import_settings_page,
-            ui.general_settings_page,
-            ui.hide_printings_page,
-            ui.page_size_page,
-        )
+        return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
+
 
     def load_settings(self, settings: configparser.ConfigParser):
         logger.debug("Loading the settings")
@@ -207,7 +204,7 @@ class SettingsWindow(QDialog):
         if old_preferred_language != new_preferred_language:
             self.preferred_language_changed.emit(new_preferred_language)
         current_document_layout = self.document.page_layout
-        new_default_layout = self.ui.page_size_page.ui.page_configuration_group_box.page_layout
+        new_default_layout = self.ui.default_document_layout_page.ui.page_configuration_group_box.page_layout
         if current_document_layout != new_default_layout and QMessageBox.question(
                 self, "Apply settings to the current document?",
                 "The new default settings differ from the settings used by the current document.\n"

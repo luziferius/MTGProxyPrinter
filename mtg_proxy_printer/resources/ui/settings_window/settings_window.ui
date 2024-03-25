@@ -25,9 +25,14 @@
        <verstretch>0</verstretch>
       </sizepolicy>
      </property>
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
      <widget class="GeneralSettingsPage" name="general_settings_page"/>
      <widget class="DecklistImportSettingsPage" name="decklist_import_settings_page"/>
-     <widget class="PageSizePrintingSettingsPage" name="page_size_page"/>
+     <widget class="PDFSettingsPage" name="pdf_settings_page"/>
+     <widget class="PrinterSettingsPage" name="printer_settings_page"/>
+     <widget class="DefaultDocumentLayoutSettingsPage" name="default_document_layout_page"/>
      <widget class="HidePrintingsPage" name="hide_printings_page"/>
      <widget class="DebugSettingsPage" name="debug_settings_page"/>
     </widget>
@@ -80,7 +85,7 @@
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>PageSizePrintingSettingsPage</class>
+   <class>DefaultDocumentLayoutSettingsPage</class>
    <extends>QWidget</extends>
    <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
@@ -93,6 +98,18 @@
   </customwidget>
   <customwidget>
    <class>DebugSettingsPage</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PDFSettingsPage</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.settings_window_pages</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PrinterSettingsPage</class>
    <extends>QWidget</extends>
    <header>mtg_proxy_printer.ui.settings_window_pages</header>
    <container>1</container>
