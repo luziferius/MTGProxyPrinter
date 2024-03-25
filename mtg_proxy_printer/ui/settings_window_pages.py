@@ -287,13 +287,6 @@ class GeneralSettingsPage(Page):
             logger.info("User selected a new default document save path.")
             self.ui.document_save_path.setText(location)
 
-    @Slot()
-    def on_pdf_save_path_browse_button_clicked(self):
-        logger.debug("User about to select a new default PDF document export path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
-            logger.info("User selected a new default PDF document export path.")
-            self.ui.pdf_save_path.setText(location)
-
     def load(self, settings: configparser.ConfigParser):
         self._load_layout_settings(settings)
         self._load_update_settings(settings)
@@ -399,7 +392,6 @@ class GeneralSettingsPage(Page):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
             (ui.document_save_path, "document-save-path"),
-            (ui.pdf_save_path, "pdf-export-path"),
         ]
         return widgets_with_settings
 
@@ -511,11 +503,14 @@ class PDFSettingsPage(Page):
     def load(self, settings: configparser.ConfigParser):
         ui = self.ui
         ui.pdf_page_count_limit.setValue(settings["documents"].getint("pdf-page-count-limit"))
+        ui.pdf_save_path.setText(settings["default-filesystem-paths"]["pdf-export-path"])
 
     def save(self):
+        ui = self.ui
         mtg_proxy_printer.settings.settings["documents"]["pdf-page-count-limit"] = str(
-            self.ui.pdf_page_count_limit.value()
+            ui.pdf_page_count_limit.value()
         )
+        mtg_proxy_printer.settings.settings["default-filesystem-paths"]["pdf-export-path"] = ui.pdf_save_path.text()
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
@@ -523,3 +518,15 @@ class PDFSettingsPage(Page):
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
             highlight_widget(ui.pdf_page_count_limit)
 
+        section = settings["default-filesystem-paths"]
+        if ui.pdf_save_path.text() != section["pdf-export-path"]:
+            highlight_widget(ui.pdf_save_path)
+
+    @Slot()
+    def on_pdf_save_path_browse_button_clicked(self):
+        logger.debug("User about to select a new default PDF document export path.")
+        if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
+            logger.info("User selected a new default PDF document export path.")
+            self.ui.pdf_save_path.setText(location)
+        else:
+            logger.debug("User cancelled path selection")
