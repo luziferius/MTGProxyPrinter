@@ -21,7 +21,7 @@ import typing
 from abc import abstractmethod
 
 from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
-from PyQt5.QtGui import QDesktopServices
+from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit
 
 import mtg_proxy_printer.app_dirs
@@ -29,6 +29,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget
+from mtg_proxy_printer.units_and_sizes import OptStr
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.debug_settings_page import Ui_DebugSettingsPage
@@ -59,9 +60,32 @@ QueuedConnection = Qt.ConnectionType.QueuedConnection
 logger = get_logger(__name__)
 del get_logger
 
+class PageMetadata(typing.NamedTuple):
+    text: str
+    icon_name: OptStr
+    tooltip: OptStr = None
+
+
 
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
+
+    def display_item(self) -> typing.Sequence[QStandardItem]:
+        data = self.display_metadata
+        item = QStandardItem(data.text)
+        if data.icon_name:
+            item.setIcon(QIcon.fromTheme(data.icon_name))
+        if data.tooltip:
+            item.setToolTip(data.tooltip)
+        size = item.sizeHint()
+        size.setHeight(32)
+        item.setSizeHint(size)
+        return item,
+
+    @property
+    @abstractmethod
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata("FIXME: FILL DATA", None, "FIXME: FILL DATA")
 
     @abstractmethod
     def save(self):
@@ -87,6 +111,7 @@ class Page(QWidget):
 class DebugSettingsPage(Page):
 
     requested_card_download = Signal(pathlib.Path)
+    display_metadata = PageMetadata("Debug settings", None, "Things useful for investigating bugs in the application")
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -172,6 +197,7 @@ class DebugSettingsPage(Page):
 
 
 class DecklistImportSettingsPage(Page):
+    display_metadata = PageMetadata("Deck list import", "edit-download", "Configure the deck list importer")
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -235,6 +261,7 @@ class DecklistImportSettingsPage(Page):
 
 
 class GeneralSettingsPage(Page):
+    display_metadata = PageMetadata("General settings", "configure")
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -374,6 +401,7 @@ class GeneralSettingsPage(Page):
 
 
 class HidePrintingsPage(Page):
+    display_metadata = PageMetadata("Hide printings", "view-hidden", "Hide unwanted printings")
 
     error_occurred = Signal(str)
     long_running_process_begins = Signal(int, str)
@@ -414,6 +442,10 @@ class HidePrintingsPage(Page):
 
 
 class DefaultDocumentLayoutSettingsPage(Page):
+    display_metadata = PageMetadata(
+        "Default document settings", "document-properties",
+        "Set the default document settings used for new documents,\nlike page size, margins, spacings, etc."
+    )
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -432,6 +464,8 @@ class DefaultDocumentLayoutSettingsPage(Page):
 
 
 class PrinterSettingsPage(Page):
+    display_metadata = PageMetadata("Printer settings", "document-print", "Configure the printer")
+
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
         self.ui = ui = Ui_PrinterSettingsPage()
@@ -463,6 +497,8 @@ class PrinterSettingsPage(Page):
                 highlight_widget(widget)
 
 class PDFSettingsPage(Page):
+    display_metadata = PageMetadata("PDF export settings", "viewpdf", "Configure the PDF export")
+
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
         self.ui = ui = Ui_PDFSettingsPage()

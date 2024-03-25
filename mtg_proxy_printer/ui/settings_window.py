@@ -18,7 +18,7 @@ import typing
 
 from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel, QEvent, QObject
 from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
-from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QResizeEvent
+from PyQt5.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.document import Document
@@ -28,7 +28,6 @@ from mtg_proxy_printer.document_controller.edit_document_settings import ActionE
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.settings_window_pages import Page, HidePrintingsPage
-from mtg_proxy_printer.units_and_sizes import OptStr
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.settings_window import Ui_SettingsWindow
@@ -48,18 +47,6 @@ TALL_LAYOUT_THRESHOLD = 750
 __all__ = [
     "SettingsWindow",
 ]
-
-
-def item_factory(text: str, icon_name: OptStr, tooltip_text: OptStr = None) -> typing.Sequence[QStandardItem]:
-    item = QStandardItem(text)
-    if icon_name:
-        item.setIcon(QIcon.fromTheme(icon_name))
-    if tooltip_text:
-        item.setToolTip(tooltip_text)
-    size = item.sizeHint()
-    size.setHeight(32)
-    item.setSizeHint(size)
-    return item,
 
 
 class HoverEventFilter(QObject):
@@ -107,13 +94,10 @@ class SettingsWindow(QDialog):
     def _setup_pages_model(self, ui: Ui_SettingsWindow) -> QStandardItemModel:
         model = QStandardItemModel(self)
         # Create the model entries for each page, in the order they are stacked.
-        model.appendRow(item_factory("General settings", "configure"))
-        model.appendRow(item_factory("Deck list import", "edit-download", "Configure the deck list importer"))
-        model.appendRow(item_factory("PDF export settings", "viewpdf", "Configure the PDF export"))
-        model.appendRow(item_factory("Printer settings", "document-print", "Configure the printer"))
-        model.appendRow(item_factory("Default document settings", "document-properties", "Set the default document settings used for new documents,\nlike page size, margins, spacings, etc."))
-        model.appendRow(item_factory("Hide printings", "view-hidden", "Hide unwanted printings"))
-        model.appendRow(item_factory("Debug settings", None, "Things useful for investigating bugs in the application"))
+        pages: typing.List[Page] = [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
+        for page in pages:
+            model.appendRow(page.display_item())
+
         # Set the models
         ui.page_selection_list_view.setModel(model)
         ui.page_selection_combo_box.setModel(model)
