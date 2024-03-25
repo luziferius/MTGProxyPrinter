@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PrinterSettingsPage</class>
+ <widget class="QWidget" name="PrinterSettingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>304</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QCheckBox" name="printer_use_borderless_printing">
+     <property name="toolTip">
+      <string>When enabled, instruct the printer to use borderless mode and let MTGProxyPrinter manage the printing margins.
+Disable this, if your printer keeps scaling print-outs up or down.
+
+When disabled, managing the page margins is delegated to the printer driver,
+which should increase compatibility, at the expense of drawing shorter cut helper lines.</string>
+     </property>
+     <property name="text">
+      <string>Configure printer for borderless printing</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="vertical_spacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>261</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

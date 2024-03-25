@@ -23,12 +23,12 @@ import urllib.error
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
     QItemSelection, QSize
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
+from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
-    get_downloader_class
+    get_downloader_class, ParserBase
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
@@ -337,17 +337,19 @@ class SelectDeckParserPage(QWizardPage):
 
     def initializePage(self) -> None:
         super().initializePage()
+        ui = self.ui
         used_downloader: str = self.field("deck-list-downloaded")
         if used_downloader:
             parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
-            {
-                re_parsers.MagicWorkstationDeckDataFormatParser: self.ui.select_parser_magic_workstation,
-                re_parsers.MTGArenaParser: self.ui.select_parser_mtg_arena,
-                re_parsers.MTGOnlineParser: self.ui.select_parser_mtg_online,
-                re_parsers.XMageParser: self.ui.select_parser_xmage,
-                csv_parsers.ScryfallCSVParser: self.ui.select_parser_scryfall_csv,
-                csv_parsers.TappedOutCSVParser: self.ui.select_parser_tappedout_csv,
-            }[parser_to_use].click()
+            parser_table: typing.Dict[typing.Type[ParserBase], QRadioButton] = {
+                re_parsers.MagicWorkstationDeckDataFormatParser: ui.select_parser_magic_workstation,
+                re_parsers.MTGArenaParser: ui.select_parser_mtg_arena,
+                re_parsers.MTGOnlineParser: ui.select_parser_mtg_online,
+                re_parsers.XMageParser: ui.select_parser_xmage,
+                csv_parsers.ScryfallCSVParser: ui.select_parser_scryfall_csv,
+                csv_parsers.TappedOutCSVParser: ui.select_parser_tappedout_csv,
+            }
+            parser_table[parser_to_use].click()
 
     def append_group_to_custom_re_input(self, value: str):
         self.ui.custom_re_input.setText(self.ui.custom_re_input.text()+value)
