@@ -40,10 +40,10 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
 
     def setEditorData(self, editor: QComboBox, index: QModelIndex) -> None:
         model: typing.Union[Document, QSortFilterProxyModel] = index.model()
-        source_model: Document = model
         column = index.column()
-        while hasattr(source_model, "sourceModel"):  # Resolve the source model to gain access to the card database.
-            source_model = source_model.sourceModel()
+        while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
+            model = model.sourceModel()
+        source_model: Document = model
 
         if column == PageColumns.Set:
             matching_sets = source_model.card_db.find_sets_matching(
