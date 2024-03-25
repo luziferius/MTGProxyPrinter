@@ -394,7 +394,7 @@ class MainWindow(QMainWindow):
                 self, "Application update available. Visit website?",
                 f"An application update is available: Version {newer_version}\n"
                 f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
-                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
+                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your web browser "
                 f"to download the new version?",
                 StandardButton.Yes | StandardButton.No, StandardButton.No
                 ) == StandardButton.Yes:
