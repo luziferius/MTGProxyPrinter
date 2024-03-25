@@ -34,10 +34,12 @@ from mtg_proxy_printer.units_and_sizes import OptStr
 
 try:
     from mtg_proxy_printer.ui.generated.settings_window.debug_settings_page import Ui_DebugSettingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.decklist_import_settings_page import Ui_DecklistImportSettingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.decklist_import_settings_page \
+        import Ui_DecklistImportSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.general_settings_page import Ui_GeneralSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.hide_printings_page import Ui_HidePrintingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.default_document_layout_settings_page import Ui_DefaultDocumentLayoutSettingsPage
+    from mtg_proxy_printer.ui.generated.settings_window.default_document_layout_settings_page \
+        import Ui_DefaultDocumentLayoutSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.printer_settings_page import Ui_PrinterSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.pdf_settings_page import Ui_PDFSettingsPage
 except ModuleNotFoundError:
@@ -120,16 +122,16 @@ class DebugSettingsPage(Page):
         ui.setupUi(self)
         self.requested_card_download.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
-        ui.open_cutelog_website_button.clicked.connect(
-            partial(QDesktopServices.openUrl,
-                    QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)))
+        url = QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)
+        ui.open_cutelog_website_button.clicked.connect(partial(QDesktopServices.openUrl, url))
 
     def load(self, settings: configparser.ConfigParser):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
         log_level_combo_box = self.ui.log_level_combo_box
-        log_level_combo_box.setCurrentIndex(log_level_combo_box.findText(section["log-level"]))
+        configured_level_index = log_level_combo_box.findText(section["log-level"])
+        log_level_combo_box.setCurrentIndex(configured_level_index)
 
     def save(self):
         debug_section = mtg_proxy_printer.settings.settings["debug"]
@@ -171,6 +173,7 @@ class DebugSettingsPage(Page):
             logger.debug("User cancelled location selection. Not downloading.")
             return
         if not (path := pathlib.Path(location)).is_dir():
+            logger.warning("User selected something that is not a directory. Aborting.")
             QMessageBox.critical(
                 self, "Selected location is not a directory",
                 f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
@@ -191,6 +194,7 @@ class DebugSettingsPage(Page):
             logger.debug("User cancelled file selection. Not importing.")
             return
         if not (path := pathlib.Path(location)).is_file():
+            logger.warning("User selected something that is not a file. Aborting.")
             QMessageBox.critical(
                 self, "Selected location is not a file",
                 f"Cannot find the selected file:\n{location}",
