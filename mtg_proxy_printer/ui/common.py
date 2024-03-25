@@ -69,14 +69,14 @@ class BlockedSignals:
     Context manager used to temporarily prevent any QObject-derived object from emitting Qt signals.
     This can be used to break signal trigger loops or unwanted trigger chains.
     """
-    def __init__(self, qobject: QObject):
-        self.qobject = qobject
+    def __init__(self, qt_object: QObject):
+        self.qt_object = qt_object
 
     def __enter__(self):
-        self.qobject.blockSignals(True)
+        self.qt_object.blockSignals(True)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.qobject.blockSignals(False)
+        self.qt_object.blockSignals(False)
 
 
 def set_url_label(label: QLabel, path: pathlib.Path, display_text: str = None):
