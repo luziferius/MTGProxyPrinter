@@ -16,6 +16,7 @@
 
 import configparser
 import logging
+from functools import partial
 import pathlib
 import typing
 from abc import abstractmethod
@@ -119,6 +120,9 @@ class DebugSettingsPage(Page):
         ui.setupUi(self)
         self.requested_card_download.connect(lambda _: ui.debug_download_card_data_as_file.setEnabled(False))
         ui.log_level_combo_box.addItems(map(logging.getLevelName, range(10, 60, 10)))
+        ui.open_cutelog_website_button.clicked.connect(
+            partial(QDesktopServices.openUrl,
+                    QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)))
 
     def load(self, settings: configparser.ConfigParser):
         section = settings["debug"]
