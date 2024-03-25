@@ -32,6 +32,9 @@ from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget
 from mtg_proxy_printer.units_and_sizes import OptStr
 
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.application import Application
+
 try:
     from mtg_proxy_printer.ui.generated.settings_window.debug_settings_page import Ui_DebugSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.decklist_import_settings_page \
@@ -201,7 +204,8 @@ class DebugSettingsPage(Page):
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
-        QApplication.instance().card_info_downloader.import_from_file(path)
+        app: "Application" = QApplication.instance()
+        app.card_info_downloader.import_from_file(path)
 
 
 class DecklistImportSettingsPage(Page):
@@ -490,7 +494,6 @@ class PrinterSettingsPage(Page):
 
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
-        ui = self.ui
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             if section.getboolean(setting) != widget.isChecked():
