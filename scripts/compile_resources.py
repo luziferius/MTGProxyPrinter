@@ -44,7 +44,6 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.L
 
 
 def compile():
-    print(f"{SOURCES_PATH=}, {TARGET_PATH=}")
     command = ("pyrcc5", "-compress", "9", str(SOURCES_PATH))  # noqa  # "pyrcc5" is a program name, not a typo
     compiled = subprocess.check_output(command, universal_newlines=True)  # type: str
     # The resource compiler outputs > 15000 lines with extremely low line length.
@@ -57,7 +56,6 @@ def compile():
 
 
 def clean():
-    print(TARGET_PATH)
     TARGET_PATH.unlink(missing_ok=True)
 
 
