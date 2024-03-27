@@ -69,7 +69,7 @@ mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
 
 
 [tool.setuptools]
-exclude-package-data = {"mtg_proxy_printer" = ["resources*",]}
+exclude-package-data = {"mtg_proxy_printer" = ["resources", "resources.*"]}
 
 
 [tool.setuptools.packages.find]
@@ -77,7 +77,8 @@ include = [
    "mtg_proxy_printer*",
 ]
 exclude = [
-    "mtg_proxy_printer.resources*",
+    "mtg_proxy_printer.resources",
+    "mtg_proxy_printer.resources.*",
     "tests*",
 ]
 
