@@ -43,11 +43,25 @@ dependencies = [
 dynamic = [
     "version",
 ]
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-timeout",
+    "pytest-qt >= 2.0",
+    "PyHamcrest >= 2.0.0",
+]
+package = [
+    "build",
+    "cx_Freeze >= 6.11.1; platform.python_implementation == 'CPython'",
+]
+
 
 [project.urls]
 Homepage = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/index"
 "Bug tracker" = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/ticket"
 Changelog = "https://chiselapp.com/user/luziferius/repository/MTGProxyPrinter/doc/trunk/doc/changelog.md"
+
 
 [project.gui-scripts]
 mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
@@ -66,9 +80,9 @@ exclude = [
     "tests*",
 ]
 
+
 [tool.setuptools.dynamic]
 version = {attr= "mtg_proxy_printer.meta_data.__version__"}
-
 
 
 [build-system]
@@ -80,133 +94,3 @@ requires = [
     "tox >= 3.8",
 ]
 build-backend = "setuptools.build_meta"
-
-[tool.tox]
-legacy_tox_ini = """
-[tox]
-minversion = 3.18
-
-envlist = 
-    py3-unit_tests-platformdirs{26,33}-{windows, linux}
-    py3-test_create_bundle-{windows, linux}
-
-[testenv]
-skip_install = True
-
-
-platform =
-    linux: linux
-#    macos: darwin
-    windows: win32
-
-
-allowlist_externals =
-    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter
-    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
-
-
-deps =
-    platformdirs >= 2.6.0
-    platformdirs26: platformdirs == 2.6
-    platformdirs33: platformdirs >= 3.3.0
-    build
-    PyQt5
-    ijson >= 3.1.0; python_version < '3.11'
-    ijson >= 3.2.0; python_version >= '3.11'
-    pint < 0.22; platform_system == 'windows'
-    pint; platform_system != 'windows'
-    delegateto == 1.5
-    PyHamcrest >= 1.8.1
-    truststore; python_version >= '3.10'
-    certifi; python_version < '3.10'
-
-build_deps =
-    setuptools>=61
-
-test_deps =
-    pytest
-    pytest-cov
-    pytest-timeout
-    pytest-qt >= 2.0
-    PyHamcrest >= 2.0.0
-    {[testenv]build_deps}
-
-
-[testenv:py3-unit_tests-platformdirs{26,33}-{windows, linux}]
-
-# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
-# This also prevents unwanted user interactions with the widgets under test.
-# Offscreen rendering causes a segmentation fault on Windows, so simply show the GUI under test on Windows
-setenv =
-    linux: QT_QPA_PLATFORM = offscreen
-    PYTHONDEVMODE = 1
-
-deps =
-    {[testenv]deps}
-    {[testenv]test_deps}
-
-commands =
-    pytest tests
-
-[testenv:py3-platformdirs{26,33}-visible_unit_tests]
-# Runs the unit tests with the default Qt platform plugin,
-# causing them to visibly spawn GUI windows for tests of view logic.
-# Can be used to inspect the actions and GUI states manually.
-# Not part of the environment list, so isn’t run automatically.
-
-deps =
-    {[testenv]deps}
-    {[testenv]test_deps}
-
-commands =
-    pytest tests
-
-# Pass DISPLAY, to allow rendering on screen. Also pass all other Qt-related environment variables,
-# like QT_SCREEN_SCALE_FACTORS
-passenv =
-    DISPLAY
-    QT_*
-    XDG_RUNTIME_DIR
-    
-setenv = 
-   PYTHONDEVMODE = 1
-
-
-[testenv:py3-test_create_bundle-{windows, linux}]
-
-deps =
-    {[testenv]deps}
-    cx-Freeze >= 6.11.1
-    {[testenv]build_deps}
-
-# Let Qt5 render offscreen, so that running tests don’t open windows or try to access the local system’s display
-# This also prevents unwanted user interactions with the widgets under test
-setenv =
-    linux: QT_QPA_PLATFORM = offscreen
-    PYTHONDEVMODE = 1
-
-passenv =
-    XDG_RUNTIME_DIR
-
-commands =
-    python scripts{/}compile_ui_files.py --full --purge-existing
-    python setup_cx_freeze.py build_exe --build-exe build{/}bundle_test
-    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat build{/}bundle_test
-    {toxinidir}{/}build{/}bundle_test{/}MTGProxyPrinter --test-exit-on-launch
-    -python scripts{/}compile_ui_files.py --purge-existing
-
-
-[testenv:py3-package-{windows,linux}]
-
-deps =
-    {[testenv]deps}
-    cx-Freeze >= 6.11.1
-
-commands =
-    python scripts{/}compile_ui_files.py --full --purge-existing
-    python -m build
-    python setup_cx_freeze.py build_exe
-    windows: {toxinidir}{/}scripts{/}clean_windows_build.bat
-    windows: python setup_cx_freeze.py bdist_msi --skip-build
-    -python scripts{/}compile_ui_files.py --purge-existing
-"""
