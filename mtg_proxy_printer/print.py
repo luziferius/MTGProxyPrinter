@@ -23,6 +23,7 @@ from PyQt5.QtPrintSupport import QPrinter
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
@@ -75,6 +76,7 @@ class PDFPrinter(QPdfWriter):
     def __init__(self, document: Document, file_path: str, parent: QObject = None,
                  document_index: int = 0, pages_to_print: int = None):
         self.document = document
+        layout = document.page_layout
         self.document_index = document_index
         self.pages_to_print: int = pages_to_print or document.rowCount()
         if pages_to_print < document.rowCount():
@@ -87,23 +89,32 @@ class PDFPrinter(QPdfWriter):
         self.painter = QPainter()
         # magnitude returns a float by default, so round to int to avoid a TypeError
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-        self.setPageSize(QPageSize(
-            QSizeF(document.page_layout.page_width, document.page_layout.page_height),
-            QPageSize.Unit.Millimeter
-        ))
+        self.setPageSize(self._to_page_size(layout))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    @staticmethod
+    def _to_page_size(layout: PageLayoutSettings) -> QPageSize:
+        size = QSizeF(layout.page_width, layout.page_height)
+        if layout.page_width > layout.page_height:
+            size.transpose()
+        return QPageSize(size, QPageSize.Unit.Millimeter)
+
     def print_document(self):
         logger.info("Begin rendering PDF document.")
+        layout = self.document.page_layout
+        scaling = 1
         self.painter.begin(self)
-        # Prevent quality loss by re-compressing the source images
-        self.painter.setRenderHint(QPainter.LosslessImageRendering)
+        if layout.page_width > layout.page_height:
+            scaling = self.scene.width()/self.scene.height()
+            self.painter.rotate(90)
+            self.painter.translate(0, -self.scene.height())
+        self.painter.setRenderHint(QPainter.LosslessImageRendering)  # Prevent avoidable image degradation
         self.painter.scale(
-                self.logicalDpiX()/self.resolution(),
-                self.logicalDpiY()/self.resolution()
+                scaling*self.logicalDpiX()/self.resolution(),
+                scaling*self.logicalDpiY()/self.resolution(),
             )
         first_index = self.document_index * self.pages_to_print
         last_index = min((self.document_index + 1) * self.pages_to_print, self.document.rowCount())
