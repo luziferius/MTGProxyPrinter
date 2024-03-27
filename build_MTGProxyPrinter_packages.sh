@@ -7,5 +7,5 @@ if [ ! -e "${ENVIRONMENT_NAME}" ]; then
 fi
 
 source "${ENVIRONMENT_NAME}/bin/activate"
-tox run -e py3-package-linux
+tox run --factor package
 
