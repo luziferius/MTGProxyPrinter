@@ -91,6 +91,6 @@ requires = [
     "wheel",
     "PyQt5",
     "build",
-    "tox >= 3.8",
+    "tox >= 4.0",
 ]
 build-backend = "setuptools.build_meta"
