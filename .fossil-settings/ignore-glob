@@ -26,3 +26,4 @@ mtg_proxy_printer/ui/generated*
 *.spec
 *.pdf
 *.mtgproxies
+requirements*.txt
