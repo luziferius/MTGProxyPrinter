@@ -19,6 +19,7 @@ It uses the existing setup.py and extends the parameters to allow building stand
 """
 import atexit
 import pathlib
+import platform
 import re
 import sys
 
@@ -50,6 +51,63 @@ setup_py.setup_parameters["executables"] = [
     ),
 ]
 
+excludes  = [
+    f"{setup_py.main_package}.resources",  # Do not include the raw resources as individual files
+    "distutils",
+    "lib2to3",
+    "pep517",
+    "pytest",
+    "pydoc_data",
+    "tkinter",
+    "toml",
+    "sqlite3.test",  # Ignore the internal test suite
+    "pint.testsuite",  # Ignore the internal test suite
+    "importlib_metadata",
+
+    # All unused PyQt components
+    "PyQt5.QtXmlPatterns",
+    "PyQt5.QtNfc",
+    "PyQt5.QtQml",
+    "PyQt5.QtSql",
+    "PyQt5.Qt3DAnimation",
+    "PyQt5.Qt3DCore",
+    "PyQt5.Qt3DExtras",
+    "PyQt5.Qt3DInput",
+    "PyQt5.Qt3DLogic",
+    "PyQt5.Qt3DRender",
+    "PyQt5.QtBluetooth",
+    "PyQt5.QtChart",
+    "PyQt5.QtDataVisualisation",
+    "PyQt5.QtLocation",
+    "PyQt5.QtMultimedia",
+    "PyQt5.QtMultimediaWidgets",
+    "PyQt5.QtNetwork",
+    "PyQt5.QtNetworkAuth",
+    "PyQt5.QtOpenGL",
+    "PyQt5.QtPositioning",
+    "PyQt5.QtPurchasing",
+    "PyQt5.QtQuick",
+    "PyQt5.QtQuickWidgets",
+    "PyQt5.QtRemoteObjects",
+    "PyQt5.QtSensors",
+    "PyQt5.QtSerialPort",
+    "PyQt5.QtTest",
+    "PyQt5.QtWebChannel",
+    "PyQt5.QtWebEngine",
+    "PyQt5.QtWebEngineCore",
+    "PyQt5.QtWebEngineWidgets",
+    "PyQt5.QtWebKit",
+    "PyQt5.QtWebKitWidgets",
+    "PyQt5.QtWebSockets",
+    "PyQt5.uic.port_v2",
+]
+
+if sys.platform == "win32":
+    excludes += [
+        "platformdirs.android",
+        "platformdirs.macos",
+        "platformdirs.unix",
+    ]
 
 setup_py.setup_parameters["options"] = {
     "bdist_msi": {
@@ -65,59 +123,7 @@ setup_py.setup_parameters["options"] = {
             # Make sure that the dynamically loaded ijson backends are discovered.
             "ijson.backends",
         ],
-        "excludes": [
-            f"{setup_py.main_package}.resources",  # Do not include the raw resources as individual files
-            "distutils",
-            "lib2to3",
-            "pep517",
-            "pytest",
-            "pydoc_data",
-            "tkinter",
-            "toml",
-            "sqlite3.test",  # Ignore the internal test suite
-            "pint.testsuite",  # Ignore the internal test suite
-            "importlib_metadata",
-            "platformdirs.android",
-            "platformdirs.macos",
-            "platformdirs.unix",
-
-            # All unused PyQt components
-            "PyQt5.QtXmlPatterns",
-            "PyQt5.QtNfc",
-            "PyQt5.QtQml",
-            "PyQt5.QtSql",
-            "PyQt5.Qt3DAnimation",
-            "PyQt5.Qt3DCore",
-            "PyQt5.Qt3DExtras",
-            "PyQt5.Qt3DInput",
-            "PyQt5.Qt3DLogic",
-            "PyQt5.Qt3DRender",
-            "PyQt5.QtBluetooth",
-            "PyQt5.QtChart",
-            "PyQt5.QtDataVisualisation",
-            "PyQt5.QtLocation",
-            "PyQt5.QtMultimedia",
-            "PyQt5.QtMultimediaWidgets",
-            "PyQt5.QtNetwork",
-            "PyQt5.QtNetworkAuth",
-            "PyQt5.QtOpenGL",
-            "PyQt5.QtPositioning",
-            "PyQt5.QtPurchasing",
-            "PyQt5.QtQuick",
-            "PyQt5.QtQuickWidgets",
-            "PyQt5.QtRemoteObjects",
-            "PyQt5.QtSensors",
-            "PyQt5.QtSerialPort",
-            "PyQt5.QtTest",
-            "PyQt5.QtWebChannel",
-            "PyQt5.QtWebEngine",
-            "PyQt5.QtWebEngineCore",
-            "PyQt5.QtWebEngineWidgets",
-            "PyQt5.QtWebKit",
-            "PyQt5.QtWebKitWidgets",
-            "PyQt5.QtWebSockets",
-            "PyQt5.uic.port_v2",
-        ],
+        "excludes": excludes,
         "optimize": 2,
     },
 }
