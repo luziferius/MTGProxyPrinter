@@ -7,4 +7,4 @@ IF EXIST "venv" (
   call create_development_environment.bat
 )
 
-tox
+tox run
