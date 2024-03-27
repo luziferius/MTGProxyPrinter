@@ -50,6 +50,7 @@ dev = [
     "pytest-timeout",
     "pytest-qt >= 2.0",
     "PyHamcrest >= 2.0.0",
+    "tox >= 4.0",
 ]
 package = [
     "build",
