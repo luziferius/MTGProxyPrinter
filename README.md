@@ -183,4 +183,4 @@ system theme is present, and are sourced from Breeze icon theme created by the K
 These fall under the LGPL either version 3 of the License, or
 (at your option) any later version.
 
-See the [ThirdPartyLicenses.md](./ThirdPartyLicenses.md) file for details.
+See the [ThirdPartyLicenses.md](./doc/ThirdPartyLicenses.md) file for details.

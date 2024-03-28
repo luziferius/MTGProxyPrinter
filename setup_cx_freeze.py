@@ -15,19 +15,16 @@
 
 """
 This module provides support for freezing the application using cx_Freeze.
-It uses the existing setup.py and extends the parameters to allow building stand-alone executables using cx_Freeze.
 """
-import atexit
 import pathlib
-import platform
 import re
 import sys
 
 from cx_Freeze import setup, Executable
 
-import setup as setup_py
 
-meta_data = pathlib.Path(f"{setup_py.main_package}/meta_data.py").read_text()
+main_package = "mtg_proxy_printer"
+meta_data = pathlib.Path(f"{main_package}/meta_data.py").read_text()
 version = re.search(
     r"""^__version__\s*=\s*"(.*)"\s*""",
     meta_data,
@@ -41,18 +38,9 @@ project_name = re.search(
 
 
 base = "Win32GUI" if sys.platform == "win32" else None
-setup_py.setup_parameters["executables"] = [
-    Executable(
-        f"{setup_py.main_package}/__main__.py",
-        base=base,
-        target_name=project_name,
-        shortcut_name=project_name,
-        shortcut_dir='StartMenuFolder',
-    ),
-]
 
 excludes  = [
-    f"{setup_py.main_package}.resources",  # Do not include the raw resources as individual files
+    f"{main_package}.resources",  # Do not include the raw resources as individual files
     "distutils",
     "lib2to3",
     "pep517",
@@ -109,31 +97,37 @@ if sys.platform == "win32":
         "platformdirs.unix",
     ]
 
-setup_py.setup_parameters["options"] = {
-    "bdist_msi": {
-        # The GUID upgrade_code token is used by Windows to identify the application being installed.
-        # When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
-        # causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
-        "upgrade_code": "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}",
-        "target_name": project_name,
-        "skip_build": True,
-    },
-    "build_exe": {
-        "packages": [
-            # Make sure that the dynamically loaded ijson backends are discovered.
-            "ijson.backends",
-        ],
-        "excludes": excludes,
-        "optimize": 2,
+
+setup_parameters = {
+    "executables": [
+        Executable(
+            f"{main_package}/__main__.py",
+            base=base,
+            target_name=project_name,
+            shortcut_name=project_name,
+            shortcut_dir='StartMenuFolder',
+        ),
+    ],
+    "options": {
+        "bdist_msi": {
+            # The GUID upgrade_code token is used by Windows to identify the application being installed.
+            # When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
+            # causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
+            "upgrade_code": "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}",
+            "target_name": project_name,
+            "skip_build": True,
+        },
+        "build_exe": {
+            "packages": [
+                # Make sure that the dynamically loaded ijson backends are discovered.
+                "ijson.backends",
+            ],
+            "excludes": excludes,
+            "optimize": 2,
+        },
     },
 }
 
 
 if __name__ == "__main__":
-    # Perform in-tree resource compilation.
-    resources_path = pathlib.Path(__file__).parent / setup_py.main_package / "ui"
-    resources_path = resources_path.resolve()
-    resources_file = setup_py.BuildWithQtResources.compile_resources(resources_path)
-    setup_py.BuildWithQtResources.generate_ui_classes(resources_path)
-    atexit.register(resources_file.unlink, True)
-    setup(**setup_py.setup_parameters)
+    setup(**setup_parameters)
