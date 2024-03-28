@@ -147,7 +147,7 @@ class GuiLayoutChoices(enum.StrEnum):
 
 @section("gui")
 class Gui(Config):
-    gui_layout = key("central-widget-layout", GuiLayoutChoices.columnar, enum_cast(GuiLayoutChoices))
+    layout = key("central-widget-layout", GuiLayoutChoices.columnar, enum_cast(GuiLayoutChoices))
     show_toolbar = key("show-toolbar", True)
 
 @section("debug")
@@ -514,31 +514,40 @@ def _validate_string_is_in_set(
 def _restore_default(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     section[key] = defaults[key]
 
+Migrator = Callable[[configparser.ConfigParser], bool]
 
-def migrate_settings(settings: configparser.ConfigParser):
-    _migrate_layout_setting(settings)
-    _migrate_download_settings(settings)
-    _migrate_default_save_paths_settings(settings)
-    _migrate_print_guessing_settings(settings)
-    _migrate_image_spacing_settings(settings)
+def migrate_settings(settings: configparser.ConfigParser) -> bool:
+    """
+    Migrate settings from older versions, by calling a series of migration scripts.
+    Returns True, if at least one migration script performed an action,
+    False otherwise.
+    """
+    return sum((
+        _migrate_layout_setting(settings),
+        _migrate_download_settings(settings),
+        _migrate_default_save_paths_settings(settings),
+        _migrate_print_guessing_settings(settings),
+        _migrate_image_spacing_settings(settings),
+    )) > 0
 
 
-def _migrate_layout_setting(settings: configparser.ConfigParser):
+def _migrate_layout_setting(settings: configparser.ConfigParser) -> bool:
     try:
         gui_section = settings["gui"]
         layout = gui_section["search-widget-layout"]
     except KeyError:
-        return
+        return False
     else:
         if layout == "vertical":
             layout = "columnar"
         gui_section["central-widget-layout"] = layout
+        return True
         
         
-def _migrate_download_settings(settings: configparser.ConfigParser):
+def _migrate_download_settings(settings: configparser.ConfigParser) -> bool:
     target_section_name = "card-filter"
     if settings.has_section(target_section_name) or not settings.has_section("downloads"):
-        return
+        return False
     download_section = settings["downloads"]
     settings.add_section(target_section_name)
     filter_section = settings[target_section_name]
@@ -550,22 +559,24 @@ def _migrate_download_settings(settings: configparser.ConfigParser):
             pass
         else:
             filter_section[target_setting] = str(new_value)
+    return True
 
 
-def _migrate_default_save_paths_settings(settings: configparser.ConfigParser):
+def _migrate_default_save_paths_settings(settings: configparser.ConfigParser) -> bool:
     source_section_name = "default-save-paths"
     target_section_name = "default-filesystem-paths"
     if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
-        return
+        return False
     settings.add_section(target_section_name)
     settings[target_section_name].update(settings[source_section_name])
+    return True
 
 
-def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
+def _migrate_print_guessing_settings(settings: configparser.ConfigParser) -> bool:
     source_section_name = "print-guessing"
     target_section_name = "decklist-import"
     if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
-        return
+        return False
     settings.add_section(target_section_name)
     target = settings[target_section_name]
     source = settings[source_section_name]
@@ -574,16 +585,18 @@ def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
     target["enable-print-guessing-by-default"] = "True"
     target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
     target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+    return True
 
 
-def _migrate_image_spacing_settings(settings: configparser.ConfigParser):
+def _migrate_image_spacing_settings(settings: configparser.ConfigParser) -> bool:
     section = settings["documents"]
     if "image-spacing-horizontal-mm" not in section:
-        return
+        return False
     section["row-spacing-mm"] = section["image-spacing-horizontal-mm"]
     section["column-spacing-mm"] = section["image-spacing-vertical-mm"]
     del section["image-spacing-horizontal-mm"]
     del section["image-spacing-vertical-mm"]
+    return True
 
 
 # Read the settings from file during module import
