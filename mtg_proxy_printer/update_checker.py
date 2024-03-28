@@ -195,7 +195,7 @@ class UpdateChecker(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def check_for_updates(self):
-        app_settings = settings.settings["application"]
+        app_settings = settings_old.settings_old["application"]
         if app_settings.getboolean("check-for-application-updates"):
             logger.debug("Enqueue application update check")
             QThreadPool.globalInstance().start(ApplicationUpdateCheckRunner(self))

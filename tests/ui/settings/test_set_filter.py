@@ -38,9 +38,9 @@ def hide_printings_page(qtbot: QtBot, document) -> HidePrintingsPage:
 
 @pytest.mark.parametrize("filter_content", FILTER_VALUES)
 def test_loads_set_code_filter(qtbot: QtBot, hide_printings_page: HidePrintingsPage, filter_content: str):
-    with patch.dict(mtg_proxy_printer.settings.settings["card-filter"], {"hidden-sets": filter_content}), \
+    with patch.dict(mtg_proxy_printer.settings.settings_old["card-filter"], {"hidden-sets": filter_content}), \
          qtbot.wait_exposed(hide_printings_page):
-        hide_printings_page.load(mtg_proxy_printer.settings.settings)
+        hide_printings_page.load(mtg_proxy_printer.settings.settings_old)
         hide_printings_page.show()
     assert_that(
         hide_printings_page.ui.set_filter_settings.toPlainText(), is_(equal_to(filter_content))
@@ -54,7 +54,7 @@ def test_saves_set_code_filter(qtbot: QtBot, hide_printings_page: HidePrintingsP
     with qtbot.wait_exposed(hide_printings_page):
         hide_printings_page.ui.set_filter_settings.setPlainText(filter_content)
         hide_printings_page.show()
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     with patch.dict(section, {"hide-sets": ""}):
         hide_printings_page.save()
         assert_that(section, has_entry("hidden-sets", equal_to(filter_content)))

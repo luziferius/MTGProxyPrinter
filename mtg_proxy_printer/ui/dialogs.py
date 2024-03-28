@@ -58,7 +58,7 @@ __all__ = [
 
 
 def read_path(setting: str) -> str:
-    stored = mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+    stored = mtg_proxy_printer.settings.settings_old["default-filesystem-paths"][setting]
     if not stored:
         return ""
     resolved = str(pathlib.Path(stored).resolve())
@@ -284,7 +284,7 @@ class DocumentSettingsDialog(QDialog):
         button_box = self.ui.button_box
 
         restore_defaults = button_box.button(button_roles.RestoreDefaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings_old, self))
         restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
 
         reset = button_box.button(button_roles.Reset)
@@ -305,7 +305,7 @@ class DocumentSettingsDialog(QDialog):
     @Slot()
     def restore_defaults_button_clicked(self):
         logger.info("User reverts the document settings to the values from the global configuration")
-        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings_old)
         self.clear_highlight()
 
     @Slot()

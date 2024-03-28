@@ -25,7 +25,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 
 def test__remove_old_printing_filters_with_unchanged_boolean_settings_does_nothing(card_db: CardDatabase):
     query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     old_settings = card_db.db.execute(query).fetchall()
     updater = PrintingFilterUpdater(card_db, card_db.db)
     assert_that(
@@ -41,7 +41,7 @@ def test__remove_old_printing_filters_with_unchanged_boolean_settings_does_nothi
 
 def test__remove_old_printing_filters_with_removed_settings_removes_database_rows(card_db: CardDatabase):
     query = "SELECT * FROM DisplayFilters ORDER BY filter_id ASC"
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     updater = PrintingFilterUpdater(card_db, card_db.db)
     with unittest.mock.patch.dict(section, {}, clear=True):
         assert_that(
@@ -57,7 +57,7 @@ def test__remove_old_printing_filters_with_removed_settings_removes_database_row
 
 @pytest.mark.parametrize("settings_key", mtg_proxy_printer.settings.get_boolean_card_filter_keys())
 def test_store_current_printing_filters_updates_value_in_database(card_db: CardDatabase, settings_key: str):
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     updater = PrintingFilterUpdater(card_db, card_db.db)
@@ -71,7 +71,7 @@ def test_store_current_printing_filters_updates_value_in_database(card_db: CardD
 def test_filters_in_db_differ_from_settings_with_changed_boolean_settings_returns_true(
         card_db: CardDatabase, settings_key: str):
     updater = PrintingFilterUpdater(card_db, card_db.db)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     settings_to_use[settings_key] = str(not section.getboolean(settings_key))
     with unittest.mock.patch.dict(section, settings_to_use):
@@ -83,7 +83,7 @@ def test_filters_in_db_differ_from_settings_with_changed_boolean_settings_return
 
 def test_filters_in_db_differ_from_settings_with_unchanged_settings_returns_false(card_db: CardDatabase):
     updater = PrintingFilterUpdater(card_db, card_db.db)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     with unittest.mock.patch.dict(section, settings_to_use):
         assert_that(

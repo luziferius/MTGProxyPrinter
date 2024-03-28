@@ -32,7 +32,9 @@ import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import CardSizes, OptBool
 
 __all__ = [
+    "settings_old",
     "settings",
+    "DEFAULT_SETTINGS_OLD",
     "DEFAULT_SETTINGS",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -45,8 +47,8 @@ __all__ = [
 Location = QStandardPaths.StandardLocation
 LocateOption = QStandardPaths.LocateOption
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
-settings = configparser.ConfigParser()
-DEFAULT_SETTINGS = configparser.ConfigParser()
+settings_old = configparser.ConfigParser()
+DEFAULT_SETTINGS_OLD = configparser.ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.
 # This will be used to store “unset” boolean settings.
 configparser.ConfigParser.BOOLEAN_STATES.update({
@@ -185,9 +187,10 @@ class Settings(Config):
     general = group_key(General)
     printer = group_key(Printer)
 
-DEFAULT_SETTINGS_2 = Settings()
-settings2 = Settings()
-settings2.add_source(IniFileConfigSource(config_file_path))
+DEFAULT_SETTINGS = Settings()
+settings = Settings()
+settings.add_source(IniFileConfigSource(config_file_path))
+settings.read()
 
 # Below are the default application settings. How to define new ones:
 # - Add a key-value pair (String keys and values only) to a section or add a new section
@@ -198,11 +201,11 @@ settings2.add_source(IniFileConfigSource(config_file_path))
 # - Wire up save and load functionality for the new key in the Settings UI
 # - The Settings GUI class has to also do a value range check.
 
-DEFAULT_SETTINGS["images"] = {
+DEFAULT_SETTINGS_OLD["images"] = {
     "preferred-language": "en",
     "automatically-add-opposing-faces": "True",
 }
-DEFAULT_SETTINGS["card-filter"] = {
+DEFAULT_SETTINGS_OLD["card-filter"] = {
     "hide-cards-depicting-racism": "True",
     "hide-cards-without-images": "True",
     "hide-oversized-cards": "False",
@@ -227,7 +230,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-reversible-cards": "False",
     "hidden-sets": "",
 }
-DEFAULT_SETTINGS["documents"] = {
+DEFAULT_SETTINGS_OLD["documents"] = {
     "card-bleed-mm": "0",
     "paper-height-mm": "297",
     "paper-width-mm": "210",
@@ -243,35 +246,35 @@ DEFAULT_SETTINGS["documents"] = {
     "print-page-numbers": "False",
     "default-document-name": "",
 }
-DEFAULT_SETTINGS["default-filesystem-paths"] = {
+DEFAULT_SETTINGS_OLD["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
 }
-DEFAULT_SETTINGS["gui"] = {
+DEFAULT_SETTINGS_OLD["gui"] = {
     "central-widget-layout": "columnar",
     "show-toolbar": "True",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
-DEFAULT_SETTINGS["debug"] = {
+DEFAULT_SETTINGS_OLD["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
     "log-level": "INFO"
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
-DEFAULT_SETTINGS["decklist-import"] = {
+DEFAULT_SETTINGS_OLD["decklist-import"] = {
     "enable-print-guessing-by-default": "True",
     "prefer-already-downloaded-images": "True",
     "always-translate-deck-lists": "False",
     "remove-basic-wastes": "False",
     "remove-snow-basics": "False",
 }
-DEFAULT_SETTINGS["application"] = {
+DEFAULT_SETTINGS_OLD["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
     "check-for-application-updates": "None",
     "check-for-card-data-updates": "None",
 }
-DEFAULT_SETTINGS["printer"] = {
+DEFAULT_SETTINGS_OLD["printer"] = {
     "borderless-printing": "True"
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
@@ -279,12 +282,12 @@ MAX_DOCUMENT_NAME_LENGTH = 200
 
 def get_boolean_card_filter_keys():
     """Returns all keys for boolean card filter settings."""
-    keys = DEFAULT_SETTINGS["card-filter"].keys()
+    keys = DEFAULT_SETTINGS_OLD["card-filter"].keys()
     keys = [item for item in keys if item.startswith("hide-")]
     return keys
 
 
-def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(settings: configparser.ConfigParser = settings_old) -> typing.Set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
     raw = settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
@@ -293,42 +296,42 @@ def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> ty
 
 
 def read_settings_from_file():
-    global settings, DEFAULT_SETTINGS
-    settings.clear()
+    global settings_old, DEFAULT_SETTINGS_OLD
+    settings_old.clear()
     if not config_file_path.exists():
-        settings.read_dict(DEFAULT_SETTINGS)
+        settings_old.read_dict(DEFAULT_SETTINGS_OLD)
     else:
-        settings.read(config_file_path)
-        migrate_settings(settings)
-        read_sections = set(settings.sections())
-        known_sections = set(DEFAULT_SETTINGS.sections())
+        settings_old.read(config_file_path)
+        migrate_settings(settings_old)
+        read_sections = set(settings_old.sections())
+        known_sections = set(DEFAULT_SETTINGS_OLD.sections())
         # Synchronize sections
         for outdated in read_sections - known_sections:
-            settings.remove_section(outdated)
+            settings_old.remove_section(outdated)
         for new in sorted(known_sections - read_sections):
-            settings.add_section(new)
+            settings_old.add_section(new)
         # Synchronize individual options
         for section in known_sections:
-            read_options = set(settings[section].keys())
-            known_options = set(DEFAULT_SETTINGS[section].keys())
+            read_options = set(settings_old[section].keys())
+            known_options = set(DEFAULT_SETTINGS_OLD[section].keys())
             for outdated in read_options - known_options:
-                del settings[section][outdated]
+                del settings_old[section][outdated]
             for new in sorted(known_options - read_options):
-                settings[section][new] = DEFAULT_SETTINGS[section][new]
-    validate_settings(settings)
+                settings_old[section][new] = DEFAULT_SETTINGS_OLD[section][new]
+    validate_settings(settings_old)
 
 
 def write_settings_to_file():
-    global settings
+    global settings_old
     if not config_file_path.parent.exists():
         config_file_path.parent.mkdir(parents=True)
     with config_file_path.open("w") as config_file:
-        settings.write(config_file)
+        settings_old.write(config_file)
 
 
 def update_stored_version_string():
     """Sets the version string stored in the configuration file to the version of the currently running instance."""
-    settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
+    settings_old["application"]["last-used-version"] = DEFAULT_SETTINGS_OLD["application"]["last-used-version"]
 
 
 def was_application_updated() -> bool:
@@ -337,7 +340,7 @@ def was_application_updated() -> bool:
     is greater than the version string stored in the configuration file. Returns False otherwise.
     """
     return mtg_proxy_printer.natsort.str_less_than(
-        settings["application"]["last-used-version"],
+        settings_old["application"]["last-used-version"],
         mtg_proxy_printer.meta_data.__version__
     )
 
@@ -361,7 +364,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
 
 def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     boolean_keys = get_boolean_card_filter_keys()
     for key in boolean_keys:
         _validate_boolean(section, defaults, key)
@@ -369,7 +372,7 @@ def _validate_card_filter_section(settings: configparser.ConfigParser, section_n
 
 def _validate_images_section(settings: configparser.ConfigParser, section_name: str = "images"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     for key in ("automatically-add-opposing-faces",):
         _validate_boolean(section, defaults, key)
     language = section["preferred-language"]
@@ -385,7 +388,7 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
     section = settings[section_name]
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
     string_settings = {"default-document-name", }
     # Check syntax
@@ -429,7 +432,7 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
 
 def _validate_application_section(settings: configparser.ConfigParser, section_name: str = "application"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
         section["last-used-version"] = defaults["last-used-version"]
     for option in ("check-for-application-updates", "check-for-card-data-updates"):
@@ -438,14 +441,14 @@ def _validate_application_section(settings: configparser.ConfigParser, section_n
 
 def _validate_gui_section(settings: configparser.ConfigParser, section_name: str = "gui"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
 def _validate_debug_section(settings: configparser.ConfigParser, section_name: str = "debug"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     _validate_boolean(section, defaults, "cutelog-integration")
     _validate_boolean(section, defaults, "write-log-file")
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
@@ -453,7 +456,7 @@ def _validate_debug_section(settings: configparser.ConfigParser, section_name: s
 
 def _validate_decklist_import_section(settings: configparser.ConfigParser, section_name: str = "decklist-import"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
@@ -461,14 +464,14 @@ def _validate_decklist_import_section(settings: configparser.ConfigParser, secti
 def _validate_default_filesystem_paths_section(
         settings: configparser.ConfigParser, section_name: str = "default-filesystem-paths"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
 
 
 def _validate_printer_section(settings: configparser.ConfigParser, section_name: str = "printer"):
     section = settings[section_name]
-    defaults = DEFAULT_SETTINGS[section_name]
+    defaults = DEFAULT_SETTINGS_OLD[section_name]
     _validate_boolean(section, defaults, "borderless-printing")
 
 

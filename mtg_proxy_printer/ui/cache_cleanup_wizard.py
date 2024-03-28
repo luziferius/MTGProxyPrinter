@@ -149,7 +149,7 @@ class KnownCardImageModel(QAbstractTableModel):
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
         super().__init__(parent)
         self.card_db = card_db
-        self.preferred_language: str = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        self.preferred_language: str = mtg_proxy_printer.settings.settings_old["images"]["preferred-language"]
         self._data: typing.List[KnownCardRow] = []
 
     def rowCount(self, parent: QModelIndex = INVALID_INDEX) -> int:

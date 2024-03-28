@@ -137,7 +137,7 @@ class DebugSettingsPage(Page):
         log_level_combo_box.setCurrentIndex(configured_level_index)
 
     def save(self):
-        debug_section = mtg_proxy_printer.settings.settings["debug"]
+        debug_section = mtg_proxy_printer.settings.settings_old["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             debug_section[setting] = str(widget.isChecked())
         debug_section["log-level"] = self.ui.log_level_combo_box.currentText()
@@ -234,11 +234,11 @@ class DecklistImportSettingsPage(Page):
             widget.setText(section[setting])
 
     def save(self):
-        section = mtg_proxy_printer.settings.settings["decklist-import"]
+        section = mtg_proxy_printer.settings.settings_old["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             section[setting] = str(widget.isChecked())
 
-        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
+        section = mtg_proxy_printer.settings.settings_old["default-filesystem-paths"]
         for widget, setting in self._get_save_path_settings_widgets():
             section[setting] = widget.text()
 
@@ -261,12 +261,12 @@ class DecklistImportSettingsPage(Page):
         return widgets_with_settings
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
-        section = mtg_proxy_printer.settings.settings["decklist-import"]
+        section = mtg_proxy_printer.settings.settings_old["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
                 highlight_widget(widget)
 
-        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
+        section = mtg_proxy_printer.settings.settings_old["default-filesystem-paths"]
         for widget, setting in self._get_save_path_settings_widgets():
             if widget.text() != section[setting]:
                 highlight_widget(widget)
@@ -351,22 +351,22 @@ class GeneralSettingsPage(Page):
         self._save_path_settings()
 
     def _save_update_check_settings(self):
-        section = mtg_proxy_printer.settings.settings["application"]
+        section = mtg_proxy_printer.settings.settings_old["application"]
         for widget, setting in self._get_update_check_settings_widgets():
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
     def _save_look_and_feel_settings(self):
-        section = mtg_proxy_printer.settings.settings["gui"]
+        section = mtg_proxy_printer.settings.settings_old["gui"]
         section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(
             Qt.ItemDataRole.UserRole)
 
     def _save_images_settings(self):
-        section = mtg_proxy_printer.settings.settings["images"]
+        section = mtg_proxy_printer.settings.settings_old["images"]
         section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
         section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
     def _save_path_settings(self):
-        section = mtg_proxy_printer.settings.settings["default-filesystem-paths"]
+        section = mtg_proxy_printer.settings.settings_old["default-filesystem-paths"]
         widgets_and_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
@@ -426,7 +426,7 @@ class HidePrintingsPage(Page):
         ui.card_filter_format_settings.load_settings(section)
 
     def save(self):
-        section = mtg_proxy_printer.settings.settings["card-filter"]
+        section = mtg_proxy_printer.settings.settings_old["card-filter"]
         ui = self.ui
         ui.card_filter_general_settings.save_settings(section)
         ui.card_filter_format_settings.save_settings(section)
@@ -488,7 +488,7 @@ class PrinterSettingsPage(Page):
             widget.setChecked(section.getboolean(setting))
 
     def save(self):
-        section = mtg_proxy_printer.settings.settings["printer"]
+        section = mtg_proxy_printer.settings.settings_old["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             section[setting] = str(widget.isChecked())
 
@@ -514,10 +514,10 @@ class PDFSettingsPage(Page):
 
     def save(self):
         ui = self.ui
-        mtg_proxy_printer.settings.settings["documents"]["pdf-page-count-limit"] = str(
+        mtg_proxy_printer.settings.settings_old["documents"]["pdf-page-count-limit"] = str(
             ui.pdf_page_count_limit.value()
         )
-        mtg_proxy_printer.settings.settings["default-filesystem-paths"]["pdf-export-path"] = ui.pdf_save_path.text()
+        mtg_proxy_printer.settings.settings_old["default-filesystem-paths"]["pdf-export-path"] = ui.pdf_save_path.text()
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui

@@ -145,7 +145,7 @@ class PrintingFilterUpdater(Runnable):
         db = self.db
         progress_signal = self.advance_progress
         db.execute("BEGIN IMMEDIATE TRANSACTION\n")
-        section = mtg_proxy_printer.settings.settings["card-filter"]
+        section = mtg_proxy_printer.settings.settings_old["card-filter"]
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         old_filter_removed = self._remove_old_printing_filters(section)
         filters_need_update = self._filters_in_db_differ_from_settings(section)

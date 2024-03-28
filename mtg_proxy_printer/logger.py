@@ -48,7 +48,7 @@ def configure_root_logger(output_stdout: bool = True):
     crash_log_path = log_dir / f"{PROGRAMNAME}-crashes.log"
     # Not closing the file at all to catch segmentation faults occurring at application exit.
     faulthandler.enable(crash_log_path.open("at", encoding="utf-8"))
-    debug_settings = mtg_proxy_printer.settings.settings["debug"]
+    debug_settings = mtg_proxy_printer.settings.settings_old["debug"]
     file_log_level = debug_settings["log-level"]
     root_logger.setLevel(1)
     if output_stdout:

@@ -51,7 +51,7 @@ SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
 
 def setup_logging_for_testing():
     with patch.dict(
-            mtg_proxy_printer.logger.mtg_proxy_printer.settings.settings["debug"],
+            mtg_proxy_printer.logger.mtg_proxy_printer.settings.settings_old["debug"],
             {"write-log-file": "False"}):
         mtg_proxy_printer.logger.configure_root_logger(output_stdout=False)
     mtg_proxy_printer.logger.root_logger.info("Configured logging system for test runs.")
@@ -64,8 +64,8 @@ def setup_settings_for_testing():
     mtg_proxy_printer.settings.write_settings_to_file.side_effect = AssertionError(
         "mtg_proxy_printer.settings.write_settings_to_file() called within test code!"
     )
-    mtg_proxy_printer.settings.settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    mtg_proxy_printer.settings.settings_old.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS_OLD)
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     for setting in section.keys():
         # Turn off all card filters, so that the defaults don’t affect the test cases
         section[setting] = str(False)
@@ -99,7 +99,7 @@ def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, CardDataType]],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     settings_to_use = {filter_name: "False" for filter_name in section.keys()}
     if filter_settings:
         settings_to_use.update(filter_settings)

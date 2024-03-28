@@ -129,11 +129,11 @@ class SettingsWindow(QDialog):
 
         restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
         restore_defaults.clicked.connect(self.restore_defaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS_OLD, self))
 
         reset = button_box.button(DialogBoxButton.Reset)
         reset.clicked.connect(self.reset)
-        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings_old, self))
 
         buttons_with_icons = [
             (DialogBoxButton.Reset, "edit-undo"),
@@ -148,7 +148,7 @@ class SettingsWindow(QDialog):
 
     def show(self):
         logger.info("Show the settings window.")
-        self.load_settings(mtg_proxy_printer.settings.settings)
+        self.load_settings(mtg_proxy_printer.settings.settings_old)
         self._adapt_layout_to_size(self.size())
         super().show()
 
@@ -183,7 +183,7 @@ class SettingsWindow(QDialog):
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
         logger.info("User wants to save the settings.")
-        old_preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        old_preferred_language = mtg_proxy_printer.settings.settings_old["images"]["preferred-language"]
         new_preferred_language = self.ui.general_settings_page.ui.preferred_language_combo_box.currentText()
         if old_preferred_language != new_preferred_language:
             self.preferred_language_changed.emit(new_preferred_language)
@@ -212,17 +212,17 @@ class SettingsWindow(QDialog):
         scope_question.button(MessageBoxButton.Yes).setText("Reset current page")
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User resets changes made on all pages.")
-            self.load_settings(mtg_proxy_printer.settings.settings)
+            self.load_settings(mtg_proxy_printer.settings.settings_old)
             self.clear_highlight()
         elif result == MessageBoxButton.Yes:
             logger.info("User resets changes made on the current page.")
-            self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.settings)
+            self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.settings_old)
             self.clear_highlight()
 
     def reject(self):
         """Automatically called when the user hits the "Cancel" button or closes the settings window."""
         logger.info("User closes the settings dialog. This will reset any made changes.")
-        self.load_settings(mtg_proxy_printer.settings.settings)
+        self.load_settings(mtg_proxy_printer.settings.settings_old)
         super().reject()
 
     def save(self):
@@ -246,10 +246,10 @@ class SettingsWindow(QDialog):
         scope_question.button(MessageBoxButton.Yes).setText("Restore current page")
         if (result := scope_question.exec()) == MessageBoxButton.YesToAll:
             logger.info("User reverts all pages to their default values.")
-            self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+            self.load_settings(mtg_proxy_printer.settings.DEFAULT_SETTINGS_OLD)
             self.clear_highlight()
         elif result == MessageBoxButton.Yes:
             logger.info("User reverts the current page to the default values.")
-            self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
+            self.ui.stacked_pages.currentWidget().load(mtg_proxy_printer.settings.DEFAULT_SETTINGS_OLD)
             self.clear_highlight()
         logger.debug("Loaded DEFAULT_SETTINGS.")

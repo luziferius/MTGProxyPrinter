@@ -283,7 +283,7 @@ class CentralWidget(QWidget):
 
 
 def get_configured_central_widget_layout_class() -> UiType:
-    gui_settings = mtg_proxy_printer.settings.settings["gui"]
+    gui_settings = mtg_proxy_printer.settings.settings_old["gui"]
     configured_layout = gui_settings["central-widget-layout"]
     if configured_layout == "horizontal":
         return Ui_CentralWidget_Grouped

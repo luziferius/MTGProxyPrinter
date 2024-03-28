@@ -134,10 +134,10 @@ class LoadListPage(QWizardPage):
     def initializePage(self) -> None:
         super().initializePage()
         language_model: QStringListModel = self.ui.translate_deck_list_target_language.model()
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        preferred_language = mtg_proxy_printer.settings.settings_old["images"]["preferred-language"]
         preferred_language_index = language_model.stringList().index(preferred_language)
         self.ui.translate_deck_list_target_language.setCurrentIndex(preferred_language_index)
-        options = mtg_proxy_printer.settings.settings["decklist-import"]
+        options = mtg_proxy_printer.settings.settings_old["decklist-import"]
         self.ui.print_guessing_enable.setChecked(options.getboolean("enable-print-guessing-by-default"))
         self.ui.print_guessing_prefer_already_downloaded.setChecked(options.getboolean("prefer-already-downloaded-images"))
         self.ui.translate_deck_list_enable.setChecked(options.getboolean("always-translate-deck-lists"))
@@ -154,7 +154,7 @@ class LoadListPage(QWizardPage):
     @Slot()
     def on_deck_list_browse_button_clicked(self):
         logger.info("User selects a deck list from disk")
-        default_path: str = mtg_proxy_printer.settings.settings["default-filesystem-paths"]["deck-list-search-path"]
+        default_path: str = mtg_proxy_printer.settings.settings_old["default-filesystem-paths"]["deck-list-search-path"]
         current_deck_list = self.ui.deck_list.toPlainText()
         if not current_deck_list or QMessageBox.question(
                 self, "Overwrite existing deck list?",
@@ -499,7 +499,7 @@ class SummaryPage(QWizardPage):
         wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
         wizard.setOption(WizardOption.HaveCustomButton1, True)
-        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+        decklist_import_section = mtg_proxy_printer.settings.settings_old["decklist-import"]
         remove_basic_lands_button = wizard.button(WizardButton.CustomButton1)
         remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
             decklist_import_section.getboolean("remove-basic-wastes"),
@@ -540,7 +540,7 @@ class SummaryPage(QWizardPage):
         self.wizard().button(button).setEnabled(False)
         if button == WizardButton.CustomButton1:
             logger.info("User requests to remove all basic lands")
-            decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+            decklist_import_section = mtg_proxy_printer.settings.settings_old["decklist-import"]
             self.card_list.remove_all_basic_lands(
                 decklist_import_section.getboolean("remove-basic-wastes"),
                 decklist_import_section.getboolean("remove-snow-basics"))

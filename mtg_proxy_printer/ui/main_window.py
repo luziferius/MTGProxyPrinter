@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
         self.should_update_languages.connect(
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
-        self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"))
+        self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings_old["gui"].getboolean("show-toolbar"))
         self._setup_platform_dependent_default_shortcuts()
         self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -237,9 +237,9 @@ class MainWindow(QMainWindow):
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
         self.is_running = False
-        if self.ui.toolBar.isVisible() != mtg_proxy_printer.settings.settings["gui"].getboolean("show-toolbar"):
+        if self.ui.toolBar.isVisible() != mtg_proxy_printer.settings.settings_old["gui"].getboolean("show-toolbar"):
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
-            mtg_proxy_printer.settings.settings["gui"]["show-toolbar"] = str(self.ui.toolBar.isVisible())
+            mtg_proxy_printer.settings.settings_old["gui"]["show-toolbar"] = str(self.ui.toolBar.isVisible())
             mtg_proxy_printer.settings.write_settings_to_file()
         QApplication.instance().quit()
 
@@ -440,7 +440,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
                 )) in {StandardButton.Yes, StandardButton.No}:
             logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings["application"][settings_key] = str(result == StandardButton.Yes)
+            mtg_proxy_printer.settings.settings_old["application"][settings_key] = str(result == StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
 

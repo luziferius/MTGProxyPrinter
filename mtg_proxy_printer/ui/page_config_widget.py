@@ -160,7 +160,7 @@ class PageConfigWidget(QGroupBox):
 
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
-        documents_section = mtg_proxy_printer.settings.settings["documents"]
+        documents_section = mtg_proxy_printer.settings.settings_old["documents"]
         for spinbox, setting in self._get_integer_settings_widgets():
             documents_section[setting] = str(spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():

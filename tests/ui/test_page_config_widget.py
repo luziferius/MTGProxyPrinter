@@ -116,12 +116,12 @@ def test_load_integer_document_settings_from_config(
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    document_settings = mtg_proxy_printer.settings.settings["documents"]
+    document_settings = mtg_proxy_printer.settings.settings_old["documents"]
     page_layout = widget.page_layout
     spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
     with patch.dict(document_settings, ZeroMarginsSettings), \
             patch.dict(document_settings, {settings_name: str(value)}):
-        widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings_old)
 
     if value < min_value:
         assert_that(spinbox_widget, has_getter("value", equal_to(min_value)))
@@ -140,9 +140,9 @@ def test_load_integer_document_settings_from_config(
 ])
 def test_load_boolean_checkboxes_from_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
-    document_settings = mtg_proxy_printer.settings.settings["documents"]
+    document_settings = mtg_proxy_printer.settings.settings_old["documents"]
     with patch.dict(document_settings, {settings_name: str(value)}):
-        widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings_old)
         assert_that(widget.page_layout, has_property(attribute_name, equal_to(value)))
     checkbox_widget: QCheckBox = getattr(widget.ui, attribute_name)
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
@@ -166,11 +166,11 @@ def test_save_integer_document_settings_to_config(
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    document_settings = mtg_proxy_printer.settings.settings["documents"]
+    document_settings = mtg_proxy_printer.settings.settings_old["documents"]
     original_value = document_settings[settings_name]
     with patch.dict( document_settings, ZeroMarginsSettings), \
             patch.dict(document_settings, {settings_name: original_value}):
-        widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings_old)
         expected = str(min(max(min_value, value), max_value))
         spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
         spinbox_widget.setValue(value)
@@ -189,8 +189,8 @@ def test_save_boolean_document_settings_to_config(
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    document_settings = mtg_proxy_printer.settings.settings["documents"]
-    widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+    document_settings = mtg_proxy_printer.settings.settings_old["documents"]
+    widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings_old)
     original_value = document_settings[settings_name]
     with patch.dict(document_settings, {settings_name: original_value}):
         checkbox_widget: QCheckBox = getattr(widget.ui, attribute_name)
@@ -217,7 +217,7 @@ def test_load_integers_from_page_layout(
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
     """
-    with patch.dict(mtg_proxy_printer.settings.settings["documents"], ZeroMarginsSettings):
+    with patch.dict(mtg_proxy_printer.settings.settings_old["documents"], ZeroMarginsSettings):
         other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
     expected = min(max(min_value, value), max_value)

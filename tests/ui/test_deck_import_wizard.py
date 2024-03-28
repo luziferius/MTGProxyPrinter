@@ -89,7 +89,7 @@ def test_remove_basic_lands_button_works(
     _move_wizard_forward(qtbot, wizard)
     list_model = wizard.summary_page.card_list
     assert_that(list_model.rowCount(), is_(3))
-    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["decklist-import"], removal_settings):
+    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings_old["decklist-import"], removal_settings):
         wizard.button(WizardButton.CustomButton1).click()
     assert_that(
         wizard.button(WizardButton.CustomButton1).isEnabled(),

@@ -160,7 +160,7 @@ def test_create_from_settings():
         "print-page-numbers": "True",
         "default-document-name": "Test",
     }
-    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["documents"], values):
+    with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings_old["documents"], values):
         layout = PageLayoutSettings.create_from_settings()
     assert_that(
         layout, has_properties(

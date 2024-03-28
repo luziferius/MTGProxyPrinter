@@ -105,7 +105,7 @@ class PageLayoutSettings:
     page_width: int = 0
 
     @classmethod
-    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
+    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings_old):
         document_settings = settings["documents"]
         return cls(
             document_settings.getint("card-bleed-mm"),
@@ -363,7 +363,7 @@ class Worker(LoaderSignals):
         self._complete_loading()
 
     def _parse_into_cards(self, card_data: DocumentSaveFormat) -> (typing.List[CardList], int, int):
-        prefer_already_downloaded = mtg_proxy_printer.settings.settings["decklist-import"].getboolean(
+        prefer_already_downloaded = mtg_proxy_printer.settings.settings_old["decklist-import"].getboolean(
             "prefer-already-downloaded-images")
 
         current_page_index = 1

@@ -30,7 +30,7 @@ T = typing.TypeVar("T")
 
 @pytest.fixture(params=[False, True])
 def download_section(request) -> SectionProxy:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
+    section = mtg_proxy_printer.settings.settings_old["card-filter"]
     mock_values = {key: str(request.param) for key in section.keys()}
     with patch.dict(section, mock_values):
         yield section
