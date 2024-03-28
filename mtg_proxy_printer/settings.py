@@ -14,17 +14,22 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import enum
 import logging
 import pathlib
 import re
 import typing
+from typing import TypeVar, Callable
 
 from PyQt5.QtCore import QStandardPaths
+from typedconfig import Config, key as key_, section, group_key
+from typedconfig.casts import enum_cast
+from typedconfig.source import IniFileConfigSource
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, OptBool
 
 __all__ = [
     "settings",
@@ -37,7 +42,8 @@ __all__ = [
     "parse_card_set_filters",
 ]
 
-
+Location = QStandardPaths.StandardLocation
+LocateOption = QStandardPaths.LocateOption
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
 DEFAULT_SETTINGS = configparser.ConfigParser()
@@ -55,6 +61,133 @@ VERSION_CHECK_RE = re.compile(
     r"(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][\da-zA-Z-]*))*))?"
     r"(?:\+(?P<buildmetadata>[\da-zA-Z-]+(?:\.[\da-zA-Z-]+)*))?$"
 )
+T = TypeVar("T")
+
+
+def bool_cast(value: str) -> bool:
+    result = configparser.ConfigParser.BOOLEAN_STATES[value.lower()] or False  # Coerce None to False
+    return result
+
+
+def opt_bool_cast(value: str) -> OptBool:
+    return configparser.ConfigParser.BOOLEAN_STATES[value.lower()]
+
+
+def key(name: str, default: T, cast: Callable[[str], T] = None) -> T:
+    if isinstance(default, bool) and cast is None:
+        cast = bool_cast
+    elif not isinstance(default, str) and cast is None:
+        cast = type(default)
+    return key_(required=False, default=default, key_name=name, cast=cast)
+
+@section("images")
+class Images(Config):
+    preferred_language = key("preferred-language", "en")
+    automatically_add_opposing_faces = key("automatically-add-opposing-faces", True)
+
+@section("card-filter")
+class CardFilter(Config):
+    depicting_racism = key("hide-cards-depicting-racism", True)
+    without_images = key("hide-cards-without-images", True)
+    oversized = key("hide-oversized-cards", False)
+    banned_in_brawl = key("hide-banned-in-brawl", False)
+    banned_in_commander = key("hide-banned-in-commander", False)
+    banned_in_historic = key("hide-banned-in-historic", False)
+    banned_in_legacy = key("hide-banned-in-legacy", False)
+    banned_in_modern = key("hide-banned-in-modern", False)
+    banned_in_oathbreaker = key("hide-banned-in-oathbreaker", False)
+    banned_in_pauper = key("hide-banned-in-pauper", False)
+    banned_in_penny = key("hide-banned-in-penny", False)
+    banned_in_pioneer = key("hide-banned-in-pioneer", False)
+    banned_in_standard = key("hide-banned-in-standard", False)
+    banned_in_vintage = key("hide-banned-in-vintage", False)
+    white_border = key("hide-white-bordered", False)
+    gold_border = key("hide-gold-bordered", False)
+    borderless = key("hide-borderless", False)
+    extended_art = key("hide-extended-art", False)
+    funny = key("hide-funny-cards", False)
+    token = key("hide-token", False)
+    digital = key("hide-digital-cards", True)
+    reversible = key("hide-reversible-cards", False)
+    hidden_sets = key("hidden-sets", "")
+
+@section("documents")
+class Documents(Config):
+    card_bleed_mm = key("card-bleed-mm", default=0)
+    paper_height_mm = key("paper-height-mm", default=297)
+    paper_width_mm = key("paper-width-mm", 210)
+    margin_top_mm = key("margin-top-mm", 5)
+    margin_bottom_mm = key("margin-bottom-mm", 5)
+    margin_left_mm = key("margin-left-mm", 5)
+    margin_right_mm = key("margin-right-mm", 5)
+    row_spacing_mm = key("row-spacing-mm", 0)
+    column_spacing_mm = key("column-spacing-mm", 0)
+    print_cut_markers = key("print-cut-marker", False)
+    pdf_page_count_limit = key("pdf-page-count-limit", 0)
+    print_sharp_corners = key("print-sharp-corners", False)
+    print_page_numbers = key("print-page-numbers", False)
+    default_document_name = key("default-document-name", "")
+
+@section("default-filesystem-paths")
+class FilesystemPaths(Config):
+    document_save_path = key(
+        "document-save-path",
+        default=pathlib.Path(QStandardPaths.locate(Location.DocumentsLocation, "", LocateOption.LocateDirectory)))
+    pdf_export_path = key(
+        "pdf-export-path",
+        default=pathlib.Path(QStandardPaths.locate(Location.DocumentsLocation, "", LocateOption.LocateDirectory)))
+    deck_list_search_path = key(
+        "deck-list-search-path",
+        default=pathlib.Path(QStandardPaths.locate(Location.DownloadLocation, "", LocateOption.LocateDirectory)))
+
+class GuiLayoutChoices(enum.StrEnum):
+    horizontal = "horizontal"
+    columnar = "columnar"
+    tabbed = "tabbed"
+
+@section("gui")
+class Gui(Config):
+    gui_layout = key("central-widget-layout", GuiLayoutChoices.columnar, enum_cast(GuiLayoutChoices))
+    show_toolbar = key("show-toolbar", True)
+
+@section("debug")
+class Debug(Config):
+    cutelog_integration = key("cutelog-integration", False)
+    write_log_file = key("write-log-file", True)
+    log_level = key("log-level", "INFO")
+    
+@section("decklist-import")
+class DeckListImport(Config):
+    enable_print_guessing_by_default = key("enable-print-guessing-by-default", True)
+    prefer_already_downloaded_cards = key("prefer-already-downloaded-images", True)
+    always_translate_deck_lists = key("always-translate-deck-lists", False)
+    remove_basic_wastes = key("remove-basic-wastes", False)
+    remove_snow_basic_lands = key("remove-snow-basics", False)
+
+@section("application")
+class General(Config):
+    last_used_version = key("last-used-version", mtg_proxy_printer.meta_data.__version__)
+    check_for_application_updates = key("check-for-application-updates", opt_bool_cast("None"), opt_bool_cast)
+    check_for_card_data_updates = key("check-for-card-data-updates", opt_bool_cast("None"), opt_bool_cast)
+
+@section("printer")
+class Printer(Config):
+    borderless_printing = key("borderless-printing", True)
+
+class Settings(Config):
+    images = group_key(Images)
+    card_filter = group_key(CardFilter)
+    documents = group_key(Documents)
+    filesystem_paths = group_key(FilesystemPaths)
+    gui = group_key(Gui)
+    debug = group_key(Debug)
+    deck_list_import = group_key(DeckListImport)
+    general = group_key(General)
+    printer = group_key(Printer)
+
+DEFAULT_SETTINGS_2 = Settings()
+settings2 = Settings()
+settings2.add_source(IniFileConfigSource(config_file_path))
 
 # Below are the default application settings. How to define new ones:
 # - Add a key-value pair (String keys and values only) to a section or add a new section
