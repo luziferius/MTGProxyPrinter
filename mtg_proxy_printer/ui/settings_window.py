@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-import configparser
+
 import pathlib
 import typing
 
@@ -50,7 +50,7 @@ __all__ = [
 
 
 class HoverEventFilter(QObject):
-    def __init__(self, settings: configparser.ConfigParser, parent: "SettingsWindow"):
+    def __init__(self, settings: mtg_proxy_printer.settings.Settings, parent: "SettingsWindow"):
         super().__init__(parent)
         self.settings = settings
 
@@ -129,11 +129,11 @@ class SettingsWindow(QDialog):
 
         restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
         restore_defaults.clicked.connect(self.restore_defaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS_OLD, self))
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
 
         reset = button_box.button(DialogBoxButton.Reset)
         reset.clicked.connect(self.reset)
-        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings_old, self))
+        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
 
         buttons_with_icons = [
             (DialogBoxButton.Reset, "edit-undo"),
@@ -156,7 +156,7 @@ class SettingsWindow(QDialog):
         self._adapt_layout_to_size(a0.size())
         super().resizeEvent(a0)
 
-    def highlight_differing_settings(self, setting: configparser.ConfigParser):
+    def highlight_differing_settings(self, setting: mtg_proxy_printer.settings.Settings):
         for page in self._get_pages():
             page.highlight_differing_settings(setting)
 
@@ -174,7 +174,7 @@ class SettingsWindow(QDialog):
         return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
 
 
-    def load_settings(self, settings: configparser.ConfigParser):
+    def load_settings(self, settings: mtg_proxy_printer.settings.Settings):
         logger.debug("Loading the settings")
         for page in self._get_pages():
             page.load(settings)
@@ -183,7 +183,7 @@ class SettingsWindow(QDialog):
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
         logger.info("User wants to save the settings.")
-        old_preferred_language = mtg_proxy_printer.settings.settings_old["images"]["preferred-language"]
+        old_preferred_language = mtg_proxy_printer.settings.settings.images.preferred_language
         new_preferred_language = self.ui.general_settings_page.ui.preferred_language_combo_box.currentText()
         if old_preferred_language != new_preferred_language:
             self.preferred_language_changed.emit(new_preferred_language)

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
 import functools
 from functools import partial
 import typing
@@ -121,17 +120,19 @@ class PageConfigWidget(QGroupBox):
             max(0, available_height - ui.margin_top.value())
         )
 
-    def load_document_settings_from_config(self, settings: configparser.ConfigParser):
+    def load_document_settings_from_config(self, settings: mtg_proxy_printer.settings.Settings):
         logger.debug(f"About to load document settings from the global settings")
-        documents_section = settings["documents"]
+        documents_section = settings.documents
         for spinbox, setting in self._get_integer_settings_widgets():
-            value = documents_section.getint(setting)
+            value = getattr(documents_section, setting)
             spinbox.setValue(value)
             setattr(self.page_layout, spinbox.objectName(), spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
-            checkbox.setChecked(documents_section.getboolean(setting))
+            value = getattr(documents_section, setting)
+            checkbox.setChecked(value)
         for line_edit, setting in self._get_string_settings_widgets():
-            line_edit.setText(documents_section[setting])
+            value = getattr(documents_section, setting)
+            line_edit.setText(value)
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from settings finished")
@@ -160,43 +161,43 @@ class PageConfigWidget(QGroupBox):
 
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
-        documents_section = mtg_proxy_printer.settings.settings_old["documents"]
+        documents = mtg_proxy_printer.settings.settings.documents
         for spinbox, setting in self._get_integer_settings_widgets():
-            documents_section[setting] = str(spinbox.value())
+            setattr(documents, setting, spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
-            documents_section[setting] = str(checkbox.isChecked())
+            setattr(documents, setting, checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
-            documents_section[setting] = line_edit.text()
+            setattr(documents, setting, line_edit.text())
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
-            (ui.card_bleed, "card-bleed-mm"),
-            (ui.page_height, "paper-height-mm"),
-            (ui.page_width, "paper-width-mm"),
-            (ui.margin_top, "margin-top-mm"),
-            (ui.margin_bottom, "margin-bottom-mm"),
-            (ui.margin_left, "margin-left-mm"),
-            (ui.margin_right, "margin-right-mm"),
-            (ui.row_spacing, "row-spacing-mm"),
-            (ui.column_spacing, "column-spacing-mm"),
+            (ui.card_bleed, "card_bleed_mm"),
+            (ui.page_height, "paper_height_mm"),
+            (ui.page_width, "paper_width_mm"),
+            (ui.margin_top, "margin_top_mm"),
+            (ui.margin_bottom, "margin_bottom_mm"),
+            (ui.margin_left, "margin_left_mm"),
+            (ui.margin_right, "margin_right_mm"),
+            (ui.row_spacing, "row_spacing_mm"),
+            (ui.column_spacing, "column_spacing_mm"),
         ]
         return widgets_with_settings
 
     def _get_boolean_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (ui.draw_cut_markers, "print-cut-marker"),
-            (ui.draw_sharp_corners, "print-sharp-corners"),
-            (ui.draw_page_numbers, "print-page-numbers"),
+            (ui.draw_cut_markers, "print_cut_marker"),
+            (ui.draw_sharp_corners, "print_sharp_corners"),
+            (ui.draw_page_numbers, "print_page_numbers"),
         ]
         return widgets_with_settings
 
     def _get_string_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
-            (ui.document_name, "default-document-name")
+            (ui.document_name, "default_document_name")
         ]
         return widgets_with_settings
 
@@ -205,16 +206,16 @@ class PageConfigWidget(QGroupBox):
         pass
 
     @highlight_differing_settings.register
-    def _(self, settings: configparser.ConfigParser):
-        section = settings["documents"]
+    def _(self, settings: mtg_proxy_printer.settings.Settings):
+        section = settings.documents
         for widget, setting in self._get_string_settings_widgets():
-            if widget.text() != section[setting]:
+            if widget.text() != getattr(section, setting):
                 highlight_widget(widget)
         for widget, setting in self._get_boolean_settings_widgets():
-            if widget.isChecked() is not section.getboolean(setting):
+            if widget.isChecked() is not getattr(section, setting):
                 highlight_widget(widget)
         for widget, setting in self._get_integer_settings_widgets():
-            if widget.value() != section.getint(setting):
+            if widget.value() != getattr(section, setting):
                 highlight_widget(widget)
 
     @highlight_differing_settings.register

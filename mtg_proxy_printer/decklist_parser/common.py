@@ -20,7 +20,7 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
-import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -52,13 +52,8 @@ class ParserBase(QObject):
         super().__init__(parent)
         self.card_db = card_db
         self.image_db = image_db
-        self.add_opposing_face = mtg_proxy_printer.settings.settings_old["images"].getboolean(
-            "automatically-add-opposing-faces"
-        )
-        self.print_guessing_prefer_already_downloaded = \
-            mtg_proxy_printer.settings.settings_old["decklist-import"].getboolean(
-                "prefer-already-downloaded-images"
-            )
+        self.add_opposing_face = settings.images.automatically_add_opposing_faces
+        self.print_guessing_prefer_already_downloaded = settings.deck_list_import.prefer_already_downloaded_cards
 
     def get_file_extension_filter(self) -> str:
         everything = "All files (*)"

@@ -57,11 +57,10 @@ __all__ = [
 ]
 
 
-def read_path(setting: str) -> str:
-    stored = mtg_proxy_printer.settings.settings_old["default-filesystem-paths"][setting]
-    if not stored:
+def resolve_path(path: pathlib.Path, setting: str) -> str:
+    if not path:
         return ""
-    resolved = str(pathlib.Path(stored).resolve())
+    resolved = str(pathlib.Path(path).resolve())
     if not resolved:
         logger.warning(f"File system path stored in setting {setting} does not resolve to an existing path")
     return resolved
@@ -72,7 +71,8 @@ class SavePDFDialog(QFileDialog):
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
         super().__init__(
             parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
-        if default_path := read_path("pdf-export-path"):
+        pdf_path = mtg_proxy_printer.settings.settings.filesystem_paths.pdf_export_pat
+        if default_path := resolve_path(pdf_path, "pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -110,7 +110,8 @@ class SaveDocumentAsDialog(QFileDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
         super().__init__(
             parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
-        if default_path := read_path("document-save-path"):
+        save_path = mtg_proxy_printer.settings.settings.filesystem_paths.document_save_path
+        if default_path := resolve_path(save_path, "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -140,7 +141,8 @@ class LoadDocumentDialog(QFileDialog):
         super().__init__(
             parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
             **kwargs)
-        if default_path := read_path("document-save-path"):
+        save_path = mtg_proxy_printer.settings.settings.filesystem_paths.document_save_path
+        if default_path := resolve_path(save_path, "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
@@ -284,7 +286,7 @@ class DocumentSettingsDialog(QDialog):
         button_box = self.ui.button_box
 
         restore_defaults = button_box.button(button_roles.RestoreDefaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings_old, self))
+        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
         restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
 
         reset = button_box.button(button_roles.Reset)
@@ -305,7 +307,7 @@ class DocumentSettingsDialog(QDialog):
     @Slot()
     def restore_defaults_button_clicked(self):
         logger.info("User reverts the document settings to the values from the global configuration")
-        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings_old)
+        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
         self.clear_highlight()
 
     @Slot()

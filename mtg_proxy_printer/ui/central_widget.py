@@ -26,6 +26,7 @@ from PyQt5.QtWidgets import QWidget, QAction, QMenu, QInputDialog, QFileDialog
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import GuiLayoutChoices
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardList, CheckCard, AnyCardType, AnyCardTypeForTypeCheck
@@ -283,10 +284,9 @@ class CentralWidget(QWidget):
 
 
 def get_configured_central_widget_layout_class() -> UiType:
-    gui_settings = mtg_proxy_printer.settings.settings_old["gui"]
-    configured_layout = gui_settings["central-widget-layout"]
-    if configured_layout == "horizontal":
-        return Ui_CentralWidget_Grouped
-    if configured_layout == "columnar":
-        return Ui_CentralWidget_Columnar
-    return Ui_CentralWidget_Tabbed
+    mapping = {
+        GuiLayoutChoices.columnar: Ui_CentralWidget_Columnar,
+        GuiLayoutChoices.tabbed: Ui_CentralWidget_Tabbed,
+        GuiLayoutChoices.horizontal: Ui_CentralWidget_Grouped,
+    }
+    return mapping[mtg_proxy_printer.settings.settings.gui.layout]

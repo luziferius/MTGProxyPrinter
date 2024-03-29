@@ -21,7 +21,7 @@ from PyQt5.QtGui import QPainter, QPdfWriter, QPageSize
 from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.settings import settings_old
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
@@ -37,7 +37,7 @@ __all__ = [
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
-    pages_to_print = settings_old["documents"].getint("pdf-page-count-limit") or document.rowCount()
+    pages_to_print = settings.documents.pdf_page_count_limit or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
@@ -124,7 +124,7 @@ class Renderer(QObject):
         super().__init__(parent)
         self.document = document
         self.render_mode = RenderMode.ON_PAPER
-        if not settings_old["printer"].getboolean("borderless-printing"):
+        if not settings.printer.borderless_printing:
             self.render_mode |= RenderMode.IMPLICIT_MARGINS
         self.scene = PageScene(document, self.render_mode, self)
 

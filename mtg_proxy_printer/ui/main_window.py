@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
         self.should_update_languages.connect(
             lambda: self.language_model.setStringList(self.card_database.get_all_languages())
         )
-        self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings_old["gui"].getboolean("show-toolbar"))
+        self.ui.action_show_toolbar.setChecked(mtg_proxy_printer.settings.settings.gui.show_toolbar)
         self._setup_platform_dependent_default_shortcuts()
         self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -237,9 +237,9 @@ class MainWindow(QMainWindow):
     def on_action_quit_triggered(self):
         logger.info(f"User wants to quit.")
         self.is_running = False
-        if self.ui.toolBar.isVisible() != mtg_proxy_printer.settings.settings_old["gui"].getboolean("show-toolbar"):
+        if self.ui.toolBar.isVisible() != mtg_proxy_printer.settings.settings.gui.show_toolbar:
             logger.debug("Toolbar visibility setting changed. Updating config and writing new state to disk.")
-            mtg_proxy_printer.settings.settings_old["gui"]["show-toolbar"] = str(self.ui.toolBar.isVisible())
+            mtg_proxy_printer.settings.settings.gui.show_toolbar = self.ui.toolBar.isVisible()
             mtg_proxy_printer.settings.write_settings_to_file()
         QApplication.instance().quit()
 
@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
             title="Check for application updates?",
             question=f"Automatically check for application updates whenever you start {name}?",
             logger_message="Application update policy set.",
-            settings_key="check-for-application-updates"
+            attribute="check_for_application_updates"
         )
 
     def ask_user_about_card_data_update_policy(self):
@@ -430,17 +430,17 @@ class MainWindow(QMainWindow):
             title="Check for card data updates?",
             question=f"Automatically check for card data updates on Scryfall whenever you start {name}?",
             logger_message="Card data update policy set.",
-            settings_key="check-for-card-data-updates"
+            attribute="check_for_card_data_updates"
         )
 
-    def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str):
+    def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, attribute: str):
         if (result := QMessageBox.question(
                 self, title,
                 f"{question}\nYou can change this later in the settings.",
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
                 )) in {StandardButton.Yes, StandardButton.No}:
             logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings_old["application"][settings_key] = str(result == StandardButton.Yes)
+            setattr(mtg_proxy_printer.settings.settings.general, attribute, result == StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
 

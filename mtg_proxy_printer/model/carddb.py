@@ -34,9 +34,8 @@ if typing.TYPE_CHECKING:
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
-import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
-import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
 from mtg_proxy_printer.logger import get_logger
 
@@ -519,7 +518,7 @@ class CardDatabase(QObject):
 
     def get_replacement_card_for_unknown_printing(
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
-        preferred_language = mtg_proxy_printer.settings.settings_old["images"]["preferred-language"]
+        preferred_language = settings.images.preferred_language
         query = cached_dedent('''\
         -- get_replacement_card_for_unknown_printing()
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,

@@ -32,9 +32,7 @@ import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import CardSizes, OptBool
 
 __all__ = [
-    "settings_old",
     "settings",
-    "DEFAULT_SETTINGS_OLD",
     "DEFAULT_SETTINGS",
     "read_settings_from_file",
     "write_settings_to_file",
@@ -287,9 +285,9 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(settings: configparser.ConfigParser = settings_old) -> typing.Set[str]:
+def parse_card_set_filters(settings: Settings = settings) -> typing.Set[str]:  # TODO: Move into CardFilter class
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
-    raw = settings["card-filter"]["hidden-sets"]
+    raw = settings.card_filter.hidden_sets
     raw = raw.lower()
     deduplicated = set(raw.split())
     return deduplicated
@@ -322,25 +320,25 @@ def read_settings_from_file():
 
 
 def write_settings_to_file():
-    global settings_old
+    global settings_old, settings
     if not config_file_path.parent.exists():
         config_file_path.parent.mkdir(parents=True)
     with config_file_path.open("w") as config_file:
         settings_old.write(config_file)
 
 
-def update_stored_version_string():
+def update_stored_version_string():  # FIXME: Move into General settings class
     """Sets the version string stored in the configuration file to the version of the currently running instance."""
-    settings_old["application"]["last-used-version"] = DEFAULT_SETTINGS_OLD["application"]["last-used-version"]
+    settings.general.last_used_version = DEFAULT_SETTINGS.general.last_used_version
 
 
-def was_application_updated() -> bool:
+def was_application_updated() -> bool:  # FIXME: Move into General settings class
     """
     Returns True, if the application was updated since last start, i.e. if the internal version number
     is greater than the version string stored in the configuration file. Returns False otherwise.
     """
     return mtg_proxy_printer.natsort.str_less_than(
-        settings_old["application"]["last-used-version"],
+        settings.general.last_used_version,
         mtg_proxy_printer.meta_data.__version__
     )
 

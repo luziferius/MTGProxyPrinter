@@ -19,7 +19,8 @@ import typing
 
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, Qt
 
-import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import settings, CardFilter
+import mtg_proxy_printer.settings  # TODO: REMOVE
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.carddb import CardDatabase
     from mtg_proxy_printer.ui.main_window import MainWindow
@@ -145,7 +146,7 @@ class PrintingFilterUpdater(Runnable):
         db = self.db
         progress_signal = self.advance_progress
         db.execute("BEGIN IMMEDIATE TRANSACTION\n")
-        section = mtg_proxy_printer.settings.settings_old["card-filter"]
+        section = mtg_proxy_printer.settings.settings.card_filter
         boolean_keys = mtg_proxy_printer.settings.get_boolean_card_filter_keys()
         old_filter_removed = self._remove_old_printing_filters(section)
         filters_need_update = self._filters_in_db_differ_from_settings(section)
@@ -195,7 +196,7 @@ class PrintingFilterUpdater(Runnable):
         filters_in_settings: typing.Dict[str, bool] = {key: section.getboolean(key) for key in boolean_keys}
         return filters_in_settings != filters_in_db
 
-    def _remove_old_printing_filters(self, section) -> bool:
+    def _remove_old_printing_filters(self, section: CardFilter) -> bool:
         stored_filters = {
             filter_name for filter_name, in self.db.execute("SELECT filter_name FROM DisplayFilters").fetchall()
         }

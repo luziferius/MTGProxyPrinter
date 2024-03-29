@@ -38,6 +38,7 @@ except ImportError:
     from hamcrest import contains as contains_exactly
 
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import Settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
@@ -105,22 +106,22 @@ class PageLayoutSettings:
     page_width: int = 0
 
     @classmethod
-    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings_old):
-        document_settings = settings["documents"]
+    def create_from_settings(cls, settings: Settings = mtg_proxy_printer.settings.settings):
+        document_settings = settings.documents
         return cls(
-            document_settings.getint("card-bleed-mm"),
-            document_settings["default-document-name"],
-            document_settings.getboolean("print-cut-marker"),
-            document_settings.getboolean("print-page-numbers"),
-            document_settings.getboolean("print-sharp-corners"),
-            document_settings.getint("row-spacing-mm"),
-            document_settings.getint("column-spacing-mm"),
-            document_settings.getint("margin-bottom-mm"),
-            document_settings.getint("margin-left-mm"),
-            document_settings.getint("margin-right-mm"),
-            document_settings.getint("margin-top-mm"),
-            document_settings.getint("paper-height-mm"),
-            document_settings.getint("paper-width-mm"),
+            document_settings.card_bleed_mm,
+            document_settings.default_document_name,
+            document_settings.print_cut_markers,
+            document_settings.print_page_numbers,
+            document_settings.print_sharp_corners,
+            document_settings.row_spacing_mm,
+            document_settings.column_spacing_mm,
+            document_settings.margin_bottom_mm,
+            document_settings.margin_left_mm,
+            document_settings.margin_right_mm,
+            document_settings.margin_top_mm,
+            document_settings.paper_height_mm,
+            document_settings.paper_width_mm,
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
@@ -363,9 +364,7 @@ class Worker(LoaderSignals):
         self._complete_loading()
 
     def _parse_into_cards(self, card_data: DocumentSaveFormat) -> (typing.List[CardList], int, int):
-        prefer_already_downloaded = mtg_proxy_printer.settings.settings_old["decklist-import"].getboolean(
-            "prefer-already-downloaded-images")
-
+        prefer_already_downloaded = mtg_proxy_printer.settings.settings.deck_list_import.prefer_already_downloaded_cards
         current_page_index = 1
         unknown_ids = 0
         migrated_ids = 0
