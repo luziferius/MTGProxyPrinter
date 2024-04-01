@@ -80,7 +80,7 @@ class PDFPrinter(QPdfWriter):
         if pages_to_print < document.rowCount():
             path = Path(file_path)
             # Add one to the document_index for human-readable counting starting at 1. suffix includes the separator
-            file_path = str(path.parent / f"{path.stem}-{document_index+1}{path.suffix}")
+            file_path = str(path.with_stem(f"{path.stem}-{document_index+1}"))
         super().__init__(file_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
