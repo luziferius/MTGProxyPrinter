@@ -29,12 +29,15 @@ del ijson\backends\python*.dll
 
 pushd PySide6
 
-:: Don't need the executables, like Qt Designer, etc
+:: Don't need the executables, like Qt5\b Designer, etc
 del *.exe
+del QtRemoteObjects.pyd QtSerialPort.pyd QtSensors.pyd QtNetwork.pyd QtXml.pyd QtXmlPatterns.pyd pyrcc.pyd
 
 :: Remove unused QML-related DLLs and bindings
 del Qt*Qml* Qt*Quick* Qt*Labs*
-del Qt6Designer.dll QtDesigner.pyi QtDesigner.pyd
+del Qt6Designer.dll QtDesigets.dll Qt5RemoteObjects.dll
+del Qt5Sensors.dll Qt5SerialPort.dll Qt5Sql.dll Qt5Test.dll Qt5WebChannel.dll
+dener.pyi QtDesigner.pyd
 del Qt*Test*
 :: Unused OpenGL bindings. The Qt6OpenGL DLLs are required and thus not removed
 del QtOpenGL.pyd QtOpenGLWidgets.pyd opengl32sw.dll

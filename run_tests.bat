@@ -7,4 +7,4 @@ IF EXIST "venv-PySide6" (
   call create_development_environment.bat
 )
 
-tox
+tox run

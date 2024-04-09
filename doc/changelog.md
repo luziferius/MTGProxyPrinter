@@ -1,5 +1,17 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Add a landscape printing workaround for both direct printing and PDF export.
+  If enabled, landscape documents are internally rotated by 90° during the export/print process,
+  so that they are treated as regular, portrait-mode documents.
+
+## Changed features
+
+- Printer and PDF export options are moved to dedicated pages in the application settings window.
+
 # 0.28.0 (2024-03-24)  <a name="v0_28_0"></a>
 
 ## New features

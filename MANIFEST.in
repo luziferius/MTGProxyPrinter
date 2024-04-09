@@ -1,5 +1,5 @@
 include LICENSE.md
-include ThirdPartyLicenses.md
+include doc/ThirdPartyLicenses.md
 include doc/changelog.md
 include mtg_proxy_printer/model/carddb.sql
 include mtg_proxy_printer/model/document-v*.sql

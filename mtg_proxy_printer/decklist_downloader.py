@@ -64,7 +64,7 @@ class IsIdentifyingDeckUrlValidator(QValidator):
 
 class DecklistDownloader(DownloaderBase):
     DECKLIST_PATH_RE = re.compile(r"")
-    PARSER_CLASS: ParserBase = None
+    PARSER_CLASS: typing.Type[ParserBase] = None
     APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:

@@ -47,10 +47,10 @@ class ProgressBar(QWidget):
             item.hide()
         
     @staticmethod
-    def _set_retain_size_policy(wigdget: QWidget, value: bool):
-        policy = wigdget.sizePolicy()
+    def _set_retain_size_policy(widget: QWidget, value: bool):
+        policy = widget.sizePolicy()
         policy.setRetainSizeWhenHidden(value)
-        wigdget.setSizePolicy(policy)
+        widget.setSizePolicy(policy)
 
     @Slot(int)
     @Slot(int, str)
