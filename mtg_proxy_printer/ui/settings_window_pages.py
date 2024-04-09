@@ -509,15 +509,17 @@ class PDFSettingsPage(Page):
 
     def load(self, settings: configparser.ConfigParser):
         ui = self.ui
-        ui.pdf_page_count_limit.setValue(settings["pdf-export"].getint("pdf-page-count-limit"))
-        ui.pdf_save_path.setText(settings["pdf-export"]["pdf-export-path"])
+        section = settings["pdf-export"]
+        ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
+        ui.pdf_save_path.setText(section["pdf-export-path"])
+        ui.landscape_workaround.setChecked(section.getboolean("landscape-compatibility-workaround"))
 
     def save(self):
         ui = self.ui
-        mtg_proxy_printer.settings.settings["pdf-export"]["pdf-page-count-limit"] = str(
-            ui.pdf_page_count_limit.value()
-        )
-        mtg_proxy_printer.settings.settings["pdf-export"]["pdf-export-path"] = ui.pdf_save_path.text()
+        section = mtg_proxy_printer.settings.settings["pdf-export"]
+        section["pdf-page-count-limit"] = str(ui.pdf_page_count_limit.value())
+        section["pdf-export-path"] = ui.pdf_save_path.text()
+        section["landscape-compatibility-workaround"] = str(ui.landscape_workaround.isChecked())
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
@@ -527,6 +529,8 @@ class PDFSettingsPage(Page):
 
         if ui.pdf_save_path.text() != section["pdf-export-path"]:
             highlight_widget(ui.pdf_save_path)
+        if ui.landscape_workaround.isChecked() != section.getboolean("landscape-compatibility-workaround"):
+            highlight_widget(ui.landscape_workaround)
 
     @Slot()
     def on_pdf_save_path_browse_button_clicked(self):
