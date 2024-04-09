@@ -71,6 +71,8 @@ def create_printer(renderer: "Renderer") -> QPrinter:
     return printer
 
 
+
+
 class PDFPrinter(QPdfWriter):
 
     def __init__(self, document: Document, file_path: str, parent: QObject = None,
@@ -141,7 +143,14 @@ class Renderer(QObject):
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
         logger.info("Begin printing document.")
+        landscape_workaround_enabled = settings["printer"].getboolean("landscape-compatibility-workaround")
+        is_landscape_document = self.scene.width() > self.scene.height()
         painter = QPainter(printer)
+        if is_landscape_document and landscape_workaround_enabled:
+            painter.rotate(90)
+            painter.translate(0, -self.scene.height())
+            scaling = self.scene.width()/self.scene.height()
+            painter.scale(scaling, scaling)
         painter.setRenderHint(QPainter.LosslessImageRendering)
         page_count = self.document.rowCount()
         for index in range(page_count):
