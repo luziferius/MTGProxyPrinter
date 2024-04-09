@@ -1,14 +1,13 @@
 
 import argparse
 import itertools
-import pathlib
-import typing
-
+from pathlib import Path
 import subprocess
+import typing
 
 
 main_package = "mtg_proxy_printer"
-PACKAGE_PATH = (pathlib.Path(__file__).parent.with_name(main_package)).resolve()
+PACKAGE_PATH = (Path(__file__).parent.with_name(main_package)).resolve()
 SOURCES_PATH = PACKAGE_PATH / "resources" / "resources.qrc"
 TARGET_PATH = PACKAGE_PATH / "ui" / "compiled_resources.py"
 T = typing.TypeVar("T")
