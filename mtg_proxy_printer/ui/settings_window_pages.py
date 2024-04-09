@@ -509,23 +509,22 @@ class PDFSettingsPage(Page):
 
     def load(self, settings: configparser.ConfigParser):
         ui = self.ui
-        ui.pdf_page_count_limit.setValue(settings["documents"].getint("pdf-page-count-limit"))
-        ui.pdf_save_path.setText(settings["default-filesystem-paths"]["pdf-export-path"])
+        ui.pdf_page_count_limit.setValue(settings["pdf-export"].getint("pdf-page-count-limit"))
+        ui.pdf_save_path.setText(settings["pdf-export"]["pdf-export-path"])
 
     def save(self):
         ui = self.ui
-        mtg_proxy_printer.settings.settings["documents"]["pdf-page-count-limit"] = str(
+        mtg_proxy_printer.settings.settings["pdf-export"]["pdf-page-count-limit"] = str(
             ui.pdf_page_count_limit.value()
         )
-        mtg_proxy_printer.settings.settings["default-filesystem-paths"]["pdf-export-path"] = ui.pdf_save_path.text()
+        mtg_proxy_printer.settings.settings["pdf-export"]["pdf-export-path"] = ui.pdf_save_path.text()
 
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
-        section = settings["documents"]
+        section = settings["pdf-export"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
             highlight_widget(ui.pdf_page_count_limit)
 
-        section = settings["default-filesystem-paths"]
         if ui.pdf_save_path.text() != section["pdf-export-path"]:
             highlight_widget(ui.pdf_save_path)
 

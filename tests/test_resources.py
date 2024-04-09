@@ -18,10 +18,15 @@ import os
 import typing
 from pathlib import Path
 
-
 from hamcrest import *
 import pytest
 
+
+if os.getenv("MTGPROXYPRINTER_SKIP_RESOURCE_TESTS"):
+    pytest.skip(
+        "Skipping raw resource file tests when running tests using compiled resources",
+        allow_module_level=True
+    )
 
 def list_dir(directory: Path) -> typing.Iterable[Path]:
     walker = os.walk(directory)

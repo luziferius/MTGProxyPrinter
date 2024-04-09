@@ -57,13 +57,14 @@ __all__ = [
 ]
 
 
-def read_path(setting: str) -> str:
-    stored = mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+def read_path(section: str, setting: str) -> str:
+    stored = mtg_proxy_printer.settings.settings[section][setting]
     if not stored:
         return ""
     resolved = str(pathlib.Path(stored).resolve())
     if not resolved:
-        logger.warning(f"File system path stored in setting {setting} does not resolve to an existing path")
+        logger.warning(
+            f"File system path stored in section {section} setting {setting} does not resolve to an existing path")
     return resolved
 
 
@@ -72,7 +73,7 @@ class SavePDFDialog(QFileDialog):
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
         super().__init__(
             parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
-        if default_path := read_path("pdf-export-path"):
+        if default_path := read_path("pdf-export", "pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -110,7 +111,7 @@ class SaveDocumentAsDialog(QFileDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
         super().__init__(
             parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
-        if default_path := read_path("document-save-path"):
+        if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -140,7 +141,7 @@ class LoadDocumentDialog(QFileDialog):
         super().__init__(
             parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
             **kwargs)
-        if default_path := read_path("document-save-path"):
+        if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)

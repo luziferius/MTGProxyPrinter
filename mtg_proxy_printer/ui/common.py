@@ -42,8 +42,8 @@ __all__ = [
 try:
     import mtg_proxy_printer.ui.compiled_resources
 except ModuleNotFoundError:
-    RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources")
-    ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.parent / "resources" / "icons")
+    RESOURCE_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.with_name("resources"))
+    ICON_PATH_PREFIX = str(pathlib.Path(__file__).resolve().parent.with_name("resources") / "icons")
     HAS_COMPILED_RESOURCES = False
 else:
     import atexit

@@ -105,14 +105,12 @@ DEFAULT_SETTINGS["documents"] = {
     "row-spacing-mm": "0",
     "column-spacing-mm": "0",
     "print-cut-marker": "False",
-    "pdf-page-count-limit": "0",
     "print-sharp-corners": "False",
     "print-page-numbers": "False",
     "default-document-name": "",
 }
 DEFAULT_SETTINGS["default-filesystem-paths"] = {
     "document-save-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
-    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "deck-list-search-path": QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
 }
 DEFAULT_SETTINGS["gui"] = {
@@ -140,6 +138,10 @@ DEFAULT_SETTINGS["application"] = {
 }
 DEFAULT_SETTINGS["printer"] = {
     "borderless-printing": "True"
+}
+DEFAULT_SETTINGS["pdf-export"] = {
+    "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
+    "pdf-page-count-limit": "0",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
 
@@ -224,6 +226,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_decklist_import_section(read_settings)
     _validate_default_filesystem_paths_section(read_settings)
     _validate_printer_section(read_settings)
+    _validate_pdf_export_section(read_settings)
 
 
 def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
@@ -339,6 +342,13 @@ def _validate_printer_section(settings: configparser.ConfigParser, section_name:
     _validate_boolean(section, defaults, "borderless-printing")
 
 
+def _validate_pdf_export_section(to_validate: configparser.ConfigParser, section_name: str = "pdf-export"):
+    section = to_validate[section_name]
+    defaults = DEFAULT_SETTINGS[section_name]
+    _validate_path_to_directory(section, defaults, "pdf-export-path")
+    _validate_non_negative_int(section, defaults, "pdf-page-count-limit")
+
+
 def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
         if not pathlib.Path(section[key]).resolve().is_dir():
@@ -388,6 +398,7 @@ def migrate_settings(settings: configparser.ConfigParser):
     _migrate_default_save_paths_settings(settings)
     _migrate_print_guessing_settings(settings)
     _migrate_image_spacing_settings(settings)
+    _migrate_to_pdf_export_section(settings)
 
 
 def _migrate_layout_setting(settings: configparser.ConfigParser):
@@ -451,6 +462,18 @@ def _migrate_image_spacing_settings(settings: configparser.ConfigParser):
     section["column-spacing-mm"] = section["image-spacing-vertical-mm"]
     del section["image-spacing-horizontal-mm"]
     del section["image-spacing-vertical-mm"]
+
+
+def _migrate_to_pdf_export_section(to_migrate: configparser.ConfigParser):
+    section_name: str = "pdf-export"
+    if to_migrate.has_section(section_name):
+        return
+    to_migrate.add_section(section_name)
+    target = to_migrate[section_name]
+    target["pdf-page-count-limit"] = to_migrate["documents"]["pdf-page-count-limit"]
+    target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+    del to_migrate["documents"]["pdf-page-count-limit"]
+    del to_migrate["default-filesystem-paths"]["pdf-export-path"]
 
 
 # Read the settings from file during module import
