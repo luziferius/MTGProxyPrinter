@@ -29,6 +29,20 @@ which should increase compatibility, at the expense of drawing shorter cut helpe
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="landscape_workaround">
+     <property name="toolTip">
+      <string>If enabled, print landscape documents in portrait mode with all content rotated by 90°.
+Enable this, if printing landscape documents results in portrait printouts with cropped-off sides.</string>
+     </property>
+     <property name="text">
+      <string>Enable landscape workaround: Rotate prints by 90°</string>
+     </property>
+     <property name="wordWrap" stdset="0">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <spacer name="vertical_spacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>

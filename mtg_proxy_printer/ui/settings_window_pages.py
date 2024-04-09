@@ -478,7 +478,8 @@ class PrinterSettingsPage(Page):
     def _get_printer_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
-            (ui.printer_use_borderless_printing, "borderless-printing")
+            (ui.printer_use_borderless_printing, "borderless-printing"),
+            (ui.landscape_workaround, "landscape-compatibility-workaround"),
         ]
         return widgets_with_settings
 
