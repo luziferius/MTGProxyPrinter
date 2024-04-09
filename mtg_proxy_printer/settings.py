@@ -142,6 +142,7 @@ DEFAULT_SETTINGS["printer"] = {
 DEFAULT_SETTINGS["pdf-export"] = {
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "pdf-page-count-limit": "0",
+    "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
 
@@ -347,6 +348,7 @@ def _validate_pdf_export_section(to_validate: configparser.ConfigParser, section
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_path_to_directory(section, defaults, "pdf-export-path")
     _validate_non_negative_int(section, defaults, "pdf-page-count-limit")
+    _validate_boolean(section, defaults, "landscape-compatibility-workaround")
 
 
 def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):

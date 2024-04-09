@@ -76,9 +76,9 @@ class PDFPrinter(QPdfWriter):
     def __init__(self, document: Document, file_path: str, parent: QObject = None,
                  document_index: int = 0, pages_to_print: int = None):
         self.document = document
-        layout = document.page_layout
         self.document_index = document_index
         self.pages_to_print: int = pages_to_print or document.rowCount()
+        self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             path = Path(file_path)
             # Add one to the document_index for human-readable counting starting at 1. suffix includes the separator
@@ -89,16 +89,15 @@ class PDFPrinter(QPdfWriter):
         self.painter = QPainter()
         # magnitude returns a float by default, so round to int to avoid a TypeError
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-        self.setPageSize(self._to_page_size(layout))
+        self.setPageSize(self._to_page_size(document.page_layout))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    @staticmethod
-    def _to_page_size(layout: PageLayoutSettings) -> QPageSize:
+    def _to_page_size(self, layout: PageLayoutSettings) -> QPageSize:
         size = QSizeF(layout.page_width, layout.page_height)
-        if layout.page_width > layout.page_height:
+        if layout.page_width > layout.page_height and self.landscape_workaround_enabled:
             size.transpose()
         return QPageSize(size, QPageSize.Unit.Millimeter)
 
@@ -107,7 +106,7 @@ class PDFPrinter(QPdfWriter):
         layout = self.document.page_layout
         scaling = 1
         self.painter.begin(self)
-        if layout.page_width > layout.page_height:
+        if layout.page_width > layout.page_height and self.landscape_workaround_enabled:
             scaling = self.scene.width()/self.scene.height()
             self.painter.rotate(90)
             self.painter.translate(0, -self.scene.height())
