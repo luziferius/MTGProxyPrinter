@@ -117,9 +117,11 @@ it will be exported into multiple PDF documents automatically.</string>
    <item row="4" column="0" colspan="3">
     <widget class="QCheckBox" name="landscape_workaround">
      <property name="toolTip">
-      <string>If enabled, exporting landscape documents to PDF creates portrait mode PDFs with all content rotated by 90°.
+      <string>If enabled, landscape documents are rotated by 90° to portrait mode during export.
 Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
-Enabling may cause enabled cut helper lines to flicker or not show in some PDF viewers, so only enable this, if actually required.</string>
+
+Enabling this may cause the cut helper lines to flicker or not show in some PDF viewers.
+So only enable this, if actually required.</string>
      </property>
      <property name="text">
       <string>Enable landscape workaround: Rotate landscape PDFs by 90°</string>
