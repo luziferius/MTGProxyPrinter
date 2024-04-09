@@ -155,7 +155,6 @@ def test_create_from_settings():
         "row-spacing-mm": "2",
         "column-spacing-mm": "1",
         "print-cut-marker": "True",
-        "pdf-page-count-limit": "1",
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",

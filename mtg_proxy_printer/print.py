@@ -37,7 +37,7 @@ __all__ = [
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
-    pages_to_print = settings["documents"].getint("pdf-page-count-limit") or document.rowCount()
+    pages_to_print = settings["pdf-export"].getint("pdf-page-count-limit") or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
