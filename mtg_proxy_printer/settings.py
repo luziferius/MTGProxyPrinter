@@ -121,7 +121,7 @@ VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
-    "log-level": "INFO"
+    "log-level": "INFO",
 }
 VALID_LOG_LEVELS = set(map(logging.getLevelName, range(10, 60, 10)))
 DEFAULT_SETTINGS["decklist-import"] = {
@@ -137,11 +137,13 @@ DEFAULT_SETTINGS["application"] = {
     "check-for-card-data-updates": "None",
 }
 DEFAULT_SETTINGS["printer"] = {
-    "borderless-printing": "True"
+    "borderless-printing": "True",
+    "landscape-compatibility-workaround": "False",
 }
 DEFAULT_SETTINGS["pdf-export"] = {
     "pdf-export-path": QStandardPaths.locate(QStandardPaths.DocumentsLocation, "", QStandardPaths.LocateDirectory),
     "pdf-page-count-limit": "0",
+    "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
 
@@ -339,7 +341,8 @@ def _validate_default_filesystem_paths_section(
 def _validate_printer_section(settings: configparser.ConfigParser, section_name: str = "printer"):
     section = settings[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
-    _validate_boolean(section, defaults, "borderless-printing")
+    for item in defaults.keys():
+        _validate_boolean(section, defaults, item)
 
 
 def _validate_pdf_export_section(to_validate: configparser.ConfigParser, section_name: str = "pdf-export"):
@@ -347,6 +350,7 @@ def _validate_pdf_export_section(to_validate: configparser.ConfigParser, section
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_path_to_directory(section, defaults, "pdf-export-path")
     _validate_non_negative_int(section, defaults, "pdf-page-count-limit")
+    _validate_boolean(section, defaults, "landscape-compatibility-workaround")
 
 
 def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):

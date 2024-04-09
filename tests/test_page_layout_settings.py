@@ -179,9 +179,11 @@ def test_create_from_settings():
     )
 
 
-@pytest.mark.parametrize("height, width, orientation", [
-    (297, 210, QPageLayout.Orientation.Portrait),
-    (210, 297, QPageLayout.Orientation.Landscape),
+@pytest.mark.parametrize("height, width, landscape_workaround, orientation", [
+    (297, 210, True, QPageLayout.Orientation.Portrait),
+    (297, 210, False, QPageLayout.Orientation.Portrait),
+    (210, 297, True, QPageLayout.Orientation.Portrait),
+    (210, 297, False, QPageLayout.Orientation.Landscape),
 ])
 @pytest.mark.parametrize("render_mode, margins", [
     (RenderMode(0), QMarginsF(0, 0, 0, 0)),
@@ -190,7 +192,7 @@ def test_create_from_settings():
 def test_to_page_layout(
         page_layout: PageLayoutSettings,
         render_mode: RenderMode, margins: QMarginsF,
-        height: int, width: int, orientation: QPageLayout.Orientation
+        height: int, width: int, landscape_workaround: bool, orientation: QPageLayout.Orientation
 ):
     page_layout.page_height = height
     page_layout.page_width = width
@@ -198,7 +200,9 @@ def test_to_page_layout(
     page_layout.margin_top = 2
     page_layout.margin_right = 3
     page_layout.margin_bottom = 4
-    q_page_layout = page_layout.to_page_layout(render_mode)
+    section = mtg_proxy_printer.settings.settings["printer"]
+    with unittest.mock.patch.dict(section, {"landscape-compatibility-workaround": str(landscape_workaround)}):
+        q_page_layout = page_layout.to_page_layout(render_mode)
     assert_that(q_page_layout, has_getters(
         margins=has_getters(
             left=margins.left(),
