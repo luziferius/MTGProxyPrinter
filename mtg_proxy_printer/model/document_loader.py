@@ -547,8 +547,8 @@ class Worker(LoaderSignals):
             default_settings,
             has_properties(
                 card_bleed=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                page_height=all_of(instance_of(int), greater_than(0)),
-                page_width=all_of(instance_of(int), greater_than(0)),
+                custom_page_height=all_of(instance_of(int), greater_than(0)),
+                custom_page_width=all_of(instance_of(int), greater_than(0)),
                 margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
                 margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
