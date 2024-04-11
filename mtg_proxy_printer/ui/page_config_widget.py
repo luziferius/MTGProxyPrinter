@@ -19,12 +19,15 @@ from functools import partial
 import typing
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
+from PyQt5.QtPrintSupport import QPrinter
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
+
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, PageType
+from mtg_proxy_printer.natsort import natural_sorted
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -36,6 +39,21 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CheckState = Qt.CheckState
+
+
+def read_enum(container: typing.Type, enum) -> typing.Dict[str, int]:
+    result = {}
+    for item in natural_sorted(dir(container)):
+        value = getattr(container, item)
+        if isinstance(value, enum):
+            result[item] = value
+    return result
+
+
+PageSize = {"Custom": -1}
+PageSize.update(read_enum(QPrinter, QPrinter.PageSize))
+del PageSize["LastPageSize"]
+PageSizeReverse = {value: key for key, value in PageSize.items()}
 
 
 class PageConfigWidget(QGroupBox):
@@ -53,6 +71,9 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
+        for item, value in PageSize.items():
+            ui.paper_size.addItem(item, value)
+        ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
         ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
         ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
         ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
@@ -76,6 +97,13 @@ class PageConfigWidget(QGroupBox):
             lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
+
+    def _on_paper_size_changed(self, index: int):
+        ui = self.ui
+        ui.paper_orientation.setEnabled(index)
+        ui.page_width.setDisabled(index)
+        ui.page_height.setDisabled(index)
+        ui.flip_page_dimensions.setDisabled(index)
 
     @Slot()
     def page_layout_setting_changed(self):

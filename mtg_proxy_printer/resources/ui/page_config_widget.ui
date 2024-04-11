@@ -396,6 +396,19 @@ otherwise you need two cuts but require less precision hitting the exact middle.
      </property>
     </spacer>
    </item>
+   <item row="16" column="3">
+    <widget class="QComboBox" name="paper_size"/>
+   </item>
+   <item row="16" column="1">
+    <widget class="QLabel" name="paper_size_label">
+     <property name="text">
+      <string>Paper size</string>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="4">
+    <widget class="QComboBox" name="paper_orientation"/>
+   </item>
   </layout>
  </widget>
  <tabstops>
@@ -415,5 +428,4 @@ otherwise you need two cuts but require less precision hitting the exact middle.
  </tabstops>
  <resources/>
  <connections/>
- <slots/>
 </ui>
