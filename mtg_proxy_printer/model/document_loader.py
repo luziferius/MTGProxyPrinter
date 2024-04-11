@@ -151,15 +151,22 @@ class PageLayoutSettings:
         margins = QMarginsF(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom) \
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
         landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean("landscape-compatibility-workaround")
-        orientation = QPageLayout.Orientation.Portrait \
-            if self.page_width < self.page_height or landscape_workaround \
-            else QPageLayout.Orientation.Landscape
-        layout = QPageLayout(
-            QPageSize(QSizeF(*sorted([self.page_width, self.page_height])), QPageSize.Unit.Millimeter),
-            orientation,
-            margins,
-            QPageLayout.Unit.Millimeter,
-        )
+        if self.paper_size == "Custom":
+            orientation = QPageLayout.Orientation.Portrait \
+                if self.page_width < self.page_height or landscape_workaround \
+                else QPageLayout.Orientation.Landscape
+            layout = QPageLayout(
+                QPageSize(QSizeF(*sorted([self.page_width, self.page_height])), QPageSize.Unit.Millimeter),
+                orientation,
+                margins,
+                QPageLayout.Unit.Millimeter,
+            )
+        else:
+            layout = QPageLayout(
+                QPageSize(mtg_proxy_printer.settings.PageSize[self.paper_size]),
+                QPageLayout.Orientation.Portrait,
+                margins,
+            )
         return layout
 
     def __lt__(self, other):
