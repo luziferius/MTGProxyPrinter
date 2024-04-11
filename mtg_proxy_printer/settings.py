@@ -18,7 +18,7 @@ import logging
 import pathlib
 import re
 import typing
-from typing import Type, Dict, TypeVar
+from typing import Type, Dict
 
 from PyQt5.QtCore import QStandardPaths
 from PyQt5.QtPrintSupport import QPrinter
@@ -26,7 +26,7 @@ from PyQt5.QtPrintSupport import QPrinter
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, T
 
 __all__ = [
     "settings",
@@ -38,7 +38,6 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
 ]
-T = TypeVar("T")
 
 
 def read_enum(container: Type, enum: Type[T]) -> Dict[str, T]:
