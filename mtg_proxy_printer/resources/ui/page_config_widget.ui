@@ -15,12 +15,12 @@
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="17" column="1">
-    <widget class="QLabel" name="page_height_label">
+    <widget class="QLabel" name="custom_page_height_label">
      <property name="text">
       <string>Page height</string>
      </property>
      <property name="buddy">
-      <cstring>page_height</cstring>
+      <cstring>custom_page_height</cstring>
      </property>
     </widget>
    </item>
@@ -151,7 +151,7 @@ based on the page size and spacings configured</string>
     </widget>
    </item>
    <item row="17" column="3">
-    <widget class="QSpinBox" name="page_height">
+    <widget class="QSpinBox" name="custom_page_height">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -175,7 +175,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
     </widget>
    </item>
    <item row="19" column="3">
-    <widget class="QSpinBox" name="page_width">
+    <widget class="QSpinBox" name="custom_page_width">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -225,12 +225,12 @@ Otherwise, scaling may be applied by the printer driver.</string>
     </widget>
    </item>
    <item row="19" column="1">
-    <widget class="QLabel" name="page_width_label">
+    <widget class="QLabel" name="custom_page_width_label">
      <property name="text">
       <string>Page width</string>
      </property>
      <property name="buddy">
-      <cstring>page_width</cstring>
+      <cstring>custom_page_width</cstring>
      </property>
     </widget>
    </item>
@@ -416,8 +416,8 @@ otherwise you need two cuts but require less precision hitting the exact middle.
   <tabstop>draw_page_numbers</tabstop>
   <tabstop>draw_cut_markers</tabstop>
   <tabstop>draw_sharp_corners</tabstop>
-  <tabstop>page_height</tabstop>
-  <tabstop>page_width</tabstop>
+  <tabstop>custom_page_height</tabstop>
+  <tabstop>custom_page_width</tabstop>
   <tabstop>margin_top</tabstop>
   <tabstop>margin_bottom</tabstop>
   <tabstop>margin_left</tabstop>

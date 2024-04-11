@@ -16,18 +16,17 @@
 import configparser
 import functools
 from functools import partial
-import typing
+from typing import List, Tuple
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
+from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QComboBox
 
 
-import mtg_proxy_printer.settings
+from mtg_proxy_printer.settings import settings, PageSize, PageSizeReverse
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, PageType
-from mtg_proxy_printer.natsort import natural_sorted
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -39,22 +38,6 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CheckState = Qt.CheckState
-
-
-def read_enum(container: typing.Type, enum) -> typing.Dict[str, int]:
-    result = {}
-    for item in natural_sorted(dir(container)):
-        value = getattr(container, item)
-        if isinstance(value, enum):
-            result[item] = value
-    return result
-
-
-PageSize = {"Custom": -1}
-PageSize.update(read_enum(QPrinter, QPrinter.PageSize))
-del PageSize["LastPageSize"]
-PageSizeReverse = {value: key for key, value in PageSize.items()}
-
 
 class PageConfigWidget(QGroupBox):
 
@@ -73,18 +56,20 @@ class PageConfigWidget(QGroupBox):
         page_layout = PageLayoutSettings()
         for item, value in PageSize.items():
             ui.paper_size.addItem(item, value)
+
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
         ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
-        ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
-        ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
+        ui.custom_page_height.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_height"))
+        ui.custom_page_width.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_width"))
         ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
         ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
         ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
         ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
         ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
         ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
+
         for spinbox in (
-                ui.page_height, ui.page_width,
+                ui.custom_page_height, ui.custom_page_width,
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
                 ui.row_spacing, ui.column_spacing):
             spinbox.valueChanged[int].connect(self.validate_paper_size_settings)
@@ -101,9 +86,10 @@ class PageConfigWidget(QGroupBox):
     def _on_paper_size_changed(self, index: int):
         ui = self.ui
         ui.paper_orientation.setEnabled(index)
-        ui.page_width.setDisabled(index)
-        ui.page_height.setDisabled(index)
+        ui.custom_page_width.setDisabled(index)
+        ui.custom_page_height.setDisabled(index)
         ui.flip_page_dimensions.setDisabled(index)
+        selected_paper_size_item: QPrinter.PageSize = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
 
     @Slot()
     def page_layout_setting_changed(self):
@@ -121,9 +107,9 @@ class PageConfigWidget(QGroupBox):
         """Toggles between landscape/portrait mode by flipping the page height and page width values."""
         logger.debug("User flips paper dimensions")
         ui = self.ui
-        width = ui.page_width.value()
-        ui.page_width.setValue(ui.page_height.value())
-        ui.page_height.setValue(width)
+        width = ui.custom_page_width.value()
+        ui.custom_page_width.setValue(ui.custom_page_height.value())
+        ui.custom_page_height.setValue(width)
 
     @Slot()
     def validate_paper_size_settings(self):
@@ -132,8 +118,8 @@ class PageConfigWidget(QGroupBox):
         """
         ui = self.ui
         oversized = CardSizes.OVERSIZED
-        available_width = ui.page_width.value() - oversized.as_mm(oversized.width)
-        available_height = ui.page_height.value() - oversized.as_mm(oversized.height)
+        available_width = ui.custom_page_width.value() - oversized.as_mm(oversized.width)
+        available_height = ui.custom_page_height.value() - oversized.as_mm(oversized.height)
         ui.margin_left.setMaximum(
             max(0, available_width - ui.margin_right.value())
         )
@@ -158,6 +144,7 @@ class PageConfigWidget(QGroupBox):
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
+        self._load_paper_size(documents_section["paper-size"])
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from settings finished")
@@ -177,30 +164,44 @@ class PageConfigWidget(QGroupBox):
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
                     setattr(self.page_layout, key, widget.text())
+                elif isinstance(widget, QComboBox):
+                    pass
                 else:
                     widget.setChecked(value)
                     setattr(self.page_layout, key, widget.isChecked())
+        self._load_paper_size(other.paper_size)
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")
 
+    def _load_paper_size(self, size: str):
+        page_size = PageSize[size]
+        combo_box = self.ui.paper_size
+        model = combo_box.model()
+        for row in range(model.rowCount()):
+            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == page_size:
+                combo_box.setCurrentIndex(row)
+                break
+
+
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
-        documents_section = mtg_proxy_printer.settings.settings["documents"]
+        documents_section = settings["documents"]
         for spinbox, setting in self._get_integer_settings_widgets():
             documents_section[setting] = str(spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
+        documents_section["paper-size"] = PageSizeReverse[self._current_page_size()]
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
+        widgets_with_settings: List[Tuple[QSpinBox, str]] = [
             (ui.card_bleed, "card-bleed-mm"),
-            (ui.page_height, "paper-height-mm"),
-            (ui.page_width, "paper-width-mm"),
+            (ui.custom_page_height, "paper-height-mm"),
+            (ui.custom_page_width, "paper-width-mm"),
             (ui.margin_top, "margin-top-mm"),
             (ui.margin_bottom, "margin-bottom-mm"),
             (ui.margin_left, "margin-left-mm"),
@@ -212,7 +213,7 @@ class PageConfigWidget(QGroupBox):
 
     def _get_boolean_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QCheckBox, str]] = [
+        widgets_with_settings: List[Tuple[QCheckBox, str]] = [
             (ui.draw_cut_markers, "print-cut-marker"),
             (ui.draw_sharp_corners, "print-sharp-corners"),
             (ui.draw_page_numbers, "print-page-numbers"),
@@ -221,10 +222,13 @@ class PageConfigWidget(QGroupBox):
 
     def _get_string_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QLineEdit, str]] = [
-            (ui.document_name, "default-document-name")
+        widgets_with_settings: List[Tuple[QLineEdit, str]] = [
+            (ui.document_name, "default-document-name"),
         ]
         return widgets_with_settings
+
+    def _current_page_size(self) -> QPrinter.PageSize:
+        return self.ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
 
     @functools.singledispatchmethod
     def highlight_differing_settings(self, settings):
@@ -242,6 +246,8 @@ class PageConfigWidget(QGroupBox):
         for widget, setting in self._get_integer_settings_widgets():
             if widget.value() != section.getint(setting):
                 highlight_widget(widget)
+        if self._current_page_size() != PageSize[section["paper-size"]]:
+            highlight_widget(self.ui.paper_size)
 
     @highlight_differing_settings.register
     def _(self, settings: PageLayoutSettings):
@@ -254,3 +260,5 @@ class PageConfigWidget(QGroupBox):
         for widget, _ in self._get_integer_settings_widgets():
             if widget.value() != getattr(settings, widget.objectName()):
                 highlight_widget(widget)
+        if self._current_page_size() != PageSize[settings.paper_size]:
+            highlight_widget(self.ui.paper_size)
