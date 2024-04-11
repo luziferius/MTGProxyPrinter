@@ -42,7 +42,7 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, T
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 
@@ -78,7 +78,6 @@ class CardType(str, enum.Enum):
 
 
 DocumentSaveFormat = typing.List[typing.Tuple[int, int, str, bool, CardType]]
-T = typing.TypeVar("T")
 
 
 def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.Iterable[typing.Tuple[T, ...]]:
@@ -103,6 +102,7 @@ class PageLayoutSettings:
     margin_top: int = 0
     page_height: int = 0
     page_width: int = 0
+    paper_size: str = "Custom"
 
     @classmethod
     def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
@@ -121,6 +121,7 @@ class PageLayoutSettings:
             document_settings.getint("margin-top-mm"),
             document_settings.getint("paper-height-mm"),
             document_settings.getint("paper-width-mm"),
+            document_settings["paper-size"],
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
@@ -542,6 +543,7 @@ class Worker(LoaderSignals):
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
                 document_name=(any_of(instance_of(str), instance_of(int))),
+                paper_size=is_in(mtg_proxy_printer.settings.PageSize),
             ),
             "Document settings contain invalid data or data types"
         )
