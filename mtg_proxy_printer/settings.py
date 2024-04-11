@@ -21,7 +21,7 @@ import typing
 from typing import Type, Dict
 
 from PyQt5.QtCore import QStandardPaths
-from PyQt5.QtPrintSupport import QPrinter
+from PyQt5.QtGui import QPageSize
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
@@ -48,8 +48,8 @@ def read_enum(container: Type, enum: Type[T]) -> Dict[str, T]:
             result[item] = value
     return result
 
-PageSize: Dict[str, QPrinter.PageSize] = {"Custom": QPrinter.PageSize(-1)}
-PageSize.update(read_enum(QPrinter, QPrinter.PageSize))
+PageSize: Dict[str, QPageSize.PageSizeId] = {"Custom": QPageSize.PageSizeId(-1)}
+PageSize.update(read_enum(QPageSize, QPageSize.PageSizeId))
 del PageSize["LastPageSize"]
 PageSizeReverse = {value: key for key, value in PageSize.items()}
 
