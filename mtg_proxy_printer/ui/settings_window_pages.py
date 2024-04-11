@@ -493,12 +493,12 @@ class PrinterSettingsPage(Page):
         for widget, setting in self._get_printer_settings_widgets():
             section[setting] = str(widget.isChecked())
 
-
     def highlight_differing_settings(self, settings: configparser.ConfigParser):
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             if section.getboolean(setting) != widget.isChecked():
                 highlight_widget(widget)
+
 
 class PDFSettingsPage(Page):
     display_metadata = PageMetadata("PDF export settings", "viewpdf", "Configure the PDF export")
