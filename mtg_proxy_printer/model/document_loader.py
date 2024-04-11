@@ -100,9 +100,25 @@ class PageLayoutSettings:
     margin_left: int = 0
     margin_right: int = 0
     margin_top: int = 0
-    page_height: int = 0
-    page_width: int = 0
+    custom_page_height: int = 0
+    custom_page_width: int = 0
     paper_size: str = "Custom"
+
+    @property
+    def page_height(self) -> int:
+        return self.custom_page_height
+
+    @page_height.setter
+    def page_height(self, value: int):
+        self.custom_page_height = value
+
+    @property
+    def page_width(self) -> int:
+        return self.custom_page_width
+
+    @page_width.setter
+    def page_width(self, value: int):
+        self.custom_page_width = value
 
     @classmethod
     def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
