@@ -18,8 +18,10 @@ import logging
 import pathlib
 import re
 import typing
+from typing import Type, Dict, TypeVar
 
 from PyQt5.QtCore import QStandardPaths
+from PyQt5.QtPrintSupport import QPrinter
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
@@ -36,7 +38,21 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
 ]
+T = TypeVar("T")
 
+
+def read_enum(container: Type, enum: Type[T]) -> Dict[str, T]:
+    result = {}
+    for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
+        value = getattr(container, item)
+        if isinstance(value, enum):
+            result[item] = value
+    return result
+
+PageSize: Dict[str, QPrinter.PageSize] = {"Custom": QPrinter.PageSize(-1)}
+PageSize.update(read_enum(QPrinter, QPrinter.PageSize))
+del PageSize["LastPageSize"]
+PageSizeReverse = {value: key for key, value in PageSize.items()}
 
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
@@ -96,6 +112,7 @@ DEFAULT_SETTINGS["card-filter"] = {
 }
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed-mm": "0",
+    "paper-size": "A4",
     "paper-height-mm": "297",
     "paper-width-mm": "210",
     "margin-top-mm": "5",
@@ -259,13 +276,15 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
-    string_settings = {"default-document-name", }
+    freeform_string_settings = {"default-document-name", }
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
-        elif key in string_settings:
+        elif key in freeform_string_settings:
             pass
+        elif key == "paper-size" and section[key] not in PageSize:
+            _restore_default(section, defaults, key)
         else:
             _validate_non_negative_int(section, defaults, key)
     # Check some semantic properties
