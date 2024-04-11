@@ -36,6 +36,7 @@ StringSet = typing.Set[str]
 OptStr = typing.Optional[str]
 IntList = typing.List[int]
 StrDict = typing.Dict[str, str]
+T = typing.TypeVar("T")
 
 
 class UUID(str):
