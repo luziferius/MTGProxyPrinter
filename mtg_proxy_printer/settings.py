@@ -21,12 +21,12 @@ import typing
 from typing import Type, Dict
 
 from PyQt5.QtCore import QStandardPaths
-from PyQt5.QtGui import QPageSize
+from PyQt5.QtGui import QPageSize, QPageLayout
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize, T
 
 __all__ = [
     "settings",
@@ -40,23 +40,29 @@ __all__ = [
 ]
 
 
-def read_page_size_enum(container: Type, enum: Type[QPageSize.PageSizeId]) -> Dict[str, QPageSize.PageSizeId]:
-    result: Dict[str, QPageSize.PageSizeId] = {"Custom": QPageSize.PageSizeId(-1)}
+def read_enum(container: Type, enum: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+    if accumulator is None:
+        accumulator = {}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
         value = getattr(container, item)
         if isinstance(value, enum):
-            size = QPageSize.size(value, QPageSize.Unit.Millimeter)
-            if size.height() > CardSize.as_mm(CardSizes.OVERSIZED.height) \
-                    and size.width() > CardSize.as_mm(CardSizes.OVERSIZED.width):
-                result[item] = value
+            accumulator[item] = value
+    return accumulator
+
+def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
+    result =  read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
+    del result["LastPageSize"]
+    for item, value in list(result.items()):
+        size = QPageSize.size(value, QPageSize.Unit.Millimeter)
+        if size.height() < CardSize.as_mm(CardSizes.OVERSIZED.height) \
+                or size.width() < CardSize.as_mm(CardSizes.OVERSIZED.width):
+            del result[item]
     return result
 
-PageSize = read_page_size_enum(QPageSize, QPageSize.PageSizeId)
-try:
-    del PageSize["LastPageSize"]
-except KeyError:
-    pass
+PageSize = read_page_size_enum()
 PageSizeReverse = {value: key for key, value in PageSize.items()}
+PageOrientation = read_enum(QPageLayout, QPageLayout.Orientation)
+PageOrientationReverse = {value: key for key, value in PageOrientation.items()}
 
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
