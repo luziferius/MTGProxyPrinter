@@ -26,7 +26,7 @@ from PyQt5.QtGui import QPageSize
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, T
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 
 __all__ = [
     "settings",
@@ -40,17 +40,22 @@ __all__ = [
 ]
 
 
-def read_enum(container: Type, enum: Type[T]) -> Dict[str, T]:
-    result = {}
+def read_page_size_enum(container: Type, enum: Type[QPageSize.PageSizeId]) -> Dict[str, QPageSize.PageSizeId]:
+    result: Dict[str, QPageSize.PageSizeId] = {"Custom": QPageSize.PageSizeId(-1)}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
         value = getattr(container, item)
         if isinstance(value, enum):
-            result[item] = value
+            size = QPageSize.size(value, QPageSize.Unit.Millimeter)
+            if size.height() > CardSize.as_mm(CardSizes.OVERSIZED.height) \
+                    and size.width() > CardSize.as_mm(CardSizes.OVERSIZED.width):
+                result[item] = value
     return result
 
-PageSize: Dict[str, QPageSize.PageSizeId] = {"Custom": QPageSize.PageSizeId(-1)}
-PageSize.update(read_enum(QPageSize, QPageSize.PageSizeId))
-del PageSize["LastPageSize"]
+PageSize = read_page_size_enum(QPageSize, QPageSize.PageSizeId)
+try:
+    del PageSize["LastPageSize"]
+except KeyError:
+    pass
 PageSizeReverse = {value: key for key, value in PageSize.items()}
 
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
