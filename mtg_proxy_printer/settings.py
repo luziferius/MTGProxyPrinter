@@ -122,7 +122,7 @@ DEFAULT_SETTINGS["card-filter"] = {
 }
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed-mm": "0",
-    "paper-size": "A4",
+    "paper-size": PageSizeReverse[QPageSize.PageSizeId.A4],
     "paper-height-mm": "297",
     "paper-width-mm": "210",
     "margin-top-mm": "5",
