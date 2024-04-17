@@ -120,8 +120,6 @@ class PageLayoutSettings:
             return self.custom_page_width
         return QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter).width()
 
-
-
     @page_width.setter
     def page_width(self, value: int):
         self.custom_page_width = value

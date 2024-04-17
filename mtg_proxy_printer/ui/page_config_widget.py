@@ -20,6 +20,7 @@ from typing import List, Tuple
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtPrintSupport import QPrinter
+from PyQt5.QtGui import QPageSize
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QComboBox
 
 
@@ -91,7 +92,8 @@ class PageConfigWidget(QGroupBox):
         ui.custom_page_width.setDisabled(index)
         ui.custom_page_height.setDisabled(index)
         ui.flip_page_dimensions.setDisabled(index)
-        selected_paper_size_item: QPrinter.PageSize = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
+        self.page_layout.paper_size = PageSizeReverse[selected_paper_size_item]
 
     @Slot()
     def page_layout_setting_changed(self):
