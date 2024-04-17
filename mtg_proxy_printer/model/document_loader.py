@@ -108,8 +108,7 @@ class PageLayoutSettings:
     def page_height(self) -> typing.Union[float, int]:
         if self.paper_size == "Custom":
             return self.custom_page_height
-        page_size = QPageSize(mtg_proxy_printer.settings.PageSize[self.paper_size])
-        return page_size.size(QPageSize.Unit.Millimeter).height()
+        return QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter).height()
 
     @page_height.setter
     def page_height(self, value: int):
@@ -119,8 +118,8 @@ class PageLayoutSettings:
     def page_width(self) -> typing.Union[float, int]:
         if self.paper_size == "Custom":
             return self.custom_page_width
-        page_size = QPageSize(mtg_proxy_printer.settings.PageSize[self.paper_size])
-        return page_size.size(QPageSize.Unit.Millimeter).width()
+        return QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter).width()
+
 
 
     @page_width.setter
