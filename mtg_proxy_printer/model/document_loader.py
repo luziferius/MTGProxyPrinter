@@ -102,13 +102,15 @@ class PageLayoutSettings:
     margin_top: int = 0
     custom_page_height: int = 0
     custom_page_width: int = 0
+    paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
 
     @property
     def page_height(self) -> typing.Union[float, int]:
         if self.paper_size == "Custom":
             return self.custom_page_height
-        return QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter).height()
+        size = QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
+        return size.height() if self.paper_orientation == "Portrait" else size.width()
 
     @page_height.setter
     def page_height(self, value: int):
@@ -118,7 +120,8 @@ class PageLayoutSettings:
     def page_width(self) -> typing.Union[float, int]:
         if self.paper_size == "Custom":
             return self.custom_page_width
-        return QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter).width()
+        size = QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
+        return size.width() if self.paper_orientation == "Portrait" else size.height()
 
     @page_width.setter
     def page_width(self, value: int):
@@ -141,6 +144,7 @@ class PageLayoutSettings:
             document_settings.getint("margin-top-mm"),
             document_settings.getint("paper-height-mm"),
             document_settings.getint("paper-width-mm"),
+            document_settings["paper-orientation"],
             document_settings["paper-size"],
         )
 
@@ -161,10 +165,11 @@ class PageLayoutSettings:
                 QPageLayout.Unit.Millimeter,
             )
         else:
-            logger.debug(f"Creating QPageLayout for paper size {self.paper_size}")
+            logger.debug(
+                f"Creating QPageLayout for paper size {self.paper_size} and orientation {self.paper_orientation}")
             layout = QPageLayout(
                 QPageSize(mtg_proxy_printer.settings.PageSize[self.paper_size]),
-                QPageLayout.Orientation.Portrait,
+                mtg_proxy_printer.settings.PageOrientation[self.paper_orientation],
                 margins,
             )
         return layout
@@ -573,6 +578,7 @@ class Worker(LoaderSignals):
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
                 document_name=(any_of(instance_of(str), instance_of(int))),
+                paper_orientation=is_in(mtg_proxy_printer.settings.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.settings.PageSize),
             ),
             "Document settings contain invalid data or data types"

@@ -122,6 +122,7 @@ DEFAULT_SETTINGS["card-filter"] = {
 }
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed-mm": "0",
+    "paper-orientation": PageOrientationReverse[QPageLayout.Orientation.Portrait],
     "paper-size": PageSizeReverse[QPageSize.PageSizeId.A4],
     "paper-height-mm": "297",
     "paper-width-mm": "210",
@@ -286,17 +287,19 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
-    freeform_string_settings = {"default-document-name", }
+    string_settings = {"default-document-name", "paper-size", "paper-orientation"}
     # Check syntax
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
-        elif key in freeform_string_settings:
+        elif key in string_settings:
             pass
-        elif key == "paper-size" and section[key] not in PageSize:
-            _restore_default(section, defaults, key)
         else:
             _validate_non_negative_int(section, defaults, key)
+    if section["paper-size"] not in PageSize:
+        _restore_default(section, defaults, "paper-size")
+    if section["paper-orientation"] not in PageOrientation:
+        _restore_default(section, defaults, "paper-orientation")
     # Check some semantic properties
     available_height = section.getint("paper-height-mm") - \
         (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
