@@ -152,6 +152,8 @@ class PageLayoutSettings:
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
         landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean("landscape-compatibility-workaround")
         if self.paper_size == "Custom":
+            logger.debug(
+                f"Creating custom QPageLayout for a custom paper size of {self.page_width}mm×{self.page_height}mm")
             orientation = QPageLayout.Orientation.Portrait \
                 if self.page_width < self.page_height or landscape_workaround \
                 else QPageLayout.Orientation.Landscape
@@ -162,6 +164,7 @@ class PageLayoutSettings:
                 QPageLayout.Unit.Millimeter,
             )
         else:
+            logger.debug(f"Creating QPageLayout for paper size {self.paper_size}")
             layout = QPageLayout(
                 QPageSize(mtg_proxy_printer.settings.PageSize[self.paper_size]),
                 QPageLayout.Orientation.Portrait,
