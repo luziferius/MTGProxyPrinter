@@ -58,6 +58,8 @@ class PageConfigWidget(QGroupBox):
             ui.paper_size.addItem(item, value)
 
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
+        ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings)
+        ui.paper_size.currentIndexChanged.connect(self.page_layout_setting_changed)
         ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
         ui.custom_page_height.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_height"))
         ui.custom_page_width.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_width"))
