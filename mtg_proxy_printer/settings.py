@@ -18,7 +18,6 @@ import logging
 import pathlib
 import re
 import typing
-from typing import Type, Dict
 
 from PyQt5.QtCore import QStandardPaths
 from PyQt5.QtGui import QPageSize, QPageLayout
@@ -26,7 +25,8 @@ from PyQt5.QtGui import QPageSize, QPageLayout
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize, T
+from mtg_proxy_printer.units_and_sizes import \
+    CardSizes, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse
 
 __all__ = [
     "settings",
@@ -38,31 +38,6 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
 ]
-
-
-def read_enum(container: Type, enum: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
-    if accumulator is None:
-        accumulator = {}
-    for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
-        value = getattr(container, item)
-        if isinstance(value, enum):
-            accumulator[item] = value
-    return accumulator
-
-def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
-    result =  read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
-    del result["LastPageSize"]
-    for item, value in list(result.items()):
-        size = QPageSize.size(value, QPageSize.Unit.Millimeter)
-        if size.height() < CardSize.as_mm(CardSizes.OVERSIZED.height) \
-                or size.width() < CardSize.as_mm(CardSizes.OVERSIZED.width):
-            del result[item]
-    return result
-
-PageSize = read_page_size_enum()
-PageSizeReverse = {value: key for key, value in PageSize.items()}
-PageOrientation = read_enum(QPageLayout, QPageLayout.Orientation)
-PageOrientationReverse = {value: key for key, value in PageOrientation.items()}
 
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()

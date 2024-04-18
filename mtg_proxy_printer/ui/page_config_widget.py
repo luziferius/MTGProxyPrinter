@@ -24,10 +24,11 @@ from PyQt5.QtGui import QPageSize, QPageLayout
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QComboBox
 
 
-from mtg_proxy_printer.settings import settings, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse
+from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, PageType
+from mtg_proxy_printer.units_and_sizes import CardSizes, \
+    PageType, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget

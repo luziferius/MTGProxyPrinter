@@ -37,6 +37,7 @@ except ImportError:
     # Compatibility with PyHamcrest < 1.10
     from hamcrest import contains as contains_exactly
 
+import mtg_proxy_printer.units_and_sizes
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
@@ -109,7 +110,7 @@ class PageLayoutSettings:
     def page_height(self) -> typing.Union[float, int]:
         if self.paper_size == "Custom":
             return self.custom_page_height
-        size = QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
+        size = QPageSize.size(mtg_proxy_printer.units_and_sizes.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
         return size.height() if self.paper_orientation == "Portrait" else size.width()
 
     @page_height.setter
@@ -120,7 +121,7 @@ class PageLayoutSettings:
     def page_width(self) -> typing.Union[float, int]:
         if self.paper_size == "Custom":
             return self.custom_page_width
-        size = QPageSize.size(mtg_proxy_printer.settings.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
+        size = QPageSize.size(mtg_proxy_printer.units_and_sizes.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
         return size.width() if self.paper_orientation == "Portrait" else size.height()
 
     @page_width.setter
@@ -168,8 +169,8 @@ class PageLayoutSettings:
             logger.debug(
                 f"Creating QPageLayout for paper size {self.paper_size} and orientation {self.paper_orientation}")
             layout = QPageLayout(
-                QPageSize(mtg_proxy_printer.settings.PageSize[self.paper_size]),
-                mtg_proxy_printer.settings.PageOrientation[self.paper_orientation],
+                QPageSize(mtg_proxy_printer.units_and_sizes.PageSize[self.paper_size]),
+                mtg_proxy_printer.units_and_sizes.PageOrientation[self.paper_orientation],
                 margins,
             )
         return layout
@@ -578,8 +579,8 @@ class Worker(LoaderSignals):
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
                 document_name=(any_of(instance_of(str), instance_of(int))),
-                paper_orientation=is_in(mtg_proxy_printer.settings.PageOrientation),
-                paper_size=is_in(mtg_proxy_printer.settings.PageSize),
+                paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageOrientation),
+                paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSize),
             ),
             "Document settings contain invalid data or data types"
         )
