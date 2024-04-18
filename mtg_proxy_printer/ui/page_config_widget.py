@@ -20,11 +20,11 @@ from typing import List, Tuple
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtPrintSupport import QPrinter
-from PyQt5.QtGui import QPageSize
+from PyQt5.QtGui import QPageSize, QPageLayout
 from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QComboBox
 
 
-from mtg_proxy_printer.settings import settings, PageSize, PageSizeReverse
+from mtg_proxy_printer.settings import settings, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, PageType
@@ -39,6 +39,7 @@ from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
 CheckState = Qt.CheckState
+
 
 class PageConfigWidget(QGroupBox):
 
@@ -57,10 +58,17 @@ class PageConfigWidget(QGroupBox):
         page_layout = PageLayoutSettings()
         for item, value in PageSize.items():
             ui.paper_size.addItem(item, value)
+        for item, value in PageOrientation.items():
+            ui.paper_orientation.addItem(item, value)
 
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
         ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings)
         ui.paper_size.currentIndexChanged.connect(self.page_layout_setting_changed)
+
+        ui.paper_orientation.currentIndexChanged.connect(self._on_paper_orientation_changed)
+        ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings)
+        ui.paper_orientation.currentIndexChanged.connect(self.page_layout_setting_changed)
+
         ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
         ui.custom_page_height.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_height"))
         ui.custom_page_width.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_width"))
@@ -86,6 +94,7 @@ class PageConfigWidget(QGroupBox):
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
 
+    @Slot(int)
     def _on_paper_size_changed(self, index: int):
         ui = self.ui
         ui.paper_orientation.setEnabled(index)
@@ -96,11 +105,16 @@ class PageConfigWidget(QGroupBox):
         self.page_layout.paper_size = PageSizeReverse[selected_paper_size_item]
 
     @Slot()
+    def _on_paper_orientation_changed(self):
+        ui = self.ui
+        orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
+        self.page_layout.paper_orientation = PageOrientationReverse[orientation]
+
+    @Slot()
     def page_layout_setting_changed(self):
         """
         Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
-
         regular_capacity = self.page_layout.compute_page_card_capacity(PageType.REGULAR)
         oversized_capacity = self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
         capacity_text = f"{regular_capacity} regular cards, {oversized_capacity} oversized cards"
@@ -149,6 +163,7 @@ class PageConfigWidget(QGroupBox):
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
         self._load_paper_size(documents_section["paper-size"])
+        self._load_paper_orientation(documents_section["paper-orientation"])
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from settings finished")
@@ -174,6 +189,7 @@ class PageConfigWidget(QGroupBox):
                     widget.setChecked(value)
                     setattr(self.page_layout, key, widget.isChecked())
         self._load_paper_size(other.paper_size)
+        self._load_paper_orientation(other.paper_orientation)
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")
@@ -187,6 +203,14 @@ class PageConfigWidget(QGroupBox):
                 combo_box.setCurrentIndex(row)
                 break
 
+    def _load_paper_orientation(self, orientation_str: str):
+        orientation = PageOrientation[orientation_str]
+        combo_box = self.ui.paper_orientation
+        model = combo_box.model()
+        for row in range(model.rowCount()):
+            if model.data(model.index(row, 0), Qt.ItemDataRole.UserRole) == orientation:
+                combo_box.setCurrentIndex(row)
+                break
 
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
