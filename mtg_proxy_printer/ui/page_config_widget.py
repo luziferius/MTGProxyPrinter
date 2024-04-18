@@ -222,6 +222,7 @@ class PageConfigWidget(QGroupBox):
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
         documents_section["paper-size"] = PageSizeReverse[self._current_page_size()]
+        documents_section["paper-orientation"] = PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
@@ -258,6 +259,9 @@ class PageConfigWidget(QGroupBox):
     def _current_page_size(self) -> QPrinter.PageSize:
         return self.ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
 
+    def _current_page_orientation(self) -> QPageLayout.Orientation:
+        return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
+
     @functools.singledispatchmethod
     def highlight_differing_settings(self, settings):
         pass
@@ -276,6 +280,8 @@ class PageConfigWidget(QGroupBox):
                 highlight_widget(widget)
         if self._current_page_size() != PageSize[section["paper-size"]]:
             highlight_widget(self.ui.paper_size)
+        if self._current_page_orientation() != PageOrientation[section["paper-orientation"]]:
+            highlight_widget(self.ui.paper_orientation)
 
     @highlight_differing_settings.register
     def _(self, settings: PageLayoutSettings):
@@ -290,3 +296,5 @@ class PageConfigWidget(QGroupBox):
                 highlight_widget(widget)
         if self._current_page_size() != PageSize[settings.paper_size]:
             highlight_widget(self.ui.paper_size)
+        if self._current_page_orientation() != PageOrientation[settings.paper_orientation]:
+            highlight_widget(self.ui.paper_orientation)
