@@ -263,13 +263,15 @@ def read_enum(container: Type, enum: Type[T], accumulator: Dict[str, T] = None) 
 
 
 def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
-    result =  read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
-    del result["LastPageSize"]
-    for item, value in list(result.items()):
+    found_items = read_enum(QPageSize, QPageSize.PageSizeId)
+    del found_items["LastPageSize"]
+    result: Dict[str, QPageSize.PageSizeId] = {"Custom": QPageSize.PageSizeId(-1)}
+    for value in found_items.values():
         size = QPageSize.size(value, QPageSize.Unit.Millimeter)
-        if size.height() < CardSize.as_mm(CardSizes.OVERSIZED.height) \
-                or size.width() < CardSize.as_mm(CardSizes.OVERSIZED.width):
-            del result[item]
+        if size.height() >= CardSize.as_mm(CardSizes.OVERSIZED.height) \
+                and size.width() >= CardSize.as_mm(CardSizes.OVERSIZED.width):
+            name = QPageSize.name(value)
+            result[name] = value
     return result
 
 
