@@ -252,18 +252,18 @@ class BulkDataType(TypedDict):
     content_encoding: str
 
 
-def read_enum(container: Type, enum: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+def read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
     if accumulator is None:
         accumulator = {}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
         value = getattr(container, item)
-        if isinstance(value, enum):
+        if isinstance(value, enum_class):
             accumulator[item] = value
     return accumulator
 
 
 def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
-    result =  read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
+    result = read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
     del result["LastPageSize"]
     for item, value in list(result.items()):
         size = QPageSize.size(value, QPageSize.Unit.Millimeter)
