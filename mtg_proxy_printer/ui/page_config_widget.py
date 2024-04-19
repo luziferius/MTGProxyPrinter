@@ -57,8 +57,8 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        for item, value in PageSize.items():
-            ui.paper_size.addItem(item, value)
+        for page_size_id in PageSize.values():
+            ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
         for item, value in PageOrientation.items():
             ui.paper_orientation.addItem(item, value)
 
