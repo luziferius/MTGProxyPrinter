@@ -270,7 +270,7 @@ def is_acceptable_page_size(page_size: Union[QPageSize.PageSizeId, QPageSize]) -
 
 
 def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
-    result = read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
+    result = read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId.Custom})
     del result["LastPageSize"]
     for item, value in list(result.items()):
         if not is_acceptable_page_size(value):
