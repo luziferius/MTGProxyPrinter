@@ -21,11 +21,10 @@ import argparse
 import ast
 import itertools
 import textwrap
-import typing
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict
+from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict, Set
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
 MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
@@ -33,6 +32,8 @@ UI_SOURCE_PATH = MAIN_PACKAGE / "resources/ui"  # UI files live here
 TARGET_PATH = MAIN_PACKAGE / "ui/generated"  # Package containing generated modules/type hinting stubs
 T = TypeVar("T")
 ClassRegistry = Dict[str, ast.ImportFrom]
+UsedClasses = Set[str]
+
 
 class Assignment(NamedTuple):
     attribute: str
@@ -114,7 +115,7 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
     """Scan the source tree for classes and build a dict from class name to import path"""
     result: ClassRegistry = {}
     for py_file in package_path.rglob("*.py"):
-        module_path = ".".join((py_file.parent.relative_to(package_path.parent)/ py_file.stem).parts)
+        module_path = ".".join((py_file.parent.relative_to(package_path.parent) / py_file.stem).parts)
         root_node = ast.parse(py_file.read_text("utf-8"), py_file)
         for class_def in type_filter(root_node.body, ast.ClassDef):
             result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)])
@@ -137,7 +138,7 @@ def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry
             type_filter(root_node.body, (ast.ImportFrom, ast.Import))
         )
     )
-    found_class_uses: typing.List[str] = []
+    found_class_uses: UsedClasses = set()
     class_stubs = "\n\n\n".join(
         map(
             generate_class_stub,
@@ -146,8 +147,7 @@ def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry
         ))
     type_hinting_imports = [
         ast.unparse(class_registry[used_class])
-        for used_class in found_class_uses
-        if used_class in class_registry
+        for used_class in found_class_uses.intersection(class_registry)
     ] or ["pass"]
     type_hinting_import_str = "if typing.TYPE_CHECKING:\n"
     type_hinting_import_str += textwrap.indent(
@@ -157,7 +157,7 @@ def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry
     return "\n\n".join((header, imports, type_hinting_import_str, class_stubs)) + "\n"
 
 
-def generate_class_stub(class_root: ast.ClassDef, found_class_uses: typing.List[str]) -> str:
+def generate_class_stub(class_root: ast.ClassDef, found_class_uses: UsedClasses) -> str:
     header = generate_class_header(class_root)
 
     for item in class_root.body:
@@ -200,11 +200,11 @@ def get_assignments(function_body: ast.FunctionDef) -> List[Assignment]:
     ]
 
 
-def get_function_stub(function_body: ast.FunctionDef, found_class_uses: typing.List[str]):
+def get_function_stub(function_body: ast.FunctionDef, found_class_uses: UsedClasses):
     for index, arg in enumerate(function_body.args.args):
         if arg.arg == "self":
             continue
-        found_class_uses.append(arg.arg)
+        found_class_uses.add(arg.arg)
         arg.annotation = ast.Str(arg.arg)
         arg.arg = f"arg{index}"
 
