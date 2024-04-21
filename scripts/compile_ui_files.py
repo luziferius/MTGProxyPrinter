@@ -112,7 +112,7 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
     """Scan the source tree for classes and build a dict from class name to import path"""
     result: ClassRegistry = {}
     for py_file in package_path.rglob("*.py"):
-        module_path = ".".join([*py_file.relative_to(SOURCE_ROOT).parts[:-1], py_file.stem])
+        module_path = ".".join((py_file.parent.relative_to(package_path.parent)/ py_file.stem).parts)
         root_node = ast.parse(py_file.read_text("utf-8"), py_file)
         for class_def in type_filter(root_node.body, ast.ClassDef):
             result[class_def.name] = ast.ImportFrom(module_path, class_def.name)
@@ -124,7 +124,7 @@ def compile_ui_file(path: Path) -> str:
     return subprocess.check_output(command, encoding="utf-8")
 
 
-def generate_stub(compiled_ui: str, ui_file: Path, class_registry: Dict[str, str]) -> str:
+def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry) -> str:
     root_node = ast.parse(compiled_ui)
     header = f"# Automatically generated type hinting stub for '{ui_file.name}'. Do not modify."
     # Keep all imports unmodified
