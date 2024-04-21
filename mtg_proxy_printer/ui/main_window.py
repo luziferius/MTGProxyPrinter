@@ -35,7 +35,7 @@ from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
+    AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.ui.progress_bar import ProgressBar
@@ -103,8 +103,8 @@ class MainWindow(QMainWindow):
         self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_about_dialog(self) -> AboutMTGProxyPrinterDialog:
-        about_dialog = AboutMTGProxyPrinterDialog(self)
+    def _create_about_dialog(self) -> AboutDialog:
+        about_dialog = AboutDialog(self)
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog
@@ -397,7 +397,7 @@ class MainWindow(QMainWindow):
                 f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your web browser "
                 f"to download the new version?",
                 StandardButton.Yes | StandardButton.No, StandardButton.No
-                ) == StandardButton.Yes:
+        ) == StandardButton.Yes:
             url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
             QDesktopServices.openUrl(url)
 

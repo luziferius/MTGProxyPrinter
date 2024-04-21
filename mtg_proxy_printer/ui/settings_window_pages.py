@@ -72,7 +72,6 @@ class PageMetadata(typing.NamedTuple):
     tooltip: OptStr = None
 
 
-
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
@@ -527,7 +526,6 @@ class PDFSettingsPage(Page):
         section = settings["pdf-export"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
             highlight_widget(ui.pdf_page_count_limit)
-
         if ui.pdf_save_path.text() != section["pdf-export-path"]:
             highlight_widget(ui.pdf_save_path)
         if ui.landscape_workaround.isChecked() != section.getboolean("landscape-compatibility-workaround"):

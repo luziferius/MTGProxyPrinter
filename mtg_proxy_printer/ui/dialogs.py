@@ -50,7 +50,7 @@ __all__ = [
     "SavePDFDialog",
     "SaveDocumentAsDialog",
     "LoadDocumentDialog",
-    "AboutMTGProxyPrinterDialog",
+    "AboutDialog",
     "PrintPreviewDialog",
     "PrintDialog",
     "DocumentSettingsDialog",
@@ -163,7 +163,7 @@ class LoadDocumentDialog(QFileDialog):
         logger.debug("User aborted loading. Doing nothing.")
 
 
-class AboutMTGProxyPrinterDialog(QDialog):
+class AboutDialog(QDialog):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -254,14 +254,14 @@ class HoverEventFilter(QObject):
         self.settings = settings
 
     def eventFilter(self, object_, event: QEvent):
-        event_type = event.type()
+        event_type: QEvent.Type = event.type()
         # This check avoids a crash during application shutdown
-        if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
+        if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
             return False
         parent: "DocumentSettingsDialog" = self.parent()
-        if event_type == QEvent.HoverEnter:
+        if event_type == QEvent.Type.HoverEnter:
             parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
-        elif event_type == QEvent.HoverLeave:
+        elif event_type == QEvent.Type.HoverLeave:
             parent.clear_highlight()
         return False
 

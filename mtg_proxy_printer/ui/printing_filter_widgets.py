@@ -17,7 +17,7 @@
 import abc
 import configparser
 from functools import partial
-from typing import Union, Type, List, Tuple
+from typing import List, Tuple
 
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices
@@ -33,16 +33,10 @@ except ModuleNotFoundError:
     Ui_FormatPrintingFilter = load_ui_from_file("settings_window/format_printing_filter")
     Ui_GeneralPrintingFilter = load_ui_from_file("settings_window/general_printing_filter")
 
-UiTypes = Union[Type[Ui_FormatPrintingFilter], Type[Ui_GeneralPrintingFilter]]
 ParsingMode = QUrl.ParsingMode
 
 
-class AbstractPrintingFilterWidget(QGroupBox):
-
-    def __init__(self, ui_class: UiTypes, parent: QWidget = None):
-        super().__init__(parent)
-        self.ui = ui_class()
-        self.ui.setupUi(self)
+class AbstractPrintingFilter(QGroupBox):
 
     def load_settings(self, settings: configparser.SectionProxy):
         for widget, key in self._get_widgets_with_keys():
@@ -68,13 +62,14 @@ class AbstractPrintingFilterWidget(QGroupBox):
         pass
 
 
-class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
+class GeneralPrintingFilter(AbstractPrintingFilter):
     """
     Manages settings for all printing filters that are not related to bans in specific formats
     """
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_GeneralPrintingFilter, parent)
-        ui = self.ui
+        super().__init__(parent)
+        self.ui = ui = Ui_GeneralPrintingFilter()
+        ui.setupUi(self)
         ui.view_cards_depicting_racism.clicked.connect(
             partial(self.view_query_on_scryfall, "function:banned-due-to-racist-imagery"))
         ui.view_oversized_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:oversized"))
@@ -111,7 +106,7 @@ class GeneralPrintingFilterWidget(AbstractPrintingFilterWidget):
                 highlight_widget(widget)
 
 
-class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
+class FormatPrintingFilter(AbstractPrintingFilter):
     """
     Manages printing filters for bans in specific formats. An enabled filter for a given format hides
     all cards that are banned in that format.
@@ -119,8 +114,9 @@ class FormatPrintingFilterWidget(AbstractPrintingFilterWidget):
     # TODO 1: Refactor to generate the checkbox list and button list from the format list in the settings
     # TODO 2: Write test that ensures that there is a bijection between settings keys and widgets
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_FormatPrintingFilter, parent)
-        ui = self.ui
+        super().__init__(parent)
+        self.ui = ui = Ui_FormatPrintingFilter()
+        ui.setupUi(self)
         for _, key in self._get_widgets_with_keys():
             format_name = key.split("-")[-1]
             button: QPushButton = getattr(ui, f"view_banned_in_{format_name}")
