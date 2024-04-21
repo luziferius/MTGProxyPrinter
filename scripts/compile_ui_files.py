@@ -28,6 +28,8 @@ from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
 UI_SOURCE_PATH = SOURCE_ROOT / "mtg_proxy_printer/resources/ui"  # UI files live here
 TARGET_PATH = SOURCE_ROOT / "mtg_proxy_printer/ui/generated"  # Package containing generated modules/type hinting stubs
+T = TypeVar("T")
+
 
 class Assignment(NamedTuple):
     attribute: str
@@ -35,9 +37,6 @@ class Assignment(NamedTuple):
 
     def __str__(self):
         return f"{self.attribute}: {self.type}"
-
-
-T = TypeVar("T")
 
 
 class Namespace(NamedTuple):
