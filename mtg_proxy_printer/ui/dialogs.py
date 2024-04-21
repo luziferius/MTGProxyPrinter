@@ -50,7 +50,7 @@ __all__ = [
     "SavePDFDialog",
     "SaveDocumentAsDialog",
     "LoadDocumentDialog",
-    "AboutMTGProxyPrinterDialog",
+    "AboutDialog",
     "PrintPreviewDialog",
     "PrintDialog",
     "DocumentSettingsDialog",
@@ -163,7 +163,7 @@ class LoadDocumentDialog(QFileDialog):
         logger.debug("User aborted loading. Doing nothing.")
 
 
-class AboutMTGProxyPrinterDialog(QDialog):
+class AboutDialog(QDialog):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
