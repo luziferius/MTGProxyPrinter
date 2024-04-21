@@ -1,3 +1,33 @@
+#!/usr/bin/env python3
+
+# Copyright (C) 2022-2024 Thomas Hess <thomas.hess@udo.edu>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+"""
+This script compiles the resources listed in the Qt resources registry under
+mtg_proxy_printer/resources/resources.qrc into an importable Python module for packaging.
+
+For development, the codebase loads the files directly from disk,
+which allows working on them without intermediate compilation steps.
+
+Deliverables (both Python wheel files and executable bundles created via cx_Freeze)
+load the resources from the compiled resources module instead.
+This ensures that the Qt resources framework has access to the icon theme, translations,
+and other resources (if any), regardless of packaging or installation method,
+as this approach does not rely on filesystem paths.
+"""
 
 import argparse
 import itertools

@@ -53,8 +53,6 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        ui.column_spacing.valueChanged[int].connect(lambda value: logger.debug(f"Column spacing now {value}"))
-        ui.page_width.valueChanged[int].connect(lambda value: logger.debug(f"Page width now {value}"))
         ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
         ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
         ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))

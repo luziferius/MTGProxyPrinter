@@ -1,4 +1,5 @@
-# Copyright (C) 2022-2023 Thomas Hess <thomas.hess@udo.edu>
+#!/usr/bin/env python3
+# Copyright (C) 2022-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,7 +15,12 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
-This script generates Python stubs for the UI types
+This script compiles Qt Ui files.
+It has two usage modes:
+- Compiling into importable Python modules. This is used for built deliverables,
+  like Python wheels and application bundles created via cx_Freeze.
+- Creation of type hinting stubs with suffix ".pyi". These are used during development,
+  to provide type hinting and autocompletion for the Ui classes defined by the UI files.
 """
 
 import argparse
@@ -65,7 +71,7 @@ def parse_args() -> Namespace:
     return args
 
 
-def type_filter(any_: Iterable[Any], types: [Union[Type[T], Tuple[Type[T], ...]]]) -> Iterable[T]:
+def type_filter(any_: Iterable[Any], types: Union[Type[T], Tuple[Type[T], ...]]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
 
@@ -162,7 +168,7 @@ def generate_class_stub(class_root: ast.ClassDef, found_class_uses: UsedClasses)
 
     for item in class_root.body:
         if item.name == "setupUi":
-            setup_ui = item
+            setup_ui: ast.FunctionDef = item
             break
     else:
         raise RuntimeError(f"No setupUi() definition found in class {class_root.name}")
@@ -188,7 +194,7 @@ def generate_class_header(class_root: ast.ClassDef) -> str:
     return f"class {class_root.name}({base_classes}):"
 
 
-def get_assignments(function_body: ast.FunctionDef) -> List[Assignment]:
+def get_assignments(function_body: List[ast.stmt]) -> List[Assignment]:
     return [
         Assignment(
             assignment.targets[0].attr,
