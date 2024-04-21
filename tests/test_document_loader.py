@@ -66,33 +66,48 @@ def disabled_check_constraints(db: sqlite3.Connection):
     db.execute("PRAGMA ignore_check_constraints = FALSE;")
 
 
-def test_valid_data_loads_correctly(
+def _store_page_layout_settings_in_save_file(
+        db: sqlite3.Connection, data: mtg_proxy_printer.model.document_loader.PageLayoutSettings = None):
+    """
+    Stores the given PageLayoutSettings in the given database.
+    If the data is None, use the default settings as given by the current default application settings.
+    """
+    if data is None:
+        data = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+    db_data = dataclasses.asdict(data).items()
+    db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", db_data)
+
+
+def _load_from_memory_database(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document, db: sqlite3.Connection,
+        save_path = pathlib.Path("/tmp/invalid.mtgproxies")):
+    loader = document.loader
+    target = "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database"
+    with unittest.mock.patch(target, return_value=db) as mock:
+       with qtbot.waitSignals([loader.loading_state_changed]*2,
+                              check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
+               qtbot.assert_not_emitted(loader.loading_file_failed):
+           loader.load_document(save_path)
+    mock.assert_called_once()
+    return mock
+
+
+def test_valid_page_layout_settings_load_correctly(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document, empty_save_database: sqlite3.Connection,
+        ):
+    _store_page_layout_settings_in_save_file(empty_save_database)
+    pytest.fail("WIP")
+
+
+def test_valid_card_data_loads_correctly(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
         empty_save_database: sqlite3.Connection):
+    _store_page_layout_settings_in_save_file(empty_save_database)
     empty_save_database.execute(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
     )
-    page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
-        page_height=300, page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        row_spacing=3, column_spacing=2,
-        draw_cut_markers=True, draw_sharp_corners=False,
-    )
-    page_layout_items = dataclasses.asdict(page_layout).items()
-    assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
-    empty_save_database.executemany(
-        "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        page_layout_items
-    )
-    loader = document.loader
-    save_path = pathlib.Path("/tmp/invalid.mtgproxies")
-    with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as mock:
-        mock.return_value = empty_save_database
-        with qtbot.waitSignals([loader.loading_state_changed]*2,
-                               check_params_cbs=[(lambda value: value), (lambda value: not value)]), \
-                qtbot.waitSignals([loader.load_requested, document.page_layout_changed]):
-            loader.load_document(save_path)
+    mock = _load_from_memory_database(qtbot, document, empty_save_database)
     mock.assert_called_once()
     assert_that(document.rowCount(), is_(equal_to(1)))
     page_index = document.index(0, 0)
@@ -102,16 +117,15 @@ def test_valid_data_loads_correctly(
         document.index(0, mtg_proxy_printer.model.document.PageColumns.CardName, page_index).data(),
         is_("Fury Sliver")
     )
+
+
+def test_loading_document_stores_save_file_path_in_document(
+        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
+        empty_save_database: sqlite3.Connection):
+    _store_page_layout_settings_in_save_file(empty_save_database)
+    save_path = pathlib.Path("/tmp/invalid.mtgproxies")
+    _load_from_memory_database(qtbot, document, empty_save_database, save_path)
     assert_that(document.save_file_path, is_(equal_to(save_path)))
-    assert_that(document.page_layout, is_(equal_to(page_layout)))
-    assert_that(
-        document.page_layout.compute_page_card_capacity(PageType.REGULAR),
-        is_(equal_to(page_layout.compute_page_card_capacity(PageType.REGULAR)))
-    )
-    assert_that(
-        document.page_layout.compute_page_card_capacity(PageType.OVERSIZED),
-        is_(equal_to(page_layout.compute_page_card_capacity(PageType.OVERSIZED)))
-    )
 
 
 def test_document_with_mixed_pages_distributes_cards_based_on_size(
@@ -307,6 +321,7 @@ def test_loads_check_card(
             (1, 1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", CardType.CHECK_CARD.value),
          ]
     )
+
     loader = document.loader
     with unittest.mock.patch("mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database") as open_database:
         open_database.return_value = empty_save_database
@@ -385,8 +400,6 @@ def test_load_correctly_sets_document_title(
     if title.startswith("0") or title == "1.0":
         # TODO: Leading zeros, and trailing zero decimals aren't handled correctly
         pytest.xfail("Leading zeros and trailing zero decimals not yet supported correctly")
-    loader = document_light.loader
-    annotations = document_light.page_layout.__annotations__
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
         dataclasses.asdict(document_light.page_layout).items())
@@ -398,10 +411,13 @@ def test_load_correctly_sets_document_title(
             "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database",
             return_value=empty_save_database), \
             qtbot.wait_signal(document_light.action_applied):
-        loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
+        document_light.loader.load_document(pathlib.Path("/tmp/invalid.mtgproxies"))
 
     assert_that(
         document_light.page_layout,
-        has_properties({item: instance_of(value) for item, value in annotations.items()})
+        has_properties({
+            item: instance_of(value)
+            for item, value
+            in document_light.page_layout.__annotations__.items()})
     )
     assert_that(document_light.page_layout, has_property("document_name", equal_to(title)))
