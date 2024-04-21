@@ -397,7 +397,7 @@ class MainWindow(QMainWindow):
                 f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your web browser "
                 f"to download the new version?",
                 StandardButton.Yes | StandardButton.No, StandardButton.No
-                ) == StandardButton.Yes:
+        ) == StandardButton.Yes:
             url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
             QDesktopServices.openUrl(url)
 

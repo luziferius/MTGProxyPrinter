@@ -30,7 +30,7 @@ import itertools
 import textwrap
 from pathlib import Path
 import shutil
-from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Dict, Set
+from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict, Set
 
 import PyQt5.uic
 
@@ -73,7 +73,7 @@ def parse_args() -> Namespace:
     return args
 
 
-def type_filter(any_: Iterable, types: Union[Type[T], Tuple[Type[T], ...]]) -> Iterable[T]:
+def type_filter(any_: Iterable[Any], types: Union[Type[T], Tuple[Type[T], ...]]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
 

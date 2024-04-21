@@ -40,6 +40,7 @@ dependencies = [
     "truststore; python_version >= '3.10'",
     "certifi; python_version < '3.10'",
 ]
+
 dynamic = [
     "version",
 ]
