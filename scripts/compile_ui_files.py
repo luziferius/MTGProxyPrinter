@@ -173,6 +173,12 @@ def get_assignments(function_body: ast.FunctionDef) -> List[Assignment]:
 
 
 def get_function_stub(function_body: ast.FunctionDef):
+    for index, arg in enumerate(function_body.args.args):
+        if arg.arg == "self":
+            continue
+        arg.annotation = ast.Str(arg.arg)
+        arg.arg = f"arg{index}"
+
     old_body = function_body.body
     function_body.body = [ast.Constant(Ellipsis)]
     result = ast.unparse(function_body)
