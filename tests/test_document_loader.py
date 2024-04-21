@@ -16,6 +16,7 @@
 import contextlib
 import dataclasses
 import itertools
+from itertools import repeat
 import pathlib
 import sqlite3
 import unittest.mock
@@ -147,17 +148,17 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
 
 @pytest.mark.parametrize("data", itertools.chain(
     # Syntactically invalid
-    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
-    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.REGULAR.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(CardType.REGULAR.value)),
-    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
-    zip(itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), itertools.repeat(CardType.CHECK_CARD.value)),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], itertools.repeat(CardType.CHECK_CARD.value)),
-    # Semantically invalid, as type "d" it means generating a DFC check card for a single sided card.
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(1), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
-    zip(itertools.repeat(1), itertools.repeat(1), itertools.repeat(0), itertools.repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR.value)),
+    zip(repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR.value)),
+    zip(repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.REGULAR.value)),
+    zip(repeat(1), repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(CardType.REGULAR.value)),
+    zip([-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.CHECK_CARD.value)),
+    zip(repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.CHECK_CARD.value)),
+    zip(repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), repeat(CardType.CHECK_CARD.value)),
+    zip(repeat(1), repeat(1), repeat(1), [-1, 1.3, -1000.2, "", "ABC", b"binary"], repeat(CardType.CHECK_CARD.value)),
+    # Semantically invalid, as type "d" means generating a DFC check card for a single sided card.
+    zip(repeat(1), repeat(1), repeat(1), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
+    zip(repeat(1), repeat(1), repeat(0), repeat("0000579f-7b35-4ed3-b44c-db2a538066fe"), [-1, 1.3, -1000.2, "", b"binary", CardType.CHECK_CARD.value]),
 ))
 def test_invalid_data_in_card_columns_raises_exception(
         qtbot: QtBot, document: mtg_proxy_printer.model.document.Document,
