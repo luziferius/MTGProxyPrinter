@@ -23,13 +23,14 @@ import textwrap
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any
+from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict
 
 SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
-UI_SOURCE_PATH = SOURCE_ROOT / "mtg_proxy_printer/resources/ui"  # UI files live here
-TARGET_PATH = SOURCE_ROOT / "mtg_proxy_printer/ui/generated"  # Package containing generated modules/type hinting stubs
+MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
+UI_SOURCE_PATH = MAIN_PACKAGE / "resources/ui"  # UI files live here
+TARGET_PATH = MAIN_PACKAGE / "ui/generated"  # Package containing generated modules/type hinting stubs
 T = TypeVar("T")
-
+ClassRegistry = Dict[str, ast.ImportFrom]
 
 class Assignment(NamedTuple):
     attribute: str
@@ -97,13 +98,25 @@ def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, sourc
     """
     if args.purge_existing and target_path.is_dir():
         shutil.rmtree(target_path)
+    class_registry = build_class_registry(MAIN_PACKAGE)
     create_python_package(target_path)
     for ui_file in source_path.rglob("*.ui"):
         compiled = compile_ui_file(ui_file)
-        stub = generate_stub(compiled, ui_file)
+        stub = generate_stub(compiled, ui_file, class_registry)
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
         create_python_package(parent_dir)
         (parent_dir/f"{ui_file.stem}.pyi").write_text(stub, "utf-8")
+
+
+def build_class_registry(package_path: Path) -> ClassRegistry:
+    """Scan the source tree for classes and build a dict from class name to import path"""
+    result: ClassRegistry = {}
+    for py_file in package_path.rglob("*.py"):
+        module_path = ".".join([*py_file.relative_to(SOURCE_ROOT).parts[:-1], py_file.stem])
+        root_node = ast.parse(py_file.read_text("utf-8"), py_file)
+        for class_def in type_filter(root_node.body, ast.ClassDef):
+            result[class_def.name] = ast.ImportFrom(module_path, class_def.name)
+    return result
 
 
 def compile_ui_file(path: Path) -> str:
@@ -111,7 +124,7 @@ def compile_ui_file(path: Path) -> str:
     return subprocess.check_output(command, encoding="utf-8")
 
 
-def generate_stub(compiled_ui: str, ui_file: Path) -> str:
+def generate_stub(compiled_ui: str, ui_file: Path, class_registry: Dict[str, str]) -> str:
     root_node = ast.parse(compiled_ui)
     header = f"# Automatically generated type hinting stub for '{ui_file.name}'. Do not modify."
     # Keep all imports unmodified
