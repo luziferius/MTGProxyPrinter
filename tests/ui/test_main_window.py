@@ -32,8 +32,8 @@ from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import DocumentLoader, PageLayoutSettings
 from mtg_proxy_printer.ui.main_window import MainWindow
-from mtg_proxy_printer.ui.central_widget import Ui_CentralWidget_Columnar, Ui_CentralWidget_Grouped, \
-    Ui_CentralWidget_Tabbed
+from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, \
+    Ui_TabbedCentralWidget
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
 from tests.helpers import fill_card_database_with_json_cards
@@ -41,7 +41,7 @@ from tests.document_controller.helpers import insert_card_in_page
 StandardButton = QMessageBox.StandardButton
 
 
-@pytest.fixture(params=[Ui_CentralWidget_Columnar, Ui_CentralWidget_Grouped, Ui_CentralWidget_Tabbed])
+@pytest.fixture(params=[Ui_ColumnarCentralWidget, Ui_GroupedCentralWidget, Ui_TabbedCentralWidget])
 def main_window(qtbot, card_db: CardDatabase, document: Document, request) -> MainWindow:
     fill_card_database_with_json_cards(qtbot, card_db, ["regular_english_card", "oversized_card"])
     with unittest.mock.patch(

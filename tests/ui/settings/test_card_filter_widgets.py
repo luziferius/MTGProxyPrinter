@@ -22,8 +22,8 @@ import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.ui.printing_filter_widgets import AbstractPrintingFilterWidget, GeneralPrintingFilterWidget, \
-    FormatPrintingFilterWidget
+from mtg_proxy_printer.ui.printing_filter_widgets import AbstractPrintingFilter, GeneralPrintingFilter, \
+    FormatPrintingFilter
 
 T = typing.TypeVar("T")
 
@@ -54,7 +54,7 @@ general_printing_widget_mapping = {
 @pytest.mark.parametrize("setting", general_printing_widget_mapping.keys())
 def test_general_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
     download_section[setting] = str(value)
-    widget = _create_widget_with_loaded_settings(qtbot, GeneralPrintingFilterWidget, download_section)
+    widget = _create_widget_with_loaded_settings(qtbot, GeneralPrintingFilter, download_section)
     ui = widget.ui
     for key, widget_name in general_printing_widget_mapping.items():
         checkbox = getattr(ui, widget_name)
@@ -66,7 +66,7 @@ def test_general_printing_filter_loads_correctly(qtbot, download_section, settin
 
 
 def _create_widget_with_loaded_settings(qtbot, widget_class: typing.Type[T], download_section: SectionProxy) -> T:
-    widget: AbstractPrintingFilterWidget = widget_class()
+    widget: AbstractPrintingFilter = widget_class()
     qtbot.addWidget(widget)
     with qtbot.waitExposed(widget, timeout=1000):
         widget.show()
@@ -93,7 +93,7 @@ format_printing_widget_mapping = {
 @pytest.mark.parametrize("setting", format_printing_widget_mapping.keys())
 def test_format_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
     download_section[setting] = str(value)
-    widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilterWidget, download_section)
+    widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilter, download_section)
     ui = widget.ui
     checkbox: QCheckBox = getattr(ui, format_printing_widget_mapping[setting])
     assert_that(
@@ -113,7 +113,7 @@ def test_format_printing_filter_loads_correctly(qtbot, download_section, setting
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("setting", format_printing_widget_mapping.keys())
 def test_format_printing_filter_saves_correctly(qtbot, download_section, setting: str, value: bool):
-    widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilterWidget, download_section)
+    widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilter, download_section)
     checkbox: QCheckBox = getattr(widget.ui, format_printing_widget_mapping[setting])
     assert_that(checkbox, is_(instance_of(QCheckBox)))
     checkbox.setChecked(value)
