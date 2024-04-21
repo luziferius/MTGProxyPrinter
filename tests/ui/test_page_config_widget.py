@@ -34,6 +34,7 @@ def widget(qtbot: QtBot) -> PageConfigWidget:
     qtbot.addWidget(widget)
     return widget
 
+
 @pytest.mark.parametrize("name, min_value", [
     ("page_height", 126),
     ("page_width", 88),
@@ -86,6 +87,7 @@ def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_n
         new_value = not previous
         checkbox_widget.setChecked(new_value)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
+
 
 ZeroMarginsSettings = {
     "paper-height-mm": "297",
