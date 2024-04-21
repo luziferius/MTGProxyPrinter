@@ -25,6 +25,9 @@ import shutil
 import subprocess
 from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any
 
+SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
+UI_SOURCE_PATH = SOURCE_ROOT / "mtg_proxy_printer/resources/ui"  # UI files live here
+TARGET_PATH = SOURCE_ROOT / "mtg_proxy_printer/ui/generated"  # Package containing generated modules/type hinting stubs
 
 class Assignment(NamedTuple):
     attribute: str
@@ -69,10 +72,7 @@ def create_python_package(location: Path, /):
     (location/"__init__.py").touch(exist_ok=True)
 
 
-def compile_ui_files(
-        args: Namespace,
-        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
-        source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
+def compile_ui_files(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
 
@@ -89,10 +89,7 @@ def compile_ui_files(
         (parent_dir/f"{ui_file.stem}.py").write_text(compiled, "utf-8")
 
 
-def create_ui_type_stubs(
-        args: Namespace,
-        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
-        source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
+def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Creates type hinting stubs for all UI files found in source_path, storing results in target_path.
 
@@ -184,9 +181,13 @@ def get_function_stub(function_body: ast.FunctionDef):
     return result
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     if args.full:
         compile_ui_files(args)
     else:
         create_ui_type_stubs(args)
+
+
+if __name__ == "__main__":
+    main()
