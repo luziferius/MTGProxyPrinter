@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CentralWidget_Grouped</class>
- <widget class="QWidget" name="CentralWidget_Grouped">
+ <class>GroupedCentralWidget</class>
+ <widget class="QWidget" name="GroupedCentralWidget">
   <property name="geometry">
    <rect>
     <x>0</x>
