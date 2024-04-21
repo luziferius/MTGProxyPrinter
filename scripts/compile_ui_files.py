@@ -19,7 +19,9 @@ This script generates Python stubs for the UI types
 
 import argparse
 import ast
+import itertools
 import textwrap
+import typing
 from pathlib import Path
 import shutil
 import subprocess
@@ -115,7 +117,7 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
         module_path = ".".join((py_file.parent.relative_to(package_path.parent)/ py_file.stem).parts)
         root_node = ast.parse(py_file.read_text("utf-8"), py_file)
         for class_def in type_filter(root_node.body, ast.ClassDef):
-            result[class_def.name] = ast.ImportFrom(module_path, class_def.name)
+            result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)])
     return result
 
 
@@ -128,22 +130,34 @@ def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry
     root_node = ast.parse(compiled_ui)
     header = f"# Automatically generated type hinting stub for '{ui_file.name}'. Do not modify."
     # Keep all imports unmodified
-    imports = "\n".join(
+    imports = "import typing\n\n"
+    imports += "\n".join(
         map(
             ast.unparse,
             type_filter(root_node.body, (ast.ImportFrom, ast.Import))
         )
     )
+    found_class_uses: typing.List[str] = []
     class_stubs = "\n\n\n".join(
         map(
             generate_class_stub,
-            type_filter(root_node.body, ast.ClassDef)
+            type_filter(root_node.body, ast.ClassDef),
+            itertools.repeat(found_class_uses)
         ))
+    type_hinting_imports = [
+        ast.unparse(class_registry[used_class])
+        for used_class in found_class_uses
+        if used_class in class_registry
+    ] or ["pass"]
+    type_hinting_import_str = "if typing.TYPE_CHECKING:\n"
+    type_hinting_import_str += textwrap.indent(
+        "\n".join(type_hinting_imports),
+        " "*4
+    )
+    return "\n\n".join((header, imports, type_hinting_import_str, class_stubs)) + "\n"
 
-    return "\n\n".join((header, imports, class_stubs)) + "\n"
 
-
-def generate_class_stub(class_root: ast.ClassDef) -> str:
+def generate_class_stub(class_root: ast.ClassDef, found_class_uses: typing.List[str]) -> str:
     header = generate_class_header(class_root)
 
     for item in class_root.body:
@@ -155,7 +169,8 @@ def generate_class_stub(class_root: ast.ClassDef) -> str:
     function_signatures = textwrap.indent(
         "\n\n".join(map(
             get_function_stub,
-            type_filter(class_root.body, ast.FunctionDef)
+            type_filter(class_root.body, ast.FunctionDef),
+            itertools.repeat(found_class_uses)
         )), " "*4
     )
     assignment_body = textwrap.indent(
@@ -185,10 +200,11 @@ def get_assignments(function_body: ast.FunctionDef) -> List[Assignment]:
     ]
 
 
-def get_function_stub(function_body: ast.FunctionDef):
+def get_function_stub(function_body: ast.FunctionDef, found_class_uses: typing.List[str]):
     for index, arg in enumerate(function_body.args.args):
         if arg.arg == "self":
             continue
+        found_class_uses.append(arg.arg)
         arg.annotation = ast.Str(arg.arg)
         arg.arg = f"arg{index}"
 
