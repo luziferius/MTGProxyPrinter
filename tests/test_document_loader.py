@@ -22,16 +22,23 @@ import sqlite3
 import unittest.mock
 import textwrap
 
+from PyQt5.QtGui import QPageSize
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
 
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 import mtg_proxy_printer.model.document_loader
 from mtg_proxy_printer.units_and_sizes import PageType
 from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.units_and_sizes import PageOrientation, PageSize
+
+from tests.helpers import is_dataclass_equal_to
+
 CardType = mtg_proxy_printer.model.document_loader.CardType
 
 
@@ -67,13 +74,13 @@ def disabled_check_constraints(db: sqlite3.Connection):
 
 
 def _store_page_layout_settings_in_save_file(
-        db: sqlite3.Connection, data: mtg_proxy_printer.model.document_loader.PageLayoutSettings = None):
+        db: sqlite3.Connection, data: PageLayoutSettings = None):
     """
     Stores the given PageLayoutSettings in the given database.
     If the data is None, use the default settings as given by the current default application settings.
     """
     if data is None:
-        data = mtg_proxy_printer.model.document_loader.PageLayoutSettings.create_from_settings()
+        data = PageLayoutSettings.create_from_settings()
     db_data = dataclasses.asdict(data).items()
     db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", db_data)
 
@@ -103,11 +110,52 @@ def _load_from_memory_database_expecting_failure(
     mock.assert_called_once()
 
 
+@pytest.mark.parametrize("card_bleed", [0, 1, 10])
+@pytest.mark.parametrize("document_name", ["", "Test"])
+# Lump all 3 boolean settings together, as they do not interact in any way. Cuts test cases by factor 4
+@pytest.mark.parametrize("boolean_settings", [True, False])
+@pytest.mark.parametrize("row_spacing, column_spacing", [(0, 0), (2, 3)])
+@pytest.mark.parametrize("margin_bottom, margin_left, margin_right, margin_top", [(0, 0, 0, 0), (5, 5, 5, 5)])
+@pytest.mark.parametrize("custom_page_height, custom_page_width", [(297, 210), (2000, 1000)])
+@pytest.mark.parametrize("paper_orientation", PageOrientation.keys())
+@pytest.mark.parametrize("paper_size", PageSize.keys())
 def test_valid_page_layout_settings_load_correctly(
-        qtbot: QtBot, document: mtg_proxy_printer.model.document.Document, empty_save_database: sqlite3.Connection,
-        ):
-    _store_page_layout_settings_in_save_file(empty_save_database)
-    pytest.fail("WIP")
+        qtbot: QtBot, empty_save_database: sqlite3.Connection,
+        card_bleed: int, document_name: str, boolean_settings: bool,
+        row_spacing: int, column_spacing: int,
+        margin_bottom: int, margin_left: int, margin_right: int, margin_top: int,
+        custom_page_height: int, custom_page_width: int,
+        paper_orientation: str, paper_size: str
+):
+    default_settings = PageLayoutSettings.create_from_settings()
+    stored_settings = PageLayoutSettings(
+        card_bleed=card_bleed, document_name=document_name, draw_cut_markers=boolean_settings,
+        draw_page_numbers=boolean_settings, draw_sharp_corners=boolean_settings,
+        row_spacing=row_spacing, column_spacing=column_spacing,
+        margin_bottom=margin_bottom, margin_left=margin_left, margin_right=margin_right, margin_top=margin_top,
+        custom_page_height=custom_page_height, custom_page_width=custom_page_width,
+        paper_orientation=paper_orientation, paper_size=paper_size,
+    )
+    if stored_settings.compute_page_card_capacity(PageType.OVERSIZED) == 0:
+        pytest.skip("Invalid page size")
+
+    _store_page_layout_settings_in_save_file(empty_save_database, stored_settings)
+    settings = mtg_proxy_printer.model.document_loader.Worker._read_document_settings(
+        empty_save_database, default_settings)
+
+    assert_that(settings, is_dataclass_equal_to(stored_settings))
+    if settings.paper_size == "Custom":
+        assert_that(settings, has_properties({"page_height": custom_page_height, "page_width": custom_page_width}))
+    else:
+        size = QPageSize.size(PageSize[paper_size], QPageSize.Unit.Millimeter)
+        if settings.paper_orientation == "Landscape":
+            size = size.transposed()
+        assert_that(
+            settings,
+            has_properties({
+                "page_height": close_to(size.height(), 0.05),
+                "page_width": close_to(size.width(), 0.05)})
+        )
 
 
 def test_valid_card_data_loads_correctly(
@@ -332,7 +380,17 @@ def test_loads_check_card(
          ("image_spacing_horizontal", 8), ("image_spacing_vertical", 9), ("margin_top", 4), ("margin_bottom", 5),
          ("margin_left", 6), ("margin_right", 7), ("page_height", 200), ("page_width", 150),
          ("row_spacing", 2), ("column_spacing", 3)]),
-
+    # Only new spacing keys. Old paper size keys from before implementing enum-based paper sizes
+    (6, [("document_name", ""), ("draw_cut_markers", 1), ("draw_page_numbers", 0), ("draw_sharp_corners", 0),
+         ("margin_top", 4), ("margin_bottom", 5), ("margin_left", 6), ("margin_right", 7),
+         ("page_height", 200), ("page_width", 150),
+         ("row_spacing", 2), ("column_spacing", 3)]),
+    # Old and new paper size keys. Should never exist in the wild.
+    (6, [("document_name", ""), ("draw_cut_markers", 1), ("draw_page_numbers", 0), ("draw_sharp_corners", 0),
+         ("margin_top", 4), ("margin_bottom", 5), ("margin_left", 6), ("margin_right", 7),
+         ("page_height", 250), ("page_width", 180),
+         ("custom_page_height", 200), ("custom_page_width", 150), ("paper_size", "Custom"),
+         ("row_spacing", 2), ("column_spacing", 3)]),
     ], [True, False]))
 def legacy_save_file(request):
     (save_version, settings), reverse_unordered = request.param  # type: (int, list), bool
@@ -362,7 +420,9 @@ def test_load_settings_from_legacy_save_file_is_successful(
         "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
         "row_spacing": 2, "column_spacing": 3,
         "margin_top": 4, "margin_bottom": 5, "margin_left": 6, "margin_right": 7,
-        "page_height": 200, "page_width": 150
+        "page_height": close_to(200, 0.05), "page_width": close_to(150, 0.05),
+        "custom_page_height": 200, "custom_page_width": 150,
+        "paper_size": "Custom", "paper_orientation": "Portrait",
     }))
 
 
