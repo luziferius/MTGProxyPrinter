@@ -21,12 +21,13 @@ import typing
 
 from PyQt5.QtCore import QStandardPaths
 from PyQt5.QtGui import QPageSize, QPageLayout
+from PyQt5.QtPrintSupport import QPrinterInfo
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse
+    CardSizes, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse, is_acceptable_page_size
 
 __all__ = [
     "settings",
@@ -38,6 +39,18 @@ __all__ = [
     "get_boolean_card_filter_keys",
     "parse_card_set_filters",
 ]
+
+
+def get_default_paper_size() -> str:
+    default = PageSizeReverse[QPageSize.PageSizeId.A4]
+    printer_info = QPrinterInfo.defaultPrinter()
+    if printer_info.isNull():
+        return default
+    page_size = printer_info.defaultPageSize()
+    if page_size.isValid() and is_acceptable_page_size(page_size):
+        return PageSizeReverse[page_size.id()]
+    return default
+
 
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
 settings = configparser.ConfigParser()
@@ -98,7 +111,7 @@ DEFAULT_SETTINGS["card-filter"] = {
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed-mm": "0",
     "paper-orientation": PageOrientationReverse[QPageLayout.Orientation.Portrait],
-    "paper-size": PageSizeReverse[QPageSize.PageSizeId.A4],
+    "paper-size": get_default_paper_size(),
     "paper-height-mm": "297",
     "paper-width-mm": "210",
     "margin-top-mm": "5",

@@ -16,7 +16,7 @@
 """Contains some constants, like the card size"""
 import enum
 import re
-from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDict
+from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDict, Union
 
 try:
     from typing import NotRequired
@@ -252,23 +252,28 @@ class BulkDataType(TypedDict):
     content_encoding: str
 
 
-def read_enum(container: Type, enum: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+def read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
     if accumulator is None:
         accumulator = {}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
         value = getattr(container, item)
-        if isinstance(value, enum):
+        if isinstance(value, enum_class):
             accumulator[item] = value
     return accumulator
 
 
+def is_acceptable_page_size(page_size: Union[QPageSize.PageSizeId, QPageSize]) -> bool:
+    size = QPageSize.size(page_size, QPageSize.Unit.Millimeter) \
+        if isinstance(page_size, QPageSize.PageSizeId) else page_size.size(QPageSize.Unit.Millimeter)
+    return size.height() >= CardSize.as_mm(CardSizes.OVERSIZED.height) \
+        and size.width() >= CardSize.as_mm(CardSizes.OVERSIZED.width)
+
+
 def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
-    result =  read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId(-1)})
+    result = read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId.Custom})
     del result["LastPageSize"]
     for item, value in list(result.items()):
-        size = QPageSize.size(value, QPageSize.Unit.Millimeter)
-        if size.height() < CardSize.as_mm(CardSizes.OVERSIZED.height) \
-                or size.width() < CardSize.as_mm(CardSizes.OVERSIZED.width):
+        if not is_acceptable_page_size(value):
             del result[item]
     return result
 
