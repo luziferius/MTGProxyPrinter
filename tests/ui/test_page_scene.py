@@ -57,6 +57,7 @@ def page_scene(request, qtbot: QtBot, document_light: Document):
         yield scene
 
 
+
 @pytest.mark.parametrize("render_mode", [RenderMode.ON_PAPER, RenderMode.ON_SCREEN])
 def test___init__does_not_add_text_items_if_disabled(document_light: Document, render_mode: RenderMode):
     with patch.object(document_light.page_layout, "draw_page_numbers", False), \
@@ -80,10 +81,10 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
     document = page_scene.document
     with qtbot.wait_signal(document.action_applied):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
-    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markes_mock, \
+    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markers_mock, \
             qtbot.wait_signals([document.action_applied, document.rowsInserted]):
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized), count))
-    cut_markes_mock.assert_not_called()
+    cut_markers_mock.assert_not_called()
     assert_that(
         page_scene.items(),
         has_items(*[instance_of(QGraphicsPixmapItem)]*len(document.currently_edited_page))
