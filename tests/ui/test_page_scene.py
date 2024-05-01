@@ -79,10 +79,8 @@ def test___init__adds_text_items_if_enabled(document_light: Document, render_mod
 def test_adding_with_card_to_filled_page_does_not_redraw_page(
         qtbot: QtBot, page_scene: PageScene, oversized: bool, count: int):
     document = page_scene.document
-    with qtbot.wait_signal(document.action_applied):
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
-    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markers_mock, \
-            qtbot.wait_signals([document.action_applied, document.rowsInserted]):
+    document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
+    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markers_mock:
         document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized), count))
     cut_markers_mock.assert_not_called()
     assert_that(
@@ -106,8 +104,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_sc
     document = page_scene.document
     document.page_layout.draw_cut_markers = False
     document.page_layout_changed.emit(document.page_layout)
-    with qtbot.wait_signal(document.action_applied):
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
+    document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
     )
@@ -215,9 +212,7 @@ def test_horizontal_cut_line_locations_when_enabled(
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
-        with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(
-                ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED)))
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED)))
 
     assert_that(
         page_scene.horizontal_cut_line_locations[page_type],
@@ -293,9 +288,7 @@ def test_vertical_cut_line_locations_when_enabled(
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
-        with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(
-                ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED)))
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED)))
 
     assert_that(
         page_scene.vertical_cut_line_locations[page_type],
@@ -361,7 +354,7 @@ def test__compute_position_for_image_x(
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     row_count = document.page_layout.compute_page_row_count(page_type)
     card = create_card_with_pixmap("Something", page_type == PageType.OVERSIZED)
-    ActionAddCard(card, 1).apply(document)
+    document.apply(ActionAddCard(card, 1))
     x_coordinates = [page_scene._compute_position_for_image(index, page_type).x() for index in range(page_capacity)]
     assert_that(
         x_coordinates, contains_exactly(*[close_to_(x) for x in expected_x]*row_count),
@@ -422,7 +415,7 @@ def test__compute_position_for_image_y(
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     column_count = document.page_layout.compute_page_column_count(page_type)
     card = create_card_with_pixmap("Something", page_type == PageType.OVERSIZED)
-    ActionAddCard(card, 1).apply(document)
+    document.apply(ActionAddCard(card, 1))
     y_coordinates = [page_scene._compute_position_for_image(index, page_type).y() for index in range(page_capacity)]
     assert_that(
         y_coordinates, contains_exactly(*elementwise_repeat([close_to_(y) for y in expected_y], column_count)),
@@ -440,10 +433,10 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(
     document = page_scene.document
     page_capacity = document.page_layout.compute_page_card_capacity(PageType.REGULAR)
     card = create_card_with_pixmap("Something", False)
-    ActionAddCard(card, page_capacity*2).apply(document)
-    ActionRemoveCards(removed_range, 0).apply(document)
+    document.apply(ActionAddCard(card, page_capacity*2))
+    document.apply(ActionRemoveCards(removed_range, 0))
     # Verify no IndexError is raised when handling signals during:
-    ActionCompactDocument().apply(document)
+    document.apply(ActionCompactDocument())
 
     assert_that(
         page_scene.card_items,
