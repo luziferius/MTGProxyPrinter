@@ -26,7 +26,7 @@ import threading
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QSize, QModelIndex, Qt, QThreadPool
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
 from PyQt5.QtGui import QPixmap, QColorConstants
 
 from mtg_proxy_printer.model.carddb import with_database_write_lock

@@ -27,7 +27,7 @@ if typing.TYPE_CHECKING:
 try:
     from typing import Self
 except ImportError:  # Compatibility with Python < 3.11
-    Self = typing.TypeVar("Self", bound="DocumentAction")
+    from typing_extensions import Self
 
 __all__ = [
     "DocumentAction",
