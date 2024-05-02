@@ -23,7 +23,7 @@ from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
-from PyQt5.QtGui import QPalette, QColorConstants, QPixmap
+from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
@@ -39,9 +39,19 @@ close_to_ = partial(close_to, delta=0.005)
 
 
 def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
+    """
+    Create a Card with the given size, and fill the pixmap with the given color.
+    The four corner pixels are always transparent, as a crude emulation of rounded corners.
+    """
     card = create_card(name, size is CardSizes.OVERSIZED)
-    card.image_file = image = QPixmap(size.as_qsize_px())
+    q_size = size.as_qsize_px()
+    image = QImage(q_size, QImage.Format.Format_ARGB32)
     image.fill(color)
+    w = q_size.width()-1
+    h = q_size.height()-1
+    for x, y in ((0, 0), (w, 0), (0, h), (w, h)):
+        image.setPixelColor(x, y, QColorConstants.Transparent)
+    card.image_file = QPixmap.fromImage(image)
     return card
 
 @pytest.fixture(params=itertools.product(
@@ -448,3 +458,4 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(
 def test_setPalette_runs_without_exception(qtbot: QtBot, page_scene: PageScene):
     palette = QPalette()
     page_scene.setPalette(palette)
+
