@@ -25,7 +25,7 @@ from pytestqt.qtbot import QtBot
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PyQt5.QtGui import QPalette, QColorConstants, QPixmap
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
@@ -38,10 +38,9 @@ PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 close_to_ = partial(close_to, delta=0.005)
 
 
-def create_card_with_pixmap(name: str, oversized: bool, *, color = QColorConstants.Transparent):
-    card = create_card(name, oversized)
-    size = (CardSizes.OVERSIZED if oversized else CardSizes.REGULAR).as_qsize_px()
-    card.image_file = image = QPixmap(size)
+def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
+    card = create_card(name, size is CardSizes.OVERSIZED)
+    card.image_file = image = QPixmap(size.as_qsize_px())
     image.fill(color)
     return card
 
@@ -75,13 +74,13 @@ def test___init__adds_text_items_if_enabled(document_light: Document, render_mod
 
 
 @pytest.mark.parametrize("count", [1, 2, 10])
-@pytest.mark.parametrize("oversized", [True, False])
+@pytest.mark.parametrize("size", CardSizes)
 def test_adding_with_card_to_filled_page_does_not_redraw_page(
-        qtbot: QtBot, page_scene: PageScene, oversized: bool, count: int):
+        qtbot: QtBot, page_scene: PageScene, size: CardSize, count: int):
     document = page_scene.document
-    document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
+    document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     with patch(PATH_PREFIX+"draw_cut_markers") as cut_markers_mock:
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized), count))
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", size), count))
     cut_markers_mock.assert_not_called()
     assert_that(
         page_scene.items(),
@@ -99,12 +98,12 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(qtbot: QtBot, page_sce
     assert_that(page_scene.cut_lines, is_(empty()))
 
 
-@pytest.mark.parametrize("oversized", [True, False])
-def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_scene: PageScene, oversized: bool):
+@pytest.mark.parametrize("size", CardSizes)
+def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_scene: PageScene, size: CardSize):
     document = page_scene.document
     document.page_layout.draw_cut_markers = False
     document.page_layout_changed.emit(document.page_layout)
-    document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized)))
+    document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
     )
@@ -212,7 +211,8 @@ def test_horizontal_cut_line_locations_when_enabled(
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED)))
+        card_size = CardSizes.for_page_type(page_type)
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", card_size)))
 
     assert_that(
         page_scene.horizontal_cut_line_locations[page_type],
@@ -288,7 +288,8 @@ def test_vertical_cut_line_locations_when_enabled(
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED)))
+        card_size = CardSizes.for_page_type(page_type)
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", card_size)))
 
     assert_that(
         page_scene.vertical_cut_line_locations[page_type],
@@ -353,7 +354,7 @@ def test__compute_position_for_image_x(
     document.page_layout_changed.emit(document.page_layout)
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     row_count = document.page_layout.compute_page_row_count(page_type)
-    card = create_card_with_pixmap("Something", page_type == PageType.OVERSIZED)
+    card = create_card_with_pixmap("Something", CardSizes.for_page_type(page_type))
     document.apply(ActionAddCard(card, 1))
     x_coordinates = [page_scene._compute_position_for_image(index, page_type).x() for index in range(page_capacity)]
     assert_that(
@@ -414,7 +415,7 @@ def test__compute_position_for_image_y(
     document.page_layout_changed.emit(document.page_layout)
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     column_count = document.page_layout.compute_page_column_count(page_type)
-    card = create_card_with_pixmap("Something", page_type == PageType.OVERSIZED)
+    card = create_card_with_pixmap("Something", CardSizes.for_page_type(page_type))
     document.apply(ActionAddCard(card, 1))
     y_coordinates = [page_scene._compute_position_for_image(index, page_type).y() for index in range(page_capacity)]
     assert_that(
@@ -432,7 +433,7 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(
     # Setup
     document = page_scene.document
     page_capacity = document.page_layout.compute_page_card_capacity(PageType.REGULAR)
-    card = create_card_with_pixmap("Something", False)
+    card = create_card_with_pixmap("Something")
     document.apply(ActionAddCard(card, page_capacity*2))
     document.apply(ActionRemoveCards(removed_range, 0))
     # Verify no IndexError is raised when handling signals during:
