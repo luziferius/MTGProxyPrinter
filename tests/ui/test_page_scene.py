@@ -18,12 +18,14 @@ import itertools
 from functools import partial
 import typing
 from unittest.mock import patch
+from math import ceil
 
 from hamcrest import *
 import pytest
 from pytestqt.qtbot import QtBot
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
-from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage
+from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
+from PyQt5.QtCore import QPoint
 
 from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
@@ -36,22 +38,29 @@ from tests.hasgetter import has_getters, has_getter
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 close_to_ = partial(close_to, delta=0.005)
+RenderHint = QPainter.RenderHint
+
+
+def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):
+    for x, y in itertools.product(range(width), range(height)):  # type: int, int
+        image.setPixelColor(pos+QPoint(x, y), fill_color)
 
 
 def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
     """
     Create a Card with the given size, and fill the pixmap with the given color.
-    The four corner pixels are always transparent, as a crude emulation of rounded corners.
+    Each corner has a square transparent area, as a crude emulation of rounded corners.
     """
     card = create_card(name, size is CardSizes.OVERSIZED)
     q_size = size.as_qsize_px()
     image = QImage(q_size, QImage.Format.Format_ARGB32)
     image.fill(color)
-    w = q_size.width()-1
-    h = q_size.height()-1
-    for x, y in ((0, 0), (w, 0), (0, h), (w, h)):
-        image.setPixelColor(x, y, QColorConstants.Transparent)
-    card.image_file = QPixmap.fromImage(image)
+    fill_transparent = partial(_fill_area, image, QColorConstants.Transparent)
+    fill_transparent(QPoint(0, 0))
+    fill_transparent(QPoint(0, q_size.height()-5))
+    fill_transparent(QPoint(q_size.width()-5, 0))
+    fill_transparent(QPoint(q_size.width()-5, q_size.height()-5))
+    card.set_image_file(QPixmap.fromImage(image))
     return card
 
 @pytest.fixture(params=itertools.product(
@@ -65,6 +74,12 @@ def page_scene(request, qtbot: QtBot, document_light: Document):
         scene = PageScene(document_light, render_mode)
         yield scene
 
+def render_scene(scene: PageScene) -> QImage:
+    image = QImage(ceil(scene.width()), ceil(scene.height()), QImage.Format.Format_ARGB32)
+    painter = QPainter(image)
+    painter.setRenderHint(RenderHint.LosslessImageRendering, True)
+    scene.render(painter)
+    return image
 
 
 @pytest.mark.parametrize("render_mode", [RenderMode.ON_PAPER, RenderMode.ON_SCREEN])
@@ -458,4 +473,29 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(
 def test_setPalette_runs_without_exception(qtbot: QtBot, page_scene: PageScene):
     palette = QPalette()
     page_scene.setPalette(palette)
+
+
+@pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
+@pytest.mark.parametrize("draw_sharp_corners", [True, False])
+@pytest.mark.parametrize("card_bleed", [0, 1])
+def test_sharp_corners(qtbot: QtBot, page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+    document = page_scene.document
+    document.page_layout.draw_sharp_corners = draw_sharp_corners
+    document.page_layout.card_bleed = card_bleed
+    document.page_layout_changed.emit(document.page_layout)
+    card = create_card_with_pixmap("Something", color=color)
+    document.apply(ActionAddCard(card))
+
+    pixmap_item = page_scene.card_items[0].card_pixmap_item
+    top_left = pixmap_item.scenePos().toPoint()
+    right, down = QPoint(card.image_file.width()-1, 0), QPoint(0, card.image_file.height()-1)
+
+    rendered = render_scene(page_scene)
+    has_correct_color = is_(equal_to(color if draw_sharp_corners else QColorConstants.White))
+    assert_that(rendered.pixelColor(top_left), has_correct_color)
+    assert_that(rendered.pixelColor(top_left+right), has_correct_color)
+    assert_that(rendered.pixelColor(top_left+down), has_correct_color)
+    assert_that(rendered.pixelColor(top_left+right+down), has_correct_color)
+
+
 
