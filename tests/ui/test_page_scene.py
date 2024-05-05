@@ -604,3 +604,179 @@ def test_card_bleed_with_single_card(
     assert_that(rendered.pixelColor(top_right + h_13 - h_1), has_background_color)
     assert_that(rendered.pixelColor(right_center + h_13 - h_1), has_background_color)
     assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)
+
+
+@pytest.mark.parametrize("column_spacing", [0, 1])
+def test_card_bleed_with_two_cards(
+        qtbot: QtBot, page_scene: PageScene, column_spacing: int):
+    document = page_scene.document
+    document.page_layout.draw_sharp_corners = True
+    document.page_layout.card_bleed = 1
+    document.page_layout.column_spacing = column_spacing
+    document.page_layout_changed.emit(document.page_layout)
+    document.apply(ActionAddCard(create_card_with_pixmap("Left", color=QColorConstants.Black)))
+    document.apply(ActionAddCard(create_card_with_pixmap("Right", color=QColorConstants.Cyan)))
+
+    size = CardSizes.REGULAR.as_qsize_px()
+    right = QPoint(size.width() - 1, 0)
+    down = QPoint(0, size.height() - 1)
+    half_right, half_down = right / 2, down / 2
+    h_1 = QPoint(1, 0)
+    h_6 = QPoint(5, 0)  # TODO: Investigate why the right border is one pixel too narrow when rendering to QImage
+    h_7 = QPoint(7, 0)
+    h_12 = QPoint(12, 0)
+    h_13 = QPoint(13, 0)
+    v_1 = QPoint(0, 1)
+    v_12 = QPoint(0, 12)
+    v_13 = QPoint(0, 13)
+
+    top_left = page_scene.card_items[0].scenePos().toPoint()
+    top_right = top_left + right
+    bottom_left = top_left + down
+    bottom_right = top_left + right + down
+
+    top_center = top_left + half_right
+    left_center = top_left + half_down
+    right_center = top_right + half_down
+    bottom_center = bottom_left + half_right
+
+    rendered = render_scene(page_scene)
+    has_left_color = is_(equal_to(QColorConstants.Black))
+    has_right_color = is_(equal_to(QColorConstants.Cyan))
+    has_background_color = is_(equal_to(QColorConstants.White))
+
+    # Left card
+    
+    # Top border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - v_1), has_left_color)
+    assert_that(rendered.pixelColor(top_center - v_1), has_left_color)
+    assert_that(rendered.pixelColor(top_right - v_1), has_left_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - v_12), has_left_color)
+    assert_that(rendered.pixelColor(top_center - v_12), has_left_color)
+    assert_that(rendered.pixelColor(top_right - v_12), has_left_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_center - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_right - v_13), has_background_color)
+
+    # Bottom border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_1), has_left_color)
+    assert_that(rendered.pixelColor(bottom_center + v_1), has_left_color)
+    assert_that(rendered.pixelColor(bottom_right + v_1), has_left_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_12), has_left_color)
+    assert_that(rendered.pixelColor(bottom_center + v_12), has_left_color)
+    assert_that(rendered.pixelColor(bottom_right + v_12), has_left_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(bottom_left + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_center + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + v_13), has_background_color)
+
+    # Left border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - h_1), has_left_color)
+    assert_that(rendered.pixelColor(left_center - h_1), has_left_color)
+    assert_that(rendered.pixelColor(bottom_left - h_1), has_left_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - h_12), has_left_color)
+    assert_that(rendered.pixelColor(left_center - h_12), has_left_color)
+    assert_that(rendered.pixelColor(bottom_left - h_12), has_left_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - h_13), has_background_color)
+    assert_that(rendered.pixelColor(left_center - h_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_left - h_13), has_background_color)
+
+    # Right border
+    if column_spacing:
+        # Inner bleed edge
+        assert_that(rendered.pixelColor(top_right + h_1), has_left_color)
+        assert_that(rendered.pixelColor(right_center + h_1), has_left_color)
+        assert_that(rendered.pixelColor(bottom_right + h_1), has_left_color)
+        # Outer bleed edge
+        assert_that(rendered.pixelColor(top_right + h_6), has_left_color)
+        assert_that(rendered.pixelColor(right_center + h_6), has_left_color)
+        assert_that(rendered.pixelColor(bottom_right + h_6), has_left_color)
+        # Outside bleed
+        assert_that(rendered.pixelColor(top_right + h_7), has_right_color)
+        assert_that(rendered.pixelColor(right_center + h_7), has_right_color)
+        assert_that(rendered.pixelColor(bottom_right + h_7), has_right_color)
+    else:
+        assert_that(rendered.pixelColor(top_right + h_1), has_right_color)
+        assert_that(rendered.pixelColor(right_center + h_1), has_right_color)
+        assert_that(rendered.pixelColor(bottom_right + h_1), has_right_color)
+
+    # Right card
+    
+    top_left = page_scene.card_items[1].scenePos().toPoint()
+    top_right = top_left + right
+    bottom_left = top_left + down
+    bottom_right = top_left + right + down
+
+    top_center = top_left + half_right
+    left_center = top_left + half_down
+    right_center = top_right + half_down
+    bottom_center = bottom_left + half_right
+
+    # Top border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - v_1), has_right_color)
+    assert_that(rendered.pixelColor(top_center - v_1), has_right_color)
+    assert_that(rendered.pixelColor(top_right - v_1), has_right_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - v_12), has_right_color)
+    assert_that(rendered.pixelColor(top_center - v_12), has_right_color)
+    assert_that(rendered.pixelColor(top_right - v_12), has_right_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_center - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_right - v_13), has_background_color)
+
+    # Bottom border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_center + v_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + v_1), has_right_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_12), has_right_color)
+    assert_that(rendered.pixelColor(bottom_center + v_12), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + v_12), has_right_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(bottom_left + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_center + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + v_13), has_background_color)
+
+    # Left border
+    if column_spacing:
+        # Inner bleed edge
+        assert_that(rendered.pixelColor(top_left - h_1), has_right_color)
+        assert_that(rendered.pixelColor(left_center - h_1), has_right_color)
+        assert_that(rendered.pixelColor(bottom_left - h_1), has_right_color)
+        # Outer bleed edge
+        assert_that(rendered.pixelColor(top_left - h_6), has_right_color)
+        assert_that(rendered.pixelColor(left_center - h_6), has_right_color)
+        assert_that(rendered.pixelColor(bottom_left - h_6), has_right_color)
+        # Outside bleed
+        assert_that(rendered.pixelColor(top_left - h_7-h_1), has_left_color)
+        assert_that(rendered.pixelColor(left_center - h_7-h_1), has_left_color)
+        assert_that(rendered.pixelColor(bottom_left - h_7-h_1), has_left_color)
+    else:
+        assert_that(rendered.pixelColor(top_left - h_1), has_left_color)
+        assert_that(rendered.pixelColor(left_center - h_1), has_left_color)
+        assert_that(rendered.pixelColor(bottom_left - h_1), has_left_color)
+
+    # Right border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_right + h_1), has_right_color)
+    assert_that(rendered.pixelColor(right_center + h_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + h_1), has_right_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_right + h_12 - h_1), has_right_color)
+    assert_that(rendered.pixelColor(right_center + h_12 - h_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + h_12 - h_1), has_right_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_right + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(right_center + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)
