@@ -12,6 +12,10 @@
 
 - Printer and PDF export options are moved to dedicated pages in the application settings window.
 
+## Fixed issues
+
+- Fixed broken card bleed rendering when row-spacing or column-spacing are set to zero.
+
 # 0.28.0 (2024-03-24)  <a name="v0_28_0"></a>
 
 ## New features
