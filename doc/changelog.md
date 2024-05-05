@@ -4,7 +4,7 @@
 
 ## New features
 
-- Add a landscape printing workaround for both direct printing and PDF export.
+- Add a landscape printing workaround that can be enabled independently for direct printing and PDF export.
   If enabled, landscape documents are internally rotated by 90° during the export/print process,
   so that they are treated as regular, portrait-mode documents.
 
