@@ -498,6 +498,19 @@ def test_sharp_corners(qtbot: QtBot, page_scene: PageScene, draw_sharp_corners: 
     assert_that(rendered.pixelColor(top_left+right+down), has_correct_color, "Bottom right corner wrong")
 
 
+@pytest.mark.parametrize("card_bleed", [0, 1])
+def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed: int):
+    document = page_scene.document
+    document.page_layout.card_bleed = card_bleed
+    document.page_layout_changed.emit(document.page_layout)
+    card = create_card_with_pixmap("Something", color=QColorConstants.Black)
+    document.apply(ActionAddCard(card))
+    item = page_scene.card_items[0]
+    assert_that(
+        item.scenePos(), is_(equal_to(item.card_pixmap_item.scenePos()))
+    )
+
+
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
 @pytest.mark.parametrize("draw_sharp_corners", [False, True])
 @pytest.mark.parametrize("card_bleed", [0, 1])
@@ -507,11 +520,11 @@ def test_card_bleed_with_single_card(
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
     document.page_layout_changed.emit(document.page_layout)
-    card = create_card_with_pixmap("Something", color=color)
-    document.apply(ActionAddCard(card))
+    document.apply(ActionAddCard(create_card_with_pixmap("Something", color=color)))
 
-    pixmap_item = page_scene.card_items[0].card_pixmap_item
-    right, down = QPoint(card.image_file.width()-1, 0), QPoint(0, card.image_file.height()-1)
+    size = CardSizes.REGULAR.as_qsize_px()
+    right = QPoint(size.width() - 1, 0)
+    down = QPoint(0, size.height() - 1)
     half_right, half_down = right/2, down/2
     h_1 = QPoint(1, 0)
     h_12 = QPoint(12, 0)
@@ -520,7 +533,7 @@ def test_card_bleed_with_single_card(
     v_12 = QPoint(0, 12)
     v_13 = QPoint(0, 13)
 
-    top_left = pixmap_item.scenePos().toPoint()
+    top_left = page_scene.card_items[0].scenePos().toPoint()
     top_right = top_left + right
     bottom_left = top_left + down
     bottom_right = top_left + right+down
@@ -583,6 +596,7 @@ def test_card_bleed_with_single_card(
     assert_that(rendered.pixelColor(bottom_right + h_1), has_correct_color)
     # Outer bleed edge
     # TODO: Investigate why the right side is off by one when rendering to QImage, instead of PDF
+    #  The 1mm bleed is only 11 pixel wide, instead of 12
     assert_that(rendered.pixelColor(top_right + h_12 - h_1), has_correct_color)
     assert_that(rendered.pixelColor(right_center + h_12 - h_1), has_correct_color)
     assert_that(rendered.pixelColor(bottom_right + h_12 - h_1), has_correct_color)
