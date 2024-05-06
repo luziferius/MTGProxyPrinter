@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 
-from subprocess import run
+from pathlib import Path
+from subprocess import call
 
-run("python -m piptools compile -o requirements.txt pyproject.toml")
-run("python -m piptools compile --extra dev -o requirements-dev.txt pyproject.toml")
-run("python -m piptools compile --extra package -o requirements-package.txt pyproject.toml")
+repo_root = Path(__file__).parent.parent
+source = repo_root / "pyproject.toml"
+req = repo_root / "requirements.txt"
+req_dev = repo_root / "requirements-dev.txt"
+req_pack = repo_root / "requirements-package.txt"
+
+if __name__ == "__main__":
+    call(["python", "-m", "piptools", "compile", "-o", req, source])
+    call(["python", "-m", "piptools", "compile", "--extra", "dev", "-o", req_dev, source])
+    call(["python", "-m", "piptools", "compile", "--extra", "package", "-o", req_pack, source])
