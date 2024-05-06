@@ -6,7 +6,7 @@ if [ -e "${ENVIRONMENT_NAME}" ]; then
   rm -r "${ENVIRONMENT_NAME}"
 fi
 
-virtualenv -p python3 "${ENVIRONMENT_NAME}"
+python -m venv "${ENVIRONMENT_NAME}"
 source "${ENVIRONMENT_NAME}/bin/activate"
 
 # Install including all dependencies
