@@ -50,6 +50,7 @@ excludes  = [
     "toml",
     "sqlite3.test",  # Ignore the internal test suite
     "pint.testsuite",  # Ignore the internal test suite
+    "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
     "importlib_metadata",
     # Empty package with readme and download scripts
     "ctypes.test",

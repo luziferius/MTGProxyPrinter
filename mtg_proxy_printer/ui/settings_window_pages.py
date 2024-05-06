@@ -72,7 +72,6 @@ class PageMetadata(typing.NamedTuple):
     icon_name: OptStr
     tooltip: OptStr = None
 
-
 class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 

@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
@@ -33,12 +34,14 @@ dependencies = [
     "PySide6_Essentials >= 6.5.0",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
+    "ijson >= 3.2.1; python_version >= '3.12'",
     "pint < 0.22; python_version < '3.9'",  # 0.22 dropped Py 3.8 support, thus Win7 support
     "pint; python_version >= '3.9'",
     "delegateto == 1.5",
-    "PyHamcrest >= 1.8.1",
+    "PyHamcrest >= 2",
     "truststore; python_version >= '3.10'",
     "certifi; python_version < '3.10'",
+    "typing_extensions; python_version < '3.11'",
 ]
 
 dynamic = [
@@ -50,7 +53,6 @@ dev = [
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 2.0",
-    "PyHamcrest >= 2.0.0",
     "tox >= 4.0",
 ]
 package = [
