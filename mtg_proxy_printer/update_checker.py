@@ -152,7 +152,7 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
 
     def _read_available_application_versions_from_mirror(self, mirror):
         data, _ = self.read_from_url(f"{mirror}/json/tag/list/")
-        items = ijson.items(data, "payload.tags.item")
+        items = ijson.items(data, "payload.tags.item", use_float=True)
         matches = filter(
             None,
             map(VERSION_TAG_MATCHER.fullmatch, items)
