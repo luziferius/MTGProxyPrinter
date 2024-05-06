@@ -234,7 +234,7 @@ def get_function_stub(function_body: ast.FunctionDef, found_class_uses: UsedClas
         if arg.arg == "self":
             continue
         found_class_uses.add(arg.arg)
-        arg.annotation = ast.Str(arg.arg)
+        arg.annotation = ast.Constant(arg.arg)
         arg.arg = f"arg{index}"
 
     old_body = function_body.body
