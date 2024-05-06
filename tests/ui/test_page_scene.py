@@ -22,7 +22,6 @@ from math import ceil
 
 from hamcrest import *
 import pytest
-from pytestqt.qtbot import QtBot
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
 from PyQt5.QtCore import QPoint
@@ -66,7 +65,7 @@ def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, co
 @pytest.fixture(params=itertools.product(
     [RenderMode.ON_PAPER, RenderMode.ON_SCREEN],
     [True, False]))
-def page_scene(request, qtbot: QtBot, document_light: Document):
+def page_scene(request, document_light: Document):
     """Creates a PageScene in each available rendering mode"""
     render_mode, enable_text_items = request.param  # type: RenderMode, bool
     with patch.object(document_light.page_layout, "draw_page_numbers", enable_text_items), \
@@ -101,7 +100,7 @@ def test___init__adds_text_items_if_enabled(document_light: Document, render_mod
 @pytest.mark.parametrize("count", [1, 2, 10])
 @pytest.mark.parametrize("size", CardSizes)
 def test_adding_with_card_to_filled_page_does_not_redraw_page(
-        qtbot: QtBot, page_scene: PageScene, size: CardSize, count: int):
+        page_scene: PageScene, size: CardSize, count: int):
     document = page_scene.document
     document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     with patch(PATH_PREFIX+"draw_cut_markers") as cut_markers_mock:
@@ -113,7 +112,7 @@ def test_adding_with_card_to_filled_page_does_not_redraw_page(
     )
 
 
-def test_cut_lines_not_drawn_when_disabled_and_page_empty(qtbot: QtBot, page_scene: PageScene):
+def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene):
     document = page_scene.document
     document.page_layout.draw_cut_markers = False
     document.page_layout_changed.emit(document.page_layout)
@@ -124,7 +123,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(qtbot: QtBot, page_sce
 
 
 @pytest.mark.parametrize("size", CardSizes)
-def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_scene: PageScene, size: CardSize):
+def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene, size: CardSize):
     document = page_scene.document
     document.page_layout.draw_cut_markers = False
     document.page_layout_changed.emit(document.page_layout)
@@ -136,7 +135,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_sc
 
 @pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0, 1], repeat=2))
 def test_cut_lines_property_only_lists_line_elements(
-        qtbot: QtBot, page_scene: PageScene, row_spacing: int, column_spacing: int):
+        page_scene: PageScene, row_spacing: int, column_spacing: int):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
@@ -159,7 +158,7 @@ def test_cut_lines_property_only_lists_line_elements(
 @pytest.mark.parametrize("row_spacing", [0, 1])
 @pytest.mark.parametrize("column_spacing", [0, 1])
 def test_cut_lines_bounding_rects_cross_entire_page(
-        qtbot: QtBot, page_scene: PageScene, row_spacing: int, column_spacing: int):
+        page_scene: PageScene, row_spacing: int, column_spacing: int):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
@@ -222,7 +221,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     # TODO: Add cases for large bottom margin, pushing images up
 ])
 def test_horizontal_cut_line_locations_when_enabled(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: typing.List):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -299,7 +298,7 @@ def test_horizontal_cut_line_locations_when_enabled(
     # TODO: Add cases for large right margins pushing images to the left
 ])
 def test_vertical_cut_line_locations_when_enabled(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: typing.List[float]):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -369,7 +368,7 @@ def test_vertical_cut_line_locations_when_enabled(
     # TODO: Add cases for large right margins pushing images to the left
 ])
 def test__compute_position_for_image_x(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -430,7 +429,7 @@ def elementwise_repeat(items: typing.Iterable, times: int) -> list:
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1502]),
 ])
 def test__compute_position_for_image_y(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -450,8 +449,7 @@ def test__compute_position_for_image_y(
 
 
 @pytest.mark.parametrize("removed_range", [range(1), range(2), range(1, 3), range(9)])
-def test_compacting_document_moves_cards_onto_currently_shown_page(
-        qtbot: QtBot, page_scene: PageScene, removed_range: range):
+def test_compacting_document_moves_cards_onto_currently_shown_page(page_scene: PageScene, removed_range: range):
     # Test for issue [b33546aa1cbd62f3e1e7852bfc89a206fed89501]. PageScene crashes when compacting a document
     # moves cards onto the currently shown page.
 
@@ -470,7 +468,7 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(
     )
 
 
-def test_setPalette_runs_without_exception(qtbot: QtBot, page_scene: PageScene):
+def test_setPalette_runs_without_exception(page_scene: PageScene):
     palette = QPalette()
     page_scene.setPalette(palette)
 
@@ -478,7 +476,7 @@ def test_setPalette_runs_without_exception(qtbot: QtBot, page_scene: PageScene):
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
 @pytest.mark.parametrize("draw_sharp_corners", [True, False])
 @pytest.mark.parametrize("card_bleed", [0, 1])
-def test_sharp_corners(qtbot: QtBot, page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
     document = page_scene.document
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
@@ -514,8 +512,7 @@ def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
 @pytest.mark.parametrize("draw_sharp_corners", [False, True])
 @pytest.mark.parametrize("card_bleed", [0, 1])
-def test_card_bleed_with_single_card(
-        qtbot: QtBot, page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+def test_card_bleed_with_single_card(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
     document = page_scene.document
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
@@ -607,8 +604,7 @@ def test_card_bleed_with_single_card(
 
 
 @pytest.mark.parametrize("column_spacing", [0, 1])
-def test_card_bleed_with_two_cards(
-        qtbot: QtBot, page_scene: PageScene, column_spacing: int):
+def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: int):
     document = page_scene.document
     document.page_layout.draw_sharp_corners = True
     document.page_layout.card_bleed = 1
