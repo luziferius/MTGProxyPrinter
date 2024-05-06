@@ -29,7 +29,7 @@ del ijson\backends\python*.dll
 
 pushd PySide6
 
-:: Don't need the executables, like Qt5\b Designer, etc
+:: Don't need the executables, like Qt6 Designer, etc
 del *.exe
 del QtRemoteObjects.pyd QtSerialPort.pyd QtSensors.pyd QtNetwork.pyd QtXml.pyd QtXmlPatterns.pyd pyrcc.pyd
 
@@ -55,12 +55,17 @@ del assistant* designer* linguist* qtdeclarative*
 :: leave translations
 popd
 
-pushd plugins\imageformats
+pushd plugins
+:: The application does not use the SQL modules built into Qt, ~2.2 MiB
+del /S /Q sqldrivers
+pushd imageformats
 :: Unused image format libraries, around 1.3 MiB
 del qwebp.dll qtiff.dll qjpeg.dll
-::leave plugins\imageformats
+::leave imageformats
 popd
 
+:: leave plugins
+popd
 :: leave PySide6
 popd
 
