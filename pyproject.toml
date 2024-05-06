@@ -27,8 +27,10 @@ classifiers = [
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
+# Minimum required ijson version is 3.1 for the use_float parameter.
 # ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
-# Older Python works fine with ijson >= 3.1
+# and Python 3.12 support in 3.2.1. Require newer versions on those Python versions to avoid
+# falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
     "PySide6_Essentials >= 6.5.0",
@@ -47,6 +49,7 @@ dependencies = [
 dynamic = [
     "version",
 ]
+
 [project.optional-dependencies]
 dev = [
     "pytest",

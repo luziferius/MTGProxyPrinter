@@ -400,7 +400,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         # Ignore the monitor, because progress reporting is done in the main import loop.
         source, _ = self.read_from_url(url)
         with source:
-            yield from ijson.items(source, json_path)
+            yield from ijson.items(source, json_path, use_float=True)
 
     def read_json_card_data_from_file(self, file_path: Path, json_path: str = "item") -> CardStream:
         file_size = file_path.stat().st_size
@@ -408,7 +408,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         with self._wrap_in_metered_file(raw_file, file_size) as file:
             if file_path.suffix.casefold() == ".gz":
                 file = gzip.open(file, "rb")
-            yield from ijson.items(file, json_path)
+            yield from ijson.items(file, json_path, use_float=True)
 
     def _wrap_in_metered_file(self, raw_file, file_size):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
