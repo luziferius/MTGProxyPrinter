@@ -369,18 +369,20 @@ class CardDatabase(QObject):
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
 
+    def get_last_card_data_update_timestamp(self) -> typing.Optional[datetime.datetime]:
+        """Returns the last card data update timestamp, or None, if no card data was ever imported"""
+        query = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
+        result = self._read_optional_scalar_from_db(query, [])
+        return datetime.datetime.fromisoformat(result) if result else None
+
     def allow_updating_card_data(self) -> bool:
         """
         Returns True, if it should be allowed to update the internal card database, False otherwise.
         This is determined by the timestamp of the last database update performed.
         If the database is empty, downloading the card data is always allowed.
         """
-        # The MAX aggregate returns NULL on an empty database. So use a timestamp in 1970 to return True then.
-        query = "SELECT COALESCE(MAX(update_timestamp), '1970-01-01 00:00:00') FROM LastDatabaseUpdate\n"
-        result, = self.db.execute(query).fetchone()
-        last_timestamp = datetime.datetime.fromisoformat(result)
-        allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today()
-        return allow_update
+        last_timestamp = self.get_last_card_data_update_timestamp()
+        return (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today() if last_timestamp else True
 
     def get_all_languages(self) -> StringList:
         """Returns the list of all known and visible languages, sorted ascendingly."""
