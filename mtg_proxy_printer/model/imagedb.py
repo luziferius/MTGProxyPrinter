@@ -345,6 +345,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
 
     def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
         if not card_indices:
+            self.missing_images_obtained.emit()
             return
         total_cards = len(card_indices)
         logger.debug(f"Requesting {total_cards} missing images")

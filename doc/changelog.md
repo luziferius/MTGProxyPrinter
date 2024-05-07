@@ -1,5 +1,12 @@
 # Changelog
 
+# Version 0.28.2 (2024-05-07)  <a name="v0_28_2"></a>
+
+## Fixed issues
+
+- Fixed critical error that caused the PDF export, print dialog and print preview dialog to not show up under normal 
+  circumstances.
+
 # Version 0.28.1 (2024-05-06)  <a name="v0_28_1"></a>
 
 ## New features
