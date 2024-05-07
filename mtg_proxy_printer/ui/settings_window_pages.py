@@ -249,6 +249,7 @@ class DecklistImportSettingsPage(Page):
             (ui.automatic_deck_list_translation_enable, "always-translate-deck-lists"),
             (ui.remove_basic_wastes_enable, "remove-basic-wastes"),
             (ui.remove_snow_basics_enable, "remove-snow-basics"),
+            (ui.automatic_basics_removal_enable, "automatically-remove-basic-lands"),
         ]
         return widgets_with_settings
 

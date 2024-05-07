@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>DecklistImportSettingsPage</class>
  <widget class="QWidget" name="DecklistImportSettingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>415</width>
+    <height>308</height>
+   </rect>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="2">
     <widget class="QPushButton" name="deck_list_search_path_browse_button">
@@ -26,16 +34,18 @@
    <item row="3" column="0" colspan="3">
     <widget class="QGroupBox" name="basic_land_removal_group_box">
      <property name="title">
-      <string>Control the one-click basic land removal</string>
+      <string>Control the one-click or automatic basic land removal</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
-       <widget class="QLabel" name="basic_land_removal_label">
-        <property name="text">
-         <string>These options control, if the automatic removal should also include Wastes or Snow-Covered basic lands.</string>
+       <widget class="QCheckBox" name="automatic_basics_removal_enable">
+        <property name="toolTip">
+         <string>If enabled, basic lands are automatically removed from deck lists.
+If disabled, the deck import wizard keeps them by default,
+but offers the removal via a single button click.</string>
         </property>
-        <property name="wordWrap">
-         <bool>true</bool>
+        <property name="text">
+         <string>Fully automatically remove basic lands</string>
         </property>
        </widget>
       </item>
@@ -45,7 +55,7 @@
          <string>Include Wastes when removing basic lands.</string>
         </property>
         <property name="text">
-         <string>Enable removal of Basic Wastes</string>
+         <string>Include Wastes when removing basic lands</string>
         </property>
        </widget>
       </item>
@@ -55,7 +65,7 @@
          <string>Include Snow-Covered basic lands when removing basic lands.</string>
         </property>
         <property name="text">
-         <string>Enable removal of Snow-Covered Basic lands</string>
+         <string>Include Snow-Covered Basic lands when removing basic lands</string>
         </property>
        </widget>
       </item>

@@ -130,6 +130,7 @@ DEFAULT_SETTINGS["decklist-import"] = {
     "always-translate-deck-lists": "False",
     "remove-basic-wastes": "False",
     "remove-snow-basics": "False",
+    "automatically-remove-basic-lands": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,

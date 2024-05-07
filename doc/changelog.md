@@ -1,5 +1,14 @@
 # Changelog
 
+# Next version (in development)
+
+## New features
+
+- Add option to fully automatically remove basic lands from all imported deck lists.
+    - When enabled in the settings, basic lands are automatically stripped from deck lists,
+      otherwise the previous behavior is retained.
+    - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
+
 # Version 0.28.1 (2024-05-06)  <a name="v0_28_1"></a>
 
 ## New features
