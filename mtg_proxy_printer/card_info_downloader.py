@@ -89,19 +89,23 @@ class RelatedPrintingData(typing.NamedTuple):
 
 @enum.unique
 class SetWackinessScore(int, enum.Enum):
+    """
+    Used to order multiple printing choices, when automatically determining a printing choice.
+    Lower values have higher priority, so that the choice is steered towards normal cards.
+    """
     REGULAR = 0
-    PROMOTIONAL = 1
-    WHITE_BORDERED = 2
-    FUNNY = 3
-    GOLD_BORDERED = 4
-    DIGITAL = 5
-    ART_SERIES = 8
-    OVERSIZED = 10
+    PROMOTIONAL = 1  # Pre-release or planeswalker stamp. Extended/full art versions
+    WHITE_BORDERED = 2  # Old core sets. Some folks dislike the white border
+    FUNNY = 3  # Non-tournament legal
+    GOLD_BORDERED = 4  # Tournament-memorabilia printed with golden border and signed by players
+    DIGITAL = 5  # MTG Arena/Online cards. Especially Arena cards aren't pleasantly looking when printed
+    ART_SERIES = 8  # Not playable
+    OVERSIZED = 10  # Not playable
 
 
 class ProgressSignalContainer(QObject):
     download_progress = Signal(int)  # Emits the total number of processed data after processing each item
-    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
+    download_begins = Signal(int, str)  # Emitted when the download starts. Carries size (bytes) and description
     download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = Signal(bool)
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
