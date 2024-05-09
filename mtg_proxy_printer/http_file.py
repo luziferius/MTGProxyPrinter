@@ -60,7 +60,6 @@ class MeteredSeekableHTTPFile(QObject):
     In this case, linear reading with progress reports can still be performed.
     """
 
-    INSTANCES: typing.Dict[int, "MeteredSeekableHTTPFile"] = {}
 
     io_begin = Signal(int, str)  # Emitted in __enter__, carries the total file size in bytes. -1, if unknown
     io_finished = Signal()  # Emitted in __exit__, when the file is closed
@@ -77,7 +76,7 @@ class MeteredSeekableHTTPFile(QObject):
         :param retry_limit: The downloader will re-establish the connection this many times before failing
         """
         super().__init__(parent)
-        MeteredSeekableHTTPFile.INSTANCES[id(self)] = self
+        #MeteredSeekableHTTPFile.INSTANCES[id(self)] = self
         self.retry_limit = retry_limit
         self.ui_hint = ui_hint
         self.url = url
@@ -114,10 +113,6 @@ class MeteredSeekableHTTPFile(QObject):
         finally:
             self.total_bytes_processed.emit(self.read_bytes)
             self.io_finished.emit()
-            try:
-                del MeteredSeekableHTTPFile.INSTANCES[id(self)]
-            except KeyError:
-                pass
 
     @cache
     def seekable(self) -> bool:
@@ -248,15 +243,3 @@ class MeteredSeekableHTTPFile(QObject):
             # When force-closing the connection, the file attribute may never be set to something. In that case,
             # simply ignore that self.file has no close()
             pass
-        del MeteredSeekableHTTPFile.INSTANCES[id(self)]
-
-    @classmethod
-    def close_all_instances(cls):
-        if not cls.INSTANCES:
-            return
-        logger.info(f"Force closing {len(cls.INSTANCES)} still open file downloads.")
-        for instance in list(cls.INSTANCES.values()):
-            instance.retry_limit = 1
-            instance.close()
-        cls.INSTANCES.clear()
-        logger.debug("Closed all file downloads")

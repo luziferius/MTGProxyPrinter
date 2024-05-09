@@ -42,7 +42,6 @@ import mtg_proxy_printer.ui.main_window
 import mtg_proxy_printer.ui.settings_window
 import mtg_proxy_printer.progress_meter
 from mtg_proxy_printer.runner import Runnable
-from mtg_proxy_printer.http_file import MeteredSeekableHTTPFile
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -217,8 +216,10 @@ class Application(QApplication):
         logger.info("About to exit.")
         self.should_run = False
         self.closeAllWindows()
-        MeteredSeekableHTTPFile.close_all_instances()
         Runnable.cancel_all_runners()
-        logger.debug("All windows closed. Calling quit()")
-        QThreadPool.globalInstance().waitForDone()
+        logger.debug("All windows closed. Waiting for background threads to finish")
+        pool = QThreadPool.globalInstance()
+        pool.clear()
+        pool.waitForDone(60000)
+        logger.debug("Thread pool finished, calling quit()")
         super().quit()
