@@ -9,6 +9,12 @@
       otherwise the previous behavior is retained.
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
 
+## Changed features
+
+- Improved the related card search: The search now finds tokens created by Dungeons.
+  Right-clicking a card with "Venture" now also suggests the token cards created by the dungeons.
+    - When updating from previous versions, this change takes effect after the next card data update.
+
 # Version 0.28.2 (2024-05-07)  <a name="v0_28_2"></a>
 
 ## Fixed issues

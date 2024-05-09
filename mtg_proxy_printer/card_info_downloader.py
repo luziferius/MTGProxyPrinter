@@ -741,14 +741,17 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
 
 def _get_related_cards(card: CardDataType):
-    if card["layout"].endswith("token") or card.get("type_line") == "Dungeon":
-        # Tokens and Dungeons are never sources, as that would pull all cards
-        # creating that token or entering that Dungeon
+    if card["layout"].endswith("token"):
+        # Tokens are never sources, as that would pull all cards creating that token
         return
     card_id = UUID(card["id"])
+    is_dungeon = card.get("type_line") == "Dungeon"
     for related_card in card.get("all_parts", []):
         related_id = UUID(related_card["id"])
-        if card_id != related_id:
+        related_is_token = related_card["component"].endswith("token")
+        # No self reference allowed. And the implication is_dungeon ⇒ related_is_token must be True.
+        # I.e. If the source is a Dungeon, then it may link with tokens only, and nothing else.
+        if card_id != related_id and (not is_dungeon or related_is_token):
             yield RelatedPrintingData(card_id, related_id)
 
 
