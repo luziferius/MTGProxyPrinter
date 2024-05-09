@@ -204,6 +204,7 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
             else:
                 failure = False
             finally:
+                self.connection.close()
                 self.connection = None
         if failure:
             logger.error("Download failed! Deleting incomplete download.")

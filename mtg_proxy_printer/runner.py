@@ -27,15 +27,15 @@ __all__ = [
 
 
 class Runnable(QRunnable):
-    INSTANCES: typing.List["Runnable"] = []
+    INSTANCES: typing.Dict[int, "Runnable"] = {}
 
     def __init__(self):
         super().__init__()
-        self.INSTANCES.append(self)
+        Runnable.INSTANCES[id(self)] = self
 
     def release_instance(self):
         logger.debug(f"Releasing instance {self}")
-        self.INSTANCES.remove(self)
+        del Runnable.INSTANCES[id(self)]
 
     def cancel(self):
         pass
@@ -45,6 +45,6 @@ class Runnable(QRunnable):
         if not cls.INSTANCES:
             return
         logger.info(f"Cancelling {len(cls.INSTANCES)} running tasks.")
-        for item in cls.INSTANCES:
+        for item in list(cls.INSTANCES.values()):
             logger.debug(f"Cancel task {item}")
             item.cancel()

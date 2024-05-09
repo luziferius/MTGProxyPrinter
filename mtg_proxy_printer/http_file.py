@@ -248,13 +248,15 @@ class MeteredSeekableHTTPFile(QObject):
             # When force-closing the connection, the file attribute may never be set to something. In that case,
             # simply ignore that self.file has no close()
             pass
+        del MeteredSeekableHTTPFile.INSTANCES[id(self)]
 
     @classmethod
     def close_all_instances(cls):
         if not cls.INSTANCES:
             return
         logger.info(f"Force closing {len(cls.INSTANCES)} still open file downloads.")
-        for instance in cls.INSTANCES.values():
+        for instance in list(cls.INSTANCES.values()):
             instance.retry_limit = 1
             instance.close()
+        cls.INSTANCES.clear()
         logger.debug("Closed all file downloads")
