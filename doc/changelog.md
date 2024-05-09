@@ -8,11 +8,13 @@
     - When enabled in the settings, basic lands are automatically stripped from deck lists,
       otherwise the previous behavior is retained.
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
+- Add new card filter for Art Series cards, which can be enabled in the application settings.
+    - When updating from previous versions, the filter becomes functional after the next card data update.
 
 ## Changed features
 
 - Improved the related card search: The search now finds tokens created by Dungeons.
-  Right-clicking a card with "Venture" now also suggests the token cards created by the dungeons.
+  Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
 
 # Version 0.28.2 (2024-05-07)  <a name="v0_28_2"></a>

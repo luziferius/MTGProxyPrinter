@@ -92,6 +92,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-token": "False",
     "hide-digital-cards": "True",
     "hide-reversible-cards": "False",
+    "hide-art-series-cards": "False",
     "hidden-sets": "",
 }
 DEFAULT_SETTINGS["documents"] = {

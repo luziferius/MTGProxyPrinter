@@ -776,6 +776,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         # Token cards
         "hide-token": card["layout"].endswith("token") or card.get("type_line") == "Dungeon",
         "hide-digital-cards": card["digital"],
+        "hide-art-series-cards": card["layout"] == "art_series",
         # Specific format legality. Use .get() with a default instead of [] to not fail
         # if Scryfall removes one of the listed formats in the future.
         "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",

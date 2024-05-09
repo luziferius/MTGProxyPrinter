@@ -305,6 +305,32 @@ Similar to borderless cards, these require higher precision during the cutting p
      </property>
     </widget>
    </item>
+   <item row="7" column="2">
+    <widget class="QCheckBox" name="hide_art_series_cards">
+     <property name="toolTip">
+      <string>Artwork cards that can be found in Set Boosters or Play Boosters</string>
+     </property>
+     <property name="text">
+      <string>Hide Art Series cards</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="3">
+    <widget class="QPushButton" name="view_art_series_cards">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="toolTip">
+      <string>View cards hidden by this filter on the Scryfall website.</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>
