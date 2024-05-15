@@ -879,27 +879,35 @@ class CardDatabase(QObject):
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
-        SELECT set_code, set_name -- get_available_sets_for_card()
+        SELECT DISTINCT set_code, set_name -- get_available_sets_for_card()
           FROM MTGSet
           JOIN Printing USING (set_id)
           JOIN Card USING (card_id)
-          WHERE oracle_id = ?
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE oracle_id = ? 
+            AND language = ?
         """)
-        result = [MTGSet(code, name) for code, name in self.db.execute(query, (card.oracle_id,))]
+        parameters = card.oracle_id, card.language
+        result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
         return result
 
     def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
         query = cached_dedent("""\
-        SELECT collector_number -- get_available_collector_numbers_for_card_in_set()
+        SELECT DISTINCT collector_number -- get_available_collector_numbers_for_card_in_set()
           FROM MTGSet
           JOIN Printing USING (set_id)
           JOIN Card USING (card_id)
-          WHERE oracle_id = ? and set_code = ?
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE oracle_id = ?
+            AND set_code = ?
+            AND language = ?
         """)
-        parameters = (card.oracle_id, card.set.code)
-        result = natural_sorted(
-            (collector_number for collector_number, in self.db.execute(query, parameters))
-        )
+        parameters = (card.oracle_id, card.set.code, card.language)
+        result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
