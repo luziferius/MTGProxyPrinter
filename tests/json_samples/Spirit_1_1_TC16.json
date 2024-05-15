@@ -1,0 +1,275 @@
+{
+  "object": "card",
+  "id": "5009729f-6365-42ca-979f-d854a10e463b",
+  "oracle_id": "6a7a9dff-ff9e-4005-a17f-6ea0c11c1d5a",
+  "multiverse_ids": [
+
+  ],
+  "name": "Spirit",
+  "lang": "en",
+  "released_at": "2016-11-11",
+  "uri": "https://api.scryfall.com/cards/5009729f-6365-42ca-979f-d854a10e463b",
+  "scryfall_uri": "https://scryfall.com/card/tc16/1/spirit?utm_source=api",
+  "layout": "token",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/5/0/5009729f-6365-42ca-979f-d854a10e463b.jpg?1562911219",
+    "normal": "https://cards.scryfall.io/normal/front/5/0/5009729f-6365-42ca-979f-d854a10e463b.jpg?1562911219",
+    "large": "https://cards.scryfall.io/large/front/5/0/5009729f-6365-42ca-979f-d854a10e463b.jpg?1562911219",
+    "png": "https://cards.scryfall.io/png/front/5/0/5009729f-6365-42ca-979f-d854a10e463b.png?1562911219",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/5/0/5009729f-6365-42ca-979f-d854a10e463b.jpg?1562911219",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/5/0/5009729f-6365-42ca-979f-d854a10e463b.jpg?1562911219"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Token Creature — Spirit",
+  "oracle_text": "",
+  "power": "1",
+  "toughness": "1",
+  "colors": [
+
+  ],
+  "color_identity": [
+
+  ],
+  "keywords": [
+
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "16fcc1a2-f8e0-4126-81ef-4481985cf0bf",
+      "component": "combo_piece",
+      "name": "One with the Kami",
+      "type_line": "Enchantment — Aura",
+      "uri": "https://api.scryfall.com/cards/16fcc1a2-f8e0-4126-81ef-4481985cf0bf"
+    },
+    {
+      "object": "related_card",
+      "id": "9883e973-54c3-4bec-91d8-22f2829cdfa2",
+      "component": "combo_piece",
+      "name": "Sekki, Seasons' Guide",
+      "type_line": "Legendary Creature — Spirit",
+      "uri": "https://api.scryfall.com/cards/9883e973-54c3-4bec-91d8-22f2829cdfa2"
+    },
+    {
+      "object": "related_card",
+      "id": "4e9e42ed-7b7a-4fd7-8528-4b5f23b0ddb7",
+      "component": "combo_piece",
+      "name": "Release to Memory",
+      "type_line": "Instant",
+      "uri": "https://api.scryfall.com/cards/4e9e42ed-7b7a-4fd7-8528-4b5f23b0ddb7"
+    },
+    {
+      "object": "related_card",
+      "id": "c4e4866e-13a8-4130-9895-60e762b7efea",
+      "component": "combo_piece",
+      "name": "Spiritual Visit",
+      "type_line": "Instant — Arcane",
+      "uri": "https://api.scryfall.com/cards/c4e4866e-13a8-4130-9895-60e762b7efea"
+    },
+    {
+      "object": "related_card",
+      "id": "0b79b30e-e7aa-490e-b130-de7533e6e13b",
+      "component": "combo_piece",
+      "name": "Searchlight Companion",
+      "type_line": "Artifact Creature — Drone",
+      "uri": "https://api.scryfall.com/cards/0b79b30e-e7aa-490e-b130-de7533e6e13b"
+    },
+    {
+      "object": "related_card",
+      "id": "0ab91962-ebad-46f6-9f90-7477c224d93d",
+      "component": "combo_piece",
+      "name": "Go-Shintai of Shared Purpose",
+      "type_line": "Legendary Enchantment Creature — Shrine",
+      "uri": "https://api.scryfall.com/cards/0ab91962-ebad-46f6-9f90-7477c224d93d"
+    },
+    {
+      "object": "related_card",
+      "id": "a40e9071-7b27-4070-bc3a-c095c2128953",
+      "component": "combo_piece",
+      "name": "Promise of Bunrei",
+      "type_line": "Enchantment",
+      "uri": "https://api.scryfall.com/cards/a40e9071-7b27-4070-bc3a-c095c2128953"
+    },
+    {
+      "object": "related_card",
+      "id": "5009729f-6365-42ca-979f-d854a10e463b",
+      "component": "token",
+      "name": "Spirit",
+      "type_line": "Token Creature — Spirit",
+      "uri": "https://api.scryfall.com/cards/5009729f-6365-42ca-979f-d854a10e463b"
+    },
+    {
+      "object": "related_card",
+      "id": "e752b762-38b7-463c-aa09-37fecfe71a53",
+      "component": "combo_piece",
+      "name": "Dripping-Tongue Zubera",
+      "type_line": "Creature — Zubera Spirit",
+      "uri": "https://api.scryfall.com/cards/e752b762-38b7-463c-aa09-37fecfe71a53"
+    },
+    {
+      "object": "related_card",
+      "id": "81e1dbb8-3df8-4e7e-b74b-baab7d6f97c1",
+      "component": "combo_piece",
+      "name": "Baku Altar",
+      "type_line": "Artifact",
+      "uri": "https://api.scryfall.com/cards/81e1dbb8-3df8-4e7e-b74b-baab7d6f97c1"
+    },
+    {
+      "object": "related_card",
+      "id": "4d83e837-fcd1-4833-9117-e6f1bb53caad",
+      "component": "combo_piece",
+      "name": "Akki Ember-Keeper",
+      "type_line": "Enchantment Creature — Goblin Warrior",
+      "uri": "https://api.scryfall.com/cards/4d83e837-fcd1-4833-9117-e6f1bb53caad"
+    },
+    {
+      "object": "related_card",
+      "id": "003b8c93-54d2-4f23-961e-a52d63d0a54b",
+      "component": "combo_piece",
+      "name": "The Restoration of Eiganjo // Architect of Restoration",
+      "type_line": "Enchantment — Saga // Enchantment Creature — Fox Monk",
+      "uri": "https://api.scryfall.com/cards/003b8c93-54d2-4f23-961e-a52d63d0a54b"
+    },
+    {
+      "object": "related_card",
+      "id": "84241b2e-fed0-4bf4-8a1c-4d1814c2eb8b",
+      "component": "combo_piece",
+      "name": "Honden of Life's Web",
+      "type_line": "Legendary Enchantment — Shrine",
+      "uri": "https://api.scryfall.com/cards/84241b2e-fed0-4bf4-8a1c-4d1814c2eb8b"
+    },
+    {
+      "object": "related_card",
+      "id": "bdc33a21-d196-4c17-a296-87ff08e7ef69",
+      "component": "combo_piece",
+      "name": "Gods' Eye, Gate to the Reikai",
+      "type_line": "Legendary Land",
+      "uri": "https://api.scryfall.com/cards/bdc33a21-d196-4c17-a296-87ff08e7ef69"
+    },
+    {
+      "object": "related_card",
+      "id": "c453026f-8a63-46f5-8b7a-720e0ec95858",
+      "component": "combo_piece",
+      "name": "Concord with the Kami",
+      "type_line": "Enchantment",
+      "uri": "https://api.scryfall.com/cards/c453026f-8a63-46f5-8b7a-720e0ec95858"
+    },
+    {
+      "object": "related_card",
+      "id": "7ebf2cde-788d-4b38-8d24-fdb113943d0c",
+      "component": "combo_piece",
+      "name": "Myojin of Blooming Dawn",
+      "type_line": "Legendary Creature — Spirit",
+      "uri": "https://api.scryfall.com/cards/7ebf2cde-788d-4b38-8d24-fdb113943d0c"
+    },
+    {
+      "object": "related_card",
+      "id": "e2b6a2df-35cc-4d4b-b50b-99ef33678346",
+      "component": "combo_piece",
+      "name": "Sokenzan, Crucible of Defiance",
+      "type_line": "Legendary Land",
+      "uri": "https://api.scryfall.com/cards/e2b6a2df-35cc-4d4b-b50b-99ef33678346"
+    },
+    {
+      "object": "related_card",
+      "id": "8454624b-58bc-47c8-b0e6-6d4f0931a1ad",
+      "component": "combo_piece",
+      "name": "Teachings of the Kirin // Kirin-Touched Orochi",
+      "type_line": "Enchantment — Saga // Enchantment Creature — Snake Monk",
+      "uri": "https://api.scryfall.com/cards/8454624b-58bc-47c8-b0e6-6d4f0931a1ad"
+    },
+    {
+      "object": "related_card",
+      "id": "54e03a6c-1c0a-4a24-a3fe-2f3244938769",
+      "component": "combo_piece",
+      "name": "Forbidden Orchard",
+      "type_line": "Land",
+      "uri": "https://api.scryfall.com/cards/54e03a6c-1c0a-4a24-a3fe-2f3244938769"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": true,
+  "variation": false,
+  "set_id": "b8c05f6f-ae4b-436b-a475-09e768ca6a2e",
+  "set": "tc16",
+  "set_name": "Commander 2016 Tokens",
+  "set_type": "token",
+  "set_uri": "https://api.scryfall.com/sets/b8c05f6f-ae4b-436b-a475-09e768ca6a2e",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atc16&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/tc16?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/5009729f-6365-42ca-979f-d854a10e463b/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A6a7a9dff-ff9e-4005-a17f-6ea0c11c1d5a&unique=prints",
+  "collector_number": "1",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Daniel Ljunggren",
+  "artist_ids": [
+    "0fbd4798-76eb-46d5-a5d4-1e3a25870e34"
+  ],
+  "illustration_id": "c8476bc5-b6cf-48b4-be06-8b805d146282",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "promo_types": [
+    "setpromo"
+  ],
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DSpirit",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DSpirit",
+    "edhrec": "https://edhrec.com/route/?cc=Spirit"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DSpirit%26view%3Dgrid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Spirit&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Spirit&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}
