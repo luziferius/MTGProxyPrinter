@@ -832,7 +832,7 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(q
     # Also, these three cards have three different printed names
     (["german_Ironroot_Treefolk_1", "german_Ironroot_Treefolk_2", "german_Ironroot_Treefolk_3"],
      "2520cb2b-47f2-4fb3-a9e7-17ad135562c8",
-     [MTGSet("3ed", "Revised Edition"), MTGSet("4ed", "Forth Edition"), MTGSet("5ed", "Fifth Edition")]),
+     [MTGSet("3ed", "Revised Edition"), MTGSet("4ed", "Fourth Edition"), MTGSet("5ed", "Fifth Edition")]),
     # De-duplicate results
     (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
      "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", [MTGSet("mh2", "Modern Horizons 2")]),
