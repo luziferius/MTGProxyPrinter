@@ -888,6 +888,7 @@ class CardDatabase(QObject):
           JOIN PrintLanguage USING (language_id)
           WHERE oracle_id = ? 
             AND language = ?
+          ORDER BY release_date ASC
         """)
         parameters = card.oracle_id, card.language
         result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
