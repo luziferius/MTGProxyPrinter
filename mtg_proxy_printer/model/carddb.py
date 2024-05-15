@@ -37,7 +37,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
+from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr, UUID
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -760,7 +760,7 @@ class CardDatabase(QObject):
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
-        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache'")
+        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
@@ -874,6 +874,34 @@ class CardDatabase(QObject):
         result = [item for item, in self.db.execute(query, (card.oracle_id,))]
         return result
 
+    def get_available_sets_for_card(self, card: Card) -> typing.List[MTGSet]:
+        """
+        Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
+        """
+        query = cached_dedent("""\
+        SELECT set_code, set_name -- get_available_sets_for_card()
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN Card USING (card_id)
+          WHERE oracle_id = ?
+        """)
+        result = [MTGSet(code, name) for code, name in self.db.execute(query, (card.oracle_id,))]
+        return result
+
+    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
+        query = cached_dedent("""\
+        SELECT collector_number -- get_available_collector_numbers_for_card_in_set()
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN Card USING (card_id)
+          WHERE oracle_id = ? and set_code = ?
+        """)
+        parameters = (card.oracle_id, card.set.code)
+        result = natural_sorted(
+            (collector_number for collector_number, in self.db.execute(query, parameters))
+        )
+        return result
+
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
@@ -884,7 +912,7 @@ class CardDatabase(QObject):
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
-        SELECT oracle_id
+        SELECT oracle_id -- is_removed_printing()
             FROM RemovedPrintings
             WHERE scryfall_id = ?
         """)

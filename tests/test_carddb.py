@@ -24,11 +24,14 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, \
+    Card, MTGSet
 from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.units_and_sizes import UUID
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
     fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation
@@ -822,3 +825,60 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(q
             ),
         )
     )
+
+
+@pytest.mark.parametrize("jsons, scryfall_id, expected", [
+    # Result set with size > 1. Return sets in release order.
+    # Also, these three cards have three different printed names
+    (["german_Ironroot_Treefolk_1", "german_Ironroot_Treefolk_3", "german_Ironroot_Treefolk_3"],
+     "2520cb2b-47f2-4fb3-a9e7-17ad135562c8",
+     [MTGSet("3ed", "Revised Edition"), MTGSet("4ed", "Forth Edition"), MTGSet("5ed", "Fifth Edition")]),
+    # De-duplicate results
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", [MTGSet("mh2", "Modern Horizons 2")]),
+    # Only offer sets the card is available in the same language as the source
+    (["english_Back_to_Basics", "german_Back_to_Basics"],
+     "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", [MTGSet("usg", "Urza's Saga")]),
+    # 1/1 colorless Spirit token offers both TNEO and TC16
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "5009729f-6365-42ca-979f-d854a10e463b", [MTGSet("tc16", "Commander 2016 Tokens"), MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "ca20548f-6324-4858-adbe-87303ff1ca52", [MTGSet("tc16", "Commander 2016 Tokens"), MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
+    # 4/5 green Spirit token from TNEO only offers TNEO
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", [MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
+])
+def test_get_available_sets_for_card(
+        qtbot, card_db,
+        jsons: StringList, scryfall_id: UUID, expected: typing.List[MTGSet]):
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.settings.settings["card-filter"], "getboolean", lambda key: False):
+        fill_card_database_with_json_cards(qtbot, card_db, jsons)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+    fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
+    assert_that(card_db.get_available_sets_for_card(card), fulfills_matcher)
+
+
+@pytest.mark.parametrize("jsons, scryfall_id, expected", [
+    # Actual two variants in the same set (regular & extended art)
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", ["186", "463"]),
+    # The German, regular card should not find the collector number of the English extended art variant.
+    (["Asmoranomardicadaistinaculdacar_German", "Asmoranomardicadaistinaculdacar_2"],
+     "e710a21a-65eb-4106-a379-57a86fb9e6c6", ["186"]),
+    # The 1/1 Spirit token in TNEO has number 2
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "ca20548f-6324-4858-adbe-87303ff1ca52", ["2"]),
+    # 4/5 green Spirit token in TNEO  has number 11
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", ["11"]),
+])
+def test_get_available_collector_numbers_for_card_in_set(
+        qtbot, card_db,
+        jsons: StringList, scryfall_id: UUID, expected: StringList):
+    with unittest.mock.patch.object(
+            mtg_proxy_printer.settings.settings["card-filter"], "getboolean", lambda key: False):
+        fill_card_database_with_json_cards(qtbot, card_db, jsons)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+    fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
+    assert_that(card_db.get_available_collector_numbers_for_card_in_set(card), fulfills_matcher)
