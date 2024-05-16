@@ -29,7 +29,7 @@ import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.units_and_sizes import CardDataType
+from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text
@@ -71,14 +71,26 @@ def setup_settings_for_testing():
         section[setting] = str(False)
 
 
-def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data):
+def populate_database(qtbot: QtBot, card_db: mtg_proxy_printer.model.carddb.CardDatabase, data, filter_settings: StrDict):
     dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(card_db)
     dw._db = card_db.db  # Explicitly share the in-memory database connection
+    section = mtg_proxy_printer.settings.settings["card-filter"]
     with qtbot.assertNotEmitted(dw.other_error_occurred), qtbot.assertNotEmitted(dw.network_error_occurred):
-        filter_updater = PrintingFilterUpdater(card_db, card_db.db)
-        filter_updater.run()
-        dw.populate_database(data)
+        settings_to_use = update_database_printing_filters(card_db, filter_settings)
+        with patch.dict(section, settings_to_use):
+            dw.populate_database(data)
 
+def update_database_printing_filters(
+        card_db: mtg_proxy_printer.model.carddb.CardDatabase, filter_settings: StrDict) -> StrDict:
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
+    if filter_settings:
+        settings_to_use.update(filter_settings)
+    section = mtg_proxy_printer.settings.settings["card-filter"]
+    with patch.dict(section, settings_to_use):
+        updater = PrintingFilterUpdater(card_db, card_db.db)
+        updater.run()
+    return settings_to_use
 
 @functools.lru_cache()
 def load_json(name: str) -> CardDataType:
@@ -99,13 +111,8 @@ def fill_card_database_with_json_cards(
         card_db: mtg_proxy_printer.model.carddb.CardDatabase,
         json_files_or_names: typing.List[typing.Union[str, CardDataType]],
         filter_settings: typing.Dict[str, str] = None) -> mtg_proxy_printer.model.carddb.CardDatabase:
-    section = mtg_proxy_printer.settings.settings["card-filter"]
-    settings_to_use = {filter_name: "False" for filter_name in section.keys()}
-    if filter_settings:
-        settings_to_use.update(filter_settings)
     data = load_multiple_json_cards(json_files_or_names)
-    with patch.dict(section, settings_to_use):
-        populate_database(qtbot, card_db, data)
+    populate_database(qtbot, card_db, data, filter_settings)
     return card_db
 
 
