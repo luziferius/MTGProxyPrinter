@@ -879,7 +879,8 @@ class CardDatabase(QObject):
         Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT set_code, set_name -- get_available_sets_for_card()
+        SELECT DISTINCT set_code, set_name FROM ( -- get_available_sets_for_card()
+          SELECT set_code, set_name, release_date
           FROM MTGSet
           JOIN Printing USING (set_id)
           JOIN Card USING (card_id)
@@ -888,26 +889,35 @@ class CardDatabase(QObject):
           JOIN PrintLanguage USING (language_id)
           WHERE oracle_id = ? 
             AND language = ?
+          UNION ALL
+          SELECT set_code, set_name, release_date
+            FROM MTGSet
+            WHERE set_code = ?
+          )
           ORDER BY release_date ASC
         """)
-        parameters = card.oracle_id, card.language
+        parameters = card.oracle_id, card.language, card.set.code
         result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
         return result
 
     def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
         query = cached_dedent("""\
-        SELECT DISTINCT collector_number -- get_available_collector_numbers_for_card_in_set()
-          FROM MTGSet
-          JOIN Printing USING (set_id)
-          JOIN Card USING (card_id)
-          JOIN CardFace USING (printing_id)
-          JOIN FaceName USING (face_name_id)
-          JOIN PrintLanguage USING (language_id)
-          WHERE oracle_id = ?
-            AND set_code = ?
-            AND language = ?
+        SELECT DISTINCT collector_number FROM ( -- get_available_collector_numbers_for_card_in_set()
+          SELECT ? AS collector_number
+          UNION ALL
+          SELECT collector_number
+            FROM MTGSet
+            JOIN Printing USING (set_id)
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE oracle_id = ?
+              AND set_code = ?
+              AND language = ?
+          )
         """)
-        parameters = (card.oracle_id, card.set.code, card.language)
+        parameters = (card.collector_number, card.oracle_id, card.set.code, card.language)
         result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
