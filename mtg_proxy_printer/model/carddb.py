@@ -37,7 +37,7 @@ from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr, UUID
+from mtg_proxy_printer.units_and_sizes import PageType, StringList, OptStr
 from mtg_proxy_printer.logger import get_logger
 
 logger = get_logger(__name__)
@@ -887,7 +887,9 @@ class CardDatabase(QObject):
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)
-          WHERE oracle_id = ? 
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE
+            AND oracle_id = ? 
             AND language = ?
           UNION ALL
           SELECT set_code, set_name, release_date
@@ -912,7 +914,9 @@ class CardDatabase(QObject):
             JOIN CardFace USING (printing_id)
             JOIN FaceName USING (face_name_id)
             JOIN PrintLanguage USING (language_id)
-            WHERE oracle_id = ?
+            WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
+              AND oracle_id = ?
               AND set_code = ?
               AND language = ?
           )

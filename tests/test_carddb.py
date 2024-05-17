@@ -854,12 +854,12 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(q
      [MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
     # The first of these has placeholder images, making it affected by a printing filter
     (["german_Duress", "german_Duress_2"],
-     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", True,
+     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", True,  # ID of the second printing from MID
      [MTGSet("mid", "Innistrad: Midnight Hunt")]),
     # Data of hidden printings present in the document must round-trip.
     # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
     (["german_Duress", "german_Duress_2"],
-     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,  # ID of the first printing from 7th Edition
      [MTGSet("7ed", "Seventh Edition"), MTGSet("mid", "Innistrad: Midnight Hunt")]),
     (["german_Duress"],
      "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
@@ -897,6 +897,8 @@ def test_get_available_sets_for_card(
      "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", False, ["11"]),
     # Data of hidden printings present in the document must round-trip.
     # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "2879f780-e17f-4e68-931e-6e45f9df28e1", True, ["186", "463"]),
     (["german_Duress", "german_Duress_2"],
      "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
      ["131"]),

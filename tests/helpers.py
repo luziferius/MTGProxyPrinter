@@ -88,7 +88,7 @@ def update_database_printing_filters(
         settings_to_use.update(filter_settings)
     section = mtg_proxy_printer.settings.settings["card-filter"]
     with patch.dict(section, settings_to_use):
-        updater = PrintingFilterUpdater(card_db, card_db.db)
+        updater = PrintingFilterUpdater(card_db, card_db.db, force_update_hidden_column=True)
         updater.run()
     return settings_to_use
 
