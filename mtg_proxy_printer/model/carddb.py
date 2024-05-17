@@ -861,17 +861,22 @@ class CardDatabase(QObject):
         to generate the choices for translating cards in the document.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT language 
-          FROM Card
-          JOIN Printing USING (card_id)
-          JOIN CardFace USING (printing_id)
-          JOIN FaceName USING (face_name_id)
-          JOIN PrintLanguage USING (language_id)
-          WHERE oracle_id = ?
-            AND Printing.is_hidden IS FALSE
+        SELECT DISTINCT language FROM ( -- get_available_languages_for_card()
+          SELECT ? AS language
+          UNION ALL
+          SELECT language
+            FROM Card
+            JOIN Printing USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE oracle_id = ?
+              AND Printing.is_hidden IS FALSE
+          )
           ORDER BY language ASC;
         """)
-        result = [item for item, in self.db.execute(query, (card.oracle_id,))]
+        parameters = card.language, card.oracle_id
+        result = [item for item, in self.db.execute(query, parameters)]
         return result
 
     def get_available_sets_for_card(self, card: Card) -> typing.List[MTGSet]:
