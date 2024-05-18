@@ -760,7 +760,7 @@ class CardDatabase(QObject):
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
-        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache'")
+        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
@@ -861,17 +861,73 @@ class CardDatabase(QObject):
         to generate the choices for translating cards in the document.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT language 
-          FROM Card
-          JOIN Printing USING (card_id)
+        SELECT DISTINCT language FROM ( -- get_available_languages_for_card()
+          SELECT ? AS language
+          UNION ALL
+          SELECT language
+            FROM Card
+            JOIN Printing USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE oracle_id = ?
+              AND Printing.is_hidden IS FALSE
+          )
+          ORDER BY language ASC;
+        """)
+        parameters = card.language, card.oracle_id
+        result = [item for item, in self.db.execute(query, parameters)]
+        return result
+
+    def get_available_sets_for_card(self, card: Card) -> typing.List[MTGSet]:
+        """
+        Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
+        """
+        query = cached_dedent("""\
+        SELECT DISTINCT set_code, set_name FROM ( -- get_available_sets_for_card()
+          SELECT set_code, set_name, release_date
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN Card USING (card_id)
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)
-          WHERE oracle_id = ?
-            AND Printing.is_hidden IS FALSE
-          ORDER BY language ASC;
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE
+            AND oracle_id = ? 
+            AND language = ?
+          UNION ALL
+          SELECT set_code, set_name, release_date
+            FROM MTGSet
+            WHERE set_code = ?
+          )
+          ORDER BY release_date ASC
         """)
-        result = [item for item, in self.db.execute(query, (card.oracle_id,))]
+        parameters = card.oracle_id, card.language, card.set.code
+        result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
+        return result
+
+    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
+        query = cached_dedent("""\
+        SELECT DISTINCT collector_number FROM ( -- get_available_collector_numbers_for_card_in_set()
+          SELECT ? AS collector_number
+          UNION ALL
+          SELECT collector_number
+            FROM MTGSet
+            JOIN Printing USING (set_id)
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
+              AND oracle_id = ?
+              AND set_code = ?
+              AND language = ?
+          )
+        """)
+        parameters = (card.collector_number, card.oracle_id, card.set.code, card.language)
+        result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
@@ -884,7 +940,7 @@ class CardDatabase(QObject):
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
-        SELECT oracle_id
+        SELECT oracle_id -- is_removed_printing()
             FROM RemovedPrintings
             WHERE scryfall_id = ?
         """)
