@@ -394,10 +394,10 @@ class CardDatabase(QObject):
         return result
 
     def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
-        """Returns a list with all card names in the given language."""
+        """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query = cached_dedent('''\
-        SELECT card_name
+        SELECT card_name -- get_card_names()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             WHERE FaceName.is_hidden IS FALSE
@@ -571,7 +571,7 @@ class CardDatabase(QObject):
         evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, The Ring emblem, etc.
         """
         query = cached_dedent("""\
-        WITH RECURSIVE 
+        WITH RECURSIVE   -- find_related_cards()
           source_oracle_id (card_id) AS (
             SELECT card_id
             FROM Card
@@ -705,7 +705,7 @@ class CardDatabase(QObject):
         """
         from mtg_proxy_printer.model.imagedb import CacheContent
         db = self.db
-        db.execute("SAVEPOINT 'partition_image_cache'")
+        db.execute("SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()")
         db.execute(cached_dedent('''\
             CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
               scryfall_id TEXT NOT NULL,
