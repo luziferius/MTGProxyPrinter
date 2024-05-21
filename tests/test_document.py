@@ -24,11 +24,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
 
-try:
-    from hamcrest import contains_exactly
-except ImportError:
-    # Compatibility with PyHamcrest < 1.10
-    from hamcrest import contains as contains_exactly
+from hamcrest import contains_exactly
 import pytest
 from pytestqt.qtbot import QtBot
 
