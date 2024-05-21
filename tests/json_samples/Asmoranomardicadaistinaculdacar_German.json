@@ -1,0 +1,153 @@
+{
+  "object": "card",
+  "id": "e710a21a-65eb-4106-a379-57a86fb9e6c6",
+  "oracle_id": "1f74e26f-5cf3-4b0e-bcc6-f858599474fc",
+  "multiverse_ids": [
+    522523
+  ],
+  "name": "Asmoranomardicadaistinaculdacar",
+  "printed_name": "Asmoranomardicadaistinaculdacar",
+  "lang": "de",
+  "released_at": "2021-06-18",
+  "uri": "https://api.scryfall.com/cards/e710a21a-65eb-4106-a379-57a86fb9e6c6",
+  "scryfall_uri": "https://scryfall.com/card/mh2/186/de/asmoranomardicadaistinaculdacar?utm_source=api",
+  "layout": "normal",
+  "highres_image": false,
+  "image_status": "lowres",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/e/7/e710a21a-65eb-4106-a379-57a86fb9e6c6.jpg?1646198521",
+    "normal": "https://cards.scryfall.io/normal/front/e/7/e710a21a-65eb-4106-a379-57a86fb9e6c6.jpg?1646198521",
+    "large": "https://cards.scryfall.io/large/front/e/7/e710a21a-65eb-4106-a379-57a86fb9e6c6.jpg?1646198521",
+    "png": "https://cards.scryfall.io/png/front/e/7/e710a21a-65eb-4106-a379-57a86fb9e6c6.png?1646198521",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/e/7/e710a21a-65eb-4106-a379-57a86fb9e6c6.jpg?1646198521",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/e/7/e710a21a-65eb-4106-a379-57a86fb9e6c6.jpg?1646198521"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Legendary Creature — Human Wizard",
+  "printed_type_line": "Legendäre Kreatur — Mensch, Zauberer",
+  "oracle_text": "As long as you've discarded a card this turn, you may pay {B/R} to cast this spell.\nWhen Asmoranomardicadaistinaculdacar enters the battlefield, you may search your library for a card named The Underworld Cookbook, reveal it, put it into your hand, then shuffle.\nSacrifice two Foods: Target creature deals 6 damage to itself.",
+  "printed_text": "Solange du in diesem Zug eine Karte abgeworfen hast, kannst du {B/R} bezahlen, um diesen Zauberspruch zu wirken.\nWenn Asmoranomardicadaistinaculdacar ins Spiel kommt, kannst du deine Bibliothek nach einer Karte namens Kochbuch der Unterwelt durchsuchen, sie offen vorzeigen, auf deine Hand nehmen und danach mischen.\nOpfere zwei Speisen: Eine Kreatur deiner Wahl fügt sich selbst 6 Schadenspunkte zu.",
+  "power": "3",
+  "toughness": "3",
+  "colors": [
+    "B",
+    "R"
+  ],
+  "color_indicator": [
+    "B",
+    "R"
+  ],
+  "color_identity": [
+    "B",
+    "R"
+  ],
+  "keywords": [
+
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "b810d4fc-b361-407a-9051-17f71319c512",
+      "component": "combo_piece",
+      "name": "Asmoranomardicadaistinaculdacar",
+      "type_line": "Legendary Creature — Human Wizard",
+      "uri": "https://api.scryfall.com/cards/b810d4fc-b361-407a-9051-17f71319c512"
+    },
+    {
+      "object": "related_card",
+      "id": "76705f48-2431-4a78-b7e5-f3188e017a57",
+      "component": "combo_piece",
+      "name": "The Underworld Cookbook",
+      "type_line": "Artifact",
+      "uri": "https://api.scryfall.com/cards/76705f48-2431-4a78-b7e5-f3188e017a57"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "not_legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "restricted",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper",
+    "mtgo"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "c1c7eb8c-f205-40ab-a609-767cb296544e",
+  "set": "mh2",
+  "set_name": "Modern Horizons 2",
+  "set_type": "draft_innovation",
+  "set_uri": "https://api.scryfall.com/sets/c1c7eb8c-f205-40ab-a609-767cb296544e",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Amh2&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/mh2?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/e710a21a-65eb-4106-a379-57a86fb9e6c6/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A1f74e26f-5cf3-4b0e-bcc6-f858599474fc&unique=prints",
+  "collector_number": "186",
+  "digital": false,
+  "rarity": "rare",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Ryan Pancoast",
+  "artist_ids": [
+    "89cc9475-dda2-4d13-bf88-54b92867a25c"
+  ],
+  "illustration_id": "109aa8fc-4587-4092-9a51-da3a81099ae5",
+  "border_color": "black",
+  "frame": "2015",
+  "frame_effects": [
+    "legendary"
+  ],
+  "security_stamp": "oval",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 9469,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=522523&printed=true",
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DAsmoranomardicadaistinaculdacar",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DAsmoranomardicadaistinaculdacar",
+    "edhrec": "https://edhrec.com/route/?cc=Asmoranomardicadaistinaculdacar"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DAsmoranomardicadaistinaculdacar%26view%3Dgrid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Asmoranomardicadaistinaculdacar&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Asmoranomardicadaistinaculdacar&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

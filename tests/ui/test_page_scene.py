@@ -18,14 +18,15 @@ import itertools
 from functools import partial
 import typing
 from unittest.mock import patch
+from math import ceil
 
 from hamcrest import *
 import pytest
-from pytestqt.qtbot import QtBot
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
-from PyQt5.QtGui import QPalette
+from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
+from PyQt5.QtCore import QPoint
 
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
@@ -36,26 +37,48 @@ from tests.hasgetter import has_getters, has_getter
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 close_to_ = partial(close_to, delta=0.005)
+RenderHint = QPainter.RenderHint
 
 
-def create_card_with_pixmap(name: str, oversized: bool, document):
-    card = create_card(name, oversized)
-    card.image_file = document.image_db.blank_image
-    if oversized:
-        card.image_file = card.image_file.scaled(1040, 1490)
+def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):
+    for x, y in itertools.product(range(width), range(height)):  # type: int, int
+        image.setPixelColor(pos+QPoint(x, y), fill_color)
+
+
+def create_card_with_pixmap(name: str, size: CardSize = CardSizes.REGULAR, *, color = QColorConstants.Transparent):
+    """
+    Create a Card with the given size, and fill the pixmap with the given color.
+    Each corner has a square transparent area, as a crude emulation of rounded corners.
+    """
+    card = create_card(name, size is CardSizes.OVERSIZED)
+    q_size = size.as_qsize_px()
+    image = QImage(q_size, QImage.Format.Format_ARGB32)
+    image.fill(color)
+    fill_transparent = partial(_fill_area, image, QColorConstants.Transparent)
+    fill_transparent(QPoint(0, 0))
+    fill_transparent(QPoint(0, q_size.height()-5))
+    fill_transparent(QPoint(q_size.width()-5, 0))
+    fill_transparent(QPoint(q_size.width()-5, q_size.height()-5))
+    card.set_image_file(QPixmap.fromImage(image))
     return card
-
 
 @pytest.fixture(params=itertools.product(
     [RenderMode.ON_PAPER, RenderMode.ON_SCREEN],
     [True, False]))
-def page_scene(request, qtbot: QtBot, document_light: Document):
+def page_scene(request, document_light: Document):
     """Creates a PageScene in each available rendering mode"""
     render_mode, enable_text_items = request.param  # type: RenderMode, bool
     with patch.object(document_light.page_layout, "draw_page_numbers", enable_text_items), \
          patch.object(document_light.page_layout, "document_name", "Non-empty title" if enable_text_items else ""):
         scene = PageScene(document_light, render_mode)
         yield scene
+
+def render_scene(scene: PageScene) -> QImage:
+    image = QImage(ceil(scene.width()), ceil(scene.height()), QImage.Format.Format_ARGB32)
+    painter = QPainter(image)
+    painter.setRenderHint(RenderHint.LosslessImageRendering, True)
+    scene.render(painter)
+    return image
 
 
 @pytest.mark.parametrize("render_mode", [RenderMode.ON_PAPER, RenderMode.ON_SCREEN])
@@ -75,23 +98,21 @@ def test___init__adds_text_items_if_enabled(document_light: Document, render_mod
 
 
 @pytest.mark.parametrize("count", [1, 2, 10])
-@pytest.mark.parametrize("oversized", [True, False])
+@pytest.mark.parametrize("size", CardSizes)
 def test_adding_with_card_to_filled_page_does_not_redraw_page(
-        qtbot: QtBot, page_scene: PageScene, oversized: bool, count: int):
+        page_scene: PageScene, size: CardSize, count: int):
     document = page_scene.document
-    with qtbot.wait_signal(document.action_applied):
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document)))
-    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markes_mock, \
-            qtbot.wait_signals([document.action_applied, document.rowsInserted]):
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document), count))
-    cut_markes_mock.assert_not_called()
+    document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
+    with patch(PATH_PREFIX+"draw_cut_markers") as cut_markers_mock:
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", size), count))
+    cut_markers_mock.assert_not_called()
     assert_that(
         page_scene.items(),
         has_items(*[instance_of(QGraphicsPixmapItem)]*len(document.currently_edited_page))
     )
 
 
-def test_cut_lines_not_drawn_when_disabled_and_page_empty(qtbot: QtBot, page_scene: PageScene):
+def test_cut_lines_not_drawn_when_disabled_and_page_empty(page_scene: PageScene):
     document = page_scene.document
     document.page_layout.draw_cut_markers = False
     document.page_layout_changed.emit(document.page_layout)
@@ -101,13 +122,12 @@ def test_cut_lines_not_drawn_when_disabled_and_page_empty(qtbot: QtBot, page_sce
     assert_that(page_scene.cut_lines, is_(empty()))
 
 
-@pytest.mark.parametrize("oversized", [True, False])
-def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_scene: PageScene, oversized: bool):
+@pytest.mark.parametrize("size", CardSizes)
+def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene, size: CardSize):
     document = page_scene.document
     document.page_layout.draw_cut_markers = False
     document.page_layout_changed.emit(document.page_layout)
-    with qtbot.wait_signal(document.action_applied):
-        document.apply(ActionAddCard(create_card_with_pixmap("Card", oversized, document)))
+    document.apply(ActionAddCard(create_card_with_pixmap("Card", size)))
     assert_that(
         page_scene.items(), not_(has_items(instance_of(QGraphicsLineItem)))
     )
@@ -115,7 +135,7 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(qtbot: QtBot, page_sc
 
 @pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0, 1], repeat=2))
 def test_cut_lines_property_only_lists_line_elements(
-        qtbot: QtBot, page_scene: PageScene, row_spacing: int, column_spacing: int):
+        page_scene: PageScene, row_spacing: int, column_spacing: int):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
@@ -138,7 +158,7 @@ def test_cut_lines_property_only_lists_line_elements(
 @pytest.mark.parametrize("row_spacing", [0, 1])
 @pytest.mark.parametrize("column_spacing", [0, 1])
 def test_cut_lines_bounding_rects_cross_entire_page(
-        qtbot: QtBot, page_scene: PageScene, row_spacing: int, column_spacing: int):
+        page_scene: PageScene, row_spacing: int, column_spacing: int):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
@@ -201,7 +221,7 @@ def test_cut_lines_bounding_rects_cross_entire_page(
     # TODO: Add cases for large bottom margin, pushing images up
 ])
 def test_horizontal_cut_line_locations_when_enabled(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: typing.List):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -215,9 +235,8 @@ def test_horizontal_cut_line_locations_when_enabled(
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
-        with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(
-                ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
+        card_size = CardSizes.for_page_type(page_type)
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", card_size)))
 
     assert_that(
         page_scene.horizontal_cut_line_locations[page_type],
@@ -279,7 +298,7 @@ def test_horizontal_cut_line_locations_when_enabled(
     # TODO: Add cases for large right margins pushing images to the left
 ])
 def test_vertical_cut_line_locations_when_enabled(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: typing.List[float]):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -293,9 +312,8 @@ def test_vertical_cut_line_locations_when_enabled(
         "Test setup failed! Margins caused unexpected capacity decrease"
     )
     if page_type is not PageType.UNDETERMINED:
-        with qtbot.wait_signals([document.action_applied, document.page_type_changed]):
-            document.apply(
-                ActionAddCard(create_card_with_pixmap("Card", page_type is PageType.OVERSIZED, document)))
+        card_size = CardSizes.for_page_type(page_type)
+        document.apply(ActionAddCard(create_card_with_pixmap("Card", card_size)))
 
     assert_that(
         page_scene.vertical_cut_line_locations[page_type],
@@ -350,7 +368,7 @@ def test_vertical_cut_line_locations_when_enabled(
     # TODO: Add cases for large right margins pushing images to the left
 ])
 def test__compute_position_for_image_x(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -360,8 +378,8 @@ def test__compute_position_for_image_x(
     document.page_layout_changed.emit(document.page_layout)
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     row_count = document.page_layout.compute_page_row_count(page_type)
-    card = create_card_with_pixmap("Something", page_type == PageType.OVERSIZED, document)
-    ActionAddCard(card, 1).apply(document)
+    card = create_card_with_pixmap("Something", CardSizes.for_page_type(page_type))
+    document.apply(ActionAddCard(card, 1))
     x_coordinates = [page_scene._compute_position_for_image(index, page_type).x() for index in range(page_capacity)]
     assert_that(
         x_coordinates, contains_exactly(*[close_to_(x) for x in expected_x]*row_count),
@@ -411,7 +429,7 @@ def elementwise_repeat(items: typing.Iterable, times: int) -> list:
     (PageType.OVERSIZED, 1, 23, RenderMode.IMPLICIT_MARGINS, [0, 1502]),
 ])
 def test__compute_position_for_image_y(
-        qtbot: QtBot, page_scene: PageScene,
+        page_scene: PageScene,
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
@@ -421,8 +439,8 @@ def test__compute_position_for_image_y(
     document.page_layout_changed.emit(document.page_layout)
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     column_count = document.page_layout.compute_page_column_count(page_type)
-    card = create_card_with_pixmap("Something", page_type == PageType.OVERSIZED, document)
-    ActionAddCard(card, 1).apply(document)
+    card = create_card_with_pixmap("Something", CardSizes.for_page_type(page_type))
+    document.apply(ActionAddCard(card, 1))
     y_coordinates = [page_scene._compute_position_for_image(index, page_type).y() for index in range(page_capacity)]
     assert_that(
         y_coordinates, contains_exactly(*elementwise_repeat([close_to_(y) for y in expected_y], column_count)),
@@ -431,19 +449,18 @@ def test__compute_position_for_image_y(
 
 
 @pytest.mark.parametrize("removed_range", [range(1), range(2), range(1, 3), range(9)])
-def test_compacting_document_moves_cards_onto_currently_shown_page(
-        qtbot: QtBot, page_scene: PageScene, removed_range: range):
+def test_compacting_document_moves_cards_onto_currently_shown_page(page_scene: PageScene, removed_range: range):
     # Test for issue [b33546aa1cbd62f3e1e7852bfc89a206fed89501]. PageScene crashes when compacting a document
     # moves cards onto the currently shown page.
 
     # Setup
     document = page_scene.document
     page_capacity = document.page_layout.compute_page_card_capacity(PageType.REGULAR)
-    card = create_card_with_pixmap("Something", False, document)
-    ActionAddCard(card, page_capacity*2).apply(document)
-    ActionRemoveCards(removed_range, 0).apply(document)
+    card = create_card_with_pixmap("Something")
+    document.apply(ActionAddCard(card, page_capacity*2))
+    document.apply(ActionRemoveCards(removed_range, 0))
     # Verify no IndexError is raised when handling signals during:
-    ActionCompactDocument().apply(document)
+    document.apply(ActionCompactDocument())
 
     assert_that(
         page_scene.card_items,
@@ -451,6 +468,311 @@ def test_compacting_document_moves_cards_onto_currently_shown_page(
     )
 
 
-def test_setPalette_runs_without_exception(qtbot: QtBot, page_scene: PageScene):
+def test_setPalette_runs_without_exception(page_scene: PageScene):
     palette = QPalette()
     page_scene.setPalette(palette)
+
+
+@pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
+@pytest.mark.parametrize("draw_sharp_corners", [True, False])
+@pytest.mark.parametrize("card_bleed", [0, 1])
+def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+    document = page_scene.document
+    document.page_layout.draw_sharp_corners = draw_sharp_corners
+    document.page_layout.card_bleed = card_bleed
+    document.page_layout_changed.emit(document.page_layout)
+    card = create_card_with_pixmap("Something", color=color)
+    document.apply(ActionAddCard(card))
+
+    pixmap_item = page_scene.card_items[0].card_pixmap_item
+    top_left = pixmap_item.scenePos().toPoint()
+    right, down = QPoint(card.image_file.width()-1, 0), QPoint(0, card.image_file.height()-1)
+
+    rendered = render_scene(page_scene)
+    has_correct_color = is_(equal_to(color if draw_sharp_corners else QColorConstants.White))
+    assert_that(rendered.pixelColor(top_left), has_correct_color, "Top left corner wrong")
+    assert_that(rendered.pixelColor(top_left+right), has_correct_color, "Top right corner wrong")
+    assert_that(rendered.pixelColor(top_left+down), has_correct_color, "Bottom left corner wrong")
+    assert_that(rendered.pixelColor(top_left+right+down), has_correct_color, "Bottom right corner wrong")
+
+
+@pytest.mark.parametrize("card_bleed", [0, 1])
+def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed: int):
+    document = page_scene.document
+    document.page_layout.card_bleed = card_bleed
+    document.page_layout_changed.emit(document.page_layout)
+    card = create_card_with_pixmap("Something", color=QColorConstants.Black)
+    document.apply(ActionAddCard(card))
+    item = page_scene.card_items[0]
+    assert_that(
+        item.scenePos(), is_(equal_to(item.card_pixmap_item.scenePos()))
+    )
+
+
+@pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
+@pytest.mark.parametrize("draw_sharp_corners", [False, True])
+@pytest.mark.parametrize("card_bleed", [0, 1])
+def test_card_bleed_with_single_card(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+    document = page_scene.document
+    document.page_layout.draw_sharp_corners = draw_sharp_corners
+    document.page_layout.card_bleed = card_bleed
+    document.page_layout_changed.emit(document.page_layout)
+    document.apply(ActionAddCard(create_card_with_pixmap("Something", color=color)))
+
+    size = CardSizes.REGULAR.as_qsize_px()
+    right = QPoint(size.width() - 1, 0)
+    down = QPoint(0, size.height() - 1)
+    half_right, half_down = right/2, down/2
+    h_1 = QPoint(1, 0)
+    h_12 = QPoint(12, 0)
+    h_13 = QPoint(13, 0)
+    v_1 = QPoint(0, 1)
+    v_12 = QPoint(0, 12)
+    v_13 = QPoint(0, 13)
+
+    top_left = page_scene.card_items[0].scenePos().toPoint()
+    top_right = top_left + right
+    bottom_left = top_left + down
+    bottom_right = top_left + right+down
+
+    top_center = top_left + half_right
+    left_center = top_left + half_down
+    right_center = top_right + half_down
+    bottom_center = bottom_left + half_right
+    
+    rendered = render_scene(page_scene)
+    has_correct_color = is_(equal_to(color if card_bleed else QColorConstants.White))
+    has_background_color = is_(equal_to(QColorConstants.White))
+
+    # Top border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - v_1), has_correct_color)
+    assert_that(rendered.pixelColor(top_center - v_1), has_correct_color)
+    assert_that(rendered.pixelColor(top_right - v_1), has_correct_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - v_12), has_correct_color)
+    assert_that(rendered.pixelColor(top_center - v_12), has_correct_color)
+    assert_that(rendered.pixelColor(top_right - v_12), has_correct_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_center - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_right - v_13), has_background_color)
+
+    # Bottom border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_1), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_center + v_1), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_right + v_1), has_correct_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_12), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_center + v_12), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_right + v_12), has_correct_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(bottom_left + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_center + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + v_13), has_background_color)
+    
+    # Left border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - h_1), has_correct_color)
+    assert_that(rendered.pixelColor(left_center - h_1), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_left - h_1), has_correct_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - h_12), has_correct_color)
+    assert_that(rendered.pixelColor(left_center - h_12), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_left - h_12), has_correct_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - h_13), has_background_color)
+    assert_that(rendered.pixelColor(left_center - h_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_left - h_13), has_background_color)
+    
+    # Right border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_right + h_1), has_correct_color)
+    assert_that(rendered.pixelColor(right_center + h_1), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_right + h_1), has_correct_color)
+    # Outer bleed edge
+    # TODO: Investigate why the right side is off by one when rendering to QImage, instead of PDF
+    #  The 1mm bleed is only 11 pixel wide, instead of 12
+    assert_that(rendered.pixelColor(top_right + h_12 - h_1), has_correct_color)
+    assert_that(rendered.pixelColor(right_center + h_12 - h_1), has_correct_color)
+    assert_that(rendered.pixelColor(bottom_right + h_12 - h_1), has_correct_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_right + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(right_center + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)
+
+
+@pytest.mark.parametrize("column_spacing", [0, 1])
+def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: int):
+    document = page_scene.document
+    document.page_layout.draw_sharp_corners = True
+    document.page_layout.card_bleed = 1
+    document.page_layout.column_spacing = column_spacing
+    document.page_layout_changed.emit(document.page_layout)
+    document.apply(ActionAddCard(create_card_with_pixmap("Left", color=QColorConstants.Black)))
+    document.apply(ActionAddCard(create_card_with_pixmap("Right", color=QColorConstants.Cyan)))
+
+    size = CardSizes.REGULAR.as_qsize_px()
+    right = QPoint(size.width() - 1, 0)
+    down = QPoint(0, size.height() - 1)
+    half_right, half_down = right / 2, down / 2
+    h_1 = QPoint(1, 0)
+    h_6 = QPoint(5, 0)  # TODO: Investigate why the right border is one pixel too narrow when rendering to QImage
+    h_7 = QPoint(7, 0)
+    h_12 = QPoint(12, 0)
+    h_13 = QPoint(13, 0)
+    v_1 = QPoint(0, 1)
+    v_12 = QPoint(0, 12)
+    v_13 = QPoint(0, 13)
+
+    top_left = page_scene.card_items[0].scenePos().toPoint()
+    top_right = top_left + right
+    bottom_left = top_left + down
+    bottom_right = top_left + right + down
+
+    top_center = top_left + half_right
+    left_center = top_left + half_down
+    right_center = top_right + half_down
+    bottom_center = bottom_left + half_right
+
+    rendered = render_scene(page_scene)
+    has_left_color = is_(equal_to(QColorConstants.Black))
+    has_right_color = is_(equal_to(QColorConstants.Cyan))
+    has_background_color = is_(equal_to(QColorConstants.White))
+
+    # Left card
+    
+    # Top border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - v_1), has_left_color)
+    assert_that(rendered.pixelColor(top_center - v_1), has_left_color)
+    assert_that(rendered.pixelColor(top_right - v_1), has_left_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - v_12), has_left_color)
+    assert_that(rendered.pixelColor(top_center - v_12), has_left_color)
+    assert_that(rendered.pixelColor(top_right - v_12), has_left_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_center - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_right - v_13), has_background_color)
+
+    # Bottom border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_1), has_left_color)
+    assert_that(rendered.pixelColor(bottom_center + v_1), has_left_color)
+    assert_that(rendered.pixelColor(bottom_right + v_1), has_left_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_12), has_left_color)
+    assert_that(rendered.pixelColor(bottom_center + v_12), has_left_color)
+    assert_that(rendered.pixelColor(bottom_right + v_12), has_left_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(bottom_left + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_center + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + v_13), has_background_color)
+
+    # Left border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - h_1), has_left_color)
+    assert_that(rendered.pixelColor(left_center - h_1), has_left_color)
+    assert_that(rendered.pixelColor(bottom_left - h_1), has_left_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - h_12), has_left_color)
+    assert_that(rendered.pixelColor(left_center - h_12), has_left_color)
+    assert_that(rendered.pixelColor(bottom_left - h_12), has_left_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - h_13), has_background_color)
+    assert_that(rendered.pixelColor(left_center - h_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_left - h_13), has_background_color)
+
+    # Right border
+    if column_spacing:
+        # Inner bleed edge
+        assert_that(rendered.pixelColor(top_right + h_1), has_left_color)
+        assert_that(rendered.pixelColor(right_center + h_1), has_left_color)
+        assert_that(rendered.pixelColor(bottom_right + h_1), has_left_color)
+        # Outer bleed edge
+        assert_that(rendered.pixelColor(top_right + h_6), has_left_color)
+        assert_that(rendered.pixelColor(right_center + h_6), has_left_color)
+        assert_that(rendered.pixelColor(bottom_right + h_6), has_left_color)
+        # Outside bleed
+        assert_that(rendered.pixelColor(top_right + h_7), has_right_color)
+        assert_that(rendered.pixelColor(right_center + h_7), has_right_color)
+        assert_that(rendered.pixelColor(bottom_right + h_7), has_right_color)
+    else:
+        assert_that(rendered.pixelColor(top_right + h_1), has_right_color)
+        assert_that(rendered.pixelColor(right_center + h_1), has_right_color)
+        assert_that(rendered.pixelColor(bottom_right + h_1), has_right_color)
+
+    # Right card
+    
+    top_left = page_scene.card_items[1].scenePos().toPoint()
+    top_right = top_left + right
+    bottom_left = top_left + down
+    bottom_right = top_left + right + down
+
+    top_center = top_left + half_right
+    left_center = top_left + half_down
+    right_center = top_right + half_down
+    bottom_center = bottom_left + half_right
+
+    # Top border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_left - v_1), has_right_color)
+    assert_that(rendered.pixelColor(top_center - v_1), has_right_color)
+    assert_that(rendered.pixelColor(top_right - v_1), has_right_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_left - v_12), has_right_color)
+    assert_that(rendered.pixelColor(top_center - v_12), has_right_color)
+    assert_that(rendered.pixelColor(top_right - v_12), has_right_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_left - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_center - v_13), has_background_color)
+    assert_that(rendered.pixelColor(top_right - v_13), has_background_color)
+
+    # Bottom border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_center + v_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + v_1), has_right_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(bottom_left + v_12), has_right_color)
+    assert_that(rendered.pixelColor(bottom_center + v_12), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + v_12), has_right_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(bottom_left + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_center + v_13), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + v_13), has_background_color)
+
+    # Left border
+    if column_spacing:
+        # Inner bleed edge
+        assert_that(rendered.pixelColor(top_left - h_1), has_right_color)
+        assert_that(rendered.pixelColor(left_center - h_1), has_right_color)
+        assert_that(rendered.pixelColor(bottom_left - h_1), has_right_color)
+        # Outer bleed edge
+        assert_that(rendered.pixelColor(top_left - h_6), has_right_color)
+        assert_that(rendered.pixelColor(left_center - h_6), has_right_color)
+        assert_that(rendered.pixelColor(bottom_left - h_6), has_right_color)
+        # Outside bleed
+        assert_that(rendered.pixelColor(top_left - h_7-h_1), has_left_color)
+        assert_that(rendered.pixelColor(left_center - h_7-h_1), has_left_color)
+        assert_that(rendered.pixelColor(bottom_left - h_7-h_1), has_left_color)
+    else:
+        assert_that(rendered.pixelColor(top_left - h_1), has_left_color)
+        assert_that(rendered.pixelColor(left_center - h_1), has_left_color)
+        assert_that(rendered.pixelColor(bottom_left - h_1), has_left_color)
+
+    # Right border
+    # Inner bleed edge
+    assert_that(rendered.pixelColor(top_right + h_1), has_right_color)
+    assert_that(rendered.pixelColor(right_center + h_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + h_1), has_right_color)
+    # Outer bleed edge
+    assert_that(rendered.pixelColor(top_right + h_12 - h_1), has_right_color)
+    assert_that(rendered.pixelColor(right_center + h_12 - h_1), has_right_color)
+    assert_that(rendered.pixelColor(bottom_right + h_12 - h_1), has_right_color)
+    # Outside bleed
+    assert_that(rendered.pixelColor(top_right + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(right_center + h_13 - h_1), has_background_color)
+    assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)

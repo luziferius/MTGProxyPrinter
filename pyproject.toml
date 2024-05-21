@@ -22,35 +22,40 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Games/Entertainment :: Board Games",
     "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
 ]
+# Minimum required ijson version is 3.1 for the use_float parameter.
 # ijson adds full compatibility with Python 3.11 in version 3.2 (3.1 is really slow on Py3.11).
-# Older Python works fine with ijson >= 3.1
+# and Python 3.12 support in 3.2.1. Require newer versions on those Python versions to avoid
+# falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
     "PyQt5",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
+    "ijson >= 3.2.1; python_version >= '3.12'",
     "pint < 0.22; python_version < '3.9'",  # 0.22 dropped Py 3.8 support, thus Win7 support
     "pint; python_version >= '3.9'",
     "delegateto == 1.5",
-    "PyHamcrest >= 1.8.1",
+    "PyHamcrest >= 2",
     "truststore; python_version >= '3.10'",
     "certifi; python_version < '3.10'",
+    "typing_extensions; python_version < '3.11'",
 ]
 
 dynamic = [
     "version",
 ]
+
 [project.optional-dependencies]
 dev = [
     "pytest",
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 2.0",
-    "PyHamcrest >= 2.0.0",
     "tox >= 4.0",
 ]
 package = [

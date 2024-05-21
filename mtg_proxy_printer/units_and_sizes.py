@@ -21,7 +21,7 @@ from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDi
 try:
     from typing import NotRequired
 except ImportError:  # Compatibility with Python < 3.11
-    from typing import Optional as NotRequired
+    from typing_extensions import NotRequired
 
 
 from PyQt5.QtGui import QPageSize, QPageLayout

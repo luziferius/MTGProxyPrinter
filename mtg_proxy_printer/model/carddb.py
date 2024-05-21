@@ -369,18 +369,20 @@ class CardDatabase(QObject):
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
         return bool(result)
 
+    def get_last_card_data_update_timestamp(self) -> typing.Optional[datetime.datetime]:
+        """Returns the last card data update timestamp, or None, if no card data was ever imported"""
+        query = "SELECT MAX(update_timestamp) FROM LastDatabaseUpdate -- get_last_card_data_update_timestamp\n"
+        result = self._read_optional_scalar_from_db(query, [])
+        return datetime.datetime.fromisoformat(result) if result else None
+
     def allow_updating_card_data(self) -> bool:
         """
         Returns True, if it should be allowed to update the internal card database, False otherwise.
         This is determined by the timestamp of the last database update performed.
         If the database is empty, downloading the card data is always allowed.
         """
-        # The MAX aggregate returns NULL on an empty database. So use a timestamp in 1970 to return True then.
-        query = "SELECT COALESCE(MAX(update_timestamp), '1970-01-01 00:00:00') FROM LastDatabaseUpdate\n"
-        result, = self.db.execute(query).fetchone()
-        last_timestamp = datetime.datetime.fromisoformat(result)
-        allow_update = (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today()
-        return allow_update
+        last_timestamp = self.get_last_card_data_update_timestamp()
+        return (last_timestamp + MINIMUM_REFRESH_DELAY) <= datetime.datetime.today() if last_timestamp else True
 
     def get_all_languages(self) -> StringList:
         """Returns the list of all known and visible languages, sorted ascendingly."""
@@ -392,10 +394,10 @@ class CardDatabase(QObject):
         return result
 
     def get_card_names(self, language: str, card_name_filter: str = None) -> StringList:
-        """Returns a list with all card names in the given language."""
+        """Returns a sorted list with all card names in the given language that match the given filter."""
         logger.debug(f'Finding matching card names for language "{language}" and name filter "{card_name_filter}"')
         query = cached_dedent('''\
-        SELECT card_name
+        SELECT card_name -- get_card_names()
             FROM FaceName
             JOIN PrintLanguage USING (language_id)
             WHERE FaceName.is_hidden IS FALSE
@@ -559,13 +561,17 @@ class CardDatabase(QObject):
 
     def find_related_cards(self, card: Card) -> CardList:
         """
-        Recursively finds all cards related to the given non-token, non-emblem, non-dungeon card.
+        Recursively finds all cards related to the given card.
         This may be cards referenced by name in either direction, or token cards created.
-        Tokens, Emblems and Dungeons cannot have outgoing related cards, as that would create potentially huge graphs
-        due to evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, The Ring emblem, etc.
+        The search never returns the identity, i.e. the input card is never part of the output list.
+
+        Non-token cards may find anything, including other cards, tokens, emblems, dungeons, planes, etc.
+
+        Non-regular cards may not find non-token cards as that would create potentially huge graphs due to
+        evergreen tokens like Treasures, Food, Clues, 2/2 Zombies, The Ring emblem, etc.
         """
         query = cached_dedent("""\
-        WITH RECURSIVE 
+        WITH RECURSIVE   -- find_related_cards()
           source_oracle_id (card_id) AS (
             SELECT card_id
             FROM Card
@@ -699,7 +705,7 @@ class CardDatabase(QObject):
         """
         from mtg_proxy_printer.model.imagedb import CacheContent
         db = self.db
-        db.execute("SAVEPOINT 'partition_image_cache'")
+        db.execute("SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()")
         db.execute(cached_dedent('''\
             CREATE TEMP TABLE ImagesOnDisk ( -- get_all_cards_from_image_cache()
               scryfall_id TEXT NOT NULL,
@@ -754,7 +760,7 @@ class CardDatabase(QObject):
                 cards.hidden.append((card, cache_item))
             else:
                 cards.visible.append((card, cache_item))
-        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache'")
+        db.execute("ROLLBACK TRANSACTION TO SAVEPOINT 'partition_image_cache' -- get_all_cards_from_image_cache()\n")
         return cards
 
     def get_opposing_face(self, card) -> OptionalCard:
@@ -855,17 +861,73 @@ class CardDatabase(QObject):
         to generate the choices for translating cards in the document.
         """
         query = cached_dedent("""\
-        SELECT DISTINCT language 
-          FROM Card
-          JOIN Printing USING (card_id)
+        SELECT DISTINCT language FROM ( -- get_available_languages_for_card()
+          SELECT ? AS language
+          UNION ALL
+          SELECT language
+            FROM Card
+            JOIN Printing USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE oracle_id = ?
+              AND Printing.is_hidden IS FALSE
+          )
+          ORDER BY language ASC;
+        """)
+        parameters = card.language, card.oracle_id
+        result = [item for item, in self.db.execute(query, parameters)]
+        return result
+
+    def get_available_sets_for_card(self, card: Card) -> typing.List[MTGSet]:
+        """
+        Returns a list of MTG sets the card with the given Oracle ID is in, ordered by release date from old to new.
+        """
+        query = cached_dedent("""\
+        SELECT DISTINCT set_code, set_name FROM ( -- get_available_sets_for_card()
+          SELECT set_code, set_name, release_date
+          FROM MTGSet
+          JOIN Printing USING (set_id)
+          JOIN Card USING (card_id)
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)
-          WHERE oracle_id = ?
-            AND Printing.is_hidden IS FALSE
-          ORDER BY language ASC;
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE
+            AND oracle_id = ? 
+            AND language = ?
+          UNION ALL
+          SELECT set_code, set_name, release_date
+            FROM MTGSet
+            WHERE set_code = ?
+          )
+          ORDER BY release_date ASC
         """)
-        result = [item for item, in self.db.execute(query, (card.oracle_id,))]
+        parameters = card.oracle_id, card.language, card.set.code
+        result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
+        return result
+
+    def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
+        query = cached_dedent("""\
+        SELECT DISTINCT collector_number FROM ( -- get_available_collector_numbers_for_card_in_set()
+          SELECT ? AS collector_number
+          UNION ALL
+          SELECT collector_number
+            FROM MTGSet
+            JOIN Printing USING (set_id)
+            JOIN Card USING (card_id)
+            JOIN CardFace USING (printing_id)
+            JOIN FaceName USING (face_name_id)
+            JOIN PrintLanguage USING (language_id)
+            WHERE Printing.is_hidden IS FALSE
+              AND FaceName.is_hidden IS FALSE
+              AND oracle_id = ?
+              AND set_code = ?
+              AND language = ?
+          )
+        """)
+        parameters = (card.collector_number, card.oracle_id, card.set.code, card.language)
+        result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
     def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
@@ -878,7 +940,7 @@ class CardDatabase(QObject):
         logger.debug(f"Query RemovedPrintings table for scryfall id {scryfall_id}")
         parameters = scryfall_id,
         query = cached_dedent("""\
-        SELECT oracle_id
+        SELECT oracle_id -- is_removed_printing()
             FROM RemovedPrintings
             WHERE scryfall_id = ?
         """)

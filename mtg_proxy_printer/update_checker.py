@@ -152,7 +152,7 @@ class ApplicationUpdateCheckWorker(CardInfoWorkerBase):
 
     def _read_available_application_versions_from_mirror(self, mirror):
         data, _ = self.read_from_url(f"{mirror}/json/tag/list/")
-        items = ijson.items(data, "payload.tags.item")
+        items = ijson.items(data, "payload.tags.item", use_float=True)
         matches = filter(
             None,
             map(VERSION_TAG_MATCHER.fullmatch, items)
@@ -175,14 +175,14 @@ class ApplicationUpdateCheckRunner(Runnable):
             self.release_instance()
 
     def _perform_check(self):
-        worker = ApplicationUpdateCheckWorker()
+        self.worker = worker = ApplicationUpdateCheckWorker()
         worker.application_update_found.connect(self.parent.application_update_found)
         worker.network_error_occurred.connect(self.parent.network_error_occurred)
         worker.perform_application_update_check()
 
 
 class UpdateChecker(QObject):
-
+    """The interface class."""
     card_data_update_found = Signal(int)
     application_update_found = Signal(str)
     network_error_occurred = Signal(str)

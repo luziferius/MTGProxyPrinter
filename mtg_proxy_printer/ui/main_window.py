@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.request_obtaining_images.connect(image_db.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
-        self.about_dialog = self._create_about_dialog()
+        self.about_dialog = self._create_about_dialog(card_db)
         self.progress_bars = self._create_progress_bar()
         self.card_database = card_db
         self.image_db = image_db
@@ -103,8 +103,8 @@ class MainWindow(QMainWindow):
         self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_about_dialog(self) -> AboutDialog:
-        about_dialog = AboutDialog(self)
+    def _create_about_dialog(self, card_database: CardDatabase) -> AboutDialog:
+        about_dialog = AboutDialog(card_database, self)
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog

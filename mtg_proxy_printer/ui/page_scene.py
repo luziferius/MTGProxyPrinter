@@ -126,8 +126,9 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
             QPointF(left+v_px, bottom),
             QPointF(left, bottom), QPointF(left, top)
         )))
-        # Some renderers do draw zero-width elements as faint lines, so set zero-width bleeds to be transparent
-        self.setOpacity(h_px > 0 < v_px)
+        # Some renderers do draw zero-width elements as faint lines,
+        # so set zero-width bleeds to be transparent
+        self.setOpacity(h_px > 0 or v_px > 0)
 
 
 class NeighborsPresent(typing.NamedTuple):

@@ -29,32 +29,18 @@
       <layout class="QGridLayout" name="tab_about_layout">
        <item row="3" column="1" colspan="2">
         <widget class="QLabel" name="python_version_label">
+         <property name="toolTip">
+          <string>Python runtime version</string>
+         </property>
          <property name="textInteractionFlags">
           <set>Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLabel" name="mtg_proxy_printer_name">
-         <property name="text">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="textInteractionFlags">
-          <set>Qt::NoTextInteraction</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="mtg_proxy_printer_icon">
-         <property name="text">
-          <string/>
          </property>
         </widget>
        </item>
        <item row="2" column="0">
         <widget class="QLabel" name="mtg_proxy_printer_version_header_label">
          <property name="text">
-          <string>Version:</string>
+          <string>Application Version:</string>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::NoTextInteraction</set>
@@ -81,6 +67,42 @@
          </property>
         </widget>
        </item>
+       <item row="2" column="1" colspan="2">
+        <widget class="QLabel" name="mtg_proxy_printer_version_label">
+         <property name="toolTip">
+          <string>Application version</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="textFormat">
+          <enum>Qt::PlainText</enum>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::TextSelectableByMouse</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="mtg_proxy_printer_name">
+         <property name="text">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:xx-large; font-weight:600;&quot;&gt;MTGProxyPrinter&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+         <property name="textInteractionFlags">
+          <set>Qt::NoTextInteraction</set>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="mtg_proxy_printer_icon">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
        <item row="1" column="0" colspan="3">
         <widget class="QTextBrowser" name="about_text">
          <property name="sizePolicy">
@@ -103,8 +125,7 @@ Under the Fan Content Policy, you may neither sell the data downloaded using
 this program, including the card database content and downloaded card images,
 nor any documents created, both in digital and physical form.
 
-Project Website: 
-[{application_name} home page]({application_home_page})
+Project Website: [{application_name} home page]({application_home_page})
 
 </string>
          </property>
@@ -113,16 +134,20 @@ Project Website:
          </property>
         </widget>
        </item>
-       <item row="2" column="1" colspan="2">
-        <widget class="QLabel" name="mtg_proxy_printer_version_label">
+       <item row="4" column="0">
+        <widget class="QLabel" name="last_database_update_header_label">
+         <property name="text">
+          <string>Last card update:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1" colspan="2">
+        <widget class="QLabel" name="last_database_update_label">
+         <property name="toolTip">
+          <string>Timestamp of the last card data update.</string>
+         </property>
          <property name="text">
           <string/>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::PlainText</enum>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
          <property name="textInteractionFlags">
           <set>Qt::TextSelectableByMouse</set>

@@ -333,15 +333,15 @@ def test_card_import(qtbot, card_db: CardDatabase, test_case: TestCaseData):
     assert_visible_import(card_db, test_case)
 
 
-def generate_test_cases_for_test_download_filters():
+def generate_test_cases_for_test_print_hiding_filters():
     yield TestCaseData("depicting_racism"), "hide-cards-depicting-racism"  # German printing of "Crusade"
     yield TestCaseData("placeholder_image"), "hide-cards-without-images"  # Spanish printing of "Air Elemental"
     yield TestCaseData("oversized_card"), "hide-oversized-cards"  # Oversized printing of "Atraxa, Praetors' Voice"
     yield TestCaseData("funny_card_with_silver_border"), "hide-funny-cards"  # Silver-bordered "Aesthetic Consultation" from Unhinged
     yield TestCaseData("funny_card_with_acorn_security_stamp"), "hide-funny-cards"  # Black-bordered "Form of the Approach of the Second Sun" from Unfinity
     yield TestCaseData("Food_Token"), "hide-token"
-    yield TestCaseData("Undercity"), "hide-token"   # Double-faced token
-    yield TestCaseData("The_Ring"), "hide-token"   # Double-faced token
+    yield TestCaseData("Undercity"), "hide-token"   # Double-faced Dungeon / The Initiative marker card
+    yield TestCaseData("The_Ring"), "hide-token"   # Double-faced Emblem
     yield TestCaseData("gold_bordered_card"), "hide-gold-bordered"
     yield TestCaseData("white_bordered_card"), "hide-white-bordered"
     yield TestCaseData("banned_in_brawl"), "hide-banned-in-brawl"
@@ -360,11 +360,12 @@ def generate_test_cases_for_test_download_filters():
     yield TestCaseData("borderless_card"), "hide-borderless"
     yield TestCaseData("extended_art"), "hide-extended-art"
     yield TestCaseData("reversible_card"), "hide-reversible-cards"  # English special printing of Stitch in Time // Stitch in Time, which has the same card on both sides
+    yield TestCaseData("english_double_faced_art_series_card"), "hide-art-series-cards"
 
 
 @pytest.mark.parametrize("filter_enabled", [True, False])
-@pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_download_filters())
-def test_boolean_download_filters(
+@pytest.mark.parametrize("test_case, filter_name", generate_test_cases_for_test_print_hiding_filters())
+def test_boolean_print_hiding_filters(
         qtbot, card_db: CardDatabase, test_case: TestCaseData, filter_name: str, filter_enabled: bool):
     fill_card_database_with_json_card(qtbot, card_db, test_case.json_dict, {filter_name: str(filter_enabled)})
     if filter_enabled:
@@ -548,27 +549,42 @@ def test_set_wackiness_score(qtbot, card_db: CardDatabase, json_name: str, expec
     )
 
 
-def test_related_printings(qtbot, card_db: CardDatabase):
-    db = card_db.db
-    cards = [
+@pytest.mark.parametrize("cards, expected_pairs", [
+    ([
         "The_Underworld_Cookbook",
         "Food_Token",
         "Asmoranomardicadaistinaculdacar",
         "Bake_into_a_Pie",
         "Asmoranomardicadaistinaculdacar_2",
         "Food_Token_2",
-    ]
+     ], [
+        # The Food token (card id 2) is never a source, as that would pull all cards creating that token
+        (3, 1),  # Asmoranomardicadaistinaculdacar references The Underworld Cookbook by name
+        (1, 3),  # Back relation
+        (1, 2),  # Card mentions Food token
+        (4, 2),  # Card mentions Food token
+    ]),
+    ([
+         "Dungeon_of_the_Mad_Mage", "Zombie_Ogre", "Dungeon_Skeleton_Token",
+     ],[
+        (1, 3),  # The Dungeon itself can create a Skeleton Token
+        (2, 1),  # Zombie Ogre has Venture into the Dungeon
+        # Nothing else here:
+        # The Skeleton must not link to the Dungeon, and the Dungeon must not link to the Zombie Ogre
+    ]),
+])
+def test_related_printings(
+        qtbot, card_db: CardDatabase,
+        cards: typing.List[str], expected_pairs: typing.List[typing.Tuple[int, int]]):
+    db = card_db.db
+
     # Cards always relate to exact printings, but which one is chosen is rather arbitrary. E.g. The Underworld Cookbook
     # and Back into a Pie both create a Food token, but are set to different printings of that token card.
     fill_card_database_with_json_cards(qtbot, card_db, cards)
     assert_that(
         db.execute("SELECT card_id, related_id FROM RelatedPrintings").fetchall(),
         contains_inanyorder(
-            # The Food token (card id 2) is never a source, as that would pull all cards creating that token
-            (3, 1),  # Asmoranomardicadaistinaculdacar references The Underworld Cookbook by name
-            (1, 3),  # Back relation
-            (1, 2),  # Card mentions Food token
-            (4, 2),  # Card mentions Food token
+            *expected_pairs
         )
     )
 

@@ -4,7 +4,45 @@
 
 ## New features
 
-- Add a landscape printing workaround for both direct printing and PDF export.
+- Add option to fully automatically remove basic lands from all imported deck lists.
+    - When enabled in the settings, basic lands are automatically stripped from deck lists,
+      otherwise the previous behavior is retained.
+    - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
+- Add new card filter for Art Series cards, which can be enabled in the application settings.
+    - When updating from previous versions, the filter becomes functional after the next card data update.
+
+## Changed features
+
+- Improved the related card search: The search now finds tokens created by Dungeons.
+  Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
+    - When updating from previous versions, this change takes effect after the next card data update.
+
+## Fixed issues
+
+- When switching the language of the card search, the shown list now honors any entered card name filter.
+- Fixed multiple issues with print switching via double-clicking the "Language", "Set" or "Collector #" cells in tables.
+    - The app now handles ambiguous card names, most prominently with tokens or some cards in Unstable.
+      For example, it no longer treats a "1/1 colorless Spirit" token and a "1/1 black and white Spirit with Flying"
+      token as interchangeable.
+    - Fixed a crash that occurred when trying to switch a card to a different language, if all printings of the card in
+      the source language are hidden by card filters.
+    - It now properly handles cases with non-English cards in sets with multiple different printings,
+      where only parts of the set is available in the current language. 
+      In such cases, the application no longer offers switching to printings that aren't actually available in the
+      currently selected language.
+
+# Version 0.28.2 (2024-05-07)  <a name="v0_28_2"></a>
+
+## Fixed issues
+
+- Fixed critical error that caused the PDF export, print dialog and print preview dialog to not show up under normal 
+  circumstances.
+
+# Version 0.28.1 (2024-05-06)  <a name="v0_28_1"></a>
+
+## New features
+
+- Add a landscape printing workaround that can be enabled independently for direct printing and PDF export.
   If enabled, landscape documents are internally rotated by 90° during the export/print process,
   so that they are treated as regular, portrait-mode documents.
 
@@ -16,7 +54,14 @@
       as in previous versions.
 - Printer and PDF export options are moved to dedicated pages in the application settings window.
 
-# 0.28.0 (2024-03-24)  <a name="v0_28_0"></a>
+## Fixed issues
+
+- Fixed broken card bleed rendering when row spacing or column spacing are set to zero.
+  The thick border around the cards is now continuous, as it was in version [0.27](#0_27_0).
+- Fix the page view not updating instantly when the application successfully downloads a card image that
+  failed to download during previous download attempts.
+
+# Version 0.28.0 (2024-03-24)  <a name="v0_28_0"></a>
 
 ## New features
 
