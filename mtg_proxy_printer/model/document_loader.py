@@ -620,7 +620,8 @@ def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     _migrate_3_to_4(db, settings)
     _migrate_4_to_5(db, settings)
     _migrate_5_to_6(db, settings)
-    migrate_image_spacing_settings(db)
+    _migrate_image_spacing_settings(db)
+    _migrate_paper_size_settings(db)
     logger.debug("Finished running migration tasks")
 
 
@@ -752,7 +753,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
         ])
 
 
-def migrate_image_spacing_settings(db: sqlite3.Connection):
+def _migrate_image_spacing_settings(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version").fetchone()[0] != 6:
         return
     logger.debug("Migrating save file version 6 image spacing settings")
@@ -773,6 +774,31 @@ def migrate_image_spacing_settings(db: sqlite3.Connection):
         """),
         "DELETE FROM DocumentSettings WHERE key = 'image_spacing_vertical'",
         "DELETE FROM DocumentSettings WHERE key = 'image_spacing_horizontal'",
+        # Not updating the user_version
+    ]:
+        db.execute(f"{statement}\n")
+
+def _migrate_paper_size_settings(db: sqlite3.Connection):
+    if db.execute("PRAGMA user_version").fetchone()[0] != 6:
+        return
+    logger.debug("Migrating save file version 6 paper size settings")
+    for statement in [
+        textwrap.dedent("""\
+        UPDATE DocumentSettings SET key = 'custom_page_height'
+          WHERE key == 'page_height' 
+          AND NOT EXISTS (
+            SELECT key FROM DocumentSettings
+            WHERE key == 'custom_page_height')
+        """),
+        textwrap.dedent("""\
+        UPDATE DocumentSettings SET key = 'custom_page_width'
+          WHERE key == 'page_width' 
+          AND NOT EXISTS (
+            SELECT key FROM DocumentSettings
+            WHERE key == 'custom_page_width')
+        """),
+        "DELETE FROM DocumentSettings WHERE key = 'page_height'",
+        "DELETE FROM DocumentSettings WHERE key = 'page_width'",
         # Not updating the user_version
     ]:
         db.execute(f"{statement}\n")

@@ -359,7 +359,7 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(
-        page_height=300, page_width=200,
+        custom_page_height=300, custom_page_width=200,
         margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
         row_spacing=3, column_spacing=2,
         draw_cut_markers=True, draw_sharp_corners=False,
@@ -477,7 +477,7 @@ def test_save_as_saves_check_card(document: Document):
 def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
     layout = copy.copy(document_custom_layout.page_layout)
-    layout.page_height = 1000
+    layout.custom_page_height = 1000
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     # Prevent network access when re-loading the document
     document_custom_layout.image_db.loaded_images[
@@ -574,6 +574,8 @@ def _validate_saved_document_settings(document: Document):
             contains_exactly(
                 page_layout.card_bleed,
                 page_layout.column_spacing,
+                page_layout.page_height,
+                page_layout.page_width,
                 page_layout.document_name,
                 int(page_layout.draw_cut_markers),
                 int(page_layout.draw_sharp_corners),
@@ -582,8 +584,8 @@ def _validate_saved_document_settings(document: Document):
                 page_layout.margin_left,
                 page_layout.margin_right,
                 page_layout.margin_top,
-                page_layout.page_height,
-                page_layout.page_width,
+                page_layout.paper_orientation,
+                page_layout.paper_size,
                 page_layout.row_spacing,
             )
         )

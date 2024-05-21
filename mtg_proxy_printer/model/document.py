@@ -346,23 +346,24 @@ class Document(QAbstractItemModel):
         ]
         with mtg_proxy_printer.sqlite_helpers.open_database(
                 self.save_file_path, "document-v6", self.loader.MIN_SUPPORTED_SQLITE_VERSION) as db:
-            db.execute("BEGIN TRANSACTION")
+            db.execute("BEGIN TRANSACTION -- save_to_disk()\n")
             migrate_database(db, self.page_layout)
-            db.execute("DELETE FROM Card")
+            db.execute("DELETE FROM Card -- save_to_disk()\n")
             db.executemany(
-                "INSERT INTO Card (page, slot, scryfall_id, is_front, type) VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO Card (page, slot, scryfall_id, is_front, type) "
+                "VALUES (?, ?, ?, ?, ?)-- save_to_disk()\n",
                 flattened_data
             )
-            logger.debug(f"Written {db.execute('SELECT count() FROM Card').fetchone()[0]} cards.")
+            logger.debug(f"Written {db.execute('SELECT count() FROM Card -- save_to_disk()').fetchone()[0]} cards.")
             db.executemany(
                 textwrap.dedent("""\
                     INSERT OR REPLACE INTO DocumentSettings (key, value)
-                      VALUES (?, ?)
+                      VALUES (?, ?) -- save_to_disk()
                     """),
                 dataclasses.asdict(self.page_layout).items())
             logger.debug("Written document settings")
             db.commit()
-            db.execute("VACUUM")
+            db.execute("VACUUM -- save_to_disk()\n")
         logger.debug("Database saved and closed.")
 
     def compute_pages_saved_by_compacting(self) -> int:
