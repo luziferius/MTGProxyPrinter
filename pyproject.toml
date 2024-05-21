@@ -60,7 +60,7 @@ dev = [
 ]
 package = [
     "build",
-    "cx_Freeze >= 6.11.1; platform.python_implementation == 'CPython'",
+    "cx_Freeze >= 7; platform.python_implementation == 'CPython'",
 ]
 
 
@@ -92,6 +92,77 @@ exclude = [
 [tool.setuptools.dynamic]
 version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 
+
+[tool.cxfreeze]
+executables = [
+    {script = "mtg_proxy_printer/__main__.py", base = "gui", target_name = "MTGProxyPrinter", shortcut_name="MTGProxyPrinter", shortcut_dir="StartMenuFolder"}
+]
+
+[tool.cxfreeze.build_exe]
+excludes = [
+    "mtg_proxy_printer.resources",  # Do not include the raw resources as individual files
+
+    "distutils",
+    "lib2to3",
+    "pep517",
+    "pytest",
+    "pydoc_data",
+    "tkinter",
+    "toml",
+    "sqlite3.test",  # Ignore the internal test suite
+    "pint.testsuite",  # Ignore the internal test suite
+    "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
+    "importlib_metadata",
+
+    # All unused PyQt components
+    "PyQt5.QtXmlPatterns",
+    "PyQt5.QtNfc",
+    "PyQt5.QtQml",
+    "PyQt5.QtSql",
+    "PyQt5.Qt3DAnimation",
+    "PyQt5.Qt3DCore",
+    "PyQt5.Qt3DExtras",
+    "PyQt5.Qt3DInput",
+    "PyQt5.Qt3DLogic",
+    "PyQt5.Qt3DRender",
+    "PyQt5.QtBluetooth",
+    "PyQt5.QtChart",
+    "PyQt5.QtDataVisualisation",
+    "PyQt5.QtLocation",
+    "PyQt5.QtMultimedia",
+    "PyQt5.QtMultimediaWidgets",
+    "PyQt5.QtNetwork",
+    "PyQt5.QtNetworkAuth",
+    "PyQt5.QtOpenGL",
+    "PyQt5.QtPositioning",
+    "PyQt5.QtPurchasing",
+    "PyQt5.QtQuick",
+    "PyQt5.QtQuickWidgets",
+    "PyQt5.QtRemoteObjects",
+    "PyQt5.QtSensors",
+    "PyQt5.QtSerialPort",
+    "PyQt5.QtTest",
+    "PyQt5.QtWebChannel",
+    "PyQt5.QtWebEngine",
+    "PyQt5.QtWebEngineCore",
+    "PyQt5.QtWebEngineWidgets",
+    "PyQt5.QtWebKit",
+    "PyQt5.QtWebKitWidgets",
+    "PyQt5.QtWebSockets",
+    "PyQt5.uic.port_v2",
+]
+zip_include_packages = [
+    "ijson.backends", # Make sure that the dynamically loaded ijson backends are discovered.
+]
+optimize = 2
+
+[tool.cxfreeze.bdist_msi]
+# The GUID upgrade_code token is used by Windows to identify the application being installed.
+# When another MSI package with a known, installed GUID is installed, it is assumed to be an update,
+# causing the removal of the previous package, allowing smooth updates. It has to be enclosed in {}.
+upgrade_code = "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}"
+target_name = "MTGProxyPrinter"
+skip_build = true
 
 [build-system]
 requires = [
