@@ -151,7 +151,7 @@ excludes = [
     "PyQt5.QtWebSockets",
     "PyQt5.uic.port_v2",
 ]
-zip_include_packages = [
+includes = [
     "ijson.backends", # Make sure that the dynamically loaded ijson backends are discovered.
 ]
 optimize = 2
