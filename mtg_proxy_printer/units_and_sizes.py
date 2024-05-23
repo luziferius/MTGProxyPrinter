@@ -16,6 +16,7 @@
 """Contains some constants, like the card size"""
 import enum
 import re
+import typing
 from typing import Type, Dict, List, Optional, Set, TypeVar, NamedTuple, TypedDict, Union
 
 try:
@@ -25,9 +26,11 @@ except ImportError:  # Compatibility with Python < 3.11
 
 
 from PyQt5.QtGui import QPageSize, QPageLayout
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, QObject, pyqtSignal as Signal
 import pint
 
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 
 import mtg_proxy_printer.natsort
 unit_registry = pint.UnitRegistry()
@@ -252,7 +255,7 @@ class BulkDataType(TypedDict):
     content_encoding: str
 
 
-def read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
+def _read_enum(container: Type, enum_class: Type[T], accumulator: Dict[str, T] = None) -> Dict[str, T]:
     if accumulator is None:
         accumulator = {}
     for item in mtg_proxy_printer.natsort.natural_sorted(dir(container)):
@@ -270,15 +273,22 @@ def is_acceptable_page_size(page_size: Union[QPageSize.PageSizeId, QPageSize]) -
 
 
 def read_page_size_enum() -> Dict[str, QPageSize.PageSizeId]:
-    result = read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId.Custom})
+    result = _read_enum(QPageSize, QPageSize.PageSizeId, {"Custom": QPageSize.PageSizeId.Custom})
     del result["LastPageSize"]
     for item, value in list(result.items()):
         if not is_acceptable_page_size(value):
             del result[item]
     return result
 
+class PageSizeManager(QObject):
+    PageSize = read_page_size_enum()
+    PageSizeReverse = {value: key for key, value in read_page_size_enum().items()}
+    PageOrientation = _read_enum(QPageLayout, QPageLayout.Orientation)
+    PageOrientationReverse = {value: key for key, value in _read_enum(QPageLayout, QPageLayout.Orientation).items()}
 
-PageSize = read_page_size_enum()
-PageSizeReverse = {value: key for key, value in PageSize.items()}
-PageOrientation = read_enum(QPageLayout, QPageLayout.Orientation)
-PageOrientationReverse = {value: key for key, value in PageOrientation.items()}
+    available_page_sizes_changed = Signal(dict)
+
+    def on_margins_updated(self, page_layout: "PageLayoutSettings"):
+        # TODO: actually check the page layout margins
+        PageSizeManager.PageSize.clear()
+        PageSizeManager.PageSize.update(read_page_size_enum())

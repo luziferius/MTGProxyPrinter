@@ -27,7 +27,7 @@ import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
 from mtg_proxy_printer.units_and_sizes import \
-    CardSizes, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse, is_acceptable_page_size
+    CardSizes, PageSizeManager, is_acceptable_page_size
 
 __all__ = [
     "settings",
@@ -42,13 +42,13 @@ __all__ = [
 
 
 def get_default_paper_size() -> str:
-    default = PageSizeReverse[QPageSize.PageSizeId.A4]
+    default = PageSizeManager.PageSizeReverse[QPageSize.PageSizeId.A4]
     printer_info = QPrinterInfo.defaultPrinter()
     if printer_info.isNull():
         return default
     page_size = printer_info.defaultPageSize()
     if page_size.isValid() and is_acceptable_page_size(page_size):
-        return PageSizeReverse[page_size.id()]
+        return PageSizeManager.PageSizeReverse[page_size.id()]
     return default
 
 
@@ -111,7 +111,7 @@ DEFAULT_SETTINGS["card-filter"] = {
 }
 DEFAULT_SETTINGS["documents"] = {
     "card-bleed-mm": "0",
-    "paper-orientation": PageOrientationReverse[QPageLayout.Orientation.Portrait],
+    "paper-orientation": PageSizeManager.PageOrientationReverse[QPageLayout.Orientation.Portrait],
     "paper-size": get_default_paper_size(),
     "paper-height-mm": "297",
     "paper-width-mm": "210",
@@ -286,9 +286,9 @@ def _validate_documents_section(to_validate: configparser.ConfigParser, section_
             pass
         else:
             _validate_non_negative_int(section, defaults, key)
-    if section["paper-size"] not in PageSize:
+    if section["paper-size"] not in PageSizeManager.PageSize:
         _restore_default(section, defaults, "paper-size")
-    if section["paper-orientation"] not in PageOrientation:
+    if section["paper-orientation"] not in PageSizeManager.PageOrientation:
         _restore_default(section, defaults, "paper-orientation")
     # Check some semantic properties
     available_height = section.getint("paper-height-mm") - \

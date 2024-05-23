@@ -35,7 +35,7 @@ from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import PageOrientation, PageSize
+from mtg_proxy_printer.units_and_sizes import PageSizeManager
 
 from tests.helpers import is_dataclass_equal_to
 
@@ -117,8 +117,8 @@ def _load_from_memory_database_expecting_failure(
 @pytest.mark.parametrize("row_spacing, column_spacing", [(0, 0), (2, 3)])
 @pytest.mark.parametrize("margin_bottom, margin_left, margin_right, margin_top", [(0, 0, 0, 0), (5, 5, 5, 5)])
 @pytest.mark.parametrize("custom_page_height, custom_page_width", [(297, 210), (2000, 1000)])
-@pytest.mark.parametrize("paper_orientation", PageOrientation.keys())
-@pytest.mark.parametrize("paper_size", PageSize.keys())
+@pytest.mark.parametrize("paper_orientation", PageSizeManager.PageOrientation.keys())
+@pytest.mark.parametrize("paper_size", PageSizeManager.PageSize.keys())
 def test_valid_page_layout_settings_load_correctly(
         qtbot: QtBot, empty_save_database: sqlite3.Connection,
         card_bleed: int, document_name: str, boolean_settings: bool,
@@ -147,7 +147,7 @@ def test_valid_page_layout_settings_load_correctly(
     if settings.paper_size == "Custom":
         assert_that(settings, has_properties({"page_height": custom_page_height, "page_width": custom_page_width}))
     else:
-        size = QPageSize.size(PageSize[paper_size], QPageSize.Unit.Millimeter)
+        size = QPageSize.size(PageSizeManager.PageSize[paper_size], QPageSize.Unit.Millimeter)
         if settings.paper_orientation == "Landscape":
             size = size.transposed()
         assert_that(

@@ -28,7 +28,7 @@ from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes, \
-    PageType, PageSize, PageSizeReverse, PageOrientation, PageOrientationReverse
+    PageType, PageSizeManager
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -57,9 +57,9 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        for page_size_id in PageSize.values():
+        for page_size_id in PageSizeManager.PageSize.values():
             ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
-        for item, value in PageOrientation.items():
+        for item, value in PageSizeManager.PageOrientation.items():
             ui.paper_orientation.addItem(item, value)
 
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
@@ -103,13 +103,13 @@ class PageConfigWidget(QGroupBox):
         ui.custom_page_height.setDisabled(index)
         ui.flip_page_dimensions.setDisabled(index)
         selected_paper_size_item: QPageSize.PageSizeId = ui.paper_size.currentData(Qt.ItemDataRole.UserRole)
-        self.page_layout.paper_size = PageSizeReverse[selected_paper_size_item]
+        self.page_layout.paper_size = PageSizeManager.PageSizeReverse[selected_paper_size_item]
 
     @Slot()
     def _on_paper_orientation_changed(self):
         ui = self.ui
         orientation: QPageLayout.Orientation = ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
-        self.page_layout.paper_orientation = PageOrientationReverse[orientation]
+        self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
 
     @Slot()
     def page_layout_setting_changed(self):
@@ -196,7 +196,7 @@ class PageConfigWidget(QGroupBox):
         logger.debug(f"Loading from document settings finished")
 
     def _load_paper_size(self, size: str):
-        page_size = PageSize[size]
+        page_size = PageSizeManager.PageSize[size]
         combo_box = self.ui.paper_size
         model = combo_box.model()
         for row in range(model.rowCount()):
@@ -205,7 +205,7 @@ class PageConfigWidget(QGroupBox):
                 break
 
     def _load_paper_orientation(self, orientation_str: str):
-        orientation = PageOrientation[orientation_str]
+        orientation = PageSizeManager.PageOrientation[orientation_str]
         combo_box = self.ui.paper_orientation
         model = combo_box.model()
         for row in range(model.rowCount()):
@@ -222,8 +222,8 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
             documents_section[setting] = line_edit.text()
-        documents_section["paper-size"] = PageSizeReverse[self._current_page_size()]
-        documents_section["paper-orientation"] = PageOrientationReverse[self._current_page_orientation()]
+        documents_section["paper-size"] = PageSizeManager.PageSizeReverse[self._current_page_size()]
+        documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
 
     def _get_integer_settings_widgets(self):
@@ -279,9 +279,9 @@ class PageConfigWidget(QGroupBox):
         for widget, setting in self._get_integer_settings_widgets():
             if widget.value() != section.getint(setting):
                 highlight_widget(widget)
-        if self._current_page_size() != PageSize[section["paper-size"]]:
+        if self._current_page_size() != PageSizeManager.PageSize[section["paper-size"]]:
             highlight_widget(self.ui.paper_size)
-        if self._current_page_orientation() != PageOrientation[section["paper-orientation"]]:
+        if self._current_page_orientation() != PageSizeManager.PageOrientation[section["paper-orientation"]]:
             highlight_widget(self.ui.paper_orientation)
 
     @highlight_differing_settings.register
@@ -295,7 +295,7 @@ class PageConfigWidget(QGroupBox):
         for widget, _ in self._get_integer_settings_widgets():
             if widget.value() != getattr(settings, widget.objectName()):
                 highlight_widget(widget)
-        if self._current_page_size() != PageSize[settings.paper_size]:
+        if self._current_page_size() != PageSizeManager.PageSize[settings.paper_size]:
             highlight_widget(self.ui.paper_size)
-        if self._current_page_orientation() != PageOrientation[settings.paper_orientation]:
+        if self._current_page_orientation() != PageSizeManager.PageOrientation[settings.paper_orientation]:
             highlight_widget(self.ui.paper_orientation)
