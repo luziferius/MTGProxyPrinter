@@ -1,5 +1,11 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- The MTGTop8 deck list downloader no longer rejects valid URLs starting with `www.`. These now work as expected.
+
 # Version 0.28.2 (2024-05-07)  <a name="v0_28_2"></a>
 
 ## Fixed issues
