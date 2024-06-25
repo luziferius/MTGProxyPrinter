@@ -6,6 +6,20 @@
 
 - The MTGTop8 deck list downloader no longer rejects valid URLs starting with `www.`. These now work as expected.
 
+## Fixed issues
+
+- When switching the language of the card search, the shown list now honors any entered card name filter.
+- Fixed multiple issues with print switching via double-clicking the "Language", "Set" or "Collector #" cells in tables.
+    - The app now handles ambiguous card names, most prominently with tokens or some cards in Unstable.
+      For example, it no longer treats a "1/1 colorless Spirit" token and a "1/1 black and white Spirit with Flying"
+      token as interchangeable.
+    - Fixed a crash that occurred when trying to switch a card to a different language, if all printings of the card in
+      the source language are hidden by card filters.
+    - It now properly handles cases with non-English cards in sets with multiple different printings,
+      where only parts of the set is available in the current language. 
+      In such cases, the application no longer offers switching to printings that aren't actually available in the
+      currently selected language.
+
 # Version 0.28.2 (2024-05-07)  <a name="v0_28_2"></a>
 
 ## Fixed issues
