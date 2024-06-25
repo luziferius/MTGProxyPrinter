@@ -4,10 +4,7 @@
 
 ## Fixed issues
 
-- The MTGTop8 deck list downloader no longer rejects valid URLs starting with `www.`. These now work as expected.
-
-## Fixed issues
-
+- The MTGTop8 deck list downloader no longer rejects valid URLs starting with `www.`. These now work as expecte
 - When switching the language of the card search, the shown list now honors any entered card name filter.
 - Fixed multiple issues with print switching via double-clicking the "Language", "Set" or "Collector #" cells in tables.
     - The app now handles ambiguous card names, most prominently with tokens or some cards in Unstable.
