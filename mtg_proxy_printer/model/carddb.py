@@ -905,6 +905,8 @@ class CardDatabase(QObject):
         """)
         parameters = card.oracle_id, card.language, card.set.code
         result = [MTGSet(code, name) for code, name in self.db.execute(query, parameters)]
+        if not result:
+            result.append(card.set)
         return result
 
     def get_available_collector_numbers_for_card_in_set(self, card: Card) -> StringList:
