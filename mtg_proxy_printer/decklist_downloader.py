@@ -169,7 +169,7 @@ class MTGTop8Downloader(DecklistDownloader):
     """
 
     DECKLIST_PATH_RE = re.compile(
-        r"https?://mtgtop8\.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
+        r"https?://(www\.)?mtgtop8\.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = MagicWorkstationDeckDataFormatParser
     APPLICABLE_WEBSITES = "MTGTop8 (mtgtop8.com)"

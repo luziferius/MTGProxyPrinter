@@ -17,6 +17,7 @@ import typing
 from PySide6.QtCore import QModelIndex, Qt, QAbstractItemModel, QSortFilterProxyModel
 from PySide6.QtWidgets import QStyledItemDelegate, QWidget, QStyleOptionViewItem, QComboBox
 
+from mtg_proxy_printer.model.carddb import Card
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.logger import get_logger
@@ -44,14 +45,11 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
         while hasattr(model, "sourceModel"):  # Resolve the source model to gain access to the card database.
             model = model.sourceModel()
         source_model: Document = model
+        card: Card = index.data(ItemDataRole.UserRole)
 
         if column == PageColumns.Set:
-            matching_sets = source_model.card_db.find_sets_matching(
-                index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
-                index.siblingAtColumn(PageColumns.Language).data(ItemDataRole.EditRole),
-                is_front=index.siblingAtColumn(PageColumns.IsFront).data(ItemDataRole.EditRole),
-            )
-            current_set_code = index.data(ItemDataRole.EditRole)
+            matching_sets = source_model.card_db.get_available_sets_for_card(card)
+            current_set_code = card.set.code
             current_set_position = 0
             for position, set_data in enumerate(matching_sets):
                 editor.addItem(set_data.data(ItemDataRole.DisplayRole), set_data.data(ItemDataRole.EditRole))
@@ -60,11 +58,7 @@ class ComboBoxItemDelegate(QStyledItemDelegate):
             editor.setCurrentIndex(current_set_position)
 
         elif column == PageColumns.CollectorNumber:
-            matching_collector_numbers = source_model.card_db.find_collector_numbers_matching(
-                index.siblingAtColumn(PageColumns.CardName).data(ItemDataRole.EditRole),
-                index.siblingAtColumn(PageColumns.Set).data(ItemDataRole.EditRole),
-                index.siblingAtColumn(PageColumns.Language).data(ItemDataRole.EditRole),
-            )
+            matching_collector_numbers = source_model.card_db.get_available_collector_numbers_for_card_in_set(card)
             for collector_number in matching_collector_numbers:
                 editor.addItem(collector_number, collector_number)  # Store the key in the UserData role
             if matching_collector_numbers:
