@@ -17,6 +17,8 @@
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
 
+# Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
+
 ## Fixed issues
 
 - The MTGTop8 deck list downloader no longer rejects valid URLs starting with `www.`. These now work as expected.
