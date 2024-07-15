@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import configparser
 import itertools
 import math
 import pathlib
@@ -23,12 +23,12 @@ import urllib.error
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
     QItemSelection, QSize
 from PyQt5.QtGui import QValidator, QIcon
-from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget
+from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
-    get_downloader_class
+    get_downloader_class, ParserBase
 from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
@@ -337,17 +337,19 @@ class SelectDeckParserPage(QWizardPage):
 
     def initializePage(self) -> None:
         super().initializePage()
+        ui = self.ui
         used_downloader: str = self.field("deck-list-downloaded")
         if used_downloader:
             parser_to_use = AVAILABLE_DOWNLOADERS[used_downloader].PARSER_CLASS
-            {
-                re_parsers.MagicWorkstationDeckDataFormatParser: self.ui.select_parser_magic_workstation,
-                re_parsers.MTGArenaParser: self.ui.select_parser_mtg_arena,
-                re_parsers.MTGOnlineParser: self.ui.select_parser_mtg_online,
-                re_parsers.XMageParser: self.ui.select_parser_xmage,
-                csv_parsers.ScryfallCSVParser: self.ui.select_parser_scryfall_csv,
-                csv_parsers.TappedOutCSVParser: self.ui.select_parser_tappedout_csv,
-            }[parser_to_use].click()
+            parser_table: typing.Dict[typing.Type[ParserBase], QRadioButton] = {
+                re_parsers.MagicWorkstationDeckDataFormatParser: ui.select_parser_magic_workstation,
+                re_parsers.MTGArenaParser: ui.select_parser_mtg_arena,
+                re_parsers.MTGOnlineParser: ui.select_parser_mtg_online,
+                re_parsers.XMageParser: ui.select_parser_xmage,
+                csv_parsers.ScryfallCSVParser: ui.select_parser_scryfall_csv,
+                csv_parsers.TappedOutCSVParser: ui.select_parser_tappedout_csv,
+            }
+            parser_table[parser_to_use].click()
 
     def append_group_to_custom_re_input(self, value: str):
         self.ui.custom_re_input.setText(self.ui.custom_re_input.text()+value)
@@ -476,6 +478,7 @@ class SummaryPage(QWizardPage):
         super().initializePage()
         self.selected_cells_count = 0
         parser: common.ParserBase = self.field("selected_parser")
+        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
         if self.field("translate-deck-list-enable"):
             language_override = self.field("translate-deck-list-target-language")
@@ -490,14 +493,17 @@ class SummaryPage(QWizardPage):
         )
         self.card_list.add_cards(parsed_deck)
         self.ui.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
-        self._initialize_custom_buttons()
+        self._initialize_custom_buttons(decklist_import_section)
+        if decklist_import_section.getboolean("automatically-remove-basic-lands"):
+            logger.info("Automatically remove basic lands")
+            self._remove_basic_lands()
         logger.debug(f"Initialized {self.__class__.__name__}")
 
-    def _initialize_custom_buttons(self):
+    def _initialize_custom_buttons(self, decklist_import_section: configparser.SectionProxy):
         wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
-        wizard.setOption(WizardOption.HaveCustomButton1, True)
-        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+        have_basic_land_removal_button = not decklist_import_section.getboolean("automatically-remove-basic-lands")
+        wizard.setOption(WizardOption.HaveCustomButton1, have_basic_land_removal_button)
         remove_basic_lands_button = wizard.button(WizardButton.CustomButton1)
         remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
             decklist_import_section.getboolean("remove-basic-wastes"),
@@ -538,13 +544,16 @@ class SummaryPage(QWizardPage):
         self.wizard().button(button).setEnabled(False)
         if button == WizardButton.CustomButton1:
             logger.info("User requests to remove all basic lands")
-            decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
-            self.card_list.remove_all_basic_lands(
-                decklist_import_section.getboolean("remove-basic-wastes"),
-                decklist_import_section.getboolean("remove-snow-basics"))
+            self._remove_basic_lands()
         elif button == WizardButton.CustomButton2:
             self._remove_selected_cards()
             self.selected_cells_count = 0
+
+    def _remove_basic_lands(self):
+        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+        self.card_list.remove_all_basic_lands(
+            decklist_import_section.getboolean("remove-basic-wastes"),
+            decklist_import_section.getboolean("remove-snow-basics"))
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")

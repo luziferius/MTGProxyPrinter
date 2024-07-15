@@ -35,14 +35,14 @@ from mtg_proxy_printer.document_controller.card_actions import ActionRemoveCards
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 
 try:
-    from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_CentralWidget_Columnar
-    from mtg_proxy_printer.ui.generated.central_widget.grouped import Ui_CentralWidget_Grouped
-    from mtg_proxy_printer.ui.generated.central_widget.tabbed_vertical import Ui_CentralWidget_Tabbed
+    from mtg_proxy_printer.ui.generated.central_widget.columnar import Ui_ColumnarCentralWidget
+    from mtg_proxy_printer.ui.generated.central_widget.grouped import Ui_GroupedCentralWidget
+    from mtg_proxy_printer.ui.generated.central_widget.tabbed_vertical import Ui_TabbedCentralWidget
 except ModuleNotFoundError:
     from mtg_proxy_printer.ui.common import load_ui_from_file
-    Ui_CentralWidget_Columnar = load_ui_from_file("central_widget/columnar")
-    Ui_CentralWidget_Grouped = load_ui_from_file("central_widget/grouped")
-    Ui_CentralWidget_Tabbed = load_ui_from_file("central_widget/tabbed_vertical")
+    Ui_ColumnarCentralWidget = load_ui_from_file("central_widget/columnar")
+    Ui_GroupedCentralWidget = load_ui_from_file("central_widget/grouped")
+    Ui_TabbedCentralWidget = load_ui_from_file("central_widget/tabbed_vertical")
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -53,7 +53,7 @@ __all__ = [
     "CentralWidget",
 ]
 
-UiType = Union[Type[Ui_CentralWidget_Grouped], Type[Ui_CentralWidget_Columnar], Type[Ui_CentralWidget_Tabbed]]
+UiType = Union[Type[Ui_GroupedCentralWidget], Type[Ui_ColumnarCentralWidget], Type[Ui_TabbedCentralWidget]]
 
 
 class CentralWidget(QWidget):
@@ -286,7 +286,7 @@ def get_configured_central_widget_layout_class() -> UiType:
     gui_settings = mtg_proxy_printer.settings.settings["gui"]
     configured_layout = gui_settings["central-widget-layout"]
     if configured_layout == "horizontal":
-        return Ui_CentralWidget_Grouped
+        return Ui_GroupedCentralWidget
     if configured_layout == "columnar":
-        return Ui_CentralWidget_Columnar
-    return Ui_CentralWidget_Tabbed
+        return Ui_ColumnarCentralWidget
+    return Ui_TabbedCentralWidget

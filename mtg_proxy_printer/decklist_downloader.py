@@ -20,6 +20,7 @@ import abc
 import collections
 import csv
 import html.parser
+import io
 from io import StringIO
 import platform
 import re
@@ -63,7 +64,7 @@ class IsIdentifyingDeckUrlValidator(QValidator):
 
 class DecklistDownloader(DownloaderBase):
     DECKLIST_PATH_RE = re.compile(r"")
-    PARSER_CLASS: ParserBase = None
+    PARSER_CLASS: typing.Type[ParserBase] = None
     APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:
@@ -168,7 +169,7 @@ class MTGTop8Downloader(DecklistDownloader):
     """
 
     DECKLIST_PATH_RE = re.compile(
-        r"https?://mtgtop8\.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
+        r"https?://(www\.)?mtgtop8\.com/event\?e=\d+&d=(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = MagicWorkstationDeckDataFormatParser
     APPLICABLE_WEBSITES = "MTGTop8 (mtgtop8.com)"
@@ -394,11 +395,36 @@ class CubeCobraDownloader(DecklistDownloader):
         return f"https://cubecobra.com/cube/download/xmage/{cube_name}"
 
 
+class ManaboxDownloader(DecklistDownloader):
+    DECKLIST_PATH_RE = re.compile(
+        r"https://manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"
+    )
+    PARSER_CLASS = ScryfallCSVParser
+    APPLICABLE_WEBSITES = "ManaBox (manabox.app)"
+
+    def map_to_download_url(self, decklist_url: str) -> str:
+        match = self.DECKLIST_PATH_RE.match(decklist_url)
+        deck_id = match.group("deck_id")
+        return f"https://cloud.manabox.app/decks/{deck_id}"
+
+    def post_process(self, data: bytes) -> str:
+        cards: typing.Iterable[typing.Dict[str, typing.Any]] = ijson.items(data, "cards.item")
+        buffer = io.StringIO()
+        writer = csv.writer(buffer, self.PARSER_CLASS.Dialect)
+        writer.writerow(("scryfall_id", "count", "lang", "name", "set_code", "collector_number"))
+        writer.writerows(
+            (c["scryfallId"], c["quantity"], "", c["name"], c["setId"], "")
+            for c in cards
+        )
+        return buffer.getvalue()
+
+
 AVAILABLE_DOWNLOADERS: typing.Dict[str, typing.Type[DecklistDownloader]] = {
     downloader.__name__: downloader for downloader in [
         ArchidektDownloader,
         CubeCobraDownloader,
         DeckstatsDownloader,
+        ManaboxDownloader,
         MTGTop8Downloader,
         MoxfieldDownloader,
         MTGAZoneDownloader,

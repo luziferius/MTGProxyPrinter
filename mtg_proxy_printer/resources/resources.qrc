@@ -4,7 +4,7 @@
     <file alias="changelog.md">../../doc/changelog.md</file>
     <!-- Licenses of used dependencies. These have to be included for the binary Windows bundles created with
     cx_Freeze, because this bundles everything in one package. -->
-    <file alias="ThirdPartyLicenses.md">../../ThirdPartyLicenses.md</file>
+    <file alias="ThirdPartyLicenses.md">../../doc/ThirdPartyLicenses.md</file>
     <file alias="License.md">../../LICENSE.md</file>
 
     <!-- Localisations -->
@@ -43,6 +43,7 @@
     <file>icons/breeze/actions/16/help-contents.svg</file>
     <file>icons/breeze/actions/16/list-add.svg</file>
     <file>icons/breeze/actions/16/shuffle.svg</file>
+    <file>icons/breeze/actions/16/transform-rotate.svg</file>
     <file>icons/breeze/actions/16/view-hidden.svg</file>
     <file>icons/breeze/actions/16/viewpdf.svg</file>
     
@@ -75,6 +76,7 @@
     <file>icons/breeze/actions/22/help-contents.svg</file>
     <file>icons/breeze/actions/22/list-add.svg</file>
     <file>icons/breeze/actions/22/shuffle.svg</file>
+    <file>icons/breeze/actions/22/transform-rotate.svg</file>
     <file>icons/breeze/actions/22/view-hidden.svg</file>
     <file>icons/breeze/actions/22/viewpdf.svg</file>
     
@@ -107,6 +109,7 @@
     <file>icons/breeze/actions/24/help-contents.svg</file>
     <file>icons/breeze/actions/24/list-add.svg</file>
     <file>icons/breeze/actions/24/shuffle.svg</file>
+    <file>icons/breeze/actions/24/transform-rotate.svg</file>
     <file>icons/breeze/actions/24/view-hidden.svg</file>
     <file>icons/breeze/actions/24/viewpdf.svg</file>
     

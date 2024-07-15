@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CentralWidget_Columnar</class>
- <widget class="QWidget" name="CentralWidget_Columnar">
+ <class>ColumnarCentralWidget</class>
+ <widget class="QWidget" name="ColumnarCentralWidget">
   <property name="geometry">
    <rect>
     <x>0</x>

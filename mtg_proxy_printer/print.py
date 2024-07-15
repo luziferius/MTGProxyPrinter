@@ -23,6 +23,7 @@ from PyQt5.QtPrintSupport import QPrinter
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.settings import settings
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.logger import get_logger
 import mtg_proxy_printer.units_and_sizes
@@ -37,7 +38,7 @@ __all__ = [
 
 
 def export_pdf(document: Document, file_path: str, parent: QObject = None):
-    pages_to_print = settings["documents"].getint("pdf-page-count-limit") or document.rowCount()
+    pages_to_print = settings["pdf-export"].getint("pdf-page-count-limit") or document.rowCount()
     if not pages_to_print:  # No pages in document. Return now, to avoid dividing by zero
         logger.error("Tried to export a document with zero pages as a PDF. Aborting.")
         return
@@ -70,6 +71,8 @@ def create_printer(renderer: "Renderer") -> QPrinter:
     return printer
 
 
+
+
 class PDFPrinter(QPdfWriter):
 
     def __init__(self, document: Document, file_path: str, parent: QObject = None,
@@ -77,33 +80,42 @@ class PDFPrinter(QPdfWriter):
         self.document = document
         self.document_index = document_index
         self.pages_to_print: int = pages_to_print or document.rowCount()
+        self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             path = Path(file_path)
             # Add one to the document_index for human-readable counting starting at 1. suffix includes the separator
-            file_path = str(path.parent / f"{path.stem}-{document_index+1}{path.suffix}")
+            file_path = str(path.with_stem(f"{path.stem}-{document_index+1}"))
         super().__init__(file_path)
         self.setParent(parent)
         self.setCreator(f"{mtg_proxy_printer.meta_data.PROGRAMNAME}, v{mtg_proxy_printer.meta_data.__version__}")
         self.painter = QPainter()
         # magnitude returns a float by default, so round to int to avoid a TypeError
         self.setResolution(round(mtg_proxy_printer.units_and_sizes.RESOLUTION.magnitude))
-        self.setPageSize(QPageSize(
-            QSizeF(document.page_layout.page_width, document.page_layout.page_height),
-            QPageSize.Unit.Millimeter
-        ))
+        self.setPageSize(self._to_page_size(document.page_layout))
         # Prevent downscaling the page content
         self.setPageMargins(QMarginsF(0, 0, 0, 0))
         self.scene = PageScene(document, RenderMode.ON_PAPER, self)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def _to_page_size(self, layout: PageLayoutSettings) -> QPageSize:
+        size = QSizeF(layout.page_width, layout.page_height)
+        if layout.page_width > layout.page_height and self.landscape_workaround_enabled:
+            size.transpose()
+        return QPageSize(size, QPageSize.Unit.Millimeter)
+
     def print_document(self):
         logger.info("Begin rendering PDF document.")
+        layout = self.document.page_layout
+        scaling = 1
         self.painter.begin(self)
-        # Prevent quality loss by re-compressing the source images
-        self.painter.setRenderHint(QPainter.LosslessImageRendering)
+        if layout.page_width > layout.page_height and self.landscape_workaround_enabled:
+            scaling = self.scene.width()/self.scene.height()
+            self.painter.rotate(90)
+            self.painter.translate(0, -self.scene.height())
+        self.painter.setRenderHint(QPainter.LosslessImageRendering)  # Prevent avoidable image degradation
         self.painter.scale(
-                self.logicalDpiX()/self.resolution(),
-                self.logicalDpiY()/self.resolution()
+                scaling*self.logicalDpiX()/self.resolution(),
+                scaling*self.logicalDpiY()/self.resolution(),
             )
         first_index = self.document_index * self.pages_to_print
         last_index = min((self.document_index + 1) * self.pages_to_print, self.document.rowCount())
@@ -131,7 +143,14 @@ class Renderer(QObject):
     @Slot(QPrinter)
     def print_document(self, printer: QPrinter):
         logger.info("Begin printing document.")
+        landscape_workaround_enabled = settings["printer"].getboolean("landscape-compatibility-workaround")
+        is_landscape_document = self.scene.width() > self.scene.height()
         painter = QPainter(printer)
+        if is_landscape_document and landscape_workaround_enabled:
+            painter.rotate(90)
+            painter.translate(0, -self.scene.height())
+            scaling = self.scene.width()/self.scene.height()
+            painter.scale(scaling, scaling)
         painter.setRenderHint(QPainter.LosslessImageRendering)
         page_count = self.document.rowCount()
         for index in range(page_count):

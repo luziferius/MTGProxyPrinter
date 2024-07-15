@@ -14,10 +14,10 @@
     </widget>
    </item>
    <item>
-    <widget class="GeneralPrintingFilterWidget" name="card_filter_general_settings"/>
+    <widget class="GeneralPrintingFilter" name="card_filter_general_settings"/>
    </item>
    <item>
-    <widget class="FormatPrintingFilterWidget" name="card_filter_format_settings"/>
+    <widget class="FormatPrintingFilter" name="card_filter_format_settings"/>
    </item>
    <item>
     <widget class="QLabel" name="set_filter_label">
@@ -45,13 +45,13 @@ LEA DDU TC13 J21</string>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>GeneralPrintingFilterWidget</class>
+   <class>GeneralPrintingFilter</class>
    <extends>QGroupBox</extends>
    <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
    <container>1</container>
   </customwidget>
   <customwidget>
-   <class>FormatPrintingFilterWidget</class>
+   <class>FormatPrintingFilter</class>
    <extends>QGroupBox</extends>
    <header>mtg_proxy_printer.ui.printing_filter_widgets</header>
    <container>1</container>

@@ -31,11 +31,11 @@ logger = get_logger(__name__)
 del get_logger
 
 try:
-    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_AddCardWidget_Vertical
-    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_AddCardWidget_Horizontal
+    from mtg_proxy_printer.ui.generated.add_card_widget.vertical import Ui_VerticalAddCardWidget
+    from mtg_proxy_printer.ui.generated.add_card_widget.horizontal import Ui_HorizontalAddCardWidget
 except ModuleNotFoundError:
-    Ui_AddCardWidget_Vertical = load_ui_from_file("add_card_widget/vertical")
-    Ui_AddCardWidget_Horizontal = load_ui_from_file("add_card_widget/horizontal")
+    Ui_VerticalAddCardWidget = load_ui_from_file("add_card_widget/vertical")
+    Ui_HorizontalAddCardWidget = load_ui_from_file("add_card_widget/horizontal")
 
 
 __all__ = [
@@ -44,7 +44,7 @@ __all__ = [
     "HorizontalAddCardWidget",
 ]
 
-UiTypes = Union[Type[Ui_AddCardWidget_Vertical], Type[Ui_AddCardWidget_Horizontal]]
+UiTypes = Union[Type[Ui_VerticalAddCardWidget], Type[Ui_HorizontalAddCardWidget]]
 StandardButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
 
@@ -186,7 +186,8 @@ class AddCardWidget(QWidget):
     @Slot(str)
     def language_combo_box_changed(self, new_language: str):
         logger.info(f'Selected language changed to: "{new_language}"')
-        card_names = self.card_database.get_card_names(new_language)
+        current_filter = self.ui.card_name_filter.text()
+        card_names = self.card_database.get_card_names(new_language, current_filter)
         self.card_name_model.setStringList(card_names)
         self.set_name_model.set_set_data([])
         self.ui.set_name_box.setEnabled(False)
@@ -282,9 +283,9 @@ class AddCardWidget(QWidget):
 class VerticalAddCardWidget(AddCardWidget):
 
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_AddCardWidget_Vertical, parent)
+        super().__init__(Ui_VerticalAddCardWidget, parent)
 
 
 class HorizontalAddCardWidget(AddCardWidget):
     def __init__(self, parent: QWidget = None):
-        super().__init__(Ui_AddCardWidget_Horizontal, parent)
+        super().__init__(Ui_HorizontalAddCardWidget, parent)

@@ -39,6 +39,7 @@ CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
+
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigWidget()
@@ -46,8 +47,7 @@ class PageConfigWidget(QGroupBox):
         self.page_layout = self._setup_page_layout(ui)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    @staticmethod
-    def _setup_page_layout(ui: Ui_PageConfigWidget) -> PageLayoutSettings:
+    def _setup_page_layout(self, ui: Ui_PageConfigWidget) -> PageLayoutSettings:
         # Implementation note: The signal connections below will also trigger
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
@@ -62,6 +62,12 @@ class PageConfigWidget(QGroupBox):
         ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
         ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
         ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
+        for spinbox in (
+                ui.page_height, ui.page_width,
+                ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
+                ui.row_spacing, ui.column_spacing):
+            spinbox.valueChanged[int].connect(self.validate_paper_size_settings)
+            spinbox.valueChanged[int].connect(self.page_layout_setting_changed)
         ui.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
         ui.draw_sharp_corners.stateChanged.connect(
@@ -74,8 +80,7 @@ class PageConfigWidget(QGroupBox):
     @Slot()
     def page_layout_setting_changed(self):
         """
-        Recomputes and updates the page capacity value, whenever any page layout widget changes.
-        Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
+        Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
 
         regular_capacity = self.page_layout.compute_page_card_capacity(PageType.REGULAR)
@@ -84,27 +89,49 @@ class PageConfigWidget(QGroupBox):
         self.ui.page_capacity.setText(capacity_text)
 
     @Slot()
+    def on_flip_page_dimensions_clicked(self):
+        """Toggles between landscape/portrait mode by flipping the page height and page width values."""
+        logger.debug("User flips paper dimensions")
+        ui = self.ui
+        width = ui.page_width.value()
+        ui.page_width.setValue(ui.page_height.value())
+        ui.page_height.setValue(width)
+
+    @Slot()
     def validate_paper_size_settings(self):
         """
         Recomputes and updates the minimum page size, whenever any page layout widget changes.
-        Qt Signal/Slot connections from editor widgets valueChanged[int] signals are defined in the UI file.
         """
+        ui = self.ui
         oversized = CardSizes.OVERSIZED
-        pl = self.page_layout
-        min_page_height = pl.margin_bottom + pl.margin_top + oversized.as_mm(oversized.height)
-        min_page_width = pl.margin_left + pl.margin_right + oversized.as_mm(oversized.width)
-        self.ui.page_height.setMinimum(min_page_height)
-        self.ui.page_width.setMinimum(min_page_width)
+        available_width = ui.page_width.value() - oversized.as_mm(oversized.width)
+        available_height = ui.page_height.value() - oversized.as_mm(oversized.height)
+        ui.margin_left.setMaximum(
+            max(0, available_width - ui.margin_right.value())
+        )
+        ui.margin_right.setMaximum(
+            max(0, available_width - ui.margin_left.value())
+        )
+        ui.margin_top.setMaximum(
+            max(0, available_height - ui.margin_bottom.value())
+        )
+        ui.margin_bottom.setMaximum(
+            max(0, available_height - ui.margin_top.value())
+        )
 
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         documents_section = settings["documents"]
         for spinbox, setting in self._get_integer_settings_widgets():
-            spinbox.setValue(documents_section.getint(setting))
+            value = documents_section.getint(setting)
+            spinbox.setValue(value)
+            setattr(self.page_layout, spinbox.objectName(), spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
+        self.validate_paper_size_settings()
+        self.page_layout_setting_changed()
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -114,15 +141,17 @@ class PageConfigWidget(QGroupBox):
         layout = self.page_layout
         for key in layout.__annotations__.keys():
             value = getattr(other, key)
-            setattr(self.page_layout, key, value)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QSpinBox):
                     widget.setValue(value)
+                    setattr(self.page_layout, key, widget.value())
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
+                    setattr(self.page_layout, key, widget.text())
                 else:
                     widget.setChecked(value)
+                    setattr(self.page_layout, key, widget.isChecked())
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")

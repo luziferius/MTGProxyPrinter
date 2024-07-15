@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
+import configparser
 import dataclasses
 import enum
 import functools
@@ -104,8 +105,8 @@ class PageLayoutSettings:
     page_width: int = 0
 
     @classmethod
-    def create_from_settings(cls):
-        document_settings = mtg_proxy_printer.settings.settings["documents"]
+    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
+        document_settings = settings["documents"]
         return cls(
             document_settings.getint("card-bleed-mm"),
             document_settings["default-document-name"],
@@ -123,12 +124,15 @@ class PageLayoutSettings:
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
-        orientation = QPageLayout.Orientation
         margins = QMarginsF(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom) \
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
+        landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean("landscape-compatibility-workaround")
+        orientation = QPageLayout.Orientation.Portrait \
+            if self.page_width < self.page_height or landscape_workaround \
+            else QPageLayout.Orientation.Landscape
         layout = QPageLayout(
             QPageSize(QSizeF(*sorted([self.page_width, self.page_height])), QPageSize.Unit.Millimeter),
-            orientation.Portrait if self.page_width < self.page_height else orientation.Landscape,
+            orientation,
             margins,
             QPageLayout.Unit.Millimeter,
         )

@@ -35,7 +35,7 @@ from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.print
 from mtg_proxy_printer.ui.dialogs import SavePDFDialog, SaveDocumentAsDialog, LoadDocumentDialog, \
-    AboutMTGProxyPrinterDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
+    AboutDialog, PrintPreviewDialog, PrintDialog, DocumentSettingsDialog
 from mtg_proxy_printer.ui.cache_cleanup_wizard import CacheCleanupWizard
 from mtg_proxy_printer.ui.deck_import_wizard import DeckImportWizard
 from mtg_proxy_printer.ui.progress_bar import ProgressBar
@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
         self.missing_images_manager = MissingImagesManager(document, self)
         self.missing_images_manager.request_obtaining_images.connect(image_db.obtain_missing_images)
         self.missing_images_manager.obtaining_missing_images_failed.connect(self.on_network_error_occurred)
-        self.about_dialog = self._create_about_dialog()
+        self.about_dialog = self._create_about_dialog(card_db)
         self.progress_bars = self._create_progress_bar()
         self.card_database = card_db
         self.image_db = image_db
@@ -103,8 +103,8 @@ class MainWindow(QMainWindow):
         self.current_dialog: typing.Optional[QDialog] = None
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _create_about_dialog(self) -> AboutMTGProxyPrinterDialog:
-        about_dialog = AboutMTGProxyPrinterDialog(self)
+    def _create_about_dialog(self, card_database: CardDatabase) -> AboutDialog:
+        about_dialog = AboutDialog(card_database, self)
         self.ui.action_show_about_dialog.triggered.connect(about_dialog.show_about)
         self.ui.action_show_changelog.triggered.connect(about_dialog.show_changelog)
         return about_dialog
@@ -394,10 +394,10 @@ class MainWindow(QMainWindow):
                 self, "Application update available. Visit website?",
                 f"An application update is available: Version {newer_version}\n"
                 f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
-                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your webbrowser "
+                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your web browser "
                 f"to download the new version?",
                 StandardButton.Yes | StandardButton.No, StandardButton.No
-                ) == StandardButton.Yes:
+        ) == StandardButton.Yes:
             url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
             QDesktopServices.openUrl(url)
 

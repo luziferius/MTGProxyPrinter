@@ -26,8 +26,11 @@ import threading
 import typing
 import urllib.error
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QSize, QModelIndex, Qt, QThreadPool
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, pyqtSlot as Slot, QModelIndex, Qt, QThreadPool
 from PyQt5.QtGui import QPixmap, QColorConstants
+
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
 
 from mtg_proxy_printer.model.carddb import with_database_write_lock
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -341,9 +344,13 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         logger.info(f"Obtained images for {total_cards} cards.")
 
     def obtain_missing_images(self, card_indices: typing.List[QModelIndex]):
+        if not card_indices:
+            self.missing_images_obtained.emit()
+            return
         total_cards = len(card_indices)
         logger.debug(f"Requesting {total_cards} missing images")
         blank = self.image_database.blank_image
+        document: "Document" = card_indices[0].model()
         self.update_batch_processing_state(True)
         self.batch_process_starting.emit(total_cards, "Fetching missing images")
         for index, card_index in enumerate(card_indices, start=1):
@@ -351,6 +358,7 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
             self.get_image_synchronous(card)
             if card.image_file is not blank:
                 self.missing_image_obtained.emit(card_index)
+            document.on_missing_image_obtained(card_index)
             self.batch_process_progress.emit(index)
         self.batch_process_finished.emit()
         self.update_batch_processing_state(False)

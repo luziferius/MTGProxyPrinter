@@ -30,10 +30,10 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.document_page import CardContainer
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.units_and_sizes import PageType
-
 __all__ = [
     "ActionShuffleDocument",
 ]
+
 IndexedCards = typing.List[typing.Tuple[int, Card]]
 ModelIndexList = typing.List[QModelIndex]
 ItemDataRole = Qt.ItemDataRole

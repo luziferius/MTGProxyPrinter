@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+from functools import partial
 import pathlib
 import sys
 
@@ -23,7 +24,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, CardDatabase
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
@@ -50,20 +51,21 @@ __all__ = [
     "SavePDFDialog",
     "SaveDocumentAsDialog",
     "LoadDocumentDialog",
-    "AboutMTGProxyPrinterDialog",
+    "AboutDialog",
     "PrintPreviewDialog",
     "PrintDialog",
     "DocumentSettingsDialog",
 ]
 
 
-def read_path(setting: str) -> str:
-    stored = mtg_proxy_printer.settings.settings["default-filesystem-paths"][setting]
+def read_path(section: str, setting: str) -> str:
+    stored = mtg_proxy_printer.settings.settings[section][setting]
     if not stored:
         return ""
     resolved = str(pathlib.Path(stored).resolve())
     if not resolved:
-        logger.warning(f"File system path stored in setting {setting} does not resolve to an existing path")
+        logger.warning(
+            f"File system path stored in section {section} setting {setting} does not resolve to an existing path")
     return resolved
 
 
@@ -72,7 +74,7 @@ class SavePDFDialog(QFileDialog):
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
         super().__init__(
             parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
-        if default_path := read_path("pdf-export-path"):
+        if default_path := read_path("pdf-export", "pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -110,7 +112,7 @@ class SaveDocumentAsDialog(QFileDialog):
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
         super().__init__(
             parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
-        if default_path := read_path("document-save-path"):
+        if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -140,7 +142,7 @@ class LoadDocumentDialog(QFileDialog):
         super().__init__(
             parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
             **kwargs)
-        if default_path := read_path("document-save-path"):
+        if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
@@ -162,9 +164,9 @@ class LoadDocumentDialog(QFileDialog):
         logger.debug("User aborted loading. Doing nothing.")
 
 
-class AboutMTGProxyPrinterDialog(QDialog):
+class AboutDialog(QDialog):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, card_database: CardDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = Ui_AboutDialog()
         self.ui.setupUi(self)
@@ -172,9 +174,22 @@ class AboutMTGProxyPrinterDialog(QDialog):
         self._setup_changelog_text()
         self._setup_license_text()
         self._setup_third_party_license_text()
+        self.card_database = card_database
+        self.populate_card_database_update_timestamp_label()
         self.ui.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.ui.python_version_label.setText(sys.version.replace("\n", " "))
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def populate_card_database_update_timestamp_label(self):
+        self.card_database.card_data_updated.connect(self.on_card_database_updated)
+        self.on_card_database_updated()
+
+
+    @Slot()
+    def on_card_database_updated(self):
+        last_update = self.card_database.get_last_card_data_update_timestamp()
+        label_text = str(last_update) if last_update else ""
+        self.ui.last_database_update_label.setText(label_text)
 
     @Slot()
     def show_about(self):
@@ -253,14 +268,14 @@ class HoverEventFilter(QObject):
         self.settings = settings
 
     def eventFilter(self, object_, event: QEvent):
-        event_type = event.type()
+        event_type: QEvent.Type = event.type()
         # This check avoids a crash during application shutdown
-        if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
+        if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
             return False
         parent: "DocumentSettingsDialog" = self.parent()
-        if event_type == QEvent.HoverEnter:
+        if event_type == QEvent.Type.HoverEnter:
             parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
-        elif event_type == QEvent.HoverLeave:
+        elif event_type == QEvent.Type.HoverLeave:
             parent.clear_highlight()
         return False
 

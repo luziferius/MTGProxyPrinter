@@ -18,18 +18,13 @@ import dataclasses
 import pathlib
 import typing
 import unittest.mock
-from tempfile import TemporaryDirectory
 import textwrap
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from hamcrest import *
 
-try:
-    from hamcrest import contains_exactly
-except ImportError:
-    # Compatibility with PyHamcrest < 1.10
-    from hamcrest import contains as contains_exactly
+from hamcrest import contains_exactly
 import pytest
 from pytestqt.qtbot import QtBot
 
@@ -408,43 +403,38 @@ def test_document_is_created_empty(document_light: Document):
 
 
 @pytest.mark.parametrize("source_version", [2, 3, 4, 5])
-def test_save_migration(document: Document, source_version: int):
+def test_save_migration(tmp_path: pathlib.Path, document: Document, source_version: int):
     """Tests migration of existing saves to the newest schema revision on save."""
     card = document.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     capacity = document.page_layout.compute_page_card_capacity(card.requested_page_type())
     document.apply(ActionAddCard(card, capacity))
-    with TemporaryDirectory() as temp_dir:
-        document.save_file_path = _create_save_file(pathlib.Path(temp_dir), source_version)
-        document.save_to_disk()
-        _validate_database_schema(document.save_file_path)
-        _validate_saved_document_settings(document)
+    document.save_file_path = _create_save_file(pathlib.Path(tmp_path), source_version)
+    document.save_to_disk()
+    _validate_database_schema(document.save_file_path)
+    _validate_saved_document_settings(document)
 
 
-def test_create_save(document_custom_layout: Document):
+def test_create_save(tmp_path: pathlib.Path, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     capacity = document_custom_layout.page_layout.compute_page_card_capacity(card.requested_page_type())
     document_custom_layout.apply(ActionAddCard(card, capacity))
-    with TemporaryDirectory() as temp_dir:
-        save_dir = pathlib.Path(temp_dir)/"test.mtgproxies"
-        document_custom_layout.save_as(save_dir)
-        _validate_database_schema(save_dir)
-        _validate_saved_document_settings(document_custom_layout)
+    save_dir = tmp_path / "test.mtgproxies"
+    document_custom_layout.save_as(save_dir)
+    _validate_database_schema(save_dir)
+    _validate_saved_document_settings(document_custom_layout)
 
 
 @pytest.mark.parametrize("is_front", [True, False])
-def test_save_as_saves_regular_card(document: Document, is_front: bool):
+def test_save_as_saves_regular_card(tmp_path: pathlib.Path, document: Document, is_front: bool):
     card = document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front)
     document.apply(ActionAddCard(card))
-    with TemporaryDirectory() as temp_dir:
-        save_file = pathlib.Path(temp_dir)/"test.mtgproxies"
-        document.save_as(save_file)
-        with open_database(
-                save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
-            content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
-        # Deleting the connection is required on Windows. It releases the file lock that otherwise prevents the
-        # temp_dir context manager from cleaning up the disk
-        del con
+    save_file = tmp_path/"test.mtgproxies"
+    document.save_as(save_file)
+    with open_database(
+            save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+        content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+    del con
     assert_that(
         content, contains_exactly(
             contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", is_front, CardType.REGULAR.value)
@@ -452,21 +442,18 @@ def test_save_as_saves_regular_card(document: Document, is_front: bool):
     )
 
 
-def test_save_as_saves_check_card(document: Document):
+def test_save_as_saves_check_card(tmp_path: pathlib.Path, document: Document):
     card = CheckCard(
         document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True),
         document.card_db.get_card_with_scryfall_id("b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", False),
     )
     document.apply(ActionAddCard(card))
-    with TemporaryDirectory() as temp_dir:
-        save_file = pathlib.Path(temp_dir)/"test.mtgproxies"
-        document.save_as(save_file)
-        with open_database(
-                save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
-            content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
-        # Deleting the connection is required on Windows. It releases the file lock that otherwise prevents the
-        # temp_dir context manager from cleaning up the disk
-        del con
+    save_file = tmp_path / "test.mtgproxies"
+    document.save_as(save_file)
+    with open_database(
+            save_file, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION, False) as con:
+        content = con.execute("SELECT page, slot, scryfall_id, is_front, type FROM Card").fetchall()
+    del con
     assert_that(
         content, contains_exactly(
             contains_exactly(1, 1, "b3b87bfc-f97f-4734-94f6-e3e2f335fc4d", True, CardType.CHECK_CARD.value)

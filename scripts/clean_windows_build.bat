@@ -28,8 +28,9 @@ del ijson\backends\python*.dll
 
 
 pushd PyQt5
-:: All DLLs here are also in Qt\bin\
+:: All DLLs here are also in Qt5\bin\
 del *.dll
+del QtRemoteObjects.pyd QtSerialPort.pyd QtSensors.pyd QtNetwork.pyd QtXml.pyd QtXmlPatterns.pyd pyrcc.pyd
 
 :: The sip bindings aren't used at runtime
 rmdir /S /Q bindings
@@ -50,7 +51,8 @@ del Qt5Location.dll Qt5Multimedia.dll Qt5MultimediaWidgets.dll Qt5Network.dll Qt
 del Qt5PositioningQuick.dll Qt5Qml.dll Qt5QmlModels.dll Qt5QmlWorkerScript.dll Qt5Quick.dll Qt5Quick3D.dll
 del Qt5Quick3DAssetImport.dll Qt5Quick3DRender.dll Qt5Quick3DRuntimeRender.dll Qt5Quick3DUtils.dll Qt5QuickControls2.dll
 del Qt5QuickParticles.dll Qt5QuickShapes.dll Qt5QuickTemplates2.dll Qt5QuickTest.dll Qt5QuickWidgets.dll Qt5RemoteObjects.dll
-del Qt5Sensors.dll Qt5SerialPort.dll Qt5Sql.dll Qt5Test.dll Qt5WebChannel.dll Qt5WebSockets.dll Qt5WebView.dll Qt5XmlPatterns.dll
+del Qt5Sensors.dll Qt5SerialPort.dll Qt5Sql.dll Qt5Test.dll Qt5WebChannel.dll
+del Qt5WebSockets.dll Qt5WebView.dll Qt5XmlPatterns.dll
 del libcrypto-1_1-x64.dll libssl-1_1-x64.dll
 popd
 

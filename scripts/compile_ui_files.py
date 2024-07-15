@@ -1,4 +1,5 @@
-# Copyright (C) 2022-2023 Thomas Hess <thomas.hess@udo.edu>
+#!/usr/bin/env python3
+# Copyright (C) 2022-2024 Thomas Hess <thomas.hess@udo.edu>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +15,32 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 """
-This script generates Python stubs for the UI types
+This script compiles Qt Ui files.
+It has two usage modes:
+- Compiling into importable Python modules. This is used for built deliverables,
+  like Python wheels and application bundles created via cx_Freeze.
+- Creation of type hinting stubs with suffix ".pyi". These are used during development,
+  to provide type hinting and autocompletion for the Ui classes defined by the UI files.
 """
 
 import argparse
 import ast
 import io
+import itertools
 import textwrap
 from pathlib import Path
 import shutil
-from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List
+from typing import Tuple, NamedTuple, TypeVar, Iterable, Union, Type, List, Any, Dict, Set
 
 import PyQt5.uic
+
+SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
+MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
+UI_SOURCE_PATH = MAIN_PACKAGE / "resources/ui"  # UI files live here
+TARGET_PATH = MAIN_PACKAGE / "ui/generated"  # Package containing generated modules/type hinting stubs
+T = TypeVar("T")
+ClassRegistry = Dict[str, ast.ImportFrom]
+UsedClasses = Set[str]
 
 
 class Assignment(NamedTuple):
@@ -34,9 +49,6 @@ class Assignment(NamedTuple):
 
     def __str__(self):
         return f"{self.attribute}: {self.type}"
-
-
-T = TypeVar("T")
 
 
 class Namespace(NamedTuple):
@@ -61,14 +73,11 @@ def parse_args() -> Namespace:
     return args
 
 
-def type_filter(any_: Iterable[T], types: [Union[Type, Tuple[Type]]]) -> Iterable[T]:
+def type_filter(any_: Iterable[Any], types: Union[Type[T], Tuple[Type[T], ...]]) -> Iterable[T]:
     return filter(lambda x: isinstance(x, types), any_)
 
 
-def compile_ui_files(
-        args: Namespace,
-        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
-        source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
+def compile_ui_files(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Compiles all UI files found in source_path to Python types, storing results in target_path.
 
@@ -101,10 +110,7 @@ def create_python_package(target_dir: Path):
             (entry/"__init__.py").touch(exist_ok=True)
 
 
-def create_ui_type_stubs(
-        args: Namespace,
-        target_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/ui/generated",
-        source_path: Path = Path(__file__).parent.parent/"mtg_proxy_printer/resources/ui"):
+def create_ui_type_stubs(args: Namespace, target_path: Path = TARGET_PATH, source_path: Path = UI_SOURCE_PATH):
     """
     Creates type hinting stubs for all UI files found in source_path, storing results in target_path.
 
@@ -113,13 +119,25 @@ def create_ui_type_stubs(
     """
     if args.purge_existing and target_path.is_dir():
         shutil.rmtree(target_path)
+    class_registry = build_class_registry(MAIN_PACKAGE)
     for ui_file in source_path.rglob("*.ui"):
         compiled = compile_ui_file(ui_file)
-        stub = generate_stub(compiled, ui_file)
+        stub = generate_stub(compiled, ui_file, class_registry)
         parent_dir = (target_path/ui_file.relative_to(source_path)).parent
         parent_dir.mkdir(exist_ok=True)
         (parent_dir/f"{ui_file.stem}.pyi").write_text(stub, "utf-8")
     create_python_package(target_path)
+
+
+def build_class_registry(package_path: Path) -> ClassRegistry:
+    """Scan the source tree for classes and build a dict from class name to import path"""
+    result: ClassRegistry = {}
+    for py_file in package_path.rglob("*.py"):
+        module_path = ".".join((py_file.parent.relative_to(package_path.parent) / py_file.stem).parts)
+        root_node = ast.parse(py_file.read_text("utf-8"), py_file)
+        for class_def in type_filter(root_node.body, ast.ClassDef):
+            result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)])
+    return result
 
 
 def compile_ui_file(path: Path) -> str:
@@ -128,38 +146,50 @@ def compile_ui_file(path: Path) -> str:
     return buffer.getvalue()
 
 
-def generate_stub(compiled_ui: str, ui_file: Path) -> str:
+def generate_stub(compiled_ui: str, ui_file: Path, class_registry: ClassRegistry) -> str:
     root_node = ast.parse(compiled_ui)
     header = f"# Automatically generated type hinting stub for '{ui_file.name}'. Do not modify."
     # Keep all imports unmodified
-    imports = "\n".join(
+    imports = "import typing\n\n"
+    imports += "\n".join(
         map(
             ast.unparse,
             type_filter(root_node.body, (ast.ImportFrom, ast.Import))
         )
     )
+    found_class_uses: UsedClasses = set()
     class_stubs = "\n\n\n".join(
         map(
             generate_class_stub,
-            type_filter(root_node.body, ast.ClassDef)
+            type_filter(root_node.body, ast.ClassDef),
+            itertools.repeat(found_class_uses)
         ))
+    type_hinting_imports = [
+        ast.unparse(class_registry[used_class])
+        for used_class in found_class_uses.intersection(class_registry)
+    ] or ["pass"]
+    type_hinting_import_str = "if typing.TYPE_CHECKING:\n"
+    type_hinting_import_str += textwrap.indent(
+        "\n".join(type_hinting_imports),
+        " "*4
+    )
+    return "\n\n".join((header, imports, type_hinting_import_str, class_stubs)) + "\n"
 
-    return "\n\n".join((header, imports, class_stubs)) + "\n"
 
-
-def generate_class_stub(class_root: ast.ClassDef) -> str:
+def generate_class_stub(class_root: ast.ClassDef, found_class_uses: UsedClasses) -> str:
     header = generate_class_header(class_root)
 
     for item in class_root.body:
         if item.name == "setupUi":
-            setup_ui = item
+            setup_ui: ast.FunctionDef = item
             break
     else:
         raise RuntimeError(f"No setupUi() definition found in class {class_root.name}")
     function_signatures = textwrap.indent(
         "\n\n".join(map(
             get_function_stub,
-            type_filter(class_root.body, ast.FunctionDef)
+            type_filter(class_root.body, ast.FunctionDef),
+            itertools.repeat(found_class_uses)
         )), " "*4
     )
     assignment_body = textwrap.indent(
@@ -173,11 +203,12 @@ def generate_class_stub(class_root: ast.ClassDef) -> str:
 
 
 def generate_class_header(class_root: ast.ClassDef) -> str:
-    base_classes = ", ".join(base.id for base in class_root.bases)
+    bases: List[ast.Name] = class_root.bases
+    base_classes = ", ".join(base.id for base in bases)
     return f"class {class_root.name}({base_classes}):"
 
 
-def get_assignments(function_body: ast.FunctionDef) -> List[Assignment]:
+def get_assignments(function_body: List[ast.stmt]) -> List[Assignment]:
     return [
         Assignment(
             assignment.targets[0].attr,
@@ -198,7 +229,14 @@ def get_assignment_type(assignment: ast.Assign):
     raise NotImplementedError("Unknown assignment type")
 
 
-def get_function_stub(function_body: ast.FunctionDef):
+def get_function_stub(function_body: ast.FunctionDef, found_class_uses: UsedClasses):
+    for index, arg in enumerate(function_body.args.args):
+        if arg.arg == "self":
+            continue
+        found_class_uses.add(arg.arg)
+        arg.annotation = ast.Constant(arg.arg)
+        arg.arg = f"arg{index}"
+
     old_body = function_body.body
     function_body.body = [ast.Constant(Ellipsis)]
     result = ast.unparse(function_body)
@@ -206,9 +244,13 @@ def get_function_stub(function_body: ast.FunctionDef):
     return result
 
 
-if __name__ == "__main__":
+def main():
     args = parse_args()
     if args.full:
         compile_ui_files(args)
     else:
         create_ui_type_stubs(args)
+
+
+if __name__ == "__main__":
+    main()

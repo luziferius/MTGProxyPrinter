@@ -20,7 +20,7 @@ import typing
 try:
     from typing import NotRequired
 except ImportError:  # Compatibility with Python < 3.11
-    from typing import Optional as NotRequired
+    from typing_extensions import NotRequired
 
 import pint
 from PyQt5.QtCore import QSize
