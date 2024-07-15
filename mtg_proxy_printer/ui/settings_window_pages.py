@@ -174,7 +174,7 @@ class DebugSettingsPage(Page):
     def on_debug_download_card_data_as_file_clicked(self):
         logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
-            self, "Select download location",
+            self, self.tr("Select download location"),
             QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
         if not location:
             logger.debug("User cancelled location selection. Not downloading.")
@@ -182,8 +182,8 @@ class DebugSettingsPage(Page):
         if not (path := pathlib.Path(location)).is_dir():
             logger.warning("User selected something that is not a directory. Aborting.")
             QMessageBox.critical(
-                self, "Selected location is not a directory",
-                f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
+                self, self.tr("Selected location is not a directory"),
+                self.tr(f"Cannot write the card data at the given location, because it is not a directory:\n{location}"),
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
@@ -193,9 +193,9 @@ class DebugSettingsPage(Page):
     def on_debug_import_card_data_from_file_clicked(self):
         logger.debug("User about to import card tata from a previously downloaded file.")
         location, _ = QFileDialog.getOpenFileName(
-            self, "Import previously downloaded card data obtained from Scryfall",
+            self, self.tr("Import previously downloaded card data obtained from Scryfall"),
             QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
-            "Scryfall card data (*.json, *.json.gz)")
+            self.tr("Scryfall card data (*.json, *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
             logger.debug("User cancelled file selection. Not importing.")
@@ -203,8 +203,8 @@ class DebugSettingsPage(Page):
         if not (path := pathlib.Path(location)).is_file():
             logger.warning("User selected something that is not a file. Aborting.")
             QMessageBox.critical(
-                self, "Selected location is not a file",
-                f"Cannot find the selected file:\n{location}",
+                self, self.tr("Selected location is not a file"),
+                self.tr(f"Cannot find the selected file:\n{location}"),
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
@@ -225,7 +225,7 @@ class DecklistImportSettingsPage(Page):
     @Slot()
     def on_deck_list_search_path_browse_button_clicked(self):
         logger.debug("User about to select a new default deck list search path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default deck list search path"):
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default deck list search path")):
             logger.info("User selected a new default deck list search path.")
             self.ui.deck_list_search_path.setText(location)
 
@@ -289,9 +289,9 @@ class GeneralSettingsPage(Page):
         self.ui = ui = Ui_GeneralSettingsPage()
         self.language_model = QStringListModel([], self)
         ui.setupUi(self)
-        ui.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
-        ui.add_card_widget_style_combo_box.addItem("Columnar layout", "columnar")
-        ui.add_card_widget_style_combo_box.addItem("Tabbed layout", "tabbed")
+        ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
+        ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
+        ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
 
     def set_language_model(self, model: QStringListModel):
         self.language_model = model
@@ -300,7 +300,7 @@ class GeneralSettingsPage(Page):
     @Slot()
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default save location")):
             logger.info("User selected a new default document save path.")
             self.ui.document_save_path.setText(location)
 
@@ -469,7 +469,7 @@ class DefaultDocumentLayoutSettingsPage(Page):
         super().__init__(parent)
         self.ui = ui = Ui_DefaultDocumentLayoutSettingsPage()
         ui.setupUi(self)
-        ui.page_configuration_group_box.setTitle("Default settings for new documents")
+        ui.page_configuration_group_box.setTitle(self.tr("Default settings for new documents"))
 
     def load(self, settings: configparser.ConfigParser):
         self.ui.page_configuration_group_box.load_document_settings_from_config(settings)
@@ -551,7 +551,7 @@ class PDFSettingsPage(Page):
     @Slot()
     def on_pdf_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default PDF document export path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default PDF export location")):
             logger.info("User selected a new default PDF document export path.")
             self.ui.pdf_save_path.setText(location)
         else:

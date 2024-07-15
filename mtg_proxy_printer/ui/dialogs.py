@@ -73,7 +73,7 @@ class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
         super().__init__(
-            parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
+            parent, self.tr("Export as PDF"), self.get_preferred_file_name(document), self.tr("PDF-Documents (*.pdf)"))
         if default_path := read_path("pdf-export", "pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -111,7 +111,8 @@ class SaveDocumentAsDialog(QFileDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
         super().__init__(
-            parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
+            parent, self.tr("Save document as …"),
+            filter=self.tr(f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})"), **kwargs)
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -140,7 +141,8 @@ class LoadDocumentDialog(QFileDialog):
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
         super().__init__(
-            parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
+            parent, self.tr("Load MTGProxyPrinter document"),
+            filter=self.tr(f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})"),
             **kwargs)
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
@@ -289,7 +291,7 @@ class DocumentSettingsDialog(QDialog):
         self.setModal(True)
         self.document = document
         self.ui.page_config_groupbox.load_from_page_layout(document.page_layout)
-        self.ui.page_config_groupbox.setTitle("These settings only affect the current document")
+        self.ui.page_config_groupbox.setTitle(self.tr("These settings only affect the current document"))
         self._setup_button_box()
         self.accepted.connect(self.on_accept)
         logger.info(f"Created {self.__class__.__name__} instance.")
