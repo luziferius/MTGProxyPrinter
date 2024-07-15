@@ -24,14 +24,17 @@ from unittest.mock import MagicMock
 from hamcrest import *
 import pytest
 
-from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, Card
+import mtg_proxy_printer.settings
+from mtg_proxy_printer.model.carddb import CardDatabase, CardIdentificationData, MINIMUM_REFRESH_DELAY, CardList, \
+    Card, MTGSet
 from mtg_proxy_printer.model.imagedb import CacheContent
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
+from mtg_proxy_printer.units_and_sizes import UUID
 
 from .helpers import assert_model_is_empty, fill_card_database_with_json_card, \
-    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation
+    fill_card_database_with_json_cards, is_dataclass_equal_to, matches_type_annotation, update_database_printing_filters
 from .test_card_info_downloader import TestCaseData
 
 StringList = typing.List[str]
@@ -772,27 +775,37 @@ def test_is_dfc(qtbot, card_db: CardDatabase, json_name: str, scryfall_id: str, 
     )
 
 
-@pytest.mark.parametrize("card_data, expected", [
+@pytest.mark.parametrize("card_data, filter_enabled, expected", [
     # Forests. All source languages return all available languages
-    (CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), ["de", "en", "es"]),
-    (CardIdentificationData(scryfall_id="ffa13d4c-6c5e-44bd-859e-38e79d47a916", is_front=True), ["de", "en", "es"]),
-    (CardIdentificationData(scryfall_id="cd4cf73d-a408-48f1-9931-54707553c5d5", is_front=True), ["de", "en", "es"]),
+    (CardIdentificationData(scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True), False, ["de", "en", "es"]),
+    (CardIdentificationData(scryfall_id="ffa13d4c-6c5e-44bd-859e-38e79d47a916", is_front=True), False, ["de", "en", "es"]),
+    (CardIdentificationData(scryfall_id="cd4cf73d-a408-48f1-9931-54707553c5d5", is_front=True), False, ["de", "en", "es"]),
     # The mis-translated German Coercion cannot be translated, as the English Coercion is not in the imported test data
-    (CardIdentificationData(scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0", is_front=True), ["de"]),
+    (CardIdentificationData(scryfall_id="93054b80-fd1f-4200-8d33-2e826a181db0", is_front=True), False, ["de"]),
     # English/German Duress can be translated
-    (CardIdentificationData(scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3", is_front=True), ["de", "en"]),
-    (CardIdentificationData(scryfall_id="15c8d82e-6e65-4d36-bf09-b24dde016581", is_front=True), ["de", "en"]),
+    (CardIdentificationData(scryfall_id="51c6ec30-afb2-41e6-895b-92e070aa86f3", is_front=True), False, ["de", "en"]),
+    (CardIdentificationData(scryfall_id="15c8d82e-6e65-4d36-bf09-b24dde016581", is_front=True), False, ["de", "en"]),
+    # English Back to Basics only finds English if card filters are active
+    (CardIdentificationData(scryfall_id="0600d6c2-0f72-4e79-a55d-1f06dffa48c2", is_front=True), True, ["en"]),
+    (CardIdentificationData(scryfall_id="0600d6c2-0f72-4e79-a55d-1f06dffa48c2", is_front=True), False, ["de", "en"]),
+    # German, hidden printing of Back to Basics also round-trips the current language
+    (CardIdentificationData(scryfall_id="97b84e7d-258f-46dc-baef-4b1eb6f28d4d", is_front=True), True, ["de", "en"]),
 ])
-def test_get_available_languages_for_card(qtbot, card_db, card_data: CardIdentificationData, expected: StringList):
+def test_get_available_languages_for_card(
+        qtbot, card_db, card_data: CardIdentificationData, filter_enabled: bool, expected: StringList):
     fill_card_database_with_json_cards(qtbot, card_db, [
         "english_basic_Forest", "german_basic_Forest", "spanish_basic_Forest",
         "german_Coercion_with_faulty_translation", "german_Duress", "english_Duress",
+        "english_Back_to_Basics", "german_Back_to_Basics",
     ])
     card = card_db.get_card_with_scryfall_id(card_data.scryfall_id, card_data.is_front)
     assert_that(card, is_(not_none()), "Setup failed, card not found")
+    if filter_enabled:
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        update_database_printing_filters(card_db, filters)
     assert_that(
         card_db.get_available_languages_for_card(card),
-        contains_exactly(*expected)
+        all_of(has_length(len(expected)), contains_exactly(*expected))
     )
 
 
@@ -821,3 +834,96 @@ def test_get_card_from_data_prefers_highres_images_over_newer_lowres_printings(q
             ),
         )
     )
+
+
+@pytest.mark.parametrize("jsons, scryfall_id, filter_enabled, expected", [
+    # Result set with size > 1. Return sets in release order.
+    # Also, these three cards have three different printed names
+    (["german_Ironroot_Treefolk_1", "german_Ironroot_Treefolk_2", "german_Ironroot_Treefolk_3"],
+     "2520cb2b-47f2-4fb3-a9e7-17ad135562c8", False,
+     [MTGSet("3ed", "Revised Edition"), MTGSet("4ed", "Fourth Edition"), MTGSet("5ed", "Fifth Edition")]),
+    # De-duplicate results
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", False,
+     [MTGSet("mh2", "Modern Horizons 2")]),
+    # Only offer sets the card is available in the same language as the source
+    (["english_Back_to_Basics", "german_Back_to_Basics"],
+     "97b84e7d-258f-46dc-baef-4b1eb6f28d4d", False,
+     [MTGSet("usg", "Urza's Saga")]),
+    # 1/1 colorless Spirit token offers both TNEO and TC16
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "5009729f-6365-42ca-979f-d854a10e463b", False,
+     [MTGSet("tc16", "Commander 2016 Tokens"), MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "ca20548f-6324-4858-adbe-87303ff1ca52", False,
+     [MTGSet("tc16", "Commander 2016 Tokens"), MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
+    # 4/5 green Spirit token from TNEO only offers TNEO
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", False,
+     [MTGSet("tneo", "Kamigawa: Neon Dynasty Tokens")]),
+    # The first of these has placeholder images, making it affected by a printing filter
+    (["german_Duress", "german_Duress_2"],
+     "920e8a8f-3cb4-4f33-8a71-f2524cf63aaf", True,  # ID of the second printing from MID
+     [MTGSet("mid", "Innistrad: Midnight Hunt")]),
+    # Data of hidden printings present in the document must round-trip.
+    # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
+    (["german_Duress", "german_Duress_2"],
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,  # ID of the first printing from 7th Edition
+     [MTGSet("7ed", "Seventh Edition"), MTGSet("mid", "Innistrad: Midnight Hunt")]),
+    (["german_Duress"],
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
+     [MTGSet("7ed", "Seventh Edition")]),
+    
+])
+def test_get_available_sets_for_card(
+        qtbot, card_db,
+        jsons: StringList, scryfall_id: UUID, filter_enabled: bool, expected: typing.List[MTGSet]):
+    fill_card_database_with_json_cards(qtbot, card_db, jsons)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+    if filter_enabled:
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        update_database_printing_filters(card_db, filters)
+    assert_that(card, is_(not_none()), "Test setup failed, card not found")
+    fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
+    assert_that(card_db.get_available_sets_for_card(card), fulfills_matcher)
+
+
+@pytest.mark.parametrize("jsons, scryfall_id, filter_enabled, expected", [
+    # Actual two variants in the same set (regular & extended art)
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", False, ["186", "463"]),
+    # With enabled filters, the extended art variant is unavailable, thus should not be suggested
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "d99a9a7d-d9ca-4c11-80ab-e39d5943a315", True, ["186"]),
+    # The German, regular card should not find the collector number of the English extended art variant.
+    (["Asmoranomardicadaistinaculdacar_German", "Asmoranomardicadaistinaculdacar_2"],
+     "e710a21a-65eb-4106-a379-57a86fb9e6c6", False, ["186"]),
+    # The 1/1 Spirit token in TNEO has number 2
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "ca20548f-6324-4858-adbe-87303ff1ca52", False, ["2"]),
+    # 4/5 green Spirit token in TNEO  has number 11
+    (["Spirit_1_1_TNEO", "Spirit_1_1_TC16", "Spirit_4_5_TNEO"],
+     "0f48aaab-dd6e-4bcc-a8fb-d31dd4a098ba", False, ["11"]),
+    # Data of hidden printings present in the document must round-trip.
+    # Steps to reproduce: Disable a card filter, add a card affected by it, then re-enable it.
+    (["Asmoranomardicadaistinaculdacar", "Asmoranomardicadaistinaculdacar_2"],
+     "2879f780-e17f-4e68-931e-6e45f9df28e1", True, ["186", "463"]),
+    (["german_Duress", "german_Duress_2"],
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
+     ["131"]),
+    (["german_Duress"],
+     "51c6ec30-afb2-41e6-895b-92e070aa86f3", True,
+     ["131"]),
+])
+def test_get_available_collector_numbers_for_card_in_set(
+        qtbot, card_db,
+        jsons: StringList, scryfall_id: UUID, filter_enabled: bool, expected: StringList):
+    fill_card_database_with_json_cards(qtbot, card_db, jsons)
+    card = card_db.get_card_with_scryfall_id(scryfall_id, True)
+    assert_that(card, is_(not_none()), "Setup failed. Card not found")
+    if filter_enabled:
+        filters = {key: str(filter_enabled) for key in mtg_proxy_printer.settings.settings["card-filter"]}
+        update_database_printing_filters(card_db, filters)
+
+    fulfills_matcher = all_of(has_length(len(expected)), contains_exactly(*expected)) if expected else empty()
+    assert_that(card_db.get_available_collector_numbers_for_card_in_set(card), fulfills_matcher)

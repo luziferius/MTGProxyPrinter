@@ -1,0 +1,153 @@
+{
+  "object": "card",
+  "id": "fa6fdb57-82f3-4695-b1fa-1f301ea4ef83",
+  "oracle_id": "8556740e-653e-4866-9e57-5e8da844113f",
+  "multiverse_ids": [
+
+  ],
+  "name": "Skeleton",
+  "lang": "en",
+  "released_at": "2021-07-23",
+  "uri": "https://api.scryfall.com/cards/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83",
+  "scryfall_uri": "https://scryfall.com/card/tafr/6/skeleton?utm_source=api",
+  "layout": "token",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/f/a/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83.jpg?1641306237",
+    "normal": "https://cards.scryfall.io/normal/front/f/a/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83.jpg?1641306237",
+    "large": "https://cards.scryfall.io/large/front/f/a/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83.jpg?1641306237",
+    "png": "https://cards.scryfall.io/png/front/f/a/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83.png?1641306237",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/f/a/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83.jpg?1641306237",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/f/a/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83.jpg?1641306237"
+  },
+  "mana_cost": "",
+  "cmc": 0.0,
+  "type_line": "Token Creature — Skeleton",
+  "oracle_text": "",
+  "power": "1",
+  "toughness": "1",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [
+
+  ],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "6f509dbe-6ec7-4438-ab36-e20be46c9922",
+      "component": "combo_piece",
+      "name": "Dungeon of the Mad Mage",
+      "type_line": "Dungeon",
+      "uri": "https://api.scryfall.com/cards/6f509dbe-6ec7-4438-ab36-e20be46c9922"
+    },
+    {
+      "object": "related_card",
+      "id": "fa6fdb57-82f3-4695-b1fa-1f301ea4ef83",
+      "component": "token",
+      "name": "Skeleton",
+      "type_line": "Token Creature — Skeleton",
+      "uri": "https://api.scryfall.com/cards/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83"
+    },
+    {
+      "object": "related_card",
+      "id": "d0f910fc-929c-4979-968e-8083e8701871",
+      "component": "combo_piece",
+      "name": "Skeletal Swarming",
+      "type_line": "Enchantment",
+      "uri": "https://api.scryfall.com/cards/d0f910fc-929c-4979-968e-8083e8701871"
+    },
+    {
+      "object": "related_card",
+      "id": "126b2636-030a-4a0e-9307-54c3372afb52",
+      "component": "combo_piece",
+      "name": "Death-Priest of Myrkul",
+      "type_line": "Creature — Tiefling Cleric",
+      "uri": "https://api.scryfall.com/cards/126b2636-030a-4a0e-9307-54c3372afb52"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "explorer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "68e8eca4-2c75-4f44-8519-59489e76b719",
+  "set": "tafr",
+  "set_name": "Adventures in the Forgotten Realms Tokens",
+  "set_type": "token",
+  "set_uri": "https://api.scryfall.com/sets/68e8eca4-2c75-4f44-8519-59489e76b719",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atafr&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/tafr?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/fa6fdb57-82f3-4695-b1fa-1f301ea4ef83/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A8556740e-653e-4866-9e57-5e8da844113f&unique=prints",
+  "collector_number": "6",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Svetlin Velinov",
+  "artist_ids": [
+    "ffd063ae-c097-4f26-b2e6-b1e2137708bc"
+  ],
+  "illustration_id": "5bf023de-188f-4814-9ea3-eed1c8ab8eb0",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": false,
+  "story_spotlight": false,
+  "prices": {
+    "usd": null,
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": null,
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "tcgplayer_infinite_articles": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Darticle%26game%3Dmagic%26partner%3Dscryfall%26q%3DSkeleton",
+    "tcgplayer_infinite_decks": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&trafcat=infinite&u=https%3A%2F%2Finfinite.tcgplayer.com%2Fsearch%3FcontentMode%3Ddeck%26game%3Dmagic%26partner%3Dscryfall%26q%3DSkeleton",
+    "edhrec": "https://edhrec.com/route/?cc=Skeleton"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://tcgplayer.pxf.io/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fmagic%2Fproduct%3FproductLineName%3Dmagic%26q%3DSkeleton%26view%3Dgrid",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products/Search?referrer=scryfall&searchString=Skeleton&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Skeleton&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

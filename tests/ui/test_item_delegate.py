@@ -61,7 +61,7 @@ def test_setEditorData_on_card_list_empty_model(qtbot, card_db: CardDatabase, ca
     delegate = ComboBoxItemDelegate()
     index = card_list_empty_carddb.index(0, column)
     delegate.setEditorData(editor_widget, index)
-    assert_that(editor_widget.model().rowCount(), is_(0))
+    assert_that(editor_widget.model().rowCount(), is_(1))  # Data from the source card must round-trip
 
 
 @pytest.mark.parametrize("column", CardListModel.EDITABLE_COLUMNS)
@@ -71,4 +71,4 @@ def test_setEditorData_on_document_empty_model(qtbot, card_db: CardDatabase, doc
     page_index = document_empty_carddb.index(0, 0)
     index = document_empty_carddb.index(0, column, page_index)
     delegate.setEditorData(editor_widget, index)
-    assert_that(editor_widget.model().rowCount(), is_(0))
+    assert_that(editor_widget.model().rowCount(), is_(1))  # Data from the source card must round-trip

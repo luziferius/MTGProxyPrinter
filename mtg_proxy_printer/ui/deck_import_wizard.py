@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+import configparser
 import itertools
 import math
 import pathlib
@@ -479,6 +479,7 @@ class SummaryPage(QWizardPage):
         super().initializePage()
         self.selected_cells_count = 0
         parser: common.ParserBase = self.field("selected_parser")
+        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
         logger.debug(f"About to parse the deck list using parser {parser.__class__.__name__}")
         if self.field("translate-deck-list-enable"):
             language_override = self.field("translate-deck-list-target-language")
@@ -493,14 +494,17 @@ class SummaryPage(QWizardPage):
         )
         self.card_list.add_cards(parsed_deck)
         self.ui.unparsed_lines_text.setPlainText("\n".join(unidentified_lines))
-        self._initialize_custom_buttons()
+        self._initialize_custom_buttons(decklist_import_section)
+        if decklist_import_section.getboolean("automatically-remove-basic-lands"):
+            logger.info("Automatically remove basic lands")
+            self._remove_basic_lands()
         logger.debug(f"Initialized {self.__class__.__name__}")
 
-    def _initialize_custom_buttons(self):
+    def _initialize_custom_buttons(self, decklist_import_section: configparser.SectionProxy):
         wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
-        wizard.setOption(WizardOption.HaveCustomButton1, True)
-        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+        have_basic_land_removal_button = not decklist_import_section.getboolean("automatically-remove-basic-lands")
+        wizard.setOption(WizardOption.HaveCustomButton1, have_basic_land_removal_button)
         remove_basic_lands_button = wizard.button(WizardButton.CustomButton1)
         remove_basic_lands_button.setEnabled(self.card_list.has_basic_lands(
             decklist_import_section.getboolean("remove-basic-wastes"),
@@ -541,13 +545,16 @@ class SummaryPage(QWizardPage):
         self.wizard().button(button).setEnabled(False)
         if button == WizardButton.CustomButton1:
             logger.info("User requests to remove all basic lands")
-            decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
-            self.card_list.remove_all_basic_lands(
-                decklist_import_section.getboolean("remove-basic-wastes"),
-                decklist_import_section.getboolean("remove-snow-basics"))
+            self._remove_basic_lands()
         elif button == WizardButton.CustomButton2:
             self._remove_selected_cards()
             self.selected_cells_count = 0
+
+    def _remove_basic_lands(self):
+        decklist_import_section = mtg_proxy_printer.settings.settings["decklist-import"]
+        self.card_list.remove_all_basic_lands(
+            decklist_import_section.getboolean("remove-basic-wastes"),
+            decklist_import_section.getboolean("remove-snow-basics"))
 
     def _remove_selected_cards(self):
         logger.info("User removes the selected cards")

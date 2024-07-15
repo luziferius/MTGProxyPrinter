@@ -81,6 +81,7 @@ class GeneralPrintingFilter(AbstractPrintingFilter):
         ui.view_token.clicked.connect(partial(self.view_query_on_scryfall, "is:token"))
         ui.view_digital_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:digital"))
         ui.view_reversible_cards.clicked.connect(partial(self.view_query_on_scryfall, "is:reversible"))
+        ui.view_art_series_cards.clicked.connect(partial(self.view_query_on_scryfall, "layout:art-series"))
 
     def _get_widgets_with_keys(self) -> List[Tuple[QCheckBox, str]]:
         ui = self.ui
@@ -96,6 +97,7 @@ class GeneralPrintingFilter(AbstractPrintingFilter):
             (ui.hide_token, "hide-token"),
             (ui.hide_digital_cards, "hide-digital-cards"),
             (ui.hide_reversible_cards, "hide-reversible-cards"),
+            (ui.hide_art_series_cards, "hide-art-series-cards"),
         ]
         return widgets_with_settings
 

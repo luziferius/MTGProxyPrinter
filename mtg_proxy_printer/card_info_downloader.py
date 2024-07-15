@@ -89,19 +89,23 @@ class RelatedPrintingData(typing.NamedTuple):
 
 @enum.unique
 class SetWackinessScore(int, enum.Enum):
+    """
+    Used to order multiple printing choices, when automatically determining a printing choice.
+    Lower values have higher priority, so that the choice is steered towards normal cards.
+    """
     REGULAR = 0
-    PROMOTIONAL = 1
-    WHITE_BORDERED = 2
-    FUNNY = 3
-    GOLD_BORDERED = 4
-    DIGITAL = 5
-    ART_SERIES = 8
-    OVERSIZED = 10
+    PROMOTIONAL = 1  # Pre-release or planeswalker stamp. Extended/full art versions
+    WHITE_BORDERED = 2  # Old core sets. Some folks dislike the white border
+    FUNNY = 3  # Non-tournament legal
+    GOLD_BORDERED = 4  # Tournament-memorabilia printed with golden border and signed by players
+    DIGITAL = 5  # MTG Arena/Online cards. Especially Arena cards aren't pleasantly looking when printed
+    ART_SERIES = 8  # Not playable
+    OVERSIZED = 10  # Not playable
 
 
 class ProgressSignalContainer(QObject):
     download_progress = Signal(int)  # Emits the total number of processed data after processing each item
-    download_begins = Signal(int, str)  # Emitted when the download starts. Data represents the expected total data
+    download_begins = Signal(int, str)  # Emitted when the download starts. Carries size (bytes) and description
     download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
     working_state_changed = Signal(bool)
     network_error_occurred = Signal(str)  # Emitted when downloading failed due to network issues.
@@ -200,6 +204,7 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
             else:
                 failure = False
             finally:
+                self.connection.close()
                 self.connection = None
         if failure:
             logger.error("Download failed! Deleting incomplete download.")
@@ -736,14 +741,17 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
 
 
 def _get_related_cards(card: CardDataType):
-    if card["layout"].endswith("token") or card.get("type_line") == "Dungeon":
-        # Tokens and Dungeons are never sources, as that would pull all cards
-        # creating that token or entering that Dungeon
+    if card["layout"].endswith("token"):
+        # Tokens are never sources, as that would pull all cards creating that token
         return
     card_id = UUID(card["id"])
+    is_dungeon = card.get("type_line") == "Dungeon"
     for related_card in card.get("all_parts", []):
         related_id = UUID(related_card["id"])
-        if card_id != related_id:
+        related_is_token = related_card["component"].endswith("token")
+        # No self reference allowed. And the implication is_dungeon ⇒ related_is_token must be True.
+        # I.e. If the source is a Dungeon, then it may link with tokens only, and nothing else.
+        if card_id != related_id and (not is_dungeon or related_is_token):
             yield RelatedPrintingData(card_id, related_id)
 
 
@@ -768,6 +776,7 @@ def _get_card_filter_data(card: CardDataType) -> typing.Dict[str, bool]:
         # Token cards
         "hide-token": card["layout"].endswith("token") or card.get("type_line") == "Dungeon",
         "hide-digital-cards": card["digital"],
+        "hide-art-series-cards": card["layout"] == "art_series",
         # Specific format legality. Use .get() with a default instead of [] to not fail
         # if Scryfall removes one of the listed formats in the future.
         "hide-banned-in-brawl": legalities.get("brawl", "") == "banned",

@@ -92,6 +92,7 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hide-token": "False",
     "hide-digital-cards": "True",
     "hide-reversible-cards": "False",
+    "hide-art-series-cards": "False",
     "hidden-sets": "",
 }
 DEFAULT_SETTINGS["documents"] = {
@@ -130,6 +131,7 @@ DEFAULT_SETTINGS["decklist-import"] = {
     "always-translate-deck-lists": "False",
     "remove-basic-wastes": "False",
     "remove-snow-basics": "False",
+    "automatically-remove-basic-lands": "False",
 }
 DEFAULT_SETTINGS["application"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
@@ -231,16 +233,16 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_pdf_export_section(read_settings)
 
 
-def _validate_card_filter_section(settings: configparser.ConfigParser, section_name: str = "card-filter"):
-    section = settings[section_name]
+def _validate_card_filter_section(to_validate: configparser.ConfigParser, section_name: str = "card-filter"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_keys = get_boolean_card_filter_keys()
     for key in boolean_keys:
         _validate_boolean(section, defaults, key)
 
 
-def _validate_images_section(settings: configparser.ConfigParser, section_name: str = "images"):
-    section = settings[section_name]
+def _validate_images_section(to_validate: configparser.ConfigParser, section_name: str = "images"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in ("automatically-add-opposing-faces",):
         _validate_boolean(section, defaults, key)
@@ -250,11 +252,11 @@ def _validate_images_section(settings: configparser.ConfigParser, section_name: 
         _restore_default(section, defaults, "preferred-language")
 
 
-def _validate_documents_section(settings: configparser.ConfigParser, section_name: str = "documents"):
+def _validate_documents_section(to_validate: configparser.ConfigParser, section_name: str = "documents"):
     card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
     card_height = card_size.as_mm(card_size.height)
     card_width = card_size.as_mm(card_size.width)
-    section = settings[section_name]
+    section = to_validate[section_name]
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
@@ -299,8 +301,8 @@ def _validate_documents_section(settings: configparser.ConfigParser, section_nam
         section["row-spacing-mm"] = str(available_spacing_horizontal)
 
 
-def _validate_application_section(settings: configparser.ConfigParser, section_name: str = "application"):
-    section = settings[section_name]
+def _validate_application_section(to_validate: configparser.ConfigParser, section_name: str = "application"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
         section["last-used-version"] = defaults["last-used-version"]
@@ -308,38 +310,38 @@ def _validate_application_section(settings: configparser.ConfigParser, section_n
         _validate_three_valued_boolean(section, defaults, option)
 
 
-def _validate_gui_section(settings: configparser.ConfigParser, section_name: str = "gui"):
-    section = settings[section_name]
+def _validate_gui_section(to_validate: configparser.ConfigParser, section_name: str = "gui"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
-def _validate_debug_section(settings: configparser.ConfigParser, section_name: str = "debug"):
-    section = settings[section_name]
+def _validate_debug_section(to_validate: configparser.ConfigParser, section_name: str = "debug"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "cutelog-integration")
     _validate_boolean(section, defaults, "write-log-file")
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
 
 
-def _validate_decklist_import_section(settings: configparser.ConfigParser, section_name: str = "decklist-import"):
-    section = settings[section_name]
+def _validate_decklist_import_section(to_validate: configparser.ConfigParser, section_name: str = "decklist-import"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_boolean(section, defaults, key)
 
 
 def _validate_default_filesystem_paths_section(
-        settings: configparser.ConfigParser, section_name: str = "default-filesystem-paths"):
-    section = settings[section_name]
+        to_validate: configparser.ConfigParser, section_name: str = "default-filesystem-paths"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
 
 
-def _validate_printer_section(settings: configparser.ConfigParser, section_name: str = "printer"):
-    section = settings[section_name]
+def _validate_printer_section(to_validate: configparser.ConfigParser, section_name: str = "printer"):
+    section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for item in defaults.keys():
         _validate_boolean(section, defaults, item)
@@ -396,18 +398,18 @@ def _restore_default(section: configparser.SectionProxy, defaults: configparser.
     section[key] = defaults[key]
 
 
-def migrate_settings(settings: configparser.ConfigParser):
-    _migrate_layout_setting(settings)
-    _migrate_download_settings(settings)
-    _migrate_default_save_paths_settings(settings)
-    _migrate_print_guessing_settings(settings)
-    _migrate_image_spacing_settings(settings)
-    _migrate_to_pdf_export_section(settings)
+def migrate_settings(to_migrate: configparser.ConfigParser):
+    _migrate_layout_setting(to_migrate)
+    _migrate_download_settings(to_migrate)
+    _migrate_default_save_paths_settings(to_migrate)
+    _migrate_print_guessing_settings(to_migrate)
+    _migrate_image_spacing_settings(to_migrate)
+    _migrate_to_pdf_export_section(to_migrate)
 
 
-def _migrate_layout_setting(settings: configparser.ConfigParser):
+def _migrate_layout_setting(to_migrate: configparser.ConfigParser):
     try:
-        gui_section = settings["gui"]
+        gui_section = to_migrate["gui"]
         layout = gui_section["search-widget-layout"]
     except KeyError:
         return
@@ -417,14 +419,14 @@ def _migrate_layout_setting(settings: configparser.ConfigParser):
         gui_section["central-widget-layout"] = layout
         
         
-def _migrate_download_settings(settings: configparser.ConfigParser):
+def _migrate_download_settings(to_migrate: configparser.ConfigParser):
     target_section_name = "card-filter"
-    if settings.has_section(target_section_name) or not settings.has_section("downloads"):
+    if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
         return
-    download_section = settings["downloads"]
-    settings.add_section(target_section_name)
-    filter_section = settings[target_section_name]
-    for source_setting in settings["downloads"].keys():
+    download_section = to_migrate["downloads"]
+    to_migrate.add_section(target_section_name)
+    filter_section = to_migrate[target_section_name]
+    for source_setting in to_migrate["downloads"].keys():
         target_setting = source_setting.replace("download-", "hide-")
         try:
             new_value = not download_section.getboolean(source_setting)
@@ -434,23 +436,23 @@ def _migrate_download_settings(settings: configparser.ConfigParser):
             filter_section[target_setting] = str(new_value)
 
 
-def _migrate_default_save_paths_settings(settings: configparser.ConfigParser):
+def _migrate_default_save_paths_settings(to_migrate: configparser.ConfigParser):
     source_section_name = "default-save-paths"
     target_section_name = "default-filesystem-paths"
-    if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
+    if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
         return
-    settings.add_section(target_section_name)
-    settings[target_section_name].update(settings[source_section_name])
+    to_migrate.add_section(target_section_name)
+    to_migrate[target_section_name].update(to_migrate[source_section_name])
 
 
-def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
+def _migrate_print_guessing_settings(to_migrate: configparser.ConfigParser):
     source_section_name = "print-guessing"
     target_section_name = "decklist-import"
-    if settings.has_section(target_section_name) or not settings.has_section(source_section_name):
+    if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
         return
-    settings.add_section(target_section_name)
-    target = settings[target_section_name]
-    source = settings[source_section_name]
+    to_migrate.add_section(target_section_name)
+    target = to_migrate[target_section_name]
+    source = to_migrate[source_section_name]
     # Force-overwrite with the new default when migrating. Having this disabled has negative UX impact, so should not
     # be disabled by default.
     target["enable-print-guessing-by-default"] = "True"
@@ -458,8 +460,8 @@ def _migrate_print_guessing_settings(settings: configparser.ConfigParser):
     target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
 
 
-def _migrate_image_spacing_settings(settings: configparser.ConfigParser):
-    section = settings["documents"]
+def _migrate_image_spacing_settings(to_migrate: configparser.ConfigParser):
+    section = to_migrate["documents"]
     if "image-spacing-horizontal-mm" not in section:
         return
     section["row-spacing-mm"] = section["image-spacing-horizontal-mm"]

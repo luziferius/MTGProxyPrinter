@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+from functools import partial
 import pathlib
 import sys
 
@@ -23,7 +24,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.model.carddb import Card
+from mtg_proxy_printer.model.carddb import Card, CardDatabase
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
 import mtg_proxy_printer.print
@@ -165,7 +166,7 @@ class LoadDocumentDialog(QFileDialog):
 
 class AboutDialog(QDialog):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, card_database: CardDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.ui = Ui_AboutDialog()
         self.ui.setupUi(self)
@@ -173,9 +174,22 @@ class AboutDialog(QDialog):
         self._setup_changelog_text()
         self._setup_license_text()
         self._setup_third_party_license_text()
+        self.card_database = card_database
+        self.populate_card_database_update_timestamp_label()
         self.ui.mtg_proxy_printer_version_label.setText(mtg_proxy_printer.meta_data.__version__)
         self.ui.python_version_label.setText(sys.version.replace("\n", " "))
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def populate_card_database_update_timestamp_label(self):
+        self.card_database.card_data_updated.connect(self.on_card_database_updated)
+        self.on_card_database_updated()
+
+
+    @Slot()
+    def on_card_database_updated(self):
+        last_update = self.card_database.get_last_card_data_update_timestamp()
+        label_text = str(last_update) if last_update else ""
+        self.ui.last_database_update_label.setText(label_text)
 
     @Slot()
     def show_about(self):
