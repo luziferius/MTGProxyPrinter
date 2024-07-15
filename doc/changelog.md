@@ -13,12 +13,19 @@
 
 ## Changed features
 
+- Reworked paper size configuration: The document settings now have a list of pre-defined paper sizes to choose from.
+    - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
+    - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
+      as in previous versions.
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
 
+# Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
+
 ## Fixed issues
 
+- The MTGTop8 deck list downloader no longer rejects valid URLs starting with `www.`. These now work as expected.
 - When switching the language of the card search, the shown list now honors any entered card name filter.
 - Fixed multiple issues with print switching via double-clicking the "Language", "Set" or "Collector #" cells in tables.
     - The app now handles ambiguous card names, most prominently with tokens or some cards in Unstable.
@@ -48,10 +55,6 @@
 
 ## Changed features
 
-- Reworked paper size configuration: The document settings now have a list of pre-defined paper sizes to choose from.
-    - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
-    - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
-      as in previous versions.
 - Printer and PDF export options are moved to dedicated pages in the application settings window.
 
 ## Fixed issues
