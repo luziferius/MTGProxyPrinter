@@ -198,7 +198,7 @@ class LoadListPage(QWizardPage):
         if not self.ui.deck_list.toPlainText() \
                 or QMessageBox.question(
                         self, self.tr("Overwrite existing deck list?"),
-                        self.tr("Downloading a deck list will overwrite the existing content. Continue?"),
+                        self.tr("Downloading a deck list will overwrite the existing deck list. Continue?"),
                         StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
             url = self.ui.deck_list_download_url_line_edit.text()
             logger.info(f"User requests to download a deck list from the internet: {url}")
