@@ -377,7 +377,7 @@ class MainWindow(QMainWindow):
                 self, "Unavailable printings replaced",
                 f"The document contained {replaced} unavailable printings of cards that were automatically replaced "
                 f"with other printings. The replaced printings are unavailable, "
-                f"because they match a configured download filter.",
+                f"because they match a configured card filter.",
                 StandardButton.Ok, StandardButton.Ok
             )
         if unknown:
