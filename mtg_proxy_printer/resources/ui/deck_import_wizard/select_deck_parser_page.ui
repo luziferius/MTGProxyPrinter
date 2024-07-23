@@ -105,7 +105,7 @@ or any other preference, like card price.</string>
      <property name="toolTip">
       <string>CSV exports from Scryfall’s own deck builder.
 Gives very accurate results, unless the imported deck list contains ignored items
-matching a configured download filter.</string>
+matching an enabled card filter.</string>
      </property>
      <property name="text">
       <string>Scryfall.com deck lists (CSV export)</string>
@@ -300,7 +300,7 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="placeholderText">
-      <string>(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
+      <string notr="true">(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>
      </property>
      <property name="clearButtonEnabled">
       <bool>true</bool>
