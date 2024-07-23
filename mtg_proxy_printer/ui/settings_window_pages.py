@@ -183,7 +183,9 @@ class DebugSettingsPage(Page):
             logger.warning("User selected something that is not a directory. Aborting.")
             QMessageBox.critical(
                 self, self.tr("Selected location is not a directory"),
-                self.tr(f"Cannot write the card data at the given location, because it is not a directory:\n{location}"),
+                self.tr(
+                    "Cannot write the card data at the given location, because it is not a directory:\n{location}"
+                ).format(location=location),
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
@@ -204,7 +206,7 @@ class DebugSettingsPage(Page):
             logger.warning("User selected something that is not a file. Aborting.")
             QMessageBox.critical(
                 self, self.tr("Selected location is not a file"),
-                self.tr(f"Cannot find the selected file:\n{location}"),
+                self.tr("Cannot find the selected file:\n{location}").format(location=location),
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")

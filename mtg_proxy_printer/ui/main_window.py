@@ -213,9 +213,9 @@ class MainWindow(QMainWindow):
 
     @Slot()
     def on_document_action_applied_or_undone(self):
-        undo_tooltip = self.tr(f"Undo:\n{self.document.undo_stack[-1]}") \
+        undo_tooltip = self.tr("Undo:\n{top_entry}").format(top_entry=self.document.undo_stack[-1]) \
             if self.document.undo_stack else self.default_undo_tooltip
-        redo_tooltip = self.tr(f"Redo:\n{self.document.redo_stack[-1]}") \
+        redo_tooltip = self.tr("Redo:\n{top_entry}").format(top_entry=self.document.redo_stack[-1]) \
             if self.document.redo_stack else self.default_redo_tooltip
         self.ui.action_undo.setToolTip(undo_tooltip)
         self.ui.action_redo.setToolTip(redo_tooltip)
@@ -289,16 +289,16 @@ class MainWindow(QMainWindow):
     def on_network_error_occurred(self, message: str):
         QMessageBox.warning(
             self, self.tr("Network error"),
-            self.tr(f"Operation failed, because a network error occurred.\n"
-            f"Check your internet connection. Reported error message:\n\n{message}"),
+            self.tr("Operation failed, because a network error occurred.\n"
+            "Check your internet connection. Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
         self.loading_state_changed.emit(False)
 
     def on_error_occurred(self, message: str):
         QMessageBox.critical(
             self, self.tr("Error"),
-            self.tr(f"Operation failed, because an internal error occurred.\n"
-            f"Reported error message:\n\n{message}"),
+            self.tr("Operation failed, because an internal error occurred.\n"
+            "Reported error message:\n\n{message}").format(message=message),
             StandardButton.Ok, StandardButton.Ok)
         self.loading_state_changed.emit(False)
 
@@ -306,9 +306,9 @@ class MainWindow(QMainWindow):
         if savable_pages := self.document.compute_pages_saved_by_compacting():
             if (result := QMessageBox.question(
                 self, self.tr("Saving pages possible"),
-                self.tr(f"It is possible to save {savable_pages} pages when printing this document.\n"
-                        f"Do you want to compact the document now to minimize the page count prior to {action}?",
-                        n=savable_pages),
+                self.tr("It is possible to save {savable_pages} pages when printing this document.\n"
+                        "Do you want to compact the document now to minimize the page count prior to {action}?",
+                        n=savable_pages).format(savable_pages=savable_pages, action=action),
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
             )) == StandardButton.Yes:
                 self.document.apply(ActionCompactDocument())
@@ -367,12 +367,15 @@ class MainWindow(QMainWindow):
         self.current_dialog.open()
 
     def on_document_loading_failed(self, failed_path: pathlib.Path, reason: str):
+        function_text = self.ui.action_import_deck_list.text()
         QMessageBox.critical(
             self, self.tr("Document loading failed"),
-            self.tr(f"Loading file \"{failed_path}\" failed. The file was not recognized as an "
-            f"{mtg_proxy_printer.meta_data.PROGRAMNAME} document. If you want to load a deck list, use the "
-            f"\"{self.ui.action_import_deck_list.text()}\" function instead.\n"
-            f"Reported failure reason: {reason}"),
+            self.tr('Loading file "{failed_path}" failed. The file was not recognized as a '
+                    '{program_name} document. If you want to load a deck list, use the '
+                    '"{function_text}" function instead.\n'
+                    'Reported failure reason: {reason}').format(
+                failed_path=failed_path, program_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
+                function_text=function_text, reason=reason),
             StandardButton.Ok, StandardButton.Ok
         )
 
@@ -390,19 +393,22 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self, self.tr("Unrecognized cards in loaded document found"),
                 self.tr(
-                    f"Skipped {unknown} unrecognized cards in the loaded document. "
-                    f"Saving the document will remove these entries permanently.\n\nThe locally stored card "
-                    f"data may be outdated or the document was tampered with.", n=unknown),
+                    "Skipped {unknown} unrecognized cards in the loaded document. "
+                    "Saving the document will remove these entries permanently.\n\nThe locally stored card "
+                    "data may be outdated or the document was tampered with.", n=unknown).format(unknown=unknown),
                 StandardButton.Ok, StandardButton.Ok
             )
 
     def show_application_update_available_message_box(self, newer_version: str):
         if QMessageBox.question(
                 self, self.tr("Application update available. Visit website?"),
-                self.tr(f"An application update is available: Version {newer_version}\n"
-                f"You are currently using version {mtg_proxy_printer.meta_data.__version__}.\n\n"
-                f"Open the {mtg_proxy_printer.meta_data.PROGRAMNAME} website in your web browser "
-                f"to download the new version?"),
+                self.tr("An application update is available: Version {newer_version}\n"
+                "You are currently using version {current_version}.\n\n"
+                "Open the {program_name} website in your web browser "
+                "to download the new version?").format(
+                    newer_version=newer_version, current_version=mtg_proxy_printer.meta_data.__version__,
+                    program_name=mtg_proxy_printer.meta_data.PROGRAMNAME,
+                ),
                 StandardButton.Yes | StandardButton.No, StandardButton.No
         ) == StandardButton.Yes:
             url = QUrl(mtg_proxy_printer.meta_data.DOWNLOAD_WEB_PAGE, QUrl.ParsingMode.StrictMode)
@@ -412,8 +418,8 @@ class MainWindow(QMainWindow):
         if QMessageBox.question(
                 self, self.tr("New card data available"),
                 self.tr(
-                    f"There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
-                    n=estimated_card_count),
+                    "There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
+                    n=estimated_card_count).format(estimated_card_count=estimated_card_count),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")
@@ -437,7 +443,9 @@ class MainWindow(QMainWindow):
         name = mtg_proxy_printer.meta_data.PROGRAMNAME
         self._ask_user_about_update_policy(
             title=self.tr("Check for card data updates?"),
-            question=self.tr(f"Automatically check for card data updates on Scryfall whenever you start {name}?"),
+            question=self.tr(
+                "Automatically check for card data updates on Scryfall whenever you start {program_name}?").format(
+                program_name=name),
             logger_message="Card data update policy set.",
             settings_key="check-for-card-data-updates"
         )
@@ -445,7 +453,7 @@ class MainWindow(QMainWindow):
     def _ask_user_about_update_policy(self, title: str, question: str, logger_message: str, settings_key: str):
         if (result := QMessageBox.question(
                 self, title,
-                self.tr(f"{question}\nYou can change this later in the settings."),
+                self.tr("{question}\nYou can change this later in the settings.").format(question=question),
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
                 )) in {StandardButton.Yes, StandardButton.No}:
             logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")

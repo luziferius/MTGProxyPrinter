@@ -109,7 +109,7 @@ class LoadListPage(QWizardPage):
             lambda text: self.ui.deck_list_download_button.setEnabled(
                 self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
-        self.ui.deck_list_download_url_line_edit.setToolTip(self.tr(f"Supported websites:\n{supported_sites}"))
+        self.ui.deck_list_download_url_line_edit.setToolTip(self.tr("Supported websites:\n{supported_sites}").format(supported_sites=supported_sites))
         self.ui.translate_deck_list_target_language.setModel(language_model)
         self.registerField("deck_list*", self.ui.deck_list, "plainText", self.ui.deck_list.textChanged)
         self.registerField("print-guessing-enable", self.ui.print_guessing_enable)
@@ -210,18 +210,18 @@ class LoadListPage(QWizardPage):
                     deck_list = downloader.download(url)
                 except urllib.error.HTTPError as e:
                     btn = StandardButton.Ok
-                    msg = self.tr(f"Download failed with HTTP error {e.code}.\n\n"
+                    msg = self.tr("Download failed with HTTP error {http_error_code}.\n\n"
                           f"Verify that the URL is valid, reachable, and that the deck list is set to public.\n"
                           f"This program cannot download private deck lists. Please note, that setting deck lists to\n"
-                          f"public may take a minute or two to apply.")
+                          f"public may take a minute or two to apply.").format(http_error_code=e.code)
                     QMessageBox.critical(self, self.tr("Deck list download failed"), msg, btn, btn)
                 except Exception:
                     btn = StandardButton.Ok
-                    msg = self.tr(f"Download failed.\n\n"
-                          f"Check your internet connection, verify that the URL is valid, reachable, "
-                          f"and that the deck list is set to public. "
-                          f"This program cannot download private deck lists. If this persists, "
-                          f"please report a bug in the issue tracker on the homepage.")
+                    msg = self.tr("Download failed.\n\n"
+                          "Check your internet connection, verify that the URL is valid, reachable, "
+                          "and that the deck list is set to public. "
+                          "This program cannot download private deck lists. If this persists, "
+                          "please report a bug in the issue tracker on the homepage.")
                     QMessageBox.critical(self, self.tr("Deck list download failed"), msg, btn, btn)
                 else:
                     self.ui.deck_list.setPlainText(deck_list)
@@ -236,7 +236,9 @@ class LoadListPage(QWizardPage):
                 logger.warning(f"Unable to parse file {file_path}. Not a text file?")
                 QMessageBox.critical(
                     self, self.tr("Unable to read file content"),
-                    self.tr(f"Unable to read the content of file {file_path} as plain text.\nFailed to load the content."))
+                    self.tr(
+                        "Unable to read the content of file {file_path} as plain text.\nFailed to load the content."
+                    ).format(file_path=file_path))
             else:
                 logger.debug("Successfully read the file as plain text, replacing the current deck list")
                 self.ui.deck_list.setPlainText(content)
@@ -246,7 +248,7 @@ class LoadListPage(QWizardPage):
         too_large = size > LoadListPage.LARGE_FILE_THRESHOLD_BYTES
         should_load = not too_large or QMessageBox.question(
             self, self.tr("Load large file?"),
-            self.tr(f"The selected file {file_path} is unexpectedly large ({format_size(size)}). Load anyways?"),
+            self.tr("The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyways?").format(file_path=file_path, formatted_size=format_size(size)),
             StandardButton.Yes | StandardButton.No, StandardButton.No
         ) == StandardButton.Yes
         logger.debug(f"File size: {size}, {too_large=}, {should_load=}")
@@ -290,12 +292,12 @@ class SelectDeckParserPage(QWizardPage):
         self.image_db = image_db
         self._selected_parser = None
         self.parser_creator: typing.Callable[[], None] = (lambda: None)
+        group_names = ', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))
         self.ui.custom_re_input.setToolTip(self.tr(
-            f"Enter a Regular Expression containing at least one supported, named group.\n\n"
-            f"Supported named groups are: "
-            f"{', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))}\n\n"
-            f"See the 'What’s this?' (?-Button) help for details."
-        ))
+            "Enter a Regular Expression containing at least one supported, named group.\n\n"
+            "Supported named groups are: {group_names}\n\n"
+            "See the 'What’s this?' (?-Button) help for details."
+        ).format(group_names=group_names))
         self.ui.custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
         self.ui.insert_copies_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<copies>\d+)"))
@@ -437,8 +439,8 @@ class SummaryPage(QWizardPage):
         if oversized_cards:
             accept_button.setIcon(QIcon.fromTheme("data-warning"))
             accept_button.setToolTip(self.tr(
-                f"Beware: The card list currently contains {oversized_cards} potentially oversized cards."
-            ))
+                "Beware: The card list currently contains {oversized_cards} potentially oversized cards."
+            ).format(oversized_cards=oversized_cards))
         elif self.field("should_replace_document"):
             accept_button.setIcon(QIcon.fromTheme("document-replace"))
             accept_button.setToolTip(self.tr("Replace document content with the identified cards"))
@@ -606,9 +608,9 @@ class DeckImportWizard(WizardBase):
         if oversized_count and QMessageBox.question(
                 self, self.tr("Oversized cards present"),
                 self.tr(
-                    f"There are {oversized_count} possibly oversized cards in the deck list that "
-                    f"may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
-                    n=oversized_count),
+                    "There are {oversized_count} possibly oversized cards in the deck list that "
+                    "may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
+                    n=oversized_count).format(oversized_count=oversized_count),
                 StandardButton.Yes | StandardButton.No, StandardButton.No) == StandardButton.No:
             return False
         return True

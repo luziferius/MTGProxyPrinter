@@ -106,13 +106,16 @@ class SavePDFDialog(QFileDialog):
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
 
+class LoadSaveDialog(QFileDialog):
+    def __init__(self, *args, **kwargs):
+        filter_text = self.tr(f"MTGProxyPrinter document", disambiguation="Human-readable file type name") \
+            + f" (*.{DEFAULT_SAVE_SUFFIX})"
+        super().__init__(*args, filter=filter_text, **kwargs)
 
-class SaveDocumentAsDialog(QFileDialog):
+class SaveDocumentAsDialog(LoadSaveDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
-        super().__init__(
-            parent, self.tr("Save document as …"),
-            filter=self.tr(f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})"), **kwargs)
+        super().__init__(parent, self.tr("Save document as …"), **kwargs)
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -135,15 +138,12 @@ class SaveDocumentAsDialog(QFileDialog):
         logger.debug("User aborted saving. Doing nothing.")
 
 
-class LoadDocumentDialog(QFileDialog):
+class LoadDocumentDialog(LoadSaveDialog):
 
     def __init__(
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
-        super().__init__(
-            parent, self.tr("Load MTGProxyPrinter document"),
-            filter=self.tr(f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})"),
-            **kwargs)
+        super().__init__(parent, self.tr("Load MTGProxyPrinter document"), **kwargs)
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -185,7 +185,6 @@ class AboutDialog(QDialog):
     def populate_card_database_update_timestamp_label(self):
         self.card_database.card_data_updated.connect(self.on_card_database_updated)
         self.on_card_database_updated()
-
 
     @Slot()
     def on_card_database_updated(self):
