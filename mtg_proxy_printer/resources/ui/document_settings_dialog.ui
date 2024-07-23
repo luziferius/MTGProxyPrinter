@@ -15,11 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="PageConfigWidget" name="page_config_groupbox">
-     <property name="title">
-      <string>GroupBox</string>
-     </property>
-    </widget>
+    <widget class="PageConfigWidget" name="page_config_groupbox"/>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="button_box">
