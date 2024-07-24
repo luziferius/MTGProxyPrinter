@@ -84,7 +84,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             if match := self.parser.match(line):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
-                # If the matcher doesn’t include language information, all cards are implicitly English printings
+                # If the matcher doesn't include language information, all cards are implicitly English printings
                 parsed_data = self._parse_line(match_dict)
                 if language_override and language_override != parsed_data.language and (
                         translated := self.card_db.translate_card_name(parsed_data, language_override)):
@@ -171,8 +171,10 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
 class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
 
-    SUPPORTED_FILE_TYPES = {
-        "Magic Workstation Deck Data Format": ["mwDeck"],
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return {
+        self.tr("Magic Workstation Deck Data Format"): ["mwDeck"],
     }
     PREFIXES_TO_SKIP = frozenset({"//"})
 
@@ -187,10 +189,13 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
-    SUPPORTED_FILE_TYPES = {
+
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return {
         # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
         # XMage also lists the .mtga suffix, so add that too.
-        "Magic Arena deck file": ["txt", "mtga"]
+        self.tr("Magic Arena deck file"): ["txt", "mtga"],
     }
     
     # The deck segment headers seem inconsistent across different sites
@@ -220,9 +225,11 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     so sets and individual printings have to be guessed.
     """
 
-    SUPPORTED_FILE_TYPES = {
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return {
         # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
-        "Magic Online (MTGO) deck file": ["dek", "txt"],
+        self.tr("Magic Online (MTGO) deck file"): ["dek", "txt"],
     }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
@@ -241,8 +248,10 @@ class XMageParser(GenericRegularExpressionDeckParser):
     A parser for XMage deck files (file extension ".dck").
     """
 
-    SUPPORTED_FILE_TYPES = {
-        "XMage Deck file": ["dck"],
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return {
+        self.tr("XMage Deck file"): ["dck"],
     }
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 

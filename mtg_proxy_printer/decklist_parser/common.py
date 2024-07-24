@@ -45,7 +45,10 @@ ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 class ParserBase(QObject):
 
-    SUPPORTED_FILE_TYPES: typing.Dict[str, typing.List[str]] = {}
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return {}
+
     incompatible_file_format = Signal()
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
@@ -61,12 +64,12 @@ class ParserBase(QObject):
             )
 
     def get_file_extension_filter(self) -> str:
-        everything = "All files (*)"
-        if not self.SUPPORTED_FILE_TYPES:
+        everything = self.tr("All files (*)")
+        if not self.supported_file_types:
             return everything
         return ";;".join(
             f'{name} (*.{" *.".join(extensions)})'
-            for name, extensions in self.SUPPORTED_FILE_TYPES.items()
+            for name, extensions in self.supported_file_types.items()
         ) + f";;{everything}"
 
     def parse_deck(self, deck: str,

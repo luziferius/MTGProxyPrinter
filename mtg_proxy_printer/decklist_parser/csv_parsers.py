@@ -110,9 +110,11 @@ class ScryfallCSVParser(BaseCSVParser):
         "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
     }
 
-    SUPPORTED_FILE_TYPES = {
-        "Scryfall CSV export": ["csv"]
-    }
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return  {
+            self.tr("Scryfall CSV export"): ["csv"],
+        }
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
@@ -178,9 +180,12 @@ class TappedOutCSVParser(BaseCSVParser):
         # because there is the fallback to the old "Languange" column.
         "Qty", "Name", "Board", "Printing",
     }
-    SUPPORTED_FILE_TYPES = {
-        "Tappedout CSV export": ["csv"]
-    }
+
+    @property
+    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+        return {
+            self.tr("Tappedout CSV export"): ["csv"]
+        }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):
