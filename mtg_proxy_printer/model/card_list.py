@@ -49,20 +49,19 @@ class CardListModel(QAbstractTableModel):
     """
     This is a model for holding a simple list of cards.
     """
-
-    header = {
-        PageColumns.CardName: "Card name",
-        PageColumns.Set: "Set",
-        PageColumns.CollectorNumber: "Collector #",
-        PageColumns.Language: "Language",
-        PageColumns.IsFront: "Side",
-    }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     oversized_card_count_changed = Signal(int)
 
     def __init__(self, card_db: CardDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.header = {
+            PageColumns.CardName: self.tr("Card name"),
+            PageColumns.Set: self.tr("Set"),
+            PageColumns.CollectorNumber: self.tr("Collector #"),
+            PageColumns.Language: self.tr("Language"),
+            PageColumns.IsFront: self.tr("Side"),
+        }
         self.card_db = card_db
         self.cards: CardList = []
         self.oversized_card_count = 0
@@ -72,7 +71,7 @@ class CardListModel(QAbstractTableModel):
         return 0 if parent.isValid() else len(self.cards)
 
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:
-        return 0 if parent.isValid() else len(CardListModel.header)
+        return 0 if parent.isValid() else len(self.header)
 
     def data(self, index: QModelIndex, role: ItemDataRole = ItemDataRole.DisplayRole) -> typing.Any:
         card = self.cards[index.row()]
@@ -93,10 +92,10 @@ class CardListModel(QAbstractTableModel):
             elif index.column() == PageColumns.IsFront:
                 if role == ItemDataRole.EditRole:
                     return card.is_front
-                return "Front" if card.is_front else "Back"
+                return self.tr("Front") if card.is_front else self.tr("Back")
         if card.is_oversized:
             if role == ItemDataRole.ToolTipRole:
-                return "Beware: Potentially oversized card!\nThis card may not fit in your deck."
+                return self.tr("Beware: Potentially oversized card!\nThis card may not fit in your deck.")
             elif role == ItemDataRole.DecorationRole:
                 return self._oversized_icon
 
@@ -232,9 +231,9 @@ class CardListModel(QAbstractTableModel):
             orientation: Qt.Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Qt.Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
-                return CardListModel.header.get(section)
+                return self.header.get(section)
             elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
-                return "Double-click on entries to\nswitch the selected printing."
+                return self.tr("Double-click on entries to\nswitch the selected printing.")
         return super().headerData(section, orientation, role)
 
     def clear(self):
