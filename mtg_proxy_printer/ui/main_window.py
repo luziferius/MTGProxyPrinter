@@ -306,9 +306,9 @@ class MainWindow(QMainWindow):
         if savable_pages := self.document.compute_pages_saved_by_compacting():
             if (result := QMessageBox.question(
                 self, self.tr("Saving pages possible"),
-                self.tr("It is possible to save {savable_pages} pages when printing this document.\n"
+                self.tr("It is possible to save %n pages when printing this document.\n"
                         "Do you want to compact the document now to minimize the page count prior to {action}?",
-                        n=savable_pages).format(savable_pages=savable_pages, action=action),
+                        "", savable_pages).format(action=action),
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
             )) == StandardButton.Yes:
                 self.document.apply(ActionCompactDocument())
@@ -384,9 +384,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self, self.tr("Unavailable printings replaced"),
                 self.tr(
-                    f"The document contained {replaced} unavailable printings of cards that "
-                    f"were automatically replaced with other printings. The replaced printings are unavailable, "
-                    f"because they match a configured card filter.", n=replaced),
+                    "The document contained %n unavailable printings of cards that "
+                    "were automatically replaced with other printings. The replaced printings are unavailable, "
+                    "because they match a configured card filter.", "", replaced),
                 StandardButton.Ok, StandardButton.Ok
             )
         if unknown:
@@ -395,7 +395,7 @@ class MainWindow(QMainWindow):
                 self.tr(
                     "Skipped {unknown} unrecognized cards in the loaded document. "
                     "Saving the document will remove these entries permanently.\n\nThe locally stored card "
-                    "data may be outdated or the document was tampered with.", n=unknown).format(unknown=unknown),
+                    "data may be outdated or the document was tampered with.", "", unknown),
                 StandardButton.Ok, StandardButton.Ok
             )
 
@@ -418,8 +418,8 @@ class MainWindow(QMainWindow):
         if QMessageBox.question(
                 self, self.tr("New card data available"),
                 self.tr(
-                    "There are {estimated_card_count} new printings available on Scryfall. Update the local data now?",
-                    n=estimated_card_count).format(estimated_card_count=estimated_card_count),
+                    "There are %n new printings available on Scryfall. Update the local data now?",
+                    "", estimated_card_count),
                 StandardButton.Yes | StandardButton.No, StandardButton.Yes
         ) == StandardButton.Yes:
             logger.info("User agreed to update the card data from Scryfall. Performing update")

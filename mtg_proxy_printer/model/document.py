@@ -313,12 +313,10 @@ class Document(QAbstractItemModel):
 
     def _get_page_preview(self, page: Page):
         names = collections.Counter(container.card.name for container in page)
-        template = self.tr(
-            "{count}× {name}",
-            disambiguation="Used to display a card name and amount of copies in the page overview. "
-                           "Only needs translation for RTL language support")
-        return "\n".join(
-            template.format(count=count, name=name) for name, count in names.items()
+        return "\n".join(self.tr(
+            "%n× {name}",
+            "Used to display a card name and amount of copies in the page overview. "
+            "Only needs translation for RTL language support", count).format(name=name) for name, count in names.items()
         )
 
     @Slot(QModelIndex)

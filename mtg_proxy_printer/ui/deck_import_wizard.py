@@ -608,9 +608,9 @@ class DeckImportWizard(WizardBase):
         if oversized_count and QMessageBox.question(
                 self, self.tr("Oversized cards present"),
                 self.tr(
-                    "There are {oversized_count} possibly oversized cards in the deck list that "
+                    "There are %n possibly oversized cards in the deck list that "
                     "may not fit into a deck, when printed out.\n\nContinue and use these cards as-is?",
-                    n=oversized_count).format(oversized_count=oversized_count),
+                    "",oversized_count),
                 StandardButton.Yes | StandardButton.No, StandardButton.No) == StandardButton.No:
             return False
         return True

@@ -33,7 +33,7 @@ class PrettySetListModel(QAbstractListModel):
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
         self.header = {
-            0: self.tr("Set", disambiguation="MTG set name"),
+            0: self.tr("Set", "MTG set name"),
         }
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []

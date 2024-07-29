@@ -128,13 +128,16 @@ class CentralWidget(QWidget):
 
     def _create_add_copies_actions(self, card: Union[AnyCardType, CardList], add_4th: bool = False):
         actions = [
-            self._create_add_copies_action(self.tr("Add {count} copy", n=1, disambiguation="Context menu").format(count=1), 1, card),
-            self._create_add_copies_action(self.tr("Add {count} copy", n=2, disambiguation="Context menu").format(count=2), 2, card),
-            self._create_add_copies_action(self.tr("Add {count} copy", n=3, disambiguation="Context menu").format(count=3), 3, card),
-            self._create_add_copies_action(self.tr("Add copies …", disambiguation="Context menu. User will be asked for a number"), None, card)
+            self._create_add_copies_action(
+                self.tr("Add %n copies","Context menu action: "
+                        "Add additional card copies to the document", copy_count),
+                copy_count, card)
+            for copy_count in range(1, 4+add_4th)
         ]
-        if add_4th:
-            actions.insert(-1, self._create_add_copies_action(self.tr("Add {count} copy", n=4, disambiguation="Context menu").format(count=4), 4, card),)
+        actions.append(self._create_add_copies_action(
+            self.tr("Add copies …", "Context menu action: "
+                    "Add additional card copies to the document. User will be asked for a number"),
+            None, card))
         return actions
 
     def _create_add_copies_action(self, label: str, count: Optional[int],
@@ -149,16 +152,17 @@ class CentralWidget(QWidget):
         check_card = CheckCard(front, back)
         actions = [
             self._create_add_copies_action(
-                self.tr("Add {count} copy", n=1, disambiguation="Context menu").format(count=1), 1, check_card),
-            self._create_add_copies_action(
-                self.tr("Add {count} copy", n=2, disambiguation="Context menu").format(count=2), 2, check_card),
-            self._create_add_copies_action(
-                self.tr("Add {count} copy", n=3, disambiguation="Context menu").format(count=3), 3, check_card),
-            self._create_add_copies_action(
-                self.tr("Add {count} copy", n=4, disambiguation="Context menu").format(count=4), 4, check_card),
-            self._create_add_copies_action(
-                self.tr("Add copies …", disambiguation="Context menu. User will be asked for a number"), None, check_card),
+                self.tr("Add %n copies",
+                        "Context menu action: Add additional card copies to the document", copy_count),
+                copy_count, check_card)
+            for copy_count in range(1, 5)
         ]
+        actions.append(
+            self._create_add_copies_action(
+                self.tr("Add copies …", "Context menu action: "
+                        "Add additional card copies to the document. User will be asked for a number"),
+                None, check_card))
+
         parent.addMenu(self.tr("Generate DFC check card")).addActions(actions)
 
     def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
