@@ -334,7 +334,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         total_cards = len(cards)
         logger.info(f"Got batch DocumentAction, filling {total_cards} cards")
         self.update_batch_processing_state(True)
-        self.batch_process_starting.emit(total_cards, "Importing deck list")
+        self.batch_process_starting.emit(
+            total_cards,
+            self.tr("Importing deck list", "Progress bar label text"))
         for index, card in enumerate(cards, start=1):
             self.get_image_synchronous(card)
             self.batch_process_progress.emit(index)
@@ -352,7 +354,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         blank = self.image_database.blank_image
         document: "Document" = card_indices[0].model()
         self.update_batch_processing_state(True)
-        self.batch_process_starting.emit(total_cards, "Fetching missing images")
+        self.batch_process_starting.emit(
+            total_cards,
+            self.tr("Fetching missing images", "Progress bar label text"))
         for index, card_index in enumerate(card_indices, start=1):
             card = card_index.data(ItemDataRole.UserRole)
             self.get_image_synchronous(card)
@@ -445,7 +449,9 @@ class ImageDownloader(mtg_proxy_printer.downloader_base.DownloaderBase):
         side = 'Front' if card.is_front else 'Back'
         download_path = self.image_database.db_path / f"{image_path.stem}-{side}{image_path.suffix}"
         self.currently_opened_file, self.currently_opened_file_monitor = self.read_from_url(
-            download_uri, f"Downloading '{card.name}'")
+            download_uri,
+            self.tr("Downloading '{card_name}'", "Progress bar label text").format(
+                card_name=card.name))
         self.currently_opened_file_monitor.total_bytes_processed.connect(self.download_progress)
         # Download to the root of the cache first. Move to the target only after downloading finished.
         # This prevents inserting damaged files into the cache, if the download aborts due to an application crash,

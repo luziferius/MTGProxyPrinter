@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>415</width>
-    <height>308</height>
+    <width>439</width>
+    <height>317</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -40,7 +40,7 @@
       <item>
        <widget class="QCheckBox" name="automatic_basics_removal_enable">
         <property name="toolTip">
-         <string>If enabled, basic lands are automatically removed from deck lists.
+         <string extracomment="Tooltip">If enabled, basic lands are automatically removed from deck lists.
 If disabled, the deck import wizard keeps them by default,
 but offers the removal via a single button click.</string>
         </property>
@@ -51,8 +51,8 @@ but offers the removal via a single button click.</string>
       </item>
       <item>
        <widget class="QCheckBox" name="remove_basic_wastes_enable">
-        <property name="whatsThis">
-         <string>Include Wastes when removing basic lands.</string>
+        <property name="toolTip">
+         <string extracomment="Tooltip">When enabled, treat Wastes like any other basic land</string>
         </property>
         <property name="text">
          <string>Include Wastes when removing basic lands</string>
@@ -61,8 +61,8 @@ but offers the removal via a single button click.</string>
       </item>
       <item>
        <widget class="QCheckBox" name="remove_snow_basics_enable">
-        <property name="whatsThis">
-         <string>Include Snow-Covered basic lands when removing basic lands.</string>
+        <property name="toolTip">
+         <string extracomment="Tooltip">When enabled, treat Snow-Covered basic lands like any other basic land</string>
         </property>
         <property name="text">
          <string>Include Snow-Covered Basic lands when removing basic lands</string>
