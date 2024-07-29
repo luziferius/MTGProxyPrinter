@@ -72,8 +72,12 @@ def read_path(section: str, setting: str) -> str:
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
-        super().__init__(
-            parent, self.tr("Export as PDF"), self.get_preferred_file_name(document), self.tr("PDF-Documents (*.pdf)"))
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, "", self.get_preferred_file_name(document))
+        self.setWindowTitle(self.tr("Export as PDF"))
+        self.setNameFilter(self.tr("PDF-Documents (*.pdf)"))
+
         if default_path := read_path("pdf-export", "pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -108,15 +112,22 @@ class SavePDFDialog(QFileDialog):
 
 class LoadSaveDialog(QFileDialog):
     def __init__(self, *args, **kwargs):
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(*args, **kwargs)
         filter_text = self.tr(f"MTGProxyPrinter document", disambiguation="Human-readable file type name") \
             + f" (*.{DEFAULT_SAVE_SUFFIX})"
-        super().__init__(*args, filter=filter_text, **kwargs)
+        self.setNameFilter(filter_text)
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
-        super().__init__(parent, self.tr("Save document as …"), **kwargs)
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, **kwargs)
+        self.setWindowTitle(self.tr("Save document as …"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
+
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
@@ -143,7 +154,10 @@ class LoadDocumentDialog(LoadSaveDialog):
     def __init__(
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
-        super().__init__(parent, self.tr("Load MTGProxyPrinter document"), **kwargs)
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, **kwargs)
+        self.setWindowTitle(self.tr("Load MTGProxyPrinter document"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
