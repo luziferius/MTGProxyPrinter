@@ -4,6 +4,10 @@
 
 ## New features
 
+- Localization support. Translations are managed on [Crowdin.com](https://crowdin.com/project/mtgproxyprinter)
+    - Interface language is chosen based on the system locale, but can be explicitly set in the application settings.
+    - Currently includes translations into US English and German.
+    - Goal is translations into all languages in which Magic sets get printed.
 - Add option to fully automatically remove basic lands from all imported deck lists.
     - When enabled in the settings, basic lands are automatically stripped from deck lists,
       otherwise the previous behavior is retained.
