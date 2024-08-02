@@ -187,16 +187,19 @@ class Application(QApplication):
             self.main_window.ask_user_about_card_data_update_policy()
 
     def _setup_translations(self):
-        system_locale = QLocale.system()
+        if configured_language := settings.settings["gui"]["language"]:
+            locale = QLocale(configured_language)
+        else:
+            locale = QLocale.system()
         logger.info(
-            f"Loading localisations. System locale: {system_locale.name()}, "
-            f"possible display languages are: {system_locale.uiLanguages()}")
+            f"Loading localisations. System locale: {locale.name()}, "
+            f"possible display languages are: {locale.uiLanguages()}")
         path = ":" if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES \
             else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
         path += "/translations"
         logger.debug(f"Locale search path is '{path}'")
         translator = QTranslator(self)
-        if translator.load(system_locale, 'mtgproxyprinter', '_', path):
+        if translator.load(locale, 'mtgproxyprinter', '_', path):
             logger.debug("Translation loaded successfully, installing it.")
             self.installTranslator(translator)
         else:
