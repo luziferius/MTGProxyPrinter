@@ -21,7 +21,7 @@ import pathlib
 import typing
 from abc import abstractmethod
 
-from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool, QObject
+from PyQt5.QtCore import pyqtSignal as Signal, pyqtSlot as Slot, QUrl, QStandardPaths, QStringListModel, Qt, QThreadPool
 from PyQt5.QtGui import QDesktopServices, QStandardItem, QIcon
 from PyQt5.QtWidgets import QWidget, QCheckBox, QFileDialog, QMessageBox, QApplication, QLineEdit
 
@@ -63,6 +63,7 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
 }
 check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+ItemDataRole = Qt.ItemDataRole
 logger = get_logger(__name__)
 del get_logger
 
@@ -294,6 +295,12 @@ class GeneralSettingsPage(Page):
         ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
         ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
+        for display_text, language_code in [
+            (self.tr("System default"), ""),
+            (self.tr("English (US)"), "en_US"),
+            (self.tr("German"), "de"),
+        ]:
+            ui.application_language_combo_box.addItem(display_text, language_code)
 
     def set_language_model(self, model: QStringListModel):
         self.language_model = model
@@ -307,16 +314,18 @@ class GeneralSettingsPage(Page):
             self.ui.document_save_path.setText(location)
 
     def load(self, settings: configparser.ConfigParser):
-        self._load_layout_settings(settings)
+        self._load_look_and_feel_settings(settings)
         self._load_update_settings(settings)
         self._load_images_settings(settings)
         self._load_path_settings(settings)
 
-    def _load_layout_settings(self, settings: configparser.ConfigParser):
+    def _load_look_and_feel_settings(self, settings: configparser.ConfigParser):
         ui = self.ui
         gui_section = settings["gui"]
         search_layout_index = ui.add_card_widget_style_combo_box.findData(gui_section["central-widget-layout"])
         ui.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
+        language_index = ui.application_language_combo_box.findData(gui_section["language"])
+        ui.application_language_combo_box.setCurrentIndex(language_index)
 
     def _load_update_settings(self, settings: configparser.ConfigParser):
         application_section = settings["application"]
@@ -369,7 +378,9 @@ class GeneralSettingsPage(Page):
     def _save_look_and_feel_settings(self):
         section = mtg_proxy_printer.settings.settings["gui"]
         section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(
-            Qt.ItemDataRole.UserRole)
+            ItemDataRole.UserRole)
+        section["language"] = self.ui.application_language_combo_box.currentData(
+            ItemDataRole.UserRole)
 
     def _save_images_settings(self):
         section = mtg_proxy_printer.settings.settings["images"]
@@ -392,8 +403,11 @@ class GeneralSettingsPage(Page):
 
         section = settings["gui"]
         if section["central-widget-layout"] != ui.add_card_widget_style_combo_box.currentData(
-                Qt.ItemDataRole.UserRole):
+                ItemDataRole.UserRole):
             highlight_widget(ui.add_card_widget_style_combo_box)
+        if section["language"] != ui.application_language_combo_box.currentData(
+                ItemDataRole.UserRole):
+            highlight_widget(ui.application_language_combo_box)
 
         section = settings["images"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
