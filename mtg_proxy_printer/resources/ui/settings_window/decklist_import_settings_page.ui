@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>439</width>
-    <height>317</height>
+    <height>326</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -33,6 +33,10 @@
    </item>
    <item row="3" column="0" colspan="3">
     <widget class="QGroupBox" name="basic_land_removal_group_box">
+     <property name="toolTip">
+      <string>The import wizard can remove basic lands fully- or semi-automatic.
+These settings control the removal behavior.</string>
+     </property>
      <property name="title">
       <string>Control the one-click or automatic basic land removal</string>
      </property>
@@ -55,7 +59,7 @@ but offers the removal via a single button click.</string>
          <string extracomment="Tooltip">When enabled, treat Wastes like any other basic land</string>
         </property>
         <property name="text">
-         <string>Include Wastes when removing basic lands</string>
+         <string>Removal includes Wastes</string>
         </property>
        </widget>
       </item>
@@ -65,7 +69,7 @@ but offers the removal via a single button click.</string>
          <string extracomment="Tooltip">When enabled, treat Snow-Covered basic lands like any other basic land</string>
         </property>
         <property name="text">
-         <string>Include Snow-Covered Basic lands when removing basic lands</string>
+         <string>Removal includes Snow-Covered Basic lands</string>
         </property>
        </widget>
       </item>
@@ -86,7 +90,7 @@ but offers the removal via a single button click.</string>
 These options set the default behaviour when encountering ambiguous card</string>
      </property>
      <property name="title">
-      <string>Control print guessing in ambiguous cases</string>
+      <string>Control print selection in ambiguous cases</string>
      </property>
      <property name="checked">
       <bool>false</bool>
@@ -95,7 +99,7 @@ These options set the default behaviour when encountering ambiguous card</string
       <item row="2" column="0">
        <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
         <property name="toolTip">
-         <string>When guessing a printing, prefer printings with already downloaded images over other possible printings.</string>
+         <string>When automatically selecting a printing, prefer printings with already downloaded images over other possible printings.</string>
         </property>
         <property name="text">
          <string>Prefer printings with already downloaded images</string>
@@ -121,7 +125,7 @@ If enabled, choose an arbitrary printing, instead of failing to identify such ca
 With some deck list formats, this option is always enabled.</string>
         </property>
         <property name="text">
-         <string>Enable print guessing by default</string>
+         <string>Automatically select a printing</string>
         </property>
        </widget>
       </item>

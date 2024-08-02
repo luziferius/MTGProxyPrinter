@@ -20,6 +20,7 @@
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
+- Reworded and clarified some texts in the user interface
 
 # Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
 

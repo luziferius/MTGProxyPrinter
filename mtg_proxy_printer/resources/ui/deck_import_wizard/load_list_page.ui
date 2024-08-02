@@ -29,14 +29,17 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Translate deck list to:</string>
+      <string>Translate deck list into:</string>
      </property>
     </widget>
    </item>
    <item row="0" column="0" colspan="2">
     <widget class="QLineEdit" name="deck_list_download_url_line_edit">
+     <property name="inputMethodHints">
+      <set>Qt::ImhUrlCharactersOnly</set>
+     </property>
      <property name="placeholderText">
-      <string>Paste a link to a deck list here. Hover to see supported sites.</string>
+      <string>Paste a link to a public deck list here. Hover to see supported sites.</string>
      </property>
     </widget>
    </item>
@@ -44,6 +47,9 @@
     <widget class="QPushButton" name="deck_list_download_button">
      <property name="enabled">
       <bool>false</bool>
+     </property>
+     <property name="toolTip">
+      <string>Download the deck list from the given link</string>
      </property>
      <property name="text">
       <string>Download</string>
@@ -62,8 +68,7 @@
       <string>Select deck list file</string>
      </property>
      <property name="icon">
-      <iconset theme="document-open">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="document-open"/>
      </property>
     </widget>
    </item>
@@ -101,7 +106,7 @@
 If unchecked, each ambiguous card is ignored and reported as unrecognized.</string>
      </property>
      <property name="text">
-      <string>Guess printings for ambiguous entries in the deck list</string>
+      <string>Automatically select printings for ambiguous entries in the deck list</string>
      </property>
     </widget>
    </item>
@@ -115,7 +120,7 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
 Enabling this can potentially save disk space and download volume, based on the images already downloaded.</string>
      </property>
      <property name="text">
-      <string>When guessing or translating cards, prefer printings with already downloaded images</string>
+      <string>Prefer printings with already downloaded images</string>
      </property>
     </widget>
    </item>
