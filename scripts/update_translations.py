@@ -20,6 +20,7 @@ Management script for application translations
 """
 
 import argparse
+import pathlib
 import subprocess
 from typing import Callable, NamedTuple
 
@@ -73,13 +74,15 @@ def verify_crowdin_cli_present():
 
 
 def register_new_raw_strings():
+    target = pathlib.Path("mtg_proxy_printer/resources/translations/mtgproxyprinter_en-US.ts")
+    target.parent.mkdir(parents=True, exist_ok=True)
     subprocess.call([
         "pyside6-lupdate",
         "-source-language", "en_US",
         "-recursive", "-no-obsolete",
         "-extensions", "py,ui",
         "mtg_proxy_printer",
-        "-ts", "mtg_proxy_printer/resources/translations/mtgproxyprinter_en-US.ts"
+        "-ts", target
     ])
 
 
