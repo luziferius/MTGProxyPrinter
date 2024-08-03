@@ -9,7 +9,17 @@
 
     <!-- Localisations -->
     <file>translations/mtgproxyprinter_de.qm</file>
+    <!--file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_GB.qm</file-->
     <file alias="translations/mtgproxyprinter_en.qm">translations/mtgproxyprinter_en_US.qm</file>
+    <!--file>translations/mtgproxyprinter_es.qm</file-->
+    <!--file>translations/mtgproxyprinter_fr.qm</file-->
+    <!--file>translations/mtgproxyprinter_it.qm</file-->
+    <!--file>translations/mtgproxyprinter_ja.qm</file-->
+    <!--file>translations/mtgproxyprinter_ko.qm</file-->
+    <!--file>translations/mtgproxyprinter_pt.qm</file-->
+    <!--file>translations/mtgproxyprinter_ru.qm</file-->
+    <!--file>translations/mtgproxyprinter_zh_CN.qm</file-->
+    <!--file>translations/mtgproxyprinter_zh_TW.qm</file-->
 
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
