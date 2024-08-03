@@ -40,7 +40,7 @@ LOCALES = {
     "zh-CN": "zh_CN",
     "zh-TW": "zh_TW",
 }
-
+TRANSLATIONS_DIR = pathlib.Path("mtg_proxy_printer/resources/translations/")
 
 class Namespace(NamedTuple):
     """Mock namespace for type hinting"""
@@ -52,12 +52,14 @@ def parse_args() -> Namespace:
         "upload": upload_raw_strings,
         "download": download_new_translations,
         "compile": compile_translations,
+        "clean": clean_translations,
     }
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(required=True, dest="command", help="Action to perform")
     upload_parser = commands.add_parser("upload", help="Run Qt lupdate to extract new strings and upload them to Crowdin. Requires an API key")
     download_parser = commands.add_parser("download", help="Download translation updates from Crowdin")
-    compile_parser = commands.add_parser("compile", help="Compile translations into the importable binary format")
+    compile_parser = commands.add_parser("compile", help="Compile translations into the importable binary format for distribution")
+    clean_parser = commands.add_parser("clean", help="Delete compiled, binary translation files")
     args = parser.parse_args()
     # It seems that it is not possible to set the subcommand entry function directly,
     # (like in store_const=<function_object>)
@@ -74,15 +76,14 @@ def verify_crowdin_cli_present():
 
 
 def register_new_raw_strings():
-    target = pathlib.Path("mtg_proxy_printer/resources/translations/mtgproxyprinter_en-US.ts")
-    target.parent.mkdir(parents=True, exist_ok=True)
+    TRANSLATIONS_DIR.mkdir(parents=True, exist_ok=True)
     subprocess.call([
         "pyside6-lupdate",
         "-source-language", "en_US",
         "-recursive", "-no-obsolete",
         "-extensions", "py,ui",
         "mtg_proxy_printer",
-        "-ts", target
+        "-ts", TRANSLATIONS_DIR/"mtgproxyprinter_en-US.ts"
     ])
 
 
@@ -104,12 +105,18 @@ def download_new_translations(args: Namespace):
 
 def compile_translations(args: Namespace):
     for source_name, target_name in LOCALES.items():
-        source = f"mtg_proxy_printer/resources/translations/mtgproxyprinter_{source_name}.ts"
-        target = f"mtg_proxy_printer/resources/translations/mtgproxyprinter_{target_name}.qm"
+        source = TRANSLATIONS_DIR / f"mtgproxyprinter_{source_name}.ts"
+        target = TRANSLATIONS_DIR / f"mtgproxyprinter_{target_name}.qm"
         subprocess.call([
             "lrelease", "-compress",
             source, "-qm", target
         ])
+
+
+def clean_translations(args: Namespace):
+    target = TRANSLATIONS_DIR.glob("mtgproxyprinter_*.qm")
+    for file in target:
+        file.unlink()
 
 
 def main():
