@@ -20,6 +20,7 @@ Management script for application translations
 """
 
 import argparse
+import itertools
 import pathlib
 import subprocess
 from typing import Callable, NamedTuple
@@ -77,6 +78,16 @@ def verify_crowdin_cli_present():
 
 def register_new_raw_strings():
     TRANSLATIONS_DIR.mkdir(parents=True, exist_ok=True)
+    # PyQt5
+    package = pathlib.Path("mtg_proxy_printer")
+    files = list(itertools.chain(package.rglob("*.py"), package.rglob("*.ui")))
+    subprocess.call([
+        "pylupdate5",
+        "-noobsolete", "-verbose",
+        *files,
+        "-ts", TRANSLATIONS_DIR/"mtgproxyprinter_en-US.ts"
+    ])
+    ''' PySide6
     subprocess.call([
         "pyside6-lupdate",
         "-source-language", "en_US",
@@ -85,6 +96,7 @@ def register_new_raw_strings():
         "mtg_proxy_printer",
         "-ts", TRANSLATIONS_DIR/"mtgproxyprinter_en-US.ts"
     ])
+    '''
 
 
 def upload_raw_strings(args: Namespace):
