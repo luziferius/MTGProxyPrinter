@@ -16,6 +16,7 @@
 import configparser
 import logging
 import pathlib
+from numbers import Real
 import re
 import typing
 
@@ -148,6 +149,10 @@ DEFAULT_SETTINGS["pdf-export"] = {
     "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
+
+
+def round_to_nearest_multiple(value: Real, multiple: Real) -> Real:
+    return round(value/multiple)*multiple
 
 
 def get_boolean_card_filter_keys():
