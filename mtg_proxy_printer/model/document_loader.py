@@ -90,37 +90,37 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: int = 0
+    card_bleed: float = 0
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: int = 0
-    column_spacing: int = 0
-    margin_bottom: int = 0
-    margin_left: int = 0
-    margin_right: int = 0
-    margin_top: int = 0
-    page_height: int = 0
-    page_width: int = 0
+    row_spacing: float = 0
+    column_spacing: float = 0
+    margin_bottom: float = 0
+    margin_left: float = 0
+    margin_right: float = 0
+    margin_top: float = 0
+    page_height: float = 0
+    page_width: float = 0
 
     @classmethod
     def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
         document_settings = settings["documents"]
         return cls(
-            document_settings.getint("card-bleed-mm"),
+            document_settings.getfloat("card-bleed-mm"),
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
-            document_settings.getint("row-spacing-mm"),
-            document_settings.getint("column-spacing-mm"),
-            document_settings.getint("margin-bottom-mm"),
-            document_settings.getint("margin-left-mm"),
-            document_settings.getint("margin-right-mm"),
-            document_settings.getint("margin-top-mm"),
-            document_settings.getint("paper-height-mm"),
-            document_settings.getint("paper-width-mm"),
+            document_settings.getfloat("row-spacing-mm"),
+            document_settings.getfloat("column-spacing-mm"),
+            document_settings.getfloat("margin-bottom-mm"),
+            document_settings.getfloat("margin-left-mm"),
+            document_settings.getfloat("margin-right-mm"),
+            document_settings.getfloat("margin-top-mm"),
+            document_settings.getfloat("paper-height-mm"),
+            document_settings.getfloat("paper-width-mm"),
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:

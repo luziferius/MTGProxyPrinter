@@ -27,7 +27,6 @@ from PyQt5.QtCore import QStandardPaths
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-import units_and_sizes
 from mtg_proxy_printer.units_and_sizes import CardSizes
 
 __all__ = [
