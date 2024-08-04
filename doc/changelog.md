@@ -13,6 +13,13 @@
 
 ## Changed features
 
+- Support decimal values in document settings, like margins, image spacings and the card bleed width.
+    - Entered decimals are rounded to the nearest multiple of 1/12, which is 1 pixel at print resolution.
+      Sub-pixel placement remains unsupported.
+- As a safety measure against DoS-attacks via loading malicious documents, limit numerical document settings
+  loaded from document files to 10000mm. Limiting the paper size to 10m in each direction prevents the creation
+  of potentially indefinitely large drawing areas, and thus consuming all system main memory until either the
+  application or the system crashes.
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.

@@ -29,7 +29,7 @@ from unittest.mock import patch
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_, any_of
+    has_properties, greater_than, is_, any_of, less_than_or_equal_to
 
 try:
     from hamcrest import contains_exactly
@@ -526,18 +526,24 @@ class Worker(LoaderSignals):
                 ORDER BY key ASC
             """)
         default_settings.update(db.execute(document_settings_query))
+        is_number = any_of(instance_of(float), instance_of(int))
+        is_positive_bounded_number = all_of(
+            is_number, less_than_or_equal_to(10000), greater_than(0))
+        is_non_negative_bounded_number = all_of(
+            is_number, less_than_or_equal_to(10000), greater_than_or_equal_to(0))
+
         assert_that(
             default_settings,
             has_properties(
-                card_bleed=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                page_height=all_of(instance_of(int), greater_than(0)),
-                page_width=all_of(instance_of(int), greater_than(0)),
-                margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                row_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                column_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                card_bleed=is_non_negative_bounded_number,
+                page_height=is_positive_bounded_number,
+                page_width=is_positive_bounded_number,
+                margin_top=is_non_negative_bounded_number,
+                margin_bottom=is_non_negative_bounded_number,
+                margin_left=is_non_negative_bounded_number,
+                margin_right=is_non_negative_bounded_number,
+                row_spacing=is_non_negative_bounded_number,
+                column_spacing=is_non_negative_bounded_number,
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
