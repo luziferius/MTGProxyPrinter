@@ -161,6 +161,11 @@ round_distance_value = functools.partial(
     round_to_nearest_multiple,
     multiple=1/100
 )
+def clamp_to_supported_range(value: float) -> float:
+    """Clamps numerical document settings to the supported value range"""
+    return min(max(value, 0.0), 10000.0)
+
+
 def get_boolean_card_filter_keys():
     """Returns all keys for boolean card filter settings."""
     keys = DEFAULT_SETTINGS["card-filter"].keys()
@@ -401,9 +406,7 @@ def _validate_document_spacing_distance(
         section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
         value = section.getfloat(key)
-        rounded = round_distance_value(value)
-        if rounded < 0:
-            raise ValueError
+        rounded = round_distance_value(clamp_to_supported_range(value))
         if not math.isclose(value, rounded) or value < 0:
             section[key] = str(rounded)
     except ValueError:

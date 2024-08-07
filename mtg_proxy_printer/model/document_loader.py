@@ -552,7 +552,12 @@ class Worker(LoaderSignals):
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(default_settings, key)
             if not isinstance(value, annotated_type):
-                setattr(default_settings, key, annotated_type(value))
+                value = annotated_type(value)
+                setattr(default_settings, key, value)
+            # Ensure all floats are within the allowed bounds.
+            if isinstance(value, float):
+                value = mtg_proxy_printer.settings.clamp_to_supported_range(value)
+                setattr(default_settings, key, value)
         assert_that(
             default_settings.compute_page_card_capacity(),
             is_(greater_than_or_equal_to(1)),

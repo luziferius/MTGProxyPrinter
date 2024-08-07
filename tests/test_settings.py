@@ -123,3 +123,18 @@ def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_co
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),
         contains_inanyorder(*parsed_set_codes)
     )
+
+@pytest.mark.parametrize("value, expected", [
+    (-0.01, 0),
+    (0, 0),
+    (1, 1),
+    (9999, 9999),
+    (10000, 10000),
+    (10001, 10000),
+    (10000.1, 10000),
+])
+def test_clamp_to_supported_range(value: float, expected: float):
+    assert_that(
+        mtg_proxy_printer.settings.clamp_to_supported_range(value),
+        is_(close_to(expected, 0.001))
+    )
