@@ -79,11 +79,6 @@ class CardSize(typing.NamedTuple):
     width: pint.Quantity
     height: pint.Quantity
 
-    @staticmethod
-    def as_mm(value: pint.Quantity) -> int:
-        size: pint.Quantity = value.to("mm", "print")
-        return round(size.magnitude)
-
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
 
