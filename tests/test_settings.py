@@ -19,6 +19,7 @@ from numbers import Real
 import typing
 
 import mtg_proxy_printer.settings
+from mtg_proxy_printer.units_and_sizes import unit_registry
 
 import pytest
 from hamcrest import *
@@ -134,7 +135,6 @@ def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_co
     (10000.1, 10000),
 ])
 def test_clamp_to_supported_range(value: float, expected: float):
-    assert_that(
-        mtg_proxy_printer.settings.clamp_to_supported_range(value),
-        is_(close_to(expected, 0.001))
-    )
+    value_as_distance = unit_registry(f"{value} mm")
+    clamped_value = mtg_proxy_printer.settings.clamp_to_supported_range(value_as_distance).magnitude
+    assert_that(clamped_value, is_(close_to(expected, 0.001)))

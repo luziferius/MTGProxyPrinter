@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
 import functools
 import logging
 import math
@@ -22,12 +21,13 @@ from numbers import Real
 import re
 import typing
 
+import pint
 from PyQt5.QtCore import QStandardPaths
 
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T
 
 __all__ = [
     "settings",
@@ -42,11 +42,11 @@ __all__ = [
 
 
 config_file_path = mtg_proxy_printer.app_dirs.data_directories.user_config_path / "MTGProxyPrinter.ini"
-settings = configparser.ConfigParser()
-DEFAULT_SETTINGS = configparser.ConfigParser()
+settings = ConfigParser()
+DEFAULT_SETTINGS = ConfigParser()
 # Support three-valued boolean logic by adding values that parse to None, instead of True/False.
 # This will be used to store “unset” boolean settings.
-configparser.ConfigParser.BOOLEAN_STATES.update({
+ConfigParser.BOOLEAN_STATES.update({
     "-1": None,
     "unknown": None,
     "none": None,
@@ -99,15 +99,15 @@ DEFAULT_SETTINGS["card-filter"] = {
     "hidden-sets": "",
 }
 DEFAULT_SETTINGS["documents"] = {
-    "card-bleed-mm": "0",
-    "paper-height-mm": "297",
-    "paper-width-mm": "210",
-    "margin-top-mm": "5",
-    "margin-bottom-mm": "5",
-    "margin-left-mm": "5",
-    "margin-right-mm": "5",
-    "row-spacing-mm": "0",
-    "column-spacing-mm": "0",
+    "card-bleed": "0 mm",
+    "paper-height": "297 mm",
+    "paper-width": "210 mm",
+    "margin-top": "5 mm",
+    "margin-bottom": "5 mm",
+    "margin-left": "5 mm",
+    "margin-right": "5 mm",
+    "row-spacing": "0 mm",
+    "column-spacing": "0 mm",
     "print-cut-marker": "False",
     "print-sharp-corners": "False",
     "print-page-numbers": "False",
@@ -153,17 +153,13 @@ DEFAULT_SETTINGS["pdf-export"] = {
 MAX_DOCUMENT_NAME_LENGTH = 200
 
 
-def round_to_nearest_multiple(value: Real, multiple: Real) -> Real:
+def round_to_nearest_multiple(value: T, multiple: T) -> T:
     """Rounds the given value to the nearest multiple of "multiple"."""
     return round(value/multiple)*multiple
 
-round_distance_value = functools.partial(
-    round_to_nearest_multiple,
-    multiple=1/100
-)
-def clamp_to_supported_range(value: float) -> float:
+def clamp_to_supported_range(value: pint.Quantity) -> pint.Quantity:
     """Clamps numerical document settings to the supported value range"""
-    return min(max(value, 0.0), 10000.0)
+    return min(max(value, unit_registry("0 mm")),  unit_registry("10000 mm"))
 
 
 def get_boolean_card_filter_keys():
@@ -173,7 +169,7 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(settings: ConfigParser = settings) -> typing.Set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
     raw = settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
@@ -231,7 +227,7 @@ def was_application_updated() -> bool:
     )
 
 
-def validate_settings(read_settings: configparser.ConfigParser):
+def validate_settings(read_settings: ConfigParser):
     """
     Called after reading the settings from disk. Ensures that all settings contain valid values and expected types.
     I.e. checks that settings that should contain booleans do contain valid booleans, options that should contain
@@ -249,7 +245,7 @@ def validate_settings(read_settings: configparser.ConfigParser):
     _validate_pdf_export_section(read_settings)
 
 
-def _validate_card_filter_section(to_validate: configparser.ConfigParser, section_name: str = "card-filter"):
+def _validate_card_filter_section(to_validate: ConfigParser, section_name: str = "card-filter"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_keys = get_boolean_card_filter_keys()
@@ -257,7 +253,7 @@ def _validate_card_filter_section(to_validate: configparser.ConfigParser, sectio
         _validate_boolean(section, defaults, key)
 
 
-def _validate_images_section(to_validate: configparser.ConfigParser, section_name: str = "images"):
+def _validate_images_section(to_validate: ConfigParser, section_name: str = "images"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in ("automatically-add-opposing-faces",):
@@ -268,11 +264,11 @@ def _validate_images_section(to_validate: configparser.ConfigParser, section_nam
         _restore_default(section, defaults, "preferred-language")
 
 
-def _validate_documents_section(to_validate: configparser.ConfigParser, section_name: str = "documents"):
+def _validate_documents_section(to_validate: ConfigParser, section_name: str = "documents"):
     card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
-    card_height = card_size.as_mm(card_size.height)
-    card_width = card_size.as_mm(card_size.width)
-    section = to_validate[section_name]
+    card_height = card_size.height.to("mm", "print")
+    card_width = card_size.width.to("mm", "print")
+    section: SectionProxy = to_validate[section_name]
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
@@ -287,37 +283,37 @@ def _validate_documents_section(to_validate: configparser.ConfigParser, section_
             _validate_document_spacing_distance(section, defaults, key)
 
     # Check some semantic properties
-    available_height = section.getfloat("paper-height-mm") - \
-        (section.getfloat("margin-top-mm") + section.getfloat("margin-bottom-mm"))
-    available_width = section.getfloat("paper-width-mm") - \
-        (section.getfloat("margin-left-mm") + section.getfloat("margin-right-mm"))
+    available_height: pint.Quantity = section.get_quantity("paper-height") - \
+        (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
+    available_width: pint.Quantity = section.get_quantity("paper-width") - \
+        (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
 
     if available_height < card_height:
         # Can not fit a single card on a page
-        section["paper-height-mm"] = defaults["paper-height-mm"]
-        section["margin-top-mm"] = defaults["margin-top-mm"]
-        section["margin-bottom-mm"] = defaults["margin-bottom-mm"]
+        section["paper-height"] = defaults["paper-height"]
+        section["margin-top"] = defaults["margin-top"]
+        section["margin-bottom"] = defaults["margin-bottom"]
     if available_width < card_width:
         # Can not fit a single card on a page
-        section["paper-width-mm"] = defaults["paper-width-mm"]
-        section["margin-left-mm"] = defaults["margin-left-mm"]
-        section["margin-right-mm"] = defaults["margin-right-mm"]
+        section["paper-width"] = defaults["paper-width"]
+        section["margin-left"] = defaults["margin-left"]
+        section["margin-right"] = defaults["margin-right"]
 
     # Re-calculate, if width or height was reset
-    available_height = section.getfloat("paper-height-mm") - \
-        (section.getfloat("margin-top-mm") + section.getfloat("margin-bottom-mm"))
-    available_width = section.getfloat("paper-width-mm") - \
-        (section.getfloat("margin-left-mm") + section.getfloat("margin-right-mm"))
+    available_height: pint.Quantity = section.get_quantity("paper-height") - \
+        (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
+    available_width: pint.Quantity = section.get_quantity("paper-width") - \
+        (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
     # FIXME: This looks like a dimensional error. Validate and test!
-    if section.getfloat("column-spacing-mm") > (available_spacing_vertical := available_height - card_height):
+    if section.get_quantity("column-spacing") > (available_spacing_vertical := available_height - card_height):
         # Prevent column spacing from overlapping with bottom margin
-        section["column-spacing-mm"] = str(available_spacing_vertical)
-    if section.getfloat("row-spacing-mm") > (available_spacing_horizontal := available_width - card_width):
+        section["column-spacing"] = str(available_spacing_vertical)
+    if section.get_quantity("row-spacing") > (available_spacing_horizontal := available_width - card_width):
         # Prevent row spacing from overlapping with right margin
-        section["row-spacing-mm"] = str(available_spacing_horizontal)
+        section["row-spacing"] = str(available_spacing_horizontal)
 
 
-def _validate_application_section(to_validate: configparser.ConfigParser, section_name: str = "application"):
+def _validate_application_section(to_validate: ConfigParser, section_name: str = "application"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
@@ -326,14 +322,14 @@ def _validate_application_section(to_validate: configparser.ConfigParser, sectio
         _validate_three_valued_boolean(section, defaults, option)
 
 
-def _validate_gui_section(to_validate: configparser.ConfigParser, section_name: str = "gui"):
+def _validate_gui_section(to_validate: ConfigParser, section_name: str = "gui"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
 
 
-def _validate_debug_section(to_validate: configparser.ConfigParser, section_name: str = "debug"):
+def _validate_debug_section(to_validate: ConfigParser, section_name: str = "debug"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_boolean(section, defaults, "cutelog-integration")
@@ -341,7 +337,7 @@ def _validate_debug_section(to_validate: configparser.ConfigParser, section_name
     _validate_string_is_in_set(section, defaults, VALID_LOG_LEVELS, "log-level")
 
 
-def _validate_decklist_import_section(to_validate: configparser.ConfigParser, section_name: str = "decklist-import"):
+def _validate_decklist_import_section(to_validate: ConfigParser, section_name: str = "decklist-import"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
@@ -349,21 +345,21 @@ def _validate_decklist_import_section(to_validate: configparser.ConfigParser, se
 
 
 def _validate_default_filesystem_paths_section(
-        to_validate: configparser.ConfigParser, section_name: str = "default-filesystem-paths"):
+        to_validate: ConfigParser, section_name: str = "default-filesystem-paths"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in section.keys():
         _validate_path_to_directory(section, defaults, key)
 
 
-def _validate_printer_section(to_validate: configparser.ConfigParser, section_name: str = "printer"):
+def _validate_printer_section(to_validate: ConfigParser, section_name: str = "printer"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for item in defaults.keys():
         _validate_boolean(section, defaults, item)
 
 
-def _validate_pdf_export_section(to_validate: configparser.ConfigParser, section_name: str = "pdf-export"):
+def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = "pdf-export"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_path_to_directory(section, defaults, "pdf-export-path")
@@ -371,7 +367,7 @@ def _validate_pdf_export_section(to_validate: configparser.ConfigParser, section
     _validate_boolean(section, defaults, "landscape-compatibility-workaround")
 
 
-def _validate_path_to_directory(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+def _validate_path_to_directory(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if not pathlib.Path(section[key]).resolve().is_dir():
             raise ValueError
@@ -379,7 +375,7 @@ def _validate_path_to_directory(section: configparser.SectionProxy, defaults: co
         _restore_default(section, defaults, key)
 
 
-def _validate_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+def _validate_boolean(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if section.getboolean(key) is None:
             raise ValueError
@@ -387,14 +383,14 @@ def _validate_boolean(section: configparser.SectionProxy, defaults: configparser
         _restore_default(section, defaults, key)
 
 
-def _validate_three_valued_boolean(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+def _validate_three_valued_boolean(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         section.getboolean(key)
     except ValueError:
         _restore_default(section, defaults, key)
 
 
-def _validate_non_negative_int(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if section.getint(key) < 0:
             raise ValueError
@@ -403,37 +399,38 @@ def _validate_non_negative_int(section: configparser.SectionProxy, defaults: con
 
 
 def _validate_document_spacing_distance(
-        section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+        section: SectionProxy, defaults: SectionProxy, key: str):
     try:
-        value = section.getfloat(key)
-        rounded = round_distance_value(clamp_to_supported_range(value))
-        if not math.isclose(value, rounded) or value < 0:
+        value = section.get_quantity(key)
+        rounded = clamp_to_supported_range(value)
+        if not math.isclose(value.magnitude, rounded.magnitude) or value < 0:
             section[key] = str(rounded)
     except ValueError:
         _restore_default(section, defaults, key)
 
 def _validate_string_is_in_set(
-        section: configparser.SectionProxy, defaults: configparser.SectionProxy,
+        section: SectionProxy, defaults: SectionProxy,
         valid_options: typing.Set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
         _restore_default(section, defaults, key)
 
 
-def _restore_default(section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+def _restore_default(section: SectionProxy, defaults: SectionProxy, key: str):
     section[key] = defaults[key]
 
 
-def migrate_settings(to_migrate: configparser.ConfigParser):
+def migrate_settings(to_migrate: ConfigParser):
     _migrate_layout_setting(to_migrate)
     _migrate_download_settings(to_migrate)
     _migrate_default_save_paths_settings(to_migrate)
     _migrate_print_guessing_settings(to_migrate)
     _migrate_image_spacing_settings(to_migrate)
     _migrate_to_pdf_export_section(to_migrate)
+    _migrate_document_settings_to_pint(to_migrate)
 
 
-def _migrate_layout_setting(to_migrate: configparser.ConfigParser):
+def _migrate_layout_setting(to_migrate: ConfigParser):
     try:
         gui_section = to_migrate["gui"]
         layout = gui_section["search-widget-layout"]
@@ -445,7 +442,7 @@ def _migrate_layout_setting(to_migrate: configparser.ConfigParser):
         gui_section["central-widget-layout"] = layout
         
         
-def _migrate_download_settings(to_migrate: configparser.ConfigParser):
+def _migrate_download_settings(to_migrate: ConfigParser):
     target_section_name = "card-filter"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section("downloads"):
         return
@@ -462,7 +459,7 @@ def _migrate_download_settings(to_migrate: configparser.ConfigParser):
             filter_section[target_setting] = str(new_value)
 
 
-def _migrate_default_save_paths_settings(to_migrate: configparser.ConfigParser):
+def _migrate_default_save_paths_settings(to_migrate: ConfigParser):
     source_section_name = "default-save-paths"
     target_section_name = "default-filesystem-paths"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
@@ -471,7 +468,7 @@ def _migrate_default_save_paths_settings(to_migrate: configparser.ConfigParser):
     to_migrate[target_section_name].update(to_migrate[source_section_name])
 
 
-def _migrate_print_guessing_settings(to_migrate: configparser.ConfigParser):
+def _migrate_print_guessing_settings(to_migrate: ConfigParser):
     source_section_name = "print-guessing"
     target_section_name = "decklist-import"
     if to_migrate.has_section(target_section_name) or not to_migrate.has_section(source_section_name):
@@ -486,7 +483,7 @@ def _migrate_print_guessing_settings(to_migrate: configparser.ConfigParser):
     target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
 
 
-def _migrate_image_spacing_settings(to_migrate: configparser.ConfigParser):
+def _migrate_image_spacing_settings(to_migrate: ConfigParser):
     section = to_migrate["documents"]
     if "image-spacing-horizontal-mm" not in section:
         return
@@ -496,7 +493,7 @@ def _migrate_image_spacing_settings(to_migrate: configparser.ConfigParser):
     del section["image-spacing-vertical-mm"]
 
 
-def _migrate_to_pdf_export_section(to_migrate: configparser.ConfigParser):
+def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
     section_name: str = "pdf-export"
     if to_migrate.has_section(section_name):
         return
@@ -507,6 +504,17 @@ def _migrate_to_pdf_export_section(to_migrate: configparser.ConfigParser):
     del to_migrate["documents"]["pdf-page-count-limit"]
     del to_migrate["default-filesystem-paths"]["pdf-export-path"]
 
+
+def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
+    section = to_migrate["documents"]
+    if "margin-top-mm" not in section:
+        return
+    for key in ("card-bleed", "paper-height", "paper-width",
+            "margin-top", "margin-bottom", "margin-left", "margin-right",
+            "row-spacing", "column-spacing"):
+        old_key = f"{key}-mm"
+        section[key] = f"{section[old_key]} mm"
+        del section[old_key]
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.

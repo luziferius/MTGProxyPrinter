@@ -13,7 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-"""Contains some constants, like the card size"""
+"""Contains some constants, type definitions and the unit parsing support code"""
+import configparser
 import enum
 import re
 import typing
@@ -28,7 +29,7 @@ from PyQt5.QtCore import QSize
 
 def _setup_units() -> typing.Tuple[pint.UnitRegistry, pint.Quantity]:
     registry = pint.UnitRegistry()
-    resolution = unit_registry.parse_expression("300dots/inch")
+    resolution = registry.parse_expression("300dots/inch")
     print_context = pint.Context("print")
     print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
     print_context.add_transformation("[printing_unit]", "[length]", lambda _, x: x/RESOLUTION)
@@ -46,6 +47,22 @@ StringSet = typing.Set[str]
 OptStr = typing.Optional[str]
 IntList = typing.List[int]
 StrDict = typing.Dict[str, str]
+T = typing.TypeVar("T")
+
+
+class SectionProxy(configparser.SectionProxy):
+    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> pint.Quantity:
+        raw_value = self.get(option, fallback, raw=raw, vars=vars)
+        return unit_registry.parse_expression(raw_value)
+
+class ConfigParser(configparser.ConfigParser):
+
+    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> pint.Quantity:
+        raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
+        return unit_registry.parse_expression(raw_value)
+
+configparser.SectionProxy = SectionProxy
+configparser.ConfigParser = ConfigParser
 
 
 class UUID(str):
@@ -64,7 +81,7 @@ class CardSize(typing.NamedTuple):
 
     @staticmethod
     def as_mm(value: pint.Quantity) -> int:
-        size: pint.Quantity = (value/RESOLUTION).to("mm")
+        size: pint.Quantity = value.to("mm", "print")
         return round(size.magnitude)
 
     def as_qsize_px(self):

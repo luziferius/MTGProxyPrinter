@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLine
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, PageType
+from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, SectionProxy
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -114,9 +114,9 @@ class PageConfigWidget(QGroupBox):
 
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
-        documents_section = settings["documents"]
+        documents_section: SectionProxy = settings["documents"]
         for spinbox, setting in self._get_decimal_settings_widgets():
-            value = documents_section.getfloat(setting)
+            value = documents_section.get_quantity(setting).to("mm").magnitude
             spinbox.setValue(value)
             setattr(self.page_layout, spinbox.objectName(), spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
@@ -153,7 +153,7 @@ class PageConfigWidget(QGroupBox):
         logger.info("About to save document settings to the global settings")
         documents_section = mtg_proxy_printer.settings.settings["documents"]
         for spinbox, setting in self._get_decimal_settings_widgets():
-            documents_section[setting] = str(spinbox.value())
+            documents_section[setting] = f"{spinbox.value()} mm"
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
@@ -163,15 +163,15 @@ class PageConfigWidget(QGroupBox):
     def _get_decimal_settings_widgets(self):
         ui = self.ui
         widgets_with_settings: typing.List[typing.Tuple[QDoubleSpinBox, str]] = [
-            (ui.card_bleed, "card-bleed-mm"),
-            (ui.page_height, "paper-height-mm"),
-            (ui.page_width, "paper-width-mm"),
-            (ui.margin_top, "margin-top-mm"),
-            (ui.margin_bottom, "margin-bottom-mm"),
-            (ui.margin_left, "margin-left-mm"),
-            (ui.margin_right, "margin-right-mm"),
-            (ui.row_spacing, "row-spacing-mm"),
-            (ui.column_spacing, "column-spacing-mm"),
+            (ui.card_bleed, "card-bleed"),
+            (ui.page_height, "paper-height"),
+            (ui.page_width, "paper-width"),
+            (ui.margin_top, "margin-top"),
+            (ui.margin_bottom, "margin-bottom"),
+            (ui.margin_left, "margin-left"),
+            (ui.margin_right, "margin-right"),
+            (ui.row_spacing, "row-spacing"),
+            (ui.column_spacing, "column-spacing"),
         ]
         return widgets_with_settings
 
@@ -197,7 +197,7 @@ class PageConfigWidget(QGroupBox):
 
     @highlight_differing_settings.register
     def _(self, settings: configparser.ConfigParser):
-        section = settings["documents"]
+        section: SectionProxy = settings["documents"]
         for widget, setting in self._get_string_settings_widgets():
             if widget.text() != section[setting]:
                 highlight_widget(widget)
@@ -205,7 +205,7 @@ class PageConfigWidget(QGroupBox):
             if widget.isChecked() is not section.getboolean(setting):
                 highlight_widget(widget)
         for widget, setting in self._get_decimal_settings_widgets():
-            if not math.isclose(widget.value(), section.getfloat(setting)):
+            if not math.isclose(widget.value(), section.get_quantity(setting).to("mm").magnitude):
                 highlight_widget(widget)
 
     @highlight_differing_settings.register

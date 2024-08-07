@@ -29,7 +29,7 @@ from unittest.mock import patch
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_, any_of, less_than_or_equal_to
+    has_properties, is_, any_of
 
 try:
     from hamcrest import contains_exactly
@@ -42,7 +42,7 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, SectionProxy
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 
@@ -106,21 +106,21 @@ class PageLayoutSettings:
 
     @classmethod
     def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
-        document_settings = settings["documents"]
+        document_settings: SectionProxy = settings["documents"]
         return cls(
-            document_settings.getfloat("card-bleed-mm"),
+            document_settings.get_quantity("card-bleed").magnitude,
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
-            document_settings.getfloat("row-spacing-mm"),
-            document_settings.getfloat("column-spacing-mm"),
-            document_settings.getfloat("margin-bottom-mm"),
-            document_settings.getfloat("margin-left-mm"),
-            document_settings.getfloat("margin-right-mm"),
-            document_settings.getfloat("margin-top-mm"),
-            document_settings.getfloat("paper-height-mm"),
-            document_settings.getfloat("paper-width-mm"),
+            document_settings.get_quantity("row-spacing").magnitude,
+            document_settings.get_quantity("column-spacing").magnitude,
+            document_settings.get_quantity("margin-bottom").magnitude,
+            document_settings.get_quantity("margin-left").magnitude,
+            document_settings.get_quantity("margin-right").magnitude,
+            document_settings.get_quantity("margin-top").magnitude,
+            document_settings.get_quantity("paper-height").magnitude,
+            document_settings.get_quantity("paper-width").magnitude,
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
