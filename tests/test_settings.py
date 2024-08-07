@@ -14,6 +14,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+from itertools import chain
+from numbers import Real
 import typing
 
 import mtg_proxy_printer.settings
@@ -29,9 +31,27 @@ def default_settings() -> configparser.ConfigParser:
     return settings
 
 
-def test__validate_documents_section_restore_horizontal_paper_dimensions(default_settings):
+@pytest.mark.parametrize("value, multiple, expected", chain(
+    # Fractional multiple
+    ((x/12, 1/12, x/12) for x in range(12)),  # Fractions of 1/12
+    ((x/12+1/100, 1/12, x/12) for x in range(12)),  # Larger values get rounded down
+    ((x/12-1/100, 1/12, x/12) for x in range(12)),  # Smaller values get rounded up
+    # Integer multiple
+    ((10*x, 10, 10*x) for x in (range(10))),
+    ((10*x+1, 10, 10*x) for x in (range(10))),
+    ((10*x-1, 10, 10*x) for x in (range(10))),
+))
+def test_round_to_nearest_multiple(value: Real, multiple: Real, expected: Real):
+    assert_that(
+        mtg_proxy_printer.settings.round_to_nearest_multiple(value, multiple),
+        is_(close_to(expected, 0.0001))
+    )
+
+
+@pytest.mark.parametrize("invalid", [10, 10.5, 0, -1])
+def test__validate_documents_section_restore_horizontal_paper_dimensions(default_settings, invalid: float):
     documents_section = default_settings["documents"]
-    documents_section["paper-width-mm"] = "10"
+    documents_section["paper-width-mm"] = str(invalid)
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
         "paper-width-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["paper-width-mm"]),
@@ -40,9 +60,10 @@ def test__validate_documents_section_restore_horizontal_paper_dimensions(default
     }))
 
 
-def test__validate_documents_section_restore_vertical_paper_dimensions(default_settings):
+@pytest.mark.parametrize("invalid", [10, 10.5, 0, -1])
+def test__validate_documents_section_restore_vertical_paper_dimensions(default_settings, invalid: float):
     documents_section = default_settings["documents"]
-    documents_section["paper-height-mm"] = "10"
+    documents_section["paper-height-mm"] = str(invalid)
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
         "paper-height-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["paper-height-mm"]),
@@ -50,6 +71,35 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(default_s
         "margin-bottom-mm": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-bottom-mm"]),
     }))
 
+
+@pytest.mark.parametrize("value", [0, 1/12, 11/12, 1])
+@pytest.mark.parametrize("offset", [0, -0.004, 0.004])
+@pytest.mark.parametrize("settings_key", [
+    "margin-top-mm", "margin-bottom-mm", "margin-left-mm", "margin-right-mm",
+    "row-spacing-mm", "column-spacing-mm", "card-bleed-mm"])
+def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
+        default_settings, value: float, offset: float, settings_key: str):
+    documents_section = default_settings["documents"]
+    documents_section[settings_key] = str(value+offset)
+    mtg_proxy_printer.settings.validate_settings(default_settings)
+    assert_that(
+        documents_section.getfloat(settings_key),
+        is_(close_to(value, 0.01))
+    )
+
+
+@pytest.mark.parametrize("value", [297, 297+1/12, 297+11/12, 298])
+@pytest.mark.parametrize("offset", [0, -0.004, 0.004])
+@pytest.mark.parametrize("settings_key", ["paper-height-mm", "paper-width-mm",])
+def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
+        default_settings, value: float, offset: float, settings_key: str):
+    documents_section = default_settings["documents"]
+    documents_section[settings_key] = str(value+offset)
+    mtg_proxy_printer.settings.validate_settings(default_settings)
+    assert_that(
+        documents_section.getfloat(settings_key),
+        is_(close_to(value, 0.01))
+    )
 
 def test__validate_documents_section_document_name(default_settings):
     key, value = "default-document-name", "Test"
@@ -72,4 +122,19 @@ def test_parse_card_set_filters(default_settings, set_filter: str, parsed_set_co
     assert_that(
         mtg_proxy_printer.settings.parse_card_set_filters(default_settings),
         contains_inanyorder(*parsed_set_codes)
+    )
+
+@pytest.mark.parametrize("value, expected", [
+    (-0.01, 0),
+    (0, 0),
+    (1, 1),
+    (9999, 9999),
+    (10000, 10000),
+    (10001, 10000),
+    (10000.1, 10000),
+])
+def test_clamp_to_supported_range(value: float, expected: float):
+    assert_that(
+        mtg_proxy_printer.settings.clamp_to_supported_range(value),
+        is_(close_to(expected, 0.001))
     )

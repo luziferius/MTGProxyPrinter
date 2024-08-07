@@ -8,11 +8,16 @@
     - When enabled in the settings, basic lands are automatically stripped from deck lists,
       otherwise the previous behavior is retained.
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
-- Add new card filter for Art Series cards, which can be enabled in the application settings.
+- Add new card filter to hide Art Series cards, which can be enabled in the application settings.
     - When updating from previous versions, the filter becomes functional after the next card data update.
 
 ## Changed features
 
+- Support decimal values in document settings, like margins, image spacings and the card bleed width.
+- As a safety measure against DoS-attacks via loading malicious documents, limit numerical document settings
+  to 10000mm. Limiting the paper size to 10m (~394in) in each direction prevents the creation
+  of indefinitely large drawing areas that could consume all system main memory until either the
+  application or the system crashes.
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
