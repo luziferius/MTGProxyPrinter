@@ -25,8 +25,18 @@ except ImportError:  # Compatibility with Python < 3.11
 import pint
 from PyQt5.QtCore import QSize
 
-unit_registry = pint.UnitRegistry()
-RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
+
+def _setup_units() -> typing.Tuple[pint.UnitRegistry, pint.Quantity]:
+    registry = pint.UnitRegistry()
+    resolution = unit_registry.parse_expression("300dots/inch")
+    print_context = pint.Context("print")
+    print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
+    print_context.add_transformation("[printing_unit]", "[length]", lambda _, x: x/RESOLUTION)
+    registry.add_context(print_context)
+    return registry, resolution
+
+
+unit_registry, RESOLUTION = _setup_units()
 DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 # typing shortcuts
