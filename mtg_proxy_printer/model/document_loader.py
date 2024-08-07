@@ -518,7 +518,6 @@ class Worker(LoaderSignals):
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
-        # TODO: Although not required (source is trustworthy), replace with a parametrized query
         document_settings_query = textwrap.dedent(f"""\
             SELECT key, value
                 FROM DocumentSettings
@@ -527,42 +526,38 @@ class Worker(LoaderSignals):
             """)
         default_settings.update(db.execute(document_settings_query))
         is_number = any_of(instance_of(float), instance_of(int))
-        is_positive_bounded_number = all_of(
-            is_number, less_than_or_equal_to(10000), greater_than(0))
-        is_non_negative_bounded_number = all_of(
-            is_number, less_than_or_equal_to(10000), greater_than_or_equal_to(0))
-
         assert_that(
             default_settings,
             has_properties(
-                card_bleed=is_non_negative_bounded_number,
-                page_height=is_positive_bounded_number,
-                page_width=is_positive_bounded_number,
-                margin_top=is_non_negative_bounded_number,
-                margin_bottom=is_non_negative_bounded_number,
-                margin_left=is_non_negative_bounded_number,
-                margin_right=is_non_negative_bounded_number,
-                row_spacing=is_non_negative_bounded_number,
-                column_spacing=is_non_negative_bounded_number,
+                card_bleed=is_number,
+                page_height=is_number,
+                page_width=is_number,
+                margin_top=is_number,
+                margin_bottom=is_number,
+                margin_left=is_number,
+                margin_right=is_number,
+                row_spacing=is_number,
+                column_spacing=is_number,
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
+                # TODO: Values column should have TEXT affinity, in order to preserve numerical-looking titles as-is
                 document_name=(any_of(instance_of(str), instance_of(int))),
             ),
             "Document settings contain invalid data or data types"
         )
+        # Numerical column affinity coerces document titles like "1" to integers, so convert to str in those cases.
+        # This does lose leading zeros and zero decimals (e.g. "1.000", however.
+        # Also coerce integer values into the annotated float or boolean types
+        for key, annotated_type in PageLayoutSettings.__annotations__.items():
+            value = getattr(default_settings, key)
+            if not isinstance(value, annotated_type):
+                setattr(default_settings, key, annotated_type(value))
         assert_that(
             default_settings.compute_page_card_capacity(),
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        default_settings.draw_cut_markers = bool(default_settings.draw_cut_markers)
-        default_settings.draw_sharp_corners = bool(default_settings.draw_sharp_corners)
-        default_settings.draw_page_numbers = bool(default_settings.draw_page_numbers)
-        # Numerical column affinity coerces document titles like "1" to integers, so convert to str in those cases
-        # This does lose leading zeros and zero decimals (e.g. "1.000", however.
-        if not isinstance(default_settings.document_name, str):
-            default_settings.document_name = str(default_settings.document_name)
         return default_settings
 
     @staticmethod

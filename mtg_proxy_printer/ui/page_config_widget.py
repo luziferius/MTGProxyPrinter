@@ -59,9 +59,7 @@ class PageConfigWidget(QGroupBox):
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
                 ui.row_spacing, ui.column_spacing):
             layout_key = spinbox.objectName()
-            spinbox.valueChanged[float].connect(partial(
-                self.set_spinbox_and_page_layout_to_rounded_value, spinbox, page_layout, layout_key,
-            ))
+            spinbox.valueChanged[float].connect(partial(setattr, page_layout, layout_key))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.page_layout_setting_changed)
         ui.draw_cut_markers.stateChanged.connect(
@@ -72,18 +70,6 @@ class PageConfigWidget(QGroupBox):
             lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
-
-    @staticmethod
-    def set_spinbox_and_page_layout_to_rounded_value(
-            spinbox: QDoubleSpinBox, page_layout: PageLayoutSettings, layout_key: str, value: float):
-        """
-        Whenever the user updates the spinbox, coerce the value into an acceptable decimal, and then
-        update the spinbox and page layout to that value.
-        """
-        rounded = mtg_proxy_printer.settings.round_distance_to_nearest_full_pixel(value)
-        with BlockedSignals(spinbox):
-            spinbox.setValue(rounded)
-        setattr(page_layout, layout_key, rounded)
 
     @Slot()
     def page_layout_setting_changed(self):

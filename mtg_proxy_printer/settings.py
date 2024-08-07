@@ -157,9 +157,9 @@ def round_to_nearest_multiple(value: Real, multiple: Real) -> Real:
     """Rounds the given value to the nearest multiple of "multiple"."""
     return round(value/multiple)*multiple
 
-round_distance_to_nearest_full_pixel = functools.partial(
+round_distance_value = functools.partial(
     round_to_nearest_multiple,
-    multiple=1/12 #(units_and_sizes.unit_registry("1 mm") * units_and_sizes.RESOLUTION).to("pixels").magnitude
+    multiple=1/100
 )
 def get_boolean_card_filter_keys():
     """Returns all keys for boolean card filter settings."""
@@ -401,7 +401,7 @@ def _validate_document_spacing_distance(
         section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
     try:
         value = section.getfloat(key)
-        rounded = round_distance_to_nearest_full_pixel(value)
+        rounded = round_distance_value(value)
         if rounded < 0:
             raise ValueError
         if not math.isclose(value, rounded) or value < 0:

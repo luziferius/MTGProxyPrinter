@@ -73,7 +73,7 @@ def test__validate_documents_section_restore_vertical_paper_dimensions(default_s
 
 
 @pytest.mark.parametrize("value", [0, 1/12, 11/12, 1])
-@pytest.mark.parametrize("offset", [0, -0.01, 0.01])
+@pytest.mark.parametrize("offset", [0, -0.004, 0.004])
 @pytest.mark.parametrize("settings_key", [
     "margin-top-mm", "margin-bottom-mm", "margin-left-mm", "margin-right-mm",
     "row-spacing-mm", "column-spacing-mm", "card-bleed-mm"])
@@ -84,12 +84,12 @@ def test__validate_documents_section_rounds_spacing_value_to_acceptable_value(
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(
         documents_section.getfloat(settings_key),
-        is_(close_to(value, 0.0001))
+        is_(close_to(value, 0.01))
     )
 
 
 @pytest.mark.parametrize("value", [297, 297+1/12, 297+11/12, 298])
-@pytest.mark.parametrize("offset", [0, -0.01, 0.01])
+@pytest.mark.parametrize("offset", [0, -0.004, 0.004])
 @pytest.mark.parametrize("settings_key", ["paper-height-mm", "paper-width-mm",])
 def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value(
         default_settings, value: float, offset: float, settings_key: str):
@@ -98,7 +98,7 @@ def test__validate_documents_section_rounds_paper_size_value_to_acceptable_value
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(
         documents_section.getfloat(settings_key),
-        is_(close_to(value, 0.0001))
+        is_(close_to(value, 0.01))
     )
 
 def test__validate_documents_section_document_name(default_settings):
