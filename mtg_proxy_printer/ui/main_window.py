@@ -259,8 +259,10 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_print_triggered(self):
         logger.info(f"User prints the current document.")
-        # TODO: l10n refactoring required
-        if self._ask_user_about_compacting_document("printing") == StandardButton.Cancel:
+        action_str = self.tr(
+            "printing",
+            "This is passed as the {action} when asking the user about compacting the document if that can save pages")
+        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = PrintDialog(self.document, self)
         self.current_dialog.finished.connect(self.on_dialog_finished)
@@ -269,8 +271,10 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_print_preview_triggered(self):
         logger.info(f"User views the print preview.")
-        # TODO: l10n refactoring required
-        if self._ask_user_about_compacting_document("printing") == StandardButton.Cancel:
+        action_str = self.tr(
+            "printing",
+            "This is passed as the {action} when asking the user about compacting the document if that can save pages")
+        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = PrintPreviewDialog(self.document, self)
         self.current_dialog.finished.connect(self.on_dialog_finished)
@@ -279,8 +283,10 @@ class MainWindow(QMainWindow):
     @Slot()
     def on_action_print_pdf_triggered(self):
         logger.info(f"User prints the current document to PDF.")
-        # TODO: l10n refactoring required
-        if self._ask_user_about_compacting_document("exporting as a PDF") == StandardButton.Cancel:
+        action_str = self.tr(
+            "exporting as a PDF",
+            "This is passed as the {action} when asking the user about compacting the document if that can save pages")
+        if self._ask_user_about_compacting_document(action_str) == StandardButton.Cancel:
             return
         self.current_dialog = SavePDFDialog(self, self.document)
         self.current_dialog.finished.connect(self.on_dialog_finished)
