@@ -61,6 +61,7 @@ class ConfigParser(configparser.ConfigParser):
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
+
 configparser.SectionProxy = SectionProxy
 configparser.ConfigParser = ConfigParser
 

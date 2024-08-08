@@ -19,13 +19,14 @@ from functools import partial
 import math
 import typing
 
+import pint
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, SectionProxy
+from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, SectionProxy, unit_registry
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -59,7 +60,8 @@ class PageConfigWidget(QGroupBox):
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
                 ui.row_spacing, ui.column_spacing):
             layout_key = spinbox.objectName()
-            spinbox.valueChanged[float].connect(partial(setattr, page_layout, layout_key))
+            spinbox.valueChanged[float].connect(
+                partial(self.set_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.page_layout_setting_changed)
         ui.draw_cut_markers.stateChanged.connect(
@@ -70,6 +72,15 @@ class PageConfigWidget(QGroupBox):
             lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         return page_layout
+
+    @staticmethod
+    def set_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: str, value: float):
+        # Implementation note: This call is placed here, because stuffing it into a lambda defined within a while loop
+        # somehow uses the wrong references and will set the attribute that was processed last in the loop.
+        # This method can be used via functools.partial to reduce the signature to (float) -> None,
+        # which can be connected to the valueChanged[float] signal just fine.
+        # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
+        setattr(page_layout, layout_key, value*unit_registry(unit))
 
     @Slot()
     def page_layout_setting_changed(self):
@@ -133,18 +144,16 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         layout = self.page_layout
         for key in layout.__annotations__.keys():
-            value = getattr(other, key)
+            value: typing.Union[pint.Quantity, bool, str] = getattr(other, key)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):
-                    widget.setValue(value)
-                    setattr(self.page_layout, key, widget.value())
+                    widget.setValue(value.magnitude)
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
-                    setattr(self.page_layout, key, widget.text())
                 else:
                     widget.setChecked(value)
-                    setattr(self.page_layout, key, widget.isChecked())
+            setattr(self.page_layout, key, value)
         self.validate_paper_size_settings()
         self.page_layout_setting_changed()
         logger.debug(f"Loading from document settings finished")
