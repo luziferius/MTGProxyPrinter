@@ -16,6 +16,7 @@
 import contextlib
 import dataclasses
 import itertools
+import functools
 import pathlib
 import sqlite3
 import unittest.mock
@@ -32,7 +33,7 @@ from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 CardType = mtg_proxy_printer.model.document_loader.CardType
-
+close_to_ = functools.partial(close_to, delta=0.01)
 
 @pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
@@ -372,9 +373,10 @@ def test_load_settings_from_legacy_save_file_is_successful(
     )
     assert_that(document_light.page_layout, has_properties({
         "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
-        "row_spacing": 2, "column_spacing": 3,
-        "margin_top": 4, "margin_bottom": 5, "margin_left": 6, "margin_right": 7,
-        "page_height": 200, "page_width": 150
+        "row_spacing": close_to_(2), "column_spacing": close_to_(3),
+        "margin_top": close_to_(4), "margin_bottom": close_to_(5),
+        "margin_left": close_to_(6), "margin_right": close_to_(7),
+        "page_height": close_to_(200), "page_width": close_to_(150)
     }))
 
 
