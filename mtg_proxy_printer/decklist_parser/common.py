@@ -45,8 +45,8 @@ ParsedDeck = typing.Tuple[typing.Counter[Card], typing.List[str]]
 
 class ParserBase(QObject):
 
-    @property
-    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {}
 
     incompatible_file_format = Signal()
@@ -69,7 +69,7 @@ class ParserBase(QObject):
             return everything
         return ";;".join(
             f'{name} (*.{" *.".join(extensions)})'
-            for name, extensions in self.supported_file_types.items()
+            for name, extensions in self.supported_file_types().items()
         ) + f";;{everything}"
 
     def parse_deck(self, deck: str,
@@ -100,7 +100,7 @@ class ParserBase(QObject):
         pass
 
     @property
-    def requires_print_guessing(self) -> bool:
+    def requires_automatic_print_selection(self) -> bool:
         """
         Subclasses can overwrite this and return True to indicate that the format does not work without
         print guessing enabled, most likely because the format contains insufficient information for accurate parsing.

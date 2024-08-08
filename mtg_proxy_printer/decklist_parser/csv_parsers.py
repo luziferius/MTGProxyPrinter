@@ -18,7 +18,7 @@ import collections
 import csv
 import typing
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -110,10 +110,10 @@ class ScryfallCSVParser(BaseCSVParser):
         "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
     }
 
-    @property
-    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return  {
-            self.tr("Scryfall CSV export"): ["csv"],
+            QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
         }
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
@@ -181,10 +181,10 @@ class TappedOutCSVParser(BaseCSVParser):
         "Qty", "Name", "Board", "Printing",
     }
 
-    @property
-    def supported_file_types(self) -> typing.Dict[str, typing.List[str]]:
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-            self.tr("Tappedout CSV export"): ["csv"]
+            QCoreApplication.translate("TappedOutCSVParser", "Tappedout CSV export"): ["csv"]
         }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,

@@ -177,14 +177,14 @@ class LoadListPage(QWizardPage):
         ]
         everything = self.tr("All files (*)")
         individual_file_types = list(
-            itertools.chain.from_iterable(parser.SUPPORTED_FILE_TYPES.items() for parser in parsers)
+            itertools.chain.from_iterable(parser.supported_file_types().items() for parser in parsers)
         )
         # At this point, the data required (file extension list) is in a list of dict values containing
         # lists of strings. Thus, it requires two levels of iterable unpacking. Because of duplicates in file,
         # extensions across all parsers, de-duplicate and then sort the result.
         all_supported = sorted(set(
             itertools.chain.from_iterable(itertools.chain.from_iterable(
-                parser.SUPPORTED_FILE_TYPES.values() for parser in parsers))
+                parser.supported_file_types().values() for parser in parsers))
         ))
         result = self.tr('All Supported ') + f'(*.{" *.".join(all_supported)});;' \
                  + ";;".join(
