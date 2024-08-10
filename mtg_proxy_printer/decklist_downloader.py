@@ -114,6 +114,7 @@ class ScryfallDownloader(DecklistDownloader):
             search_parameters = decklist_url.split("search?", 1)[1]
             parsed_parameters = dict(urllib.parse.parse_qsl(search_parameters))
             parsed_parameters["format"] = "csv"  # Enforce CSV format
+            parsed_parameters["include_multilingual"] = "true"
             quoted_parameters = "&".join(
                 f"{key}={urllib.parse.quote(value)}"
                 for key, value in parsed_parameters.items())
