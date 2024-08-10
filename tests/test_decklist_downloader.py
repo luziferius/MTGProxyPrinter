@@ -168,8 +168,8 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e-8-bfdea0951ce3/?with=eur"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-xyza-83e8-bfdea0951ce3/?with=tix"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/?with=arena"
-    # API search without CSV format specifier
-    yield ScryfallDownloader, "https://api.scryfall.com/cards/search?q=e%3Arex+cn%E2%89%A527+cn%E2%89%A445"
+    # API search without query
+    yield ScryfallDownloader, "https://api.scryfall.com/cards/search?format=csv"
 
     # mtg.wtf
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21"
