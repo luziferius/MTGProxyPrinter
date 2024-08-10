@@ -107,7 +107,7 @@ class ScryfallCSVParser(BaseCSVParser):
 
     DIALECT_NAME = "scryfall_com"
     USED_COLUMNS = {
-        "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
+        "scryfall_id", "lang",
     }
 
     SUPPORTED_FILE_TYPES = {
@@ -118,7 +118,7 @@ class ScryfallCSVParser(BaseCSVParser):
             -> LineParserResult:
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
-        count = int(line["count"])
+        count = int(line.get("count", 1))
         language = line["lang"]
         target_language = language_override or language
 
@@ -132,11 +132,11 @@ class ScryfallCSVParser(BaseCSVParser):
             self._add_card_to_deck(cards, card, count)
         elif guess_printing:
             logger.debug(f"Card not identified. Try guessing a printing")
-            english_name = line["name"]
+            english_name = line.get("name", "")
             card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
                 CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
             card_data = CardIdentificationData(
-                target_language, card_name, line["set_code"], line["collector_number"]
+                target_language, card_name, line.get("set_code"), line.get("collector_number")
             )
             if (card := self.guess_printing(card_data)) is not None:
                 self._add_card_to_deck(cards, card, count)
