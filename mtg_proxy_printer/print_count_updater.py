@@ -15,11 +15,14 @@
 
 
 import sqlite3
+import typing
 
-from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
+from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock, CardDatabase
 from mtg_proxy_printer.sqlite_helpers import open_database
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.model.document import Document
 
 logger = get_logger(__name__)
 del get_logger
@@ -29,9 +32,10 @@ class PrintCountUpdater(Runnable):
     """
     This class updates the print counts stored in the database.
     """
-    def __init__(self, document, db: sqlite3.Connection = None):
+    def __init__(self, document: "Document", db: sqlite3.Connection = None):
         super().__init__()
-        self.document = document
+        self.db_path = document.card_db.db_path
+        self.data = document.get_all_card_keys_in_document()
         self.db_passed_in = bool(db)
         self._db = db
 
@@ -42,9 +46,8 @@ class PrintCountUpdater(Runnable):
         # in the thread that actually uses it.
         if self._db is None:
             logger.debug(f"{self.__class__.__name__}.db: Opening new database connection")
-            source_model = self.document.card_db
             self._db = open_database(
-                source_model.db_path, SCHEMA_NAME, source_model.MIN_SUPPORTED_SQLITE_VERSION)
+                self.db_path, SCHEMA_NAME, CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 
     @with_database_write_lock()
@@ -61,7 +64,6 @@ class PrintCountUpdater(Runnable):
     def _update_image_usage(self):
         logger.info("Updating image usage for all cards in the document.")
         db = self.db
-        data = self.document.get_all_card_keys_in_document()
         db.execute("BEGIN IMMEDIATE TRANSACTION")
         db.executemany(
             r"""
@@ -70,9 +72,10 @@ class PrintCountUpdater(Runnable):
               ON CONFLICT (scryfall_id, is_front)
               DO UPDATE SET usage_count = usage_count + 1, last_use_date = CURRENT_TIMESTAMP;
             """,
-            data
+            self.data
         )
         db.commit()
+        logger.info("Usage data written.")
         if not self.db_passed_in:
             db.close()
         self._db = None
