@@ -13,6 +13,8 @@
 
 ## Changed features
 
+- The deck list import wizard now supports downloading links to the Scryfall API card search at 
+  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
 - Support decimal values in document settings, like margins, image spacings and the card bleed width.
 - As a safety measure against DoS-attacks via loading malicious documents, limit numerical document settings
   to 10000mm. Limiting the paper size to 10m (~394in) in each direction prevents the creation
