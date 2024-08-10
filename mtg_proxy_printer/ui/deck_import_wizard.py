@@ -19,10 +19,11 @@ import pathlib
 import re
 import typing
 import urllib.error
+import urllib.parse
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QSize
-from PyQt5.QtGui import QValidator, QIcon
+    QItemSelection, QSize, QUrl
+from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
 import mtg_proxy_printer.settings
@@ -231,6 +232,12 @@ class LoadListPage(QWizardPage):
                     QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
                 else:
                     self.ui.deck_list.setPlainText(deck_list)
+
+    @Slot()
+    def on_scryfall_search_view_button_clicked(self):
+        logger.debug("User views the currently entered Scryfall query on the Scryfall website")
+        query = urllib.parse.quote(self.ui.scryfall_search.text())
+        QDesktopServices.openUrl(QUrl(f"https://scryfall.com/search?q={query}"))
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
