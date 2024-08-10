@@ -47,7 +47,7 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#arena"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/archetype/legacy-led-dredge#online"
 
-    # Scryfall
+    # Scryfall deck lists
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=eur"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3/?with=tix"
@@ -62,6 +62,9 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?with=cah"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e8-bfdea0951ce3?as=visual&with=eur"
+    # Scryfall API searches
+    yield ScryfallDownloader, "https://api.scryfall.com/cards/search?q=e%3Arex+cn%E2%89%A527+cn%E2%89%A445&format=csv"
+    yield ScryfallDownloader, "https://api.scryfall.com/cards/search?format=csv&q=e%3Arex+cn%E2%89%A527+cn%E2%89%A445"
 
     # mtg.wtf
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance"
@@ -165,6 +168,8 @@ def generate_tests_for_test_re_matcher_rejects_unacceptable_url() -> typing.Gene
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-4431-83e-8-bfdea0951ce3/?with=eur"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/8c02b4b2-50e2-xyza-83e8-bfdea0951ce3/?with=tix"
     yield ScryfallDownloader, "https://scryfall.com/@user/decks/?with=arena"
+    # API search without CSV format specifier
+    yield ScryfallDownloader, "https://api.scryfall.com/cards/search?q=e%3Arex+cn%E2%89%A527+cn%E2%89%A445"
 
     # mtg.wtf
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21"
@@ -255,7 +260,10 @@ def generate_test_cases_for_test_deck_list_download() \
     causing test failures. The tests should pass as long as the website returns some plausible data.
     """
     yield MTGWTFDownloader, "https://mtg.wtf/deck/c21/prismari-performance/", "1 Jaya Ballard"
+    # Deck list
     yield ScryfallDownloader, "https://scryfall.com/@luziferius/decks/e1a9af19-cfff-48c4-ae74-ed2dd78cb736", "Island"
+    # API search
+    yield ScryfallDownloader, "https://api.scryfall.com/cards/search?format=csv&q=e%3Arex+cn%E2%89%A527+cn%E2%89%A445", "f197b176-8fa0-451b-a981-a7a942890296"
     yield MTGAZoneDownloader, "https://mtgazone.com/deck/orzhov-phyrexians-march-of-the-machine-theorycraft/", "3 Cut Down"
     yield MTGTop8Downloader, "http://mtgtop8.com/event?e=9011&d=251345&f=BL", "4 [KTK] Abzan Charm"
     yield MTGGoldfishDownloader, "https://www.mtggoldfish.com/deck/5136573", "1 Ancestral Recall"
