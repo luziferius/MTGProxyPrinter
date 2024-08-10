@@ -42,6 +42,9 @@
    </item>
    <item row="1" column="0" colspan="2">
     <widget class="QLineEdit" name="scryfall_search">
+     <property name="maxLength">
+      <number>900</number>
+     </property>
      <property name="placeholderText">
       <string>Scryfall search query</string>
      </property>

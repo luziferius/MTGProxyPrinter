@@ -4,6 +4,9 @@
 
 ## New features
 
+- The deck import wizard can now directly download Scryfall search queries as deck lists
+    - Added a text field to enter a Scryfall card search query, a button to show the result on the Scryfall website,
+      and a button that downloads the search result as a deck list.
 - Add option to fully automatically remove basic lands from all imported deck lists.
     - When enabled in the settings, basic lands are automatically stripped from deck lists,
       otherwise the previous behavior is retained.
