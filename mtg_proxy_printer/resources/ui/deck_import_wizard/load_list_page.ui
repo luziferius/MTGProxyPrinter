@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>581</width>
+    <width>712</width>
     <height>343</height>
    </rect>
   </property>
@@ -20,61 +20,7 @@
    <string>Load a deck file from disk or paste deck list in the text field below</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="5" column="0">
-    <widget class="QCheckBox" name="translate_deck_list_enable">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="text">
-      <string>Translate deck list to:</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="0" colspan="2">
-    <widget class="QLineEdit" name="deck_list_download_url_line_edit">
-     <property name="placeholderText">
-      <string>Paste a link to a deck list here. Hover to see supported sites.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="2">
-    <widget class="QPushButton" name="deck_list_download_button">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>Download</string>
-     </property>
-     <property name="icon">
-      <iconset theme="edit-download"/>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="0" colspan="3">
-    <widget class="QPushButton" name="deck_list_browse_button">
-     <property name="toolTip">
-      <string>Opens a file picker and lets you load a deck file from disk.</string>
-     </property>
-     <property name="text">
-      <string>Select deck list file</string>
-     </property>
-     <property name="icon">
-      <iconset theme="document-open">
-       <normaloff>.</normaloff>.</iconset>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0" colspan="3">
-    <widget class="QPlainTextEdit" name="deck_list">
-     <property name="placeholderText">
-      <string>Paste your deck list here or select a file using the button above.</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="1" colspan="2">
+   <item row="6" column="1" colspan="3">
     <widget class="QComboBox" name="translate_deck_list_target_language">
      <property name="enabled">
       <bool>false</bool>
@@ -87,14 +33,24 @@
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="3">
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
+   <item row="0" column="0" colspan="2">
+    <widget class="QLineEdit" name="deck_list_download_url_line_edit">
+     <property name="placeholderText">
+      <string>Paste a link to a deck list here. Hover to see supported sites.</string>
      </property>
     </widget>
    </item>
-   <item row="6" column="0" colspan="3">
+   <item row="1" column="0" colspan="2">
+    <widget class="QLineEdit" name="scryfall_search">
+     <property name="maxLength">
+      <number>900</number>
+     </property>
+     <property name="placeholderText">
+      <string>Scryfall search query</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0" colspan="4">
     <widget class="QCheckBox" name="print_guessing_enable">
      <property name="toolTip">
       <string>If checked, choose an arbitrary printing, if a unique printing is not identified.
@@ -105,7 +61,34 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
      </property>
     </widget>
    </item>
-   <item row="7" column="0" colspan="3">
+   <item row="1" column="3">
+    <widget class="QPushButton" name="scryfall_search_download_button">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string extracomment="Download the entered Scryfall search query as a deck list">Download result</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-download">
+       <normaloff>../../../../</normaloff>../../../../</iconset>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="4">
+    <widget class="QPlainTextEdit" name="deck_list">
+     <property name="placeholderText">
+      <string>Paste your deck list here or use one of the actions above</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0" colspan="4">
     <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
      <property name="enabled">
       <bool>true</bool>
@@ -116,6 +99,77 @@ Enabling this can potentially save disk space and download volume, based on the 
      </property>
      <property name="text">
       <string>When guessing or translating cards, prefer printings with already downloaded images</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QCheckBox" name="translate_deck_list_enable">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Translate deck list to:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0" colspan="4">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="4">
+    <widget class="QPushButton" name="deck_list_browse_button">
+     <property name="toolTip">
+      <string>Opens a file picker and lets you load a deck file from disk.</string>
+     </property>
+     <property name="text">
+      <string extracomment="Lets the user select a file, and loads the content as a deck list">Select deck list file</string>
+     </property>
+     <property name="icon">
+      <iconset theme="document-open"/>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QPushButton" name="scryfall_search_view_button">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string extracomment="View the entered Scryfall search query on the Scryfall website">View result</string>
+     </property>
+     <property name="icon">
+      <iconset theme="globe"/>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2" colspan="2">
+    <widget class="QPushButton" name="deck_list_download_button">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string extracomment="On pressing the button, the deck list given by the entered URL is downloaded">Download deck list</string>
+     </property>
+     <property name="icon">
+      <iconset theme="edit-download"/>
      </property>
     </widget>
    </item>

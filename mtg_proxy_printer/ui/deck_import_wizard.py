@@ -19,10 +19,11 @@ import pathlib
 import re
 import typing
 import urllib.error
+import urllib.parse
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QSize
-from PyQt5.QtGui import QValidator, QIcon
+    QItemSelection, QSize, QUrl
+from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
 import mtg_proxy_printer.settings
@@ -100,24 +101,30 @@ class LoadListPage(QWizardPage):
 
     def __init__(self, language_model: QStringListModel, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ui = Ui_LoadListPage()
-        self.ui.setupUi(self)
+        self.ui = ui = Ui_LoadListPage()
+        ui.setupUi(self)
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
         self._deck_list_downloader: typing.Optional[str] = None
-        self.ui.deck_list_download_url_line_edit.textChanged.connect(
-            lambda text: self.ui.deck_list_download_button.setEnabled(
+        ui.scryfall_search.textChanged.connect(
+            lambda text: ui.scryfall_search_view_button.setEnabled(bool(text))
+        )
+        ui.scryfall_search.textChanged.connect(
+            lambda text: ui.scryfall_search_download_button.setEnabled(bool(text))
+        )
+        ui.deck_list_download_url_line_edit.textChanged.connect(
+            lambda text: ui.deck_list_download_button.setEnabled(
                 self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
-        self.ui.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
-        self.ui.translate_deck_list_target_language.setModel(language_model)
-        self.registerField("deck_list*", self.ui.deck_list, "plainText", self.ui.deck_list.textChanged)
-        self.registerField("print-guessing-enable", self.ui.print_guessing_enable)
-        self.registerField("print-guessing-prefer-already-downloaded", self.ui.print_guessing_prefer_already_downloaded)
-        self.registerField("translate-deck-list-enable", self.ui.translate_deck_list_enable)
+        ui.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
+        ui.translate_deck_list_target_language.setModel(language_model)
+        self.registerField("deck_list*", ui.deck_list, "plainText", ui.deck_list.textChanged)
+        self.registerField("print-guessing-enable", ui.print_guessing_enable)
+        self.registerField("print-guessing-prefer-already-downloaded", ui.print_guessing_prefer_already_downloaded)
+        self.registerField("translate-deck-list-enable", ui.translate_deck_list_enable)
         self.registerField("deck-list-downloaded", self, "deck_list_downloader", self.deck_list_downloader_changed)
         self.registerField(
-            "translate-deck-list-target-language", self.ui.translate_deck_list_target_language,
-            "currentText", self.ui.translate_deck_list_target_language.currentTextChanged
+            "translate-deck-list-target-language", ui.translate_deck_list_target_language,
+            "currentText", ui.translate_deck_list_target_language.currentTextChanged
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -195,12 +202,18 @@ class LoadListPage(QWizardPage):
 
     @Slot()
     def on_deck_list_download_button_clicked(self):
+        url = self.ui.deck_list_download_url_line_edit.text()
+        bad_request_msg="Verify that the URL is valid, reachable, and that the deck list is set to public.\n" \
+            "This program cannot download private deck lists. Please note, that setting deck lists to\n" \
+            "public may take a minute or two to apply."
+        self._populate_deck_list_from_url(url, bad_request_msg)
+
+    def _populate_deck_list_from_url(self, url: str, bad_request_msg: str):
         if not self.ui.deck_list.toPlainText() \
                 or QMessageBox.question(
-                        self, "Overwrite existing deck list?",
-                        "Downloading a deck list will overwrite the existing deck list. Continue?",
-                        StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
-            url = self.ui.deck_list_download_url_line_edit.text()
+            self, "Overwrite existing deck list?",
+            "Downloading a deck list will overwrite the existing deck list. Continue?",
+            StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
             logger.info(f"User requests to download a deck list from the internet: {url}")
             downloader_class = get_downloader_class(url)
             if downloader_class is not None:
@@ -210,10 +223,7 @@ class LoadListPage(QWizardPage):
                     deck_list = downloader.download(url)
                 except urllib.error.HTTPError as e:
                     btn = StandardButton.Ok
-                    msg = f"Download failed with HTTP error {e.code}.\n\n" \
-                          f"Verify that the URL is valid, reachable, and that the deck list is set to public.\n" \
-                          f"This program cannot download private deck lists. Please note, that setting deck lists to\n"\
-                          f"public may take a minute or two to apply."
+                    msg = f"Download failed with HTTP error {e.code}.\n\n{bad_request_msg}"
                     QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
                 except Exception:
                     btn = StandardButton.Ok
@@ -225,6 +235,20 @@ class LoadListPage(QWizardPage):
                     QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
                 else:
                     self.ui.deck_list.setPlainText(deck_list)
+
+    @Slot()
+    def on_scryfall_search_view_button_clicked(self):
+        logger.debug("User views the currently entered Scryfall query on the Scryfall website")
+        query = urllib.parse.quote(self.ui.scryfall_search.text())
+        QDesktopServices.openUrl(QUrl(f"https://scryfall.com/search?q={query}"))
+
+    @Slot()
+    def on_scryfall_search_download_button_clicked(self):
+        logger.debug("User downloads the currently entered Scryfall query results")
+        query = urllib.parse.quote(self.ui.scryfall_search.text())
+        self._populate_deck_list_from_url(
+            f"https://api.scryfall.com/cards/search?q={query}",
+            "Invalid Scryfall query entered, no result obtained")
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
