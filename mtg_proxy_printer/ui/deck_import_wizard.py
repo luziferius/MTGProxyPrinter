@@ -100,24 +100,30 @@ class LoadListPage(QWizardPage):
 
     def __init__(self, language_model: QStringListModel, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.ui = Ui_LoadListPage()
-        self.ui.setupUi(self)
+        self.ui = ui = Ui_LoadListPage()
+        ui.setupUi(self)
         self.deck_list_url_validator = IsIdentifyingDeckUrlValidator(self)
         self._deck_list_downloader: typing.Optional[str] = None
-        self.ui.deck_list_download_url_line_edit.textChanged.connect(
-            lambda text: self.ui.deck_list_download_button.setEnabled(
+        ui.scryfall_search.textChanged.connect(
+            lambda text: ui.scryfall_search_view_button.setEnabled(bool(text))
+        )
+        ui.scryfall_search.textChanged.connect(
+            lambda text: ui.scryfall_search_download_button.setEnabled(bool(text))
+        )
+        ui.deck_list_download_url_line_edit.textChanged.connect(
+            lambda text: ui.deck_list_download_button.setEnabled(
                 self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
-        self.ui.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
-        self.ui.translate_deck_list_target_language.setModel(language_model)
-        self.registerField("deck_list*", self.ui.deck_list, "plainText", self.ui.deck_list.textChanged)
-        self.registerField("print-guessing-enable", self.ui.print_guessing_enable)
-        self.registerField("print-guessing-prefer-already-downloaded", self.ui.print_guessing_prefer_already_downloaded)
-        self.registerField("translate-deck-list-enable", self.ui.translate_deck_list_enable)
+        ui.deck_list_download_url_line_edit.setToolTip(f"Supported websites:\n{supported_sites}")
+        ui.translate_deck_list_target_language.setModel(language_model)
+        self.registerField("deck_list*", ui.deck_list, "plainText", ui.deck_list.textChanged)
+        self.registerField("print-guessing-enable", ui.print_guessing_enable)
+        self.registerField("print-guessing-prefer-already-downloaded", ui.print_guessing_prefer_already_downloaded)
+        self.registerField("translate-deck-list-enable", ui.translate_deck_list_enable)
         self.registerField("deck-list-downloaded", self, "deck_list_downloader", self.deck_list_downloader_changed)
         self.registerField(
-            "translate-deck-list-target-language", self.ui.translate_deck_list_target_language,
-            "currentText", self.ui.translate_deck_list_target_language.currentTextChanged
+            "translate-deck-list-target-language", ui.translate_deck_list_target_language,
+            "currentText", ui.translate_deck_list_target_language.currentTextChanged
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
 
