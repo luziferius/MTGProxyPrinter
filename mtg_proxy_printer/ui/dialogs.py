@@ -82,7 +82,6 @@ class SavePDFDialog(QFileDialog):
         self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
-        self._print_count_updater = PrintCountUpdater(document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     @staticmethod
@@ -99,7 +98,7 @@ class SavePDFDialog(QFileDialog):
         logger.debug("User chose a file name, about to generate the PDF document")
         path = self.selectedFiles()[0]
         mtg_proxy_printer.print.export_pdf(self.document, path, self)
-        QThreadPool.globalInstance().start(self._print_count_updater)
+        QThreadPool.globalInstance().start(PrintCountUpdater(self.document))
         logger.info(f"Saved document to {path}")
 
     @Slot()
@@ -257,8 +256,7 @@ class PrintDialog(QPrintDialog):
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
-        self._print_count_updater = PrintCountUpdater(document)
-        self.accepted.connect(lambda: QThreadPool.globalInstance().start(self._print_count_updater))
+        self.accepted.connect(lambda: QThreadPool.globalInstance().start(PrintCountUpdater(document)))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 

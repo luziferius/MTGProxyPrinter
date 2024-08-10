@@ -31,6 +31,14 @@ del get_logger
 class PrintCountUpdater(Runnable):
     """
     This class updates the print counts stored in the database.
+
+    Implementation note: Why is this an async task, even though it only takes a few milliseconds to complete?
+    Answer: This encapsulates the database writing work associated with printing, allowing the application to delay
+    the execution of the database write transaction arbitrarily without stalling the main thread.
+    This allows the app to offer printing while a card data update writes to the card database,
+    which can take multiple minutes if the network connection is sufficiently slow.
+    If it were synchronous, printing would block the UI thread until the update completes,
+    or the app would miss writing the data at all, or printing/PDF export had to be prohibited.
     """
     def __init__(self, document: "Document", db: sqlite3.Connection = None):
         super().__init__()
@@ -50,7 +58,6 @@ class PrintCountUpdater(Runnable):
                 self.db_path, SCHEMA_NAME, CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
         return self._db
 
-    @with_database_write_lock()
     def run(self):
         """
         Increments the usage count of all cards used in the document and updates the last use timestamps.
@@ -61,6 +68,7 @@ class PrintCountUpdater(Runnable):
         finally:
             self.release_instance()
 
+    @with_database_write_lock()
     def _update_image_usage(self):
         logger.info("Updating image usage for all cards in the document.")
         db = self.db
