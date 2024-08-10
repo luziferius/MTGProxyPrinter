@@ -68,6 +68,11 @@ class DecklistDownloader(DownloaderBase):
     APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:
+        """
+        Fetches the decklist from the given URL.
+        The base class handles the download including transparent decompression, and performs post-processing steps:
+        Replacing Windows-style line endings \r\n with plain \n newlines, and decoding bytes assuming utf-8 input
+        """
         logger.info(f"About to fetch deck list from {decklist_url}")
         download_url = self.map_to_download_url(decklist_url)
         logger.debug(f"Obtained download URL: {download_url}")
@@ -88,8 +93,8 @@ class DecklistDownloader(DownloaderBase):
 
     @abc.abstractmethod
     def map_to_download_url(self, decklist_url: str) -> str:
-        """Takes a URL to a deck list and returns a download URL"""
-        pass
+        """Takes a URL to a deck list and returns a download URL. By default, returns the identity"""
+        return decklist_url
 
 
 class ScryfallDownloader(DecklistDownloader):
