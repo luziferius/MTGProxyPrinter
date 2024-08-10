@@ -202,12 +202,18 @@ class LoadListPage(QWizardPage):
 
     @Slot()
     def on_deck_list_download_button_clicked(self):
+        url = self.ui.deck_list_download_url_line_edit.text()
+        bad_request_msg="Verify that the URL is valid, reachable, and that the deck list is set to public.\n" \
+            "This program cannot download private deck lists. Please note, that setting deck lists to\n" \
+            "public may take a minute or two to apply."
+        self._populate_deck_list_from_url(url, bad_request_msg)
+
+    def _populate_deck_list_from_url(self, url: str, bad_request_msg: str):
         if not self.ui.deck_list.toPlainText() \
                 or QMessageBox.question(
-                        self, "Overwrite existing deck list?",
-                        "Downloading a deck list will overwrite the existing deck list. Continue?",
-                        StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
-            url = self.ui.deck_list_download_url_line_edit.text()
+            self, "Overwrite existing deck list?",
+            "Downloading a deck list will overwrite the existing deck list. Continue?",
+            StandardButton.Yes | StandardButton.No) == StandardButton.Yes:
             logger.info(f"User requests to download a deck list from the internet: {url}")
             downloader_class = get_downloader_class(url)
             if downloader_class is not None:
@@ -217,10 +223,7 @@ class LoadListPage(QWizardPage):
                     deck_list = downloader.download(url)
                 except urllib.error.HTTPError as e:
                     btn = StandardButton.Ok
-                    msg = f"Download failed with HTTP error {e.code}.\n\n" \
-                          f"Verify that the URL is valid, reachable, and that the deck list is set to public.\n" \
-                          f"This program cannot download private deck lists. Please note, that setting deck lists to\n"\
-                          f"public may take a minute or two to apply."
+                    msg = f"Download failed with HTTP error {e.code}.\n\n{bad_request_msg}"
                     QMessageBox.critical(self, "Deck list download failed", msg, btn, btn)
                 except Exception:
                     btn = StandardButton.Ok
@@ -238,6 +241,14 @@ class LoadListPage(QWizardPage):
         logger.debug("User views the currently entered Scryfall query on the Scryfall website")
         query = urllib.parse.quote(self.ui.scryfall_search.text())
         QDesktopServices.openUrl(QUrl(f"https://scryfall.com/search?q={query}"))
+
+    @Slot()
+    def on_scryfall_search_download_button_clicked(self):
+        logger.debug("User downloads the currently entered Scryfall query results")
+        query = urllib.parse.quote(self.ui.scryfall_search.text())
+        self._populate_deck_list_from_url(
+            f"https://api.scryfall.com/cards/search?q={query}",
+            "Invalid Scryfall query entered, no result obtained")
 
     def _load_from_file(self, selected_file: typing.Optional[str]):
         if selected_file and (file_path := pathlib.Path(selected_file)).is_file() and \
