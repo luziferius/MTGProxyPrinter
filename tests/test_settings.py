@@ -13,23 +13,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
 from itertools import chain
 from numbers import Real
 import typing
 
 import mtg_proxy_printer.settings
-from mtg_proxy_printer.units_and_sizes import unit_registry
+from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
 
 import pytest
 from hamcrest import *
 
 
 @pytest.fixture
-def default_settings() -> configparser.ConfigParser:
-    settings = configparser.ConfigParser()
+def default_settings() -> ConfigParser:
+    settings = ConfigParser()
     settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     return settings
+
+
+def test_configparser_has_get_quantity(default_settings):
+    assert_that(default_settings, has_property("get_quantity"))
+
+
+def test_section_has_get_quantity(default_settings):
+    assert_that(default_settings["DEFAULT"], has_property("get_quantity"))
 
 
 @pytest.mark.parametrize("value, multiple, expected", chain(

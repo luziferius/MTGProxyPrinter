@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
 import functools
 from functools import partial
 import math
@@ -26,7 +25,7 @@ from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLine
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, SectionProxy, unit_registry
+from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, SectionProxy, unit_registry, ConfigParser
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -123,9 +122,9 @@ class PageConfigWidget(QGroupBox):
             max(0, available_height - ui.margin_top.value())
         )
 
-    def load_document_settings_from_config(self, settings: configparser.ConfigParser):
+    def load_document_settings_from_config(self, settings: ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
-        documents_section: SectionProxy = settings["documents"]
+        documents_section = settings["documents"]
         for spinbox, setting in self._get_decimal_settings_widgets():
             value = documents_section.get_quantity(setting).to("mm").magnitude
             spinbox.setValue(value)
@@ -205,8 +204,8 @@ class PageConfigWidget(QGroupBox):
         pass
 
     @highlight_differing_settings.register
-    def _(self, settings: configparser.ConfigParser):
-        section: SectionProxy = settings["documents"]
+    def _(self, settings: ConfigParser):
+        section = settings["documents"]
         for widget, setting in self._get_string_settings_widgets():
             if widget.text() != section[setting]:
                 highlight_widget(widget)

@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
-from functools import partial
 import pathlib
 import sys
 
@@ -31,7 +29,7 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.logger import get_logger
@@ -263,7 +261,7 @@ class PrintDialog(QPrintDialog):
 
 
 class HoverEventFilter(QObject):
-    def __init__(self, settings: configparser.ConfigParser, parent: "DocumentSettingsDialog"):
+    def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
         self.settings = settings
 

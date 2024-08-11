@@ -151,7 +151,8 @@ DEFAULT_SETTINGS["pdf-export"] = {
     "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
-
+MIN_SIZE = unit_registry("0 mm")
+MAX_SIZE = unit_registry("10000 mm")
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
     """Rounds the given value to the nearest multiple of "multiple"."""
@@ -159,7 +160,7 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
 
 def clamp_to_supported_range(value: pint.Quantity) -> pint.Quantity:
     """Clamps numerical document settings to the supported value range"""
-    return min(max(value, unit_registry("0 mm")),  unit_registry("10000 mm"))
+    return min(max(value, MIN_SIZE),  MAX_SIZE)
 
 
 def get_boolean_card_filter_keys():
@@ -268,7 +269,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
     card_size = mtg_proxy_printer.units_and_sizes.CardSizes.OVERSIZED
     card_height = card_size.height.to("mm", "print")
     card_width = card_size.width.to("mm", "print")
-    section: SectionProxy = to_validate[section_name]
+    section = to_validate[section_name]
     if (document_name := section["default-document-name"]) and len(document_name) > MAX_DOCUMENT_NAME_LENGTH:
         section["default-document-name"] = document_name[:MAX_DOCUMENT_NAME_LENGTH-1] + "…"
     defaults = DEFAULT_SETTINGS[section_name]
@@ -398,8 +399,7 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
         _restore_default(section, defaults, key)
 
 
-def _validate_document_spacing_distance(
-        section: SectionProxy, defaults: SectionProxy, key: str):
+def _validate_document_spacing_distance(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         value = section.get_quantity(key)
         rounded = clamp_to_supported_range(value)
@@ -408,9 +408,7 @@ def _validate_document_spacing_distance(
     except ValueError:
         _restore_default(section, defaults, key)
 
-def _validate_string_is_in_set(
-        section: SectionProxy, defaults: SectionProxy,
-        valid_options: typing.Set[str], key: str):
+def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: typing.Set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""
     if section[key] not in valid_options:
         _restore_default(section, defaults, key)

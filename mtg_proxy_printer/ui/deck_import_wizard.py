@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-import configparser
+
 import itertools
 import math
 import pathlib
@@ -25,6 +25,7 @@ from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as
 from PyQt5.QtGui import QValidator, QIcon
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
+from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
@@ -499,7 +500,7 @@ class SummaryPage(QWizardPage):
             self._remove_basic_lands()
         logger.debug(f"Initialized {self.__class__.__name__}")
 
-    def _initialize_custom_buttons(self, decklist_import_section: configparser.SectionProxy):
+    def _initialize_custom_buttons(self, decklist_import_section: SectionProxy):
         wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
         have_basic_land_removal_button = not decklist_import_section.getboolean("automatically-remove-basic-lands")

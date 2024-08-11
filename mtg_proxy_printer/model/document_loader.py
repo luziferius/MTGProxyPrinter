@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import configparser
 import dataclasses
 import enum
 import functools
@@ -43,7 +42,7 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, SectionProxy, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, SectionProxy, unit_registry, ConfigParser
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 
@@ -106,8 +105,8 @@ class PageLayoutSettings:
     page_width: pint.Quantity = unit_registry.parse_expression("0 mm")
 
     @classmethod
-    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
-        document_settings: SectionProxy = settings["documents"]
+    def create_from_settings(cls, settings: ConfigParser = mtg_proxy_printer.settings.settings):
+        document_settings = settings["documents"]
         return cls(
             document_settings.get_quantity("card-bleed"),
             document_settings["default-document-name"],
