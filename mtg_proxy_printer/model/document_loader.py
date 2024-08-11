@@ -645,9 +645,11 @@ def _migrate_3_to_4(db: sqlite3.Connection, settings: PageLayoutSettings):
     """))
     db.execute(
         "INSERT INTO DocumentSettings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (1, settings.page_height, settings.page_width,
-         settings.margin_top, settings.margin_bottom, settings.margin_left, settings.margin_right,
-         settings.row_spacing, settings.column_spacing, settings.draw_cut_markers
+        (1, settings.page_height.to("mm").magnitude, settings.page_width.to("mm").magnitude,
+         settings.margin_top.to("mm").magnitude, settings.margin_bottom.to("mm").magnitude,
+         settings.margin_left.to("mm").magnitude, settings.margin_right.to("mm").magnitude,
+         settings.row_spacing.to("mm").magnitude, settings.column_spacing.to("mm").magnitude,
+         settings.draw_cut_markers
          )
     )
     db.execute(f"PRAGMA user_version = 4;\n")
@@ -673,7 +675,9 @@ def _migrate_4_to_5(db: sqlite3.Connection, settings: PageLayoutSettings):
           draw_sharp_corners INTEGER NOT NULL CHECK (draw_sharp_corners in (TRUE, FALSE))
         );
         """))
-    db.execute("INSERT INTO DocumentSettings SELECT *, ? FROM DocumentSettings_Old;\n", (settings.draw_sharp_corners,))
+    db.execute(
+        "INSERT INTO DocumentSettings SELECT *, ? FROM DocumentSettings_Old;\n",
+        (settings.draw_sharp_corners,))
     db.execute("DROP TABLE DocumentSettings_Old;\n")
     db.execute("PRAGMA user_version = 5;\n")
 
@@ -723,7 +727,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
     db.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", [
             ("document_name", settings.document_name),
-            ("card_bleed", settings.card_bleed),
+            ("card_bleed", settings.card_bleed.to("mm").magnitude),
             ("draw_page_numbers", settings.draw_page_numbers),
         ])
 
