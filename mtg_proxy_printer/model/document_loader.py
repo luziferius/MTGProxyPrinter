@@ -645,10 +645,10 @@ def _migrate_3_to_4(db: sqlite3.Connection, settings: PageLayoutSettings):
     """))
     db.execute(
         "INSERT INTO DocumentSettings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (1, settings.page_height.to("mm").magnitude, settings.page_width.to("mm").magnitude,
-         settings.margin_top.to("mm").magnitude, settings.margin_bottom.to("mm").magnitude,
-         settings.margin_left.to("mm").magnitude, settings.margin_right.to("mm").magnitude,
-         settings.row_spacing.to("mm").magnitude, settings.column_spacing.to("mm").magnitude,
+        (1, settings.page_height.to("mm"), settings.page_width.to("mm"),
+         settings.margin_top.to("mm"), settings.margin_bottom.to("mm"),
+         settings.margin_left.to("mm"), settings.margin_right.to("mm"),
+         settings.row_spacing.to("mm"), settings.column_spacing.to("mm"),
          settings.draw_cut_markers
          )
     )
@@ -727,7 +727,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
     db.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", [
             ("document_name", settings.document_name),
-            ("card_bleed", settings.card_bleed.to("mm").magnitude),
+            ("card_bleed", settings.card_bleed.to("mm")),
             ("draw_page_numbers", settings.draw_page_numbers),
         ])
 

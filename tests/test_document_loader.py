@@ -28,7 +28,7 @@ from hamcrest import *
 
 
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry
 from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
@@ -73,10 +73,11 @@ def test_valid_data_loads_correctly(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
     )
+    mm = unit_registry.mm
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
-        page_height=300, page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        row_spacing=3, column_spacing=2,
+        page_height=300*mm, page_width=200*mm,
+        margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
+        row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
     page_layout_items = dataclasses.asdict(page_layout).items()

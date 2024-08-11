@@ -15,6 +15,8 @@
 
 import faulthandler
 
+import mtg_proxy_printer.sqlite_helpers  # noqa; Ensure the conversion adapters are registered
+
 from .helpers import setup_logging_for_testing, setup_settings_for_testing
 
 faulthandler.enable()
