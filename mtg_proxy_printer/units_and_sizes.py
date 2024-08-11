@@ -57,6 +57,8 @@ class SectionProxy(configparser.SectionProxy):
 
 class ConfigParser(configparser.ConfigParser):
 
+    __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
+
     def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> pint.Quantity:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
