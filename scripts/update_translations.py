@@ -117,7 +117,7 @@ def download_new_translations(args: Namespace):
 
 def get_lrelease():
     try:
-        subprocess.check_output("lrelease")
+        subprocess.check_output(["lrelease", "-version"])
     except FileNotFoundError:
         print("lrelease not found on PATH. Falling back to the executable supplied by PySide2.")
         import sys
