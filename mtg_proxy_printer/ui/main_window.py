@@ -399,7 +399,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self, self.tr("Unrecognized cards in loaded document found"),
                 self.tr(
-                    "Skipped {unknown} unrecognized cards in the loaded document. "
+                    "Skipped %n unrecognized cards in the loaded document. "
                     "Saving the document will remove these entries permanently.\n\nThe locally stored card "
                     "data may be outdated or the document was tampered with.", "", unknown),
                 StandardButton.Ok, StandardButton.Ok
