@@ -193,8 +193,8 @@ class Application(QApplication):
         else:
             locale = system_locale
         logger.info(
-            f"Loading localisations. System locale: {system_locale.name()}, selected locale: {locale.name()}"
-            f"possible display languages are: {locale.uiLanguages()}")
+            f"Loading localisations. System locale: {system_locale.name()}, selected locale: {locale.name()}. "
+            f"Possible display languages are: {locale.uiLanguages()}")
         path = ":" if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES \
             else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
         path += "/translations"
