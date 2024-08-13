@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>487</width>
+    <width>505</width>
     <height>302</height>
    </rect>
   </property>
@@ -23,7 +23,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -42,7 +42,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -58,7 +58,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -92,7 +92,7 @@ Those require higher cutting precision to get right.</string>
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -119,7 +119,7 @@ This filter hides those.</string>
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -135,7 +135,7 @@ This filter hides those.</string>
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -217,7 +217,7 @@ These are not tournament legal</string>
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -245,7 +245,7 @@ English placeholder images with an overlay text stating
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -261,7 +261,7 @@ English placeholder images with an overlay text stating
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -277,7 +277,7 @@ English placeholder images with an overlay text stating
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -287,7 +287,7 @@ English placeholder images with an overlay text stating
    <item row="7" column="1">
     <widget class="QPushButton" name="view_extended_art_cards">
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -324,7 +324,7 @@ Similar to borderless cards, these require higher precision during the cutting p
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>

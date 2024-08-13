@@ -176,7 +176,9 @@ class CentralWidget(QWidget):
         card_name = card.name if isinstance(card, AnyCardTypeForTypeCheck) else nl + nl.join(item.name for item in card)
         if count is None:
             count, success = QInputDialog.getInt(
-                self, self.tr("Add copies"), self.tr("Add copies of {card_name}").format(card_name=card_name),
+                self, self.tr("Add copies"), self.tr(
+                    "Add copies of {card_name}",
+                    "Asks the user for a number. Does not need plural forms").format(card_name=card_name),
                 1, 1, 100)
             if not success:
                 logger.info("User cancelled adding card copies")
