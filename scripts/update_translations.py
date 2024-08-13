@@ -22,8 +22,10 @@ Management script for application translations
 import argparse
 import itertools
 import pathlib
+import re
 import subprocess
 from typing import Callable, NamedTuple
+
 
 # Mapping between source locales, as provided by Crowdin, and the target, as expected/loaded by Qt.
 # TODO: Investigate, how systems behave in locales requiring the country as disambiguation, like en or zh.
@@ -42,6 +44,15 @@ LOCALES = {
     "zh-TW": "zh_TW",
 }
 TRANSLATIONS_DIR = pathlib.Path("mtg_proxy_printer/resources/translations/")
+crowdin_yml_path = pathlib.Path(__file__).parent.parent/"crowdin.yml"
+SOURCES_PATH = pathlib.Path(
+    # Fetch the name of the sources .ts file from crowdin.yml.
+    # (Since Python does not come with a YAML parser, use a simple RE for data extraction)
+    re.search(
+        r'"source":\s*"(?P<path>.+)",',
+        crowdin_yml_path.read_text("utf-8")
+    )["path"]
+)
 
 class Namespace(NamedTuple):
     """Mock namespace for type hinting"""
@@ -58,7 +69,7 @@ def parse_args() -> Namespace:
     parser = argparse.ArgumentParser()
     commands = parser.add_subparsers(required=True, dest="command", help="Action to perform")
     upload_parser = commands.add_parser("upload", help="Run Qt lupdate to extract new strings and upload them to Crowdin. Requires an API key")
-    download_parser = commands.add_parser("download", help="Download translation updates from Crowdin")
+    download_parser = commands.add_parser("download", help="Download translation updates from Crowdin. Requires an API key")
     compile_parser = commands.add_parser("compile", help="Compile translations into the importable binary format for distribution")
     clean_parser = commands.add_parser("clean", help="Delete compiled, binary translation files")
     args = parser.parse_args()
@@ -85,7 +96,7 @@ def register_new_raw_strings():
         "pylupdate5",
         "-noobsolete", "-verbose",
         *files,
-        "-ts", TRANSLATIONS_DIR/"mtgproxyprinter_en-US.ts"
+        "-ts", SOURCES_PATH
     ])
     ''' PySide6
     subprocess.call([
@@ -94,12 +105,13 @@ def register_new_raw_strings():
         "-recursive", "-no-obsolete",
         "-extensions", "py,ui",
         "mtg_proxy_printer",
-        "-ts", TRANSLATIONS_DIR/"mtgproxyprinter_en-US.ts"
+        "-ts", SOURCES_PATH
     ])
     '''
 
 
 def upload_raw_strings(args: Namespace):
+    """Updates the sources .ts from code, then uploads it to the Crowdin API"""
     register_new_raw_strings()
     verify_crowdin_cli_present()
     subprocess.call([
@@ -108,7 +120,7 @@ def upload_raw_strings(args: Namespace):
 
 
 def download_new_translations(args: Namespace):
-
+    """Downloads translated .ts files from Crowdin via the API"""
     verify_crowdin_cli_present()
     subprocess.call([
         "crowdin", "download"
@@ -116,6 +128,10 @@ def download_new_translations(args: Namespace):
 
 
 def get_lrelease():
+    """
+    Determine the lrelease binary name. Tries to find in on $PATH, or falls back to using the PySide2-supplied binary
+    from the virtual environment.
+    """
     try:
         subprocess.check_output(["lrelease", "-version"])
     except FileNotFoundError:
@@ -130,7 +146,9 @@ def get_lrelease():
 
 
 def compile_translations(args: Namespace):
+    """Compiles .ts files into importable, binary translation files with .qm suffix."""
     lrelease = get_lrelease()
+    # Iterate over the defined locales, and not the directory. This skips the sources .ts file
     for source_name, target_name in LOCALES.items():
         source = TRANSLATIONS_DIR / f"mtgproxyprinter_{source_name}.ts"
         if not source.is_file():
@@ -143,6 +161,7 @@ def compile_translations(args: Namespace):
 
 
 def clean_translations(args: Namespace):
+    """Deletes all compiled translation files. Keeps .ts files in place"""
     target = TRANSLATIONS_DIR.glob("mtgproxyprinter_*.qm")
     for file in target:
         file.unlink()
