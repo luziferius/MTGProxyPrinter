@@ -133,6 +133,8 @@ def compile_translations(args: Namespace):
     lrelease = get_lrelease()
     for source_name, target_name in LOCALES.items():
         source = TRANSLATIONS_DIR / f"mtgproxyprinter_{source_name}.ts"
+        if not source.is_file():
+            continue
         target = TRANSLATIONS_DIR / f"mtgproxyprinter_{target_name}.qm"
         subprocess.call([
             lrelease, "-compress",
