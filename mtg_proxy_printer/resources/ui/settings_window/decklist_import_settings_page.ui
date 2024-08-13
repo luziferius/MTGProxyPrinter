@@ -87,7 +87,7 @@ but offers the removal via a single button click.</string>
     <widget class="QGroupBox" name="print_guessing_group_box">
      <property name="toolTip">
       <string>Not all deck list formats always contain complete data.
-These options set the default behaviour when encountering ambiguous card</string>
+These options set the default behavior when encountering ambiguous card</string>
      </property>
      <property name="title">
       <string>Control print selection in ambiguous cases</string>
