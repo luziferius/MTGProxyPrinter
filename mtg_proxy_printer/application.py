@@ -23,7 +23,7 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
 
@@ -199,12 +199,16 @@ class Application(QApplication):
             else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
         path += "/translations"
         logger.debug(f"Locale search path is '{path}'")
+        self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.TranslationsPath))
+        self._load_translator(locale, "mtgproxyprinter", path)
+
+    def _load_translator(self, locale: QLocale, component: str, path: str):
         translator = QTranslator(self)
-        if translator.load(locale, 'mtgproxyprinter', '_', path):
-            logger.debug("Translation loaded successfully, installing it.")
+        if translator.load(locale, component, '_', path):
+            logger.debug(f"{component} translation loaded successfully, installing it")
             self.installTranslator(translator)
         else:
-            logger.warning("Translation failed to load. No translation available?")
+            logger.warning(f"{component} translation failed to load. No translation available?")
 
     def _setup_icons(self):
         # The current icon theme name is empty by default, which causes the system-default theme, returned by
