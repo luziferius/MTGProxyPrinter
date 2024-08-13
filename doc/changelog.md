@@ -16,7 +16,7 @@
 
 ## Changed features
 
-- The deck list import wizard now supports downloading links to the Scryfall API card search at 
+- The deck list import wizard now supports downloading links from the Scryfall API card search at 
   [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
 - Support decimal values in document settings, like margins, image spacings and the card bleed width.
 - As a safety measure against DoS-attacks via loading malicious documents, limit numerical document settings
@@ -26,6 +26,10 @@
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
+
+## Fixed issues
+
+- Improved performance of the image cleanup wizard, when the user has many images of non-English cards stored on disk.
 
 # Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
 
