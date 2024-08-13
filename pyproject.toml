@@ -57,6 +57,7 @@ dev = [
     "pytest-timeout",
     "pytest-qt >= 2.0",
     "tox >= 4.0",
+    "PySide2; platform_system == 'Windows'",  # Used for lrelease: Compiling translations
 ]
 package = [
     "build",
