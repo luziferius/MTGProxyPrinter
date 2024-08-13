@@ -235,7 +235,7 @@ class AboutDialog(QDialog):
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.license_text_browser)
 
     def _setup_third_party_license_text(self):
-        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../ThirdPartyLicenses.md")
+        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../doc/ThirdPartyLicenses.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.third_party_license_text_browser)
 
     def _setup_changelog_text(self):
