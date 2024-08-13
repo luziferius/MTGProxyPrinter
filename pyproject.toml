@@ -61,6 +61,7 @@ dev = [
 package = [
     "build",
     "cx_Freeze >= 6.11.1; platform.python_implementation == 'CPython'",
+    "PySide2; platform_system == 'Windows'",  # Used for lrelease: Compiling translations
 ]
 
 

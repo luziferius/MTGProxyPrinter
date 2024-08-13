@@ -115,12 +115,27 @@ def download_new_translations(args: Namespace):
     ])
 
 
+def get_lrelease():
+    try:
+        subprocess.check_output("lrelease")
+    except FileNotFoundError:
+        print("lrelease not found on PATH. Falling back to the executable supplied by PySide2.")
+        import sys
+        exe = pathlib.Path(sys.executable)
+        venv = exe.parent.parent
+        lrelease = venv / "Lib" / "site-packages" / "PySide2" / "lrelease.exe"
+        return lrelease
+    else:
+        return "lrelease"
+
+
 def compile_translations(args: Namespace):
+    lrelease = get_lrelease()
     for source_name, target_name in LOCALES.items():
         source = TRANSLATIONS_DIR / f"mtgproxyprinter_{source_name}.ts"
         target = TRANSLATIONS_DIR / f"mtgproxyprinter_{target_name}.qm"
         subprocess.call([
-            "lrelease", "-compress",
+            lrelease, "-compress",
             source, "-qm", target
         ])
 
