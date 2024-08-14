@@ -19,6 +19,8 @@ import itertools
 import operator
 import typing
 
+from PyQt5.QtCore import QCoreApplication
+
 from mtg_proxy_printer.units_and_sizes import StringList
 
 if typing.TYPE_CHECKING:
@@ -50,16 +52,23 @@ class IllegalStateError(RuntimeError):
 
 
 class DocumentAction:
+    """Base class for modifying Document instances via the Command pattern."""
 
-    COMPARISON_ATTRIBUTES: StringList = []
+    COMPARISON_ATTRIBUTES: StringList = []  # Defines which attributes have to be compared in __eq__()
+    translate = QCoreApplication.translate
 
     @abstractmethod
     def apply(self, document: "Document") -> Self:
+        """Apply the action to the given document"""
         str(self)  # Populate the as_str cache
         return self
 
     @abstractmethod
     def undo(self, document: "Document") -> Self:
+        """
+        Reverses the application of the action to the given document, undoing its effects.
+        For this to work properly, this action must have been the most recent action applied to the document.
+        """
         pass
 
     def __eq__(self, other) -> bool:
