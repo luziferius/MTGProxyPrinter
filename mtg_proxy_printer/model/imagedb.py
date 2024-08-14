@@ -137,7 +137,8 @@ class ImageDatabase(QObject):
 
     def __init__(self, db_path: pathlib.Path = DEFAULT_DATABASE_LOCATION, parent: QObject = None):
         super().__init__(parent)
-        self.read_disk_cache_content = functools.partial(read_disk_cache_content, db_path)
+        self.read_disk_cache_content: typing.Callable[[], typing.List[CacheContent]] = functools.partial(
+            read_disk_cache_content, db_path)
         self.db_path = db_path
         _migrate_database(db_path)
         # Caches loaded images in a map from scryfall_id to image. If a file is already loaded, use the loaded instance

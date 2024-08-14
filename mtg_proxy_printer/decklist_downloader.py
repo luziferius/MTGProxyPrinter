@@ -21,6 +21,7 @@ import collections
 import csv
 import html.parser
 import io
+import urllib.parse
 from io import StringIO
 import platform
 import re
@@ -68,6 +69,11 @@ class DecklistDownloader(DownloaderBase):
     APPLICABLE_WEBSITES: str = ""
 
     def download(self, decklist_url: str) -> str:
+        """
+        Fetches the decklist from the given URL.
+        The base class handles the download including transparent decompression, and performs post-processing steps:
+        Replacing Windows-style line endings \r\n with plain \n newlines, and decoding bytes assuming utf-8 input
+        """
         logger.info(f"About to fetch deck list from {decklist_url}")
         download_url = self.map_to_download_url(decklist_url)
         logger.debug(f"Obtained download URL: {download_url}")
@@ -88,21 +94,32 @@ class DecklistDownloader(DownloaderBase):
 
     @abc.abstractmethod
     def map_to_download_url(self, decklist_url: str) -> str:
-        """Takes a URL to a deck list and returns a download URL"""
-        pass
+        """Takes a URL to a deck list and returns a download URL. By default, returns the identity"""
+        return decklist_url
 
 
 class ScryfallDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://scryfall\.com/@\w+/decks/(?P<uuid>[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12})/?"
+        r"(https://scryfall\.com/@\w+/decks/(?P<uuid>[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12})/?)|"
+        r"(https://api.scryfall.com/cards/search?.*(?P<search_param>q=.+).*)"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Scryfall (scryfall.com)"
 
     def map_to_download_url(self, decklist_url: str) -> str:
         match = self.DECKLIST_PATH_RE.match(decklist_url)
-        uuid = match.group("uuid")
-        return f"https://api.scryfall.com/decks/{uuid}/export/csv"
+        if uuid := match.group("uuid"):
+            return f"https://api.scryfall.com/decks/{uuid}/export/csv"
+        else:
+            search_parameters = decklist_url.split("search?", 1)[1]
+            parsed_parameters = dict(urllib.parse.parse_qsl(search_parameters))
+            parsed_parameters["format"] = "csv"  # Enforce CSV format
+            parsed_parameters["include_multilingual"] = "true"
+            parsed_parameters["include_extras"] = "true"
+            quoted_parameters = "&".join(
+                f"{key}={urllib.parse.quote(value)}"
+                for key, value in parsed_parameters.items())
+            return f"https://api.scryfall.com/cards/search?{quoted_parameters}"
 
 
 class MTGAZoneHTMLParser(html.parser.HTMLParser):

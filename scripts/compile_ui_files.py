@@ -142,7 +142,10 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
 
 def compile_ui_file(path: Path) -> str:
     buffer = io.StringIO()
-    PyQt5.uic.compileUi(path, buffer, from_imports=True)
+    try:
+        PyQt5.uic.compileUi(path, buffer, from_imports=True)
+    except Exception as e:
+        raise RuntimeError(f"Compilation failed for file {path}") from e
     return buffer.getvalue()
 
 
