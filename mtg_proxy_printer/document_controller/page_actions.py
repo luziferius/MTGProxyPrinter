@@ -75,11 +75,10 @@ class ActionNewPage(DocumentAction):
     @functools.cached_property
     def as_str(self):
         formatted_pages = self.translate(
-            "ActionNewPage.as_str", "{first_page_number}-{last_page_number}",
+            "ActionNewPage.as_str. Format page range", "{first_page_number}-{last_page_number}",
             "Undo/redo tooltip text. A page range, like 2 to 5, singular should only contain the first page number",
             self.count
         ).format(first_page_number=self.position+1, last_page_number=self.position+self.count)
-
         return self.translate(
             "ActionNewPage.as_str", "Add page(s) {pages}",
             "Undo/redo tooltip text", self.count
@@ -178,7 +177,7 @@ class ActionRemovePage(DocumentAction):
     def as_str(self):
         cards_removed = sum(map(len, self.removed_pages))
         formatted_pages = self.translate(
-            "ActionRemovePage.as_str", "{first_page_number}-{last_page_number}",
+            "ActionRemovePage.as_str. Format page range", "{first_page_number}-{last_page_number}",
             "Undo/redo tooltip text. A page range, like 2 to 5, singular should only contain the first page number",
             self.count
         ).format(first_page_number=self.position+1, last_page_number=self.position+self.count)

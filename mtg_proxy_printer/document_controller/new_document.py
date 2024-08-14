@@ -65,4 +65,4 @@ class ActionNewDocument(DocumentAction):
 
     @property
     def as_str(self):
-        return "Create new document"
+        return self.translate("ActionNewDocument.as_str", "Create new document", "Undo/redo tooltip text")

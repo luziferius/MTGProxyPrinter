@@ -67,5 +67,13 @@ class ActionImportDeckList(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        action = "Wipe document and import" if self.clear_document else "Import"
-        return f"{action} a deck list containing {len(self.cards)} cards"
+        if self.clear_document:
+            return self.translate(
+                "ActionImportDeckList.as_str",
+                "Wipe document and import a deck list containing %n card(s)",
+                "Undo/redo tooltip text. Option to delete the current document enabled.", len(self.cards))
+        else:
+            return self.translate(
+                "ActionImportDeckList.as_str",
+                "Import a deck list containing %n card(s)",
+                "Undo/redo tooltip text. Option to delete the current document disabled.", len(self.cards))
