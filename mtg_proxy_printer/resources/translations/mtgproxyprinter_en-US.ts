@@ -405,12 +405,12 @@ switch the selected printing.</translation>
   <context>
     <name>DeckImportWizard</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="608"/>
+      <location filename="../../ui/deck_import_wizard.py" line="639"/>
       <source>Oversized cards present</source>
       <translation>Oversized cards present</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="608"/>
+      <location filename="../../ui/deck_import_wizard.py" line="639"/>
       <source>There are %n possibly oversized cards in the deck list that may not fit into a deck, when printed out.
 
 Continue and use these cards as-is?</source>
@@ -424,16 +424,21 @@ Continue and use these cards as-is?</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="619"/>
+      <location filename="../../ui/deck_import_wizard.py" line="650"/>
       <source>Incompatible file selected</source>
       <translation>Incompatible file selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="619"/>
+      <location filename="../../ui/deck_import_wizard.py" line="650"/>
       <source>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</source>
       <translation>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="618"/>
+      <source>Import a deck list</source>
+      <translation>Import a deck list</translation>
     </message>
   </context>
   <context>
@@ -660,7 +665,7 @@ switch the selected printing.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="307"/>
+      <location filename="../../ui/dialogs.py" line="305"/>
       <source>These settings only affect the current document</source>
       <translation>These settings only affect the current document</translation>
     </message>
@@ -1224,19 +1229,19 @@ LEA DDU TC13 J21</translation>
   <context>
     <name>ImageDownloader</name>
     <message>
-      <location filename="../../model/imagedb.py" line="337"/>
+      <location filename="../../model/imagedb.py" line="338"/>
       <source>Importing deck list</source>
       <comment>Progress bar label text</comment>
       <translation>Importing deck list</translation>
     </message>
     <message>
-      <location filename="../../model/imagedb.py" line="357"/>
+      <location filename="../../model/imagedb.py" line="358"/>
       <source>Fetching missing images</source>
       <comment>Progress bar label text</comment>
       <translation>Fetching missing images</translation>
     </message>
     <message>
-      <location filename="../../model/imagedb.py" line="451"/>
+      <location filename="../../model/imagedb.py" line="452"/>
       <source>Downloading &apos;{card_name}&apos;</source>
       <comment>Progress bar label text</comment>
       <translation>Downloading &apos;{card_name}&apos;</translation>
@@ -1245,7 +1250,7 @@ LEA DDU TC13 J21</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="160"/>
+      <location filename="../../ui/dialogs.py" line="159"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>Load MTGProxyPrinter document</translation>
     </message>
@@ -1253,62 +1258,49 @@ LEA DDU TC13 J21</translation>
   <context>
     <name>LoadListPage</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="112"/>
+      <location filename="../../ui/deck_import_wizard.py" line="119"/>
       <source>Supported websites:
 {supported_sites}</source>
       <translation>Supported websites:
 {supported_sites}</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="199"/>
+      <location filename="../../ui/deck_import_wizard.py" line="214"/>
       <source>Overwrite existing deck list?</source>
       <translation>Overwrite existing deck list?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="160"/>
+      <location filename="../../ui/deck_import_wizard.py" line="168"/>
       <source>Selecting a file will overwrite the existing deck list. Continue?</source>
       <translation>Selecting a file will overwrite the existing deck list. Continue?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="168"/>
+      <location filename="../../ui/deck_import_wizard.py" line="176"/>
       <source>Select deck file</source>
       <translation>Select deck file</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="178"/>
+      <location filename="../../ui/deck_import_wizard.py" line="186"/>
       <source>All files (*)</source>
       <translation>All files (*)</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="189"/>
+      <location filename="../../ui/deck_import_wizard.py" line="197"/>
       <source>All Supported </source>
       <translation>All Supported </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="199"/>
+      <location filename="../../ui/deck_import_wizard.py" line="214"/>
       <source>Downloading a deck list will overwrite the existing deck list. Continue?</source>
       <translation>Downloading a deck list will overwrite the existing deck list. Continue?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="213"/>
-      <source>Download failed with HTTP error {http_error_code}.
-
-Verify that the URL is valid, reachable, and that the deck list is set to public.
-This program cannot download private deck lists. Please note, that setting deck lists to
-public may take a minute or two to apply.</source>
-      <translation>Download failed with HTTP error {http_error_code}.
-
-Verify that the URL is valid, reachable, and that the deck list is set to public.
-This program cannot download private deck lists. Please note, that setting deck lists to
-public may take a minute or two to apply.</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="225"/>
+      <location filename="../../ui/deck_import_wizard.py" line="238"/>
       <source>Deck list download failed</source>
       <translation>Deck list download failed</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="220"/>
+      <location filename="../../ui/deck_import_wizard.py" line="233"/>
       <source>Download failed.
 
 Check your internet connection, verify that the URL is valid, reachable, and that the deck list is set to public. This program cannot download private deck lists. If this persists, please report a bug in the issue tracker on the homepage.</source>
@@ -1317,26 +1309,21 @@ Check your internet connection, verify that the URL is valid, reachable, and tha
 Check your internet connection, verify that the URL is valid, reachable, and that the deck list is set to public. This program cannot download private deck lists. If this persists, please report a bug in the issue tracker on the homepage.</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="237"/>
+      <location filename="../../ui/deck_import_wizard.py" line="264"/>
       <source>Unable to read file content</source>
       <translation>Unable to read file content</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="237"/>
+      <location filename="../../ui/deck_import_wizard.py" line="264"/>
       <source>Unable to read the content of file {file_path} as plain text.
 Failed to load the content.</source>
       <translation>Unable to read the content of file {file_path} as plain text.
 Failed to load the content.</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="249"/>
+      <location filename="../../ui/deck_import_wizard.py" line="276"/>
       <source>Load large file?</source>
       <translation>Load large file?</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="249"/>
-      <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyways?</source>
-      <translation>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyways?</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="17"/>
@@ -1349,69 +1336,93 @@ Failed to load the content.</translation>
       <translation>Load a deck file from disk or paste deck list in the text field below</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="32"/>
-      <source>Translate deck list into:</source>
-      <translation>Translate deck list into:</translation>
-    </message>
-    <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="42"/>
       <source>Paste a link to a public deck list here. Hover to see supported sites.</source>
       <translation>Paste a link to a public deck list here. Hover to see supported sites.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="52"/>
-      <source>Download the deck list from the given link</source>
-      <translation>Download the deck list from the given link</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="55"/>
-      <source>Download</source>
-      <translation>Download</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="65"/>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="130"/>
       <source>Opens a file picker and lets you load a deck file from disk.</source>
       <translation>Opens a file picker and lets you load a deck file from disk.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="68"/>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="133"/>
       <source>Select deck list file</source>
       <translation>Select deck list file</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="78"/>
-      <source>Paste your deck list here or select a file using the button above.</source>
-      <translation>Paste your deck list here or select a file using the button above.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="105"/>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="59"/>
       <source>If checked, choose an arbitrary printing, if a unique printing is not identified.
 If unchecked, each ambiguous card is ignored and reported as unrecognized.</source>
       <translation>If checked, choose an arbitrary printing, if a unique printing is not identified.
 If unchecked, each ambiguous card is ignored and reported as unrecognized.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="109"/>
-      <source>Automatically select printings for ambiguous entries in the deck list</source>
-      <translation>Automatically select printings for ambiguous entries in the deck list</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="119"/>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="99"/>
       <source>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
 Enabling this can potentially save disk space and download volume, based on the images already downloaded.</source>
       <translation>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
 Enabling this can potentially save disk space and download volume, based on the images already downloaded.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="123"/>
-      <source>Prefer printings with already downloaded images</source>
-      <translation>Prefer printings with already downloaded images</translation>
+      <location filename="../../ui/deck_import_wizard.py" line="227"/>
+      <source>Download failed with HTTP error {http_error_code}.
+
+{bad_request_msg}</source>
+      <translation>Download failed with HTTP error {http_error_code}.
+
+{bad_request_msg}</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="52"/>
+      <source>Scryfall search query</source>
+      <translation>Scryfall search query</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="63"/>
+      <source>Guess printings for ambiguous entries in the deck list</source>
+      <translation>Choose printings for ambiguous entries in the deck list</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="79"/>
+      <source>Download result</source>
+      <translation>Download result</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="89"/>
+      <source>Paste your deck list here or use one of the actions above</source>
+      <translation>Paste your deck list here or use one of the actions above</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="103"/>
+      <source>When choosing a printing, prefer ones with already downloaded images</source>
+      <translation>When choosing a printing, prefer ones with already downloaded images</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="116"/>
+      <source>Translate deck list to:</source>
+      <translation>Translate deck list to:</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="152"/>
+      <source>View result</source>
+      <translation>View result</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="171"/>
+      <source>Download deck list</source>
+      <translation>Download deck list</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="276"/>
+      <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</source>
+      <translation>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</translation>
     </message>
   </context>
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="118"/>
+      <location filename="../../ui/dialogs.py" line="117"/>
       <source>MTGProxyPrinter document</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter document</translation>
@@ -2080,17 +2091,6 @@ Otherwise, scaling may be applied by the printer driver.</translation>
       <translation>Top margin</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="297"/>
-      <source>The document name is printed on each page and can help you keeping track
-of different printed sheets and to which deck they belong.
-
-Leave empty to disable.</source>
-      <translation>The document name is printed on each page and can help you keeping track
-of different printed sheets and to which deck they belong.
-
-Leave empty to disable.</translation>
-    </message>
-    <message>
       <location filename="../ui/page_config_widget.ui" line="306"/>
       <source>Document/deck name</source>
       <translation>Document/deck name</translation>
@@ -2142,6 +2142,17 @@ otherwise you need two cuts but require less precision hitting the exact middle.
       <location filename="../ui/page_config_widget.ui" line="412"/>
       <source>Print page numbers</source>
       <translation>Print page numbers</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="297"/>
+      <source>The document name is printed on each page and can help you keep track
+of different printed sheets and to which deck they belong.
+
+Leave empty to disable.</source>
+      <translation>The document name is printed on each page and can help you keep track
+of different printed sheets and to which deck they belong.
+
+Leave empty to disable.</translation>
     </message>
   </context>
   <context>
@@ -2215,7 +2226,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="128"/>
+      <location filename="../../ui/dialogs.py" line="127"/>
       <source>Save document as …</source>
       <translation>Save document as …</translation>
     </message>
@@ -2244,7 +2255,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SelectDeckParserPage</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="296"/>
+      <location filename="../../ui/deck_import_wizard.py" line="324"/>
       <source>Enter a Regular Expression containing at least one supported, named group.
 
 Supported named groups are: {group_names}
@@ -2267,25 +2278,9 @@ See the 'What’s this?' (?-Button) help for details.</translation>
       <translation>Select which kind of deck list you want to import.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
-      <source>Decklist files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</source>
-      <translation>Decklist files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</translation>
-    </message>
-    <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="28"/>
       <source>XMage</source>
       <translation>XMage</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
-      <source>This is a Tappedout-specific section of the deck.
-It may contain the decklist author’s buylist or anything else.</source>
-      <translation>This is a Tappedout-specific section of the deck.
-It may contain the decklist author’s buylist or anything else.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="42"/>
@@ -2301,15 +2296,6 @@ It may contain the decklist author’s buylist or anything else.</translation>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="52"/>
       <source>Magic Online</source>
       <translation>Magic Online</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="94"/>
-      <source>This is a Tappedout-specific section of the deck.
-It may contain cards that the decklist creator considers for inclusion, based on the meta
-or any other preference, like card price.</source>
-      <translation>This is a Tappedout-specific section of the deck.
-It may contain cards that the decklist creator considers for inclusion, based on the meta
-or any other preference, like card price.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="99"/>
@@ -2437,11 +2423,6 @@ as the format works for any card.</translation>
       <translation>MTG Arena</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="283"/>
-      <source>Use this regular expression to parse the deck list file. See the context help (?-Button) for more detailes.</source>
-      <translation>Use this regular expression to parse the deck list file. See the context help (?-Button) for more detailes.</translation>
-    </message>
-    <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="286"/>
       <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
@@ -2478,6 +2459,36 @@ p, li { white-space: pre-wrap; }
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="316"/>
       <source>Magic Workstation Deck Data (mwDeck)</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
+      <source>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</source>
+      <translation>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
+      <source>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</source>
+      <translation>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="94"/>
+      <source>This is a Tappedout-specific section of the deck.
+It may contain cards that the deck list creator considers for inclusion, based on the meta
+or any other preference, like card price.</source>
+      <translation>This is a Tappedout-specific section of the deck.
+It may contain cards that the deck list creator considers for inclusion, based on the meta
+or any other preference, like card price.</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="283"/>
+      <source>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</source>
+      <translation>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</translation>
     </message>
   </context>
   <context>
@@ -2543,37 +2554,32 @@ Apply the new settings to the current document?</translation>
   <context>
     <name>SummaryPage</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="441"/>
-      <source>Beware: The card list currently contains {oversized_cards} potentially oversized cards.</source>
-      <translation>Beware: The card list currently contains {oversized_cards} potentially oversized cards.</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="458"/>
+      <location filename="../../ui/deck_import_wizard.py" line="489"/>
       <source>Replace document content with the identified cards</source>
       <translation>Replace document content with the identified cards</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="461"/>
+      <location filename="../../ui/deck_import_wizard.py" line="492"/>
       <source>Append identified cards to the document</source>
       <translation>Append identified cards to the document</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="512"/>
+      <location filename="../../ui/deck_import_wizard.py" line="543"/>
       <source>Remove basic lands</source>
       <translation>Remove basic lands</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="513"/>
+      <location filename="../../ui/deck_import_wizard.py" line="544"/>
       <source>Remove all basic lands in the deck list above</source>
       <translation>Remove all basic lands in the deck list above</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="518"/>
+      <location filename="../../ui/deck_import_wizard.py" line="549"/>
       <source>Remove selected</source>
       <translation>Remove selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="519"/>
+      <location filename="../../ui/deck_import_wizard.py" line="550"/>
       <source>Remove all selected cards in the deck list above</source>
       <translation>Remove all selected cards in the deck list above</translation>
     </message>
@@ -2619,6 +2625,15 @@ If unchecked, append the cards found below to the document.</translation>
       <source>Nothing. All cards were successfully identified!</source>
       <translation>Nothing. All cards were successfully identified!</translation>
     </message>
+    <message numerus="yes">
+      <location filename="../../ui/deck_import_wizard.py" line="469"/>
+      <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
+      <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
+      <translation>
+        <numerusform>Beware: The card list currently contains %n potentially oversized card.</numerusform>
+        <numerusform>Beware: The card list currently contains %n potentially oversized cards.</numerusform>
+      </translation>
+    </message>
   </context>
   <context>
     <name>TabbedCentralWidget</name>
@@ -2651,7 +2666,7 @@ If unchecked, append the cards found below to the document.</translation>
   <context>
     <name>TappedOutCSVParser</name>
     <message>
-      <location filename="../../decklist_parser/csv_parsers.py" line="187"/>
+      <location filename="../../decklist_parser/csv_parsers.py" line="195"/>
       <source>Tappedout CSV export</source>
       <translation>Tappedout CSV export</translation>
     </message>
