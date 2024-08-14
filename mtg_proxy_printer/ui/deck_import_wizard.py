@@ -23,7 +23,7 @@ import urllib.error
 import urllib.parse
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QSize, QUrl
+    QItemSelection, QSize, QUrl, QEvent, QObject
 from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
@@ -128,6 +128,7 @@ class LoadListPage(QWizardPage):
             "currentText", ui.translate_deck_list_target_language.currentTextChanged
         )
         logger.info(f"Created {self.__class__.__name__} instance.")
+
 
     @Property(str, notify=deck_list_downloader_changed)
     def deck_list_downloader(self):
@@ -605,7 +606,7 @@ class DeckImportWizard(WizardBase):
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  language_model: QStringListModel, parent: QWidget = None, flags=Qt.WindowFlags()):
-        super().__init__(QSize(800, 600), parent, flags)
+        super().__init__(QSize(1000, 600), parent, flags)
         self.card_db = card_db
         self.select_deck_parser_page = SelectDeckParserPage(card_db, image_db, self)
         self.load_list_page = LoadListPage(language_model, self)
@@ -614,7 +615,7 @@ class DeckImportWizard(WizardBase):
         self.addPage(self.select_deck_parser_page)
         self.addPage(self.summary_page)
         self.setWindowIcon(QIcon.fromTheme("document-import"))
-        self.setWindowTitle("Import a deck list")
+        self.setWindowTitle(self.tr("Import a deck list"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def accept(self):

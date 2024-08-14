@@ -79,8 +79,7 @@ If unchecked, each ambiguous card is ignored and reported as unrecognized.</stri
       <string extracomment="Download the entered Scryfall search query as a deck list">Download result</string>
      </property>
      <property name="icon">
-      <iconset theme="edit-download">
-       <normaloff>../../../../</normaloff>../../../../</iconset>
+      <iconset theme="edit-download"/>
      </property>
     </widget>
    </item>
@@ -181,6 +180,9 @@ Enabling this can potentially save disk space and download volume, based on the 
  <tabstops>
   <tabstop>deck_list_download_url_line_edit</tabstop>
   <tabstop>deck_list_download_button</tabstop>
+  <tabstop>scryfall_search</tabstop>
+  <tabstop>scryfall_search_view_button</tabstop>
+  <tabstop>scryfall_search_download_button</tabstop>
   <tabstop>deck_list_browse_button</tabstop>
   <tabstop>deck_list</tabstop>
   <tabstop>translate_deck_list_enable</tabstop>
