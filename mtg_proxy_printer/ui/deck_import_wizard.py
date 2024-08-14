@@ -274,7 +274,8 @@ class LoadListPage(QWizardPage):
         too_large = size > LoadListPage.LARGE_FILE_THRESHOLD_BYTES
         should_load = not too_large or QMessageBox.question(
             self, self.tr("Load large file?"),
-            self.tr("The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyways?").format(file_path=file_path, formatted_size=format_size(size)),
+            self.tr("The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?").format(
+                file_path=file_path, formatted_size=format_size(size)),
             StandardButton.Yes | StandardButton.No, StandardButton.No
         ) == StandardButton.Yes
         logger.debug(f"File size: {size}, {too_large=}, {should_load=}")
@@ -465,7 +466,7 @@ class SummaryPage(QWizardPage):
         if oversized_cards:
             accept_button.setIcon(QIcon.fromTheme("data-warning"))
             accept_button.setToolTip(self.tr(
-                "Beware: The card list currently contains %n potentially oversized cards.",
+                "Beware: The card list currently contains %n potentially oversized card(s).",
                 "Warning emitted, if at least 1 card has the oversized flag set. "
                 "The Scryfall server *may* still return a regular-sized image, so not *all* printings marked "
                 "as oversized are actually so when fetched.", oversized_cards
