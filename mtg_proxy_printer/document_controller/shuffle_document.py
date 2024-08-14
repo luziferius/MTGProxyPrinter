@@ -98,4 +98,7 @@ class ActionShuffleDocument(DocumentAction):
 
     @property
     def as_str(self):
-        return "Shuffle document"
+        return self.translate(
+            "ActionShuffleDocument.as_str", "Shuffle document",
+            "Undo/redo tooltip text"
+        )
