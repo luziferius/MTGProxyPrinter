@@ -31,7 +31,7 @@ from typing import Callable, NamedTuple
 # TODO: Investigate, how systems behave in locales requiring the country as disambiguation, like en or zh.
 LOCALES = {
     "de-DE": "de",
-    "en-GB": "en_GB",
+#    "en-GB": "en_GB",
     "en-US": "en_US",
     "es-ES": "es",
     "fr-FR": "fr",
