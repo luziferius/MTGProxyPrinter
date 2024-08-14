@@ -128,4 +128,6 @@ class ActionEditDocumentSettings(DocumentAction):
 
     @property
     def as_str(self):
-        return "Update document settings"
+        return self.translate(
+            "ActionEditDocumentSettings.as_str", "Update document settings", "Undo/redo tooltip text"
+        )
