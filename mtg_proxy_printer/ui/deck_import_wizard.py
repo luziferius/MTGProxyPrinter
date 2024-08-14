@@ -465,13 +465,16 @@ class SummaryPage(QWizardPage):
         if oversized_cards:
             accept_button.setIcon(QIcon.fromTheme("data-warning"))
             accept_button.setToolTip(self.tr(
-                "Beware: The card list currently contains {oversized_cards} potentially oversized cards."
-            ).format(oversized_cards=oversized_cards))
+                "Beware: The card list currently contains %n potentially oversized cards.",
+                "Warning emitted, if at least 1 card has the oversized flag set. "
+                "The Scryfall server *may* still return a regular-sized image, so not *all* printings marked "
+                "as oversized are actually so when fetched.", oversized_cards
+            ))
         elif self.field("should_replace_document"):
             accept_button.setIcon(QIcon.fromTheme("document-replace"))
             accept_button.setToolTip(self.tr("Replace document content with the identified cards"))
         else:
-            accept_button.setIcon(QIcon())
+            accept_button.setIcon(QIcon.fromTheme("dialog-ok"))
             accept_button.setToolTip(self.tr("Append identified cards to the document"))
 
     @Slot(bool)
