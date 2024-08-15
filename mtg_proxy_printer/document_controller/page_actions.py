@@ -74,15 +74,11 @@ class ActionNewPage(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        formatted_pages = self.translate(
-            "ActionNewPage.as_str. Format page range", "{first_page_number}-{last_page_number}",
-            "Undo/redo tooltip text. A page range, like 2 to 5, singular should only contain the first page number",
-            self.count
-        ).format(first_page_number=self.position+1, last_page_number=self.position+self.count)
+        pages = self._format_number_range(self.position+1, self.position+self.count)
         return self.translate(
             "ActionNewPage.as_str", "Add page(s) {pages}",
             "Undo/redo tooltip text", self.count
-        ).format(pages=formatted_pages)
+        ).format(pages=pages)
 
     @staticmethod
     def _validate_content_does_not_create_mixed_pages(content: ContentType):
@@ -176,16 +172,12 @@ class ActionRemovePage(DocumentAction):
     @functools.cached_property
     def as_str(self):
         cards_removed = sum(map(len, self.removed_pages))
-        formatted_pages = self.translate(
-            "ActionRemovePage.as_str. Format page range", "{first_page_number}-{last_page_number}",
-            "Undo/redo tooltip text. A page range, like 2 to 5, singular should only contain the first page number",
-            self.count
-        ).format(first_page_number=self.position+1, last_page_number=self.position+self.count)
+        formatted_pages = self._format_number_range(self.position+1, self.position+self.count)
         formatted_card_count = self.translate(
-            "ActionRemovePage.as_str", "%n card(s) total",
+            "ActionRemovePage.as_str1. Card total", "%n card(s) total",
             "Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}", cards_removed
         )
         return self.translate(
-            "ActionRemovePage.as_str", "Remove page {formatted_pages} containing {formatted_card_count}",
+            "ActionRemovePage.as_str2", "Remove page {formatted_pages} containing {formatted_card_count}",
             "Undo/redo tooltip text", self.count
         ).format(formatted_pages=formatted_pages, formatted_card_count=formatted_card_count)

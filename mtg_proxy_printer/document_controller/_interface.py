@@ -94,5 +94,15 @@ class DocumentAction:
     def __str__(self):
         return self.as_str
 
+    def _format_number_range(self, first: int, last: int) -> str:
+        """
+        Formats an inclusive range. If first == last, returns that number as a string.
+        Otherwise, returns a translation-enabled range first-last
+        """
+        if first == last:
+            return str(first)
+        return self.translate(
+            "DocumentAction", "{first}-{last}", "Inclusive, formatted number range, from first to last")
+
 
 ActionList = typing.List[DocumentAction]

@@ -154,8 +154,7 @@ class ActionAddCard(DocumentAction):
             page_ranges = to_list_of_ranges(all_pages)
             # Human-readable representation: pages are comma-separated,
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
-            target = ", ".join(
-                (f"{lower}-{upper}" if lower < upper else f"{lower}") for lower, upper in page_ranges)
+            target = ", ".join(itertools.starmap(self._format_number_range, page_ranges))
         return self.translate(
             "ActionAddCard.as_str", "Add {count} × {card_display_string} to page {target}",
             "Undo/redo tooltip text. Plural form refers to {target}, not {count}. "
