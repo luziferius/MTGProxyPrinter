@@ -147,7 +147,7 @@ class ActionAddCard(DocumentAction):
         else:
             # Cards added to multiple existing and/or new pages
             existing_pages = ((page + 1) for page, _ in self.added_cards_to_existing_pages)
-            new_pages = range(self.first_added_page, self.first_added_page+self.added_new_pages) \
+            new_pages = range(self.first_added_page+1, self.first_added_page+self.added_new_pages+1) \
                 if self.first_added_page else []
             all_pages = list(itertools.chain(existing_pages, new_pages))
             n = len(all_pages)
