@@ -117,6 +117,7 @@ class LoadSaveDialog(QFileDialog):
         filter_text = self.tr("MTGProxyPrinter document", "Human-readable file type name") \
             + f" (*.{DEFAULT_SAVE_SUFFIX})"
         self.setNameFilter(filter_text)
+        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
@@ -130,7 +131,6 @@ class SaveDocumentAsDialog(LoadSaveDialog):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
         self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
@@ -161,7 +161,6 @@ class LoadDocumentDialog(LoadSaveDialog):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
-        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
         self.setFileMode(QFileDialog.FileMode.ExistingFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
