@@ -114,7 +114,7 @@ class LoadSaveDialog(QFileDialog):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(*args, **kwargs)
-        filter_text = self.tr(f"MTGProxyPrinter document", "Human-readable file type name") \
+        filter_text = self.tr("MTGProxyPrinter document", "Human-readable file type name") \
             + f" (*.{DEFAULT_SAVE_SUFFIX})"
         self.setNameFilter(filter_text)
 
