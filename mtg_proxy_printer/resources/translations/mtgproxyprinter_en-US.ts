@@ -90,6 +90,150 @@ Project Website: [{application_name} home page]({application_home_page})
     </message>
   </context>
   <context>
+    <name>ActionAddCard.as_str</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/card_actions.py" line="158"/>
+      <source>Add {count} × {card_display_string} to page {target}</source>
+      <comment>Undo/redo tooltip text. Plural form refers to {target}, not {count}. {target} can be multiple ranges of multiple pages each</comment>
+      <translation>
+        <numerusform>Add {count} × {card_display_string} to page {target}</numerusform>
+        <numerusform>Add {count} × {card_display_string} to pages {target}</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionCompactDocument.as_str</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/compact_document.py" line="108"/>
+      <source>Compact document, removing %n page(s)</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>
+        <numerusform>Compact document, removing %n page</numerusform>
+        <numerusform>Compact document, removing %n pages</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionEditDocumentSettings.as_str</name>
+    <message>
+      <location filename="../../document_controller/edit_document_settings.py" line="131"/>
+      <source>Update document settings</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>Update document settings</translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionImportDeckList.as_str</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/import_deck_list.py" line="71"/>
+      <source>Wipe document and import a deck list containing %n card(s)</source>
+      <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
+      <translation>
+        <numerusform>Wipe document and import a deck list containing %n card</numerusform>
+        <numerusform>Wipe document and import a deck list containing %n cards</numerusform>
+      </translation>
+    </message>
+    <message numerus="yes">
+      <location filename="../../document_controller/import_deck_list.py" line="76"/>
+      <source>Import a deck list containing %n card(s)</source>
+      <comment>Undo/redo tooltip text. Option to delete the current document disabled.</comment>
+      <translation>
+        <numerusform>Import a deck list containing %n card</numerusform>
+        <numerusform>Import a deck list containing %n cards</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionLoadDocument.as_str1. Card total</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/load_document.py" line="71"/>
+      <source>with %n card(s) total</source>
+      <comment>Undo/redo tooltip text. Will be inserted as {cards_total}</comment>
+      <translation>
+        <numerusform>with %n card total</numerusform>
+        <numerusform>with %n cards total</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionLoadDocument.as_str2</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/load_document.py" line="75"/>
+      <source>Load document from &apos;{save_path}&apos;,
+containing %n page(s) {cards_total}</source>
+      <comment>Undo/redo tooltip text.</comment>
+      <translation>
+        <numerusform>Load document from &apos;{save_path}&apos;,
+containing %n page {cards_total}</numerusform>
+        <numerusform>Load document from &apos;{save_path}&apos;,
+containing %n pages {cards_total}</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionMoveCards.as_str</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/move_cards.py" line="139"/>
+      <source>Move %n card(s) from page {source_page} to {target_page}</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>
+        <numerusform>Move %n card from page {source_page} to {target_page}</numerusform>
+        <numerusform>Move %n cards from page {source_page} to {target_page}</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionNewDocument.as_str</name>
+    <message>
+      <location filename="../../document_controller/new_document.py" line="68"/>
+      <source>Create new document</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>Create new document</translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionRemoveCards.as_str</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/card_actions.py" line="216"/>
+      <source>Remove %n card(s) from page {page_number}</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>
+        <numerusform>Remove %n card from page {page_number}</numerusform>
+        <numerusform>Remove %n cards from page {page_number}</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionRemovePage.as_str1. Card total</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/page_actions.py" line="176"/>
+      <source>%n card(s) total</source>
+      <comment>Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}</comment>
+      <translation>
+        <numerusform>%n card total</numerusform>
+        <numerusform>%n cards total</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionReplaceCard.as_str</name>
+    <message>
+      <location filename="../../document_controller/replace_card.py" line="98"/>
+      <source>Replace card {old_card} on page {page_number} with {new_card}</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>Replace card {old_card} on page {page_number} with {new_card}</translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionShuffleDocument.as_str</name>
+    <message>
+      <location filename="../../document_controller/shuffle_document.py" line="101"/>
+      <source>Shuffle document</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>Shuffle document</translation>
+    </message>
+  </context>
+  <context>
     <name>CardFilterPage</name>
     <message>
       <location filename="../ui/cache_cleanup_wizard/card_filter_page.ui" line="14"/>
@@ -243,6 +387,12 @@ switch the selected printing.</translation>
       <translation>Add copies</translation>
     </message>
     <message>
+      <location filename="../../ui/central_widget.py" line="178"/>
+      <source>Add copies of {card_name}</source>
+      <comment>Asks the user for a number. Does not need plural forms</comment>
+      <translation>Add copies of {card_name}</translation>
+    </message>
+    <message>
       <location filename="../../ui/central_widget.py" line="204"/>
       <source>Export image</source>
       <translation>Export image</translation>
@@ -256,12 +406,6 @@ switch the selected printing.</translation>
       <location filename="../../ui/central_widget.py" line="219"/>
       <source>Images (*.png *.bmp *.jpg)</source>
       <translation>Images (*.png *.bmp *.jpg)</translation>
-    </message>
-    <message>
-      <location filename="../../ui/central_widget.py" line="178"/>
-      <source>Add copies of {card_name}</source>
-      <comment>Asks the user for a number. Does not need plural forms</comment>
-      <translation>Add copies of {card_name}</translation>
     </message>
   </context>
   <context>
@@ -405,6 +549,11 @@ switch the selected printing.</translation>
   <context>
     <name>DeckImportWizard</name>
     <message>
+      <location filename="../../ui/deck_import_wizard.py" line="618"/>
+      <source>Import a deck list</source>
+      <translation>Import a deck list</translation>
+    </message>
+    <message>
       <location filename="../../ui/deck_import_wizard.py" line="639"/>
       <source>Oversized cards present</source>
       <translation>Oversized cards present</translation>
@@ -434,11 +583,6 @@ Continue and use these cards as-is?</numerusform>
 Maybe you selected the wrong deck list type?</source>
       <translation>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="618"/>
-      <source>Import a deck list</source>
-      <translation>Import a deck list</translation>
     </message>
   </context>
   <context>
@@ -520,6 +664,13 @@ but offers the removal via a single button click.</translation>
       <translation>These options control the deck list import function.</translation>
     </message>
     <message>
+      <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="89"/>
+      <source>Not all deck list formats always contain complete data.
+These options set the default behavior when encountering ambiguous card</source>
+      <translation>Not all deck list formats always contain complete data.
+These options set the default behavior when encountering ambiguous card</translation>
+    </message>
+    <message>
       <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="93"/>
       <source>Control print selection in ambiguous cases</source>
       <translation>Control print selection in ambiguous cases</translation>
@@ -569,13 +720,6 @@ With some deck list formats, this option is always enabled.</translation>
       <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="144"/>
       <source>Path to a directory</source>
       <translation>Path to a directory</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="89"/>
-      <source>Not all deck list formats always contain complete data.
-These options set the default behavior when encountering ambiguous card</source>
-      <translation>Not all deck list formats always contain complete data.
-These options set the default behavior when encountering ambiguous card</translation>
     </message>
   </context>
   <context>
@@ -660,6 +804,15 @@ switch the selected printing.</translation>
         <numerusform>%n× {name}</numerusform>
         <numerusform>%n× {name}</numerusform>
       </translation>
+    </message>
+  </context>
+  <context>
+    <name>DocumentAction</name>
+    <message>
+      <location filename="../../document_controller/_interface.py" line="104"/>
+      <source>{first}-{last}</source>
+      <comment>Inclusive, formatted number range, from first to last</comment>
+      <translation>{first}-{last}</translation>
     </message>
   </context>
   <context>
@@ -1295,6 +1448,15 @@ LEA DDU TC13 J21</translation>
       <translation>Downloading a deck list will overwrite the existing deck list. Continue?</translation>
     </message>
     <message>
+      <location filename="../../ui/deck_import_wizard.py" line="227"/>
+      <source>Download failed with HTTP error {http_error_code}.
+
+{bad_request_msg}</source>
+      <translation>Download failed with HTTP error {http_error_code}.
+
+{bad_request_msg}</translation>
+    </message>
+    <message>
       <location filename="../../ui/deck_import_wizard.py" line="238"/>
       <source>Deck list download failed</source>
       <translation>Deck list download failed</translation>
@@ -1326,6 +1488,11 @@ Failed to load the content.</translation>
       <translation>Load large file?</translation>
     </message>
     <message>
+      <location filename="../../ui/deck_import_wizard.py" line="276"/>
+      <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</source>
+      <translation>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="17"/>
       <source>Import a deck list for printing</source>
       <translation>Import a deck list for printing</translation>
@@ -1341,14 +1508,9 @@ Failed to load the content.</translation>
       <translation>Paste a link to a public deck list here. Hover to see supported sites.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="130"/>
-      <source>Opens a file picker and lets you load a deck file from disk.</source>
-      <translation>Opens a file picker and lets you load a deck file from disk.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="133"/>
-      <source>Select deck list file</source>
-      <translation>Select deck list file</translation>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="52"/>
+      <source>Scryfall search query</source>
+      <translation>Scryfall search query</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="59"/>
@@ -1356,27 +1518,6 @@ Failed to load the content.</translation>
 If unchecked, each ambiguous card is ignored and reported as unrecognized.</source>
       <translation>If checked, choose an arbitrary printing, if a unique printing is not identified.
 If unchecked, each ambiguous card is ignored and reported as unrecognized.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="99"/>
-      <source>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
-Enabling this can potentially save disk space and download volume, based on the images already downloaded.</source>
-      <translation>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
-Enabling this can potentially save disk space and download volume, based on the images already downloaded.</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="227"/>
-      <source>Download failed with HTTP error {http_error_code}.
-
-{bad_request_msg}</source>
-      <translation>Download failed with HTTP error {http_error_code}.
-
-{bad_request_msg}</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="52"/>
-      <source>Scryfall search query</source>
-      <translation>Scryfall search query</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="63"/>
@@ -1394,6 +1535,13 @@ Enabling this can potentially save disk space and download volume, based on the 
       <translation>Paste your deck list here or use one of the actions above</translation>
     </message>
     <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="99"/>
+      <source>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
+Enabling this can potentially save disk space and download volume, based on the images already downloaded.</source>
+      <translation>When an exact printing is not determined or card translation is requested, choose a printing that is already downloaded, if possible.
+Enabling this can potentially save disk space and download volume, based on the images already downloaded.</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="103"/>
       <source>When choosing a printing, prefer ones with already downloaded images</source>
       <translation>When choosing a printing, prefer ones with already downloaded images</translation>
@@ -1404,6 +1552,16 @@ Enabling this can potentially save disk space and download volume, based on the 
       <translation>Translate deck list to:</translation>
     </message>
     <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="130"/>
+      <source>Opens a file picker and lets you load a deck file from disk.</source>
+      <translation>Opens a file picker and lets you load a deck file from disk.</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/load_list_page.ui" line="133"/>
+      <source>Select deck list file</source>
+      <translation>Select deck list file</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="152"/>
       <source>View result</source>
       <translation>View result</translation>
@@ -1412,11 +1570,6 @@ Enabling this can potentially save disk space and download volume, based on the 
       <location filename="../ui/deck_import_wizard/load_list_page.ui" line="171"/>
       <source>Download deck list</source>
       <translation>Download deck list</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="276"/>
-      <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</source>
-      <translation>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</translation>
     </message>
   </context>
   <context>
@@ -1571,6 +1724,20 @@ Reported failure reason: {reason}</translation>
       <location filename="../../ui/main_window.py" line="399"/>
       <source>Unrecognized cards in loaded document found</source>
       <translation>Unrecognized cards in loaded document found</translation>
+    </message>
+    <message numerus="yes">
+      <location filename="../../ui/main_window.py" line="399"/>
+      <source>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
+
+The locally stored card data may be outdated or the document was tampered with.</source>
+      <translation>
+        <numerusform>Skipped %n unrecognized card in the loaded document. Saving the document will remove this entry permanently.
+
+The locally stored card data may be outdated or the document was tampered with.</numerusform>
+        <numerusform>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
+
+The locally stored card data may be outdated or the document was tampered with.</numerusform>
+      </translation>
     </message>
     <message>
       <location filename="../../ui/main_window.py" line="409"/>
@@ -1842,20 +2009,6 @@ use this to reduce the initial deck shuffling required</translation>
       <source>Redo</source>
       <translation>Redo</translation>
     </message>
-    <message numerus="yes">
-      <location filename="../../ui/main_window.py" line="399"/>
-      <source>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
-
-The locally stored card data may be outdated or the document was tampered with.</source>
-      <translation>
-        <numerusform>Skipped %n unrecognized card in the loaded document. Saving the document will remove this entry permanently.
-
-The locally stored card data may be outdated or the document was tampered with.</numerusform>
-        <numerusform>Skipped %n unrecognized cards in the loaded document. Saving the document will remove these entries permanently.
-
-The locally stored card data may be outdated or the document was tampered with.</numerusform>
-      </translation>
-    </message>
   </context>
   <context>
     <name>PDFSettingsPage</name>
@@ -2091,6 +2244,17 @@ Otherwise, scaling may be applied by the printer driver.</translation>
       <translation>Top margin</translation>
     </message>
     <message>
+      <location filename="../ui/page_config_widget.ui" line="297"/>
+      <source>The document name is printed on each page and can help you keep track
+of different printed sheets and to which deck they belong.
+
+Leave empty to disable.</source>
+      <translation>The document name is printed on each page and can help you keep track
+of different printed sheets and to which deck they belong.
+
+Leave empty to disable.</translation>
+    </message>
+    <message>
       <location filename="../ui/page_config_widget.ui" line="306"/>
       <source>Document/deck name</source>
       <translation>Document/deck name</translation>
@@ -2142,17 +2306,6 @@ otherwise you need two cuts but require less precision hitting the exact middle.
       <location filename="../ui/page_config_widget.ui" line="412"/>
       <source>Print page numbers</source>
       <translation>Print page numbers</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="297"/>
-      <source>The document name is printed on each page and can help you keep track
-of different printed sheets and to which deck they belong.
-
-Leave empty to disable.</source>
-      <translation>The document name is printed on each page and can help you keep track
-of different printed sheets and to which deck they belong.
-
-Leave empty to disable.</translation>
     </message>
   </context>
   <context>
@@ -2278,9 +2431,25 @@ See the 'What’s this?' (?-Button) help for details.</translation>
       <translation>Select which kind of deck list you want to import.</translation>
     </message>
     <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
+      <source>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</source>
+      <translation>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="28"/>
       <source>XMage</source>
       <translation>XMage</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
+      <source>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</source>
+      <translation>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="42"/>
@@ -2296,6 +2465,15 @@ See the 'What’s this?' (?-Button) help for details.</translation>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="52"/>
       <source>Magic Online</source>
       <translation>Magic Online</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="94"/>
+      <source>This is a Tappedout-specific section of the deck.
+It may contain cards that the deck list creator considers for inclusion, based on the meta
+or any other preference, like card price.</source>
+      <translation>This is a Tappedout-specific section of the deck.
+It may contain cards that the deck list creator considers for inclusion, based on the meta
+or any other preference, like card price.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="99"/>
@@ -2423,6 +2601,11 @@ as the format works for any card.</translation>
       <translation>MTG Arena</translation>
     </message>
     <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="283"/>
+      <source>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</source>
+      <translation>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="286"/>
       <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
@@ -2459,36 +2642,6 @@ p, li { white-space: pre-wrap; }
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="316"/>
       <source>Magic Workstation Deck Data (mwDeck)</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
-      <source>Deck list files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</source>
-      <translation>Deck list files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
-      <source>This is a Tappedout-specific section of the deck.
-It may contain the deck list author’s buy-list or anything else.</source>
-      <translation>This is a Tappedout-specific section of the deck.
-It may contain the deck list author’s buy-list or anything else.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="94"/>
-      <source>This is a Tappedout-specific section of the deck.
-It may contain cards that the deck list creator considers for inclusion, based on the meta
-or any other preference, like card price.</source>
-      <translation>This is a Tappedout-specific section of the deck.
-It may contain cards that the deck list creator considers for inclusion, based on the meta
-or any other preference, like card price.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="283"/>
-      <source>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</source>
-      <translation>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</translation>
     </message>
   </context>
   <context>
@@ -2553,6 +2706,15 @@ Apply the new settings to the current document?</translation>
   </context>
   <context>
     <name>SummaryPage</name>
+    <message numerus="yes">
+      <location filename="../../ui/deck_import_wizard.py" line="469"/>
+      <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
+      <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
+      <translation>
+        <numerusform>Beware: The card list currently contains %n potentially oversized card.</numerusform>
+        <numerusform>Beware: The card list currently contains %n potentially oversized cards.</numerusform>
+      </translation>
+    </message>
     <message>
       <location filename="../../ui/deck_import_wizard.py" line="489"/>
       <source>Replace document content with the identified cards</source>
@@ -2624,15 +2786,6 @@ If unchecked, append the cards found below to the document.</translation>
       <location filename="../ui/deck_import_wizard/parser_result_page.ui" line="85"/>
       <source>Nothing. All cards were successfully identified!</source>
       <translation>Nothing. All cards were successfully identified!</translation>
-    </message>
-    <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="469"/>
-      <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
-      <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
-      <translation>
-        <numerusform>Beware: The card list currently contains %n potentially oversized card.</numerusform>
-        <numerusform>Beware: The card list currently contains %n potentially oversized cards.</numerusform>
-      </translation>
     </message>
   </context>
   <context>
