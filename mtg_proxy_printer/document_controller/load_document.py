@@ -76,4 +76,4 @@ class ActionLoadDocument(DocumentAction):
             "ActionLoadDocument.as_str",
             "Load document from '{save_path}',\ncontaining %n page(s) {cards_total}",
             "Undo/redo tooltip text.", page_count
-        ).format(cards_total=cards_total)
+        ).format(save_path=self.save_path, cards_total=cards_total)
