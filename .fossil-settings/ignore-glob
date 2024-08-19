@@ -26,5 +26,6 @@ mtg_proxy_printer/ui/generated*
 *.spec
 *.pdf
 *.mtgproxies
-requirements*.txt
+mtg_proxy_printer/resources/translations/*.qm
+Screenshots/*.txt
 *.png

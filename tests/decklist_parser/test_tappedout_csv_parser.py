@@ -21,21 +21,36 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
 from mtg_proxy_printer.decklist_parser.csv_parsers import TappedOutCSVParser
+from mtg_proxy_printer.decklist_downloader import DecklistDownloader
 
-from tests.helpers import fill_card_database_with_json_cards
+from tests.helpers import fill_card_database_with_json_cards, SHOULD_SKIP_NETWORK_TESTS
 
 StringList = typing.List[str]
-CSV_HEADER = "Board,Qty,Name,Printing,Foil,Alter,Signed,Condition,Language,Commander"
+CSV_HEADER = "Board,Qty,Name,Printing,Foil,Alter,Signed,Condition,Language"
 
 
 def append_to_header(plain_deck_list: str) -> str:
     return f"{CSV_HEADER}\n{plain_deck_list}"
 
 
+@pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
+@pytest.mark.parametrize("url, header", [
+    ("https://tappedout.net/mtg-decks/mtgproxyprinter-test-deck/", CSV_HEADER),
+    # TODO: Commander decks have an additional column for Commander designation
+])
+def test_local_header_conforms_to_current_scryfall_return_data(url: str, header: str):
+    """Verifies that the hard-coded CSV headers above match what the API returns"""
+    downloader = DecklistDownloader()
+    result = downloader.download(url)
+    expected = result.splitlines()[0]
+    assert_that(
+        header, is_(equal_to(expected)), "CSV header format changed on Tappedout"
+    )
+
 def generate_test_cases_for_translation_and_replacement():
     yield (
         ["german_Back_to_Basics", "english_Back_to_Basics"],
-        append_to_header("main,1,Back to Basics,USG,,,,,de,"),
+        append_to_header("main,1,Back to Basics,USG,,,,,de"),
         CardIdentificationData("en", "Back to Basics", is_front=True,)
     )
 
@@ -90,7 +105,7 @@ def _get_expected_card_from_database(card_db: CardDatabase, expected_card: CardI
 def generate_test_cases_for_test_card_identification_works_in_simple_cases():
     yield (
         ["english_basic_Forest", "english_basic_Forest_2"],
-        append_to_header("main,1,Forest,ANB,,,,,en,"),
+        append_to_header("main,1,Forest,ANB,,,,,en"),
         CardIdentificationData("en", "Forest", scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True,)
     )
 
@@ -119,7 +134,7 @@ def test_card_identification_works_in_simple_cases(
     "cards_to_import, deck_list", [
         (
             ["english_basic_Forest"],
-            append_to_header("main,invalid_count,Forest,ANB,,,,,en,"),
+            append_to_header("main,invalid_count,Forest,ANB,,,,,en"),
         ),
     ]
 )

@@ -61,8 +61,10 @@ bool_to_check_state: typing.Dict[typing.Optional[bool], CheckState] = {
 }
 check_state_to_bool_str: typing.Dict[CheckState, str] = {v: str(k) for k, v in bool_to_check_state.items()}
 QueuedConnection = Qt.ConnectionType.QueuedConnection
+ItemDataRole = Qt.ItemDataRole
 logger = get_logger(__name__)
 del get_logger
+
 
 class PageMetadata(typing.NamedTuple):
     text: str
@@ -74,7 +76,7 @@ class Page(QWidget):
     """The base class for settings page widgets. Defines the API used by the settings window"""
 
     def display_item(self) -> typing.Sequence[QStandardItem]:
-        data = self.display_metadata
+        data = self.display_metadata()
         item = QStandardItem(data.text)
         if data.icon_name:
             item.setIcon(QIcon.fromTheme(data.icon_name))
@@ -85,7 +87,6 @@ class Page(QWidget):
         item.setSizeHint(size)
         return item,
 
-    @property
     @abstractmethod
     def display_metadata(self) -> PageMetadata:
         return PageMetadata("FIXME: FILL DATA", None, "FIXME: FILL DATA")
@@ -114,7 +115,12 @@ class Page(QWidget):
 class DebugSettingsPage(Page):
 
     requested_card_download = Signal(pathlib.Path)
-    display_metadata = PageMetadata("Debug settings", None, "Things useful for investigating bugs in the application")
+
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(
+            self.tr("Debug settings"), None,
+            self.tr("Things useful for investigating bugs in the application")
+        )
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -167,7 +173,7 @@ class DebugSettingsPage(Page):
     def on_debug_download_card_data_as_file_clicked(self):
         logger.debug("User about to download the card data from Scryfall to a file.")
         location = QFileDialog.getExistingDirectory(
-            self, "Select download location",
+            self, self.tr("Select download location"),
             QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory))
         if not location:
             logger.debug("User cancelled location selection. Not downloading.")
@@ -175,8 +181,10 @@ class DebugSettingsPage(Page):
         if not (path := pathlib.Path(location)).is_dir():
             logger.warning("User selected something that is not a directory. Aborting.")
             QMessageBox.critical(
-                self, "Selected location is not a directory",
-                f"Cannot write the card data at the given location, because it is not a directory:\n{location}",
+                self, self.tr("Selected location is not a directory"),
+                self.tr(
+                    "Cannot write the card data at the given location, because it is not a directory:\n{location}"
+                ).format(location=location),
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Download card data to file {path}")
@@ -186,9 +194,9 @@ class DebugSettingsPage(Page):
     def on_debug_import_card_data_from_file_clicked(self):
         logger.debug("User about to import card tata from a previously downloaded file.")
         location, _ = QFileDialog.getOpenFileName(
-            self, "Import previously downloaded card data obtained from Scryfall",
+            self, self.tr("Import previously downloaded card data obtained from Scryfall"),
             QStandardPaths.locate(QStandardPaths.DownloadLocation, "", QStandardPaths.LocateDirectory),
-            "Scryfall card data (*.json, *.json.gz)")
+            self.tr("Scryfall card data (*.json, *.json.gz)"))
         logger.info(f"{location=}")
         if not location:
             logger.debug("User cancelled file selection. Not importing.")
@@ -196,8 +204,8 @@ class DebugSettingsPage(Page):
         if not (path := pathlib.Path(location)).is_file():
             logger.warning("User selected something that is not a file. Aborting.")
             QMessageBox.critical(
-                self, "Selected location is not a file",
-                f"Cannot find the selected file:\n{location}",
+                self, self.tr("Selected location is not a file"),
+                self.tr("Cannot find the selected file:\n{location}").format(location=location),
                 QMessageBox.StandardButton.Ok, QMessageBox.StandardButton.Ok)
             return
         logger.info(f"Import card data from {path}")
@@ -206,7 +214,9 @@ class DebugSettingsPage(Page):
 
 
 class DecklistImportSettingsPage(Page):
-    display_metadata = PageMetadata("Deck list import", "edit-download", "Configure the deck list importer")
+
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(self.tr("Deck list import"), "edit-download", self.tr("Configure the deck list importer"))
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -216,7 +226,7 @@ class DecklistImportSettingsPage(Page):
     @Slot()
     def on_deck_list_search_path_browse_button_clicked(self):
         logger.debug("User about to select a new default deck list search path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default deck list search path"):
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default deck list search path")):
             logger.info("User selected a new default deck list search path.")
             self.ui.deck_list_search_path.setText(location)
 
@@ -271,16 +281,24 @@ class DecklistImportSettingsPage(Page):
 
 
 class GeneralSettingsPage(Page):
-    display_metadata = PageMetadata("General settings", "configure")
+
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(self.tr("General settings"), "configure")
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.ui = ui = Ui_GeneralSettingsPage()
         self.language_model = QStringListModel([], self)
         ui.setupUi(self)
-        ui.add_card_widget_style_combo_box.addItem("Horizontal layout", "horizontal")
-        ui.add_card_widget_style_combo_box.addItem("Columnar layout", "columnar")
-        ui.add_card_widget_style_combo_box.addItem("Tabbed layout", "tabbed")
+        ui.add_card_widget_style_combo_box.addItem(self.tr("Horizontal layout"), "horizontal")
+        ui.add_card_widget_style_combo_box.addItem(self.tr("Columnar layout"), "columnar")
+        ui.add_card_widget_style_combo_box.addItem(self.tr("Tabbed layout"), "tabbed")
+        for display_text, language_code in [
+            (self.tr("System default"), ""),
+            (self.tr("English (US)"), "en_US"),
+            (self.tr("German"), "de"),
+        ]:
+            ui.application_language_combo_box.addItem(display_text, language_code)
 
     def set_language_model(self, model: QStringListModel):
         self.language_model = model
@@ -289,21 +307,23 @@ class GeneralSettingsPage(Page):
     @Slot()
     def on_document_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default document save path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default save location"):
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default save location")):
             logger.info("User selected a new default document save path.")
             self.ui.document_save_path.setText(location)
 
     def load(self, settings: ConfigParser):
-        self._load_layout_settings(settings)
+        self._load_look_and_feel_settings(settings)
         self._load_update_settings(settings)
         self._load_images_settings(settings)
         self._load_path_settings(settings)
 
-    def _load_layout_settings(self, settings: ConfigParser):
+    def _load_look_and_feel_settings(self, settings: ConfigParser):
         ui = self.ui
         gui_section = settings["gui"]
         search_layout_index = ui.add_card_widget_style_combo_box.findData(gui_section["central-widget-layout"])
         ui.add_card_widget_style_combo_box.setCurrentIndex(search_layout_index)
+        language_index = ui.application_language_combo_box.findData(gui_section["language"])
+        ui.application_language_combo_box.setCurrentIndex(language_index)
 
     def _load_update_settings(self, settings: ConfigParser):
         application_section = settings["application"]
@@ -356,7 +376,9 @@ class GeneralSettingsPage(Page):
     def _save_look_and_feel_settings(self):
         section = mtg_proxy_printer.settings.settings["gui"]
         section["central-widget-layout"] = self.ui.add_card_widget_style_combo_box.currentData(
-            Qt.ItemDataRole.UserRole)
+            ItemDataRole.UserRole)
+        section["language"] = self.ui.application_language_combo_box.currentData(
+            ItemDataRole.UserRole)
 
     def _save_images_settings(self):
         section = mtg_proxy_printer.settings.settings["images"]
@@ -379,8 +401,11 @@ class GeneralSettingsPage(Page):
 
         section = settings["gui"]
         if section["central-widget-layout"] != ui.add_card_widget_style_combo_box.currentData(
-                Qt.ItemDataRole.UserRole):
+                ItemDataRole.UserRole):
             highlight_widget(ui.add_card_widget_style_combo_box)
+        if section["language"] != ui.application_language_combo_box.currentData(
+                ItemDataRole.UserRole):
+            highlight_widget(ui.application_language_combo_box)
 
         section = settings["images"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
@@ -403,7 +428,9 @@ class GeneralSettingsPage(Page):
 
 
 class HidePrintingsPage(Page):
-    display_metadata = PageMetadata("Hide printings", "view-hidden", "Hide unwanted printings")
+
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(self.tr("Hide printings"), "view-hidden", self.tr("Hide unwanted printings"))
 
     error_occurred = Signal(str)
     long_running_process_begins = Signal(int, str)
@@ -444,16 +471,19 @@ class HidePrintingsPage(Page):
 
 
 class DefaultDocumentLayoutSettingsPage(Page):
-    display_metadata = PageMetadata(
-        "Default document settings", "document-properties",
-        "Set the default document settings used for new documents,\nlike page size, margins, spacings, etc."
-    )
+
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(
+            self.tr("Default document settings"), "document-properties",
+            self.tr("Set the default document settings used for new documents,\n"
+                    "like page size, margins, spacings, etc.")
+        )
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
         self.ui = ui = Ui_DefaultDocumentLayoutSettingsPage()
         ui.setupUi(self)
-        ui.page_configuration_group_box.setTitle("Default settings for new documents")
+        ui.page_configuration_group_box.setTitle(self.tr("Default settings for new documents"))
 
     def load(self, settings: ConfigParser):
         self.ui.page_configuration_group_box.load_document_settings_from_config(settings)
@@ -466,7 +496,8 @@ class DefaultDocumentLayoutSettingsPage(Page):
 
 
 class PrinterSettingsPage(Page):
-    display_metadata = PageMetadata("Printer settings", "document-print", "Configure the printer")
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(self.tr("Printer settings"), "document-print", self.tr("Configure the printer"))
 
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
@@ -499,7 +530,8 @@ class PrinterSettingsPage(Page):
 
 
 class PDFSettingsPage(Page):
-    display_metadata = PageMetadata("PDF export settings", "viewpdf", "Configure the PDF export")
+    def display_metadata(self) -> PageMetadata:
+        return PageMetadata(self.tr("PDF export settings"), "viewpdf", self.tr("Configure the PDF export"))
 
     def __init__(self, parent=None, flags=Qt.WindowFlags()):
         super().__init__(parent, flags)
@@ -533,7 +565,7 @@ class PDFSettingsPage(Page):
     @Slot()
     def on_pdf_save_path_browse_button_clicked(self):
         logger.debug("User about to select a new default PDF document export path.")
-        if location := QFileDialog.getExistingDirectory(self, "Select default PDF export location"):
+        if location := QFileDialog.getExistingDirectory(self, self.tr("Select default PDF export location")):
             logger.info("User selected a new default PDF document export path.")
             self.ui.pdf_save_path.setText(location)
         else:

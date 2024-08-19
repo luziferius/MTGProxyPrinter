@@ -20,7 +20,7 @@
    <item row="3" column="1" colspan="4">
     <widget class="QRadioButton" name="select_parser_xmage">
      <property name="toolTip">
-      <string>Decklist files, stored in XMage’s native format.
+      <string>Deck list files, stored in XMage’s native format.
 Because XMage closely follows Scryfall regarding Magic sets,
 this should give very accurate results.</string>
      </property>
@@ -36,7 +36,7 @@ this should give very accurate results.</string>
      </property>
      <property name="toolTip">
       <string>This is a Tappedout-specific section of the deck.
-It may contain the decklist author’s buylist or anything else.</string>
+It may contain the deck list author’s buy-list or anything else.</string>
      </property>
      <property name="text">
       <string>Include “Acquire-Board”</string>
@@ -92,7 +92,7 @@ It may contain the decklist author’s buylist or anything else.</string>
      </property>
      <property name="toolTip">
       <string>This is a Tappedout-specific section of the deck.
-It may contain cards that the decklist creator considers for inclusion, based on the meta
+It may contain cards that the deck list creator considers for inclusion, based on the meta
 or any other preference, like card price.</string>
      </property>
      <property name="text">
@@ -280,7 +280,7 @@ as the format works for any card.</string>
       <bool>false</bool>
      </property>
      <property name="toolTip">
-      <string>Use this regular expression to parse the deck list file. See the context help (?-Button) for more detailes.</string>
+      <string>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</string>
      </property>
      <property name="whatsThis">
       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -298,6 +298,9 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Not all groups are required for a successful match. For example, &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt; and &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt; is sufficient for exact identification most of the time.&lt;/p&gt;
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Hint: You may want to use an online Regular Expression editor, like &lt;a href=&quot;https://regex101.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://regex101.com/&lt;/span&gt;&lt;/a&gt;, for example.&lt;/p&gt;
 &lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhPreferLatin</set>
      </property>
      <property name="placeholderText">
       <string notr="true">(?P&lt;copies&gt;\w+) (?P&lt;name&gt;.+) \((?P&lt;set_code&gt;\w+)\) (?P&lt;collector_number&gt;\d+)</string>

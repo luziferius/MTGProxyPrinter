@@ -21,24 +21,51 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
 from mtg_proxy_printer.decklist_parser.csv_parsers import ScryfallCSVParser
+from mtg_proxy_printer.decklist_downloader import DecklistDownloader
 
-from tests.helpers import fill_card_database_with_json_cards
+from tests.helpers import fill_card_database_with_json_cards, SHOULD_SKIP_NETWORK_TESTS
 
 StringList = typing.List[str]
-CSV_HEADER = "section,count,name,mana_cost,type,set,set_code,collector_number,lang,rarity," \
-             "artist,foil,usd_price,eur_price,tix_price,scryfall_uri,scryfall_id"
+DECK_LIST_CSV_HEADER = "section,count,name,mana_cost,type,set,set_code,collector_number,lang,rarity," \
+    "artist,finish,usd_price,eur_price,tix_price,scryfall_uri,scryfall_id"
+SEARCH_CSV_HEADER = "multiverse_id,mtgo_id,set,collector_number,lang,rarity,name,mana_cost,cmc,type_line,artist," \
+    "usd_price,usd_foil_price,eur_price,tix_price,image_uri,scryfall_uri,scryfall_id"
 
+def append_to_header(header: str, plain_deck_list: str) -> str:
+    return f"{header}\n{plain_deck_list}"
 
-def append_to_header(plain_deck_list: str) -> str:
-    return f"{CSV_HEADER}\n{plain_deck_list}"
+@pytest.mark.skipif(SHOULD_SKIP_NETWORK_TESTS, reason="Skipping network-hitting tests")
+@pytest.mark.parametrize("url, header", [
+    ("https://api.scryfall.com/decks/e1a9af19-cfff-48c4-ae74-ed2dd78cb736/export/csv", DECK_LIST_CSV_HEADER),
+    ("https://api.scryfall.com/cards/search?q=scryfallid%3Ad99a9a7d-d9ca-4c11-80ab-e39d5943a315&format=csv", SEARCH_CSV_HEADER)
+])
+def test_local_header_conforms_to_current_scryfall_return_data(url: str, header: str):
+    """Verifies that the hard-coded CSV headers above match what the API returns"""
+    downloader = DecklistDownloader()
+    result = downloader.download(url)
+    expected = result.splitlines()[0]
+    assert_that(
+        header, is_(equal_to(expected)), "CSV header format changed on Scryfall"
+    )
+
 
 
 def generate_test_cases_for_translation_and_replacement():
     yield (
         ["german_Back_to_Basics", "english_Back_to_Basics"],
         append_to_header(
-            "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,false,13.27,7.9,"
+            DECK_LIST_CSV_HEADER,
+            "nonlands,1,Back to Basics,{2}{U},Enchantment,Urza's Saga,usg,62,de,rare,Andrew Robinson,,13.27,7.9,"
             "2.92,https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
+        CardIdentificationData("en", "Back to Basics", is_front=True,)
+    )
+    yield (
+        ["german_Back_to_Basics", "english_Back_to_Basics"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            ",,USG,62,de,R,Back to Basics,{2}{U},3.0,Enchantment,Andrew Robinson,,,,,"
+            "https://cards.scryfall.io/large/front/9/7/97b84e7d-258f-46dc-baef-4b1eb6f28d4d.jpg?1562927127,"
+            "https://scryfall.com/card/usg/62/de/grundlagenforschung,97b84e7d-258f-46dc-baef-4b1eb6f28d4d"),
         CardIdentificationData("en", "Back to Basics", is_front=True,)
     )
 
@@ -95,8 +122,18 @@ def generate_test_cases_for_test_card_identification_works_in_simple_cases():
     yield (
         ["english_basic_Forest", "english_basic_Forest_2"],
         append_to_header(
-            "columna,1,Forest,"",Basic Land — Forest,Arena Beginner Set,anb,112,en,common,Jonas De Ro,false,0.06,0.01,"
+            DECK_LIST_CSV_HEADER,
+            "columna,1,Forest,"",Basic Land — Forest,Arena Beginner Set,anb,112,en,common,Jonas De Ro,,0.06,0.01,"
             "0.01,https://scryfall.com/card/anb/112/forest,7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"),
+        CardIdentificationData("en", "Forest", scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True,)
+    )
+    yield (
+        ["english_basic_Forest", "english_basic_Forest_2"],
+        append_to_header(
+            SEARCH_CSV_HEADER,
+            "548224,,ANB,112,en,C,Forest,"",0.0,Basic Land — Forest,Jonas De Ro,,,,,"
+            "https://cards.scryfall.io/large/front/7/e/7ef83f4c-d3ff-4905-a16d-f2bae673a5b2.jpg?1597375433,"
+            "https://scryfall.com/card/anb/112/forest,7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"),
         CardIdentificationData("en", "Forest", scryfall_id="7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", is_front=True,)
     )
 
@@ -130,8 +167,9 @@ def test_card_identification_works_in_simple_cases(
     (
         ["english_basic_Forest"],
         append_to_header(
-        "columna,invalid_count,Forest,"",Basic Land — Forest,Arena Beginner Set,anb,112,en,common,Jonas De Ro,false,0.06,0.01,"
-        "0.01,https://scryfall.com/card/anb/112/forest,7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"),
+            DECK_LIST_CSV_HEADER,
+            "columna,invalid_count,Forest,"",Basic Land — Forest,Arena Beginner Set,anb,112,en,common,Jonas De Ro,,0.06,0.01,"
+            "0.01,https://scryfall.com/card/anb/112/forest,7ef83f4c-d3ff-4905-a16d-f2bae673a5b2"),
     ),
     ]
 )
