@@ -139,8 +139,11 @@ def get_lrelease():
         import sys
         exe = pathlib.Path(sys.executable)
         venv = exe.parent.parent
-        lrelease = venv / "Lib" / "site-packages" / "PySide2" / "lrelease.exe"
-        return lrelease
+        lrelease5 = venv / "Lib" / "site-packages" / "PySide2" / "lrelease.exe"
+        lrelease6 = venv / "Lib" / "site-packages" / "PySide6" / "lrelease.exe"
+        if not lrelease5.is_file() and not lrelease6.is_file():
+            raise RuntimeError("No fallback lrelease executable found")
+        return lrelease5 if lrelease5.is_file() else lrelease6
     else:
         return "lrelease"
 

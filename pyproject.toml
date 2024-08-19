@@ -57,12 +57,14 @@ dev = [
     "pytest-timeout",
     "pytest-qt >= 2.0",
     "tox >= 4.0",
-    "PySide2; platform_system == 'Windows'",  # Used for lrelease: Compiling translations
+    "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
+    "PySide2; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
 ]
 package = [
     "build",
     "cx_Freeze >= 6.11.1; platform.python_implementation == 'CPython'",
-    "PySide2; platform_system == 'Windows'",  # Used for lrelease: Compiling translations
+    "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
+    "PySide6; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
 ]
 
 
