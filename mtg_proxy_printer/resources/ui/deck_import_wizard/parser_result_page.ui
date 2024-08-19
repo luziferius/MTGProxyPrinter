@@ -27,8 +27,7 @@ If unchecked, append the cards found below to the document.</string>
       <string>Replace the current document content with the found cards</string>
      </property>
      <property name="icon">
-      <iconset theme="document-replace">
-       <normaloff>.</normaloff>.</iconset>
+      <iconset theme="document-replace"/>
      </property>
     </widget>
    </item>

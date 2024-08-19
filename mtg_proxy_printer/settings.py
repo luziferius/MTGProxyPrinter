@@ -120,8 +120,12 @@ DEFAULT_SETTINGS["default-filesystem-paths"] = {
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
     "show-toolbar": "True",
+    "language": "",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
+VALID_LANGUAGES = {
+    "", "de", "en_US",
+}
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
@@ -331,6 +335,7 @@ def _validate_gui_section(to_validate: configparser.ConfigParser, section_name: 
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
+    _validate_string_is_in_set(section, defaults, VALID_LANGUAGES, "language")
 
 
 def _validate_debug_section(to_validate: configparser.ConfigParser, section_name: str = "debug"):
