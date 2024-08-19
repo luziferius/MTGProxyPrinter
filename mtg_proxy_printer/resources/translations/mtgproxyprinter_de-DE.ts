@@ -122,7 +122,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
   <context>
     <name>ActionImportDeckList</name>
     <message numerus="yes">
-      <location filename="../../document_controller/import_deck_list.py" line="71"/>
+      <location filename="../../document_controller/import_deck_list.py" line="72"/>
       <source>Wipe document and import a deck list containing %n card(s)</source>
       <comment>Undo/redo tooltip text. Option to delete the current document enabled.</comment>
       <translation>
@@ -131,7 +131,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../document_controller/import_deck_list.py" line="76"/>
+      <location filename="../../document_controller/import_deck_list.py" line="77"/>
       <source>Import a deck list containing %n card(s)</source>
       <comment>Undo/redo tooltip text. Option to delete the current document disabled.</comment>
       <translation>
@@ -189,6 +189,18 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
+    <name>ActionNewPage</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/page_actions.py" line="81"/>
+      <source>Add page(s) {pages}</source>
+      <comment>Undo/redo tooltip text. Translations should drop the %n placeholder</comment>
+      <translation>
+        <numerusform>Seite {pages} hinzufügen</numerusform>
+        <numerusform>Seiten {pages} hinzufügen</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
     <name>ActionRemoveCards</name>
     <message numerus="yes">
       <location filename="../../document_controller/card_actions.py" line="216"/>
@@ -201,14 +213,23 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionRemovePage. Card total</name>
+    <name>ActionRemovePage</name>
     <message numerus="yes">
-      <location filename="../../document_controller/page_actions.py" line="176"/>
+      <location filename="../../document_controller/page_actions.py" line="181"/>
       <source>%n card(s) total</source>
       <comment>Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}</comment>
       <translation>
-        <numerusform>insgesamt einer Karte</numerusform>
-        <numerusform>insgesamt %n Karten</numerusform>
+        <numerusform>mit einer Karte</numerusform>
+        <numerusform>mit %n Karten</numerusform>
+      </translation>
+    </message>
+    <message numerus="yes">
+      <location filename="../../document_controller/page_actions.py" line="187"/>
+      <source>Remove page(s) {formatted_pages} containing {formatted_card_count}</source>
+      <comment>Undo/redo tooltip text</comment>
+      <translation>
+        <numerusform>Seite {formatted_pages} {formatted_card_count} entfernt</numerusform>
+        <numerusform>Seiten {formatted_pages} {formatted_card_count} entfernt</numerusform>
       </translation>
     </message>
   </context>
