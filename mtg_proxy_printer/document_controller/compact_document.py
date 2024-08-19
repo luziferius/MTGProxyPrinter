@@ -106,5 +106,5 @@ class ActionCompactDocument(DocumentAction):
         last_action = self.actions[-1] if self.actions else None
         saved_pages = last_action.count if isinstance(last_action, ActionRemovePage) else 0
         return self.translate(
-            "ActionCompactDocument.as_str", "Compact document, removing %n page(s)",
+            "ActionCompactDocument", "Compact document, removing %n page(s)",
             "Undo/redo tooltip text", saved_pages)

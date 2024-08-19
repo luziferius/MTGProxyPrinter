@@ -69,11 +69,11 @@ class ActionImportDeckList(DocumentAction):
     def as_str(self):
         if self.clear_document:
             return self.translate(
-                "ActionImportDeckList.as_str",
+                "ActionImportDeckList",
                 "Wipe document and import a deck list containing %n card(s)",
                 "Undo/redo tooltip text. Option to delete the current document enabled.", len(self.cards))
         else:
             return self.translate(
-                "ActionImportDeckList.as_str",
+                "ActionImportDeckList",
                 "Import a deck list containing %n card(s)",
                 "Undo/redo tooltip text. Option to delete the current document disabled.", len(self.cards))

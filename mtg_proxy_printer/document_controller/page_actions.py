@@ -76,7 +76,7 @@ class ActionNewPage(DocumentAction):
     def as_str(self):
         pages = self._format_number_range(self.position+1, self.position+self.count)
         return self.translate(
-            "ActionNewPage.as_str", "Add page(s) {pages}",
+            "ActionNewPage", "Add page(s) {pages}",
             "Undo/redo tooltip text", self.count
         ).format(pages=pages)
 
@@ -174,10 +174,10 @@ class ActionRemovePage(DocumentAction):
         cards_removed = sum(map(len, self.removed_pages))
         formatted_pages = self._format_number_range(self.position+1, self.position+self.count)
         formatted_card_count = self.translate(
-            "ActionRemovePage.as_str1. Card total", "%n card(s) total",
+            "ActionRemovePage. Card total", "%n card(s) total",
             "Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}", cards_removed
         )
         return self.translate(
-            "ActionRemovePage.as_str2", "Remove page {formatted_pages} containing {formatted_card_count}",
+            "ActionRemovePage", "Remove page {formatted_pages} containing {formatted_card_count}",
             "Undo/redo tooltip text", self.count
         ).format(formatted_pages=formatted_pages, formatted_card_count=formatted_card_count)

@@ -69,11 +69,11 @@ class ActionLoadDocument(DocumentAction):
         page_count = len(self.loaded_cards)
         card_count = sum(map(len, self.loaded_cards))
         cards_total = self.translate(
-            "ActionLoadDocument.as_str1. Card total", "with %n card(s) total",
+            "ActionLoadDocument. Card total", "with %n card(s) total",
             "Undo/redo tooltip text. Will be inserted as {cards_total}", card_count
         )
         return self.translate(
-            "ActionLoadDocument.as_str2",
+            "ActionLoadDocument",
             "Load document from '{save_path}',\ncontaining %n page(s) {cards_total}",
             "Undo/redo tooltip text.", page_count
         ).format(save_path=self.save_path, cards_total=cards_total)

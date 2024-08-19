@@ -96,6 +96,6 @@ class ActionReplaceCard(DocumentAction):
     @functools.cached_property
     def as_str(self):
         return self.translate(
-            "ActionReplaceCard.as_str", "Replace card {old_card} on page {page_number} with {new_card}",
+            "ActionReplaceCard", "Replace card {old_card} on page {page_number} with {new_card}",
             "Undo/redo tooltip text"
         ).format(old_card=self.old_card.display_string(), page_number=self.page+1, new_card=self.card.display_string())

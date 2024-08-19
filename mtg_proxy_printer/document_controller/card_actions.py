@@ -156,7 +156,7 @@ class ActionAddCard(DocumentAction):
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
             target = ", ".join(itertools.starmap(self._format_number_range, page_ranges))
         return self.translate(
-            "ActionAddCard.as_str", "Add {count} × {card_display_string} to page {target}",
+            "ActionAddCard", "Add {count} × {card_display_string} to page {target}",
             "Undo/redo tooltip text. Plural form refers to {target}, not {count}. "
             "{target} can be multiple ranges of multiple pages each", n
         ).format(count=self.count, card_display_string=self.card.display_string(), target=target)
@@ -214,7 +214,7 @@ class ActionRemoveCards(DocumentAction):
         card_count = sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)
         page_number = self.page_number+1
         return self.translate(
-            "ActionRemoveCards.as_str", "Remove %n card(s) from page {page_number}",
+            "ActionRemoveCards", "Remove %n card(s) from page {page_number}",
             "Undo/redo tooltip text", card_count
         ).format(page_number=page_number)
 
