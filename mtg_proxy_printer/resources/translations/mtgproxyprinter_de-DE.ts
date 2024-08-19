@@ -87,7 +87,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
     </message>
   </context>
   <context>
-    <name>ActionAddCard.as_str</name>
+    <name>ActionAddCard</name>
     <message numerus="yes">
       <location filename="../../document_controller/card_actions.py" line="158"/>
       <source>Add {count} × {card_display_string} to page {target}</source>
@@ -99,7 +99,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
     </message>
   </context>
   <context>
-    <name>ActionCompactDocument.as_str</name>
+    <name>ActionCompactDocument</name>
     <message numerus="yes">
       <location filename="../../document_controller/compact_document.py" line="108"/>
       <source>Compact document, removing %n page(s)</source>
@@ -111,7 +111,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
     </message>
   </context>
   <context>
-    <name>ActionEditDocumentSettings.as_str</name>
+    <name>ActionEditDocumentSettings</name>
     <message>
       <location filename="../../document_controller/edit_document_settings.py" line="131"/>
       <source>Update document settings</source>
@@ -120,7 +120,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
     </message>
   </context>
   <context>
-    <name>ActionImportDeckList.as_str</name>
+    <name>ActionImportDeckList</name>
     <message numerus="yes">
       <location filename="../../document_controller/import_deck_list.py" line="71"/>
       <source>Wipe document and import a deck list containing %n card(s)</source>
@@ -141,19 +141,7 @@ Projekt-Website: [{application_name} Homepage]({application_home_page})
     </message>
   </context>
   <context>
-    <name>ActionLoadDocument.as_str1. Card total</name>
-    <message numerus="yes">
-      <location filename="../../document_controller/load_document.py" line="71"/>
-      <source>with %n card(s) total</source>
-      <comment>Undo/redo tooltip text. Will be inserted as {cards_total}</comment>
-      <translation>
-        <numerusform>und insgesamt %n Karte</numerusform>
-        <numerusform>und insgesamt %n Karten</numerusform>
-      </translation>
-    </message>
-  </context>
-  <context>
-    <name>ActionLoadDocument.as_str2</name>
+    <name>ActionLoadDocument</name>
     <message numerus="yes">
       <location filename="../../document_controller/load_document.py" line="75"/>
       <source>Load document from &apos;{save_path}&apos;,
@@ -168,7 +156,19 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionMoveCards.as_str</name>
+    <name>ActionLoadDocument. Card total</name>
+    <message numerus="yes">
+      <location filename="../../document_controller/load_document.py" line="71"/>
+      <source>with %n card(s) total</source>
+      <comment>Undo/redo tooltip text. Will be inserted as {cards_total}</comment>
+      <translation>
+        <numerusform>und insgesamt %n Karte</numerusform>
+        <numerusform>und insgesamt %n Karten</numerusform>
+      </translation>
+    </message>
+  </context>
+  <context>
+    <name>ActionMoveCards</name>
     <message numerus="yes">
       <location filename="../../document_controller/move_cards.py" line="139"/>
       <source>Move %n card(s) from page {source_page} to {target_page}</source>
@@ -180,7 +180,7 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionNewDocument.as_str</name>
+    <name>ActionNewDocument</name>
     <message>
       <location filename="../../document_controller/new_document.py" line="68"/>
       <source>Create new document</source>
@@ -189,7 +189,7 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionRemoveCards.as_str</name>
+    <name>ActionRemoveCards</name>
     <message numerus="yes">
       <location filename="../../document_controller/card_actions.py" line="216"/>
       <source>Remove %n card(s) from page {page_number}</source>
@@ -201,7 +201,7 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionRemovePage.as_str1. Card total</name>
+    <name>ActionRemovePage. Card total</name>
     <message numerus="yes">
       <location filename="../../document_controller/page_actions.py" line="176"/>
       <source>%n card(s) total</source>
@@ -213,7 +213,7 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionReplaceCard.as_str</name>
+    <name>ActionReplaceCard</name>
     <message>
       <location filename="../../document_controller/replace_card.py" line="98"/>
       <source>Replace card {old_card} on page {page_number} with {new_card}</source>
@@ -222,7 +222,7 @@ mit %n Seiten {cards_total}</numerusform>
     </message>
   </context>
   <context>
-    <name>ActionShuffleDocument.as_str</name>
+    <name>ActionShuffleDocument</name>
     <message>
       <location filename="../../document_controller/shuffle_document.py" line="101"/>
       <source>Shuffle document</source>
@@ -814,7 +814,7 @@ zu wechseln.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="305"/>
+      <location filename="../../ui/dialogs.py" line="304"/>
       <source>These settings only affect the current document</source>
       <translation>Diese Einstellungen betreffen nur das aktuelle Dokument</translation>
     </message>
@@ -1571,9 +1571,9 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
     <name>LoadSaveDialog</name>
     <message>
       <location filename="../../ui/dialogs.py" line="117"/>
-      <source>MTGProxyPrinter document</source>
+      <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
-      <translation>MTGProxyPrinter-Dokument</translation>
+      <translation>MTGProxyPrinter-Dokument (*.{default_save_suffix})</translation>
     </message>
   </context>
   <context>
@@ -2372,7 +2372,7 @@ Aktivieren sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="127"/>
+      <location filename="../../ui/dialogs.py" line="129"/>
       <source>Save document as …</source>
       <translation>Dokument speichern unter …</translation>
     </message>
@@ -2386,8 +2386,8 @@ Aktivieren sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im
     </message>
     <message>
       <location filename="../../ui/dialogs.py" line="79"/>
-      <source>PDF-Documents (*.pdf)</source>
-      <translation>PDF-Dokumente (*.pdf)</translation>
+      <source>PDF documents (*.pdf)</source>
+      <translation>PDF-Dokument (*.pdf)</translation>
     </message>
   </context>
   <context>
