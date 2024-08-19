@@ -92,10 +92,11 @@ class SavePDFDialog(QFileDialog):
     def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
         if document.save_file_path is None:
             return ""
+        # Note: Qt automatically appends the preferred file extension (.pdf), if the file does not have one.
+        # So ensure it ends on ".pdf", if there is a dot in the name. Otherwise, let the user enter the name without
+        # pre-setting an extension for a cleaner dialog
         stem = document.save_file_path.stem
-        if "." in stem:
-            return f"{stem}.pdf"
-        return stem
+        return f"{stem}.pdf" if "." in stem else stem
 
     @Slot()
     def on_accept(self):
