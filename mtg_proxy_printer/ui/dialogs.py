@@ -76,7 +76,7 @@ class SavePDFDialog(QFileDialog):
         # because tr() requires to have returned from super().__init__()
         super().__init__(parent, "", self.get_preferred_file_name(document))
         self.setWindowTitle(self.tr("Export as PDF"))
-        self.setNameFilter(self.tr("PDF-Documents (*.pdf)"))
+        self.setNameFilter(self.tr("PDF documents (*.pdf)"))
 
         if default_path := read_path("pdf-export", "pdf-export-path"):
             self.setDirectory(default_path)
@@ -114,8 +114,9 @@ class LoadSaveDialog(QFileDialog):
         # Note: Cannot supply already translated strings to __init__,
         # because tr() requires to have returned from super().__init__()
         super().__init__(*args, **kwargs)
-        filter_text = self.tr("MTGProxyPrinter document", "Human-readable file type name") \
-            + f" (*.{DEFAULT_SAVE_SUFFIX})"
+        filter_text = self.tr(
+            "MTGProxyPrinter document (*.{default_save_suffix})", "Human-readable file type name"
+        ).format(default_save_suffix=DEFAULT_SAVE_SUFFIX)
         self.setNameFilter(filter_text)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
 
@@ -127,7 +128,6 @@ class SaveDocumentAsDialog(LoadSaveDialog):
         super().__init__(parent, **kwargs)
         self.setWindowTitle(self.tr("Save document as …"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
-
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
