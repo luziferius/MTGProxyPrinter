@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
-from functools import partial
+import typing
 import pathlib
 import sys
 
@@ -276,6 +276,8 @@ class PrintDialog(QPrintDialog):
 
 
 class HoverEventFilter(QObject):
+    parent: typing.Callable[[], "DocumentSettingsDialog"]
+
     def __init__(self, settings: configparser.ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
         self.settings = settings
@@ -285,7 +287,7 @@ class HoverEventFilter(QObject):
         # This check avoids a crash during application shutdown
         if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
             return False
-        parent: "DocumentSettingsDialog" = self.parent()
+        parent = self.parent()
         if event_type == QEvent.Type.HoverEnter:
             parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
         elif event_type == QEvent.Type.HoverLeave:

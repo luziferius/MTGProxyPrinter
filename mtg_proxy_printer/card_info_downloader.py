@@ -46,6 +46,7 @@ del get_logger
 
 __all__ = [
     "CardInfoDownloader",
+    "CardInfoWorkerBase",
     "CardInfoDatabaseImportWorker",
     "SetWackinessScore",
 ]

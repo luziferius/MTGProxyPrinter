@@ -23,7 +23,7 @@ import urllib.error
 import urllib.parse
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QSize, QUrl, QEvent, QObject
+    QItemSelection, QSize, QUrl
 from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 

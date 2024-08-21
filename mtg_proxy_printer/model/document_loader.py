@@ -29,7 +29,7 @@ from unittest.mock import patch
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_, any_of, less_than_or_equal_to
+    has_properties, is_, any_of
 
 try:
     from hamcrest import contains_exactly
@@ -57,6 +57,7 @@ __all__ = [
     "DocumentLoader",
     "PageLayoutSettings",
     "CardType",
+    "migrate_database",
 ]
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
@@ -583,7 +584,7 @@ class Worker(LoaderSignals):
 
 def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     logger.debug("Running save file migration tasks")
-    _migrate_2_to_3(db, settings)
+    _migrate_2_to_3(db)
     _migrate_3_to_4(db, settings)
     _migrate_4_to_5(db, settings)
     _migrate_5_to_6(db, settings)
@@ -591,7 +592,7 @@ def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     logger.debug("Finished running migration tasks")
 
 
-def _migrate_2_to_3(db: sqlite3.Connection, settings: PageLayoutSettings):
+def _migrate_2_to_3(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version\n").fetchone()[0] != 2:
         return
     logger.debug("Migrating save file from version 2 to 3")

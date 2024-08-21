@@ -50,6 +50,7 @@ __all__ = [
 
 
 class HoverEventFilter(QObject):
+    parent: typing.Callable[[], "SettingsWindow"]
     def __init__(self, settings: configparser.ConfigParser, parent: "SettingsWindow"):
         super().__init__(parent)
         self.settings = settings
@@ -59,7 +60,7 @@ class HoverEventFilter(QObject):
         # This check avoids a crash during application shutdown
         if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
             return False
-        parent: "SettingsWindow" = self.parent()
+        parent = self.parent()
         if event_type == QEvent.HoverEnter:
             parent.highlight_differing_settings(self.settings)
         elif event_type == QEvent.HoverLeave:

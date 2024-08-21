@@ -646,7 +646,7 @@ class PageScene(QGraphicsScene):
         )
 
     @staticmethod
-    def _mm_to_rounded_px(value: int) -> int:
+    def _mm_to_rounded_px(value: float) -> int:
         return round((value*unit_registry.mm*RESOLUTION).to("pixel").magnitude)
 
     def remove_cut_markers(self):

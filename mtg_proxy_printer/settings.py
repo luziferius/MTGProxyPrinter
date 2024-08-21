@@ -177,9 +177,9 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(input_settings: configparser.ConfigParser = settings) -> typing.Set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
-    raw = settings["card-filter"]["hidden-sets"]
+    raw = input_settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
     deduplicated = set(raw.split())
     return deduplicated
