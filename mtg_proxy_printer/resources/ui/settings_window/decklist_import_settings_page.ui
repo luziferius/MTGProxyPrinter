@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>415</width>
-    <height>308</height>
+    <width>439</width>
+    <height>326</height>
    </rect>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -33,6 +33,10 @@
    </item>
    <item row="3" column="0" colspan="3">
     <widget class="QGroupBox" name="basic_land_removal_group_box">
+     <property name="toolTip">
+      <string>The import wizard can remove basic lands fully- or semi-automatic.
+These settings control the removal behavior.</string>
+     </property>
      <property name="title">
       <string>Control the one-click or automatic basic land removal</string>
      </property>
@@ -40,7 +44,7 @@
       <item>
        <widget class="QCheckBox" name="automatic_basics_removal_enable">
         <property name="toolTip">
-         <string>If enabled, basic lands are automatically removed from deck lists.
+         <string extracomment="Tooltip">If enabled, basic lands are automatically removed from deck lists.
 If disabled, the deck import wizard keeps them by default,
 but offers the removal via a single button click.</string>
         </property>
@@ -51,21 +55,21 @@ but offers the removal via a single button click.</string>
       </item>
       <item>
        <widget class="QCheckBox" name="remove_basic_wastes_enable">
-        <property name="whatsThis">
-         <string>Include Wastes when removing basic lands.</string>
+        <property name="toolTip">
+         <string extracomment="Tooltip">When enabled, treat Wastes like any other basic land</string>
         </property>
         <property name="text">
-         <string>Include Wastes when removing basic lands</string>
+         <string>Removal includes Wastes</string>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QCheckBox" name="remove_snow_basics_enable">
-        <property name="whatsThis">
-         <string>Include Snow-Covered basic lands when removing basic lands.</string>
+        <property name="toolTip">
+         <string extracomment="Tooltip">When enabled, treat Snow-Covered basic lands like any other basic land</string>
         </property>
         <property name="text">
-         <string>Include Snow-Covered Basic lands when removing basic lands</string>
+         <string>Removal includes Snow-Covered Basic lands</string>
         </property>
        </widget>
       </item>
@@ -83,10 +87,10 @@ but offers the removal via a single button click.</string>
     <widget class="QGroupBox" name="print_guessing_group_box">
      <property name="toolTip">
       <string>Not all deck list formats always contain complete data.
-These options set the default behaviour when encountering ambiguous card</string>
+These options set the default behavior when encountering ambiguous card</string>
      </property>
      <property name="title">
-      <string>Control print guessing in ambiguous cases</string>
+      <string>Control print selection in ambiguous cases</string>
      </property>
      <property name="checked">
       <bool>false</bool>
@@ -95,7 +99,7 @@ These options set the default behaviour when encountering ambiguous card</string
       <item row="2" column="0">
        <widget class="QCheckBox" name="print_guessing_prefer_already_downloaded">
         <property name="toolTip">
-         <string>When guessing a printing, prefer printings with already downloaded images over other possible printings.</string>
+         <string>When automatically selecting a printing, prefer printings with already downloaded images over other possible printings.</string>
         </property>
         <property name="text">
          <string>Prefer printings with already downloaded images</string>
@@ -121,7 +125,7 @@ If enabled, choose an arbitrary printing, instead of failing to identify such ca
 With some deck list formats, this option is always enabled.</string>
         </property>
         <property name="text">
-         <string>Enable print guessing by default</string>
+         <string>Automatically select a printing</string>
         </property>
        </widget>
       </item>

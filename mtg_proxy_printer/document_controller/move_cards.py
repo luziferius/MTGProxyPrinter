@@ -133,5 +133,10 @@ class ActionMoveCards(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        return f"Move {sum(upper-lower+1 for lower, upper in self.card_ranges_to_move)} cards " \
-               f"from page {self.source_page+1} to page {self.target_page+1}"
+        source_page = self.source_page+1
+        target_page = self.target_page+1
+        count = sum(upper-lower+1 for lower, upper in self.card_ranges_to_move)
+        return self.translate(
+            "ActionMoveCards", "Move %n card(s) from page {source_page} to {target_page}",
+            "Undo/redo tooltip text", count
+        ).format(source_page=source_page, target_page=target_page)

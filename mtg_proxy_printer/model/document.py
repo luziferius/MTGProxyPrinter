@@ -82,18 +82,19 @@ class Document(QAbstractItemModel):
     redo_available_changed = Signal(bool)
     request_fill_image_for_action = Signal(DocumentAction)
 
-    page_header = {
-        PageColumns.CardName: "Card name",
-        PageColumns.Set: "Set",
-        PageColumns.CollectorNumber: "Collector #",
-        PageColumns.Language: "Language",
-        PageColumns.Image: "Image",
-        PageColumns.IsFront: "Side",
-    }
     EDITABLE_COLUMNS = {PageColumns.Set, PageColumns.CollectorNumber, PageColumns.Language}
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.header = {
+            PageColumns.CardName: self.tr("Card name"),
+            PageColumns.Set: self.tr("Set"),
+            PageColumns.CollectorNumber: self.tr("Collector #"),
+            PageColumns.Language: self.tr("Language"),
+            PageColumns.Image: self.tr("Image"),
+            PageColumns.IsFront: self.tr("Side"),
+        }
+
         self.undo_stack: ActionStack = collections.deque()
         self.redo_stack: ActionStack = collections.deque()
         self.save_file_path: typing.Optional[pathlib.Path] = None
@@ -167,9 +168,9 @@ class Document(QAbstractItemModel):
             orientation: Orientation, role: ItemDataRole = ItemDataRole.DisplayRole) -> str:
         if orientation == Orientation.Horizontal:
             if role == ItemDataRole.DisplayRole:
-                return Document.page_header.get(section)
+                return self.header.get(section)
             elif role == ItemDataRole.ToolTipRole and section in self.EDITABLE_COLUMNS:
-                return "Double-click on entries to\nswitch the selected printing."
+                return self.tr("Double-click on entries to\nswitch the selected printing.")
         return super().headerData(section, orientation, role)
 
     def rowCount(self, parent: AnyIndex = INVALID_INDEX) -> int:
@@ -278,7 +279,7 @@ class Document(QAbstractItemModel):
         if role == ItemDataRole.DisplayRole:
             return self._get_page_preview(item)
         elif role == ItemDataRole.ToolTipRole:
-            return f"Page {index.row()+1}/{self.rowCount()}"
+            return self.tr("Page {current}/{total}").format(current=index.row()+1, total=self.rowCount())
         elif role == ItemDataRole.EditRole:
             return item
         elif role == ItemDataRole.UserRole:
@@ -307,13 +308,15 @@ class Document(QAbstractItemModel):
             elif index.column() == PageColumns.Image:
                 return card.image_file
             elif index.column() == PageColumns.IsFront:
-                return card.is_front if role == ItemDataRole.EditRole else ("Front" if card.is_front else "Back")
+                return card.is_front if role == ItemDataRole.EditRole else (
+                    self.tr("Front") if card.is_front else self.tr("Back"))
 
-    @staticmethod
-    def _get_page_preview(page: Page):
+    def _get_page_preview(self, page: Page):
         names = collections.Counter(container.card.name for container in page)
-        return "\n".join(
-            f"{count}× {name}" for name, count in names.items()
+        return "\n".join(self.tr(
+            "%n× {name}",
+            "Used to display a card name and amount of copies in the page overview. "
+            "Only needs translation for RTL language support", count).format(name=name) for name, count in names.items()
         )
 
     @Slot(QModelIndex)

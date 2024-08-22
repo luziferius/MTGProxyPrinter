@@ -23,7 +23,7 @@ import sys
 from tempfile import mkdtemp
 import typing
 
-from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool
+from PySide6.QtCore import Slot, QTimer, QStringListModel, QThreadPool, QTranslator, QLocale, QLibraryInfo
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QIcon
 
@@ -66,6 +66,7 @@ class Application(QApplication):
             # Set a dark-mode compatible style, if on Windows and the user does not override the style.
             self.setStyle("fusion")
         self.should_run = True
+        self._setup_translations()
         self._setup_icons()
         self.args: Namespace = args
         self.card_db, self.image_db = self._open_databases(args)
@@ -185,6 +186,30 @@ class Application(QApplication):
         if section.getboolean("check-for-card-data-updates") is None:
             logger.info("No user setting for card data updates set. About to ask.")
             self.main_window.ask_user_about_card_data_update_policy()
+
+    def _setup_translations(self):
+        system_locale = QLocale.system()
+        if configured_language := settings.settings["gui"]["language"]:
+            locale = QLocale(configured_language)
+        else:
+            locale = system_locale
+        logger.info(
+            f"Loading localisations. System locale: {system_locale.name()}, selected locale: {locale.name()}. "
+            f"Possible display languages are: {locale.uiLanguages()}")
+        path = ":" if mtg_proxy_printer.ui.common.HAS_COMPILED_RESOURCES \
+            else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
+        path += "/translations"
+        logger.debug(f"Locale search path is '{path}'")
+        self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.LibraryPath.TranslationsPath))
+        self._load_translator(locale, "mtgproxyprinter", path)
+
+    def _load_translator(self, locale: QLocale, component: str, path: str):
+        translator = QTranslator(self)
+        if translator.load(locale, component, '_', path):
+            logger.debug(f"{component} translation loaded successfully, installing it")
+            self.installTranslator(translator)
+        else:
+            logger.warning(f"{component} translation failed to load. No translation available?")
 
     def _setup_icons(self):
         # The current icon theme name is empty by default, which causes the system-default theme, returned by

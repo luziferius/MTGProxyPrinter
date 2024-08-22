@@ -682,6 +682,10 @@ def _migrate_31_to_32(db: sqlite3.Connection):
         db.execute(statement)
 
 
+def _migrate_32_to_33(db: sqlite3.Connection):
+    db.execute("CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id);\n")
+
+
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
     # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
@@ -708,6 +712,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (29, _migrate_29_to_30),
     (30, _migrate_30_to_31),
     (31, _migrate_31_to_32),
+    (32, _migrate_32_to_33),
 )
 
 
@@ -752,5 +757,6 @@ def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationSc
             db.commit()
     current_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
     logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
+    db.execute("ANALYZE\n")
     db.execute("VACUUM\n")
     logger.info("Rebuild done.")

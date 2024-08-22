@@ -17,28 +17,28 @@
    <item row="2" column="2">
     <widget class="QCheckBox" name="hide_banned_in_pioneer">
      <property name="text">
-      <string>Pioneer</string>
+      <string extracomment="An MTG format name">Pioneer</string>
      </property>
     </widget>
    </item>
    <item row="4" column="0">
     <widget class="QCheckBox" name="hide_banned_in_modern">
      <property name="text">
-      <string>Modern</string>
+      <string extracomment="An MTG format name">Modern</string>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
     <widget class="QCheckBox" name="hide_banned_in_historic">
      <property name="text">
-      <string>Historic</string>
+      <string extracomment="An MTG format name">Historic</string>
      </property>
     </widget>
    </item>
    <item row="4" column="2">
     <widget class="QCheckBox" name="hide_banned_in_vintage">
      <property name="text">
-      <string>Vintage</string>
+      <string extracomment="An MTG format name">Vintage</string>
      </property>
     </widget>
    </item>
@@ -51,7 +51,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -61,14 +61,14 @@
    <item row="1" column="2">
     <widget class="QCheckBox" name="hide_banned_in_penny">
      <property name="text">
-      <string>Penny</string>
+      <string extracomment="An MTG format name">Penny</string>
      </property>
     </widget>
    </item>
    <item row="3" column="2">
     <widget class="QCheckBox" name="hide_banned_in_standard">
      <property name="text">
-      <string>Standard</string>
+      <string extracomment="An MTG format name">Standard</string>
      </property>
     </widget>
    </item>
@@ -81,7 +81,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -91,14 +91,14 @@
    <item row="0" column="2">
     <widget class="QCheckBox" name="hide_banned_in_pauper">
      <property name="text">
-      <string>Pauper</string>
+      <string extracomment="An MTG format name">Pauper</string>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
     <widget class="QCheckBox" name="hide_banned_in_commander">
      <property name="text">
-      <string>Commander</string>
+      <string extracomment="An MTG format name">Commander</string>
      </property>
     </widget>
    </item>
@@ -111,7 +111,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -127,7 +127,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -137,7 +137,7 @@
    <item row="0" column="0">
     <widget class="QCheckBox" name="hide_banned_in_brawl">
      <property name="text">
-      <string>Brawl</string>
+      <string extracomment="An MTG format name">Brawl</string>
      </property>
     </widget>
    </item>
@@ -150,7 +150,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -166,7 +166,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -182,7 +182,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -198,7 +198,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -214,7 +214,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -224,7 +224,7 @@
    <item row="3" column="0">
     <widget class="QCheckBox" name="hide_banned_in_legacy">
      <property name="text">
-      <string>Legacy</string>
+      <string extracomment="An MTG format name">Legacy</string>
      </property>
     </widget>
    </item>
@@ -237,7 +237,7 @@
       </sizepolicy>
      </property>
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -247,14 +247,14 @@
    <item row="5" column="0">
     <widget class="QCheckBox" name="hide_banned_in_oathbreaker">
      <property name="text">
-      <string>Oathbreaker</string>
+      <string extracomment="An MTG format name">Oathbreaker</string>
      </property>
     </widget>
    </item>
    <item row="5" column="1">
     <widget class="QPushButton" name="view_banned_in_oathbreaker">
      <property name="toolTip">
-      <string>View cards hidden by this filter on the Scryfall website.</string>
+      <string extracomment="Causes the application to open the web browser showing the affected cards">View cards hidden by this filter on the Scryfall website.</string>
      </property>
      <property name="icon">
       <iconset theme="globe"/>
@@ -262,6 +262,28 @@
     </widget>
    </item>
   </layout>
+  <zorder>hide_banned_in_modern</zorder>
+  <zorder>hide_banned_in_historic</zorder>
+  <zorder>view_banned_in_brawl</zorder>
+  <zorder>view_banned_in_pioneer</zorder>
+  <zorder>hide_banned_in_commander</zorder>
+  <zorder>view_banned_in_standard</zorder>
+  <zorder>view_banned_in_legacy</zorder>
+  <zorder>hide_banned_in_brawl</zorder>
+  <zorder>view_banned_in_vintage</zorder>
+  <zorder>view_banned_in_pauper</zorder>
+  <zorder>view_banned_in_modern</zorder>
+  <zorder>view_banned_in_penny</zorder>
+  <zorder>view_banned_in_historic</zorder>
+  <zorder>hide_banned_in_legacy</zorder>
+  <zorder>view_banned_in_commander</zorder>
+  <zorder>view_banned_in_oathbreaker</zorder>
+  <zorder>hide_banned_in_penny</zorder>
+  <zorder>hide_banned_in_oathbreaker</zorder>
+  <zorder>hide_banned_in_pauper</zorder>
+  <zorder>hide_banned_in_standard</zorder>
+  <zorder>hide_banned_in_vintage</zorder>
+  <zorder>hide_banned_in_pioneer</zorder>
  </widget>
  <resources/>
  <connections/>

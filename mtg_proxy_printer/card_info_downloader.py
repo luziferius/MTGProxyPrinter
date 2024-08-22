@@ -46,6 +46,7 @@ del get_logger
 
 __all__ = [
     "CardInfoDownloader",
+    "CardInfoWorkerBase",
     "CardInfoDatabaseImportWorker",
     "SetWackinessScore",
 ]
@@ -182,7 +183,9 @@ class CardInfoFileDownloadWorker(CardInfoWorkerBase):
         url, size = self.get_scryfall_bulk_card_data_url()
         file_name = urllib.parse.urlparse(url).path.split("/")[-1]
         logger.debug(f"Obtained url: '{url}'")
-        monitor = self._open_url(url, "Downloading card data:")
+        monitor = self._open_url(
+            url,
+            self.tr("Downloading card data:", "Progress bar label text"))
         # Hack: As of writing this, the CDN does not offer the size of the gzip-compressed data.
         # The API also only offers the uncompressed size. So divide the API-provided size by an empirically
         # determined compression factor to estimate the download size. Only do so, if the CDN does not offer the size.
@@ -363,7 +366,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         except Exception:
             self.db.rollback()
             logger.exception(f"Error during import from file: {path}")
-            self.other_error_occurred.emit(f"Error during import from file:\n{path}")
+            self.other_error_occurred.emit(self.tr("Error during import from file:\n{path}").format(path=path))
         finally:
             self.download_finished.emit()
 
@@ -374,7 +377,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             url, _ = self.get_scryfall_bulk_card_data_url()
             data = self.read_json_card_data_from_url(url)
             estimated_total_card_count = self.get_available_card_count()
-            self.download_begins.emit(estimated_total_card_count, "Updating card data from Scryfall:")
+            self.download_begins.emit(
+                estimated_total_card_count,
+                self.tr("Updating card data from Scryfall:", "Progress bar label text"))
             self.populate_database(data, total_count=estimated_total_card_count)
         except urllib.error.URLError as e:
             logger.exception("Handling URLError during card data download.")
@@ -382,7 +387,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
             self.db.rollback()
         except socket.timeout as e:
             logger.exception("Handling socket timeout error during card data download.")
-            self.network_error_occurred.emit(f"Reading from socket failed: {e}")
+            self.network_error_occurred.emit(self.tr("Reading from socket failed: {error}").format(error=e))
             self.db.rollback()
         finally:
             self.download_finished.emit()
@@ -418,7 +423,9 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
     def _wrap_in_metered_file(self, raw_file, file_size):
         monitor = mtg_proxy_printer.metered_file.MeteredFile(raw_file, file_size, self)
         monitor.total_bytes_processed.connect(self.download_progress)
-        monitor.io_begin.connect(lambda size: self.download_begins.emit(size, "Importing card data from disk:"))
+        monitor.io_begin.connect(lambda size: self.download_begins.emit(
+            size,
+            self.tr("Importing card data from disk:", "Progress bar label text")))
         return monitor
 
     def populate_database(self, card_data: CardStream, *, total_count: int = 0):
@@ -436,7 +443,8 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         except Exception as e:
             self.db.rollback()
             logger.exception(f"Error in parsing step")
-            self.other_error_occurred.emit(f"Failed to parse data from Scryfall. Reported error: {e}")
+            self.other_error_occurred.emit(
+                self.tr("Failed to parse data from Scryfall. Reported error: {error}").format(error=e))
         finally:
             self._clear_lru_caches()
             logger.info(f"Finished import with {card_count} imported cards.")

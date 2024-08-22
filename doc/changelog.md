@@ -4,18 +4,38 @@
 
 ## New features
 
+- Localization support. Translations are managed on [Crowdin.com](https://crowdin.com/project/mtgproxyprinter).   
+  Join, if you want to contribute translations :)
+    - Interface language is chosen based on the system locale, but can be explicitly set in the application settings.
+    - Currently, the app includes translations into US English and German.
+    - Goal is translations into all languages in which Magic sets get printed.
+- The deck import wizard can now directly download Scryfall search queries as deck lists
+    - Added a text field to enter a Scryfall card search query, a button to show the result on the Scryfall website,
+      and a button that downloads the search result as a deck list.
 - Add option to fully automatically remove basic lands from all imported deck lists.
-    - When enabled in the settings, basic lands are automatically stripped from deck lists,
-      otherwise the previous behavior is retained.
+    - When enabled in the settings, basic lands are automatically stripped from deck lists.
+      Otherwise, the previous behavior, offering removal via a button click, is retained.
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
-- Add new card filter for Art Series cards, which can be enabled in the application settings.
+- Add new card filter to hide Art Series cards, which can be enabled in the application settings.
     - When updating from previous versions, the filter becomes functional after the next card data update.
 
 ## Changed features
 
+- The deck list import wizard now supports downloading links from the Scryfall API card search at 
+  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
+- Support decimal values in document settings, like margins, image spacings and the card bleed width.
+- As a safety measure against DoS-attacks via loading malicious documents, the app now limits
+  numerical document settings to 10000mm. Limiting the paper size to 10m (~394in) in each direction prevents the creation
+  of indefinitely large drawing areas that could consume all system main memory until either the
+  application or the system crashes.
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
+
+## Fixed issues
+
+- Improved performance of the image cleanup wizard, if there are many images of non-English cards stored on disk.
+- Reworded and clarified some texts in the user interface, fixed grammar and spellning mistakes
 
 # Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
 

@@ -137,25 +137,29 @@ class ActionAddCard(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
+        n = 1
         if len(self.added_cards_to_existing_pages) == 1 and not self.first_added_page:
             # Cards added to a single existing page
-            target = f"to page {self.added_cards_to_existing_pages[0][0]+1}"
+            target = self.added_cards_to_existing_pages[0][0]+1
         elif self.first_added_page and not self.added_cards_to_existing_pages:
             # Cards added to a single new page
-            target = f"to page {self.first_added_page+1}"
+            target = self.first_added_page+1
         else:
             # Cards added to multiple existing and/or new pages
             existing_pages = ((page + 1) for page, _ in self.added_cards_to_existing_pages)
-            new_pages = range(self.first_added_page, self.first_added_page+self.added_new_pages) \
+            new_pages = range(self.first_added_page+1, self.first_added_page+self.added_new_pages+1) \
                 if self.first_added_page else []
-            all_pages = itertools.chain(existing_pages, new_pages)
+            all_pages = list(itertools.chain(existing_pages, new_pages))
+            n = len(all_pages)
             page_ranges = to_list_of_ranges(all_pages)
             # Human-readable representation: pages are comma-separated,
             # with consecutive values collapsed into hyphen-separated ranges like lower-upper
-            formatted_pages = ", ".join(
-                (f"{lower}-{upper}" if lower < upper else f"{lower}") for lower, upper in page_ranges)
-            target = f"across pages {formatted_pages}"
-        return f'Add {self.count} × {self.card.display_string()} {target}'
+            target = ", ".join(itertools.starmap(self._format_number_range, page_ranges))
+        return self.translate(
+            "ActionAddCard", "Add {count} × {card_display_string} to page {target}",
+            "Undo/redo tooltip text. Plural form refers to {target}, not {count}. "
+            "{target} can be multiple ranges of multiple pages each", n
+        ).format(count=self.count, card_display_string=self.card.display_string(), target=target)
 
 
 class ActionRemoveCards(DocumentAction):
@@ -207,8 +211,12 @@ class ActionRemoveCards(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        return f"Remove {sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)} " \
-               f"from page {self.page_number+1}"
+        card_count = sum(upper-lower+1 for lower, upper in self.card_ranges_to_remove)
+        page_number = self.page_number+1
+        return self.translate(
+            "ActionRemoveCards", "Remove %n card(s) from page {page_number}",
+            "Undo/redo tooltip text", card_count
+        ).format(page_number=page_number)
 
 
 def to_list_of_ranges(sequence: typing.Iterable[int]) -> typing.List[typing.Tuple[int, int]]:

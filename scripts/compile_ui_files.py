@@ -40,14 +40,6 @@ T = TypeVar("T")
 ClassRegistry = Dict[str, ast.ImportFrom]
 UsedClasses = Set[str]
 
-SOURCE_ROOT = Path(__file__).parent.parent  # Checkout root directory
-MAIN_PACKAGE = SOURCE_ROOT / "mtg_proxy_printer"
-UI_SOURCE_PATH = MAIN_PACKAGE / "resources/ui"  # UI files live here
-TARGET_PATH = MAIN_PACKAGE / "ui/generated"  # Package containing generated modules/type hinting stubs
-T = TypeVar("T")
-ClassRegistry = Dict[str, ast.ImportFrom]
-UsedClasses = Set[str]
-
 
 class Assignment(NamedTuple):
     attribute: str
@@ -136,19 +128,11 @@ def build_class_registry(package_path: Path) -> ClassRegistry:
     return result
 
 
-def build_class_registry(package_path: Path) -> ClassRegistry:
-    """Scan the source tree for classes and build a dict from class name to import path"""
-    result: ClassRegistry = {}
-    for py_file in package_path.rglob("*.py"):
-        module_path = ".".join((py_file.parent.relative_to(package_path.parent) / py_file.stem).parts)
-        root_node = ast.parse(py_file.read_text("utf-8"), py_file)
-        for class_def in type_filter(root_node.body, ast.ClassDef):
-            result[class_def.name] = ast.ImportFrom(module_path, [ast.alias(class_def.name)])
-    return result
-
-
 def compile_ui_file(path: Path) -> str:
-    command = ("pyside6-uic", "--generator", "python", str(path))
+    try:
+        command = ("pyside6-uic", "--generator", "python", str(path))
+    except Exception as e:
+        raise RuntimeError(f"Compilation failed for file {path}") from e
     return subprocess.check_output(command, encoding="utf-8")
 
 

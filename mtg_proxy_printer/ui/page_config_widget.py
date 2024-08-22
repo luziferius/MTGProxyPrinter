@@ -16,10 +16,11 @@
 import configparser
 import functools
 from functools import partial
+import math
 import typing
 
 from PySide6.QtCore import Slot, Qt
-from PySide6.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit
+from PySide6.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
@@ -53,24 +54,17 @@ class PageConfigWidget(QGroupBox):
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
         page_layout = PageLayoutSettings()
-        ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
-        ui.page_height.valueChanged[int].connect(partial(setattr, page_layout, "page_height"))
-        ui.page_width.valueChanged[int].connect(partial(setattr, page_layout, "page_width"))
-        ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
-        ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
-        ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
-        ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
-        ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
 
-        # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
-        # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
         for spinbox in (
-                ui.page_height, ui.page_width,
+                ui.card_bleed, ui.page_height, ui.page_width,
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
                 ui.row_spacing, ui.column_spacing):
-            spinbox.valueChanged[int].connect(self.validate_paper_size_settings)
-            spinbox.valueChanged[int].connect(self.page_layout_setting_changed)
+            layout_key = spinbox.objectName()
+            spinbox.valueChanged[float].connect(partial(setattr, page_layout, layout_key))
+            spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
+            spinbox.valueChanged[float].connect(self.page_layout_setting_changed)
+        # PySide6 maps the QCheckBox check states to proper Python enums, but the stateChanged Qt signal carries raw
+        # integers. To get the integers for comparison, the lambdas below require accessing the CheckState enum values.
         ui.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked.value))
         ui.draw_sharp_corners.stateChanged.connect(
@@ -85,10 +79,21 @@ class PageConfigWidget(QGroupBox):
         """
         Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
-
         regular_capacity = self.page_layout.compute_page_card_capacity(PageType.REGULAR)
         oversized_capacity = self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
-        capacity_text = f"{regular_capacity} regular cards, {oversized_capacity} oversized cards"
+        regular_text = self.tr(
+            "%n regular card(s)",
+            "Display of the resulting page capacity for regular-sized cards",
+            regular_capacity)
+        oversized_text = self.tr(
+            "%n oversized card(s)",
+            "Display of the resulting page capacity for oversized cards",
+            oversized_capacity
+        )
+        capacity_text = self.tr(
+            "{regular_text}, {oversized_text}",
+            "Combination of the page capacities for regular, and oversized cards"
+        ).format(regular_text=regular_text, oversized_text=oversized_text)
         self.ui.page_capacity.setText(capacity_text)
 
     @Slot()
@@ -125,8 +130,8 @@ class PageConfigWidget(QGroupBox):
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         documents_section = settings["documents"]
-        for spinbox, setting in self._get_integer_settings_widgets():
-            value = documents_section.getint(setting)
+        for spinbox, setting in self._get_decimal_settings_widgets():
+            value = documents_section.getfloat(setting)
             spinbox.setValue(value)
             setattr(self.page_layout, spinbox.objectName(), spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
@@ -146,7 +151,7 @@ class PageConfigWidget(QGroupBox):
             value = getattr(other, key)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
-                if isinstance(widget, QSpinBox):
+                if isinstance(widget, QDoubleSpinBox):
                     widget.setValue(value)
                     setattr(self.page_layout, key, widget.value())
                 elif isinstance(widget, QLineEdit):
@@ -162,7 +167,7 @@ class PageConfigWidget(QGroupBox):
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
         documents_section = mtg_proxy_printer.settings.settings["documents"]
-        for spinbox, setting in self._get_integer_settings_widgets():
+        for spinbox, setting in self._get_decimal_settings_widgets():
             documents_section[setting] = str(spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
@@ -170,9 +175,9 @@ class PageConfigWidget(QGroupBox):
             documents_section[setting] = line_edit.text()
         logger.debug("Saving done.")
 
-    def _get_integer_settings_widgets(self):
+    def _get_decimal_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: typing.List[typing.Tuple[QSpinBox, str]] = [
+        widgets_with_settings: typing.List[typing.Tuple[QDoubleSpinBox, str]] = [
             (ui.card_bleed, "card-bleed-mm"),
             (ui.page_height, "paper-height-mm"),
             (ui.page_width, "paper-width-mm"),
@@ -214,8 +219,8 @@ class PageConfigWidget(QGroupBox):
         for widget, setting in self._get_boolean_settings_widgets():
             if widget.isChecked() is not section.getboolean(setting):
                 highlight_widget(widget)
-        for widget, setting in self._get_integer_settings_widgets():
-            if widget.value() != section.getint(setting):
+        for widget, setting in self._get_decimal_settings_widgets():
+            if not math.isclose(widget.value(), section.getfloat(setting)):
                 highlight_widget(widget)
 
     @highlight_differing_settings.register
@@ -226,6 +231,6 @@ class PageConfigWidget(QGroupBox):
         for widget, _ in self._get_boolean_settings_widgets():
             if widget.isChecked() is not getattr(settings, widget.objectName()):
                 highlight_widget(widget)
-        for widget, _ in self._get_integer_settings_widgets():
-            if widget.value() != getattr(settings, widget.objectName()):
+        for widget, _ in self._get_decimal_settings_widgets():
+            if not math.isclose(widget.value(), getattr(settings, widget.objectName())):
                 highlight_widget(widget)

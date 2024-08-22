@@ -221,6 +221,10 @@ class MeteredSeekableHTTPFile(QObject):
         for retry in range(outer_retries, self.retry_limit or 1):
             try:
                 response: http.client.HTTPResponse = urllib.request.urlopen(request)
+            except urllib.error.HTTPError as e:
+                if e.code in {400, 403, 404}:
+                    # Do not re-try bad requests, permission denied or not-found URLs
+                    raise e
             except urllib.error.URLError as e:
                 # URLError is most likely caused by being offline,
                 # so wait a bit to not immediately burn all remaining retries

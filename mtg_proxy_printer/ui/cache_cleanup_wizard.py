@@ -352,12 +352,12 @@ class CardFilterPage(QWizardPage):
     def initializePage(self) -> None:
         super().initializePage()
         images = self.image_db.read_disk_cache_content()
-        visible, hidden, unknown = self.card_db.get_all_cards_from_image_cache(images)
-        for card, key in visible:
+        partitioned = self.card_db.get_all_cards_from_image_cache(images)
+        for card, key in partitioned.visible:
             self.card_image_model.add_row(card, key, False)
-        for card, key in hidden:
+        for card, key in partitioned.hidden:
             self.card_image_model.add_row(card, key, True)
-        for key in unknown:
+        for key in partitioned.unknown:
             self.unknown_image_model.add_row(key)
         self._apply_filter()
 

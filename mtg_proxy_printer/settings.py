@@ -14,8 +14,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import configparser
+import functools
 import logging
+import math
 import pathlib
+from numbers import Real
 import re
 import typing
 
@@ -117,8 +120,12 @@ DEFAULT_SETTINGS["default-filesystem-paths"] = {
 DEFAULT_SETTINGS["gui"] = {
     "central-widget-layout": "columnar",
     "show-toolbar": "True",
+    "language": "",
 }
 VALID_SEARCH_WIDGET_LAYOUTS = {"horizontal", "columnar", "tabbed"}
+VALID_LANGUAGES = {
+    "", "de", "en_US",
+}
 DEFAULT_SETTINGS["debug"] = {
     "cutelog-integration": "False",
     "write-log-file": "True",
@@ -150,6 +157,19 @@ DEFAULT_SETTINGS["pdf-export"] = {
 MAX_DOCUMENT_NAME_LENGTH = 200
 
 
+def round_to_nearest_multiple(value: Real, multiple: Real) -> Real:
+    """Rounds the given value to the nearest multiple of "multiple"."""
+    return round(value/multiple)*multiple
+
+round_distance_value = functools.partial(
+    round_to_nearest_multiple,
+    multiple=1/100
+)
+def clamp_to_supported_range(value: float) -> float:
+    """Clamps numerical document settings to the supported value range"""
+    return min(max(value, 0.0), 10000.0)
+
+
 def get_boolean_card_filter_keys():
     """Returns all keys for boolean card filter settings."""
     keys = DEFAULT_SETTINGS["card-filter"].keys()
@@ -157,9 +177,9 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(settings: configparser.ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(input_settings: configparser.ConfigParser = settings) -> typing.Set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
-    raw = settings["card-filter"]["hidden-sets"]
+    raw = input_settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
     deduplicated = set(raw.split())
     return deduplicated
@@ -262,19 +282,19 @@ def _validate_documents_section(to_validate: configparser.ConfigParser, section_
     defaults = DEFAULT_SETTINGS[section_name]
     boolean_settings = {"print-cut-marker", "print-sharp-corners", "print-page-numbers", }
     string_settings = {"default-document-name", }
-    # Check syntax
     for key in section.keys():
         if key in boolean_settings:
             _validate_boolean(section, defaults, key)
         elif key in string_settings:
             pass
         else:
-            _validate_non_negative_int(section, defaults, key)
+            _validate_document_spacing_distance(section, defaults, key)
+
     # Check some semantic properties
-    available_height = section.getint("paper-height-mm") - \
-        (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
-    available_width = section.getint("paper-width-mm") - \
-        (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
+    available_height = section.getfloat("paper-height-mm") - \
+        (section.getfloat("margin-top-mm") + section.getfloat("margin-bottom-mm"))
+    available_width = section.getfloat("paper-width-mm") - \
+        (section.getfloat("margin-left-mm") + section.getfloat("margin-right-mm"))
 
     if available_height < card_height:
         # Can not fit a single card on a page
@@ -288,15 +308,15 @@ def _validate_documents_section(to_validate: configparser.ConfigParser, section_
         section["margin-right-mm"] = defaults["margin-right-mm"]
 
     # Re-calculate, if width or height was reset
-    available_height = section.getint("paper-height-mm") - \
-        (section.getint("margin-top-mm") + section.getint("margin-bottom-mm"))
-    available_width = section.getint("paper-width-mm") - \
-        (section.getint("margin-left-mm") + section.getint("margin-right-mm"))
+    available_height = section.getfloat("paper-height-mm") - \
+        (section.getfloat("margin-top-mm") + section.getfloat("margin-bottom-mm"))
+    available_width = section.getfloat("paper-width-mm") - \
+        (section.getfloat("margin-left-mm") + section.getfloat("margin-right-mm"))
     # FIXME: This looks like a dimensional error. Validate and test!
-    if section.getint("column-spacing-mm") > (available_spacing_vertical := available_height - card_height):
+    if section.getfloat("column-spacing-mm") > (available_spacing_vertical := available_height - card_height):
         # Prevent column spacing from overlapping with bottom margin
         section["column-spacing-mm"] = str(available_spacing_vertical)
-    if section.getint("row-spacing-mm") > (available_spacing_horizontal := available_width - card_width):
+    if section.getfloat("row-spacing-mm") > (available_spacing_horizontal := available_width - card_width):
         # Prevent row spacing from overlapping with right margin
         section["row-spacing-mm"] = str(available_spacing_horizontal)
 
@@ -315,6 +335,7 @@ def _validate_gui_section(to_validate: configparser.ConfigParser, section_name: 
     defaults = DEFAULT_SETTINGS[section_name]
     _validate_string_is_in_set(section, defaults, VALID_SEARCH_WIDGET_LAYOUTS, "central-widget-layout")
     _validate_boolean(section, defaults, "show-toolbar")
+    _validate_string_is_in_set(section, defaults, VALID_LANGUAGES, "language")
 
 
 def _validate_debug_section(to_validate: configparser.ConfigParser, section_name: str = "debug"):
@@ -385,6 +406,16 @@ def _validate_non_negative_int(section: configparser.SectionProxy, defaults: con
     except ValueError:
         _restore_default(section, defaults, key)
 
+
+def _validate_document_spacing_distance(
+        section: configparser.SectionProxy, defaults: configparser.SectionProxy, key: str):
+    try:
+        value = section.getfloat(key)
+        rounded = round_distance_value(clamp_to_supported_range(value))
+        if not math.isclose(value, rounded) or value < 0:
+            section[key] = str(rounded)
+    except ValueError:
+        _restore_default(section, defaults, key)
 
 def _validate_string_is_in_set(
         section: configparser.SectionProxy, defaults: configparser.SectionProxy,

@@ -17,7 +17,7 @@ import configparser
 import sqlite3
 import typing
 
-from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtCore import QObject, Signal, Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
@@ -49,7 +49,6 @@ class PrintingFilterUpdater(Runnable):
         error_occurred = Signal(str)
 
     PROGRESS_STEP_COUNT = 6
-    PROGRESS_MESSAGE = "Processing updated card filters:"
 
     def __init__(
             self, model: "CardDatabase", db_connection: sqlite3.Connection = None, *,
@@ -125,7 +124,10 @@ class PrintingFilterUpdater(Runnable):
             if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
-            self.signals.begin_update.emit(self.PROGRESS_STEP_COUNT, self.PROGRESS_MESSAGE)
+            self.signals.begin_update.emit(
+                self.PROGRESS_STEP_COUNT,
+                QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
+                                           "Processing updated card filters:"))
             self.update_ui = self._store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
