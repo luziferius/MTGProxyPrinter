@@ -194,10 +194,10 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-        # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
-        # XMage also lists the .mtga suffix, so add that too.
-        QCoreApplication.translate("MTGArenaParser", "Magic Arena deck file"): ["txt", "mtga"],
-    }
+            # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
+            # XMage also lists the .mtga suffix, so add that too.
+            QCoreApplication.translate("MTGArenaParser", "Magic Arena deck file"): ["txt", "mtga"],
+        }
     
     # The deck segment headers seem inconsistent across different sites
     LINES_TO_SKIP = frozenset((
@@ -229,9 +229,9 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-        # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
-        QCoreApplication.translate("MTGOnlineParser", "Magic Online (MTGO) deck file"): ["dek", "txt"],
-    }
+            # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
+            QCoreApplication.translate("MTGOnlineParser", "Magic Online (MTGO) deck file"): ["dek", "txt"],
+        }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
@@ -252,8 +252,8 @@ class XMageParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-        QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
-    }
+            QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
+        }
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):

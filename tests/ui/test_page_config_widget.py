@@ -90,6 +90,7 @@ def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_n
         checkbox_widget.setChecked(new_value)
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
 
+
 ZeroMarginsSettings = {
     "paper-height-mm": "297",
     "paper-width-mm": "210",

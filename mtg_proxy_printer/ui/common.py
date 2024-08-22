@@ -96,7 +96,7 @@ def load_ui_from_file(name: str):
     """
     Returns the Ui class type from uic.loadUiType(), loading the ui file with the given name.
 
-    :param name:Path to the UI file
+    :param name: Path to the UI file
     :return: class implementing the requested Ui
     :raises FileNotFoundError: If the given ui file does not exist
     """

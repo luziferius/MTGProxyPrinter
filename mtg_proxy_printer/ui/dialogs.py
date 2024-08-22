@@ -110,6 +110,7 @@ class SavePDFDialog(QFileDialog):
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
 
+
 class LoadSaveDialog(QFileDialog):
     def __init__(self, *args, **kwargs):
         # Note: Cannot supply already translated strings to __init__,
@@ -120,6 +121,7 @@ class LoadSaveDialog(QFileDialog):
         ).format(default_save_suffix=DEFAULT_SAVE_SUFFIX)
         self.setNameFilter(filter_text)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
+
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 

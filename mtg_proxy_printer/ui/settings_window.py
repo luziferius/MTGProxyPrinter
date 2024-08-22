@@ -173,7 +173,6 @@ class SettingsWindow(QDialog):
         ui = self.ui
         return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
 
-
     def load_settings(self, settings: configparser.ConfigParser):
         logger.debug("Loading the settings")
         for page in self._get_pages():
