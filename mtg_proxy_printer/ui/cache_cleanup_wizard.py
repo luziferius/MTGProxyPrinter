@@ -209,10 +209,10 @@ class KnownCardImageModel(QAbstractTableModel):
 
 class UnknownCardColumns(enum.IntEnum):
     ScryfallId = 0
-    IsFront = 1
-    HasHighResolution = 2
-    Size = 3
-    FilesystemPath = 4
+    IsFront = enum.auto()
+    HasHighResolution = enum.auto()
+    Size = enum.auto()
+    FilesystemPath = enum.auto()
 
 
 @dataclasses.dataclass()
@@ -357,9 +357,9 @@ class CardFilterPage(QWizardPage):
         for column, scaling_factor in (
                 (KnownCardColumns.Name, 2),
                 (KnownCardColumns.Set, 2.5),
-                (KnownCardColumns.CollectorNumber, 0.95),
-                (KnownCardColumns.IsFront, 0.9),
-                (KnownCardColumns.Size, 0.7)):
+                (KnownCardColumns.CollectorNumber, 1),
+                (KnownCardColumns.IsFront, 1),
+                (KnownCardColumns.Size, 0.8)):
             new_size = math.floor(view.columnWidth(column)*scaling_factor)
             view.setColumnWidth(column, new_size)
 
@@ -419,17 +419,18 @@ class CardFilterPage(QWizardPage):
 
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
+        role = ItemDataRole.EditRole
         selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
-            (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.IsFront).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.Size).data(ItemDataRole.EditRole))
+            (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(role),
+             index.siblingAtColumn(UnknownCardColumns.IsFront).data(role),
+             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(role),
+             index.siblingAtColumn(UnknownCardColumns.Size).data(role))
             for index in self.ui.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
-            (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(KnownCardColumns.IsFront).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(KnownCardColumns.Size).data(ItemDataRole.EditRole))
+            (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(role),
+             index.siblingAtColumn(KnownCardColumns.IsFront).data(role),
+             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(role),
+             index.siblingAtColumn(KnownCardColumns.Size).data(role))
             for index in self.ui.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
