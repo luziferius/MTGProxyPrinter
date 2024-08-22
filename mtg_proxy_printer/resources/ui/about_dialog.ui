@@ -73,9 +73,6 @@ Project Website: [{application_name} home page]({application_home_page})
 
 </string>
          </property>
-         <property name="tabStopWidth">
-          <number>84</number>
-         </property>
          <property name="openExternalLinks">
           <bool>true</bool>
          </property>
