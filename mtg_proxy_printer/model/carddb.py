@@ -59,6 +59,7 @@ __all__ = [
     "CheckCard",
     "Card",
     "AnyCardType",
+    "AnyCardTypeForTypeCheck",
     "CardCorner",
     "CardDatabase",
     "CardList",

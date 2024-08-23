@@ -29,7 +29,7 @@ __all__ = [
     "ActionNewPage",
     "ActionRemovePage",
 ]
-ContentType = typing.List[typing.List[AnyCardType]]
+ContentType = typing.List[typing.Iterable[AnyCardType]]
 
 
 class ActionNewPage(DocumentAction):

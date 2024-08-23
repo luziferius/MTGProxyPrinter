@@ -25,7 +25,6 @@ import textwrap
 import typing
 from unittest.mock import patch
 
-import pint
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
@@ -42,7 +41,7 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, SectionProxy, unit_registry, ConfigParser
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, ConfigParser, QuantityT
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 
@@ -57,6 +56,7 @@ __all__ = [
     "DocumentLoader",
     "PageLayoutSettings",
     "CardType",
+    "migrate_database",
 ]
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
@@ -90,19 +90,19 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: pint.Quantity = unit_registry.parse_expression("0 mm")
+    card_bleed: QuantityT = unit_registry.parse_expression("0 mm")
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: pint.Quantity = unit_registry.parse_expression("0 mm")
-    column_spacing: pint.Quantity = unit_registry.parse_expression("0 mm")
-    margin_bottom: pint.Quantity = unit_registry.parse_expression("0 mm")
-    margin_left: pint.Quantity = unit_registry.parse_expression("0 mm")
-    margin_right: pint.Quantity = unit_registry.parse_expression("0 mm")
-    margin_top: pint.Quantity = unit_registry.parse_expression("0 mm")
-    page_height: pint.Quantity = unit_registry.parse_expression("0 mm")
-    page_width: pint.Quantity = unit_registry.parse_expression("0 mm")
+    row_spacing: QuantityT = unit_registry.parse_expression("0 mm")
+    column_spacing: QuantityT = unit_registry.parse_expression("0 mm")
+    margin_bottom: QuantityT = unit_registry.parse_expression("0 mm")
+    margin_left: QuantityT = unit_registry.parse_expression("0 mm")
+    margin_right: QuantityT = unit_registry.parse_expression("0 mm")
+    margin_top: QuantityT = unit_registry.parse_expression("0 mm")
+    page_height: QuantityT = unit_registry.parse_expression("0 mm")
+    page_width: QuantityT = unit_registry.parse_expression("0 mm")
 
     @classmethod
     def create_from_settings(cls, settings: ConfigParser = mtg_proxy_printer.settings.settings):
@@ -172,8 +172,8 @@ class PageLayoutSettings:
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
         card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_width: pint.Quantity = card_size.width.to("mm", "print")
-        available_width: pint.Quantity = self.page_width - (self.margin_left + self.margin_right)
+        card_width: QuantityT = card_size.width.to("mm", "print")
+        available_width: QuantityT = self.page_width - (self.margin_left + self.margin_right)
 
         if available_width < card_width:
             return 0
@@ -185,8 +185,8 @@ class PageLayoutSettings:
     def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
         card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_height: pint.Quantity = card_size.height.to("mm", "print")
-        available_height: pint.Quantity = self.page_height - (self.margin_top + self.margin_bottom)
+        card_height: QuantityT = card_size.height.to("mm", "print")
+        available_height: QuantityT = self.page_height - (self.margin_top + self.margin_bottom)
 
         if available_height < card_height:
             return 0
@@ -560,7 +560,7 @@ class Worker(LoaderSignals):
             value = getattr(default_settings, key)
             if annotated_type is bool:
                 value = annotated_type(value)
-            elif annotated_type is pint.Quantity:
+            elif annotated_type is QuantityT:
                 # TODO: Currently implicitly interpreting values as millimeters. Replace this with save version 7.
                 # Ensure all floats are within the allowed bounds.
                 value = mtg_proxy_printer.settings.clamp_to_supported_range(annotated_type(f"{value} mm"))
@@ -592,7 +592,7 @@ class Worker(LoaderSignals):
 
 def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     logger.debug("Running save file migration tasks")
-    _migrate_2_to_3(db, settings)
+    _migrate_2_to_3(db)
     _migrate_3_to_4(db, settings)
     _migrate_4_to_5(db, settings)
     _migrate_5_to_6(db, settings)
@@ -600,7 +600,7 @@ def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     logger.debug("Finished running migration tasks")
 
 
-def _migrate_2_to_3(db: sqlite3.Connection, settings: PageLayoutSettings):
+def _migrate_2_to_3(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version\n").fetchone()[0] != 2:
         return
     logger.debug("Migrating save file from version 2 to 3")

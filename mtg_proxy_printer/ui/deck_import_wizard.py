@@ -117,7 +117,8 @@ class LoadListPage(QWizardPage):
             lambda text: ui.deck_list_download_button.setEnabled(
                 self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
-        ui.deck_list_download_url_line_edit.setToolTip(self.tr("Supported websites:\n{supported_sites}").format(supported_sites=supported_sites))
+        ui.deck_list_download_url_line_edit.setToolTip(
+            self.tr("Supported websites:\n{supported_sites}").format(supported_sites=supported_sites))
         ui.translate_deck_list_target_language.setModel(language_model)
         self.registerField("deck_list*", ui.deck_list, "plainText", ui.deck_list.textChanged)
         self.registerField("print-guessing-enable", ui.print_guessing_enable)

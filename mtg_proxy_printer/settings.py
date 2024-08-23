@@ -13,11 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import functools
 import logging
 import math
 import pathlib
-from numbers import Real
 import re
 import typing
 
@@ -27,7 +25,7 @@ from PyQt5.QtCore import QStandardPaths
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T
+from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT
 
 __all__ = [
     "settings",
@@ -162,7 +160,7 @@ def round_to_nearest_multiple(value: T, multiple: T) -> T:
     """Rounds the given value to the nearest multiple of "multiple"."""
     return round(value/multiple)*multiple
 
-def clamp_to_supported_range(value: pint.Quantity) -> pint.Quantity:
+def clamp_to_supported_range(value: QuantityT) -> QuantityT:
     """Clamps numerical document settings to the supported value range"""
     return min(max(value, MIN_SIZE),  MAX_SIZE)
 
@@ -174,9 +172,9 @@ def get_boolean_card_filter_keys():
     return keys
 
 
-def parse_card_set_filters(settings: ConfigParser = settings) -> typing.Set[str]:
+def parse_card_set_filters(input_settings: ConfigParser = settings) -> typing.Set[str]:
     """Parses the hidden sets filter setting into a set of lower-case MTG set codes."""
-    raw = settings["card-filter"]["hidden-sets"]
+    raw = input_settings["card-filter"]["hidden-sets"]
     raw = raw.lower()
     deduplicated = set(raw.split())
     return deduplicated
@@ -288,9 +286,9 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
             _validate_document_spacing_distance(section, defaults, key)
 
     # Check some semantic properties
-    available_height: pint.Quantity = section.get_quantity("paper-height") - \
+    available_height = section.get_quantity("paper-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
-    available_width: pint.Quantity = section.get_quantity("paper-width") - \
+    available_width = section.get_quantity("paper-width") - \
         (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
 
     if available_height < card_height:
@@ -305,9 +303,9 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         section["margin-right"] = defaults["margin-right"]
 
     # Re-calculate, if width or height was reset
-    available_height: pint.Quantity = section.get_quantity("paper-height") - \
+    available_height = section.get_quantity("paper-height") - \
         (section.get_quantity("margin-top") + section.get_quantity("margin-bottom"))
-    available_width: pint.Quantity = section.get_quantity("paper-width") - \
+    available_width = section.get_quantity("paper-width") - \
         (section.get_quantity("margin-left") + section.get_quantity("margin-right"))
     # FIXME: This looks like a dimensional error. Validate and test!
     if section.get_quantity("column-spacing") > (available_spacing_vertical := available_height - card_height):
@@ -376,7 +374,7 @@ def _validate_pdf_export_section(to_validate: ConfigParser, section_name: str = 
 def _validate_path_to_directory(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if not pathlib.Path(section[key]).resolve().is_dir():
-            raise ValueError
+            raise ValueError()
     except Exception:
         _restore_default(section, defaults, key)
 
@@ -384,7 +382,7 @@ def _validate_path_to_directory(section: SectionProxy, defaults: SectionProxy, k
 def _validate_boolean(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if section.getboolean(key) is None:
-            raise ValueError
+            raise ValueError()
     except ValueError:
         _restore_default(section, defaults, key)
 
@@ -399,7 +397,7 @@ def _validate_three_valued_boolean(section: SectionProxy, defaults: SectionProxy
 def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         if section.getint(key) < 0:
-            raise ValueError
+            raise ValueError()
     except ValueError:
         _restore_default(section, defaults, key)
 

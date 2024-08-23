@@ -22,6 +22,7 @@ from math import ceil
 
 from hamcrest import *
 import pytest
+
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
 from PyQt5.QtCore import QPoint

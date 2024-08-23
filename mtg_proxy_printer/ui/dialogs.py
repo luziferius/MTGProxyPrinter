@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import confimgpoart typingser
 import pathlib
 import sys
 
@@ -108,6 +109,7 @@ class SavePDFDialog(QFileDialog):
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
 
+
 class LoadSaveDialog(QFileDialog):
     def __init__(self, *args, **kwargs):
         # Note: Cannot supply already translated strings to __init__,
@@ -118,6 +120,7 @@ class LoadSaveDialog(QFileDialog):
         ).format(default_save_suffix=DEFAULT_SAVE_SUFFIX)
         self.setNameFilter(filter_text)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
+
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
@@ -274,6 +277,8 @@ class PrintDialog(QPrintDialog):
 
 
 class HoverEventFilter(QObject):
+    parent: typing.Callable[[], "DocumentSettingsDialog"]
+
     def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
         self.settings = settings
@@ -283,7 +288,7 @@ class HoverEventFilter(QObject):
         # This check avoids a crash during application shutdown
         if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
             return False
-        parent: "DocumentSettingsDialog" = self.parent()
+        parent = self.parent()
         if event_type == QEvent.Type.HoverEnter:
             parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
         elif event_type == QEvent.Type.HoverLeave:

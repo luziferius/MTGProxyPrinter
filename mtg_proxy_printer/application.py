@@ -199,7 +199,7 @@ class Application(QApplication):
             else str(pathlib.Path(mtg_proxy_printer.__file__).parent / "resources")
         path += "/translations"
         logger.debug(f"Locale search path is '{path}'")
-        self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.TranslationsPath))
+        self._load_translator(locale, "qtbase", QLibraryInfo.location(QLibraryInfo.LibraryLocation.TranslationsPath))
         self._load_translator(locale, "mtgproxyprinter", path)
 
     def _load_translator(self, locale: QLocale, component: str, path: str):

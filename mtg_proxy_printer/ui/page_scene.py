@@ -4,7 +4,6 @@ import functools
 import itertools
 import typing
 
-import pint
 from PyQt5.QtCore import Qt, QSizeF, QPointF, QRectF, pyqtSignal as Signal, QObject, pyqtSlot as Slot, \
     QPersistentModelIndex, QModelIndex, QRect, QPoint, QSize
 from PyQt5.QtGui import QPen, QColorConstants, QBrush, QColor, QPalette, QFontMetrics, QPixmap, QTransform, QPolygonF
@@ -15,7 +14,7 @@ from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.model.carddb import Card, CardCorner
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, RESOLUTION, CardSizes, CardSize, QuantityT
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -48,11 +47,11 @@ class BleedOrientation(enum.Enum):
 
 
 class CutMarkerParameters(typing.NamedTuple):
-    total_space: pint.Quantity
-    card_size: pint.Quantity
+    total_space: QuantityT
+    card_size: QuantityT
     item_count: int
-    margin: pint.Quantity
-    image_spacing: pint.Quantity
+    margin: QuantityT
+    image_spacing: QuantityT
 
 
 def scale_to_pixel(value: float) -> float:
@@ -77,7 +76,7 @@ class CardBleedItem(QGraphicsPixmapItem):
         self.setPos(pos)
         self.setZValue(RenderLayers.BLEEDS.value)
 
-    def update_bleed_size(self, bleed_width: pint.Quantity):
+    def update_bleed_size(self, bleed_width: QuantityT):
         size_px: float = bleed_width.to("pixel", "print").magnitude
         transformation = self.transform()
         transformation.reset()
@@ -113,7 +112,7 @@ class CardBleedCornerItem(QGraphicsPolygonItem):
         self.setBrush(card.corner_color(corner))
         self.setZValue(RenderLayers.BLEEDS.value+0.1)
 
-    def update_bleed_size(self, h_width_mm: pint.Quantity, v_width_mm: pint.Quantity):
+    def update_bleed_size(self, h_width_mm: QuantityT, v_width_mm: QuantityT):
         h_px: float = h_width_mm.to("pixel", "print").magnitude
         v_px: float = v_width_mm.to("pixel", "print").magnitude
         left = -v_px
@@ -171,7 +170,7 @@ class CardBleeds(typing.NamedTuple):
         bleeds.update_bleeds(zero_width, zero_width, zero_width, zero_width)
         return bleeds
 
-    def update_bleeds(self, top: pint.Quantity, bottom: pint.Quantity, left: pint.Quantity, right: pint.Quantity):
+    def update_bleeds(self, top: QuantityT, bottom: QuantityT, left: QuantityT, right: QuantityT):
         self.top.update_bleed_size(top)
         self.bottom.update_bleed_size(bottom)
         self.left.update_bleed_size(left)
@@ -465,8 +464,8 @@ class PageScene(QGraphicsScene):
         vertical_margins = (page_layout.margin_top + page_layout.margin_bottom) if without_margins else zero_width
         horizontal_margins = (page_layout.margin_left + page_layout.margin_right) if without_margins else zero_width
 
-        height: pint.Quantity = page_layout.page_height - vertical_margins
-        width: pint.Quantity = page_layout.page_width - horizontal_margins
+        height: QuantityT = page_layout.page_height - vertical_margins
+        width: QuantityT = page_layout.page_width - horizontal_margins
         page_size = QRectF(
             QPointF(0, 0),
             QSizeF(
@@ -620,8 +619,8 @@ class PageScene(QGraphicsScene):
 
     def update_card_bleeds(self):
         full_bleed = self.document.page_layout.card_bleed
-        inner_bleed_h: pint.Quantity = min(self.document.page_layout.row_spacing/2, full_bleed)
-        inner_bleed_v: pint.Quantity = min(self.document.page_layout.column_spacing/2, full_bleed)
+        inner_bleed_h: QuantityT = min(self.document.page_layout.row_spacing/2, full_bleed)
+        inner_bleed_v: QuantityT = min(self.document.page_layout.column_spacing/2, full_bleed)
         for item in self.card_items:
             neighbors = self._has_neighbors(item)
             item.bleeds.update_bleeds(
@@ -648,7 +647,7 @@ class PageScene(QGraphicsScene):
         )
 
     @staticmethod
-    def _distance_to_rounded_px(value: pint.Quantity) -> int:
+    def _distance_to_rounded_px(value: floaQuantityT) -> int:
         return round(value.to("pixel", "print").magnitude)
 
     def remove_cut_markers(self):

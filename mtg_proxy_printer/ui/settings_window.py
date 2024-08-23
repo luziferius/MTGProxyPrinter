@@ -50,7 +50,9 @@ __all__ = [
 ]
 
 
-class HoverEventFilter(QObject):
+class HighlightDifferingSettingsHoverEventFilter(QObject):
+    parent: typing.Callable[[], "SettingsWindow"]
+
     def __init__(self, settings: ConfigParser, parent: "SettingsWindow"):
         super().__init__(parent)
         self.settings = settings
@@ -60,7 +62,7 @@ class HoverEventFilter(QObject):
         # This check avoids a crash during application shutdown
         if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
             return False
-        parent: "SettingsWindow" = self.parent()
+        parent = self.parent()
         if event_type == QEvent.HoverEnter:
             parent.highlight_differing_settings(self.settings)
         elif event_type == QEvent.HoverLeave:
@@ -129,11 +131,13 @@ class SettingsWindow(QDialog):
 
         restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
         restore_defaults.clicked.connect(self.restore_defaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
+        restore_defaults.installEventFilter(
+            HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
 
         reset = button_box.button(DialogBoxButton.Reset)
         reset.clicked.connect(self.reset)
-        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        reset.installEventFilter(
+            HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
 
         buttons_with_icons = [
             (DialogBoxButton.Reset, "edit-undo"),
@@ -172,7 +176,6 @@ class SettingsWindow(QDialog):
     def _get_pages(self) -> typing.Sequence[Page]:
         ui = self.ui
         return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
-
 
     def load_settings(self, settings: ConfigParser):
         logger.debug("Loading the settings")

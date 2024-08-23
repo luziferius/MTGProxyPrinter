@@ -24,10 +24,11 @@ except ImportError:  # Compatibility with Python < 3.11
     from typing_extensions import NotRequired
 
 import pint
+from pint.facets.plain.registry import QuantityT
 from PyQt5.QtCore import QSize
 
 
-def _setup_units() -> typing.Tuple[pint.UnitRegistry, pint.Quantity]:
+def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
     registry = pint.UnitRegistry()
     resolution = registry.parse_expression("300dots/inch")
     print_context = pint.Context("print")
@@ -51,7 +52,7 @@ T = typing.TypeVar("T")
 
 
 class SectionProxy(configparser.SectionProxy):
-    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> pint.Quantity:
+    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
         raw_value = self.get(option, fallback, raw=raw, vars=vars)
         return unit_registry.parse_expression(raw_value)
 
@@ -59,7 +60,7 @@ class ConfigParser(configparser.ConfigParser):
 
     __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
 
-    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> pint.Quantity:
+    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
         raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
         return unit_registry.parse_expression(raw_value)
 
@@ -79,8 +80,8 @@ class UUID(str):
 
 
 class CardSize(typing.NamedTuple):
-    width: pint.Quantity
-    height: pint.Quantity
+    width: QuantityT
+    height: QuantityT
 
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))

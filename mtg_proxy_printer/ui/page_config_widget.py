@@ -18,14 +18,13 @@ from functools import partial
 import math
 import typing
 
-import pint
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.common import load_ui_from_file, BlockedSignals, highlight_widget
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, SectionProxy, unit_registry, ConfigParser
+from mtg_proxy_printer.units_and_sizes import CardSizes, PageType, unit_registry, ConfigParser, QuantityT
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_widget import Ui_PageConfigWidget
@@ -155,7 +154,7 @@ class PageConfigWidget(QGroupBox):
         ui = self.ui
         layout = self.page_layout
         for key in layout.__annotations__.keys():
-            value: typing.Union[pint.Quantity, bool, str] = getattr(other, key)
+            value: typing.Union[QuantityT, bool, str] = getattr(other, key)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):
