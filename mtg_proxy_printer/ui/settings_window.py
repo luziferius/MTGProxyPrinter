@@ -49,8 +49,9 @@ __all__ = [
 ]
 
 
-class HoverEventFilter(QObject):
+class HighlightDifferingSettingsHoverEventFilter(QObject):
     parent: typing.Callable[[], "SettingsWindow"]
+
     def __init__(self, settings: configparser.ConfigParser, parent: "SettingsWindow"):
         super().__init__(parent)
         self.settings = settings
@@ -129,11 +130,13 @@ class SettingsWindow(QDialog):
 
         restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
         restore_defaults.clicked.connect(self.restore_defaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
+        restore_defaults.installEventFilter(
+            HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
 
         reset = button_box.button(DialogBoxButton.Reset)
         reset.clicked.connect(self.reset)
-        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        reset.installEventFilter(
+            HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
 
         buttons_with_icons = [
             (DialogBoxButton.Reset, "edit-undo"),
