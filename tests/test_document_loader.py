@@ -17,23 +17,30 @@ import contextlib
 import dataclasses
 import itertools
 import functools
+import typing
+from numbers import Real
 import pathlib
 import sqlite3
 import unittest.mock
 import textwrap
 
+import pint
+from hamcrest.core.matcher import Matcher
+from pint.facets import QuantityT
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
 
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT
 from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 CardType = mtg_proxy_printer.model.document_loader.CardType
-close_to_ = functools.partial(close_to, delta=0.01)
+close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
+mm: UnitT = unit_registry.mm
+
 
 @pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
@@ -73,7 +80,6 @@ def test_valid_data_loads_correctly(
         'INSERT INTO "Card" (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)',
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
     )
-    mm = unit_registry.mm
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
         page_height=300*mm, page_width=200*mm,
         margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
