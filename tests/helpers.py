@@ -21,7 +21,8 @@ import typing
 from unittest.mock import patch, MagicMock
 
 from hamcrest.core.base_matcher import BaseMatcher
-from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of
+from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of, \
+    close_to
 from hamcrest.core.description import Description
 from pytestqt.qtbot import QtBot
 
@@ -29,7 +30,7 @@ import mtg_proxy_printer.model
 import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.card_info_downloader
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
-from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict
+from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text
@@ -219,3 +220,7 @@ class matches_type_annotation(BaseMatcher):
 
     def describe_to(self, description: Description) -> None:
         description.append_text(f"dataclass instance containing correct types")
+
+
+def quantity_close_to(value: QuantityT):
+    return has_properties(units=equal_to(value.units), magnitude=close_to(value.magnitude, 0.001))
