@@ -78,7 +78,7 @@ class PageConfigWidget(QGroupBox):
         # This method can be used via functools.partial to reduce the signature to (float) -> None,
         # which can be connected to the valueChanged[float] signal just fine.
         # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
-        setattr(page_layout, layout_key, value*unit_registry(unit))
+        setattr(page_layout, layout_key, value*unit_registry.parse_units(unit))
 
     @Slot()
     def page_layout_setting_changed(self):
@@ -137,9 +137,9 @@ class PageConfigWidget(QGroupBox):
         logger.debug(f"About to load document settings from the global settings")
         documents_section = settings["documents"]
         for spinbox, setting in self._get_decimal_settings_widgets():
-            value = documents_section.get_quantity(setting).to("mm").magnitude
-            spinbox.setValue(value)
-            setattr(self.page_layout, spinbox.objectName(), spinbox.value())
+            value = documents_section.get_quantity(setting).to("mm")
+            spinbox.setValue(value.magnitude)
+            setattr(self.page_layout, spinbox.objectName(), spinbox.value()*value.units)
         for checkbox, setting in self._get_boolean_settings_widgets():
             checkbox.setChecked(documents_section.getboolean(setting))
         for line_edit, setting in self._get_string_settings_widgets():
@@ -158,7 +158,7 @@ class PageConfigWidget(QGroupBox):
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):
-                    widget.setValue(value.magnitude)
+                    widget.setValue(value.to("mm").magnitude)
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
                 else:
@@ -172,7 +172,7 @@ class PageConfigWidget(QGroupBox):
         logger.info("About to save document settings to the global settings")
         documents_section = mtg_proxy_printer.settings.settings["documents"]
         for spinbox, setting in self._get_decimal_settings_widgets():
-            documents_section[setting] = f"{spinbox.value()} mm"
+            documents_section[setting] = str(spinbox.value()*unit_registry.mm)
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
         for line_edit, setting in self._get_string_settings_widgets():
@@ -229,12 +229,15 @@ class PageConfigWidget(QGroupBox):
 
     @highlight_differing_settings.register
     def _(self, settings: PageLayoutSettings):
-        for widget, _ in self._get_string_settings_widgets():
-            if widget.text() != getattr(settings, widget.objectName()):
-                highlight_widget(widget)
-        for widget, _ in self._get_boolean_settings_widgets():
-            if widget.isChecked() is not getattr(settings, widget.objectName()):
-                highlight_widget(widget)
-        for widget, _ in self._get_decimal_settings_widgets():
-            if not math.isclose(widget.value(), getattr(settings, widget.objectName())):
-                highlight_widget(widget)
+        for line_edit, _ in self._get_string_settings_widgets():
+            name = line_edit.objectName()
+            if line_edit.text() != getattr(settings, name):
+                highlight_widget(line_edit)
+        for checkbox, _ in self._get_boolean_settings_widgets():
+            name = checkbox.objectName()
+            if checkbox.isChecked() is not getattr(settings, name):
+                highlight_widget(checkbox)
+        for spinbox, _ in self._get_decimal_settings_widgets():
+            name = spinbox.objectName()
+            if not math.isclose(spinbox.value(), getattr(settings, name).to("mm").magnitude):
+                highlight_widget(spinbox)

@@ -90,19 +90,19 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: QuantityT = unit_registry.parse_expression("0 mm")
+    card_bleed: QuantityT = 0 * unit_registry.mm
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: QuantityT = unit_registry.parse_expression("0 mm")
-    column_spacing: QuantityT = unit_registry.parse_expression("0 mm")
-    margin_bottom: QuantityT = unit_registry.parse_expression("0 mm")
-    margin_left: QuantityT = unit_registry.parse_expression("0 mm")
-    margin_right: QuantityT = unit_registry.parse_expression("0 mm")
-    margin_top: QuantityT = unit_registry.parse_expression("0 mm")
-    page_height: QuantityT = unit_registry.parse_expression("0 mm")
-    page_width: QuantityT = unit_registry.parse_expression("0 mm")
+    row_spacing: QuantityT = 0 * unit_registry.mm
+    column_spacing: QuantityT = 0 * unit_registry.mm
+    margin_bottom: QuantityT = 0 * unit_registry.mm
+    margin_left: QuantityT = 0 * unit_registry.mm
+    margin_right: QuantityT = 0 * unit_registry.mm
+    margin_top: QuantityT = 0 * unit_registry.mm
+    page_height: QuantityT = 0 * unit_registry.mm
+    page_width: QuantityT = 0 * unit_registry.mm
 
     @classmethod
     def create_from_settings(cls, settings: ConfigParser = mtg_proxy_printer.settings.settings):
