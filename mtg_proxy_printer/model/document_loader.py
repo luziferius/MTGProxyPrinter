@@ -25,6 +25,7 @@ import textwrap
 import typing
 from unittest.mock import patch
 
+import pint
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
@@ -485,6 +486,7 @@ class Worker(LoaderSignals):
             user_version = Worker._validate_database_schema(db)
             if user_version not in range(2, 7):
                 raise AssertionError(f"Unknown database schema version: {user_version}")
+            logger.info(f"Save file version is {user_version}")
             migrate_database(db, settings)
             card_data = Worker._read_card_data_from_database(db)
             settings = Worker._read_page_layout_data_from_database(db, user_version)
@@ -532,7 +534,7 @@ class Worker(LoaderSignals):
                 ORDER BY key ASC
             """)
         default_settings.update(db.execute(document_settings_query))
-        is_number = any_of(instance_of(float), instance_of(int))
+        is_number = any_of(instance_of(float), instance_of(int), instance_of(pint.Quantity))
         assert_that(
             default_settings,
             has_properties(
@@ -560,10 +562,10 @@ class Worker(LoaderSignals):
             value = getattr(default_settings, key)
             if annotated_type is bool:
                 value = annotated_type(value)
-            elif annotated_type is QuantityT:
+            elif annotated_type is QuantityT and not isinstance(value, pint.Quantity):
                 # TODO: Currently implicitly interpreting values as millimeters. Replace this with save version 7.
                 # Ensure all floats are within the allowed bounds.
-                value = mtg_proxy_printer.settings.clamp_to_supported_range(annotated_type(f"{value} mm"))
+                value = mtg_proxy_printer.settings.clamp_to_supported_range(value*unit_registry.mm)
             elif annotated_type is str:
                  value = annotated_type(value)
             setattr(default_settings, key, value)
