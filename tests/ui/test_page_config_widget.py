@@ -71,6 +71,8 @@ def test_set_numerical_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attrib
 
 @pytest.mark.parametrize("attribute_name", [
     "draw_cut_markers",
+    "draw_sharp_corners",
+    "draw_page_numbers",
 ])
 def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     ui = widget.ui
