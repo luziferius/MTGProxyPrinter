@@ -18,6 +18,7 @@ import math
 import pathlib
 import re
 import typing
+import tokenize
 
 import pint
 from PyQt5.QtCore import QStandardPaths
@@ -25,7 +26,7 @@ from PyQt5.QtCore import QStandardPaths
 import mtg_proxy_printer.app_dirs
 import mtg_proxy_printer.meta_data
 import mtg_proxy_printer.natsort
-from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT
+from mtg_proxy_printer.units_and_sizes import CardSizes, ConfigParser, SectionProxy, unit_registry, T, QuantityT, UnitT
 
 __all__ = [
     "settings",
@@ -153,8 +154,10 @@ DEFAULT_SETTINGS["pdf-export"] = {
     "landscape-compatibility-workaround": "False",
 }
 MAX_DOCUMENT_NAME_LENGTH = 200
-MIN_SIZE = unit_registry("0 mm")
-MAX_SIZE = unit_registry("10000 mm")
+MIN_SIZE: QuantityT = 0 * unit_registry.mm
+MAX_SIZE: QuantityT = 10000 * unit_registry.mm
+ALLOWED_LENGTH_UNITS: typing.Set[UnitT] = {unit_registry.mm}
+
 
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
     """Rounds the given value to the nearest multiple of "multiple"."""
@@ -405,11 +408,16 @@ def _validate_non_negative_int(section: SectionProxy, defaults: SectionProxy, ke
 def _validate_document_spacing_distance(section: SectionProxy, defaults: SectionProxy, key: str):
     try:
         value = section.get_quantity(key)
+        if unit_conversion_required := (value.units not in ALLOWED_LENGTH_UNITS):
+            value = value.to("mm", "print")
         rounded = clamp_to_supported_range(value)
-        if not math.isclose(value.magnitude, rounded.magnitude) or value < 0:
+        if unit_conversion_required or not math.isclose(value.magnitude, rounded.magnitude):
             section[key] = str(rounded)
-    except ValueError:
+    # Unit-less values raise AttributeError, non-length values, like grams or seconds, raise DimensionalityError
+    # Invalid expressions raise TokenError
+    except (ValueError, pint.DimensionalityError, AttributeError, tokenize.TokenError):
         _restore_default(section, defaults, key)
+
 
 def _validate_string_is_in_set(section: SectionProxy, defaults: SectionProxy, valid_options: typing.Set[str], key: str):
     """Checks if the value of the option is one of the allowed values, as determined by the given set of strings."""

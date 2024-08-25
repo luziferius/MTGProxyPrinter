@@ -25,6 +25,11 @@ from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
 import pytest
 from hamcrest import *
 
+
+def between(lower: Real, upper: Real):
+    return all_of(greater_than_or_equal_to(lower), less_than_or_equal_to(upper))
+
+
 def to_mm_str(value: Real)-> str:
     return str(value*unit_registry.mm)
 
@@ -34,12 +39,18 @@ def default_settings() -> ConfigParser:
     settings.read_dict(mtg_proxy_printer.settings.DEFAULT_SETTINGS)
     return settings
 
+def numerical_document_settings_keys() -> typing.Iterable[str]:
+    return (
+        key for key, value in mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"].items()
+        if value.endswith(" mm")
+    )
 
-def test_configparser_has_get_quantity(default_settings):
+
+def test_configparser_has_get_quantity(default_settings: ConfigParser):
     assert_that(default_settings, has_property("get_quantity"))
 
 
-def test_section_has_get_quantity(default_settings):
+def test_section_has_get_quantity(default_settings: ConfigParser):
     assert_that(default_settings["DEFAULT"], has_property("get_quantity"))
 
 
@@ -78,14 +89,49 @@ def test__validate_documents_section_restore_horizontal_paper_dimensions(
 @pytest.mark.parametrize("invalid", [2, 2.5, 0, -1])
 def test__validate_documents_section_restore_vertical_paper_dimensions(
         default_settings: ConfigParser, invalid: float, unit: str):
+    defaults = mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]
     documents_section = default_settings["documents"]
     documents_section["paper-height"] = str(invalid*unit_registry(unit))
     mtg_proxy_printer.settings.validate_settings(default_settings)
     assert_that(documents_section, has_entries({
-        "paper-height": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["paper-height"]),
-        "margin-top": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-top"]),
-        "margin-bottom": equal_to(mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]["margin-bottom"]),
+        "paper-height": equal_to(defaults["paper-height"]),
+        "margin-top": equal_to(defaults["margin-top"]),
+        "margin-bottom": equal_to(defaults["margin-bottom"]),
     }))
+
+@pytest.mark.parametrize("setting", numerical_document_settings_keys())
+@pytest.mark.parametrize("unit", ["s", "", "kg", ' " '])
+def test__validate_document_section_restore_paper_dimensions_with_invalid_units(
+        default_settings: ConfigParser, setting: str, unit: str):
+    defaults = mtg_proxy_printer.settings.DEFAULT_SETTINGS["documents"]
+    documents_section = default_settings["documents"]
+    invalid_value = f'{documents_section[setting].split(" ")[0]} {unit}'.rstrip(" ")
+    documents_section[setting] = invalid_value
+    mtg_proxy_printer.settings.validate_settings(default_settings)
+    assert_that(documents_section, has_entry(setting, equal_to(defaults[setting])))
+
+
+@pytest.mark.parametrize("setting", numerical_document_settings_keys())
+@pytest.mark.parametrize("value", [
+    "1_000_000_000 nm", "1.0570008340246154e-16 light_year", "11811.023622047245 pixel",  # 1 m
+    "-1_000_000_000 nm", "-1.0570008340246154e-16 light_year", "-11811.023622047245 pixel",  # -1 m
+    "100_000_000_000 nm", "1.0570008340246154e-14 light_year", "1181102.3622047245 pixel",  # 100 m
+    "-100_000_000_000 nm", "-1.0570008340246154e-14 light_year", "-1181102.3622047245 pixel",  # -100 m
+
+])
+def test__validate_document_section_normalizes_unsupported_length_units_to_mm(
+        default_settings: ConfigParser, setting: str, value: str):
+    documents_section = default_settings["documents"]
+    documents_section[setting] = value
+    mtg_proxy_printer.settings.validate_settings(default_settings)
+    q = documents_section.get_quantity(setting)
+    assert_that(
+        documents_section.get_quantity(setting),
+        all_of(
+            has_property("units", equal_to(unit_registry.mm)),
+            has_property("magnitude", between(0, 10000))
+        )
+    )
 
 
 @pytest.mark.parametrize("expected", [0, 1/12, 11/12, 1])

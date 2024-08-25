@@ -24,7 +24,7 @@ except ImportError:  # Compatibility with Python < 3.11
     from typing_extensions import NotRequired
 
 import pint
-from pint.facets.plain.registry import QuantityT
+from pint.facets.plain.registry import QuantityT, UnitT
 from PyQt5.QtCore import QSize
 
 
@@ -49,7 +49,6 @@ OptStr = typing.Optional[str]
 IntList = typing.List[int]
 StrDict = typing.Dict[str, str]
 T = typing.TypeVar("T")
-
 
 class SectionProxy(configparser.SectionProxy):
     def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
