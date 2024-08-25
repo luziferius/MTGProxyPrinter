@@ -647,7 +647,7 @@ class PageScene(QGraphicsScene):
         )
 
     @staticmethod
-    def _distance_to_rounded_px(value: floaQuantityT) -> int:
+    def _distance_to_rounded_px(value: QuantityT) -> int:
         return round(value.to("pixel", "print").magnitude)
 
     def remove_cut_markers(self):
