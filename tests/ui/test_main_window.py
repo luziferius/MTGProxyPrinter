@@ -38,6 +38,7 @@ from mtg_proxy_printer.ui.central_widget import Ui_ColumnarCentralWidget, Ui_Gro
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 
 from tests.helpers import fill_card_database_with_json_cards
+from tests.test_document_loader import _page_layout_to_database_entries_helper
 from tests.document_controller.helpers import insert_card_in_page
 StandardButton = QMessageBox.StandardButton
 
@@ -118,7 +119,8 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
+    settings = _page_layout_to_database_entries_helper(PageLayoutSettings.create_from_settings())
+    #settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
     with open_database(save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
         save_file.execute(
             "INSERT INTO Card (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)",
