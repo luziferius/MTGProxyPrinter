@@ -44,14 +44,6 @@ close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=
 mm: UnitT = unit_registry.mm
 
 
-def _page_layout_to_database_entries_helper(page_layout: PageLayoutSettings):
-
-    return (
-        # For now, don't store Quantities as strings in the database
-        (key, (value.to(mm).magnitude if isinstance(value, pint.Quantity) else value))
-        for key, value in dataclasses.asdict(page_layout).items()
-    )
-
 @pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
     empty_save_database.execute(f"PRAGMA user_version = {user_version};")
@@ -96,7 +88,7 @@ def test_valid_data_loads_correctly(
         row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
-    page_layout_items = _page_layout_to_database_entries_helper(page_layout)
+    page_layout_items = page_layout.to_save_file_data()
     assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
@@ -141,7 +133,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
          ]
     )
     page_layout = mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()
-    page_layout_items = _page_layout_to_database_entries_helper(page_layout)
+    page_layout_items = page_layout.to_save_file_data()
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
         page_layout_items
@@ -410,7 +402,7 @@ def test_load_correctly_sets_document_title(
     annotations = document_light.page_layout.__annotations__
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        _page_layout_to_database_entries_helper(document_light.page_layout)
+        document_light.page_layout.to_save_file_data()
     )
     empty_save_database.execute(
         "UPDATE DocumentSettings SET value = ? WHERE key = ?",
