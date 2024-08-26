@@ -31,7 +31,7 @@ from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, QuantityT
 
 from tests.hasgetter import has_getter
-from tests.helpers import quantity_close_to
+from tests.helpers import quantity_close_to, quantity_between, number_between
 close_to_: typing.Callable[[float], hamcrest.core.matcher.Matcher] = functools.partial(close_to, delta=0.01)
 mm: UnitT = unit_registry.mm
 
@@ -222,10 +222,10 @@ def test_save_boolean_document_settings_to_config(
 @pytest.mark.parametrize("attribute_name, min_value, max_value", [
     ("page_height", 126*mm, 10000*mm),
     ("page_width", 88*mm, 10000*mm),
-    ("margin_top", 0*mm, 171*mm),
-    ("margin_bottom", 0*mm, 171*mm),
-    ("margin_left", 0*mm, 122*mm),
-    ("margin_right", 0*mm, 122*mm),
+    ("margin_top", 0*mm, 170.85*mm),
+    ("margin_bottom", 0*mm, 170.85*mm),
+    ("margin_left", 0*mm, 121.95*mm),
+    ("margin_right", 0*mm, 121.95*mm),
     ("row_spacing", 0*mm, 10000*mm),
     ("column_spacing", 0*mm, 10000*mm),
 ])
@@ -238,11 +238,11 @@ def test_load_numerical_values_from_page_layout(
     with patch.dict(mtg_proxy_printer.settings.settings["documents"], ZeroMarginsSettings):
         other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
-    expected = min(max(min_value, value), max_value)
     widget.load_from_page_layout(other)
-    assert_that(widget.page_layout, has_property(attribute_name, quantity_close_to(expected)))
+    assert_that(widget.page_layout, has_property(attribute_name, quantity_between(min_value, max_value)))
     spinbox_widget: QDoubleSpinBox = getattr(widget.ui, attribute_name)
-    assert_that(spinbox_widget.value(), is_(close_to_(expected.magnitude)))
+    assert_that(spinbox_widget.value(), is_(number_between(min_value.magnitude, max_value.magnitude)))
+    assert_that(spinbox_widget.value(), close_to_(getattr(widget.page_layout, attribute_name).magnitude))
 
 
 @pytest.mark.parametrize("value", [True, False])

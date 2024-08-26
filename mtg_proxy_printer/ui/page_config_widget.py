@@ -159,6 +159,7 @@ class PageConfigWidget(QGroupBox):
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
                 if isinstance(widget, QDoubleSpinBox):
                     widget.setValue(value.to("mm").magnitude)
+                    value: QuantityT = widget.value()*unit_registry.mm
                 elif isinstance(widget, QLineEdit):
                     widget.setText(value)
                 else:
