@@ -20,7 +20,7 @@ from unittest.mock import patch
 import pytest
 from hamcrest import *
 
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
@@ -37,7 +37,7 @@ def test_create_action_raises_value_error_on_zero_page_capacity():
 def test_apply_emits_settings_changed_signal(qtbot, document_light):
     old_settings = copy.copy(document_light.page_layout)
     new_settings = copy.copy(document_light.page_layout)
-    new_settings.page_height += 1  # Ensure that the new settings differ from the previous ones
+    new_settings.page_height += 1*unit_registry.mm  # Ensure that the new settings differ from the previous ones
     action = ActionEditDocumentSettings(copy.copy(new_settings))
     with patch(
             "mtg_proxy_printer.document_controller.edit_document_settings.ActionEditDocumentSettings._reflow_document"
@@ -56,11 +56,11 @@ def test_apply_emits_settings_changed_signal(qtbot, document_light):
 ])
 def test_page_capacity_reduction_reflows_document(
         qtbot, document_light, initial_row_spacing: int, new_row_spacing: int):
-    document_light.page_layout.row_spacing = initial_row_spacing
+    document_light.page_layout.row_spacing = initial_row_spacing*unit_registry.mm
     initial_capacity = (document_light.page_layout.compute_page_card_capacity(PageType.REGULAR),
                         document_light.page_layout.compute_page_card_capacity(PageType.OVERSIZED))
     new_settings = copy.copy(document_light.page_layout)
-    new_settings.row_spacing = new_row_spacing
+    new_settings.row_spacing = new_row_spacing*unit_registry.mm
     new_capacity = (new_settings.compute_page_card_capacity(PageType.REGULAR),
                     new_settings.compute_page_card_capacity(PageType.OVERSIZED))
     assert_that(new_capacity, is_(less_than(initial_capacity)), "Setup failed, capacity not decreased")
@@ -79,7 +79,7 @@ def test_page_capacity_reduction_reflows_document(
 ])
 def test_reflow_keeps_total_card_order(
         qtbot, document_light, initial_row_spacing: int, new_row_spacing: int):
-    document_light.page_layout.row_spacing = initial_row_spacing
+    document_light.page_layout.row_spacing = initial_row_spacing*unit_registry.mm
     ActionNewPage(count=2).apply(document_light)
     names = []
     for num in range(document_light.page_layout.compute_page_card_capacity(PageType.REGULAR)):
@@ -92,7 +92,7 @@ def test_reflow_keeps_total_card_order(
         names.append(name := f"C{num+1}")
         append_new_card_in_page(document_light.pages[2], name)
     new_settings = copy.copy(document_light.page_layout)
-    new_settings.row_spacing = new_row_spacing
+    new_settings.row_spacing = new_row_spacing*unit_registry.mm
     action = ActionEditDocumentSettings(copy.copy(new_settings))
     action.apply(document_light)
     names_after_action = [c.card.name for c in itertools.chain.from_iterable(document_light.pages)]
@@ -119,7 +119,7 @@ def test_reflow_moves_card_on_later_page(qtbot, document_light):
     assert_that(move_to_1, has_length(3), "Test setup failed")
 
     new_layout = copy.copy(document_light.page_layout)
-    new_layout.row_spacing = 30
+    new_layout.row_spacing = 30*unit_registry.mm
     assert_that(new_layout.compute_page_card_capacity(PageType.REGULAR), is_(6), "Test setup failed")
 
     action = ActionEditDocumentSettings(new_layout)
@@ -149,7 +149,7 @@ def test_reflow_does_not_append_empty_pages(qtbot, document_light):
     )
 
     new_layout = copy.copy(document_light.page_layout)
-    new_layout.row_spacing = 30
+    new_layout.row_spacing = 30*unit_registry.mm
 
     action = ActionEditDocumentSettings(new_layout)
     action.apply(document_light)
@@ -172,7 +172,7 @@ def test_undo_restores_old_page_layout(qtbot, document_light):
     # Alter the settings and store that in the action as the new settings, while keeping a backup in the old_settings
     # undo() should then restore the old values
     old_settings = copy.copy(document_light.page_layout)
-    document_light.page_layout.page_height += 1
+    document_light.page_layout.page_height += 1*unit_registry.mm
     new_settings = copy.copy(document_light.page_layout)
 
     action = ActionEditDocumentSettings(new_settings)
@@ -197,7 +197,7 @@ def test_undo_restores_old_page_content(qtbot, document_light):
 
     action = ActionEditDocumentSettings(document_light.page_layout)
     old_settings = action.old_settings = copy.copy(document_light.page_layout)
-    document_light.page_layout.page_height += 1
+    document_light.page_layout.page_height += 1*unit_registry.mm
     action.reflow_actions += [
         new_page,
         ActionMoveCards(0, range(7, 10), 1)

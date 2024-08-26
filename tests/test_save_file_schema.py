@@ -13,12 +13,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import faulthandler
+from pathlib import Path
 
-import mtg_proxy_printer.sqlite_helpers  # noqa; Ensure the conversion adapters are registered
+import pytest
+from hamcrest import *
 
-from .helpers import setup_logging_for_testing, setup_settings_for_testing
+import mtg_proxy_printer.model.document_loader
 
-faulthandler.enable()
-setup_logging_for_testing()
-setup_settings_for_testing()
+
+@pytest.mark.parametrize(
+    "document_schema",
+    Path(mtg_proxy_printer.model.document_loader.__file__).parent.glob("document-v*.sql")
+)
+def test_user_version_in_schema_matches_version_in_file_name(document_schema: Path):
+    schema_version = document_schema.name.split("-v")[1].split(".")[0]
+    content = document_schema.read_text("utf-8")
+    assert_that(
+        content,
+        has_string(matches_regexp(rf"PRAGMA user_version\s*=\s*{schema_version};")),
+        "Version mismatch between file name and user_version"
+    )
+

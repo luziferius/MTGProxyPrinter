@@ -15,7 +15,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
-import configparser
 from functools import partial
 from typing import List, Tuple
 
@@ -23,6 +22,7 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import QGroupBox, QWidget, QCheckBox, QPushButton
 
+from mtg_proxy_printer.units_and_sizes import ConfigParser, SectionProxy
 from mtg_proxy_printer.ui.common import highlight_widget
 
 try:
@@ -38,11 +38,11 @@ ParsingMode = QUrl.ParsingMode
 
 class AbstractPrintingFilter(QGroupBox):
 
-    def load_settings(self, settings: configparser.SectionProxy):
+    def load_settings(self, settings: SectionProxy):
         for widget, key in self._get_widgets_with_keys():
             widget.setChecked(settings.getboolean(key))
 
-    def save_settings(self, settings: configparser.SectionProxy):
+    def save_settings(self, settings: SectionProxy):
         for widget, key in self._get_widgets_with_keys():
             settings[key] = str(widget.isChecked())
 
@@ -57,7 +57,7 @@ class AbstractPrintingFilter(QGroupBox):
         pass
 
     @abc.abstractmethod
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         """Highlights GUI widgets with a state different from the given settings"""
         pass
 
@@ -101,7 +101,7 @@ class GeneralPrintingFilter(AbstractPrintingFilter):
         ]
         return widgets_with_settings
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         for widget, setting in self._get_widgets_with_keys():
             if widget.isChecked() is not section.getboolean(setting):
@@ -143,7 +143,7 @@ class FormatPrintingFilter(AbstractPrintingFilter):
         ]
         return widgets_with_settings
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         for widget, setting in self._get_widgets_with_keys():
             if widget.isChecked() is not section.getboolean(setting):

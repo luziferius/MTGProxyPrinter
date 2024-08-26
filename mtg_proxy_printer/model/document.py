@@ -357,12 +357,13 @@ class Document(QAbstractItemModel):
                 flattened_data
             )
             logger.debug(f"Written {db.execute('SELECT count() FROM Card').fetchone()[0]} cards.")
+            settings =  ((key, str(value)) for key, value in dataclasses.asdict(self.page_layout).items())
             db.executemany(
                 textwrap.dedent("""\
                     INSERT OR REPLACE INTO DocumentSettings (key, value)
                       VALUES (?, ?)
                     """),
-                dataclasses.asdict(self.page_layout).items())
+                settings)
             logger.debug("Written document settings")
             db.commit()
             db.execute("VACUUM")

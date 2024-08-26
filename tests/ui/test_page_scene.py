@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsLineItem
 from PyQt5.QtGui import QPalette, QColorConstants, QPixmap, QImage, QColor, QPainter
 from PyQt5.QtCore import QPoint
 
-from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize
+from mtg_proxy_printer.units_and_sizes import PageType, CardSizes, CardSize, UnitT, unit_registry, QuantityT
 from mtg_proxy_printer.ui.page_scene import RenderMode, PageScene
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.document_controller.compact_document import ActionCompactDocument
@@ -39,6 +39,7 @@ from tests.hasgetter import has_getters, has_getter
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
 close_to_ = partial(close_to, delta=0.005)
 RenderHint = QPainter.RenderHint
+mm: UnitT = unit_registry.mm
 
 
 def _fill_area(image: QImage, fill_color: QColor, pos: QPoint, width: int = 5, height: int = 5):
@@ -134,9 +135,9 @@ def test_cut_lines_not_drawn_when_disabled_and_page_filled(page_scene: PageScene
     )
 
 
-@pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0, 1], repeat=2))
+@pytest.mark.parametrize("row_spacing, column_spacing", itertools.product([0*mm, 1*mm], repeat=2))
 def test_cut_lines_property_only_lists_line_elements(
-        page_scene: PageScene, row_spacing: int, column_spacing: int):
+        page_scene: PageScene, row_spacing: QuantityT, column_spacing: QuantityT):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
@@ -156,10 +157,10 @@ def test_cut_lines_property_only_lists_line_elements(
     )
 
 
-@pytest.mark.parametrize("row_spacing", [0, 1])
-@pytest.mark.parametrize("column_spacing", [0, 1])
+@pytest.mark.parametrize("row_spacing", [0*mm, 1*mm])
+@pytest.mark.parametrize("column_spacing", [0*mm, 1*mm])
 def test_cut_lines_bounding_rects_cross_entire_page(
-        page_scene: PageScene, row_spacing: int, column_spacing: int):
+        page_scene: PageScene, row_spacing: QuantityT, column_spacing: QuantityT):
     layout = page_scene.document.page_layout
     layout.row_spacing = row_spacing
     layout.column_spacing = column_spacing
@@ -226,9 +227,9 @@ def test_horizontal_cut_line_locations_when_enabled(
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_y: typing.List):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.margin_top = margins
-    document.page_layout.margin_bottom = 0
-    document.page_layout.row_spacing = spacing
+    document.page_layout.margin_top = margins*mm
+    document.page_layout.margin_bottom = 0*mm
+    document.page_layout.row_spacing = spacing*mm
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
@@ -303,9 +304,9 @@ def test_vertical_cut_line_locations_when_enabled(
         page_type: PageType, spacing: int, margins: int, flags: RenderMode, expected_x: typing.List[float]):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.margin_left = margins
-    document.page_layout.margin_right = 0
-    document.page_layout.column_spacing = spacing
+    document.page_layout.margin_left = margins*mm
+    document.page_layout.margin_right = 0*mm
+    document.page_layout.column_spacing = spacing*mm
     document.page_layout.draw_cut_markers = True
     document.page_layout_changed.emit(document.page_layout)
     assert_that(
@@ -373,9 +374,9 @@ def test__compute_position_for_image_x(
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_x: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.column_spacing = spacing
-    document.page_layout.margin_left = margin
-    document.page_layout.margin_right = 0
+    document.page_layout.column_spacing = spacing*mm
+    document.page_layout.margin_left = margin*mm
+    document.page_layout.margin_right = 0*mm
     document.page_layout_changed.emit(document.page_layout)
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     row_count = document.page_layout.compute_page_row_count(page_type)
@@ -434,9 +435,9 @@ def test__compute_position_for_image_y(
         page_type: PageType, spacing: int, margin: int, flags: RenderMode, expected_y: typing.List[int]):
     page_scene.render_mode |= flags
     document = page_scene.document
-    document.page_layout.row_spacing = spacing
-    document.page_layout.margin_top = margin
-    document.page_layout.margin_bottom = 0
+    document.page_layout.row_spacing = spacing*mm
+    document.page_layout.margin_top = margin*mm
+    document.page_layout.margin_bottom = 0*mm
     document.page_layout_changed.emit(document.page_layout)
     page_capacity = document.page_layout.compute_page_card_capacity(page_type)
     column_count = document.page_layout.compute_page_column_count(page_type)
@@ -476,8 +477,8 @@ def test_setPalette_runs_without_exception(page_scene: PageScene):
 
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
 @pytest.mark.parametrize("draw_sharp_corners", [True, False])
-@pytest.mark.parametrize("card_bleed", [0, 1])
-def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+@pytest.mark.parametrize("card_bleed", [0*mm, 1*mm])
+def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: QuantityT):
     document = page_scene.document
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
@@ -497,8 +498,8 @@ def test_sharp_corners(page_scene: PageScene, draw_sharp_corners: bool, color: Q
     assert_that(rendered.pixelColor(top_left+right+down), has_correct_color, "Bottom right corner wrong")
 
 
-@pytest.mark.parametrize("card_bleed", [0, 1])
-def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed: int):
+@pytest.mark.parametrize("card_bleed", [0*mm, 1*mm])
+def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed: QuantityT):
     document = page_scene.document
     document.page_layout.card_bleed = card_bleed
     document.page_layout_changed.emit(document.page_layout)
@@ -512,8 +513,9 @@ def test_card_item_origin_equals_pixmap_origin(page_scene: PageScene, card_bleed
 
 @pytest.mark.parametrize("color", [QColorConstants.Black, QColorConstants.Cyan])
 @pytest.mark.parametrize("draw_sharp_corners", [False, True])
-@pytest.mark.parametrize("card_bleed", [0, 1])
-def test_card_bleed_with_single_card(page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: int):
+@pytest.mark.parametrize("card_bleed", [0*mm, 1*mm])
+def test_card_bleed_with_single_card(
+        page_scene: PageScene, draw_sharp_corners: bool, color: QColor, card_bleed: QuantityT):
     document = page_scene.document
     document.page_layout.draw_sharp_corners = draw_sharp_corners
     document.page_layout.card_bleed = card_bleed
@@ -604,11 +606,11 @@ def test_card_bleed_with_single_card(page_scene: PageScene, draw_sharp_corners: 
     assert_that(rendered.pixelColor(bottom_right + h_13 - h_1), has_background_color)
 
 
-@pytest.mark.parametrize("column_spacing", [0, 1])
-def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: int):
+@pytest.mark.parametrize("column_spacing", [0*mm, 1*mm])
+def test_card_bleed_with_two_cards(page_scene: PageScene, column_spacing: QuantityT):
     document = page_scene.document
     document.page_layout.draw_sharp_corners = True
-    document.page_layout.card_bleed = 1
+    document.page_layout.card_bleed = 1*mm
     document.page_layout.column_spacing = column_spacing
     document.page_layout_changed.emit(document.page_layout)
     document.apply(ActionAddCard(create_card_with_pixmap("Left", color=QColorConstants.Black)))
