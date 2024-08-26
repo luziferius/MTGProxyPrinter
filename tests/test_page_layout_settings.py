@@ -220,3 +220,17 @@ def test_to_page_layout(
         height=close_to(297, 0.01),
         width=close_to(210, 0.01),
     ))
+
+def test_to_save_file_data_contains_all_keys(page_layout: PageLayoutSettings):
+    data = [key for key, value in page_layout.to_save_file_data()]
+    assert_that(
+        data,
+        contains_inanyorder(*PageLayoutSettings.__annotations__.keys()),
+    )
+
+def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayoutSettings):
+    data = [value for key, value in page_layout.to_save_file_data()]
+    assert_that(
+        data,
+        only_contains(instance_of(str), instance_of(float), instance_of(bool), instance_of(int)),
+    )
