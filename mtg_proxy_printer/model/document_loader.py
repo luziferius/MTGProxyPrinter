@@ -785,7 +785,8 @@ def _migrate_image_spacing_settings(db: sqlite3.Connection):
         db.execute(f"{statement}\n")
 
 def _migrate_paper_size_settings(db: sqlite3.Connection):
-    if db.execute("PRAGMA user_version -- _migrate_paper_size_settings()").fetchone()[0] != 6:
+    user_version, = db.execute("PRAGMA user_version -- _migrate_paper_size_settings()").fetchone()
+    if user_version != 6:
         return
     logger.debug("Migrating save file version 6 paper size settings")
     for statement in [
@@ -817,7 +818,7 @@ def _migrate_paper_size_settings(db: sqlite3.Connection):
       SELECT EXISTS(SELECT key FROM DocumentSettings WHERE key = 'paper_size')
     )
     """)).fetchone()
-    if not paper_size_present:
+    if not paper_size_present and stored_width is not None and stored_height is not None:
         size = QSizeF(stored_width, stored_height)
         orientation = Orientation.Portrait if stored_height >= stored_width else Orientation.Landscape
         if orientation == Orientation.Landscape:

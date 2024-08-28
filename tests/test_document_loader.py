@@ -358,6 +358,7 @@ def test_cancelling_loading_does_not_crash(
             (1, 2, 1, "650722b4-d72b-4745-a1a5-00a34836282b", "r"),
         ]
     )
+
     loader = document.loader
     loader.begin_loading_loop.connect(loader.cancel)
     target = "mtg_proxy_printer.model.document.mtg_proxy_printer.sqlite_helpers.open_database"
@@ -469,3 +470,6 @@ def test_load_correctly_sets_document_title(
             in document_light.page_layout.__annotations__.items()})
     )
     assert_that(document_light.page_layout, has_property("document_name", equal_to(title)))
+
+def test__migrate_paper_size_settings_passes_on_empty_settings_table(empty_save_database):
+    mtg_proxy_printer.model.document_loader._migrate_paper_size_settings(empty_save_database)
