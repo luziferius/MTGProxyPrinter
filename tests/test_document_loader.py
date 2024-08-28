@@ -21,6 +21,7 @@ import pathlib
 import sqlite3
 import unittest.mock
 import textwrap
+import typing
 
 from PyQt5.QtGui import QPageSize
 from pytestqt.qtbot import QtBot
@@ -110,51 +111,72 @@ def _load_from_memory_database_expecting_failure(
     mock.assert_called_once()
 
 
-@pytest.mark.parametrize("card_bleed", [0, 1, 10])
-@pytest.mark.parametrize("document_name", ["", "Test"])
-# Lump all 3 boolean settings together, as they do not interact in any way. Cuts test cases by factor 4
-@pytest.mark.parametrize("boolean_settings", [True, False])
-@pytest.mark.parametrize("row_spacing, column_spacing", [(0, 0), (2, 3)])
-@pytest.mark.parametrize("margin_bottom, margin_left, margin_right, margin_top", [(0, 0, 0, 0), (5, 5, 5, 5)])
-@pytest.mark.parametrize("custom_page_height, custom_page_width", [(297, 210), (2000, 1000)])
-@pytest.mark.parametrize("paper_orientation", PageSizeManager.PageOrientation.keys())
-@pytest.mark.parametrize("paper_size", PageSizeManager.PageSize.keys())
+def generate_test_cases_for_test_valid_page_layout_settings_load_correctly():
+    """Each settings key is set to at least two distinct values"""
+    # Numerical settings
+    yield from itertools.product(
+        ["card_bleed", "row_spacing", "column_spacing", "margin_bottom", "margin_left", "margin_right", "margin_top"],
+        [0, 1, 1.5, 10],
+    )
+    yield from itertools.product(
+            ["custom_page_height", "custom_page_width"],
+            [200, 210.5, 1000, 10000],
+    )
+    # Boolean settings
+    yield from itertools.product(
+        ["draw_page_numbers", "draw_sharp_corners", "boolean_settings"],
+        [True, False],
+    )
+
+    # Textual settings
+    yield from itertools.product(
+        ["document_name"],
+        ["", "Test", " Leading & trailing space ", "1", "1.0", "001", "1..0.0"],
+    )
+
+    # Paper size and orientation
+    yield from zip(itertools.repeat("paper_orientation"), PageSizeManager.PageOrientation.keys())
+    yield from zip(itertools.repeat("paper_size"), PageSizeManager.PageSize.keys())
+
+
+@pytest.mark.parametrize("setting, value", generate_test_cases_for_test_valid_page_layout_settings_load_correctly())
 def test_valid_page_layout_settings_load_correctly(
         qtbot: QtBot, empty_save_database: sqlite3.Connection,
-        card_bleed: int, document_name: str, boolean_settings: bool,
-        row_spacing: int, column_spacing: int,
-        margin_bottom: int, margin_left: int, margin_right: int, margin_top: int,
-        custom_page_height: int, custom_page_width: int,
-        paper_orientation: str, paper_size: str
-):
-    default_settings = PageLayoutSettings.create_from_settings()
-    stored_settings = PageLayoutSettings(
-        card_bleed=card_bleed, document_name=document_name, draw_cut_markers=boolean_settings,
-        draw_page_numbers=boolean_settings, draw_sharp_corners=boolean_settings,
-        row_spacing=row_spacing, column_spacing=column_spacing,
-        margin_bottom=margin_bottom, margin_left=margin_left, margin_right=margin_right, margin_top=margin_top,
-        custom_page_height=custom_page_height, custom_page_width=custom_page_width,
-        paper_orientation=paper_orientation, paper_size=paper_size,
-    )
-    if stored_settings.compute_page_card_capacity(PageType.OVERSIZED) == 0:
+        setting: str, value: typing.Any):
+    stored_in_save_file = PageLayoutSettings.create_from_settings()
+    setattr(stored_in_save_file, setting, value)
+    if setting == "document_name" and (value.startswith("0") or value.endswith("0")):
+        pytest.xfail("Numerical-looking document titles with leading or trailing numbers are not yet supported")
+    if setting in ("custom_page_height", "custom_page_width"):
+        stored_in_save_file.paper_size = "Custom"
+    if stored_in_save_file.compute_page_card_capacity(PageType.OVERSIZED) == 0:
+        # TODO: These paper sizes should not be allowed.
         pytest.skip("Invalid page size")
 
-    _store_page_layout_settings_in_save_file(empty_save_database, stored_settings)
-    settings = mtg_proxy_printer.model.document_loader.Worker._read_document_settings(
-        empty_save_database, default_settings)
+    _store_page_layout_settings_in_save_file(empty_save_database, stored_in_save_file)
 
-    assert_that(settings, is_dataclass_equal_to(stored_settings))
-    if settings.paper_size == "Custom":
-        assert_that(settings, has_properties({"page_height": custom_page_height, "page_width": custom_page_width}))
-    else:
-        size = QPageSize.size(PageSizeManager.PageSize[paper_size], QPageSize.Unit.Millimeter)
-        if settings.paper_orientation == "Landscape":
-            size = size.transposed()
+    loaded_from_save_file = mtg_proxy_printer.model.document_loader.Worker._read_document_settings(
+        empty_save_database, PageLayoutSettings.create_from_settings())
+
+    assert_that(loaded_from_save_file, is_dataclass_equal_to(stored_in_save_file))
+
+    if loaded_from_save_file.paper_size == "Custom":
         assert_that(
-            settings,
+            loaded_from_save_file,
             has_properties({
-                "page_height": close_to(size.height(), 0.05),
-                "page_width": close_to(size.width(), 0.05)})
+                "page_height": stored_in_save_file.custom_page_height,
+                "page_width": stored_in_save_file.custom_page_width,
+            }))
+    else:
+        expected_paper_size = QPageSize.size(
+            PageSizeManager.PageSize[stored_in_save_file.paper_size], QPageSize.Unit.Millimeter)
+        if loaded_from_save_file.paper_orientation == "Landscape":
+            expected_paper_size = expected_paper_size.transposed()
+        assert_that(
+            loaded_from_save_file,
+            has_properties({
+                "page_height": close_to(expected_paper_size.height(), 0.05),
+                "page_width": close_to(expected_paper_size.width(), 0.05)})
         )
 
 

@@ -553,6 +553,10 @@ class Worker(LoaderSignals):
     @staticmethod
     def _read_document_settings(
             db: sqlite3.Connection, default_settings: PageLayoutSettings) -> PageLayoutSettings:
+        """
+        In-place updates the given PageLayoutSettings instance with values from the given save file.
+        Returns the passed in PageLayoutSettings instance.
+        """
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
         # TODO: Although not required (source is trustworthy), replace with a parametrized query
@@ -563,22 +567,23 @@ class Worker(LoaderSignals):
                 ORDER BY key ASC
             """)
         default_settings.update(db.execute(document_settings_query))
+        is_number = any_of(instance_of(float), instance_of(int),)
         assert_that(
             default_settings,
             has_properties(
-                card_bleed=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                custom_page_height=all_of(instance_of(int), greater_than(0)),
-                custom_page_width=all_of(instance_of(int), greater_than(0)),
-                margin_top=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_bottom=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_left=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                margin_right=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                row_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
-                column_spacing=all_of(instance_of(int), greater_than_or_equal_to(0)),
+                card_bleed=all_of(is_number, greater_than_or_equal_to(0)),
+                custom_page_height=all_of(is_number, greater_than(0)),
+                custom_page_width=all_of(is_number, greater_than(0)),
+                margin_top=all_of(is_number, greater_than_or_equal_to(0)),
+                margin_bottom=all_of(is_number, greater_than_or_equal_to(0)),
+                margin_left=all_of(is_number, greater_than_or_equal_to(0)),
+                margin_right=all_of(is_number, greater_than_or_equal_to(0)),
+                row_spacing=all_of(is_number, greater_than_or_equal_to(0)),
+                column_spacing=all_of(is_number, greater_than_or_equal_to(0)),
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
-                document_name=(any_of(instance_of(str), instance_of(int))),
+                document_name=(any_of(instance_of(str), is_number)),
                 paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
             ),
