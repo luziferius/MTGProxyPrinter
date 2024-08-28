@@ -31,6 +31,8 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, 
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
+from units_and_sizes import PageSizeManager
+
 try:
     from hamcrest import contains_exactly
 except ImportError:
@@ -62,7 +64,8 @@ __all__ = [
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
 SAVE_FILE_MAGIC_NUMBER = 41325044
-
+Orientation = QPageLayout.Orientation
+Millimeter = QPageSize.Unit.Millimeter
 
 class CardType(str, enum.Enum):
     REGULAR = "r"
@@ -784,7 +787,7 @@ def _migrate_image_spacing_settings(db: sqlite3.Connection):
         db.execute(f"{statement}\n")
 
 def _migrate_paper_size_settings(db: sqlite3.Connection):
-    if db.execute("PRAGMA user_version").fetchone()[0] != 6:
+    if db.execute("PRAGMA user_version -- _migrate_paper_size_settings()").fetchone()[0] != 6:
         return
     logger.debug("Migrating save file version 6 paper size settings")
     for statement in [
@@ -807,3 +810,34 @@ def _migrate_paper_size_settings(db: sqlite3.Connection):
         # Not updating the user_version
     ]:
         db.execute(f"{statement}\n")
+    stored_width, stored_height, paper_size_present = db.execute(textwrap.dedent("""\
+    SELECT (
+      SELECT value FROM DocumentSettings WHERE key = 'custom_page_width'
+    ) AS width, (
+      SELECT value FROM DocumentSettings WHERE key = 'custom_page_height'
+    ) AS height, (
+      SELECT EXISTS(SELECT key FROM DocumentSettings WHERE key = 'paper_size')
+    )
+    """)).fetchone()
+    if not paper_size_present:
+        size = QSizeF(stored_width, stored_height)
+        orientation = Orientation.Portrait if stored_height >= stored_width else Orientation.Landscape
+        if orientation == Orientation.Landscape:
+            size.transpose()
+
+        paper_size = QPageSize(size, Millimeter)
+        paper_size_id = paper_size.id()
+        paper_size_name = PageSizeManager.PageSizeReverse[paper_size_id]
+        orientation_name = PageSizeManager.PageOrientationReverse[orientation]
+        logger.debug(f"Detected paper sizes: {paper_size_name} ({orientation_name})")
+        db.executemany(
+            # paper_orientation *may* be present on crafted documents.
+            # so use REPLACE to not fail in that case, as presence of the key is unchecked.
+            "INSERT OR REPLACE INTO DocumentSettings VALUES (?, ?)\n",
+            [
+                ("paper_size", paper_size_name),
+                ("paper_orientation", orientation_name)]
+        )
+        if paper_size_id != QPageSize.PageSizeId.Custom:
+            logger.debug("Deleting numerical size values")
+            db.execute("DELETE FROM DocumentSettings WHERE key in ('custom_page_width', 'custom_page_height')\n")
