@@ -31,8 +31,6 @@ from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, 
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
     has_properties, greater_than, is_, any_of
 
-from units_and_sizes import PageSizeManager
-
 try:
     from hamcrest import contains_exactly
 except ImportError:
@@ -45,7 +43,7 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, T
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, T, PageSizeManager
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 
