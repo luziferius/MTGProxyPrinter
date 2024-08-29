@@ -18,17 +18,18 @@ import unittest.mock
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QMarginsF
 import pytest
 from hamcrest import *
-PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
 
 from tests.hasgetter import has_getters
+from tests.ui.test_page_scene import close_to_
 
+PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
 
 @pytest.fixture
 def page_layout():
@@ -158,6 +159,8 @@ def test_create_from_settings():
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",
+        "paper-orientation": "Portrait",
+        "paper-size": "Custom",
     }
     with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["documents"], values):
         layout = PageLayoutSettings.create_from_settings()
@@ -173,13 +176,15 @@ def test_create_from_settings():
             margin_left=7,
             margin_right=6,
             margin_top=9,
-            page_height=200,
-            page_width=100,
+            custom_page_height=200,
+            custom_page_width=100,
+            paper_orientation="Portrait",
+            paper_size="Custom",
         )
     )
 
 
-@pytest.mark.parametrize("height, width, landscape_workaround, orientation", [
+@pytest.mark.parametrize("height, width, landscape_workaround, expected_orientation", [
     (297, 210, True, QPageLayout.Orientation.Portrait),
     (297, 210, False, QPageLayout.Orientation.Portrait),
     (210, 297, True, QPageLayout.Orientation.Portrait),
@@ -192,10 +197,12 @@ def test_create_from_settings():
 def test_to_page_layout(
         page_layout: PageLayoutSettings,
         render_mode: RenderMode, margins: QMarginsF,
-        height: int, width: int, landscape_workaround: bool, orientation: QPageLayout.Orientation
+        height: int, width: int, landscape_workaround: bool, expected_orientation: QPageLayout.Orientation
 ):
-    page_layout.page_height = height
-    page_layout.page_width = width
+    page_layout.custom_page_height = height
+    page_layout.custom_page_width = width
+    page_layout.paper_size = "Custom"
+    page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[expected_orientation]
     page_layout.margin_left = 1
     page_layout.margin_top = 2
     page_layout.margin_right = 3
@@ -205,15 +212,15 @@ def test_to_page_layout(
         q_page_layout = page_layout.to_page_layout(render_mode)
     assert_that(q_page_layout, has_getters(
         margins=has_getters(
-            left=margins.left(),
-            top=margins.top(),
-            right=margins.right(),
-            bottom=margins.bottom(),
+            left=close_to_(margins.left()),
+            top=close_to_(margins.top()),
+            right=close_to_(margins.right()),
+            bottom=close_to_(margins.bottom()),
         ),
         isValid=True,
-        orientation=orientation,
+        orientation=expected_orientation,
     ))
     assert_that(q_page_layout.pageSize().size(QPageSize.Unit.Millimeter), has_getters(
-        height=close_to(297, 0.01),
-        width=close_to(210, 0.01),
+        height=close_to(max(height, width), 0.01),
+        width=close_to(min(height, width), 0.01),
     ))
