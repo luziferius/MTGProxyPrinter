@@ -13,9 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 from unittest.mock import patch
 
-from PyQt5.QtWidgets import QSpinBox, QCheckBox
+from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox
 
 from hamcrest import *
 import pytest
@@ -26,6 +27,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 
 from tests.hasgetter import has_getter
+close_to_ = functools.partial(close_to, delta=0.01)
 
 
 @pytest.fixture()
@@ -48,7 +50,7 @@ def custom_a4_page_layout():
     ("custom_page_width", 88),
 ])
 def test_paper_size_spin_box_minimum_value(widget: PageConfigWidget, name: str, min_value: int):
-    spinbox: QSpinBox = getattr(widget.ui, name)
+    spinbox: QDoubleSpinBox = getattr(widget.ui, name)
     assert_that(spinbox, has_getter("minimum", equal_to(min_value)))
 
 
@@ -61,13 +63,14 @@ def test_paper_size_spin_box_minimum_value(widget: PageConfigWidget, name: str, 
     "margin_right",
     "row_spacing",
     "column_spacing",
+    "card_bleed",
 ])
-def test_set_integer_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
+def test_set_numerical_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
     ui = widget.ui
-    assert_that(ui, has_property(attribute_name, instance_of(QSpinBox)))
-    assert_that(widget.page_layout, has_property(attribute_name, instance_of(int)))
-    spinbox_widget: QSpinBox = getattr(ui, attribute_name)
+    assert_that(ui, has_property(attribute_name, instance_of(QDoubleSpinBox)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(float)))
+    spinbox_widget: QDoubleSpinBox = getattr(ui, attribute_name)
     with qtbot.waitSignal(spinbox_widget.valueChanged):
         previous = spinbox_widget.value()
         new_value = previous + 1
@@ -122,7 +125,7 @@ ZeroMarginsSettings = {
     ("row-spacing-mm", "row_spacing", 0, 10000),
     ("column-spacing-mm", "column_spacing", 0, 10000),
 ])
-def test_load_integer_document_settings_from_config(
+def test_load_numerical_document_settings_from_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str, min_value: int, max_value: int, value: int):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
@@ -130,7 +133,7 @@ def test_load_integer_document_settings_from_config(
     """
     document_settings = mtg_proxy_printer.settings.settings["documents"]
     page_layout = widget.page_layout
-    spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
+    spinbox_widget: QDoubleSpinBox = getattr(widget.ui, attribute_name)
     with patch.dict(document_settings, ZeroMarginsSettings), \
             patch.dict(document_settings, {settings_name: str(value)}):
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
@@ -173,7 +176,7 @@ def test_load_boolean_checkboxes_from_config(
     ("row-spacing-mm", "row_spacing", 0, 10000),
     ("column-spacing-mm", "column_spacing", 0, 10000),
 ])
-def test_save_integer_document_settings_to_config(
+def test_save_numerical_document_settings_to_config(
         qtbot: QtBot,
         widget: PageConfigWidget, settings_name: str, attribute_name: str, min_value: int, max_value: int, value: int):
     """
@@ -186,11 +189,11 @@ def test_save_integer_document_settings_to_config(
             patch.dict(document_settings, {settings_name: original_value}):
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
         expected = str(min(max(min_value, value), max_value))
-        spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
+        spinbox_widget: QDoubleSpinBox = getattr(widget.ui, attribute_name)
         spinbox_widget.setValue(value)
         widget.save_document_settings_to_config()
-        assert_that(document_settings, has_entry(settings_name, equal_to(expected)))
-    assert_that(document_settings, has_entry(settings_name, equal_to(original_value)))
+        assert_that(document_settings, has_entry(settings_name, starts_with(expected)))
+    assert_that(document_settings, has_entry(settings_name, starts_with(original_value)))
 
 
 @pytest.mark.parametrize("value", [True, False])
@@ -227,7 +230,7 @@ def test_save_boolean_document_settings_to_config(
     ("row_spacing", 0, 10000),
     ("column_spacing", 0, 10000),
 ])
-def test_load_integers_from_page_layout(
+def test_load_numerical_values_from_page_layout(
         widget: PageConfigWidget, attribute_name: str, min_value: int, max_value: int, value: int):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
@@ -238,9 +241,9 @@ def test_load_integers_from_page_layout(
     setattr(other, attribute_name, value)
     expected = min(max(min_value, value), max_value)
     widget.load_from_page_layout(other)
-    assert_that(widget.page_layout, has_property(attribute_name, equal_to(expected)))
-    spinbox_widget: QSpinBox = getattr(widget.ui, attribute_name)
-    assert_that(spinbox_widget.value(), is_(equal_to(expected)))
+    assert_that(widget.page_layout, has_property(attribute_name, close_to_(expected)))
+    spinbox_widget: QDoubleSpinBox = getattr(widget.ui, attribute_name)
+    assert_that(spinbox_widget.value(), is_(close_to_(expected)))
 
 
 @pytest.mark.parametrize("value", [True, False])

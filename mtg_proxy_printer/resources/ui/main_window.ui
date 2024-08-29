@@ -122,7 +122,7 @@
     <string>&amp;Print</string>
    </property>
    <property name="toolTip">
-    <string>Print the current documents</string>
+    <string>Print the current document</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>

@@ -16,12 +16,13 @@
 import configparser
 import functools
 from functools import partial
+import math
 from typing import List, Tuple
 
 from PyQt5.QtCore import pyqtSlot as Slot, Qt
 from PyQt5.QtPrintSupport import QPrinter
 from PyQt5.QtGui import QPageSize, QPageLayout
-from PyQt5.QtWidgets import QGroupBox, QWidget, QSpinBox, QCheckBox, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox
 
 
 from mtg_proxy_printer.settings import settings
@@ -70,22 +71,14 @@ class PageConfigWidget(QGroupBox):
         ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings)
         ui.paper_orientation.currentIndexChanged.connect(self.page_layout_setting_changed)
 
-        ui.card_bleed.valueChanged[int].connect(partial(setattr, page_layout, "card_bleed"))
-        ui.custom_page_height.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_height"))
-        ui.custom_page_width.valueChanged[int].connect(partial(setattr, page_layout, "custom_page_width"))
-        ui.margin_top.valueChanged[int].connect(partial(setattr, page_layout, "margin_top"))
-        ui.margin_bottom.valueChanged[int].connect(partial(setattr, page_layout, "margin_bottom"))
-        ui.margin_left.valueChanged[int].connect(partial(setattr, page_layout, "margin_left"))
-        ui.margin_right.valueChanged[int].connect(partial(setattr, page_layout, "margin_right"))
-        ui.row_spacing.valueChanged[int].connect(partial(setattr, page_layout, "row_spacing"))
-        ui.column_spacing.valueChanged[int].connect(partial(setattr, page_layout, "column_spacing"))
-
         for spinbox in (
-                ui.custom_page_height, ui.custom_page_width,
+                ui.card_bleed, ui.custom_page_height, ui.custom_page_width,
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
                 ui.row_spacing, ui.column_spacing):
-            spinbox.valueChanged[int].connect(self.validate_paper_size_settings)
-            spinbox.valueChanged[int].connect(self.page_layout_setting_changed)
+            layout_key = spinbox.objectName()
+            spinbox.valueChanged[float].connect(partial(setattr, page_layout, layout_key))
+            spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
+            spinbox.valueChanged[float].connect(self.page_layout_setting_changed)
         ui.draw_cut_markers.stateChanged.connect(
             lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
         ui.draw_sharp_corners.stateChanged.connect(
@@ -155,8 +148,8 @@ class PageConfigWidget(QGroupBox):
     def load_document_settings_from_config(self, settings: configparser.ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
         documents_section = settings["documents"]
-        for spinbox, setting in self._get_integer_settings_widgets():
-            value = documents_section.getint(setting)
+        for spinbox, setting in self._get_decimal_settings_widgets():
+            value = documents_section.getfloat(setting)
             spinbox.setValue(value)
             setattr(self.page_layout, spinbox.objectName(), spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
@@ -178,7 +171,7 @@ class PageConfigWidget(QGroupBox):
             value = getattr(other, key)
             widget = getattr(ui, key)
             with BlockedSignals(widget):  # Don’t call the validation methods in each iteration
-                if isinstance(widget, QSpinBox):
+                if isinstance(widget, QDoubleSpinBox):
                     widget.setValue(value)
                     setattr(self.page_layout, key, widget.value())
                 elif isinstance(widget, QLineEdit):
@@ -216,7 +209,7 @@ class PageConfigWidget(QGroupBox):
     def save_document_settings_to_config(self):
         logger.info("About to save document settings to the global settings")
         documents_section = settings["documents"]
-        for spinbox, setting in self._get_integer_settings_widgets():
+        for spinbox, setting in self._get_decimal_settings_widgets():
             documents_section[setting] = str(spinbox.value())
         for checkbox, setting in self._get_boolean_settings_widgets():
             documents_section[setting] = str(checkbox.isChecked())
@@ -226,9 +219,9 @@ class PageConfigWidget(QGroupBox):
         documents_section["paper-orientation"] = PageSizeManager.PageOrientationReverse[self._current_page_orientation()]
         logger.debug("Saving done.")
 
-    def _get_integer_settings_widgets(self):
+    def _get_decimal_settings_widgets(self):
         ui = self.ui
-        widgets_with_settings: List[Tuple[QSpinBox, str]] = [
+        widgets_with_settings: List[Tuple[QDoubleSpinBox, str]] = [
             (ui.card_bleed, "card-bleed-mm"),
             (ui.custom_page_height, "paper-height-mm"),
             (ui.custom_page_width, "paper-width-mm"),
@@ -276,8 +269,8 @@ class PageConfigWidget(QGroupBox):
         for widget, setting in self._get_boolean_settings_widgets():
             if widget.isChecked() is not section.getboolean(setting):
                 highlight_widget(widget)
-        for widget, setting in self._get_integer_settings_widgets():
-            if widget.value() != section.getint(setting):
+        for widget, setting in self._get_decimal_settings_widgets():
+            if not math.isclose(widget.value(), section.getfloat(setting)):
                 highlight_widget(widget)
         if self._current_page_size() != PageSizeManager.PageSize[section["paper-size"]]:
             highlight_widget(self.ui.paper_size)
@@ -292,8 +285,8 @@ class PageConfigWidget(QGroupBox):
         for widget, _ in self._get_boolean_settings_widgets():
             if widget.isChecked() is not getattr(settings, widget.objectName()):
                 highlight_widget(widget)
-        for widget, _ in self._get_integer_settings_widgets():
-            if widget.value() != getattr(settings, widget.objectName()):
+        for widget, _ in self._get_decimal_settings_widgets():
+            if not math.isclose(widget.value(), getattr(settings, widget.objectName())):
                 highlight_widget(widget)
         if self._current_page_size() != PageSizeManager.PageSize[settings.paper_size]:
             highlight_widget(self.ui.paper_size)

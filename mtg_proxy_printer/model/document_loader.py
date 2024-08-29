@@ -26,10 +26,11 @@ import textwrap
 import typing
 from unittest.mock import patch
 
+import pint
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_, any_of
+    has_properties, greater_than, is_, any_of, less_than_or_equal_to
 
 try:
     from hamcrest import contains_exactly
@@ -91,19 +92,19 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: int = 0
+    card_bleed: float = 0
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: int = 0
-    column_spacing: int = 0
-    margin_bottom: int = 0
-    margin_left: int = 0
-    margin_right: int = 0
-    margin_top: int = 0
-    custom_page_height: int = 0
-    custom_page_width: int = 0
+    row_spacing: float = 0
+    column_spacing: float = 0
+    margin_bottom: float = 0
+    margin_left: float = 0
+    margin_right: float = 0
+    margin_top: float = 0
+    custom_page_height: float = 0
+    custom_page_width: float = 0
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
 
@@ -133,19 +134,19 @@ class PageLayoutSettings:
     def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
         document_settings = settings["documents"]
         return cls(
-            document_settings.getint("card-bleed-mm"),
+            document_settings.getfloat("card-bleed-mm"),
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
-            document_settings.getint("row-spacing-mm"),
-            document_settings.getint("column-spacing-mm"),
-            document_settings.getint("margin-bottom-mm"),
-            document_settings.getint("margin-left-mm"),
-            document_settings.getint("margin-right-mm"),
-            document_settings.getint("margin-top-mm"),
-            document_settings.getint("paper-height-mm"),
-            document_settings.getint("paper-width-mm"),
+            document_settings.getfloat("row-spacing-mm"),
+            document_settings.getfloat("column-spacing-mm"),
+            document_settings.getfloat("margin-bottom-mm"),
+            document_settings.getfloat("margin-left-mm"),
+            document_settings.getfloat("margin-right-mm"),
+            document_settings.getfloat("margin-top-mm"),
+            document_settings.getfloat("paper-height-mm"),
+            document_settings.getfloat("paper-width-mm"),
             document_settings["paper-orientation"],
             document_settings["paper-size"],
         )
@@ -560,7 +561,6 @@ class Worker(LoaderSignals):
         """
         logger.debug("Reading document settings …")
         keys = ", ".join(map("'{}'".format, default_settings.__annotations__.keys()))
-        # TODO: Although not required (source is trustworthy), replace with a parametrized query
         document_settings_query = textwrap.dedent(f"""\
             SELECT key, value
                 FROM DocumentSettings
@@ -568,40 +568,46 @@ class Worker(LoaderSignals):
                 ORDER BY key ASC
             """)
         default_settings.update(db.execute(document_settings_query))
-        is_number = any_of(instance_of(float), instance_of(int),)
+        is_number = any_of(instance_of(float), instance_of(int), pint.Quantity)
         assert_that(
             default_settings,
             has_properties(
-                card_bleed=all_of(is_number, greater_than_or_equal_to(0)),
-                custom_page_height=all_of(is_number, greater_than(0)),
-                custom_page_width=all_of(is_number, greater_than(0)),
-                margin_top=all_of(is_number, greater_than_or_equal_to(0)),
-                margin_bottom=all_of(is_number, greater_than_or_equal_to(0)),
-                margin_left=all_of(is_number, greater_than_or_equal_to(0)),
-                margin_right=all_of(is_number, greater_than_or_equal_to(0)),
-                row_spacing=all_of(is_number, greater_than_or_equal_to(0)),
-                column_spacing=all_of(is_number, greater_than_or_equal_to(0)),
+                card_bleed=is_number,
+                custom_page_height=is_number,
+                custom_page_width=is_number,
+                margin_top=is_number,
+                margin_bottom=is_number,
+                margin_left=is_number,
+                margin_right=is_number,
+                row_spacing=is_number,
+                column_spacing=is_number,
                 draw_cut_markers=is_in((0, 1)),
                 draw_sharp_corners=is_in((0, 1)),
                 draw_page_numbers=is_in((0, 1)),
+                # TODO: Values column should have TEXT affinity, in order to preserve numerical-looking titles as-is
                 document_name=(any_of(instance_of(str), is_number)),
                 paper_orientation=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageOrientation),
                 paper_size=is_in(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize),
             ),
             "Document settings contain invalid data or data types"
         )
+        # Numerical column affinity coerces document titles like "1" to integers, so convert to str in those cases.
+        # This does lose leading zeros and zero decimals (e.g. "1.000"), however.
+        # Also coerce integer values into the annotated float or boolean types
+        for key, annotated_type in PageLayoutSettings.__annotations__.items():
+            value = getattr(default_settings, key)
+            if not isinstance(value, annotated_type):
+                value = annotated_type(value)
+                setattr(default_settings, key, value)
+            # Ensure all floats are within the allowed bounds.
+            if isinstance(value, float):
+                value = mtg_proxy_printer.settings.clamp_to_supported_range(value)
+                setattr(default_settings, key, value)
         assert_that(
             default_settings.compute_page_card_capacity(),
             is_(greater_than_or_equal_to(1)),
             "Document settings invalid: At least one card has to fit on a page."
         )
-        default_settings.draw_cut_markers = bool(default_settings.draw_cut_markers)
-        default_settings.draw_sharp_corners = bool(default_settings.draw_sharp_corners)
-        default_settings.draw_page_numbers = bool(default_settings.draw_page_numbers)
-        # Numerical column affinity coerces document titles like "1" to integers, so convert to str in those cases
-        # This does lose leading zeros and zero decimals (e.g. "1.000", however.
-        if not isinstance(default_settings.document_name, str):
-            default_settings.document_name = str(default_settings.document_name)
         return default_settings
 
     @staticmethod
