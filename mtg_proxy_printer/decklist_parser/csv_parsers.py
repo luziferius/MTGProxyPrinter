@@ -107,7 +107,7 @@ class ScryfallCSVParser(BaseCSVParser):
 
     DIALECT_NAME = "scryfall_com"
     USED_COLUMNS = {
-        "scryfall_id", "count", "lang", "name", "set_code", "collector_number",
+        "scryfall_id", "lang",
     }
 
     SUPPORTED_FILE_TYPES = {
@@ -118,7 +118,7 @@ class ScryfallCSVParser(BaseCSVParser):
             -> LineParserResult:
         cards = collections.Counter()
         scryfall_id = line["scryfall_id"]
-        count = int(line["count"])
+        count = int(line.get("count", 1))
         language = line["lang"]
         target_language = language_override or language
 
@@ -131,15 +131,23 @@ class ScryfallCSVParser(BaseCSVParser):
                 card = self.card_db.translate_card(card, target_language)
             self._add_card_to_deck(cards, card, count)
         elif guess_printing:
-            logger.debug(f"Card not identified. Try guessing a printing")
-            english_name = line["name"]
-            card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
-                CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
-            card_data = CardIdentificationData(
-                target_language, card_name, line["set_code"], line["collector_number"]
-            )
-            if (card := self.guess_printing(card_data)) is not None:
-                self._add_card_to_deck(cards, card, count)
+            logger.debug(f"Card not identified. Try to automatically select a printing")
+            english_name = line.get("name")
+            set_code = line.get("set_code")
+            collector_number = line.get("collector_number")
+            if english_name:
+                card_name = english_name if target_language == "en" else self.card_db.translate_card_name(
+                    CardIdentificationData("en", english_name, scryfall_id=scryfall_id), target_language)
+            else:
+                card_name = english_name
+            if card_name or (set_code and collector_number):
+                card_data = CardIdentificationData(
+                    target_language, card_name, set_code, collector_number
+                )
+                if (card := self.guess_printing(card_data)) is not None:
+                    self._add_card_to_deck(cards, card, count)
+            else:
+                logger.info("Not enough data available to select a printing for the given line. Skipping.")
         return cards
 
     def _handle_removed_printing(self, scryfall_id: str, language: str, guess_printing: bool) -> typing.Optional[Card]:

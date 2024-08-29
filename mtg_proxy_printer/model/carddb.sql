@@ -14,7 +14,7 @@
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-PRAGMA user_version = 0000032;
+PRAGMA user_version = 0000033;
 PRAGMA foreign_keys = on;
 PRAGMA journal_mode = 'wal';
 BEGIN TRANSACTION;
@@ -88,7 +88,7 @@ CREATE TABLE CardFace (
   UNIQUE(face_name_id, printing_id, is_front)
 );
 CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id);
-
+CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id);
 
 CREATE TABLE MTGSet (
   set_id   INTEGER PRIMARY KEY NOT NULL,

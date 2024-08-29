@@ -4,6 +4,9 @@
 
 ## New features
 
+- The deck import wizard can now directly download Scryfall search queries as deck lists
+    - Added a text field to enter a Scryfall card search query, a button to show the result on the Scryfall website,
+      and a button that downloads the search result as a deck list.
 - Add option to fully automatically remove basic lands from all imported deck lists.
     - When enabled in the settings, basic lands are automatically stripped from deck lists,
       otherwise the previous behavior is retained.
@@ -13,6 +16,8 @@
 
 ## Changed features
 
+- The deck list import wizard now supports downloading links from the Scryfall API card search at 
+  [https://api.scryfall.com/cards/search](https://scryfall.com/docs/api/cards/search) 
 - Reworked paper size configuration: The document settings now have a list of pre-defined paper sizes to choose from.
     - For the pre-defined paper sizes, there is an additional toggle for the choice between Portrait and Landscape mode.
     - Arbitrary page sizes are still supported by selecting the "Custom" paper size and entering the paper dimensions 
@@ -25,6 +30,10 @@
 - Improved the related card search: The search now finds tokens created by Dungeons.
   Right-clicking a card with "Venture" or "Initiative" now also suggests the tokens created by the dungeon rooms.
     - When updating from previous versions, this change takes effect after the next card data update.
+
+## Fixed issues
+
+- Improved performance of the image cleanup wizard, when the user has many images of non-English cards stored on disk.
 
 # Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
 
