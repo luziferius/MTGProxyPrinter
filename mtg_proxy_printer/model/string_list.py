@@ -30,12 +30,11 @@ Orientation = Qt.Orientation
 
 class PrettySetListModel(QAbstractListModel):
 
-    header = {
-        0: "Set",
-    }
-
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
+        self.header = {
+            0: self.tr("Set", "MTG set name"),
+        }
         # Store both the set abbreviations and set names in dicts for fast index-based lookup via the data() method
         self.set_data: typing.List[MTGSet] = []
 
@@ -43,7 +42,7 @@ class PrettySetListModel(QAbstractListModel):
             -> typing.Optional[str]:
         if role == ItemDataRole.DisplayRole and orientation == Orientation.Horizontal:
             # Returns None for unknown columns
-            return PrettySetListModel.header.get(section)
+            return self.header.get(section)
         return super().headerData(section, orientation, role)
 
     def columnCount(self, parent: QModelIndex = INVALID_INDEX) -> int:

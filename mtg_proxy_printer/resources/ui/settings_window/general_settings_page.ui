@@ -17,17 +17,7 @@
       <string>Look &amp;&amp; Feel (Changing this requires an application restart)</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
-       <widget class="QLabel" name="add_card_widget_style_label">
-        <property name="text">
-         <string>Main window layout</string>
-        </property>
-        <property name="buddy">
-         <cstring>add_card_widget_style_combo_box</cstring>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="1">
+      <item row="1" column="1">
        <widget class="QComboBox" name="add_card_widget_style_combo_box">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -39,6 +29,26 @@
          <string>Horizontal adds a wide, horizontal search area above the currently edited page, and is best for taller screens, like 4:3 or 3:2.
 Columnar organizes the main window content in four columns, and is best for (ultra-)wide screens.
 Tabbed uses tabs to only show parts of the main window at a time. Best used with small screens in portrait mode (i.e. 9:16), otherwise not recommended.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="add_card_widget_style_label">
+        <property name="text">
+         <string>Main window layout</string>
+        </property>
+        <property name="buddy">
+         <cstring>add_card_widget_style_combo_box</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="application_language_combo_box"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="application_language_label">
+        <property name="text">
+         <string>Application language</string>
         </property>
        </widget>
       </item>
@@ -154,7 +164,8 @@ Uncheck to disable this automatism.</string>
          <string/>
         </property>
         <property name="icon">
-         <iconset theme="document-open"/>
+         <iconset theme="document-open">
+          <normaloff>.</normaloff>.</iconset>
         </property>
        </widget>
       </item>

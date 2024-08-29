@@ -18,7 +18,7 @@ import collections
 import csv
 import typing
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
 from mtg_proxy_printer.model.imagedb import ImageDatabase
@@ -110,9 +110,11 @@ class ScryfallCSVParser(BaseCSVParser):
         "scryfall_id", "lang",
     }
 
-    SUPPORTED_FILE_TYPES = {
-        "Scryfall CSV export": ["csv"]
-    }
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+        return  {
+            QCoreApplication.translate("ScryfallCSVParser", "Scryfall CSV export"): ["csv"],
+        }
 
     def parse_cards_from_line(self, line: typing.Dict[str, str], guess_printing: bool, language_override: str = None) \
             -> LineParserResult:
@@ -186,9 +188,12 @@ class TappedOutCSVParser(BaseCSVParser):
         # because there is the fallback to the old "Languange" column.
         "Qty", "Name", "Board", "Printing",
     }
-    SUPPORTED_FILE_TYPES = {
-        "Tappedout CSV export": ["csv"]
-    }
+
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+        return {
+            QCoreApplication.translate("TappedOutCSVParser", "Tappedout CSV export"): ["csv"]
+        }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase,
                  include_maybe_board: bool = False, include_acquire_board: bool = False, parent: QObject = None):

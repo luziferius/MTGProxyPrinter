@@ -111,7 +111,19 @@ class PageConfigWidget(QGroupBox):
         """
         regular_capacity = self.page_layout.compute_page_card_capacity(PageType.REGULAR)
         oversized_capacity = self.page_layout.compute_page_card_capacity(PageType.OVERSIZED)
-        capacity_text = f"{regular_capacity} regular cards, {oversized_capacity} oversized cards"
+        regular_text = self.tr(
+            "%n regular card(s)",
+            "Display of the resulting page capacity for regular-sized cards",
+            regular_capacity)
+        oversized_text = self.tr(
+            "%n oversized card(s)",
+            "Display of the resulting page capacity for oversized cards",
+            oversized_capacity
+        )
+        capacity_text = self.tr(
+            "{regular_text}, {oversized_text}",
+            "Combination of the page capacities for regular, and oversized cards"
+        ).format(regular_text=regular_text, oversized_text=oversized_text)
         self.ui.page_capacity.setText(capacity_text)
 
     @Slot()

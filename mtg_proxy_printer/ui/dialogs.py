@@ -72,8 +72,12 @@ def read_path(section: str, setting: str) -> str:
 class SavePDFDialog(QFileDialog):
 
     def __init__(self, parent: QWidget, document: mtg_proxy_printer.model.document.Document):
-        super().__init__(
-            parent, "Export as PDF", self.get_preferred_file_name(document), "PDF-Documents (*.pdf)")
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, "", self.get_preferred_file_name(document))
+        self.setWindowTitle(self.tr("Export as PDF"))
+        self.setNameFilter(self.tr("PDF documents (*.pdf)"))
+
         if default_path := read_path("pdf-export", "pdf-export-path"):
             self.setDirectory(default_path)
         self.document = document
@@ -88,10 +92,11 @@ class SavePDFDialog(QFileDialog):
     def get_preferred_file_name(document: mtg_proxy_printer.model.document.Document):
         if document.save_file_path is None:
             return ""
+        # Note: Qt automatically appends the preferred file extension (.pdf), if the file does not have one.
+        # So ensure it ends on ".pdf", if there is a dot in the name. Otherwise, let the user enter the name without
+        # pre-setting an extension for a cleaner dialog
         stem = document.save_file_path.stem
-        if "." in stem:
-            return f"{stem}.pdf"
-        return stem
+        return f"{stem}.pdf" if "." in stem else stem
 
     @Slot()
     def on_accept(self):
@@ -105,17 +110,28 @@ class SavePDFDialog(QFileDialog):
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
 
+class LoadSaveDialog(QFileDialog):
+    def __init__(self, *args, **kwargs):
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(*args, **kwargs)
+        filter_text = self.tr(
+            "MTGProxyPrinter document (*.{default_save_suffix})", "Human-readable file type name"
+        ).format(default_save_suffix=DEFAULT_SAVE_SUFFIX)
+        self.setNameFilter(filter_text)
+        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
 
-class SaveDocumentAsDialog(QFileDialog):
+class SaveDocumentAsDialog(LoadSaveDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None, **kwargs):
-        super().__init__(
-            parent, "Save document as …", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})", **kwargs)
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, **kwargs)
+        self.setWindowTitle(self.tr("Save document as …"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
         self.setFileMode(QFileDialog.FileMode.AnyFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
@@ -133,19 +149,19 @@ class SaveDocumentAsDialog(QFileDialog):
         logger.debug("User aborted saving. Doing nothing.")
 
 
-class LoadDocumentDialog(QFileDialog):
+class LoadDocumentDialog(LoadSaveDialog):
 
     def __init__(
             self, parent: QWidget,
             document: mtg_proxy_printer.model.document.Document, **kwargs):
-        super().__init__(
-            parent, "Load MTGProxyPrinter document", filter=f"MTGProxyPrinter document (*.{DEFAULT_SAVE_SUFFIX})",
-            **kwargs)
+        # Note: Cannot supply already translated strings to __init__,
+        # because tr() requires to have returned from super().__init__()
+        super().__init__(parent, **kwargs)
+        self.setWindowTitle(self.tr("Load MTGProxyPrinter document"))
         if default_path := read_path("default-filesystem-paths", "document-save-path"):
             self.setDirectory(default_path)
         self.document = document
         self.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
-        self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
         self.setFileMode(QFileDialog.FileMode.ExistingFile)
         self.accepted.connect(self.on_accept)
         self.rejected.connect(self.on_reject)
@@ -183,7 +199,6 @@ class AboutDialog(QDialog):
         self.card_database.card_data_updated.connect(self.on_card_database_updated)
         self.on_card_database_updated()
 
-
     @Slot()
     def on_card_database_updated(self):
         last_update = self.card_database.get_last_card_data_update_timestamp()
@@ -219,7 +234,7 @@ class AboutDialog(QDialog):
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.license_text_browser)
 
     def _setup_third_party_license_text(self):
-        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../ThirdPartyLicenses.md")
+        file_path = self._get_file_path(":/ThirdPartyLicenses.md", "/../../doc/ThirdPartyLicenses.md")
         self._set_text_browser_with_markdown_file_content(file_path, self.ui.third_party_license_text_browser)
 
     def _setup_changelog_text(self):
@@ -287,7 +302,7 @@ class DocumentSettingsDialog(QDialog):
         self.setModal(True)
         self.document = document
         self.ui.page_config_groupbox.load_from_page_layout(document.page_layout)
-        self.ui.page_config_groupbox.setTitle("These settings only affect the current document")
+        self.ui.page_config_groupbox.setTitle(self.tr("These settings only affect the current document"))
         self._setup_button_box()
         self.accepted.connect(self.on_accept)
         logger.info(f"Created {self.__class__.__name__} instance.")

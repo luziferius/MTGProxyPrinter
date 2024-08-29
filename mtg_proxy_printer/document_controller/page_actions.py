@@ -29,7 +29,7 @@ __all__ = [
     "ActionNewPage",
     "ActionRemovePage",
 ]
-ContentType = typing.List[typing.Iterable[AnyCardType]]
+ContentType = typing.List[typing.List[AnyCardType]]
 
 
 class ActionNewPage(DocumentAction):
@@ -40,7 +40,7 @@ class ActionNewPage(DocumentAction):
     Positions are clamped into the range [0, page_count].
 
     Page count defaults to 1.
-    If content is given, it must be a list of length equal to count, and contain List[AnyCardType].
+    If content is given, it must be a List[List[AnyCardType]], with length equal to count.
     Individual lists in content may be empty. If content is given, the cards in content are placed on the
     created pages in the order given.
     """
@@ -74,9 +74,15 @@ class ActionNewPage(DocumentAction):
 
     @functools.cached_property
     def as_str(self):
-        if self.count == 1:
-            return f"Add page {self.position+1}"
-        return f"Add pages {self.position+1}-{self.position+self.count}"
+        count = self.count
+        pages = self._format_number_range(self.position+1, self.position+count)
+        # Implementation note: pylupdate5 does not support passing object attributes as parameters.
+        # Passing "self.count", instead of "count" breaks the string extraction.
+        result = self.translate(
+            "ActionNewPage", "Add page(s) {pages}",
+            "Undo/redo tooltip text. Translations should drop the %n placeholder", count
+        ).format(pages=pages)
+        return result
 
     @staticmethod
     def _validate_content_does_not_create_mixed_pages(content: ContentType):
@@ -170,6 +176,16 @@ class ActionRemovePage(DocumentAction):
     @functools.cached_property
     def as_str(self):
         cards_removed = sum(map(len, self.removed_pages))
-        if self.count == 1:
-            return f"Remove page {self.position+1} containing {cards_removed} cards"
-        return f"Remove pages {self.position+1}-{self.position+self.count} containing {cards_removed} cards total"
+        count = self.count
+        formatted_pages = self._format_number_range(self.position+1, self.position+count)
+        formatted_card_count = self.translate(
+            "ActionRemovePage", "%n card(s) total",
+            "Undo/redo tooltip text. The total number of cards removed. Used as {formatted_card_count}", cards_removed
+        )
+        # Implementation note: pylupdate5 does not support passing object attributes as parameters.
+        # Passing "self.count", instead of "count" breaks the string extraction.
+        result = self.translate(
+            "ActionRemovePage", "Remove page(s) {formatted_pages} containing {formatted_card_count}",
+            "Undo/redo tooltip text", count
+        ).format(formatted_pages=formatted_pages, formatted_card_count=formatted_card_count)
+        return result

@@ -1,0 +1,12 @@
+"project_id": "651100"
+"base_path": "."
+"base_url": "https://api.crowdin.com"
+
+"preserve_hierarchy": true
+
+files: [
+  {
+    "source": "mtg_proxy_printer/resources/translations/mtgproxyprinter_sources.ts",
+    "translation": "mtg_proxy_printer/resources/translations/mtgproxyprinter_%locale%.ts",
+  }
+]
