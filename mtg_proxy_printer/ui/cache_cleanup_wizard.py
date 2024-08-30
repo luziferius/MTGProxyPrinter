@@ -82,7 +82,7 @@ class KnownCardColumns(enum.IntEnum):
 
 
 @dataclasses.dataclass()
-class KnownCardRow:
+class KnownCardRow(QObject):
     name: str
     set: MTGSet
     collector_number: str
@@ -93,6 +93,10 @@ class KnownCardRow:
     scryfall_id: str
     path: pathlib.Path
     preferred_language_name: OptStr
+    _parent: QObject = None
+
+    def __post_init__(self):
+        super().__init__(self._parent)  # Call QObject.__init__() without interfering with the dataclass internals
 
     def data(self, column: int, role: ItemDataRole):
         if column == KnownCardColumns.Name and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
@@ -104,19 +108,21 @@ class KnownCardRow:
         elif column == KnownCardColumns.CollectorNumber and role in (ItemDataRole.DisplayRole, ItemDataRole.EditRole):
             data = self.collector_number
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.DisplayRole:
-            data = "Yes" if self.is_hidden else "No"
+            data = self.tr("Yes") if self.is_hidden else self.tr("No")
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.ToolTipRole and self.is_hidden:
-            data = "This printing is hidden by an enabled card filter\nand is thus unavailable for printing."
+            data = self.tr(
+                "This printing is hidden by an enabled card filter\nand is thus unavailable for printing.", 
+                "Tooltip for cells with hidden cards")
         elif column == KnownCardColumns.IsHidden and role == ItemDataRole.EditRole:
             data = self.is_hidden
         elif column == KnownCardColumns.IsFront and role == ItemDataRole.DisplayRole:
-            data = "Front" if self.is_front else "Back"
+            data = self.tr("Front", "Card side") if self.is_front else self.tr("Back", "Card side")
         elif column == KnownCardColumns.IsFront and role == ItemDataRole.EditRole:
             data = self.is_front
         elif column == KnownCardColumns.HasHighResolution and role == ItemDataRole.EditRole:
             data = self.has_high_resolution
         elif column == KnownCardColumns.HasHighResolution and role == ItemDataRole.DisplayRole:
-            data = "Yes" if self.has_high_resolution else "No"
+            data = self.tr("Yes") if self.has_high_resolution else self.tr("No")
         elif column == KnownCardColumns.Size and role == ItemDataRole.DisplayRole:
             data = format_size(self.size)
         elif column == KnownCardColumns.Size and role == ItemDataRole.EditRole:
@@ -134,17 +140,19 @@ class KnownCardRow:
 
 class KnownCardImageModel(QAbstractTableModel):
 
-    header_data = {
-        KnownCardColumns.Name: "Name",
-        KnownCardColumns.Set: "Set",
-        KnownCardColumns.CollectorNumber: "Collector #",
-        KnownCardColumns.IsHidden: "Is Hidden",
-        KnownCardColumns.IsFront: "Front/Back",
-        KnownCardColumns.HasHighResolution: "High resolution?",
-        KnownCardColumns.Size: "Size",
-        KnownCardColumns.ScryfallId: "Scryfall ID",
-        KnownCardColumns.FilesystemPath: "Path",
-    }
+    @property
+    def header_data(self):
+        return {
+            KnownCardColumns.Name: self.tr("Name"),
+            KnownCardColumns.Set: self.tr("Set"),
+            KnownCardColumns.CollectorNumber: self.tr("Collector #"),
+            KnownCardColumns.IsHidden: self.tr("Is Hidden"),
+            KnownCardColumns.IsFront: self.tr("Front/Back"),
+            KnownCardColumns.HasHighResolution: self.tr("High resolution?"),
+            KnownCardColumns.Size: self.tr("Size"),
+            KnownCardColumns.ScryfallId: self.tr("Scryfall ID"),
+            KnownCardColumns.FilesystemPath: self.tr("Path"),
+        }
 
     def __init__(self, card_db: CardDatabase, parent: QObject = None):
         super().__init__(parent)
@@ -201,19 +209,23 @@ class KnownCardImageModel(QAbstractTableModel):
 
 class UnknownCardColumns(enum.IntEnum):
     ScryfallId = 0
-    IsFront = 1
-    HasHighResolution = 2
-    Size = 3
-    FilesystemPath = 4
+    IsFront = enum.auto()
+    HasHighResolution = enum.auto()
+    Size = enum.auto()
+    FilesystemPath = enum.auto()
 
 
 @dataclasses.dataclass()
-class UnknownCardRow:
+class UnknownCardRow(QObject):
     scryfall_id: str
     is_front: bool
     has_high_resolution: bool
     size: int
     path: pathlib.Path
+    _parent: QObject = None
+
+    def __post_init__(self):
+        super().__init__(self._parent)  # Call QObject.__init__() without interfering with the dataclass internals
 
     @classmethod
     def from_cache_content(cls, image: ImageCacheContent):
@@ -228,13 +240,13 @@ class UnknownCardRow:
         elif column == UnknownCardColumns.ScryfallId and role == ItemDataRole.ToolTipRole:
             data = get_image_for_tooltip_display(self.path)
         elif column == UnknownCardColumns.IsFront and role == ItemDataRole.DisplayRole:
-            data = "Front" if self.is_front else "Back"
+            data = self.tr("Front") if self.is_front else self.tr("Back")
         elif column == UnknownCardColumns.IsFront and role == ItemDataRole.EditRole:
             data = self.is_front
         elif column == UnknownCardColumns.HasHighResolution and role == ItemDataRole.EditRole:
             data = self.has_high_resolution
         elif column == UnknownCardColumns.HasHighResolution and role == ItemDataRole.DisplayRole:
-            data = "Yes" if self.has_high_resolution else "No"
+            data = self.tr("Yes") if self.has_high_resolution else self.tr("No")
         elif column == UnknownCardColumns.Size and role == ItemDataRole.DisplayRole:
             data = format_size(self.size)
         elif column == UnknownCardColumns.Size and role == ItemDataRole.EditRole:
@@ -251,13 +263,15 @@ class UnknownCardRow:
 
 class UnknownCardImageModel(QAbstractTableModel):
 
-    header_data = {
-        UnknownCardColumns.ScryfallId: "Scryfall ID",
-        UnknownCardColumns.IsFront: "Front/Back",
-        UnknownCardColumns.HasHighResolution: "High resolution?",
-        UnknownCardColumns.Size: "Size",
-        UnknownCardColumns.FilesystemPath: "Path",
-    }
+    @property
+    def header_data(self):
+        return {
+            UnknownCardColumns.ScryfallId: self.tr("Scryfall ID"),
+            UnknownCardColumns.IsFront: self.tr("Front/Back"),
+            UnknownCardColumns.HasHighResolution: self.tr("High resolution?"),
+            UnknownCardColumns.Size: self.tr("Size"),
+            UnknownCardColumns.FilesystemPath: self.tr("Path"),
+        }
 
     def __init__(self, parent: QObject = None):
         super().__init__(parent)
@@ -343,21 +357,21 @@ class CardFilterPage(QWizardPage):
         for column, scaling_factor in (
                 (KnownCardColumns.Name, 2),
                 (KnownCardColumns.Set, 2.5),
-                (KnownCardColumns.CollectorNumber, 0.95),
-                (KnownCardColumns.IsFront, 0.9),
-                (KnownCardColumns.Size, 0.7)):
+                (KnownCardColumns.CollectorNumber, 1),
+                (KnownCardColumns.IsFront, 1),
+                (KnownCardColumns.Size, 0.8)):
             new_size = math.floor(view.columnWidth(column)*scaling_factor)
             view.setColumnWidth(column, new_size)
 
     def initializePage(self) -> None:
         super().initializePage()
         images = self.image_db.read_disk_cache_content()
-        visible, hidden, unknown = self.card_db.get_all_cards_from_image_cache(images)
-        for card, key in visible:
+        partitioned = self.card_db.get_all_cards_from_image_cache(images)
+        for card, key in partitioned.visible:
             self.card_image_model.add_row(card, key, False)
-        for card, key in hidden:
+        for card, key in partitioned.hidden:
             self.card_image_model.add_row(card, key, True)
-        for key in unknown:
+        for key in partitioned.unknown:
             self.unknown_image_model.add_row(key)
         self._apply_filter()
 
@@ -405,17 +419,18 @@ class CardFilterPage(QWizardPage):
 
     def validatePage(self) -> bool:
         logger.info(f"{self.__class__.__name__}: User clicks on Next, storing the selected indices")
+        role = ItemDataRole.EditRole
         selected_images: typing.List[typing.Tuple[str, bool, bool, int]] = [
-            (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.IsFront).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(UnknownCardColumns.Size).data(ItemDataRole.EditRole))
+            (index.siblingAtColumn(UnknownCardColumns.ScryfallId).data(role),
+             index.siblingAtColumn(UnknownCardColumns.IsFront).data(role),
+             index.siblingAtColumn(UnknownCardColumns.HasHighResolution).data(role),
+             index.siblingAtColumn(UnknownCardColumns.Size).data(role))
             for index in self.ui.unknown_image_view.selectedIndexes() if not index.column()
         ] + [
-            (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(KnownCardColumns.IsFront).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(ItemDataRole.EditRole),
-             index.siblingAtColumn(KnownCardColumns.Size).data(ItemDataRole.EditRole))
+            (index.siblingAtColumn(KnownCardColumns.ScryfallId).data(role),
+             index.siblingAtColumn(KnownCardColumns.IsFront).data(role),
+             index.siblingAtColumn(KnownCardColumns.HasHighResolution).data(role),
+             index.siblingAtColumn(KnownCardColumns.Size).data(role))
             for index in self.ui.card_image_view.selectedIndexes() if not index.column()
         ]
         self.setField("selected-images", selected_images)
@@ -433,8 +448,9 @@ class SummaryPage(QWizardPage):
     def initializePage(self) -> None:
         indices = self.field("selected-images")
         disk_space_freed = format_size(sum(size_bytes for _, _, _, size_bytes in indices))
-        self.ui.image_count_summary.setText(f"Images about to be deleted: {len(indices)}")
-        self.ui.filesize_summary.setText(f"Disk space that will be freed: {disk_space_freed}")
+        self.ui.image_count_summary.setText(self.tr("Images about to be deleted: {count}").format(count=len(indices)))
+        self.ui.filesize_summary.setText(self.tr("Disk space that will be freed: {disk_space_freed}").format(
+            disk_space_freed=disk_space_freed))
         logger.debug(f"{self.__class__.__name__} populated.")
 
 
@@ -452,7 +468,7 @@ class CacheCleanupWizard(WizardBase):
         self.addPage(FilterSetupPage(self))
         self.addPage(CardFilterPage(card_db, image_db, self))
         self.addPage(SummaryPage(self))
-        self.setWindowTitle("Cleanup locally stored card images")
+        self.setWindowTitle(self.tr("Cleanup locally stored card images", "Dialog window title"))
         self.setWindowIcon(QIcon.fromTheme("edit-clear-history"))
         logger.info(f"Created {self.__class__.__name__} instance.")
 

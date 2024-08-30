@@ -60,7 +60,7 @@ class IsObjectWithGetter(BaseMatcher[object]):
 
         mismatch_description.append_text("result of getter ").append_description_of(
             self.property_name
-        ).append_text(" expected to return ")
+        ).append_text(" was ")
         value = getter()
         self.value_matcher.describe_mismatch(value, mismatch_description)
 

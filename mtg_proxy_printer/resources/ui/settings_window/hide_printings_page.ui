@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>HidePrintingsPage</class>
  <widget class="QWidget" name="HidePrintingsPage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>332</width>
+    <height>462</height>
+   </rect>
+  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="card_filter_settings_header_label">
@@ -35,6 +43,9 @@
       <string>Example:
 
 LEA DDU TC13 J21</string>
+     </property>
+     <property name="inputMethodHints">
+      <set>Qt::ImhLatinOnly|Qt::ImhMultiLine|Qt::ImhNoAutoUppercase|Qt::ImhNoPredictiveText</set>
      </property>
      <property name="placeholderText">
       <string>No sets currently hidden.</string>

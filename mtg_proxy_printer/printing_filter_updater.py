@@ -13,11 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
 import sqlite3
 import typing
 
-from PyQt5.QtCore import QObject, pyqtSignal as Signal, Qt
+from PyQt5.QtCore import QObject, pyqtSignal as Signal, Qt, QCoreApplication
 
 import mtg_proxy_printer.settings
 if typing.TYPE_CHECKING:
@@ -27,7 +26,7 @@ from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
 from mtg_proxy_printer.runner import Runnable
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import StringList
+from mtg_proxy_printer.units_and_sizes import StringList, SectionProxy
 logger = get_logger(__name__)
 del get_logger
 
@@ -49,7 +48,6 @@ class PrintingFilterUpdater(Runnable):
         error_occurred = Signal(str)
 
     PROGRESS_STEP_COUNT = 6
-    PROGRESS_MESSAGE = "Processing updated card filters:"
 
     def __init__(
             self, model: "CardDatabase", db_connection: sqlite3.Connection = None, *,
@@ -125,7 +123,10 @@ class PrintingFilterUpdater(Runnable):
             if self.db_passed:
                 # Passed-in connections have a running transaction, which has to be closed
                 self.db.commit()
-            self.signals.begin_update.emit(self.PROGRESS_STEP_COUNT, self.PROGRESS_MESSAGE)
+            self.signals.begin_update.emit(
+                self.PROGRESS_STEP_COUNT,
+                QCoreApplication.translate("PrintingFilterUpdater.store_current_printing_filters()",
+                                           "Processing updated card filters:"))
             self.update_ui = self._store_current_printing_filters()
             if self.should_abort:
                 self.db.rollback()
@@ -182,7 +183,7 @@ class PrintingFilterUpdater(Runnable):
     def _set_code_filters_need_update(self) -> bool:
         return self.get_currently_enabled_set_code_filters() != self.get_configured_set_code_filters()
 
-    def _filters_in_db_differ_from_settings(self, section: configparser.SectionProxy) -> bool:
+    def _filters_in_db_differ_from_settings(self, section: SectionProxy) -> bool:
         filters_in_db: typing.Dict[str, bool] = {
             key: bool(value) for key, value
             in self.db.execute(cached_dedent("""\

@@ -18,7 +18,7 @@ import unittest.mock
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager
+from mtg_proxy_printer.units_and_sizes import PageType, PageSizeManager, QuantityT, UnitT, unit_registry
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
 from PyQt5.QtGui import QPageLayout, QPageSize
@@ -27,9 +27,10 @@ import pytest
 from hamcrest import *
 
 from tests.hasgetter import has_getters
-from tests.ui.test_page_scene import close_to_
+from tests.helpers import quantity_close_to, close_to_
 
 PageLayoutSettings = mtg_proxy_printer.model.document_loader.PageLayoutSettings
+mm: UnitT = unit_registry.mm
 
 @pytest.fixture
 def page_layout():
@@ -55,32 +56,32 @@ def test_page_layout_compute_page_card_capacity_default_value(page_layout: PageL
 
 
 @pytest.mark.parametrize("row_spacing, expected, page_type", [
-    (0, 3, PageType.REGULAR),
-    (0, 3, PageType.UNDETERMINED),
+    (0*mm, 3, PageType.REGULAR),
+    (0*mm, 3, PageType.UNDETERMINED),
 
-    (11, 3, PageType.REGULAR),
-    (11, 3, PageType.UNDETERMINED),
-    (12, 2, PageType.REGULAR),
-    (12, 2, PageType.UNDETERMINED),
+    (11*mm, 3, PageType.REGULAR),
+    (11*mm, 3, PageType.UNDETERMINED),
+    (12*mm, 2, PageType.REGULAR),
+    (12*mm, 2, PageType.UNDETERMINED),
 
-    (111, 2, PageType.REGULAR),
-    (111, 2, PageType.UNDETERMINED),
-    (112, 1, PageType.REGULAR),
-    (112, 1, PageType.UNDETERMINED),
+    (110*mm, 2, PageType.REGULAR),
+    (110*mm, 2, PageType.UNDETERMINED),
+    (111*mm, 1, PageType.REGULAR),
+    (111*mm, 1, PageType.UNDETERMINED),
 
-    (0, 2, PageType.OVERSIZED),
+    (0*mm, 2, PageType.OVERSIZED),
 
-    (35, 2, PageType.OVERSIZED),
-    (36, 1, PageType.OVERSIZED),
+    (34*mm, 2, PageType.OVERSIZED),
+    (35*mm, 1, PageType.OVERSIZED),
 
     # Spacing is between multiple rows. So any large value should result in at least 1 row,
     # because there is no spacing with one row
-    (1000, 1, PageType.REGULAR),
-    (1000, 1, PageType.UNDETERMINED),
-    (1000, 1, PageType.OVERSIZED),
+    (1000*mm, 1, PageType.REGULAR),
+    (1000*mm, 1, PageType.UNDETERMINED),
+    (1000*mm, 1, PageType.OVERSIZED),
 ])
 def test_page_layout_compute_page_row_count(
-        page_layout: PageLayoutSettings, page_type: PageType, row_spacing: int, expected: int):
+        page_layout: PageLayoutSettings, page_type: PageType, row_spacing: QuantityT, expected: int):
     page_layout.row_spacing = row_spacing
     assert_that(page_layout.compute_page_row_count(page_type), is_(equal_to(expected)))
 
@@ -90,32 +91,32 @@ def test_page_layout_compute_compute_page_row_count_default_value(page_layout: P
 
 
 @pytest.mark.parametrize("column_spacing, expected, page_type", [
-    (0, 3, PageType.REGULAR),
-    (0, 3, PageType.UNDETERMINED),
+    (0*mm, 3, PageType.REGULAR),
+    (0*mm, 3, PageType.UNDETERMINED),
 
-    (5, 3, PageType.REGULAR),
-    (5, 3, PageType.UNDETERMINED),
-    (6, 2, PageType.REGULAR),
-    (6, 2, PageType.UNDETERMINED),
+    (5*mm, 3, PageType.REGULAR),
+    (5*mm, 3, PageType.UNDETERMINED),
+    (6*mm, 2, PageType.REGULAR),
+    (6*mm, 2, PageType.UNDETERMINED),
 
-    (74, 2, PageType.REGULAR),
-    (74, 2, PageType.UNDETERMINED),
-    (75, 1, PageType.REGULAR),
-    (75, 1, PageType.UNDETERMINED),
+    (73*mm, 2, PageType.REGULAR),
+    (73*mm, 2, PageType.UNDETERMINED),
+    (74*mm, 1, PageType.REGULAR),
+    (74*mm, 1, PageType.UNDETERMINED),
 
-    (0, 2, PageType.OVERSIZED),
+    (0*mm, 2, PageType.OVERSIZED),
 
-    (24, 2, PageType.OVERSIZED),
-    (25, 1, PageType.OVERSIZED),
+    (23*mm, 2, PageType.OVERSIZED),
+    (24*mm, 1, PageType.OVERSIZED),
 
     # Spacing is between multiple columns. So any large value should result in at least 1 column,
     # because there is no spacing with only one column
-    (1000, 1, PageType.REGULAR),
-    (1000, 1, PageType.UNDETERMINED),
-    (1000, 1, PageType.OVERSIZED),
+    (1000*mm, 1, PageType.REGULAR),
+    (1000*mm, 1, PageType.UNDETERMINED),
+    (1000*mm, 1, PageType.OVERSIZED),
 ])
 def test_page_layout_compute_page_column_count(
-        page_layout: PageLayoutSettings, page_type: PageType, column_spacing: int, expected: int):
+        page_layout: PageLayoutSettings, page_type: PageType, column_spacing: QuantityT, expected: int):
     page_layout.column_spacing = column_spacing
     assert_that(page_layout.compute_page_column_count(page_type), is_(equal_to(expected)))
 
@@ -134,7 +135,7 @@ def test_page_layout_lt_raises_type_error_on_incompatible_types(page_layout: Pag
 
 def test_page_layout_gt():
     layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings()
-    layout.page_height = 300
+    layout.page_height = 300*mm
     assert_that(layout.compute_page_card_capacity(PageType.REGULAR), is_(0))
     assert_that(layout, is_not(greater_than(layout)))
 
@@ -147,14 +148,14 @@ def test_page_layout_lt():
 
 def test_create_from_settings():
     values = {
-        "paper-height-mm": "200",
-        "paper-width-mm": "100",
-        "margin-top-mm": "9",
-        "margin-bottom-mm": "8",
-        "margin-left-mm": "7",
-        "margin-right-mm": "6",
-        "row-spacing-mm": "2",
-        "column-spacing-mm": "1",
+        "paper-height": "200 mm",
+        "paper-width": "100 mm",
+        "margin-top": "9 mm",
+        "margin-bottom": "8 mm",
+        "margin-left": "7 mm",
+        "margin-right": "6 mm",
+        "row-spacing": "2 mm",
+        "column-spacing": "1 mm",
         "print-cut-marker": "True",
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
@@ -170,14 +171,14 @@ def test_create_from_settings():
             draw_cut_markers=True,
             draw_page_numbers=True,
             draw_sharp_corners=True,
-            row_spacing=2,
-            column_spacing=1,
-            margin_bottom=8,
-            margin_left=7,
-            margin_right=6,
-            margin_top=9,
-            custom_page_height=200,
-            custom_page_width=100,
+            row_spacing=quantity_close_to(2*mm),
+            column_spacing=quantity_close_to(1*mm),
+            margin_bottom=quantity_close_to(8*mm),
+            margin_left=quantity_close_to(7*mm),
+            margin_right=quantity_close_to(6*mm),
+            margin_top=quantity_close_to(9*mm),
+            custom_page_height=quantity_close_to(200*mm),
+            custom_page_width=quantity_close_to(100*mm),
             paper_orientation="Portrait",
             paper_size="Custom",
         )
@@ -185,10 +186,10 @@ def test_create_from_settings():
 
 
 @pytest.mark.parametrize("height, width, landscape_workaround, expected_orientation", [
-    (297, 210, True, QPageLayout.Orientation.Portrait),
-    (297, 210, False, QPageLayout.Orientation.Portrait),
-    (210, 297, True, QPageLayout.Orientation.Portrait),
-    (210, 297, False, QPageLayout.Orientation.Landscape),
+    (297*mm, 210*mm, True, QPageLayout.Orientation.Portrait),
+    (297*mm, 210*mm, False, QPageLayout.Orientation.Portrait),
+    (210*mm, 297*mm, True, QPageLayout.Orientation.Portrait),
+    (210*mm, 297*mm, False, QPageLayout.Orientation.Landscape),
 ])
 @pytest.mark.parametrize("render_mode, margins", [
     (RenderMode(0), QMarginsF(0, 0, 0, 0)),
@@ -197,16 +198,16 @@ def test_create_from_settings():
 def test_to_page_layout(
         page_layout: PageLayoutSettings,
         render_mode: RenderMode, margins: QMarginsF,
-        height: int, width: int, landscape_workaround: bool, expected_orientation: QPageLayout.Orientation
+        height: QuantityT, width: QuantityT, landscape_workaround: bool, expected_orientation: QPageLayout.Orientation
 ):
     page_layout.custom_page_height = height
     page_layout.custom_page_width = width
     page_layout.paper_size = "Custom"
     page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[expected_orientation]
-    page_layout.margin_left = 1
-    page_layout.margin_top = 2
-    page_layout.margin_right = 3
-    page_layout.margin_bottom = 4
+    page_layout.margin_left = 1*mm
+    page_layout.margin_top = 2*mm
+    page_layout.margin_right = 3*mm
+    page_layout.margin_bottom = 4*mm
     section = mtg_proxy_printer.settings.settings["printer"]
     with unittest.mock.patch.dict(section, {"landscape-compatibility-workaround": str(landscape_workaround)}):
         q_page_layout = page_layout.to_page_layout(render_mode)
@@ -221,6 +222,20 @@ def test_to_page_layout(
         orientation=expected_orientation,
     ))
     assert_that(q_page_layout.pageSize().size(QPageSize.Unit.Millimeter), has_getters(
-        height=close_to(max(height, width), 0.01),
-        width=close_to(min(height, width), 0.01),
+        height=close_to(max(height.to(mm).magnitude, width.to(mm).magnitude), 0.01),
+        width=close_to(min(height.to(mm).magnitude, width.to(mm).magnitude), 0.01),
     ))
+
+def test_to_save_file_data_contains_all_keys(page_layout: PageLayoutSettings):
+    data = [key for key, value in page_layout.to_save_file_data()]
+    assert_that(
+        data,
+        contains_inanyorder(*PageLayoutSettings.__annotations__.keys()),
+    )
+
+def test_to_save_file_data_returns_only_acceptable_types(page_layout: PageLayoutSettings):
+    data = [value for key, value in page_layout.to_save_file_data()]
+    assert_that(
+        data,
+        only_contains(instance_of(str), instance_of(float), instance_of(bool), instance_of(int)),
+    )

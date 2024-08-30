@@ -118,7 +118,8 @@ def _create_mock_image(image_db: ImageDatabase, temp_path: pathlib.Path) -> path
 
 def _create_save_file(temp_path: pathlib.Path):
     save_file_path = temp_path/"test.mtgproxies"
-    settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
+    settings = PageLayoutSettings.create_from_settings().to_save_file_data()
+    #settings = dataclasses.asdict(PageLayoutSettings.create_from_settings()).items()
     with open_database(save_file_path, "document-v6", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION) as save_file:
         save_file.execute(
             "INSERT INTO Card (page, slot, is_front, scryfall_id, type) VALUES (?, ?, ?, ?, ?)",

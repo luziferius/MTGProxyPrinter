@@ -128,13 +128,16 @@ class CentralWidget(QWidget):
 
     def _create_add_copies_actions(self, card: Union[AnyCardType, CardList], add_4th: bool = False):
         actions = [
-            self._create_add_copies_action("Add 1 copy", 1, card),
-            self._create_add_copies_action("Add 2 copies", 2, card),
-            self._create_add_copies_action("Add 3 copies", 3, card),
-            self._create_add_copies_action("Add copies …", None, card)
+            self._create_add_copies_action(
+                self.tr("Add %n copies","Context menu action: "
+                        "Add additional card copies to the document", copy_count),
+                copy_count, card)
+            for copy_count in range(1, 4+add_4th)
         ]
-        if add_4th:
-            actions.insert(-1, self._create_add_copies_action("Add 4 copies", 4, card),)
+        actions.append(self._create_add_copies_action(
+            self.tr("Add copies …", "Context menu action: "
+                    "Add additional card copies to the document. User will be asked for a number"),
+            None, card))
         return actions
 
     def _create_add_copies_action(self, label: str, count: Optional[int],
@@ -148,17 +151,23 @@ class CentralWidget(QWidget):
         front, back = sorted([card, other_face], key=operator.attrgetter("is_front"), reverse=True)
         check_card = CheckCard(front, back)
         actions = [
-            self._create_add_copies_action("Add 1 copy", 1, check_card),
-            self._create_add_copies_action("Add 2 copies", 2, check_card),
-            self._create_add_copies_action("Add 3 copies", 3, check_card),
-            self._create_add_copies_action("Add 4 copies", 4, check_card),
-            self._create_add_copies_action("Add copies …", None, check_card)
+            self._create_add_copies_action(
+                self.tr("Add %n copies",
+                        "Context menu action: Add additional card copies to the document", copy_count),
+                copy_count, check_card)
+            for copy_count in range(1, 5)
         ]
-        parent.addMenu("Generate DFC check card").addActions(actions)
+        actions.append(
+            self._create_add_copies_action(
+                self.tr("Add copies …", "Context menu action: "
+                        "Add additional card copies to the document. User will be asked for a number"),
+                None, check_card))
+
+        parent.addMenu(self.tr("Generate DFC check card")).addActions(actions)
 
     def _create_add_related_actions(self, parent: QMenu, related_cards: CardList) -> None:
         logger.debug(f"Found {len(related_cards)} related cards. Adding them to the context menu")
-        parent.addMenu("All related cards").addActions(self._create_add_copies_actions(related_cards, True))
+        parent.addMenu(self.tr("All related cards")).addActions(self._create_add_copies_actions(related_cards, True))
         for card in related_cards:
             parent.addMenu(card.name).addActions(self._create_add_copies_actions(card, True))
 
@@ -166,7 +175,11 @@ class CentralWidget(QWidget):
         nl = '\n'
         card_name = card.name if isinstance(card, AnyCardTypeForTypeCheck) else nl + nl.join(item.name for item in card)
         if count is None:
-            count, success = QInputDialog.getInt(self, "Add copies", f"Add copies of {card_name}", 1, 1, 100)
+            count, success = QInputDialog.getInt(
+                self, self.tr("Add copies"), self.tr(
+                    "Add copies of {card_name}",
+                    "Asks the user for a number. Does not need plural forms").format(card_name=card_name),
+                1, 1, 100)
             if not success:
                 logger.info("User cancelled adding card copies")
                 return
@@ -188,7 +201,7 @@ class CentralWidget(QWidget):
             self.request_action.emit(action)
 
     def _add_save_image_action(self, parent: QMenu, card: AnyCardType):
-        action = QAction(QIcon.fromTheme("document-save"), "Export image", parent)
+        action = QAction(QIcon.fromTheme("document-save"), self.tr("Export image"), parent)
         action.setData(card)
         action.triggered.connect(self._on_save_image_action_triggered)
         parent.addSeparator()
@@ -204,7 +217,7 @@ class CentralWidget(QWidget):
         card: Card = action.data()
         default_save_file = self._get_default_image_save_path(card)
         result, _ = QFileDialog.getSaveFileName(
-            self, "Save card image", default_save_file, "Images (*.png *.bmp *.jpg)")  # type: str, str
+            self, self.tr("Save card image"), default_save_file, self.tr("Images (*.png *.bmp *.jpg)"))  # type: str, str
         if result:
             card.image_file.save(result)
             logger.info(f"Exported image of card {card.name} to {result}")

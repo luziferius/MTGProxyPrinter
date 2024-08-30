@@ -17,7 +17,7 @@ from collections import Counter
 import re
 import typing
 
-from PyQt5.QtCore import QObject
+from PyQt5.QtCore import QObject, QCoreApplication
 
 from mtg_proxy_printer.decklist_parser.common import ParsedDeck, ParserBase
 from mtg_proxy_printer.model.carddb import Card, CardDatabase, CardIdentificationData
@@ -84,7 +84,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
             if match := self.parser.match(line):
                 match_dict = match.groupdict()
                 copies = int(match_dict.get("copies", 1))
-                # If the matcher doesn’t include language information, all cards are implicitly English printings
+                # If the matcher doesn't include language information, all cards are implicitly English printings
                 parsed_data = self._parse_line(match_dict)
                 if language_override and language_override != parsed_data.language and (
                         translated := self.card_db.translate_card_name(parsed_data, language_override)):
@@ -134,7 +134,7 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
     def _match_language(self, match_dict: MatchType, name: typing.Optional[str]) -> str:
         """
-        If the used RE doesn't provide a language, try to guess the language based on the card name.
+        If the used RE does not provide a language, try to guess the language based on the card name.
         If neither language nor card name are given, default to English printings.
         """
         language = match_dict.get("language")
@@ -171,8 +171,11 @@ class GenericRegularExpressionDeckParser(ParserBase):
 
 class MagicWorkstationDeckDataFormatParser(GenericRegularExpressionDeckParser):
 
-    SUPPORTED_FILE_TYPES = {
-        "Magic Workstation Deck Data Format": ["mwDeck"],
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+        return {
+        QCoreApplication.translate(
+            "MagicWorkstationDeckDataFormatParser", "Magic Workstation Deck Data Format"): ["mwDeck"],
     }
     PREFIXES_TO_SKIP = frozenset({"//"})
 
@@ -187,11 +190,14 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     """
     A parser for MTG Arena deck lists (file extension .mtga). moxfield.com uses this format to export deck lists.
     """
-    SUPPORTED_FILE_TYPES = {
-        # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
-        # XMage also lists the .mtga suffix, so add that too.
-        "Magic Arena deck file": ["txt", "mtga"]
-    }
+
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+        return {
+            # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
+            # XMage also lists the .mtga suffix, so add that too.
+            QCoreApplication.translate("MTGArenaParser", "Magic Arena deck file"): ["txt", "mtga"],
+        }
     
     # The deck segment headers seem inconsistent across different sites
     LINES_TO_SKIP = frozenset((
@@ -220,10 +226,12 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
     so sets and individual printings have to be guessed.
     """
 
-    SUPPORTED_FILE_TYPES = {
-        # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
-        "Magic Online (MTGO) deck file": ["dek", "txt"],
-    }
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+        return {
+            # Tappedout and Scryfall exports them with .dek suffix, Moxfield uses .txt
+            QCoreApplication.translate("MTGOnlineParser", "Magic Online (MTGO) deck file"): ["dek", "txt"],
+        }
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):
         super().__init__(
@@ -232,7 +240,7 @@ class MTGOnlineParser(GenericRegularExpressionDeckParser):
         )
 
     @property
-    def requires_print_guessing(self) -> bool:
+    def requires_automatic_print_selection(self) -> bool:
         return True
 
 
@@ -241,9 +249,11 @@ class XMageParser(GenericRegularExpressionDeckParser):
     A parser for XMage deck files (file extension ".dck").
     """
 
-    SUPPORTED_FILE_TYPES = {
-        "XMage Deck file": ["dck"],
-    }
+    @staticmethod
+    def supported_file_types() -> typing.Dict[str, typing.List[str]]:
+        return {
+            QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
+        }
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 
     def __init__(self, card_db: CardDatabase, image_db: ImageDatabase, parent: QObject = None):

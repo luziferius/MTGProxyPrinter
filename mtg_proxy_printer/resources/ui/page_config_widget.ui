@@ -19,6 +19,9 @@
      <property name="text">
       <string>Page height</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
      <property name="buddy">
       <cstring>custom_page_height</cstring>
      </property>
@@ -27,11 +30,11 @@
    <item row="28" column="3" colspan="2">
     <widget class="QLabel" name="page_capacity">
      <property name="toolTip">
-      <string>Number of regular-size cards fitting on each page,
+      <string>Number of cards fitting on each page,
 based on the page size and spacings configured</string>
      </property>
-     <property name="text">
-      <string/>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
      </property>
     </widget>
    </item>
@@ -50,6 +53,9 @@ based on the page size and spacings configured</string>
      <property name="text">
       <string>Column spacing</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
      <property name="buddy">
       <cstring>column_spacing</cstring>
      </property>
@@ -66,7 +72,7 @@ based on the page size and spacings configured</string>
     </widget>
    </item>
    <item row="24" column="3" colspan="2">
-    <widget class="QSpinBox" name="margin_right">
+    <widget class="QDoubleSpinBox" name="margin_right">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -85,7 +91,7 @@ based on the page size and spacings configured</string>
     </widget>
    </item>
    <item row="21" column="3" colspan="2">
-    <widget class="QSpinBox" name="margin_bottom">
+    <widget class="QDoubleSpinBox" name="margin_bottom">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -104,7 +110,7 @@ based on the page size and spacings configured</string>
     </widget>
    </item>
    <item row="27" column="3" colspan="2">
-    <widget class="QSpinBox" name="card_bleed">
+    <widget class="QDoubleSpinBox" name="card_bleed">
      <property name="toolTip">
       <string>Draw an additional border around cards to ease cutting.</string>
      </property>
@@ -121,6 +127,9 @@ based on the page size and spacings configured</string>
      <property name="text">
       <string>Right margin</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
      <property name="buddy">
       <cstring>margin_right</cstring>
      </property>
@@ -131,12 +140,18 @@ based on the page size and spacings configured</string>
      <property name="text">
       <string>Resulting page capacity:</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
     </widget>
    </item>
    <item row="25" column="1">
     <widget class="QLabel" name="row_spacing_label">
      <property name="text">
       <string>Row spacing</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
      </property>
      <property name="buddy">
       <cstring>row_spacing</cstring>
@@ -151,7 +166,7 @@ based on the page size and spacings configured</string>
     </widget>
    </item>
    <item row="17" column="3">
-    <widget class="QSpinBox" name="custom_page_height">
+    <widget class="QDoubleSpinBox" name="custom_page_height">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -175,7 +190,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
     </widget>
    </item>
    <item row="19" column="3">
-    <widget class="QSpinBox" name="custom_page_width">
+    <widget class="QDoubleSpinBox" name="custom_page_width">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -206,7 +221,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
     </widget>
    </item>
    <item row="20" column="3" colspan="2">
-    <widget class="QSpinBox" name="margin_top">
+    <widget class="QDoubleSpinBox" name="margin_top">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -229,6 +244,9 @@ Otherwise, scaling may be applied by the printer driver.</string>
      <property name="text">
       <string>Page width</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
      <property name="buddy">
       <cstring>custom_page_width</cstring>
      </property>
@@ -238,6 +256,9 @@ Otherwise, scaling may be applied by the printer driver.</string>
     <widget class="QLabel" name="margin_bottom_label">
      <property name="text">
       <string>Bottom Margin</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
      </property>
      <property name="buddy">
       <cstring>margin_bottom</cstring>
@@ -249,6 +270,9 @@ Otherwise, scaling may be applied by the printer driver.</string>
      <property name="text">
       <string>Left margin</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
      <property name="buddy">
       <cstring>margin_left</cstring>
      </property>
@@ -259,6 +283,9 @@ Otherwise, scaling may be applied by the printer driver.</string>
      <property name="text">
       <string>Top margin</string>
      </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
+     </property>
      <property name="buddy">
       <cstring>margin_top</cstring>
      </property>
@@ -267,7 +294,7 @@ Otherwise, scaling may be applied by the printer driver.</string>
    <item row="0" column="3" colspan="2">
     <widget class="QLineEdit" name="document_name">
      <property name="toolTip">
-      <string>The document name is printed on each page and can help you keeping track
+      <string>The document name is printed on each page and can help you keep track
 of different printed sheets and to which deck they belong.
 
 Leave empty to disable.</string>
@@ -284,7 +311,7 @@ Leave empty to disable.</string>
     </widget>
    </item>
    <item row="26" column="3" colspan="2">
-    <widget class="QSpinBox" name="column_spacing">
+    <widget class="QDoubleSpinBox" name="column_spacing">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -305,7 +332,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
     </widget>
    </item>
    <item row="25" column="3" colspan="2">
-    <widget class="QSpinBox" name="row_spacing">
+    <widget class="QDoubleSpinBox" name="row_spacing">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -326,7 +353,7 @@ otherwise you need two cuts but require less precision hitting the exact middle.
     </widget>
    </item>
    <item row="23" column="3" colspan="2">
-    <widget class="QSpinBox" name="margin_left">
+    <widget class="QDoubleSpinBox" name="margin_left">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -348,6 +375,9 @@ otherwise you need two cuts but require less precision hitting the exact middle.
     <widget class="QLabel" name="card_bleed_label">
      <property name="text">
       <string>Card bleed</string>
+     </property>
+     <property name="textInteractionFlags">
+      <set>Qt::NoTextInteraction</set>
      </property>
      <property name="buddy">
       <cstring>card_bleed</cstring>

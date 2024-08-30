@@ -23,15 +23,17 @@ import unittest.mock
 import textwrap
 import typing
 
+import pint
 from PyQt5.QtGui import QPageSize
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
 
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from tests.helpers import quantity_close_to
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT, QuantityT
 from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
@@ -41,6 +43,7 @@ from mtg_proxy_printer.units_and_sizes import PageSizeManager
 from tests.helpers import is_dataclass_equal_to
 
 CardType = mtg_proxy_printer.model.document_loader.CardType
+mm: UnitT = unit_registry.mm
 
 
 @pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
@@ -82,7 +85,7 @@ def _store_page_layout_settings_in_save_file(
     """
     if data is None:
         data = PageLayoutSettings.create_from_settings()
-    db_data = dataclasses.asdict(data).items()
+    db_data = data.to_save_file_data()
     db.executemany("INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", db_data)
 
 
@@ -116,11 +119,11 @@ def generate_test_cases_for_test_valid_page_layout_settings_load_correctly():
     # Numerical settings
     yield from itertools.product(
         ["card_bleed", "row_spacing", "column_spacing", "margin_bottom", "margin_left", "margin_right", "margin_top"],
-        [0, 1, 1.5, 10],
+        [0*mm, 1*mm, 1.5*mm, 10*mm],
     )
     yield from itertools.product(
             ["custom_page_height", "custom_page_width"],
-            [200, 210.5, 1000, 10000],
+            [200*mm, 210.5*mm, 1000*mm, 10000*mm],
     )
     # Boolean settings
     yield from itertools.product(
@@ -175,8 +178,8 @@ def test_valid_page_layout_settings_load_correctly(
         assert_that(
             loaded_from_save_file,
             has_properties({
-                "page_height": close_to(expected_paper_size.height(), 0.05),
-                "page_width": close_to(expected_paper_size.width(), 0.05)})
+                "page_height": quantity_close_to(expected_paper_size.height()*mm),
+                "page_width": quantity_close_to(expected_paper_size.width()*mm)})
         )
 
 
@@ -218,7 +221,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
          ]
     )
     page_layout = mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()
-    page_layout_items = dataclasses.asdict(page_layout).items()
+    page_layout_items = page_layout.to_save_file_data()
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
         page_layout_items
@@ -437,14 +440,18 @@ def test_load_settings_from_legacy_save_file_is_successful(
     annotations = document_light.page_layout.__annotations__
     assert_that(
         document_light.page_layout,
-        has_properties({item: instance_of(value) for item, value in annotations.items()})
+        has_properties({
+            item: instance_of(pint.Quantity if value is QuantityT else value)
+            for item, value in annotations.items()
+        })
     )
     assert_that(document_light.page_layout, has_properties({
         "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
-        "row_spacing": 2, "column_spacing": 3,
-        "margin_top": 4, "margin_bottom": 5, "margin_left": 6, "margin_right": 7,
-        "page_height": close_to(200, 0.05), "page_width": close_to(150, 0.05),
-        "custom_page_height": 200, "custom_page_width": 150,
+        "row_spacing": quantity_close_to(2*mm), "column_spacing": quantity_close_to(3*mm),
+        "margin_top": quantity_close_to(4*mm), "margin_bottom": quantity_close_to(5*mm),
+        "margin_left": quantity_close_to(6*mm), "margin_right": quantity_close_to(7*mm),
+        "page_height": quantity_close_to(200*mm), "page_width": quantity_close_to(150*mm),
+        "custom_page_height": quantity_close_to(200*mm), "custom_page_width": quantity_close_to(150*mm),
         "paper_size": "Custom", "paper_orientation": "Portrait",
     }))
 
@@ -457,7 +464,8 @@ def test_load_correctly_sets_document_title(
         pytest.xfail("Leading zeros and trailing zero decimals not yet supported correctly")
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        dataclasses.asdict(document_light.page_layout).items())
+        document_light.page_layout.to_save_file_data()
+    )
     empty_save_database.execute(
         "UPDATE DocumentSettings SET value = ? WHERE key = ?",
         (title, "document_name"))
@@ -465,9 +473,10 @@ def test_load_correctly_sets_document_title(
     assert_that(
         document_light.page_layout,
         has_properties({
-            item: instance_of(value)
+            item: instance_of(pint.Quantity if value is QuantityT else value)
             for item, value
-            in document_light.page_layout.__annotations__.items()})
+            in document_light.page_layout.__annotations__.items()
+        })
     )
     assert_that(document_light.page_layout, has_property("document_name", equal_to(title)))
 
