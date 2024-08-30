@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
+
 import itertools
 import math
 import pathlib
@@ -23,10 +23,11 @@ import urllib.error
 import urllib.parse
 
 from PyQt5.QtCore import pyqtSlot as Slot, pyqtSignal as Signal, pyqtProperty as Property, QStringListModel, Qt, \
-    QItemSelection, QSize, QUrl, QEvent, QObject
+    QItemSelection, QSize, QUrl
 from PyQt5.QtGui import QValidator, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QWizard, QFileDialog, QMessageBox, QWizardPage, QWidget, QRadioButton
 
+from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.decklist_parser import re_parsers, common, csv_parsers
 from mtg_proxy_printer.decklist_downloader import IsIdentifyingDeckUrlValidator, AVAILABLE_DOWNLOADERS, \
@@ -116,7 +117,8 @@ class LoadListPage(QWizardPage):
             lambda text: ui.deck_list_download_button.setEnabled(
                 self.deck_list_url_validator.validate(text)[0] == State.Acceptable))
         supported_sites = "\n".join((downloader.APPLICABLE_WEBSITES for downloader in AVAILABLE_DOWNLOADERS.values()))
-        ui.deck_list_download_url_line_edit.setToolTip(self.tr("Supported websites:\n{supported_sites}").format(supported_sites=supported_sites))
+        ui.deck_list_download_url_line_edit.setToolTip(
+            self.tr("Supported websites:\n{supported_sites}").format(supported_sites=supported_sites))
         ui.translate_deck_list_target_language.setModel(language_model)
         self.registerField("deck_list*", ui.deck_list, "plainText", ui.deck_list.textChanged)
         self.registerField("print-guessing-enable", ui.print_guessing_enable)
@@ -531,7 +533,7 @@ class SummaryPage(QWizardPage):
             self._remove_basic_lands()
         logger.debug(f"Initialized {self.__class__.__name__}")
 
-    def _initialize_custom_buttons(self, decklist_import_section: configparser.SectionProxy):
+    def _initialize_custom_buttons(self, decklist_import_section: SectionProxy):
         wizard = self.wizard()
         wizard.customButtonClicked.connect(self.custom_button_clicked)
         have_basic_land_removal_button = not decklist_import_section.getboolean("automatically-remove-basic-lands")

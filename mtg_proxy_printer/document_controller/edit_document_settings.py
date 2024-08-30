@@ -112,7 +112,8 @@ class ActionEditDocumentSettings(DocumentAction):
                 self.reflow_actions.append(action.apply(document))
         last_page = partition.pages[-1]
         if (page_length := len(last_page)) > page_capacity:
-            excess = split_iterable((c.card for c in last_page[page_capacity:]), page_capacity)
+            excess = (c.card for c in last_page[page_capacity:])
+            excess = split_iterable(excess, page_capacity)
             self.reflow_actions.append(ActionRemoveCards(range(page_capacity, page_length), end_index-1).apply(document))
             self.reflow_actions.append(ActionNewPage(end_index, count=len(excess), content=excess).apply(document))
 

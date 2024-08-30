@@ -358,12 +358,13 @@ class Document(QAbstractItemModel):
                 flattened_data
             )
             logger.debug(f"Written {db.execute('SELECT count() FROM Card -- save_to_disk()').fetchone()[0]} cards.")
+            settings = self.page_layout.to_save_file_data()
             db.executemany(
                 textwrap.dedent("""\
                     INSERT OR REPLACE INTO DocumentSettings (key, value)
                       VALUES (?, ?) -- save_to_disk()
                     """),
-                dataclasses.asdict(self.page_layout).items())
+                settings)
             logger.debug("Written document settings")
             db.commit()
             db.execute("VACUUM -- save_to_disk()\n")

@@ -23,7 +23,9 @@ import textwrap
 import typing
 
 from hamcrest import assert_that, contains_exactly
+import pint
 
+from mtg_proxy_printer.units_and_sizes import unit_registry
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
 del get_logger
@@ -40,6 +42,7 @@ __all__ = [
 SCHEMA_PRAGMA_USER_VERSION_MATCHER = re.compile(r"PRAGMA\s+user_version\s+=\s+(?P<version>\d+)\s*;", re.ASCII)
 sqlite3.register_adapter(pathlib.PosixPath, str)
 sqlite3.register_adapter(pathlib.WindowsPath, str)
+sqlite3.register_adapter(type(1*unit_registry.mm), str)
 
 
 def read_resource_text(package: str, resource: str, encoding: str = "utf-8") -> str:

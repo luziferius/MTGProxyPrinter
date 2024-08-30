@@ -14,7 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import collections
-import configparser
 import dataclasses
 import enum
 import functools
@@ -30,7 +29,7 @@ import pint
 from PyQt5.QtGui import QPageLayout, QPageSize
 from PyQt5.QtCore import QObject, pyqtSignal as Signal, QThreadPool, QMarginsF, QSizeF, Qt
 from hamcrest import assert_that, all_of, instance_of, greater_than_or_equal_to, matches_regexp, is_in, \
-    has_properties, greater_than, is_, any_of, less_than_or_equal_to
+    has_properties, is_, any_of
 
 try:
     from hamcrest import contains_exactly
@@ -44,7 +43,8 @@ import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.model.carddb import CardIdentificationData, CardList, Card, CheckCard, AnyCardType, SCHEMA_NAME
 from mtg_proxy_printer.model.imagedb import ImageDownloader
 from mtg_proxy_printer.logger import get_logger
-from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, T, PageSizeManager
+from mtg_proxy_printer.units_and_sizes import PageType, CardSize, CardSizes, unit_registry, \
+    ConfigParser, PageSizeManager, QuantityT, T
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.runner import Runnable
 
@@ -59,6 +59,7 @@ __all__ = [
     "DocumentLoader",
     "PageLayoutSettings",
     "CardType",
+    "migrate_database",
 ]
 
 # ASCII encoded 'MTGP' for 'MTG proxies'. Stored in the Application ID file header field of the created save files
@@ -92,81 +93,92 @@ def split_iterable(iterable: typing.Iterable[T], chunk_size: int, /) -> typing.I
 @dataclasses.dataclass
 class PageLayoutSettings:
     """Stores all page layout attributes, like paper size, margins and spacings"""
-    card_bleed: float = 0
+    card_bleed: QuantityT = 0 * unit_registry.mm
     document_name: str = ""
     draw_cut_markers: bool = False
     draw_page_numbers: bool = False
     draw_sharp_corners: bool = False
-    row_spacing: float = 0
-    column_spacing: float = 0
-    margin_bottom: float = 0
-    margin_left: float = 0
-    margin_right: float = 0
-    margin_top: float = 0
-    custom_page_height: float = 0
-    custom_page_width: float = 0
+    row_spacing: QuantityT = 0 * unit_registry.mm
+    column_spacing: QuantityT = 0 * unit_registry.mm
+    margin_bottom: QuantityT = 0 * unit_registry.mm
+    margin_left: QuantityT = 0 * unit_registry.mm
+    margin_right: QuantityT = 0 * unit_registry.mm
+    margin_top: QuantityT = 0 * unit_registry.mm
+    custom_page_height: QuantityT = 0 * unit_registry.mm
+    custom_page_width: QuantityT = 0 * unit_registry.mm
     paper_orientation: str = "Portrait"
     paper_size: str = "Custom"
 
     @property
-    def page_height(self) -> typing.Union[float, int]:
+    def page_height(self) -> QuantityT:
         if self.paper_size == "Custom":
             return self.custom_page_height
         size = QPageSize.size(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
-        return size.height() if self.paper_orientation == "Portrait" else size.width()
+        value = size.height() if self.paper_orientation == "Portrait" else size.width()
+        return value*unit_registry.mm
 
     @page_height.setter
-    def page_height(self, value: int):
+    def page_height(self, value: QuantityT):
+        assert isinstance(value, pint.Quantity)
         self.custom_page_height = value
 
     @property
-    def page_width(self) -> typing.Union[float, int]:
+    def page_width(self) -> QuantityT:
         if self.paper_size == "Custom":
             return self.custom_page_width
         size = QPageSize.size(mtg_proxy_printer.units_and_sizes.PageSizeManager.PageSize[self.paper_size], QPageSize.Unit.Millimeter)
-        return size.width() if self.paper_orientation == "Portrait" else size.height()
+        value = size.width() if self.paper_orientation == "Portrait" else size.height()
+        return value*unit_registry.mm
 
     @page_width.setter
-    def page_width(self, value: int):
+    def page_width(self, value: QuantityT):
+        assert isinstance(value, pint.Quantity)
         self.custom_page_width = value
 
     @classmethod
-    def create_from_settings(cls, settings: configparser.ConfigParser = mtg_proxy_printer.settings.settings):
+    def create_from_settings(cls, settings: ConfigParser = mtg_proxy_printer.settings.settings):
         document_settings = settings["documents"]
         return cls(
-            document_settings.getfloat("card-bleed-mm"),
+            document_settings.get_quantity("card-bleed"),
             document_settings["default-document-name"],
             document_settings.getboolean("print-cut-marker"),
             document_settings.getboolean("print-page-numbers"),
             document_settings.getboolean("print-sharp-corners"),
-            document_settings.getfloat("row-spacing-mm"),
-            document_settings.getfloat("column-spacing-mm"),
-            document_settings.getfloat("margin-bottom-mm"),
-            document_settings.getfloat("margin-left-mm"),
-            document_settings.getfloat("margin-right-mm"),
-            document_settings.getfloat("margin-top-mm"),
-            document_settings.getfloat("paper-height-mm"),
-            document_settings.getfloat("paper-width-mm"),
+            document_settings.get_quantity("row-spacing"),
+            document_settings.get_quantity("column-spacing"),
+            document_settings.get_quantity("margin-bottom"),
+            document_settings.get_quantity("margin-left"),
+            document_settings.get_quantity("margin-right"),
+            document_settings.get_quantity("margin-top"),
+            document_settings.get_quantity("paper-height"),
+            document_settings.get_quantity("paper-width"),
             document_settings["paper-orientation"],
             document_settings["paper-size"],
         )
 
     def to_page_layout(self, render_mode: "RenderMode") -> QPageLayout:
-        margins = QMarginsF(self.margin_left, self.margin_top, self.margin_right, self.margin_bottom) \
+        margins = QMarginsF(
+            self.margin_left.to("mm").magnitude, self.margin_top.to("mm").magnitude,
+            self.margin_right.to("mm").magnitude, self.margin_bottom.to("mm").magnitude) \
             if render_mode.IMPLICIT_MARGINS in render_mode else QMarginsF(0, 0, 0, 0)
-        landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean("landscape-compatibility-workaround")
+        landscape_workaround = mtg_proxy_printer.settings.settings["printer"].getboolean(
+            "landscape-compatibility-workaround")
         if self.paper_size == "Custom":
             logger.debug(
                 f"Creating custom QPageLayout for a custom paper size of {self.page_width}mm×{self.page_height}mm")
             orientation = QPageLayout.Orientation.Portrait \
                 if self.page_width < self.page_height or landscape_workaround \
                 else QPageLayout.Orientation.Landscape
-            layout = QPageLayout(
-                QPageSize(QSizeF(*sorted([self.page_width, self.page_height])), QPageSize.Unit.Millimeter),
-                orientation,
-                margins,
-                QPageLayout.Unit.Millimeter,
+            page_size = QPageSize(
+                QSizeF(*sorted([self.page_width.to("mm").magnitude, self.page_height.to("mm").magnitude])),
+                QPageSize.Unit.Millimeter,
             )
+            layout = QPageLayout(
+                    page_size,
+                    orientation,
+                    margins,
+                    QPageLayout.Unit.Millimeter,
+                )
         else:
             logger.debug(
                 f"Creating QPageLayout for paper size {self.paper_size} and orientation {self.paper_orientation}")
@@ -176,6 +188,14 @@ class PageLayoutSettings:
                 margins,
             )
         return layout
+
+    def to_save_file_data(self):
+        # TODO: With Document save file version 7, directly store values as-is
+        return (
+            # For now, don't store Quantities as strings in the database
+            (key, (value.to(unit_registry.mm).magnitude if isinstance(value, pint.Quantity) else value))
+            for key, value in dataclasses.asdict(self).items()
+        )
 
     def __lt__(self, other):
         if not isinstance(other, self.__class__):
@@ -204,8 +224,8 @@ class PageLayoutSettings:
     def compute_page_column_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card columns that fit on this page."""
         card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_width = card_size.as_mm(card_size.width)
-        available_width = self.page_width - (self.margin_left + self.margin_right)
+        card_width: QuantityT = card_size.width.to("mm", "print")
+        available_width: QuantityT = self.page_width - (self.margin_left + self.margin_right)
 
         if available_width < card_width:
             return 0
@@ -217,7 +237,7 @@ class PageLayoutSettings:
     def compute_page_row_count(self, page_type: PageType = PageType.REGULAR) -> int:
         """Returns the total number of card rows that fit on this page."""
         card_size: CardSize = CardSizes.for_page_type(page_type)
-        card_height = card_size.as_mm(card_size.height)
+        card_height = card_size.height.to("mm", "print")
         available_height = self.page_height - (self.margin_top + self.margin_bottom)
 
         if available_height < card_height:
@@ -517,6 +537,7 @@ class Worker(LoaderSignals):
             user_version = Worker._validate_database_schema(db)
             if user_version not in range(2, 7):
                 raise AssertionError(f"Unknown database schema version: {user_version}")
+            logger.info(f"Save file version is {user_version}")
             migrate_database(db, settings)
             card_data = Worker._read_card_data_from_database(db)
             settings = Worker._read_page_layout_data_from_database(db, user_version)
@@ -568,7 +589,7 @@ class Worker(LoaderSignals):
                 ORDER BY key ASC
             """)
         default_settings.update(db.execute(document_settings_query))
-        is_number = any_of(instance_of(float), instance_of(int), pint.Quantity)
+        is_number = any_of(instance_of(float), instance_of(int), instance_of(pint.Quantity))
         assert_that(
             default_settings,
             has_properties(
@@ -596,13 +617,15 @@ class Worker(LoaderSignals):
         # Also coerce integer values into the annotated float or boolean types
         for key, annotated_type in PageLayoutSettings.__annotations__.items():
             value = getattr(default_settings, key)
-            if not isinstance(value, annotated_type):
-                value = annotated_type(value)
-                setattr(default_settings, key, value)
-            # Ensure all floats are within the allowed bounds.
-            if isinstance(value, float):
-                value = mtg_proxy_printer.settings.clamp_to_supported_range(value)
-                setattr(default_settings, key, value)
+            if annotated_type is QuantityT and not isinstance(value, pint.Quantity):
+                # TODO: Currently implicitly interpreting values as millimeters. Replace this with save version 7.
+                # Ensure all floats are within the allowed bounds.
+                value = mtg_proxy_printer.settings.clamp_to_supported_range(value*unit_registry.mm)
+            elif annotated_type is bool:
+                value = bool(value)
+            elif annotated_type is str:
+                value = str(value)
+            setattr(default_settings, key, value)
         assert_that(
             default_settings.compute_page_card_capacity(),
             is_(greater_than_or_equal_to(1)),
@@ -628,7 +651,7 @@ class Worker(LoaderSignals):
 
 def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     logger.debug("Running save file migration tasks")
-    _migrate_2_to_3(db, settings)
+    _migrate_2_to_3(db)
     _migrate_3_to_4(db, settings)
     _migrate_4_to_5(db, settings)
     _migrate_5_to_6(db, settings)
@@ -637,7 +660,7 @@ def migrate_database(db: sqlite3.Connection, settings: PageLayoutSettings):
     logger.debug("Finished running migration tasks")
 
 
-def _migrate_2_to_3(db: sqlite3.Connection, settings: PageLayoutSettings):
+def _migrate_2_to_3(db: sqlite3.Connection):
     if db.execute("PRAGMA user_version\n").fetchone()[0] != 2:
         return
     logger.debug("Migrating save file from version 2 to 3")
@@ -682,9 +705,11 @@ def _migrate_3_to_4(db: sqlite3.Connection, settings: PageLayoutSettings):
     """))
     db.execute(
         "INSERT INTO DocumentSettings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (1, settings.page_height, settings.page_width,
-         settings.margin_top, settings.margin_bottom, settings.margin_left, settings.margin_right,
-         settings.row_spacing, settings.column_spacing, settings.draw_cut_markers
+        (1, settings.page_height.to("mm").magnitude, settings.page_width.to("mm").magnitude,
+         settings.margin_top.to("mm").magnitude, settings.margin_bottom.to("mm").magnitude,
+         settings.margin_left.to("mm").magnitude, settings.margin_right.to("mm").magnitude,
+         settings.row_spacing.to("mm").magnitude, settings.column_spacing.to("mm").magnitude,
+         settings.draw_cut_markers
          )
     )
     db.execute(f"PRAGMA user_version = 4;\n")
@@ -710,7 +735,9 @@ def _migrate_4_to_5(db: sqlite3.Connection, settings: PageLayoutSettings):
           draw_sharp_corners INTEGER NOT NULL CHECK (draw_sharp_corners in (TRUE, FALSE))
         );
         """))
-    db.execute("INSERT INTO DocumentSettings SELECT *, ? FROM DocumentSettings_Old;\n", (settings.draw_sharp_corners,))
+    db.execute(
+        "INSERT INTO DocumentSettings SELECT *, ? FROM DocumentSettings_Old;\n",
+        (settings.draw_sharp_corners,))
     db.execute("DROP TABLE DocumentSettings_Old;\n")
     db.execute("PRAGMA user_version = 5;\n")
 
@@ -760,7 +787,7 @@ def _migrate_5_to_6(db: sqlite3.Connection, settings: PageLayoutSettings):
     db.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)", [
             ("document_name", settings.document_name),
-            ("card_bleed", settings.card_bleed),
+            ("card_bleed", settings.card_bleed.to("mm").magnitude),
             ("draw_page_numbers", settings.draw_page_numbers),
         ])
 

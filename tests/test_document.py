@@ -30,7 +30,7 @@ from pytestqt.qtbot import QtBot
 
 from mtg_proxy_printer.model.card_list import PageColumns
 from mtg_proxy_printer.sqlite_helpers import open_database, create_in_memory_database
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT
 from mtg_proxy_printer.model.carddb import Card, MTGSet, CheckCard
 from mtg_proxy_printer.model.document_page import Page
 from mtg_proxy_printer.model.document import Document
@@ -44,8 +44,10 @@ from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
 from .document_controller.helpers import insert_card_in_page, create_card
+from tests.helpers import close_to_
 
 ItemDataRole = Qt.ItemDataRole
+mm: UnitT = unit_registry.mm
 
 
 class DummyAction(DocumentAction):
@@ -354,10 +356,10 @@ def test_get_card_indices_of_type(document_light, page_type: PageType, parent_ro
 @pytest.fixture
 def document_custom_layout(document: Document) -> Document:
     custom_layout = PageLayoutSettings(
-        custom_page_height=300, custom_page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        row_spacing=3, column_spacing=2,
-        draw_cut_markers=True, draw_sharp_corners=False,
+        custom_page_height=300*mm, custom_page_width=200*mm,
+        margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
+        row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
+        draw_cut_markers=True,
     )
     document.apply(ActionEditDocumentSettings(custom_layout))
     yield document
@@ -464,7 +466,7 @@ def test_save_as_saves_check_card(tmp_path: pathlib.Path, document: Document):
 def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, document_custom_layout: Document):
     """Tests that saving a new document uses the newest database schema version"""
     layout = copy.copy(document_custom_layout.page_layout)
-    layout.custom_page_height = 1000
+    layout.custom_page_height = 1000*mm
     card = document_custom_layout.card_db.get_card_with_scryfall_id("0000579f-7b35-4ed3-b44c-db2a538066fe", True)
     # Prevent network access when re-loading the document
     document_custom_layout.image_db.loaded_images[
@@ -482,7 +484,9 @@ def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, 
     with qtbot.waitSignals([document_custom_layout.loading_state_changed]*2,
                            check_params_cbs=[lambda value: value, lambda value: not value]):
         document_custom_layout.loader.load_document(save_dir)
-    assert_that(document_custom_layout.page_layout.page_height, is_(equal_to(1000)))
+    assert_that(
+        document_custom_layout.page_layout.page_height.to(mm).magnitude,
+        is_(close_to(1000, 0.001)))
 
 
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
@@ -556,24 +560,25 @@ def _validate_saved_document_settings(document: Document):
               ORDER BY key ASC
             """)
         page_layout: PageLayoutSettings = document.page_layout
+        database_data = [value for value, in save.execute(query).fetchall()]
         assert_that(
-            [value for value, in save.execute(query).fetchall()],
+            database_data,
             contains_exactly(
-                page_layout.card_bleed,
-                page_layout.column_spacing,
-                page_layout.page_height,
-                page_layout.page_width,
+                close_to_(page_layout.card_bleed.to(mm).magnitude),
+                close_to_(page_layout.column_spacing.to(mm).magnitude),
+                close_to_(page_layout.custom_page_height.to(mm).magnitude),
+                close_to_(page_layout.custom_page_width.to(mm).magnitude),
                 page_layout.document_name,
-                int(page_layout.draw_cut_markers),
-                int(page_layout.draw_sharp_corners),
-                int(page_layout.draw_page_numbers),
-                page_layout.margin_bottom,
-                page_layout.margin_left,
-                page_layout.margin_right,
-                page_layout.margin_top,
+                bool(page_layout.draw_cut_markers),
+                bool(page_layout.draw_sharp_corners),
+                bool(page_layout.draw_page_numbers),
+                close_to_(page_layout.margin_bottom.to(mm).magnitude),
+                close_to_(page_layout.margin_left.to(mm).magnitude),
+                close_to_(page_layout.margin_right.to(mm).magnitude),
+                close_to_(page_layout.margin_top.to(mm).magnitude),
                 page_layout.paper_orientation,
                 page_layout.paper_size,
-                page_layout.row_spacing,
+                close_to_(page_layout.row_spacing.to(mm).magnitude),
             )
         )
 
@@ -634,10 +639,10 @@ def test_compute_pages_saved_by_compacting(
 
 def test_update_page_layout_copies_the_passed_in_instance(document_light: Document):
     layout = copy.copy(document_light.page_layout)
-    layout.row_spacing = 1
+    layout.row_spacing = 1*mm
     document_light.apply(ActionEditDocumentSettings(layout))
-    layout.row_spacing = 2
-    assert_that(document_light.page_layout, has_property("row_spacing", equal_to(1)))
+    layout.row_spacing = 2*mm
+    assert_that(document_light.page_layout, has_property("row_spacing", equal_to(1*mm)))
 
 
 @pytest.mark.parametrize("invalid_page_row", [2])

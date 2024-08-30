@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-import configparser
+
 import pathlib
 import typing
 
@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
 import mtg_proxy_printer.app_dirs
+from mtg_proxy_printer.units_and_sizes import ConfigParser
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.document_controller import DocumentAction
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
@@ -49,8 +50,10 @@ __all__ = [
 ]
 
 
-class HoverEventFilter(QObject):
-    def __init__(self, settings: configparser.ConfigParser, parent: "SettingsWindow"):
+class HighlightDifferingSettingsHoverEventFilter(QObject):
+    parent: typing.Callable[[], "SettingsWindow"]
+
+    def __init__(self, settings: ConfigParser, parent: "SettingsWindow"):
         super().__init__(parent)
         self.settings = settings
 
@@ -59,7 +62,7 @@ class HoverEventFilter(QObject):
         # This check avoids a crash during application shutdown
         if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
             return False
-        parent: "SettingsWindow" = self.parent()
+        parent = self.parent()
         if event_type == QEvent.HoverEnter:
             parent.highlight_differing_settings(self.settings)
         elif event_type == QEvent.HoverLeave:
@@ -128,11 +131,13 @@ class SettingsWindow(QDialog):
 
         restore_defaults = button_box.button(DialogBoxButton.RestoreDefaults)
         restore_defaults.clicked.connect(self.restore_defaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
+        restore_defaults.installEventFilter(
+            HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.DEFAULT_SETTINGS, self))
 
         reset = button_box.button(DialogBoxButton.Reset)
         reset.clicked.connect(self.reset)
-        reset.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        reset.installEventFilter(
+            HighlightDifferingSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
 
         buttons_with_icons = [
             (DialogBoxButton.Reset, "edit-undo"),
@@ -155,7 +160,7 @@ class SettingsWindow(QDialog):
         self._adapt_layout_to_size(a0.size())
         super().resizeEvent(a0)
 
-    def highlight_differing_settings(self, setting: configparser.ConfigParser):
+    def highlight_differing_settings(self, setting: ConfigParser):
         for page in self._get_pages():
             page.highlight_differing_settings(setting)
 
@@ -172,8 +177,7 @@ class SettingsWindow(QDialog):
         ui = self.ui
         return [ui.stacked_pages.widget(index) for index in range(ui.stacked_pages.count())]
 
-
-    def load_settings(self, settings: configparser.ConfigParser):
+    def load_settings(self, settings: ConfigParser):
         logger.debug("Loading the settings")
         for page in self._get_pages():
             page.load(settings)

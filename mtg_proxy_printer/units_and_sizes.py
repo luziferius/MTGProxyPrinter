@@ -13,7 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-"""Contains some constants, like the card size"""
+"""Contains some constants, type definitions and the unit parsing support code"""
+import configparser
 import enum
 import re
 import typing
@@ -26,6 +27,7 @@ except ImportError:  # Compatibility with Python < 3.11
 
 
 from PyQt5.QtGui import QPageSize, QPageLayout
+from pint.facets.plain.registry import QuantityT, UnitT
 from PyQt5.QtCore import QSize, QObject, pyqtSignal as Signal
 import pint
 
@@ -33,8 +35,18 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 
 import mtg_proxy_printer.natsort
-unit_registry = pint.UnitRegistry()
-RESOLUTION: pint.Quantity = unit_registry("300dots/inch")
+
+def _setup_units() -> typing.Tuple[pint.UnitRegistry, QuantityT]:
+    registry = pint.UnitRegistry()
+    resolution = registry.parse_expression("300dots/inch")
+    print_context = pint.Context("print")
+    print_context.add_transformation("[length]", "[printing_unit]", lambda _, x: x*RESOLUTION)
+    print_context.add_transformation("[printing_unit]", "[length]", lambda _, x: x/RESOLUTION)
+    registry.add_context(print_context)
+    return registry, resolution
+
+
+unit_registry, RESOLUTION = _setup_units()
 DEFAULT_SAVE_SUFFIX = "mtgproxies"
 
 # typing shortcuts
@@ -44,8 +56,27 @@ StringSet = Set[str]
 OptStr = Optional[str]
 IntList = List[int]
 StrDict = Dict[str, str]
-T = TypeVar("T")
+T = typing.TypeVar("T")
 PageSizeId = QPageSize.PageSizeId
+mm: UnitT = unit_registry.mm
+
+
+class SectionProxy(configparser.SectionProxy):
+    def get_quantity(self, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
+        raw_value = self.get(option, fallback, raw=raw, vars=vars)
+        return unit_registry.parse_expression(raw_value)
+
+class ConfigParser(configparser.ConfigParser):
+
+    __getitem__: typing.Callable[[str], SectionProxy]  # Type hint that [] returns a SectionProxy having get_quantity()
+
+    def get_quantity(self, section: str, option: str, fallback: str = None, *, raw=False, vars=None) -> QuantityT:
+        raw_value = self.get(section, option, raw=raw, vars=vars, fallback=fallback)
+        return unit_registry.parse_expression(raw_value)
+
+
+configparser.SectionProxy = SectionProxy
+configparser.ConfigParser = ConfigParser
 
 
 class UUID(str):
@@ -59,13 +90,8 @@ class UUID(str):
 
 
 class CardSize(NamedTuple):
-    width: pint.Quantity
-    height: pint.Quantity
-
-    @staticmethod
-    def as_mm(value: pint.Quantity) -> int:
-        size: pint.Quantity = (value/RESOLUTION).to("mm")
-        return round(size.magnitude)
+    width: QuantityT
+    height: QuantityT
 
     def as_qsize_px(self):
         return QSize(round(self.width.magnitude), round(self.height.magnitude))
@@ -271,8 +297,8 @@ def is_acceptable_page_size(page_size: Union[PageSizeId, QPageSize]) -> bool:
         return True
     size = QPageSize.size(page_size, QPageSize.Unit.Millimeter) \
         if isinstance(page_size, PageSizeId) else page_size.size(QPageSize.Unit.Millimeter)
-    return size.height() >= CardSize.as_mm(CardSizes.OVERSIZED.height) \
-        and size.width() >= CardSize.as_mm(CardSizes.OVERSIZED.width)
+    return size.height() >= CardSizes.OVERSIZED.height.to(mm, "print").magnitude \
+        and size.width() >= CardSizes.OVERSIZED.width.to(mm, "print").magnitude
 
 
 def read_page_size_enum() -> Dict[str, PageSizeId]:
@@ -282,6 +308,7 @@ def read_page_size_enum() -> Dict[str, PageSizeId]:
         if not is_acceptable_page_size(value):
             del result[item]
     return result
+
 
 class PageSizeManager(QObject):
     PageSize = read_page_size_enum()

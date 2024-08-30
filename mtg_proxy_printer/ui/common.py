@@ -17,7 +17,7 @@ import pathlib
 import platform
 import typing
 
-from PyQt5.QtCore import QFile, QUrl, QObject, QSize
+from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication
 from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect
 from PyQt5.QtGui import QIcon
 # noinspection PyUnresolvedReferences
@@ -96,7 +96,7 @@ def load_ui_from_file(name: str):
     """
     Returns the Ui class type from uic.loadUiType(), loading the ui file with the given name.
 
-    :param name:Path to the UI file
+    :param name: Path to the UI file
     :return: class implementing the requested Ui
     :raises FileNotFoundError: If the given ui file does not exist
     """
@@ -110,11 +110,13 @@ def load_ui_from_file(name: str):
 
 
 def format_size(size: float) -> str:
+    template = QCoreApplication.translate(
+        "format_size", "{size} {unit}", "A formatted file size in SI bytes")
     for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
         if -1024 < size < 1024:
-            return f"{size:3.2f} {unit}"
+            return template.format(size=f"{size:3.2f}", unit=unit)
         size /= 1024
-    return f"{size:.2f} YiB"
+    return template.format(size=f"{size:.2f}", unit="YiB")
 
 
 class WizardBase(QWizard):

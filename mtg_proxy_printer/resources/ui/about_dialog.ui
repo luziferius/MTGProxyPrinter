@@ -73,9 +73,6 @@ Project Website: [{application_name} home page]({application_home_page})
 
 </string>
          </property>
-         <property name="tabStopWidth">
-          <number>84</number>
-         </property>
          <property name="openExternalLinks">
           <bool>true</bool>
          </property>
@@ -88,13 +85,6 @@ Project Website: [{application_name} home page]({application_home_page})
          </property>
          <property name="textInteractionFlags">
           <set>Qt::TextSelectableByMouse</set>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="python_version_header_label">
-         <property name="text">
-          <string extracomment="Label for the Python version used to run"/>
          </property>
         </widget>
        </item>
@@ -124,19 +114,6 @@ Project Website: [{application_name} home page]({application_home_page})
           <set>Qt::NoTextInteraction</set>
          </property>
         </widget>
-       </item>
-       <item row="0" column="2">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
        </item>
        <item row="0" column="2">
         <spacer name="horizontalSpacer">

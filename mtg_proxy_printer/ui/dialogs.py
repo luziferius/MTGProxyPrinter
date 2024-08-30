@@ -13,8 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import configparser
-from functools import partial
+import typing
 import pathlib
 import sys
 
@@ -31,7 +30,7 @@ import mtg_proxy_printer.print
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.ui.common
 import mtg_proxy_printer.meta_data
-from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX
+from mtg_proxy_printer.units_and_sizes import DEFAULT_SAVE_SUFFIX, ConfigParser
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 from mtg_proxy_printer.print_count_updater import PrintCountUpdater
 from mtg_proxy_printer.logger import get_logger
@@ -110,6 +109,7 @@ class SavePDFDialog(QFileDialog):
     def on_reject(self):
         logger.debug("User aborted saving to PDF. Doing nothing.")
 
+
 class LoadSaveDialog(QFileDialog):
     def __init__(self, *args, **kwargs):
         # Note: Cannot supply already translated strings to __init__,
@@ -120,6 +120,7 @@ class LoadSaveDialog(QFileDialog):
         ).format(default_save_suffix=DEFAULT_SAVE_SUFFIX)
         self.setNameFilter(filter_text)
         self.setDefaultSuffix(DEFAULT_SAVE_SUFFIX)
+
 
 class SaveDocumentAsDialog(LoadSaveDialog):
 
@@ -276,7 +277,9 @@ class PrintDialog(QPrintDialog):
 
 
 class HoverEventFilter(QObject):
-    def __init__(self, settings: configparser.ConfigParser, parent: "DocumentSettingsDialog"):
+    parent: typing.Callable[[], "DocumentSettingsDialog"]
+
+    def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
         super().__init__(parent)
         self.settings = settings
 
@@ -285,7 +288,7 @@ class HoverEventFilter(QObject):
         # This check avoids a crash during application shutdown
         if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
             return False
-        parent: "DocumentSettingsDialog" = self.parent()
+        parent = self.parent()
         if event_type == QEvent.Type.HoverEnter:
             parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
         elif event_type == QEvent.Type.HoverLeave:
