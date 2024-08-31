@@ -158,6 +158,7 @@ class PageConfigWidget(QGroupBox):
             line_edit.setText(documents_section[setting])
         self.validate_paper_size_settings()
         self.on_page_layout_setting_changed()
+        self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -179,6 +180,7 @@ class PageConfigWidget(QGroupBox):
             setattr(self.page_layout, key, value)
         self.validate_paper_size_settings()
         self.on_page_layout_setting_changed()
+        self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
 
     def save_document_settings_to_config(self):
