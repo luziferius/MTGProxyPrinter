@@ -276,7 +276,7 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class HoverEventFilter(QObject):
+class ChangedSettingsHoverEventFilter(QObject):
     parent: typing.Callable[[], "DocumentSettingsDialog"]
 
     def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
@@ -290,7 +290,7 @@ class HoverEventFilter(QObject):
             return False
         parent = self.parent()
         if event_type == QEvent.Type.HoverEnter:
-            parent.ui.page_config_container.ui.page_config_groupbox.highlight_differing_settings(self.settings)
+            parent.ui.page_config_container.ui.page_config_widget.highlight_differing_settings(self.settings)
         elif event_type == QEvent.Type.HoverLeave:
             parent.clear_highlight()
         return False
@@ -317,11 +317,11 @@ class DocumentSettingsDialog(QDialog):
         button_box = self.ui.button_box
 
         restore_defaults = button_box.button(button_roles.RestoreDefaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        restore_defaults.installEventFilter(ChangedSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
         restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
 
         reset = button_box.button(button_roles.Reset)
-        reset.installEventFilter(HoverEventFilter(self.document.page_layout, self))
+        reset.installEventFilter(ChangedSettingsHoverEventFilter(self.document.page_layout, self))
         reset.clicked.connect(self.reset_button_clicked)
 
         buttons_with_icons = [
