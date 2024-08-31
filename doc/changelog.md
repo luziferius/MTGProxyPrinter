@@ -36,6 +36,8 @@
 
 - Improved performance of the image cleanup wizard, if there are many images of non-English cards stored on disk.
 - Reworded and clarified some texts in the user interface, fixed grammar and spellning mistakes
+- The main window no longer stays open unresponsive for multiple seconds when trying to exit the application
+  while it waits on a hanging network socket. 
 
 # Version 0.28.3 (2024-07-07)  <a name="v0_28_3"></a>
 
