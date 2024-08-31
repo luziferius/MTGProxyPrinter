@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PageConfigContainer</class>
+ <widget class="QWidget" name="PageConfigContainer">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>627</width>
+    <height>418</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QSplitter" name="splitter">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <widget class="PageConfigWidget" name="page_config_widget" native="true"/>
+     <widget class="PageConfigPreviewArea" name="page_config_preview_area" native="true"/>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PageConfigWidget</class>
+   <extends>QGroupBox</extends>
+   <header>mtg_proxy_printer.ui.page_config_widget</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PageConfigPreviewArea</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.page_config_preview_area</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
