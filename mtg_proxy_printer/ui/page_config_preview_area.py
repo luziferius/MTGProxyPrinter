@@ -17,6 +17,7 @@ from unittest.mock import MagicMock
 
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer.logger import get_logger
@@ -45,4 +46,6 @@ class PageConfigPreviewArea(QWidget):
         logger.info(f"Created {self.__class__.__name__} instance")
 
     def on_page_layout_changed(self, layout: PageLayoutSettings):
-        pass
+        ui = self.ui
+        ui.oversized_card_count.setMaximum(layout.compute_page_card_capacity(PageType.OVERSIZED))
+        ui.regular_card_count.setMaximum(layout.compute_page_card_capacity(PageType.REGULAR))

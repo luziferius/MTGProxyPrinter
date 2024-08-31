@@ -37,10 +37,14 @@ class PageConfigContainer(QWidget):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigContainer()
         ui.setupUi(self)
-        ui.page_config_widget.page_layout_changed.connect(
+        page_layout_changed = ui.page_config_widget.page_layout_changed
+        page_layout_changed.connect(
             partial(setattr, ui.page_config_preview_area.document, "page_layout")
         )
-        ui.page_config_widget.page_layout_changed.connect(
+        page_layout_changed.connect(
+            ui.page_config_preview_area.on_page_layout_changed
+        )
+        page_layout_changed.connect(
             ui.page_config_preview_area.document.page_layout_changed
         )
         logger.info(f"Created {self.__class__.__name__} instance")
