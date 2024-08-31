@@ -15,6 +15,8 @@
 
 from unittest.mock import MagicMock
 
+from PyQt5.QtCore import pyqtSlot as Slot
+
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.document_page import PageType
@@ -45,6 +47,7 @@ class PageConfigPreviewArea(QWidget):
         ui.preview_area.set_document(self.document)
         logger.info(f"Created {self.__class__.__name__} instance")
 
+    @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, layout: PageLayoutSettings):
         ui = self.ui
         ui.oversized_card_count.setMaximum(layout.compute_page_card_capacity(PageType.OVERSIZED))
