@@ -52,3 +52,19 @@ class PageConfigPreviewArea(QWidget):
         ui = self.ui
         ui.oversized_card_count.setMaximum(layout.compute_page_card_capacity(PageType.OVERSIZED))
         ui.regular_card_count.setMaximum(layout.compute_page_card_capacity(PageType.REGULAR))
+
+    @Slot(int)
+    def on_regular_card_count_valueChanged(self, value: int):
+        logger.debug(f"Setting regular card count to {value}")
+
+    @Slot(int)
+    def on_oversized_card_count_valueChanged(self, value: int):
+        logger.debug(f"Setting oversized card count to {value}")
+
+    @Slot()
+    def on_regular_size_selected_clicked(self):
+        logger.debug(f"Use regular cards for the preview")
+
+    @Slot()
+    def on_oversized_selected_clicked(self):
+        logger.debug(f"Use oversized cards for the preview")

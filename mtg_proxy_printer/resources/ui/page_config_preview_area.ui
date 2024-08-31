@@ -36,7 +36,7 @@
     </widget>
    </item>
    <item row="0" column="2">
-    <widget class="QRadioButton" name="oversize_selected">
+    <widget class="QRadioButton" name="oversized_selected">
      <property name="text">
       <string>Oversized</string>
      </property>
