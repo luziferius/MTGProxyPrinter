@@ -83,7 +83,7 @@ class AddCardWidget(QWidget):
                 button.setIcon(QIcon.fromTheme(icon))
 
     def _setup_language_combo_box(self) -> QStringListModel:
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         model = QStringListModel([preferred_language], self)
         self.ui.language_combo_box.setModel(model)
         self.ui.language_combo_box.currentTextChanged.connect(self.language_combo_box_changed)
@@ -196,7 +196,7 @@ class AddCardWidget(QWidget):
         logger.debug("About to set the card database")
         self.card_database = card_db
         card_db.card_data_updated.connect(lambda: self.card_name_filter_updated(self.ui.card_name_filter.text()))
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         languages = self.card_database.get_all_languages()
         if not languages:
             languages = [preferred_language]
@@ -226,7 +226,7 @@ class AddCardWidget(QWidget):
         copies = self.ui.copies_input.value()
         self._log_added_card(card, copies)
         self.request_action.emit(ActionAddCard(card, copies))
-        add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["images"].getboolean(
+        add_opposing_faces_enabled = mtg_proxy_printer.settings.settings["cards"].getboolean(
             "automatically-add-opposing-faces"
         )
         if add_opposing_faces_enabled and (opposing_face := self.card_database.get_opposing_face(card)) is not None:

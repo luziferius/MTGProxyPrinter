@@ -314,7 +314,7 @@ class GeneralSettingsPage(Page):
     def load(self, settings: ConfigParser):
         self._load_look_and_feel_settings(settings)
         self._load_update_settings(settings)
-        self._load_images_settings(settings)
+        self._load_cards_settings(settings)
         self._load_path_settings(settings)
 
     def _load_look_and_feel_settings(self, settings: ConfigParser):
@@ -326,19 +326,19 @@ class GeneralSettingsPage(Page):
         ui.application_language_combo_box.setCurrentIndex(language_index)
 
     def _load_update_settings(self, settings: ConfigParser):
-        application_section = settings["application"]
+        section = settings["update-checks"]
         for widget, setting in self._get_update_check_settings_widgets():
-            widget.setCheckState(bool_to_check_state[application_section.getboolean(setting)])
+            widget.setCheckState(bool_to_check_state[section.getboolean(setting)])
 
-    def _load_images_settings(self, settings: ConfigParser):
-        images_section = settings["images"]
+    def _load_cards_settings(self, settings: ConfigParser):
+        section = settings["cards"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
-        preferred_language = images_section.get("preferred-language")
+        preferred_language = section.get("preferred-language")
         if not (known := preferred_language_combo_box.model().stringList()) or preferred_language not in known:
             preferred_language_combo_box.addItem(preferred_language)
         preferred_language_combo_box.setCurrentIndex(self.get_index_for_language_code(preferred_language))
         self.ui.automatically_add_opposing_faces.setChecked(
-            images_section.getboolean("automatically-add-opposing-faces")
+            section.getboolean("automatically-add-opposing-faces")
         )
 
     def _load_path_settings(self, settings: ConfigParser):
@@ -365,11 +365,11 @@ class GeneralSettingsPage(Page):
     def save(self):
         self._save_update_check_settings()
         self._save_look_and_feel_settings()
-        self._save_images_settings()
+        self._save_cards_settings()
         self._save_path_settings()
 
     def _save_update_check_settings(self):
-        section = mtg_proxy_printer.settings.settings["application"]
+        section = mtg_proxy_printer.settings.settings["update-checks"]
         for widget, setting in self._get_update_check_settings_widgets():
             section[setting] = check_state_to_bool_str[widget.checkState()]
 
@@ -380,8 +380,8 @@ class GeneralSettingsPage(Page):
         section["language"] = self.ui.application_language_combo_box.currentData(
             ItemDataRole.UserRole)
 
-    def _save_images_settings(self):
-        section = mtg_proxy_printer.settings.settings["images"]
+    def _save_cards_settings(self):
+        section = mtg_proxy_printer.settings.settings["cards"]
         section["preferred-language"] = self.ui.preferred_language_combo_box.currentText()
         section["automatically-add-opposing-faces"] = str(self.ui.automatically_add_opposing_faces.isChecked())
 
@@ -394,7 +394,7 @@ class GeneralSettingsPage(Page):
     def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
 
-        section = settings["application"]
+        section = settings["update-checks"]
         for widget, setting in self._get_update_check_settings_widgets():
             if section[setting] != check_state_to_bool_str[widget.checkState()]:
                 highlight_widget(widget)
@@ -407,7 +407,7 @@ class GeneralSettingsPage(Page):
                 ItemDataRole.UserRole):
             highlight_widget(ui.application_language_combo_box)
 
-        section = settings["images"]
+        section = settings["cards"]
         if section["preferred-language"] != ui.preferred_language_combo_box.currentText():
             highlight_widget(ui.preferred_language_combo_box)
         if section.getboolean("automatically-add-opposing-faces") is not ui.automatically_add_opposing_faces.isChecked():

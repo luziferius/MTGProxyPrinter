@@ -99,7 +99,7 @@ class Application(QApplication):
         """
         if settings.was_application_updated():
             logger.info(
-                f'Updated application from {settings.settings["application"]["last-used-version"]} '
+                f'Updated application from {settings.settings["update-checks"]["last-used-version"]} '
                 f'to {meta_data.__version__}')
             settings.update_stored_version_string()
             settings.write_settings_to_file()
@@ -166,7 +166,7 @@ class Application(QApplication):
         return document
 
     def _create_language_model(self):
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         return QStringListModel([preferred_language], self)
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
@@ -178,7 +178,7 @@ class Application(QApplication):
         return update_checker
 
     def _check_for_undecided_update_settings(self):
-        section = settings.settings["application"]
+        section = settings.settings["update-checks"]
         if section.getboolean("check-for-application-updates") is None:
             logger.info("No user setting for application updates set. About to ask.")
             self.main_window.ask_user_about_application_update_policy()

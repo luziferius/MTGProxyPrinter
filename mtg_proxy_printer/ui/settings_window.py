@@ -186,7 +186,7 @@ class SettingsWindow(QDialog):
     def accept(self):
         """Automatically called when the user hits the "Save" button."""
         logger.info("User wants to save the settings.")
-        old_preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        old_preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         new_preferred_language = self.ui.general_settings_page.ui.preferred_language_combo_box.currentText()
         if old_preferred_language != new_preferred_language:
             self.preferred_language_changed.emit(new_preferred_language)
