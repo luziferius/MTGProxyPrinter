@@ -13,10 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from mtg_proxy_printer.ui.common import load_ui_from_file
-from mtg_proxy_printer.logger import get_logger
+from functools import partial
 
 from PyQt5.QtWidgets import QWidget
+
+from mtg_proxy_printer.ui.common import load_ui_from_file
+from mtg_proxy_printer.logger import get_logger
 
 try:
     from mtg_proxy_printer.ui.generated.page_config_container import Ui_PageConfigContainer
@@ -35,3 +37,10 @@ class PageConfigContainer(QWidget):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigContainer()
         ui.setupUi(self)
+        ui.page_config_widget.page_layout_changed.connect(
+            partial(setattr, ui.page_config_preview_area.document, "page_layout")
+        )
+        ui.page_config_widget.page_layout_changed.connect(
+            ui.page_config_preview_area.document.page_layout_changed
+        )
+        logger.info(f"Created {self.__class__.__name__} instance")

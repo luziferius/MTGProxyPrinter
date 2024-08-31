@@ -15,9 +15,10 @@
 
 from unittest.mock import MagicMock
 
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.document import Document
 from mtg_proxy_printer.ui.common import load_ui_from_file
-from mtg_proxy_printer.ui.page_scene import PageScene, RenderMode
 from mtg_proxy_printer.logger import get_logger
 
 from PyQt5.QtWidgets import QWidget
@@ -41,3 +42,7 @@ class PageConfigPreviewArea(QWidget):
         ui.setupUi(self)
         self.document = Document(MagicMock(), MagicMock())
         ui.preview_area.set_document(self.document)
+        logger.info(f"Created {self.__class__.__name__} instance")
+
+    def on_page_layout_changed(self, layout: PageLayoutSettings):
+        pass
