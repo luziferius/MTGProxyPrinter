@@ -17,7 +17,7 @@ import pathlib
 import platform
 import typing
 
-from PySide6.QtCore import QFile, QUrl, QObject, QSize
+from PySide6.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication
 from PySide6.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect
 from PySide6.QtGui import QIcon
 from PySide6.QtUiTools import loadUiType
@@ -108,11 +108,13 @@ def load_ui_from_file(name: str):
 
 
 def format_size(size: float) -> str:
+    template = QCoreApplication.translate(
+        "format_size", "{size} {unit}", "A formatted file size in SI bytes")
     for unit in ('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB'):
         if -1024 < size < 1024:
-            return f"{size:3.2f} {unit}"
+            return template.format(size=f"{size:3.2f}", unit=unit)
         size /= 1024
-    return f"{size:.2f} YiB"
+    return template.format(size=f"{size:.2f}", unit="YiB")
 
 
 class WizardBase(QWizard):

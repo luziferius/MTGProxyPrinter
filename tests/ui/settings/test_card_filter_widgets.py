@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from configparser import SectionProxy
 import typing
 from unittest.mock import patch
 
@@ -21,6 +20,7 @@ from PySide6.QtWidgets import QCheckBox
 import pytest
 from hamcrest import *
 
+from mtg_proxy_printer.units_and_sizes import SectionProxy
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.printing_filter_widgets import AbstractPrintingFilter, GeneralPrintingFilter, \
     FormatPrintingFilter
@@ -52,7 +52,7 @@ general_printing_widget_mapping = {
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("setting", general_printing_widget_mapping.keys())
-def test_general_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
+def test_general_printing_filter_loads_correctly(qtbot, download_section: SectionProxy, setting: str, value: bool):
     download_section[setting] = str(value)
     widget = _create_widget_with_loaded_settings(qtbot, GeneralPrintingFilter, download_section)
     ui = widget.ui
@@ -91,7 +91,7 @@ format_printing_widget_mapping = {
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("setting", format_printing_widget_mapping.keys())
-def test_format_printing_filter_loads_correctly(qtbot, download_section, setting: str, value: bool):
+def test_format_printing_filter_loads_correctly(qtbot, download_section: SectionProxy, setting: str, value: bool):
     download_section[setting] = str(value)
     widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilter, download_section)
     ui = widget.ui
@@ -112,7 +112,7 @@ def test_format_printing_filter_loads_correctly(qtbot, download_section, setting
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("setting", format_printing_widget_mapping.keys())
-def test_format_printing_filter_saves_correctly(qtbot, download_section, setting: str, value: bool):
+def test_format_printing_filter_saves_correctly(qtbot, download_section: SectionProxy, setting: str, value: bool):
     widget = _create_widget_with_loaded_settings(qtbot, FormatPrintingFilter, download_section)
     checkbox: QCheckBox = getattr(widget.ui, format_printing_widget_mapping[setting])
     assert_that(checkbox, is_(instance_of(QCheckBox)))

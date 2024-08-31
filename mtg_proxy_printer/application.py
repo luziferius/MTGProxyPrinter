@@ -239,6 +239,8 @@ class Application(QApplication):
     def quit(self):
         logger.info("About to exit.")
         self.should_run = False
+        self.main_window.hide()
+        self.main_window.close()
         self.closeAllWindows()
         Runnable.cancel_all_runners()
         logger.debug("All windows closed. Waiting for background threads to finish")

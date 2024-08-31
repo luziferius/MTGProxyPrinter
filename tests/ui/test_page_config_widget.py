@@ -14,8 +14,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import functools
+import typing
 from unittest.mock import patch
 
+import hamcrest.core.matcher
+import pint
 from PySide6.QtWidgets import QDoubleSpinBox, QCheckBox
 
 from hamcrest import *
@@ -25,10 +28,12 @@ from pytestqt.qtbot import QtBot
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
+from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, QuantityT
 
 from tests.hasgetter import has_getter
-close_to_ = functools.partial(close_to, delta=0.01)
-
+from tests.helpers import quantity_close_to, quantity_between, number_between
+close_to_: typing.Callable[[float], hamcrest.core.matcher.Matcher] = functools.partial(close_to, delta=0.01)
+mm: UnitT = unit_registry.mm
 
 @pytest.fixture()
 def widget(qtbot: QtBot) -> PageConfigWidget:
@@ -60,17 +65,19 @@ def test_set_numerical_spin_boxes(qtbot: QtBot, widget: PageConfigWidget, attrib
     widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
     ui = widget.ui
     assert_that(ui, has_property(attribute_name, instance_of(QDoubleSpinBox)))
-    assert_that(widget.page_layout, has_property(attribute_name, instance_of(float)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(pint.Quantity)))
     spinbox_widget: QDoubleSpinBox = getattr(ui, attribute_name)
     with qtbot.waitSignal(spinbox_widget.valueChanged):
         previous = spinbox_widget.value()
         new_value = previous + 1
         spinbox_widget.setValue(new_value)
-    assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
+    assert_that(widget.page_layout, has_property(attribute_name, quantity_close_to(new_value*mm)))
 
 
 @pytest.mark.parametrize("attribute_name", [
     "draw_cut_markers",
+    "draw_sharp_corners",
+    "draw_page_numbers",
 ])
 def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
     ui = widget.ui
@@ -91,31 +98,33 @@ def test_boolean_check_boxes(qtbot: QtBot, widget: PageConfigWidget, attribute_n
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
 
 
+
 ZeroMarginsSettings = {
-    "paper-height-mm": "297",
-    "paper-width-mm": "210",
-    "margin-top-mm": "0",
-    "margin-bottom-mm": "0",
-    "margin-left-mm": "0",
-    "margin-right-mm": "0",
-    "row-spacing-mm": "0",
-    "column-spacing-mm": "0",
+    "paper-height": "297 mm",
+    "paper-width": "210 mm",
+    "margin-top": "0 mm",
+    "margin-bottom": "0 mm",
+    "margin-left": "0 mm",
+    "margin-right": "0 mm",
+    "row-spacing": "0 mm",
+    "column-spacing": "0 mm",
 }
 
 
-@pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
+@pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("paper-height-mm", "page_height", 126, 10000),
-    ("paper-width-mm", "page_width", 88, 10000),
-    ("margin-top-mm", "margin_top", 0, 171),
-    ("margin-bottom-mm", "margin_bottom", 0, 171),
-    ("margin-left-mm", "margin_left", 0, 122),
-    ("margin-right-mm", "margin_right", 0, 122),
-    ("row-spacing-mm", "row_spacing", 0, 10000),
-    ("column-spacing-mm", "column_spacing", 0, 10000),
+    ("paper-height", "page_height", 126*mm, 10000*mm),
+    ("paper-width", "page_width", 88*mm, 10000*mm),
+    ("margin-top", "margin_top", 0*mm, 170.85*mm),
+    ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
+    ("margin-left", "margin_left", 0*mm, 121.95*mm),
+    ("margin-right", "margin_right", 0*mm, 121.95*mm),
+    ("row-spacing", "row_spacing", 0*mm, 10000*mm),
+    ("column-spacing", "column_spacing", 0*mm, 10000*mm),
 ])
 def test_load_numerical_document_settings_from_config(
-        widget: PageConfigWidget, settings_name: str, attribute_name: str, min_value: int, max_value: int, value: int):
+        widget: PageConfigWidget, settings_name: str, attribute_name: str,
+        min_value: QuantityT, max_value: QuantityT, value: QuantityT):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
@@ -128,19 +137,21 @@ def test_load_numerical_document_settings_from_config(
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
 
     if value < min_value:
-        assert_that(spinbox_widget, has_getter("value", equal_to(min_value)))
-        assert_that(page_layout, has_property(attribute_name, equal_to(min_value)))
+        assert_that(spinbox_widget, has_getter("value", close_to_(min_value.magnitude)))
+        assert_that(page_layout, has_property(attribute_name, quantity_close_to(min_value)))
     elif value > max_value:
-        assert_that(spinbox_widget, has_getter("value", equal_to(max_value)))
-        assert_that(page_layout, has_property(attribute_name, equal_to(max_value)))
+        assert_that(spinbox_widget, has_getter("value", close_to_(max_value.magnitude)))
+        assert_that(page_layout, has_property(attribute_name, quantity_close_to(max_value)))
     else:
-        assert_that(spinbox_widget, has_getter("value", equal_to(value)))
-        assert_that(page_layout, has_property(attribute_name, equal_to(value)))
+        assert_that(spinbox_widget, has_getter("value", close_to_(value.magnitude)))
+        assert_that(page_layout, has_property(attribute_name, quantity_close_to(value)))
 
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("settings_name, attribute_name", [
-    ("print-cut-marker", "draw_cut_markers"),
+    ("print-cut-marker", "draw_cut_markers",),
+    ("print-sharp-corners", "draw_sharp_corners"),
+    ("print-page-numbers", "draw_page_numbers"),
 ])
 def test_load_boolean_checkboxes_from_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
@@ -152,20 +163,21 @@ def test_load_boolean_checkboxes_from_config(
     assert_that(checkbox_widget.isChecked(), is_(equal_to(value)))
 
 
-@pytest.mark.parametrize("value", [-1, 0, 1, 200, 1000])
+@pytest.mark.parametrize("value", [-1*mm, 0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("settings_name, attribute_name, min_value, max_value", [
-    ("paper-height-mm", "page_height", 126, 10000),
-    ("paper-width-mm", "page_width", 88, 10000),
-    ("margin-top-mm", "margin_top", 0, 171),
-    ("margin-bottom-mm", "margin_bottom", 0, 171),
-    ("margin-left-mm", "margin_left", 0, 122),
-    ("margin-right-mm", "margin_right", 0, 122),
-    ("row-spacing-mm", "row_spacing", 0, 10000),
-    ("column-spacing-mm", "column_spacing", 0, 10000),
+    ("paper-height", "page_height", 126*mm, 10000*mm),
+    ("paper-width", "page_width", 88*mm, 10000*mm),
+    ("margin-top", "margin_top", 0*mm, 170.85*mm),
+    ("margin-bottom", "margin_bottom", 0*mm, 170.85*mm),
+    ("margin-left", "margin_left", 0*mm, 121.95*mm),
+    ("margin-right", "margin_right", 0*mm, 121.95*mm),
+    ("row-spacing", "row_spacing", 0*mm, 10000*mm),
+    ("column-spacing", "column_spacing", 0*mm, 10000*mm),
 ])
 def test_save_numerical_document_settings_to_config(
         qtbot: QtBot,
-        widget: PageConfigWidget, settings_name: str, attribute_name: str, min_value: int, max_value: int, value: int):
+        widget: PageConfigWidget, settings_name: str, attribute_name: str,
+        min_value: QuantityT, max_value: QuantityT, value: QuantityT):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
@@ -175,17 +187,20 @@ def test_save_numerical_document_settings_to_config(
     with patch.dict( document_settings, ZeroMarginsSettings), \
             patch.dict(document_settings, {settings_name: original_value}):
         widget.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
-        expected = str(min(max(min_value, value), max_value))
+        expected = min(max(min_value, value), max_value)
         spinbox_widget: QDoubleSpinBox = getattr(widget.ui, attribute_name)
-        spinbox_widget.setValue(value)
+        spinbox_widget.setValue(value.magnitude)
         widget.save_document_settings_to_config()
-        assert_that(document_settings, has_entry(settings_name, starts_with(expected)))
+        assert_that(document_settings.get_quantity(settings_name), quantity_close_to(expected))
+
     assert_that(document_settings, has_entry(settings_name, starts_with(original_value)))
 
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("settings_name, attribute_name", [
-    ("print-cut-marker", "draw_cut_markers"),
+    ("print-cut-marker", "draw_cut_markers",),
+    ("print-sharp-corners", "draw_sharp_corners"),
+    ("print-page-numbers", "draw_page_numbers"),
 ])
 def test_save_boolean_document_settings_to_config(
         widget: PageConfigWidget, settings_name: str, attribute_name: str, value: bool):
@@ -204,19 +219,19 @@ def test_save_boolean_document_settings_to_config(
     assert_that(document_settings, has_entry(settings_name, equal_to(original_value)))
 
 
-@pytest.mark.parametrize("value", [0, 1, 200, 1000])
+@pytest.mark.parametrize("value", [0*mm, 1*mm, 200*mm, 1000*mm])
 @pytest.mark.parametrize("attribute_name, min_value, max_value", [
-    ("page_height", 126, 10000),
-    ("page_width", 88, 10000),
-    ("margin_top", 0, 171),
-    ("margin_bottom", 0, 171),
-    ("margin_left", 0, 122),
-    ("margin_right", 0, 122),
-    ("row_spacing", 0, 10000),
-    ("column_spacing", 0, 10000),
+    ("page_height", 126*mm, 10000*mm),
+    ("page_width", 88*mm, 10000*mm),
+    ("margin_top", 0*mm, 170.85*mm),
+    ("margin_bottom", 0*mm, 170.85*mm),
+    ("margin_left", 0*mm, 121.95*mm),
+    ("margin_right", 0*mm, 121.95*mm),
+    ("row_spacing", 0*mm, 10000*mm),
+    ("column_spacing", 0*mm, 10000*mm),
 ])
 def test_load_numerical_values_from_page_layout(
-        widget: PageConfigWidget, attribute_name: str, min_value: int, max_value: int, value: int):
+        widget: PageConfigWidget, attribute_name: str, min_value: QuantityT, max_value: QuantityT, value: QuantityT):
     """
     Tests loading integer settings from config. Some values, like page size, have a minimum value greater than 0,
     to ensure that at least one image fits on a page.
@@ -224,16 +239,18 @@ def test_load_numerical_values_from_page_layout(
     with patch.dict(mtg_proxy_printer.settings.settings["documents"], ZeroMarginsSettings):
         other = PageLayoutSettings.create_from_settings()
     setattr(other, attribute_name, value)
-    expected = min(max(min_value, value), max_value)
     widget.load_from_page_layout(other)
-    assert_that(widget.page_layout, has_property(attribute_name, close_to_(expected)))
+    assert_that(widget.page_layout, has_property(attribute_name, quantity_between(min_value, max_value)))
     spinbox_widget: QDoubleSpinBox = getattr(widget.ui, attribute_name)
-    assert_that(spinbox_widget.value(), is_(close_to_(expected)))
+    assert_that(spinbox_widget.value(), is_(number_between(min_value.magnitude, max_value.magnitude)))
+    assert_that(spinbox_widget.value(), close_to_(getattr(widget.page_layout, attribute_name).magnitude))
 
 
 @pytest.mark.parametrize("value", [True, False])
 @pytest.mark.parametrize("attribute_name", [
     "draw_cut_markers",
+    "draw_sharp_corners",
+    "draw_page_numbers",
 ])
 def test_load_booleans_from_page_layout(widget: PageConfigWidget, attribute_name: str, value: bool):
     other = PageLayoutSettings.create_from_settings()
@@ -247,22 +264,22 @@ def test_load_booleans_from_page_layout(widget: PageConfigWidget, attribute_name
 def test_flip_page_dimensions_button(widget: PageConfigWidget):
     widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
     assert_that(widget.page_layout, has_properties({
-        "page_height": equal_to(297),
-        "page_width": equal_to(210),
+        "page_height": equal_to(297*mm),
+        "page_width": equal_to(210*mm),
     }), "Setup failed")
     widget.ui.flip_page_dimensions.click()
 
     assert_that(widget.page_layout, has_properties({
-        "page_height": equal_to(210),
-        "page_width": equal_to(297),
+        "page_height": equal_to(210*mm),
+        "page_width": equal_to(297*mm),
     }), "Values not correctly flipped")
 
 
 def test_flip_page_dimensions_updates_capacity(widget: PageConfigWidget):
     widget.load_from_page_layout(PageLayoutSettings.create_from_settings())
     assert_that(widget.page_layout, has_properties({
-        "page_height": equal_to(297),
-        "page_width": equal_to(210),
+        "page_height": equal_to(297*mm),
+        "page_width": equal_to(210*mm),
     }), "Setup failed")
     widget.ui.flip_page_dimensions.click()
     assert_that(widget.ui.page_capacity, has_getter("text", all_of(

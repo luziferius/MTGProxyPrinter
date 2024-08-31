@@ -13,7 +13,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-PRAGMA user_version = 0000006;
+PRAGMA user_version = 6;
 PRAGMA application_id = 41325044; -- ASCII-encoded "MTGP"
 PRAGMA page_size =  512;
 VACUUM;  -- Required to apply setting PRAGMA page_size

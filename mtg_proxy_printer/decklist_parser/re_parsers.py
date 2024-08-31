@@ -195,10 +195,10 @@ class MTGArenaParser(GenericRegularExpressionDeckParser):
     @staticmethod
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
-        # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
-        # XMage also lists the .mtga suffix, so add that too.
-        QCoreApplication.translate("MTGArenaParser", "Magic Arena deck file"): ["txt", "mtga"],
-    }
+            # Magic Arena typically uses the clipboard. Some sites offer downloads with the .txt ending.
+            # XMage also lists the .mtga suffix, so add that too.
+            QCoreApplication.translate("MTGArenaParser", "Magic Arena deck file"): ["txt", "mtga"],
+        }
     
     # The deck segment headers seem inconsistent across different sites
     LINES_TO_SKIP = frozenset((
@@ -254,7 +254,7 @@ class XMageParser(GenericRegularExpressionDeckParser):
     def supported_file_types() -> typing.Dict[str, typing.List[str]]:
         return {
             QCoreApplication.translate("XMageParser", "XMage Deck file"): ["dck"],
-        }
+            }
 
     PREFIXES_TO_SKIP = frozenset(("NAME", "LAYOUT"))
 

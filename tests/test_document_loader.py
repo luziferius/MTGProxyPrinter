@@ -17,23 +17,32 @@ import contextlib
 import dataclasses
 import itertools
 import functools
+import typing
+from numbers import Real
 import pathlib
 import sqlite3
 import unittest.mock
 import textwrap
 
+import pint
+from hamcrest.core.matcher import Matcher
+from pint.facets import QuantityT
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
-
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType
+from mtg_proxy_printer.model.document_loader import PageLayoutSettings
+from tests.helpers import quantity_close_to
+from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT
 from mtg_proxy_printer.model.carddb import CheckCard
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
+
 CardType = mtg_proxy_printer.model.document_loader.CardType
-close_to_ = functools.partial(close_to, delta=0.01)
+close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
+mm: UnitT = unit_registry.mm
+
 
 @pytest.mark.parametrize("user_version", [-1, 0, 1, 7, 8])
 def test_unknown_save_version_raises_exception(empty_save_database: sqlite3.Connection, user_version: int):
@@ -74,12 +83,12 @@ def test_valid_data_loads_correctly(
         (1, 1, 1, "0000579f-7b35-4ed3-b44c-db2a538066fe", "r")
     )
     page_layout = mtg_proxy_printer.model.document_loader.PageLayoutSettings(
-        page_height=300, page_width=200,
-        margin_top=20, margin_bottom=19, margin_left=18, margin_right=17,
-        row_spacing=3, column_spacing=2,
+        page_height=300*mm, page_width=200*mm,
+        margin_top=20*mm, margin_bottom=19*mm, margin_left=18*mm, margin_right=17*mm,
+        row_spacing=3*mm, column_spacing=2*mm, card_bleed=1*mm,
         draw_cut_markers=True, draw_sharp_corners=False,
     )
-    page_layout_items = dataclasses.asdict(page_layout).items()
+    page_layout_items = page_layout.to_save_file_data()
     assert_that(page_layout.compute_page_card_capacity(PageType.OVERSIZED), is_(greater_than_or_equal_to(1)))
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
@@ -124,7 +133,7 @@ def test_document_with_mixed_pages_distributes_cards_based_on_size(
          ]
     )
     page_layout = mtg_proxy_printer.model.document.PageLayoutSettings.create_from_settings()
-    page_layout_items = dataclasses.asdict(page_layout).items()
+    page_layout_items = page_layout.to_save_file_data()
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
         page_layout_items
@@ -369,14 +378,17 @@ def test_load_settings_from_legacy_save_file_is_successful(
     annotations = document_light.page_layout.__annotations__
     assert_that(
         document_light.page_layout,
-        has_properties({item: instance_of(value) for item, value in annotations.items()})
+        has_properties({
+            item: instance_of(pint.Quantity if value is QuantityT else value)
+            for item, value in annotations.items()
+        })
     )
     assert_that(document_light.page_layout, has_properties({
         "document_name": "", "draw_cut_markers": True, "draw_page_numbers": False, "draw_sharp_corners": False,
-        "row_spacing": close_to_(2), "column_spacing": close_to_(3),
-        "margin_top": close_to_(4), "margin_bottom": close_to_(5),
-        "margin_left": close_to_(6), "margin_right": close_to_(7),
-        "page_height": close_to_(200), "page_width": close_to_(150)
+        "row_spacing": quantity_close_to(2*mm), "column_spacing": quantity_close_to(3*mm),
+        "margin_top": quantity_close_to(4*mm), "margin_bottom": quantity_close_to(5*mm),
+        "margin_left": quantity_close_to(6*mm), "margin_right": quantity_close_to(7*mm),
+        "page_height": quantity_close_to(200*mm), "page_width": quantity_close_to(150*mm)
     }))
 
 
@@ -390,7 +402,8 @@ def test_load_correctly_sets_document_title(
     annotations = document_light.page_layout.__annotations__
     empty_save_database.executemany(
         "INSERT INTO DocumentSettings (key, value) VALUES (?, ?)",
-        dataclasses.asdict(document_light.page_layout).items())
+        document_light.page_layout.to_save_file_data()
+    )
     empty_save_database.execute(
         "UPDATE DocumentSettings SET value = ? WHERE key = ?",
         (title, "document_name"))
@@ -403,6 +416,9 @@ def test_load_correctly_sets_document_title(
 
     assert_that(
         document_light.page_layout,
-        has_properties({item: instance_of(value) for item, value in annotations.items()})
+        has_properties({
+            item: instance_of(pint.Quantity if value is QuantityT else value)
+            for item, value in annotations.items()
+        })
     )
     assert_that(document_light.page_layout, has_property("document_name", equal_to(title)))

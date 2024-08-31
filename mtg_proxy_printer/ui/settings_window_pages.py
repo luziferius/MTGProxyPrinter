@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-import configparser
 import logging
 from functools import partial
 import pathlib
@@ -30,7 +28,7 @@ import mtg_proxy_printer.settings
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget
-from mtg_proxy_printer.units_and_sizes import OptStr
+from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.application import Application
@@ -98,12 +96,12 @@ class Page(QWidget):
         pass
 
     @abstractmethod
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         """Loads the GUI state based on the given settings. This is used to load, reset, and revert settings."""
         pass
 
     @abstractmethod
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         """Highlights GUI widgets with a state different from the given settings"""
         pass
 
@@ -132,7 +130,7 @@ class DebugSettingsPage(Page):
         url = QUrl("https://github.com/busimus/cutelog", QUrl.ParsingMode.StrictMode)
         ui.open_cutelog_website_button.clicked.connect(partial(QDesktopServices.openUrl, url))
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
@@ -146,7 +144,7 @@ class DebugSettingsPage(Page):
             debug_section[setting] = str(widget.isChecked())
         debug_section["log-level"] = self.ui.log_level_combo_box.currentText()
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["debug"]
         for widget, setting in self._get_debug_settings_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
@@ -231,7 +229,7 @@ class DecklistImportSettingsPage(Page):
             logger.info("User selected a new default deck list search path.")
             self.ui.deck_list_search_path.setText(location)
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         section = settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             widget.setChecked(section.getboolean(setting))
@@ -269,7 +267,7 @@ class DecklistImportSettingsPage(Page):
         ]
         return widgets_with_settings
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         section = mtg_proxy_printer.settings.settings["decklist-import"]
         for widget, setting in self._get_checkbox_widgets():
             if widget.isChecked() != section.getboolean(setting):
@@ -312,13 +310,13 @@ class GeneralSettingsPage(Page):
             logger.info("User selected a new default document save path.")
             self.ui.document_save_path.setText(location)
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         self._load_look_and_feel_settings(settings)
         self._load_update_settings(settings)
         self._load_images_settings(settings)
         self._load_path_settings(settings)
 
-    def _load_look_and_feel_settings(self, settings: configparser.ConfigParser):
+    def _load_look_and_feel_settings(self, settings: ConfigParser):
         ui = self.ui
         gui_section = settings["gui"]
         search_layout_index = ui.add_card_widget_style_combo_box.findData(gui_section["central-widget-layout"])
@@ -326,12 +324,12 @@ class GeneralSettingsPage(Page):
         language_index = ui.application_language_combo_box.findData(gui_section["language"])
         ui.application_language_combo_box.setCurrentIndex(language_index)
 
-    def _load_update_settings(self, settings: configparser.ConfigParser):
+    def _load_update_settings(self, settings: ConfigParser):
         application_section = settings["application"]
         for widget, setting in self._get_update_check_settings_widgets():
             widget.setCheckState(bool_to_check_state[application_section.getboolean(setting)])
 
-    def _load_images_settings(self, settings: configparser.ConfigParser):
+    def _load_images_settings(self, settings: ConfigParser):
         images_section = settings["images"]
         preferred_language_combo_box = self.ui.preferred_language_combo_box
         preferred_language = images_section.get("preferred-language")
@@ -342,7 +340,7 @@ class GeneralSettingsPage(Page):
             images_section.getboolean("automatically-add-opposing-faces")
         )
 
-    def _load_path_settings(self, settings: configparser.ConfigParser):
+    def _load_path_settings(self, settings: ConfigParser):
         section = settings["default-filesystem-paths"]
         widgets_with_settings = self._get_save_path_settings_widgets()
         for widget, setting in widgets_with_settings:
@@ -392,7 +390,7 @@ class GeneralSettingsPage(Page):
         for widget, setting in widgets_and_settings:
             section[setting] = widget.text()
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
 
         section = settings["application"]
@@ -444,7 +442,7 @@ class HidePrintingsPage(Page):
         ui.setupUi(self)
         self.card_db = None
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["card-filter"]
         ui.set_filter_settings.setPlainText(section["hidden-sets"])
@@ -462,7 +460,7 @@ class HidePrintingsPage(Page):
         updater.signals.error_occurred.connect(self.error_occurred, QueuedConnection)
         QThreadPool.globalInstance().start(updater)
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["card-filter"]
         ui = self.ui
         ui.card_filter_general_settings.highlight_differing_settings(settings)
@@ -486,13 +484,13 @@ class DefaultDocumentLayoutSettingsPage(Page):
         ui.setupUi(self)
         ui.page_configuration_group_box.setTitle(self.tr("Default settings for new documents"))
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         self.ui.page_configuration_group_box.load_document_settings_from_config(settings)
 
     def save(self):
         self.ui.page_configuration_group_box.save_document_settings_to_config()
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         self.ui.page_configuration_group_box.highlight_differing_settings(settings)
 
 
@@ -513,7 +511,7 @@ class PrinterSettingsPage(Page):
         ]
         return widgets_with_settings
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             widget.setChecked(section.getboolean(setting))
@@ -523,7 +521,7 @@ class PrinterSettingsPage(Page):
         for widget, setting in self._get_printer_settings_widgets():
             section[setting] = str(widget.isChecked())
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         section = settings["printer"]
         for widget, setting in self._get_printer_settings_widgets():
             if section.getboolean(setting) != widget.isChecked():
@@ -539,7 +537,7 @@ class PDFSettingsPage(Page):
         self.ui = ui = Ui_PDFSettingsPage()
         ui.setupUi(self)
 
-    def load(self, settings: configparser.ConfigParser):
+    def load(self, settings: ConfigParser):
         ui = self.ui
         section = settings["pdf-export"]
         ui.pdf_page_count_limit.setValue(section.getint("pdf-page-count-limit"))
@@ -553,7 +551,7 @@ class PDFSettingsPage(Page):
         section["pdf-export-path"] = ui.pdf_save_path.text()
         section["landscape-compatibility-workaround"] = str(ui.landscape_workaround.isChecked())
 
-    def highlight_differing_settings(self, settings: configparser.ConfigParser):
+    def highlight_differing_settings(self, settings: ConfigParser):
         ui = self.ui
         section = settings["pdf-export"]
         if section.getint("pdf-page-count-limit") != ui.pdf_page_count_limit.value():
