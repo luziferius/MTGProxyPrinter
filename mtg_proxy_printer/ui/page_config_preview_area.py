@@ -16,13 +16,15 @@
 from unittest.mock import MagicMock
 
 from PyQt5.QtCore import pyqtSlot as Slot, QPersistentModelIndex
+from PyQt5.QtGui import QColorConstants, QPainter, QPixmap
 
 from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
-from mtg_proxy_printer.units_and_sizes import CardSizes
+from mtg_proxy_printer.units_and_sizes import CardSizes, CardSize
 from mtg_proxy_printer.model.document_page import PageType
 from mtg_proxy_printer.model.document import Document
+from mtg_proxy_printer.model.carddb import Card, MTGSet
 from mtg_proxy_printer.ui.common import load_ui_from_file
 from mtg_proxy_printer.logger import get_logger
 
@@ -46,9 +48,31 @@ class PageConfigPreviewArea(QWidget):
         self.ui = ui = Ui_PageConfigPreviewArea()
         ui.setupUi(self)
         self.document = Document(MagicMock(), MagicMock())
+        self.regular_card = self._create_card(CardSizes.REGULAR)
+        self.oversized_card = self._create_card(CardSizes.OVERSIZED)
         ActionNewPage().apply(self.document)
         ui.preview_area.set_document(self.document)
         logger.info(f"Created {self.__class__.__name__} instance")
+
+    @staticmethod
+    def _create_card(size: CardSize):
+        is_oversized = size is CardSizes.OVERSIZED
+        corner_radius = 50 if is_oversized else 27  # Pixel values empirically determined
+        border_width = 38 if is_oversized else 27
+        width = round(size.width.magnitude)
+        height = round(size.height.magnitude)
+        image = QPixmap(width, height)
+        image.fill(QColorConstants.Transparent)
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QColorConstants.Transparent)
+        painter.setBrush(QColorConstants.Black)  # The border, as a black, rounded rectangle
+        painter.drawRoundedRect(0, 0, width, height, corner_radius, corner_radius)
+        painter.setBrush(QColorConstants.Gray)  # The card content, as a simple, gray rectangle
+        painter.drawRect(border_width, border_width, width-2*border_width, height-2*border_width)
+        painter.end()
+        return Card("" , MTGSet("", ""), "", "", "", True, "", "", True, size is CardSizes.OVERSIZED, 0, False, image)
+
 
     @Slot(PageLayoutSettings)
     def on_page_layout_changed(self, layout: PageLayoutSettings):
@@ -59,16 +83,25 @@ class PageConfigPreviewArea(QWidget):
     @Slot(int)
     def on_regular_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting regular card count to {value}")
-        ui = self.ui
-        if ui.regular_size_selected.isChecked():
-            pass
+        self._adjust_card_count_on_page(0, value, self.regular_card)
 
     @Slot(int)
     def on_oversized_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting oversized card count to {value}")
-        ui = self.ui
-        if ui.oversized_selected.isChecked():
-            pass
+        self._adjust_card_count_on_page(1, value, self.oversized_card)
+
+
+    def _adjust_card_count_on_page(self, page: int, new_count: int, card: Card):
+        document = self.document
+        previous_value = document.rowCount(document.index(page, 0))
+        if previous_value > new_count:
+            count = previous_value - new_count
+            logger.debug(f"Removing {count} preview card(s) from page {page}.")
+            ActionRemoveCards(range(new_count, previous_value), page).apply(document)
+        else:
+            count = new_count - previous_value
+            logger.debug(f"Adding {count} preview card(s) to page {page}")
+            ActionAddCard(card, count, target_page=page).apply(document)
 
     @Slot()
     def on_regular_size_selected_clicked(self):
