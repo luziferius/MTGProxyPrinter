@@ -15,8 +15,10 @@
 
 from unittest.mock import MagicMock
 
-from PyQt5.QtCore import pyqtSlot as Slot
+from PyQt5.QtCore import pyqtSlot as Slot, QPersistentModelIndex
 
+from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
+from mtg_proxy_printer.document_controller.card_actions import ActionAddCard, ActionRemoveCards
 from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from mtg_proxy_printer.units_and_sizes import CardSizes
 from mtg_proxy_printer.model.document_page import PageType
@@ -44,6 +46,7 @@ class PageConfigPreviewArea(QWidget):
         self.ui = ui = Ui_PageConfigPreviewArea()
         ui.setupUi(self)
         self.document = Document(MagicMock(), MagicMock())
+        ActionNewPage().apply(self.document)
         ui.preview_area.set_document(self.document)
         logger.info(f"Created {self.__class__.__name__} instance")
 
@@ -56,15 +59,29 @@ class PageConfigPreviewArea(QWidget):
     @Slot(int)
     def on_regular_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting regular card count to {value}")
+        ui = self.ui
+        if ui.regular_size_selected.isChecked():
+            pass
 
     @Slot(int)
     def on_oversized_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting oversized card count to {value}")
+        ui = self.ui
+        if ui.oversized_selected.isChecked():
+            pass
 
     @Slot()
     def on_regular_size_selected_clicked(self):
         logger.debug(f"Use regular cards for the preview")
+        self._switch_to_document_page(0)
 
     @Slot()
     def on_oversized_selected_clicked(self):
         logger.debug(f"Use oversized cards for the preview")
+        self._switch_to_document_page(1)
+
+    def _switch_to_document_page(self, page: int):
+        document = self.document
+        document.currently_edited_page = document.pages[page]
+        index = document.index(page,0)
+        document.current_page_changed.emit(QPersistentModelIndex(index))
