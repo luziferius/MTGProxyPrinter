@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import enum
 from unittest.mock import MagicMock
 
 from PyQt5.QtCore import pyqtSlot as Slot, QPersistentModelIndex
@@ -39,6 +40,20 @@ logger = get_logger(__name__)
 del get_logger
 
 
+class PagesData(enum.Enum):
+    def __init__(self, page: int, corner_radius: int, border_width: int):
+        self.page = page
+        self.corner_radius = corner_radius
+        self.border_width = border_width
+
+    REGULAR = 0, 27, 27  # Pixel values empirically determined
+    OVERSIZED = 1, 50, 28
+
+    @classmethod
+    def from_card_size(cls, size: CardSize):
+        return cls.REGULAR if size is CardSizes.REGULAR else cls.OVERSIZED
+
+
 class PageConfigPreviewArea(QWidget):
     """
     Contains a PageRenderer and widgets to select a number of either regular or oversized cards.
@@ -56,20 +71,20 @@ class PageConfigPreviewArea(QWidget):
 
     @staticmethod
     def _create_card(size: CardSize):
-        is_oversized = size is CardSizes.OVERSIZED
-        corner_radius = 50 if is_oversized else 27  # Pixel values empirically determined
-        border_width = 38 if is_oversized else 27
-        width = round(size.width.magnitude)
-        height = round(size.height.magnitude)
-        image = QPixmap(width, height)
+        data = PagesData.from_card_size(size)
+        card_width = round(size.width.magnitude)
+        card_height = round(size.height.magnitude)
+        image = QPixmap(card_width, card_height)
         image.fill(QColorConstants.Transparent)
         painter = QPainter(image)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(QColorConstants.Transparent)
         painter.setBrush(QColorConstants.Black)  # The border, as a black, rounded rectangle
-        painter.drawRoundedRect(0, 0, width, height, corner_radius, corner_radius)
+        painter.drawRoundedRect(0, 0, card_width, card_height, data.border_width, data.corner_radius)
         painter.setBrush(QColorConstants.Gray)  # The card content, as a simple, gray rectangle
-        painter.drawRect(border_width, border_width, width-2*border_width, height-2*border_width)
+        painter.drawRect(
+            data.border_width, data.border_width,
+            card_width - 2 * data.border_width, card_height - 2 * data.border_width)
         painter.end()
         return Card("" , MTGSet("", ""), "", "", "", True, "", "", True, size is CardSizes.OVERSIZED, 0, False, image)
 
@@ -83,12 +98,12 @@ class PageConfigPreviewArea(QWidget):
     @Slot(int)
     def on_regular_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting regular card count to {value}")
-        self._adjust_card_count_on_page(0, value, self.regular_card)
+        self._adjust_card_count_on_page(PagesData.REGULAR.page, value, self.regular_card)
 
     @Slot(int)
     def on_oversized_card_count_valueChanged(self, value: int):
         logger.debug(f"Setting oversized card count to {value}")
-        self._adjust_card_count_on_page(1, value, self.oversized_card)
+        self._adjust_card_count_on_page(PagesData.OVERSIZED.page, value, self.oversized_card)
 
 
     def _adjust_card_count_on_page(self, page: int, new_count: int, card: Card):
@@ -106,12 +121,12 @@ class PageConfigPreviewArea(QWidget):
     @Slot()
     def on_regular_size_selected_clicked(self):
         logger.debug(f"Use regular cards for the preview")
-        self._switch_to_document_page(0)
+        self._switch_to_document_page(PagesData.REGULAR.page)
 
     @Slot()
     def on_oversized_selected_clicked(self):
         logger.debug(f"Use oversized cards for the preview")
-        self._switch_to_document_page(1)
+        self._switch_to_document_page(PagesData.OVERSIZED.page)
 
     def _switch_to_document_page(self, page: int):
         document = self.document
