@@ -15,8 +15,9 @@
 
 import pathlib
 import typing
+from functools import partial
 
-from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel, QEvent, QObject
+from PyQt5.QtCore import QStringListModel, pyqtSignal as Signal, Qt, QItemSelectionModel, QEvent, QObject, QTimer
 from PyQt5.QtWidgets import QDialogButtonBox, QMessageBox, QWidget, QDialog
 from PyQt5.QtGui import QIcon, QStandardItemModel, QResizeEvent
 
@@ -43,7 +44,7 @@ MessageBoxButton = QMessageBox.StandardButton
 DialogBoxButton = QDialogButtonBox.StandardButton
 ItemDataRole = Qt.ItemDataRole
 ClearAndSelect = QItemSelectionModel.SelectionFlag.ClearAndSelect
-TALL_LAYOUT_THRESHOLD = 750
+TALL_LAYOUT_THRESHOLD = 200
 
 __all__ = [
     "SettingsWindow",
@@ -90,6 +91,11 @@ class SettingsWindow(QDialog):
         ui.debug_settings_page.requested_card_download.connect(self.requested_card_download)
         self.pages_model = self._setup_pages_model(ui)
         ui.general_settings_page.set_language_model(language_model)
+        ui.default_document_layout_page.ui.page_config_preview_area.hide()
+        # Delay the resize to the next event loop iteration
+        ui.default_document_layout_page.ui.page_config_widget.ui.show_preview_button.toggled.connect(
+            partial(QTimer.singleShot, 0, lambda: self._adapt_layout_to_size(self.size()))
+        )
         self._setup_hide_printing_page(ui.hide_printings_page, document.card_db)
         self._setup_button_box()
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -169,9 +175,13 @@ class SettingsWindow(QDialog):
             page.clear_highlight()
 
     def _adapt_layout_to_size(self, size):
-        is_narrow = size.width() < TALL_LAYOUT_THRESHOLD
-        self.ui.page_selection_list_view.setHidden(is_narrow)
-        self.ui.page_selection_combo_box.setVisible(is_narrow)
+        ui = self.ui
+        # The minimum size hint contains the minimum size the widget can occupy without clipping. If there is less than
+        # TALL_LAYOUT_THRESHOLD pixels available for the page list, switch to a drop-down based layout
+        min_width = ui.stacked_pages.minimumSizeHint().width()
+        is_narrow = size.width() < TALL_LAYOUT_THRESHOLD + min_width
+        ui.page_selection_list_view.setHidden(is_narrow)
+        ui.page_selection_combo_box.setVisible(is_narrow)
 
     def _get_pages(self) -> typing.Sequence[Page]:
         ui = self.ui

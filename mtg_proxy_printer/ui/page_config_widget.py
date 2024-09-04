@@ -92,6 +92,9 @@ class PageConfigWidget(QGroupBox):
         # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
         setattr(page_layout, layout_key, value == CheckState.Checked)
 
+    def hide_preview_button(self):
+        self.ui.show_preview_button.hide()
+
     @Slot()
     def on_page_layout_setting_changed(self):
         """
