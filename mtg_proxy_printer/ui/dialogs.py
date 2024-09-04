@@ -300,13 +300,14 @@ class DocumentSettingsDialog(QDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         super().__init__(parent)
-        self.ui = ui = Ui_DocumentSettingsDialog()
-        ui.setupUi(self)
+        self.ui = Ui_DocumentSettingsDialog()
+        self.ui.setupUi(self)
         self.setModal(True)
         self.document = document
-
-        ui.page_config_container.ui.page_config_widget.load_from_page_layout(document.page_layout)
-        ui.page_config_container.ui.page_config_widget.setTitle(
+        page_config_widget = self.ui.page_config_container.ui.page_config_widget
+        page_config_widget.ui.show_preview_button.hide()
+        page_config_widget.load_from_page_layout(document.page_layout)
+        page_config_widget.setTitle(
             self.tr("These settings only affect the current document"))
         self._setup_button_box()
         self.accepted.connect(self.on_accept)
