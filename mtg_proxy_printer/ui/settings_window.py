@@ -191,7 +191,7 @@ class SettingsWindow(QDialog):
         if old_preferred_language != new_preferred_language:
             self.preferred_language_changed.emit(new_preferred_language)
         current_document_layout = self.document.page_layout
-        new_default_layout = self.ui.default_document_layout_page.ui.page_configuration_group_box.page_layout
+        new_default_layout = self.ui.default_document_layout_page.ui.page_config_widget.page_layout
         if current_document_layout != new_default_layout and QMessageBox.question(
                 self, self.tr("Apply settings to the current document?"),
                 self.tr("The new default settings differ from the settings used by the current document.\n"

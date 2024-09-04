@@ -29,6 +29,7 @@ from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.ui.common import highlight_widget
 from mtg_proxy_printer.units_and_sizes import OptStr, ConfigParser
+from mtg_proxy_printer.ui.page_config_container import PageConfigContainer
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.application import Application
@@ -39,8 +40,6 @@ try:
         import Ui_DecklistImportSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.general_settings_page import Ui_GeneralSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.hide_printings_page import Ui_HidePrintingsPage
-    from mtg_proxy_printer.ui.generated.settings_window.default_document_layout_settings_page \
-        import Ui_DefaultDocumentLayoutSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.printer_settings_page import Ui_PrinterSettingsPage
     from mtg_proxy_printer.ui.generated.settings_window.pdf_settings_page import Ui_PDFSettingsPage
 except ModuleNotFoundError:
@@ -49,7 +48,6 @@ except ModuleNotFoundError:
     Ui_DecklistImportSettingsPage = load_ui_from_file("settings_window/decklist_import_settings_page")
     Ui_GeneralSettingsPage = load_ui_from_file("settings_window/general_settings_page")
     Ui_HidePrintingsPage = load_ui_from_file("settings_window/hide_printings_page")
-    Ui_DefaultDocumentLayoutSettingsPage = load_ui_from_file("settings_window/default_document_layout_settings_page")
     Ui_PrinterSettingsPage = load_ui_from_file("settings_window/printer_settings_page")
     Ui_PDFSettingsPage = load_ui_from_file("settings_window/pdf_settings_page")
 
@@ -470,7 +468,7 @@ class HidePrintingsPage(Page):
             highlight_widget(ui.set_filter_settings)
 
 
-class DefaultDocumentLayoutSettingsPage(Page):
+class DefaultDocumentLayoutSettingsPage(Page, PageConfigContainer):
 
     def display_metadata(self) -> PageMetadata:
         return PageMetadata(
@@ -481,18 +479,20 @@ class DefaultDocumentLayoutSettingsPage(Page):
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
-        self.ui = ui = Ui_DefaultDocumentLayoutSettingsPage()
-        ui.setupUi(self)
-        ui.page_configuration_group_box.setTitle(self.tr("Default settings for new documents"))
+        self.page_config_widget.setTitle(self.tr("Default settings for new documents"))
+
+    @property
+    def page_config_widget(self):
+        return self.ui.page_config_widget
 
     def load(self, settings: ConfigParser):
-        self.ui.page_configuration_group_box.load_document_settings_from_config(settings)
+        self.page_config_widget.load_document_settings_from_config(settings)
 
     def save(self):
-        self.ui.page_configuration_group_box.save_document_settings_to_config()
+        self.page_config_widget.save_document_settings_to_config()
 
     def highlight_differing_settings(self, settings: ConfigParser):
-        self.ui.page_configuration_group_box.highlight_differing_settings(settings)
+        self.page_config_widget.highlight_differing_settings(settings)
 
 
 class PrinterSettingsPage(Page):
