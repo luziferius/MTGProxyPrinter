@@ -319,6 +319,11 @@ mit %n Seiten {cards_total}</numerusform>
       <source>Failed to parse data from Scryfall. Reported error: {error}</source>
       <translation>Fehler beim Parsen der Daten von Scryfall. Fehler: {error}</translation>
     </message>
+    <message>
+      <location filename="../../card_info_downloader.py" line="490"/>
+      <source>Post-processing card data:</source>
+      <translation>Kartendaten nachbearbeiten:</translation>
+    </message>
   </context>
   <context>
     <name>CardInfoFileDownloadWorker</name>
