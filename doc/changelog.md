@@ -79,7 +79,7 @@
 ## Fixed issues
 
 - Fixed broken card bleed rendering when row spacing or column spacing are set to zero.
-  The thick border around the cards is now continuous, as it was in version [0.27](#0_27_0).
+  The thick border around the cards is now continuous, as it was in version [0.27](#v0_27_0).
 - Fix the page view not updating instantly when the application successfully downloads a card image that
   failed to download during previous download attempts.
 
