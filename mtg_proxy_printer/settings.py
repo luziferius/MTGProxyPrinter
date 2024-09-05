@@ -530,10 +530,14 @@ def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
 
 
 def _migrate_images_to_cards_section(to_migrate: ConfigParser):
+    if "images" not in to_migrate:
+        return
     to_migrate["cards"] = to_migrate["images"]
     del to_migrate["images"]
 
 def _migrate_application_to_update_checks_section(to_migrate: ConfigParser):
+    if "application" not in to_migrate:
+        return
     to_migrate["update-checks"] = to_migrate["application"]
     del to_migrate["application"]
 

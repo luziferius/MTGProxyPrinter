@@ -15,7 +15,7 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <widget class="PageConfigWidget" name="page_config_groupbox"/>
+    <widget class="PageConfigContainer" name="page_config_container" native="true"/>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="button_box">
@@ -31,9 +31,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>PageConfigWidget</class>
-   <extends>QGroupBox</extends>
-   <header>mtg_proxy_printer.ui.page_config_widget</header>
+   <class>PageConfigContainer</class>
+   <extends>QWidget</extends>
+   <header>mtg_proxy_printer.ui.page_config_container</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

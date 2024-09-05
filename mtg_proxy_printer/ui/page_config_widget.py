@@ -18,7 +18,7 @@ from functools import partial
 import math
 import typing
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, pyqtSignal as Signal
 from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit
 
 import mtg_proxy_printer.settings
@@ -39,6 +39,7 @@ CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
+    page_layout_changed = Signal(PageLayoutSettings)
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -52,27 +53,29 @@ class PageConfigWidget(QGroupBox):
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
-        page_layout = PageLayoutSettings()
+        page_layout = PageLayoutSettings.create_from_settings()
         for spinbox in (
                 ui.card_bleed, ui.page_height, ui.page_width,
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
                 ui.row_spacing, ui.column_spacing):
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
-                partial(self.set_page_layout_item, page_layout, layout_key, "mm"))
+                partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
-            spinbox.valueChanged[float].connect(self.page_layout_setting_changed)
-        ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
-        ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == CheckState.Checked))
-        ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
+            spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
+            spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
+        for checkbox in (
+                ui.draw_cut_markers, ui.draw_sharp_corners, ui.draw_page_numbers):
+            layout_key = checkbox.objectName()
+            checkbox.stateChanged.connect(
+                partial(self.set_boolean_page_layout_item, page_layout, layout_key))
+            checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
+        ui.document_name.textChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         return page_layout
 
     @staticmethod
-    def set_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: str, value: float):
+    def set_numerical_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: str, value: float):
         # Implementation note: This call is placed here, because stuffing it into a lambda defined within a while loop
         # somehow uses the wrong references and will set the attribute that was processed last in the loop.
         # This method can be used via functools.partial to reduce the signature to (float) -> None,
@@ -80,8 +83,20 @@ class PageConfigWidget(QGroupBox):
         # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
         setattr(page_layout, layout_key, value*unit_registry.parse_units(unit))
 
+    @staticmethod
+    def set_boolean_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, value: CheckState):
+        # Implementation note: This call is placed here, because stuffing it into a lambda defined within a while loop
+        # somehow uses the wrong references and will set the attribute that was processed last in the loop.
+        # This method can be used via functools.partial to reduce the signature to (CheckState) -> None,
+        # which can be connected to the stateChanged signal just fine.
+        # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
+        setattr(page_layout, layout_key, value == CheckState.Checked)
+
+    def hide_preview_button(self):
+        self.ui.show_preview_button.hide()
+
     @Slot()
-    def page_layout_setting_changed(self):
+    def on_page_layout_setting_changed(self):
         """
         Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
@@ -145,7 +160,8 @@ class PageConfigWidget(QGroupBox):
         for line_edit, setting in self._get_string_settings_widgets():
             line_edit.setText(documents_section[setting])
         self.validate_paper_size_settings()
-        self.page_layout_setting_changed()
+        self.on_page_layout_setting_changed()
+        self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -166,7 +182,8 @@ class PageConfigWidget(QGroupBox):
                     widget.setChecked(value)
             setattr(self.page_layout, key, value)
         self.validate_paper_size_settings()
-        self.page_layout_setting_changed()
+        self.on_page_layout_setting_changed()
+        self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
 
     def save_document_settings_to_config(self):
