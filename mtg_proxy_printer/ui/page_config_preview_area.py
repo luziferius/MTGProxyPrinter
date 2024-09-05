@@ -63,17 +63,22 @@ class PageConfigPreviewArea(QWidget):
         self.ui = ui = Ui_PageConfigPreviewArea()
         ui.setupUi(self)
         self.document = Document(MagicMock(), MagicMock())
-        self.regular_card = self._create_card(CardSizes.REGULAR)
-        self.oversized_card = self._create_card(CardSizes.OVERSIZED)
+        self.regular_card = self._create_card(CardSizes.REGULAR, "Regular-size placeholder")
+        self.oversized_card = self._create_card(CardSizes.OVERSIZED, "Oversized placeholder")
         ActionNewPage().apply(self.document)
         ui.preview_area.set_document(self.document)
         self.on_page_layout_changed(self.document.page_layout)
-        ui.oversized_card_count.setValue(ui.oversized_card_count.maximum()//2)
-        ui.regular_card_count.setValue(ui.regular_card_count.maximum()//2)
+        initial_regular_cards = ui.regular_card_count.maximum()//2
+        initial_oversized_cards = ui.oversized_card_count.maximum()//2
+        logger.debug(
+            f"Initializing document with {initial_regular_cards} regular, "
+            f"and {initial_oversized_cards} oversized cards")
+        ui.oversized_card_count.setValue(initial_oversized_cards)
+        ui.regular_card_count.setValue(initial_regular_cards)
         logger.info(f"Created {self.__class__.__name__} instance")
 
     @staticmethod
-    def _create_card(size: CardSize):
+    def _create_card(size: CardSize, name: str):
         data = PagesData.from_card_size(size)
         card_width = round(size.width.magnitude)
         card_height = round(size.height.magnitude)
@@ -89,7 +94,7 @@ class PageConfigPreviewArea(QWidget):
             data.border_width, data.border_width,
             card_width - 2 * data.border_width, card_height - 2 * data.border_width)
         painter.end()
-        return Card("" , MTGSet("", ""), "", "", "", True, "", "", True, size is CardSizes.OVERSIZED, 0, False, image)
+        return Card(name , MTGSet("", ""), "", "", "", True, "", "", True, size is CardSizes.OVERSIZED, 0, False, image)
 
 
     @Slot(PageLayoutSettings)
