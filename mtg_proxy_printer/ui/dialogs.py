@@ -43,6 +43,7 @@ except ModuleNotFoundError:
     Ui_AboutDialog = load_ui_from_file("about_dialog")
     Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
 
+EventType = QEvent.Type
 logger = get_logger(__name__)
 del get_logger
 
@@ -284,14 +285,14 @@ class ChangedSettingsHoverEventFilter(QObject):
         self.settings = settings
 
     def eventFilter(self, object_, event: QEvent):
-        event_type: QEvent.Type = event.type()
+        event_type = event.type()
         # This check avoids a crash during application shutdown
-        if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
+        if event_type not in {EventType.HoverEnter, EventType.HoverLeave}:
             return False
         parent = self.parent()
-        if event_type == QEvent.Type.HoverEnter:
+        if event_type == EventType.HoverEnter:
             parent.ui.page_config_container.ui.page_config_widget.highlight_differing_settings(self.settings)
-        elif event_type == QEvent.Type.HoverLeave:
+        elif event_type == EventType.HoverLeave:
             parent.clear_highlight()
         return False
 

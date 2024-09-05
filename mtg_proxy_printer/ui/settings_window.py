@@ -42,6 +42,7 @@ logger = get_logger(__name__)
 del get_logger
 MessageBoxButton = QMessageBox.StandardButton
 DialogBoxButton = QDialogButtonBox.StandardButton
+EventType = QEvent.Type
 ItemDataRole = Qt.ItemDataRole
 ClearAndSelect = QItemSelectionModel.SelectionFlag.ClearAndSelect
 TALL_LAYOUT_THRESHOLD = 200
@@ -61,12 +62,12 @@ class HighlightDifferingSettingsHoverEventFilter(QObject):
     def eventFilter(self, object_, event: QEvent):
         event_type = event.type()
         # This check avoids a crash during application shutdown
-        if event_type not in {QEvent.HoverEnter, QEvent.HoverLeave}:
+        if event_type not in {EventType.HoverEnter, EventType.HoverLeave}:
             return False
         parent = self.parent()
-        if event_type == QEvent.HoverEnter:
+        if event_type == EventType.HoverEnter:
             parent.highlight_differing_settings(self.settings)
-        elif event_type == QEvent.HoverLeave:
+        elif event_type == EventType.HoverLeave:
             parent.clear_highlight()
         return False
 
