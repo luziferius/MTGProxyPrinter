@@ -53,7 +53,7 @@ class PageConfigWidget(QGroupBox):
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
-        page_layout = PageLayoutSettings()
+        page_layout = PageLayoutSettings.create_from_settings()
         for spinbox in (
                 ui.card_bleed, ui.page_height, ui.page_width,
                 ui.margin_top, ui.margin_left, ui.margin_bottom, ui.margin_right,
