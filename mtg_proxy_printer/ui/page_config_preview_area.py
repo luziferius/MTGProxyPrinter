@@ -67,6 +67,9 @@ class PageConfigPreviewArea(QWidget):
         self.oversized_card = self._create_card(CardSizes.OVERSIZED)
         ActionNewPage().apply(self.document)
         ui.preview_area.set_document(self.document)
+        self.on_page_layout_changed(self.document.page_layout)
+        ui.oversized_card_count.setValue(ui.oversized_card_count.maximum()//2)
+        ui.regular_card_count.setValue(ui.regular_card_count.maximum()//2)
         logger.info(f"Created {self.__class__.__name__} instance")
 
     @staticmethod
