@@ -9,49 +9,9 @@
       <translation>About MTGProxyPrinter</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="87"/>
-      <source>Python runtime version</source>
-      <translation>Python runtime version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="104"/>
-      <source>Python Version:</source>
-      <translation>Python Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="111"/>
-      <source>Application Version:</source>
-      <translation>Application Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="157"/>
-      <source>Application version</source>
-      <translation>Application version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="176"/>
-      <source>Last card update:</source>
-      <translation>Last card update:</translation>
-    </message>
-    <message>
       <location filename="../ui/about_dialog.ui" line="27"/>
       <source>About</source>
       <translation>About</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="196"/>
-      <source>Changelog</source>
-      <translation>Changelog</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="210"/>
-      <source>License</source>
-      <translation>License</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="221"/>
-      <source>Third party licenses</source>
-      <translation>Third Party licenses</translation>
     </message>
     <message>
       <location filename="../ui/about_dialog.ui" line="59"/>
@@ -87,6 +47,46 @@ nor any documents created, both in digital and physical form.
 Project Website: [{application_name} home page]({application_home_page})
 
 </translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="84"/>
+      <source>Python runtime version</source>
+      <translation>Python runtime version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="94"/>
+      <source>Python Version:</source>
+      <translation>Python Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="101"/>
+      <source>Application Version:</source>
+      <translation>Application Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="134"/>
+      <source>Application version</source>
+      <translation>Application version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="153"/>
+      <source>Last card update:</source>
+      <translation>Last card update:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="173"/>
+      <source>Changelog</source>
+      <translation>Changelog</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="187"/>
+      <source>License</source>
+      <translation>License</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="198"/>
+      <source>Third party licenses</source>
+      <translation>Third Party licenses</translation>
     </message>
   </context>
   <context>
@@ -472,49 +472,49 @@ switch the selected printing.</translation>
   <context>
     <name>DebugSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="122"/>
+      <location filename="../../ui/settings_window_pages.py" line="118"/>
       <source>Debug settings</source>
       <translation>Debug settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="122"/>
+      <location filename="../../ui/settings_window_pages.py" line="118"/>
       <source>Things useful for investigating bugs in the application</source>
       <translation>Things useful for investigating bugs in the application</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="177"/>
+      <location filename="../../ui/settings_window_pages.py" line="173"/>
       <source>Select download location</source>
       <translation>Select download location</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="185"/>
+      <location filename="../../ui/settings_window_pages.py" line="181"/>
       <source>Selected location is not a directory</source>
       <translation>Selected location is not a directory</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="185"/>
+      <location filename="../../ui/settings_window_pages.py" line="181"/>
       <source>Cannot write the card data at the given location, because it is not a directory:
 {location}</source>
       <translation>Cannot write the card data at the given location, because it is not a directory:
 {location}</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="198"/>
+      <location filename="../../ui/settings_window_pages.py" line="194"/>
       <source>Import previously downloaded card data obtained from Scryfall</source>
       <translation>Import previously downloaded card data obtained from Scryfall</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="198"/>
+      <location filename="../../ui/settings_window_pages.py" line="194"/>
       <source>Scryfall card data (*.json, *.json.gz)</source>
       <translation>Scryfall card data (*.json, *.json.gz)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="208"/>
+      <location filename="../../ui/settings_window_pages.py" line="204"/>
       <source>Selected location is not a file</source>
       <translation>Selected location is not a file</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="208"/>
+      <location filename="../../ui/settings_window_pages.py" line="204"/>
       <source>Cannot find the selected file:
 {location}</source>
       <translation>Cannot find the selected file:
@@ -579,17 +579,17 @@ switch the selected printing.</translation>
   <context>
     <name>DeckImportWizard</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="618"/>
+      <location filename="../../ui/deck_import_wizard.py" line="620"/>
       <source>Import a deck list</source>
       <translation>Import a deck list</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="639"/>
+      <location filename="../../ui/deck_import_wizard.py" line="641"/>
       <source>Oversized cards present</source>
       <translation>Oversized cards present</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="639"/>
+      <location filename="../../ui/deck_import_wizard.py" line="641"/>
       <source>There are %n possibly oversized cards in the deck list that may not fit into a deck, when printed out.
 
 Continue and use these cards as-is?</source>
@@ -603,12 +603,12 @@ Continue and use these cards as-is?</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="650"/>
+      <location filename="../../ui/deck_import_wizard.py" line="652"/>
       <source>Incompatible file selected</source>
       <translation>Incompatible file selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="650"/>
+      <location filename="../../ui/deck_import_wizard.py" line="652"/>
       <source>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</source>
       <translation>Unable to parse the given deck list, no results were obtained.
@@ -618,19 +618,24 @@ Maybe you selected the wrong deck list type?</translation>
   <context>
     <name>DecklistImportSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="221"/>
+      <location filename="../../ui/settings_window_pages.py" line="217"/>
       <source>Deck list import</source>
       <translation>Deck list import</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="221"/>
+      <location filename="../../ui/settings_window_pages.py" line="217"/>
       <source>Configure the deck list importer</source>
       <translation>Configure the deck list importer</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="231"/>
+      <location filename="../../ui/settings_window_pages.py" line="227"/>
       <source>Select default deck list search path</source>
       <translation>Select default deck list search path</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="17"/>
+      <source>Browse …</source>
+      <translation>Browse …</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="30"/>
@@ -737,37 +742,32 @@ With some deck list formats, this option is always enabled.</translation>
       <translation>Automatically select a printing</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="144"/>
-      <source>Path to a directory</source>
-      <translation>Path to a directory</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="17"/>
-      <source>Browse …</source>
-      <translation>Browse …</translation>
-    </message>
-    <message>
       <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="138"/>
       <source>If set, use this as the default location for loading deck lists. Your webbrowser’s download directory is a good choice.</source>
       <translation>If set, use this as the default location for loading deck lists. Your webbrowser’s download directory is a good choice.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/decklist_import_settings_page.ui" line="144"/>
+      <source>Path to a directory</source>
+      <translation>Path to a directory</translation>
     </message>
   </context>
   <context>
     <name>DefaultDocumentLayoutSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="478"/>
+      <location filename="../../ui/settings_window_pages.py" line="474"/>
       <source>Default document settings</source>
       <translation>Default document settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="478"/>
+      <location filename="../../ui/settings_window_pages.py" line="474"/>
       <source>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</source>
       <translation>Set the default document settings used for new documents,
 like page size, margins, spacings, etc.</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="488"/>
+      <location filename="../../ui/settings_window_pages.py" line="482"/>
       <source>Default settings for new documents</source>
       <translation>Default settings for new documents</translation>
     </message>
@@ -848,7 +848,7 @@ switch the selected printing.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="307"/>
+      <location filename="../../ui/dialogs.py" line="310"/>
       <source>These settings only affect the current document</source>
       <translation>These settings only affect the current document</translation>
     </message>
@@ -879,6 +879,11 @@ switch the selected printing.</translation>
       <location filename="../ui/cache_cleanup_wizard/filter_setup_page.ui" line="33"/>
       <source>Select images for removal based on any matching criterion.</source>
       <translation>Select images for removal based on any matching criterion.</translation>
+    </message>
+    <message>
+      <location filename="../ui/cache_cleanup_wizard/filter_setup_page.ui" line="36"/>
+      <source>Select images for deletion, that are …</source>
+      <translation>Select images for deletion, that are …</translation>
     </message>
     <message>
       <location filename="../ui/cache_cleanup_wizard/filter_setup_page.ui" line="42"/>
@@ -915,11 +920,6 @@ all these images become hidden and will be removed.</translation>
       <location filename="../ui/cache_cleanup_wizard/filter_setup_page.ui" line="94"/>
       <source>Unknown or belong to hidden printings</source>
       <translation>Unknown or belong to hidden printings</translation>
-    </message>
-    <message>
-      <location filename="../ui/cache_cleanup_wizard/filter_setup_page.ui" line="36"/>
-      <source>Select images for deletion, that are …</source>
-      <translation>Select images for deletion, that are …</translation>
     </message>
   </context>
   <context>
@@ -1042,9 +1042,47 @@ This filter hides those.</translation>
       <translation>Hide digital cards</translation>
     </message>
     <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="158"/>
+      <source>“Funny” cards, not legal in any constructed format.
+This includes full-art Contraptions from Unstable,
+cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
+some black-bordered promotional cards with non-standard back faces,
+and all silver-bordered cards.</source>
+      <translation>“Funny” cards, not legal in any constructed format.
+This includes full-art Contraptions from Unstable,
+cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
+some black-bordered promotional cards with non-standard back faces,
+and all silver-bordered cards.</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="165"/>
+      <source>Hide “funny” cards</source>
+      <translation>Hide “funny” cards</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="172"/>
+      <source>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</source>
+      <translation>These cards are larger than regular Magic cards and can’t be included in decks.
+Includes Archenemy schemes, Planechase planes and
+oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</translation>
+    </message>
+    <message>
       <location filename="../ui/settings_window/general_printing_filter.ui" line="177"/>
       <source>Hide oversized cards</source>
       <translation>Hide oversized cards</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="184"/>
+      <source>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+Many also have printed signatures of the involved players in the text box.
+
+These are not tournament legal</source>
+      <translation>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
+Many also have printed signatures of the involved players in the text box.
+
+These are not tournament legal</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/general_printing_filter.ui" line="190"/>
@@ -1065,6 +1103,15 @@ This filter hides those.</translation>
       <location filename="../ui/settings_window/general_printing_filter.ui" line="207"/>
       <source>Hide cards depicting racism</source>
       <translation>Hide cards depicting racism</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/general_printing_filter.ui" line="230"/>
+      <source>Hide non-English cards with low-resolution,
+English placeholder images with an overlay text stating
+“This card is not available in the selected language.”</source>
+      <translation>Hide non-English cards with low-resolution,
+English placeholder images with an overlay text stating
+“This card is not available in the selected language.”</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/general_printing_filter.ui" line="235"/>
@@ -1093,93 +1140,46 @@ Similar to borderless cards, these require higher precision during the cutting p
       <source>Hide Art Series cards</source>
       <translation>Hide Art Series cards</translation>
     </message>
-    <message>
-      <location filename="../ui/settings_window/general_printing_filter.ui" line="158"/>
-      <source>“Funny” cards, not legal in any constructed format.
-This includes full-art Contraptions from Unstable,
-cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
-some black-bordered promotional cards with non-standard back faces,
-and all silver-bordered cards.</source>
-      <translation>“Funny” cards, not legal in any constructed format.
-This includes full-art Contraptions from Unstable,
-cards with acorn-shaped security stamps from Unfinity (and newer Un-Sets),
-some black-bordered promotional cards with non-standard back faces,
-and all silver-bordered cards.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_printing_filter.ui" line="165"/>
-      <source>Hide “funny” cards</source>
-      <translation>Hide “funny” cards</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_printing_filter.ui" line="172"/>
-      <source>These cards are larger than regular Magic cards and can’t be included in decks.
-Includes Archenemy schemes, Planechase planes and
-oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</source>
-      <translation>These cards are larger than regular Magic cards and can’t be included in decks.
-Includes Archenemy schemes, Planechase planes and
-oversized commander creature or Planeswalker cards included in some pre-constructed Commander decks.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_printing_filter.ui" line="184"/>
-      <source>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
-Many also have printed signatures of the involved players in the text box.
-
-These are not tournament legal</source>
-      <translation>Some “collectible” sets, like full reprints of tournament-winning decks were printed with golden borders.
-Many also have printed signatures of the involved players in the text box.
-
-These are not tournament legal</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_printing_filter.ui" line="230"/>
-      <source>Hide non-English cards with low-resolution,
-English placeholder images with an overlay text stating
-“This card is not available in the selected language.”</source>
-      <translation>Hide non-English cards with low-resolution,
-English placeholder images with an overlay text stating
-“This card is not available in the selected language.”</translation>
-    </message>
   </context>
   <context>
     <name>GeneralSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="288"/>
+      <location filename="../../ui/settings_window_pages.py" line="284"/>
       <source>General settings</source>
       <translation>General settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="295"/>
+      <location filename="../../ui/settings_window_pages.py" line="291"/>
       <source>Horizontal layout</source>
       <translation>Horizontal layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="296"/>
+      <location filename="../../ui/settings_window_pages.py" line="292"/>
       <source>Columnar layout</source>
       <translation>Columnar layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="297"/>
+      <location filename="../../ui/settings_window_pages.py" line="293"/>
       <source>Tabbed layout</source>
       <translation>Tabbed layout</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="299"/>
+      <location filename="../../ui/settings_window_pages.py" line="295"/>
       <source>System default</source>
       <translation>System default</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="300"/>
+      <location filename="../../ui/settings_window_pages.py" line="296"/>
       <source>English (US)</source>
       <translation>English (US)</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="301"/>
+      <location filename="../../ui/settings_window_pages.py" line="297"/>
       <source>German</source>
       <translation>German</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="312"/>
+      <location filename="../../ui/settings_window_pages.py" line="308"/>
       <source>Select default save location</source>
       <translation>Select default save location</translation>
     </message>
@@ -1281,6 +1281,11 @@ Uncheck to disable this automatism.</translation>
       <translation>Default save paths</translation>
     </message>
     <message>
+      <location filename="../ui/settings_window/general_settings_page.ui" line="161"/>
+      <source>Browse…</source>
+      <translation>Browse…</translation>
+    </message>
+    <message>
       <location filename="../ui/settings_window/general_settings_page.ui" line="175"/>
       <source>Document save path</source>
       <translation>Document save path</translation>
@@ -1294,11 +1299,6 @@ Uncheck to disable this automatism.</translation>
       <location filename="../ui/settings_window/general_settings_page.ui" line="191"/>
       <source>Path to a directory</source>
       <translation>Path to a directory</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/general_settings_page.ui" line="161"/>
-      <source>Browse…</source>
-      <translation>Browse…</translation>
     </message>
   </context>
   <context>
@@ -1322,14 +1322,19 @@ Uncheck to disable this automatism.</translation>
   <context>
     <name>HidePrintingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="435"/>
+      <location filename="../../ui/settings_window_pages.py" line="431"/>
       <source>Hide printings</source>
       <translation>Hide printings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="435"/>
+      <location filename="../../ui/settings_window_pages.py" line="431"/>
       <source>Hide unwanted printings</source>
       <translation>Hide unwanted printings</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/hide_printings_page.ui" line="17"/>
+      <source>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</source>
+      <translation>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/hide_printings_page.ui" line="33"/>
@@ -1349,11 +1354,6 @@ LEA DDU TC13 J21</translation>
       <location filename="../ui/settings_window/hide_printings_page.ui" line="51"/>
       <source>No sets currently hidden.</source>
       <translation>No sets currently hidden.</translation>
-    </message>
-    <message>
-      <location filename="../ui/settings_window/hide_printings_page.ui" line="17"/>
-      <source>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</source>
-      <translation>These options allow hiding unwanted cards and printings. Hidden printings are treated as though they don’t exist. They can’t be found in the card search and are automatically replaced in loaded documents or imported deck lists, if possible. If all printings of a card are hidden, it won’t be available at all.</translation>
     </message>
   </context>
   <context>
@@ -1514,7 +1514,7 @@ and is thus unavailable for printing.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="160"/>
+      <location filename="../../ui/dialogs.py" line="161"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>Load MTGProxyPrinter document</translation>
     </message>
@@ -1522,44 +1522,44 @@ and is thus unavailable for printing.</translation>
   <context>
     <name>LoadListPage</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="119"/>
+      <location filename="../../ui/deck_import_wizard.py" line="120"/>
       <source>Supported websites:
 {supported_sites}</source>
       <translation>Supported websites:
 {supported_sites}</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="214"/>
+      <location filename="../../ui/deck_import_wizard.py" line="216"/>
       <source>Overwrite existing deck list?</source>
       <translation>Overwrite existing deck list?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="168"/>
+      <location filename="../../ui/deck_import_wizard.py" line="170"/>
       <source>Selecting a file will overwrite the existing deck list. Continue?</source>
       <translation>Selecting a file will overwrite the existing deck list. Continue?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="176"/>
+      <location filename="../../ui/deck_import_wizard.py" line="178"/>
       <source>Select deck file</source>
       <translation>Select deck file</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="186"/>
+      <location filename="../../ui/deck_import_wizard.py" line="188"/>
       <source>All files (*)</source>
       <translation>All files (*)</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="197"/>
+      <location filename="../../ui/deck_import_wizard.py" line="199"/>
       <source>All Supported </source>
       <translation>All Supported </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="214"/>
+      <location filename="../../ui/deck_import_wizard.py" line="216"/>
       <source>Downloading a deck list will overwrite the existing deck list. Continue?</source>
       <translation>Downloading a deck list will overwrite the existing deck list. Continue?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="227"/>
+      <location filename="../../ui/deck_import_wizard.py" line="229"/>
       <source>Download failed with HTTP error {http_error_code}.
 
 {bad_request_msg}</source>
@@ -1568,12 +1568,12 @@ and is thus unavailable for printing.</translation>
 {bad_request_msg}</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="238"/>
+      <location filename="../../ui/deck_import_wizard.py" line="240"/>
       <source>Deck list download failed</source>
       <translation>Deck list download failed</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="233"/>
+      <location filename="../../ui/deck_import_wizard.py" line="235"/>
       <source>Download failed.
 
 Check your internet connection, verify that the URL is valid, reachable, and that the deck list is set to public. This program cannot download private deck lists. If this persists, please report a bug in the issue tracker on the homepage.</source>
@@ -1582,24 +1582,24 @@ Check your internet connection, verify that the URL is valid, reachable, and tha
 Check your internet connection, verify that the URL is valid, reachable, and that the deck list is set to public. This program cannot download private deck lists. If this persists, please report a bug in the issue tracker on the homepage.</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="264"/>
+      <location filename="../../ui/deck_import_wizard.py" line="266"/>
       <source>Unable to read file content</source>
       <translation>Unable to read file content</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="264"/>
+      <location filename="../../ui/deck_import_wizard.py" line="266"/>
       <source>Unable to read the content of file {file_path} as plain text.
 Failed to load the content.</source>
       <translation>Unable to read the content of file {file_path} as plain text.
 Failed to load the content.</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="276"/>
+      <location filename="../../ui/deck_import_wizard.py" line="278"/>
       <source>Load large file?</source>
       <translation>Load large file?</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="276"/>
+      <location filename="../../ui/deck_import_wizard.py" line="278"/>
       <source>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</source>
       <translation>The selected file {file_path} is unexpectedly large ({formatted_size}). Load anyway?</translation>
     </message>
@@ -1912,6 +1912,26 @@ You can change this later in the settings.</translation>
       <translation>MTGProxyPrinter</translation>
     </message>
     <message>
+      <location filename="../ui/main_window.ui" line="31"/>
+      <source>Fi&amp;le</source>
+      <translation>Fi&amp;le</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="169"/>
+      <source>Settings</source>
+      <translation>Settings</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="59"/>
+      <source>Edit</source>
+      <translation>Edit</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="300"/>
+      <source>Show toolbar</source>
+      <translation>Show toolbar</translation>
+    </message>
+    <message>
       <location filename="../ui/main_window.ui" line="108"/>
       <source>&amp;Quit</source>
       <translation>&amp;Quit</translation>
@@ -1967,11 +1987,6 @@ You can change this later in the settings.</translation>
       <translation>Discard this page.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="169"/>
-      <source>Settings</source>
-      <translation>Settings</translation>
-    </message>
-    <message>
       <location filename="../ui/main_window.ui" line="180"/>
       <source>Update card data</source>
       <translation>Update card data</translation>
@@ -2015,6 +2030,16 @@ You can change this later in the settings.</translation>
       <location filename="../ui/main_window.ui" line="224"/>
       <source>Ctrl+L</source>
       <translation>Ctrl+L</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="232"/>
+      <source>Save as …</source>
+      <translation>Save as …</translation>
+    </message>
+    <message>
+      <location filename="../ui/main_window.ui" line="237"/>
+      <source>About …</source>
+      <translation>About …</translation>
     </message>
     <message>
       <location filename="../ui/main_window.ui" line="245"/>
@@ -2062,11 +2087,6 @@ You can change this later in the settings.</translation>
       <translation>Delete locally stored card images you no longer need.</translation>
     </message>
     <message>
-      <location filename="../ui/main_window.ui" line="300"/>
-      <source>Show toolbar</source>
-      <translation>Show toolbar</translation>
-    </message>
-    <message>
       <location filename="../ui/main_window.ui" line="303"/>
       <source>Ctrl+M</source>
       <translation>Ctrl+M</translation>
@@ -2100,41 +2120,21 @@ use this to reduce the initial deck shuffling required</translation>
       <source>Redo</source>
       <translation>Redo</translation>
     </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="31"/>
-      <source>Fi&amp;le</source>
-      <translation>Fi&amp;le</translation>
-    </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="59"/>
-      <source>Edit</source>
-      <translation>Edit</translation>
-    </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="232"/>
-      <source>Save as …</source>
-      <translation>Save as …</translation>
-    </message>
-    <message>
-      <location filename="../ui/main_window.ui" line="237"/>
-      <source>About …</source>
-      <translation>About …</translation>
-    </message>
   </context>
   <context>
     <name>PDFSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="536"/>
+      <location filename="../../ui/settings_window_pages.py" line="534"/>
       <source>PDF export settings</source>
       <translation>PDF export settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="536"/>
+      <location filename="../../ui/settings_window_pages.py" line="534"/>
       <source>Configure the PDF export</source>
       <translation>Configure the PDF export</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="570"/>
+      <location filename="../../ui/settings_window_pages.py" line="568"/>
       <source>Select default PDF export location</source>
       <translation>Select default PDF export location</translation>
     </message>
@@ -2152,6 +2152,11 @@ use this to reduce the initial deck shuffling required</translation>
       <location filename="../ui/settings_window/pdf_settings_page.ui" line="46"/>
       <source>PDF export path</source>
       <translation>PDF export path</translation>
+    </message>
+    <message>
+      <location filename="../ui/settings_window/pdf_settings_page.ui" line="56"/>
+      <source>Browse…</source>
+      <translation>Browse…</translation>
     </message>
     <message>
       <location filename="../ui/settings_window/pdf_settings_page.ui" line="96"/>
@@ -2185,11 +2190,6 @@ it will be exported into multiple PDF documents automatically.</translation>
       <translation> page(s)</translation>
     </message>
     <message>
-      <location filename="../ui/settings_window/pdf_settings_page.ui" line="56"/>
-      <source>Browse…</source>
-      <translation>Browse…</translation>
-    </message>
-    <message>
       <location filename="../ui/settings_window/pdf_settings_page.ui" line="117"/>
       <source>If enabled, landscape documents are rotated by 90° to portrait mode during export.
 Enable this, if printing from PDFs in landscape format results in portrait printouts with cropped-off sides.
@@ -2209,9 +2209,27 @@ So only enable this, if actually required.</translation>
     </message>
   </context>
   <context>
+    <name>PageConfigPreviewArea</name>
+    <message>
+      <location filename="../ui/page_config_preview_area.ui" line="36"/>
+      <source> cards</source>
+      <translation> cards</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_preview_area.ui" line="43"/>
+      <source>Regular</source>
+      <translation>Regular</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_preview_area.ui" line="53"/>
+      <source>Oversized</source>
+      <translation>Oversized</translation>
+    </message>
+  </context>
+  <context>
     <name>PageConfigWidget</name>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="81"/>
+      <location filename="../../ui/page_config_widget.py" line="105"/>
       <source>%n regular card(s)</source>
       <comment>Display of the resulting page capacity for regular-sized cards</comment>
       <translation>
@@ -2220,7 +2238,7 @@ So only enable this, if actually required.</translation>
       </translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/page_config_widget.py" line="85"/>
+      <location filename="../../ui/page_config_widget.py" line="109"/>
       <source>%n oversized card(s)</source>
       <comment>Display of the resulting page capacity for oversized cards</comment>
       <translation>
@@ -2229,7 +2247,7 @@ So only enable this, if actually required.</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/page_config_widget.py" line="90"/>
+      <location filename="../../ui/page_config_widget.py" line="114"/>
       <source>{regular_text}, {oversized_text}</source>
       <comment>Combination of the page capacities for regular, and oversized cards</comment>
       <translation>{regular_text}, {oversized_text}</translation>
@@ -2241,73 +2259,23 @@ So only enable this, if actually required.</translation>
     </message>
     <message>
       <location filename="../ui/page_config_widget.ui" line="20"/>
-      <source>Page height</source>
-      <translation>Page height</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="33"/>
       <source>Number of cards fitting on each page,
 based on the page size and spacings configured</source>
       <translation>Number of cards fitting on each page,
 based on the page size and spacings configured</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="44"/>
-      <source>Document name</source>
-      <translation>Document name</translation>
+      <location filename="../ui/page_config_widget.ui" line="57"/>
+      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="54"/>
-      <source>Column spacing</source>
-      <translation>Column spacing</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="67"/>
-      <source>Enable printing additional lines to aid cutting the printed sheets.</source>
-      <translation>Enable printing additional lines to aid cutting the printed sheets.</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="70"/>
-      <source>Print cut markers</source>
-      <translation>Print cut markers</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="83"/>
-      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="367"/>
+      <location filename="../ui/page_config_widget.ui" line="423"/>
       <source> mm</source>
       <translation> mm</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="102"/>
-      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="115"/>
-      <source>Draw an additional border around cards to ease cutting.</source>
-      <translation>Draw an additional border around cards to ease cutting.</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="128"/>
-      <source>Right margin</source>
-      <translation>Right margin</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="141"/>
-      <source>Resulting page capacity:</source>
-      <translation>Resulting page capacity:</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="151"/>
-      <source>Row spacing</source>
-      <translation>Row spacing</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="177"/>
+      <location filename="../ui/page_config_widget.ui" line="76"/>
       <source>Paper height in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2316,7 +2284,37 @@ Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="201"/>
+      <location filename="../ui/page_config_widget.ui" line="94"/>
+      <source>Top margin</source>
+      <translation>Top margin</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="113"/>
+      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the right paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="126"/>
+      <source>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</source>
+      <translation>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="129"/>
+      <source>Print page numbers</source>
+      <translation>Print page numbers</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="136"/>
+      <source>Resulting page capacity:</source>
+      <translation>Resulting page capacity:</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="146"/>
+      <source>Card bleed</source>
+      <translation>Card bleed</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="165"/>
       <source>Paper width in millimeters.
 Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</source>
@@ -2325,32 +2323,46 @@ Must match the size of the sheets in the printer.
 Otherwise, scaling may be applied by the printer driver.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="232"/>
+      <location filename="../ui/page_config_widget.ui" line="183"/>
+      <source>Enable printing additional lines to aid cutting the printed sheets.</source>
+      <translation>Enable printing additional lines to aid cutting the printed sheets.</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="186"/>
+      <source>Print cut markers</source>
+      <translation>Print cut markers</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="199"/>
+      <source>Space between image rows in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</source>
+      <translation>Space between image rows in mm.
+If set to zero, you only need one cut to separate two images,
+otherwise you need two cuts but require less precision hitting the exact middle.</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="214"/>
+      <source>Draw 90° card corners, instead of round ones</source>
+      <translation>Draw 90° card corners, instead of round ones</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="227"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
       <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the top paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="245"/>
-      <source>Page width</source>
-      <translation>Page width</translation>
+      <location filename="../ui/page_config_widget.ui" line="240"/>
+      <source>Document name</source>
+      <translation>Document name</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="258"/>
-      <source>Bottom Margin</source>
-      <translation>Bottom Margin</translation>
+      <location filename="../ui/page_config_widget.ui" line="250"/>
+      <source>Row spacing</source>
+      <translation>Row spacing</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="271"/>
-      <source>Left margin</source>
-      <translation>Left margin</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="284"/>
-      <source>Top margin</source>
-      <translation>Top margin</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="297"/>
+      <location filename="../ui/page_config_widget.ui" line="263"/>
       <source>The document name is printed on each page and can help you keep track
 of different printed sheets and to which deck they belong.
 
@@ -2361,12 +2373,32 @@ of different printed sheets and to which deck they belong.
 Leave empty to disable.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="306"/>
+      <location filename="../ui/page_config_widget.ui" line="272"/>
       <source>Document/deck name</source>
       <translation>Document/deck name</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="322"/>
+      <location filename="../ui/page_config_widget.ui" line="282"/>
+      <source>Page height</source>
+      <translation>Page height</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="295"/>
+      <source>Draw an additional border around cards to ease cutting.</source>
+      <translation>Draw an additional border around cards to ease cutting.</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="308"/>
+      <source>Bottom Margin</source>
+      <translation>Bottom Margin</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="321"/>
+      <source>Left margin</source>
+      <translation>Left margin</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="340"/>
       <source>Space between image columns in mm.
 If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</source>
@@ -2375,48 +2407,39 @@ If set to zero, you only need one cut to separate two images,
 otherwise you need two cuts but require less precision hitting the exact middle.</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="343"/>
-      <source>Space between image rows in mm.
-If set to zero, you only need one cut to separate two images,
-otherwise you need two cuts but require less precision hitting the exact middle.</source>
-      <translation>Space between image rows in mm.
-If set to zero, you only need one cut to separate two images,
-otherwise you need two cuts but require less precision hitting the exact middle.</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="364"/>
-      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the left paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="377"/>
-      <source>Card bleed</source>
-      <translation>Card bleed</translation>
-    </message>
-    <message>
-      <location filename="../ui/page_config_widget.ui" line="396"/>
+      <location filename="../ui/page_config_widget.ui" line="361"/>
       <source>Switch between portrait and landscape mode</source>
       <translation>Switch between portrait and landscape mode</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="399"/>
+      <location filename="../ui/page_config_widget.ui" line="364"/>
       <source>Flip</source>
       <translation>Flip</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="409"/>
-      <source>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</source>
-      <translation>If enabled, the page number is printed on each page. Makes it easier to notice missing pages in a stack.</translation>
+      <location filename="../ui/page_config_widget.ui" line="375"/>
+      <source>Column spacing</source>
+      <translation>Column spacing</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="412"/>
-      <source>Print page numbers</source>
-      <translation>Print page numbers</translation>
+      <location filename="../ui/page_config_widget.ui" line="388"/>
+      <source>Right margin</source>
+      <translation>Right margin</translation>
     </message>
     <message>
-      <location filename="../ui/page_config_widget.ui" line="164"/>
-      <source>Draw 90° card corners, instead of round ones</source>
-      <translation>Draw 90° card corners, instead of round ones</translation>
+      <location filename="../ui/page_config_widget.ui" line="401"/>
+      <source>Page width</source>
+      <translation>Page width</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="420"/>
+      <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Minimum margin between the bottom paper border and the page content.&lt;/p&gt;&lt;p&gt;Most printers have a minimum printing margin of 3 to 5 mm.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+    </message>
+    <message>
+      <location filename="../ui/page_config_widget.ui" line="448"/>
+      <source>Show Preview</source>
+      <translation>Show Preview</translation>
     </message>
   </context>
   <context>
@@ -2439,12 +2462,12 @@ otherwise you need two cuts but require less precision hitting the exact middle.
   <context>
     <name>PrinterSettingsPage</name>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="502"/>
+      <location filename="../../ui/settings_window_pages.py" line="500"/>
       <source>Printer settings</source>
       <translation>Printer settings</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window_pages.py" line="502"/>
+      <location filename="../../ui/settings_window_pages.py" line="500"/>
       <source>Configure the printer</source>
       <translation>Configure the printer</translation>
     </message>
@@ -2482,7 +2505,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>PrintingFilterUpdater.store_current_printing_filters()</name>
     <message>
-      <location filename="../../printing_filter_updater.py" line="127"/>
+      <location filename="../../printing_filter_updater.py" line="126"/>
       <source>Processing updated card filters:</source>
       <translation>Processing updated card filters:</translation>
     </message>
@@ -2490,7 +2513,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="130"/>
+      <location filename="../../ui/dialogs.py" line="131"/>
       <source>Save document as …</source>
       <translation>Save document as …</translation>
     </message>
@@ -2498,12 +2521,12 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="78"/>
+      <location filename="../../ui/dialogs.py" line="77"/>
       <source>Export as PDF</source>
       <translation>Export as PDF</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="79"/>
+      <location filename="../../ui/dialogs.py" line="78"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF documents (*.pdf)</translation>
     </message>
@@ -2519,7 +2542,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SelectDeckParserPage</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="324"/>
+      <location filename="../../ui/deck_import_wizard.py" line="326"/>
       <source>Enter a Regular Expression containing at least one supported, named group.
 
 Supported named groups are: {group_names}
@@ -2542,9 +2565,30 @@ See the 'What’s this?' (?-Button) help for details.</translation>
       <translation>Select which kind of deck list you want to import.</translation>
     </message>
     <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
+      <source>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</source>
+      <translation>Deck list files, stored in XMage’s native format.
+Because XMage closely follows Scryfall regarding Magic sets,
+this should give very accurate results.</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="28"/>
       <source>XMage</source>
       <translation>XMage</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
+      <source>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</source>
+      <translation>This is a Tappedout-specific section of the deck.
+It may contain the deck list author’s buy-list or anything else.</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="42"/>
+      <source>Include “Acquire-Board”</source>
+      <translation>Include “Acquire-Board”</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="49"/>
@@ -2564,6 +2608,20 @@ or any other preference, like card price.</source>
       <translation>This is a Tappedout-specific section of the deck.
 It may contain cards that the deck list creator considers for inclusion, based on the meta
 or any other preference, like card price.</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="99"/>
+      <source>Include “Maybe-Board”</source>
+      <translation>Include “Maybe-Board”</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="106"/>
+      <source>CSV exports from Scryfall’s own deck builder.
+Gives very accurate results, unless the imported deck list contains ignored items
+matching an enabled card filter.</source>
+      <translation>CSV exports from Scryfall’s own deck builder.
+Gives very accurate results, unless the imported deck list contains ignored items
+matching an enabled card filter.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="111"/>
@@ -2623,6 +2681,15 @@ If a card count field is not present in the deck list, 1 card copy per line is a
       <translation>Card name matcher</translation>
     </message>
     <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="199"/>
+      <source>Appends a matcher for the Scryfall ID to the input field above.
+This may be used by deck lists that closely integrate with the Scryfall website.
+Most deck lists won’t use this.</source>
+      <translation>Appends a matcher for the Scryfall ID to the input field above.
+This may be used by deck lists that closely integrate with the Scryfall website.
+Most deck lists won’t use this.</translation>
+    </message>
+    <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="204"/>
       <source>Scryfall ID matcher</source>
       <translation>Scryfall ID matcher</translation>
@@ -2638,6 +2705,15 @@ If a language field is not present in the deck list, the card language is guesse
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="218"/>
       <source>Language matcher</source>
       <translation>Language matcher</translation>
+    </message>
+    <message>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="227"/>
+      <source>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
+You can use the buttons below to insert basic building blocks.
+You have to separate them with the “control structures”, like spaces, as used in your deck list.</source>
+      <translation>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
+You can use the buttons below to insert basic building blocks.
+You have to separate them with the “control structures”, like spaces, as used in your deck list.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="232"/>
@@ -2701,111 +2777,58 @@ p, li { white-space: pre-wrap; }
       <source>Magic Workstation Deck Data (mwDeck)</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
     </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="23"/>
-      <source>Deck list files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</source>
-      <translation>Deck list files, stored in XMage’s native format.
-Because XMage closely follows Scryfall regarding Magic sets,
-this should give very accurate results.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="38"/>
-      <source>This is a Tappedout-specific section of the deck.
-It may contain the deck list author’s buy-list or anything else.</source>
-      <translation>This is a Tappedout-specific section of the deck.
-It may contain the deck list author’s buy-list or anything else.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="42"/>
-      <source>Include “Acquire-Board”</source>
-      <translation>Include “Acquire-Board”</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="99"/>
-      <source>Include “Maybe-Board”</source>
-      <translation>Include “Maybe-Board”</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="106"/>
-      <source>CSV exports from Scryfall’s own deck builder.
-Gives very accurate results, unless the imported deck list contains ignored items
-matching an enabled card filter.</source>
-      <translation>CSV exports from Scryfall’s own deck builder.
-Gives very accurate results, unless the imported deck list contains ignored items
-matching an enabled card filter.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="199"/>
-      <source>Appends a matcher for the Scryfall ID to the input field above.
-This may be used by deck lists that closely integrate with the Scryfall website.
-Most deck lists won’t use this.</source>
-      <translation>Appends a matcher for the Scryfall ID to the input field above.
-This may be used by deck lists that closely integrate with the Scryfall website.
-Most deck lists won’t use this.</translation>
-    </message>
-    <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="227"/>
-      <source>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
-You can use the buttons below to insert basic building blocks.
-You have to separate them with the “control structures”, like spaces, as used in your deck list.</source>
-      <translation>Specify a custom regular expression in the input field below. It will be used to parse each deck list line.
-You can use the buttons below to insert basic building blocks.
-You have to separate them with the “control structures”, like spaces, as used in your deck list.</translation>
-    </message>
   </context>
   <context>
     <name>SettingsWindow</name>
     <message>
-      <location filename="../../ui/settings_window.py" line="192"/>
+      <location filename="../../ui/settings_window.py" line="205"/>
       <source>Apply settings to the current document?</source>
       <translation>Apply settings to the current document?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="192"/>
+      <location filename="../../ui/settings_window.py" line="205"/>
       <source>The new default settings differ from the settings used by the current document.
 Apply the new settings to the current document?</source>
       <translation>The new default settings differ from the settings used by the current document.
 Apply the new settings to the current document?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="205"/>
+      <location filename="../../ui/settings_window.py" line="218"/>
       <source>Reset unsaved changes?</source>
       <translation>Reset unsaved changes?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="205"/>
+      <location filename="../../ui/settings_window.py" line="218"/>
       <source>Reset unsaved changes on the current page or on all pages?</source>
       <translation>Reset unsaved changes on the current page or on all pages?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="211"/>
+      <location filename="../../ui/settings_window.py" line="224"/>
       <source>Reset everything</source>
       <translation>Reset everything</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="212"/>
+      <location filename="../../ui/settings_window.py" line="225"/>
       <source>Reset current page</source>
       <translation>Reset current page</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="239"/>
+      <location filename="../../ui/settings_window.py" line="252"/>
       <source>Restore defaults for the current page or everything?</source>
       <translation>Restore defaults for the current page or everything?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="239"/>
+      <location filename="../../ui/settings_window.py" line="252"/>
       <source>Restore the settings on the current page or on all pages to their default values?</source>
       <translation>Restore the settings on the current page or on all pages to their default values?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="245"/>
+      <location filename="../../ui/settings_window.py" line="258"/>
       <source>Restore everything</source>
       <translation>Restore everything</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="246"/>
+      <location filename="../../ui/settings_window.py" line="259"/>
       <source>Restore current page</source>
       <translation>Restore current page</translation>
     </message>
@@ -2818,7 +2841,7 @@ Apply the new settings to the current document?</translation>
   <context>
     <name>SummaryPage</name>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="469"/>
+      <location filename="../../ui/deck_import_wizard.py" line="471"/>
       <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
       <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
       <translation>
@@ -2827,32 +2850,32 @@ Apply the new settings to the current document?</translation>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="489"/>
+      <location filename="../../ui/deck_import_wizard.py" line="491"/>
       <source>Replace document content with the identified cards</source>
       <translation>Replace document content with the identified cards</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="492"/>
+      <location filename="../../ui/deck_import_wizard.py" line="494"/>
       <source>Append identified cards to the document</source>
       <translation>Append identified cards to the document</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="543"/>
+      <location filename="../../ui/deck_import_wizard.py" line="545"/>
       <source>Remove basic lands</source>
       <translation>Remove basic lands</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="544"/>
+      <location filename="../../ui/deck_import_wizard.py" line="546"/>
       <source>Remove all basic lands in the deck list above</source>
       <translation>Remove all basic lands in the deck list above</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="549"/>
+      <location filename="../../ui/deck_import_wizard.py" line="551"/>
       <source>Remove selected</source>
       <translation>Remove selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="550"/>
+      <location filename="../../ui/deck_import_wizard.py" line="552"/>
       <source>Remove all selected cards in the deck list above</source>
       <translation>Remove all selected cards in the deck list above</translation>
     </message>
@@ -2922,14 +2945,14 @@ If unchecked, append the cards found below to the document.</translation>
       <translation>Add new cards</translation>
     </message>
     <message>
-      <location filename="../ui/central_widget/tabbed_vertical.ui" line="92"/>
-      <source>Remove selected</source>
-      <translation>Remove selected</translation>
-    </message>
-    <message>
       <location filename="../ui/central_widget/tabbed_vertical.ui" line="43"/>
       <source>Current page</source>
       <translation>Current page</translation>
+    </message>
+    <message>
+      <location filename="../ui/central_widget/tabbed_vertical.ui" line="92"/>
+      <source>Remove selected</source>
+      <translation>Remove selected</translation>
     </message>
     <message>
       <location filename="../ui/central_widget/tabbed_vertical.ui" line="103"/>
