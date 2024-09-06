@@ -81,7 +81,7 @@ VERSION_CHECK_RE = re.compile(
 # - Wire up save and load functionality for the new key in the Settings UI
 # - The Settings GUI class has to also do a value range check.
 
-DEFAULT_SETTINGS["images"] = {
+DEFAULT_SETTINGS["cards"] = {
     "preferred-language": "en",
     "automatically-add-opposing-faces": "True",
 }
@@ -155,7 +155,7 @@ DEFAULT_SETTINGS["decklist-import"] = {
     "remove-snow-basics": "False",
     "automatically-remove-basic-lands": "False",
 }
-DEFAULT_SETTINGS["application"] = {
+DEFAULT_SETTINGS["update-checks"] = {
     "last-used-version": mtg_proxy_printer.meta_data.__version__,
     "check-for-application-updates": "None",
     "check-for-card-data-updates": "None",
@@ -178,6 +178,7 @@ ALLOWED_LENGTH_UNITS: typing.Set[UnitT] = {unit_registry.mm}
 def round_to_nearest_multiple(value: T, multiple: T) -> T:
     """Rounds the given value to the nearest multiple of "multiple"."""
     return round(value/multiple)*multiple
+
 
 def clamp_to_supported_range(value: QuantityT) -> QuantityT:
     """Clamps numerical document settings to the supported value range"""
@@ -235,7 +236,7 @@ def write_settings_to_file():
 
 def update_stored_version_string():
     """Sets the version string stored in the configuration file to the version of the currently running instance."""
-    settings["application"]["last-used-version"] = DEFAULT_SETTINGS["application"]["last-used-version"]
+    settings["update-checks"]["last-used-version"] = DEFAULT_SETTINGS["update-checks"]["last-used-version"]
 
 
 def was_application_updated() -> bool:
@@ -244,7 +245,7 @@ def was_application_updated() -> bool:
     is greater than the version string stored in the configuration file. Returns False otherwise.
     """
     return mtg_proxy_printer.natsort.str_less_than(
-        settings["application"]["last-used-version"],
+        settings["update-checks"]["last-used-version"],
         mtg_proxy_printer.meta_data.__version__
     )
 
@@ -258,7 +259,7 @@ def validate_settings(read_settings: ConfigParser):
     _validate_card_filter_section(read_settings)
     _validate_images_section(read_settings)
     _validate_documents_section(read_settings)
-    _validate_application_section(read_settings)
+    _validate_update_checks_section(read_settings)
     _validate_gui_section(read_settings)
     _validate_debug_section(read_settings)
     _validate_decklist_import_section(read_settings)
@@ -275,7 +276,7 @@ def _validate_card_filter_section(to_validate: ConfigParser, section_name: str =
         _validate_boolean(section, defaults, key)
 
 
-def _validate_images_section(to_validate: ConfigParser, section_name: str = "images"):
+def _validate_images_section(to_validate: ConfigParser, section_name: str = "cards"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     for key in ("automatically-add-opposing-faces",):
@@ -339,7 +340,7 @@ def _validate_documents_section(to_validate: ConfigParser, section_name: str = "
         section["row-spacing"] = str(available_spacing_horizontal)
 
 
-def _validate_application_section(to_validate: ConfigParser, section_name: str = "application"):
+def _validate_update_checks_section(to_validate: ConfigParser, section_name: str = "update-checks"):
     section = to_validate[section_name]
     defaults = DEFAULT_SETTINGS[section_name]
     if not VERSION_CHECK_RE.fullmatch(section["last-used-version"]):
@@ -457,6 +458,8 @@ def migrate_settings(to_migrate: ConfigParser):
     _migrate_image_spacing_settings(to_migrate)
     _migrate_to_pdf_export_section(to_migrate)
     _migrate_document_settings_to_pint(to_migrate)
+    _migrate_images_to_cards_section(to_migrate)
+    _migrate_application_to_update_checks_section(to_migrate)
 
 
 def _migrate_layout_setting(to_migrate: ConfigParser):
@@ -544,6 +547,19 @@ def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
         old_key = f"{key}-mm"
         section[key] = f"{section[old_key]} mm"
         del section[old_key]
+
+
+def _migrate_images_to_cards_section(to_migrate: ConfigParser):
+    if "images" not in to_migrate:
+        return
+    to_migrate["cards"] = to_migrate["images"]
+    del to_migrate["images"]
+
+def _migrate_application_to_update_checks_section(to_migrate: ConfigParser):
+    if "application" not in to_migrate:
+        return
+    to_migrate["update-checks"] = to_migrate["application"]
+    del to_migrate["application"]
 
 # Read the settings from file during module import
 # This has to be performed before any modules containing GUI classes are imported.

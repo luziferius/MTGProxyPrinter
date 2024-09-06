@@ -463,7 +463,7 @@ class MainWindow(QMainWindow):
                 StandardButton.Yes | StandardButton.No | StandardButton.Cancel
                 )) in {StandardButton.Yes, StandardButton.No}:
             logger.info(f"{logger_message} User choice: {'Yes' if result == StandardButton.Yes else 'No'}")
-            mtg_proxy_printer.settings.settings["application"][settings_key] = str(result == StandardButton.Yes)
+            mtg_proxy_printer.settings.settings["update-checks"][settings_key] = str(result == StandardButton.Yes)
             mtg_proxy_printer.settings.write_settings_to_file()
             logger.debug("Written settings to disk.")
 

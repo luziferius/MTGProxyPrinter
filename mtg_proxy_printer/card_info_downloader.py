@@ -488,7 +488,7 @@ class CardInfoDatabaseImportWorker(CardInfoWorkerBase):
         logger.info(f"Skipped {skipped_cards} cards during the import")
         logger.info("Post-processing card data")
         progress_meter = ProgressMeter(
-            9, "Post-processing card data:",
+            9, self.tr("Post-processing card data:"),
             self.download_begins.emit, self.download_progress.emit, self.download_finished.emit)
         self._insert_related_printings(related_printings)
         progress_meter.advance()

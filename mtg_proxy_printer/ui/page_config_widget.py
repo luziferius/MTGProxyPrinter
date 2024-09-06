@@ -18,7 +18,7 @@ from functools import partial
 import math
 from typing import List, Tuple, Union
 
-from PyQt5.QtCore import pyqtSlot as Slot, Qt
+from PyQt5.QtCore import pyqtSlot as Slot, Qt, pyqtSignal as Signal
 from PyQt5.QtPrintSupport import QPrinter
 from PyQt5.QtGui import QPageSize, QPageLayout
 from PyQt5.QtWidgets import QGroupBox, QWidget, QDoubleSpinBox, QCheckBox, QLineEdit, QComboBox
@@ -43,6 +43,7 @@ CheckState = Qt.CheckState
 
 
 class PageConfigWidget(QGroupBox):
+    page_layout_changed = Signal(PageLayoutSettings)
 
     def __init__(self, parent: QWidget = None):
         super().__init__(parent)
@@ -56,7 +57,7 @@ class PageConfigWidget(QGroupBox):
         # when programmatically populating the widget values.
         # Therefore, it is not necessary to ever explicitly set the page_layout
         # attributes to the current values.
-        page_layout = PageLayoutSettings()
+        page_layout = PageLayoutSettings.create_from_settings()
         for page_size_id in PageSizeManager.PageSize.values():
             ui.paper_size.addItem(QPageSize.name(page_size_id), page_size_id)
         for item, value in PageSizeManager.PageOrientation.items():
@@ -64,11 +65,13 @@ class PageConfigWidget(QGroupBox):
 
         ui.paper_size.currentIndexChanged.connect(self._on_paper_size_changed)
         ui.paper_size.currentIndexChanged.connect(self.validate_paper_size_settings)
-        ui.paper_size.currentIndexChanged.connect(self.page_layout_setting_changed)
+        ui.paper_size.currentIndexChanged.connect(self.on_page_layout_setting_changed)
+        ui.paper_size.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
         ui.paper_orientation.currentIndexChanged.connect(self._on_paper_orientation_changed)
         ui.paper_orientation.currentIndexChanged.connect(self.validate_paper_size_settings)
-        ui.paper_orientation.currentIndexChanged.connect(self.page_layout_setting_changed)
+        ui.paper_orientation.currentIndexChanged.connect(self.on_page_layout_setting_changed)
+        ui.paper_orientation.currentIndexChanged.connect(partial(self.page_layout_changed.emit, page_layout))
 
         for spinbox in (
                 ui.card_bleed, ui.custom_page_height, ui.custom_page_width,
@@ -76,26 +79,40 @@ class PageConfigWidget(QGroupBox):
                 ui.row_spacing, ui.column_spacing):
             layout_key = spinbox.objectName()
             spinbox.valueChanged[float].connect(
-                partial(self.set_page_layout_item, page_layout, layout_key, "mm"))
+                partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
-            spinbox.valueChanged[float].connect(self.page_layout_setting_changed)
-        ui.draw_cut_markers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_cut_markers", new == CheckState.Checked))
-        ui.draw_sharp_corners.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_sharp_corners", new == CheckState.Checked))
-        ui.draw_page_numbers.stateChanged.connect(
-            lambda new: setattr(page_layout, "draw_page_numbers", new == CheckState.Checked))
+            spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
+            spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
+        for checkbox in (
+                ui.draw_cut_markers, ui.draw_sharp_corners, ui.draw_page_numbers):
+            layout_key = checkbox.objectName()
+            checkbox.stateChanged.connect(
+                partial(self.set_boolean_page_layout_item, page_layout, layout_key))
+            checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
+        ui.document_name.textChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         return page_layout
 
     @staticmethod
-    def set_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: str, value: float):
+    def set_numerical_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, unit: str, value: float):
         # Implementation note: This call is placed here, because stuffing it into a lambda defined within a while loop
         # somehow uses the wrong references and will set the attribute that was processed last in the loop.
         # This method can be used via functools.partial to reduce the signature to (float) -> None,
         # which can be connected to the valueChanged[float] signal just fine.
         # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
         setattr(page_layout, layout_key, value*unit_registry.parse_units(unit))
+
+    @staticmethod
+    def set_boolean_page_layout_item(page_layout: PageLayoutSettings, layout_key: str, value: CheckState):
+        # Implementation note: This call is placed here, because stuffing it into a lambda defined within a while loop
+        # somehow uses the wrong references and will set the attribute that was processed last in the loop.
+        # This method can be used via functools.partial to reduce the signature to (CheckState) -> None,
+        # which can be connected to the stateChanged signal just fine.
+        # Also, functools.partial does not exhibit the same issue as the lambda expression shows.
+        setattr(page_layout, layout_key, value == CheckState.Checked)
+
+    def hide_preview_button(self):
+        self.ui.show_preview_button.hide()
 
     @Slot(int)
     def _on_paper_size_changed(self, index: int):
@@ -114,7 +131,7 @@ class PageConfigWidget(QGroupBox):
         self.page_layout.paper_orientation = PageSizeManager.PageOrientationReverse[orientation]
 
     @Slot()
-    def page_layout_setting_changed(self):
+    def on_page_layout_setting_changed(self):
         """
         Recomputes and updates the page capacity display, whenever any page layout widget changes.
         """
@@ -180,7 +197,8 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_size(documents_section["paper-size"])
         self._load_paper_orientation(documents_section["paper-orientation"])
         self.validate_paper_size_settings()
-        self.page_layout_setting_changed()
+        self.on_page_layout_setting_changed()
+        self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from settings finished")
 
     def load_from_page_layout(self, other: PageLayoutSettings):
@@ -205,7 +223,8 @@ class PageConfigWidget(QGroupBox):
         self._load_paper_size(other.paper_size)
         self._load_paper_orientation(other.paper_orientation)
         self.validate_paper_size_settings()
-        self.page_layout_setting_changed()
+        self.on_page_layout_setting_changed()
+        self.page_layout_changed.emit(self.page_layout)
         logger.debug(f"Loading from document settings finished")
 
     def _load_paper_size(self, size: str):

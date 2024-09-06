@@ -145,7 +145,7 @@ class LoadListPage(QWizardPage):
     def initializePage(self) -> None:
         super().initializePage()
         language_model: QStringListModel = self.ui.translate_deck_list_target_language.model()
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         preferred_language_index = language_model.stringList().index(preferred_language)
         self.ui.translate_deck_list_target_language.setCurrentIndex(preferred_language_index)
         options = mtg_proxy_printer.settings.settings["decklist-import"]

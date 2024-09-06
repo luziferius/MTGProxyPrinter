@@ -522,7 +522,7 @@ class CardDatabase(QObject):
 
     def get_replacement_card_for_unknown_printing(
             self, card: CardIdentificationData, /, *, order_by_print_count: bool = False) -> CardList:
-        preferred_language = mtg_proxy_printer.settings.settings["images"]["preferred-language"]
+        preferred_language = mtg_proxy_printer.settings.settings["cards"]["preferred-language"]
         query = cached_dedent('''\
         -- get_replacement_card_for_unknown_printing()
         SELECT card_name, set_code, set_name, collector_number, png_image_uri,

@@ -258,7 +258,8 @@ class PageScene(QGraphicsScene):
         :param parent: Optional Qt parent object
         """
         self.render_mode = render_mode
-        super().__init__(self.get_document_page_size(document.page_layout), parent)
+        page_layout = document.page_layout
+        super().__init__(self.get_document_page_size(page_layout), parent)
         self.document = document
         self.document.rowsInserted.connect(self.on_rows_inserted)
         self.document.rowsRemoved.connect(self.on_rows_removed)
@@ -279,8 +280,8 @@ class PageScene(QGraphicsScene):
         self._update_cut_marker_positions()
         self.document_title_text = self._create_text_item()
         self.page_number_text = self._create_text_item()
-        self._update_text_items(document.page_layout)
-        if document.page_layout.draw_cut_markers:
+        self._update_text_items(page_layout)
+        if page_layout.draw_cut_markers:
             self.draw_cut_markers()
         logger.info(f"Created {self.__class__.__name__} instance. Render mode: {render_mode}")
 
