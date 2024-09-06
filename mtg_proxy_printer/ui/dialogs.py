@@ -43,6 +43,7 @@ except ModuleNotFoundError:
     Ui_AboutDialog = load_ui_from_file("about_dialog")
     Ui_DocumentSettingsDialog = load_ui_from_file("document_settings_dialog")
 
+EventType = QEvent.Type
 logger = get_logger(__name__)
 del get_logger
 
@@ -276,7 +277,7 @@ class PrintDialog(QPrintDialog):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
 
-class HoverEventFilter(QObject):
+class ChangedSettingsHoverEventFilter(QObject):
     parent: typing.Callable[[], "DocumentSettingsDialog"]
 
     def __init__(self, settings: ConfigParser, parent: "DocumentSettingsDialog"):
@@ -284,14 +285,14 @@ class HoverEventFilter(QObject):
         self.settings = settings
 
     def eventFilter(self, object_, event: QEvent):
-        event_type: QEvent.Type = event.type()
+        event_type = event.type()
         # This check avoids a crash during application shutdown
-        if event_type not in {QEvent.Type.HoverEnter, QEvent.Type.HoverLeave}:
+        if event_type not in {EventType.HoverEnter, EventType.HoverLeave}:
             return False
         parent = self.parent()
-        if event_type == QEvent.Type.HoverEnter:
-            parent.ui.page_config_groupbox.highlight_differing_settings(self.settings)
-        elif event_type == QEvent.Type.HoverLeave:
+        if event_type == EventType.HoverEnter:
+            parent.ui.page_config_container.ui.page_config_widget.highlight_differing_settings(self.settings)
+        elif event_type == EventType.HoverLeave:
             parent.clear_highlight()
         return False
 
@@ -304,8 +305,11 @@ class DocumentSettingsDialog(QDialog):
         self.ui.setupUi(self)
         self.setModal(True)
         self.document = document
-        self.ui.page_config_groupbox.load_from_page_layout(document.page_layout)
-        self.ui.page_config_groupbox.setTitle(self.tr("These settings only affect the current document"))
+        page_config_widget = self.ui.page_config_container.ui.page_config_widget
+        page_config_widget.ui.show_preview_button.hide()
+        page_config_widget.load_from_page_layout(document.page_layout)
+        page_config_widget.setTitle(
+            self.tr("These settings only affect the current document"))
         self._setup_button_box()
         self.accepted.connect(self.on_accept)
         logger.info(f"Created {self.__class__.__name__} instance.")
@@ -315,11 +319,11 @@ class DocumentSettingsDialog(QDialog):
         button_box = self.ui.button_box
 
         restore_defaults = button_box.button(button_roles.RestoreDefaults)
-        restore_defaults.installEventFilter(HoverEventFilter(mtg_proxy_printer.settings.settings, self))
+        restore_defaults.installEventFilter(ChangedSettingsHoverEventFilter(mtg_proxy_printer.settings.settings, self))
         restore_defaults.clicked.connect(self.restore_defaults_button_clicked)
 
         reset = button_box.button(button_roles.Reset)
-        reset.installEventFilter(HoverEventFilter(self.document.page_layout, self))
+        reset.installEventFilter(ChangedSettingsHoverEventFilter(self.document.page_layout, self))
         reset.clicked.connect(self.reset_button_clicked)
 
         buttons_with_icons = [
@@ -336,19 +340,20 @@ class DocumentSettingsDialog(QDialog):
     @Slot()
     def restore_defaults_button_clicked(self):
         logger.info("User reverts the document settings to the values from the global configuration")
-        self.ui.page_config_groupbox.load_document_settings_from_config(mtg_proxy_printer.settings.settings)
+        self.ui.page_config_container.ui.page_config_widget.load_document_settings_from_config(
+            mtg_proxy_printer.settings.settings)
         self.clear_highlight()
 
     @Slot()
     def reset_button_clicked(self):
         logger.info("User resets made changes")
-        self.ui.page_config_groupbox.load_from_page_layout(self.document.page_layout)
+        self.ui.page_config_container.ui.page_config_widget.load_from_page_layout(self.document.page_layout)
         self.clear_highlight()
 
     @Slot()
     def on_accept(self):
         logger.info(f"User accepted the {self.__class__.__name__}")
-        action = ActionEditDocumentSettings(self.ui.page_config_groupbox.page_layout)
+        action = ActionEditDocumentSettings(self.ui.page_config_container.ui.page_config_widget.page_layout)
         self.document.apply(action)
         logger.debug("Saving settings in the document done.")
 

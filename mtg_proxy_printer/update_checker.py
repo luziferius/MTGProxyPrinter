@@ -195,13 +195,13 @@ class UpdateChecker(QObject):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def check_for_updates(self):
-        app_settings = settings.settings["application"]
-        if app_settings.getboolean("check-for-application-updates"):
+        section = settings.settings["update-checks"]
+        if section.getboolean("check-for-application-updates"):
             logger.debug("Enqueue application update check")
             QThreadPool.globalInstance().start(ApplicationUpdateCheckRunner(self))
         else:
             logger.info("Not running application update check")
-        if not self.card_data_parameter_passed and app_settings.getboolean("check-for-card-data-updates"):
+        if not self.card_data_parameter_passed and section.getboolean("check-for-card-data-updates"):
             logger.debug("Enqueue card data update check")
             QThreadPool.globalInstance().start(CardDataUpdateCheckRunner(self))
         else:

@@ -103,7 +103,10 @@ def load_ui_from_file(name: str):
         error_message = f"UI file not found: {file_path}"
         logger.error(error_message)
         raise FileNotFoundError(error_message)
-    base_type, _ = loadUiType(file_path)
+    try:
+        base_type, _ = loadUiType(file_path)
+    except TypeError as e:
+        raise RuntimeError(f"Ui compilation failed for path {file_path}") from e
     return base_type
 
 

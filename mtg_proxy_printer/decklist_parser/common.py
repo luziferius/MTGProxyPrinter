@@ -55,7 +55,7 @@ class ParserBase(QObject):
         super().__init__(parent)
         self.card_db = card_db
         self.image_db = image_db
-        self.add_opposing_face = mtg_proxy_printer.settings.settings["images"].getboolean(
+        self.add_opposing_face = mtg_proxy_printer.settings.settings["cards"].getboolean(
             "automatically-add-opposing-faces"
         )
         self.print_guessing_prefer_already_downloaded = \

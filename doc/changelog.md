@@ -18,6 +18,7 @@
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
 - Add new card filter to hide Art Series cards, which can be enabled in the application settings.
     - When updating from previous versions, the filter becomes functional after the next card data update.
+- Add a live-updating preview to the document settings window. 
 
 ## Changed features
 
@@ -35,7 +36,7 @@
 ## Fixed issues
 
 - Improved performance of the image cleanup wizard, if there are many images of non-English cards stored on disk.
-- Reworded and clarified some texts in the user interface, fixed grammar and spellning mistakes
+- Reworded and clarified some texts in the user interface, fixed grammar and spelling mistakes
 - The main window no longer stays open unresponsive for multiple seconds when trying to exit the application
   while it waits on a hanging network socket. 
 
@@ -78,7 +79,7 @@
 ## Fixed issues
 
 - Fixed broken card bleed rendering when row spacing or column spacing are set to zero.
-  The thick border around the cards is now continuous, as it was in version [0.27](#0_27_0).
+  The thick border around the cards is now continuous, as it was in version [0.27](#v0_27_0).
 - Fix the page view not updating instantly when the application successfully downloads a card image that
   failed to download during previous download attempts.
 
@@ -249,7 +250,7 @@
 - It is now possible to save and load documents containing DFC check cards. 
   Those are no longer implicitly converted to the card front face in the saved document.
   Loading documents containing DFC check cards with older program versions will fail.
-- Improvements/fixes for the multi-page wizards, like the deck import wizards
+- Improvements/fixes for the wizards, like the deck import wizards
     - Wizards now have a consistent style on Windows (7) and are properly centered above the main window
     - Wizards are no longer placed partially out of the screen under some edge cases.  
       The window title bar is now always visible.
@@ -929,7 +930,7 @@ capabilities.
 ## Implemented features
 
 - Implemented automatic deck list imports
-    - Implemented as a multi-page wizard that guides the user through the process.
+    - Implemented as a wizard that guides the user through the process.
       Accessible via an entry in the File menu.
     - Supports Magic Online, MTG Arena and XMage deck files (And Websites that export compatible files)
     - Appends the imported list to the currently edited document or optionally completely replaces it.
@@ -948,7 +949,7 @@ capabilities.
 
 - When adding a double-faced card, automatically add it’s opposing face.
   This automatically adds the appropriate other side, matching set, art style, 
-  border style, etc, if multiple choices are available. Can be disabled in the settings.
+  border style, etc., if multiple choices are available. Can be disabled in the settings.
 - Configurable default storage location for Proxy documents and PDF documents.
   The locations can be set in the settings window.
 - Added optional download filter for token cards to exclude all tokens from the card database.
@@ -1070,7 +1071,7 @@ This is the first alpha version of MTGProxyPrinter.
 
 - Obtaining the card information and images for all [Magic](https://magic.wizards.com/) cards in all languages
   from the [Scryfall](https://scryfall.com/) API
-- Creating a multi-page document and adding card images to each page
+- Creating a document and adding card images to each page
 - Searching cards by language, name, set and collector number
 - Application settings to specify the preferred language, 
   and document settings like default page size, paper margins and spacing between images
