@@ -82,15 +82,15 @@ class PageConfigWidget(QGroupBox):
                 partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
-            spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
+            spinbox.valueChanged[float].connect(partial(self.page_layout_changed.emit, page_layout))
         for checkbox in (
                 ui.draw_cut_markers, ui.draw_sharp_corners, ui.draw_page_numbers):
             layout_key = checkbox.objectName()
             checkbox.stateChanged.connect(
                 partial(self.set_boolean_page_layout_item, page_layout, layout_key))
-            checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+            checkbox.stateChanged.connect(partial(self.page_layout_changed.emit,page_layout))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
-        ui.document_name.textChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
+        ui.document_name.textChanged.connect(partial(self.page_layout_changed.emit, page_layout))
         return page_layout
 
     @staticmethod
@@ -183,9 +183,9 @@ class PageConfigWidget(QGroupBox):
             max(0, available_height - ui.margin_top.value())
         )
 
-    def load_document_settings_from_config(self, settings: ConfigParser):
+    def load_document_settings_from_config(self, new_config: ConfigParser):
         logger.debug(f"About to load document settings from the global settings")
-        documents_section = settings["documents"]
+        documents_section = new_config["documents"]
         for spinbox, setting in self._get_decimal_settings_widgets():
             value = documents_section.get_quantity(setting).to("mm")
             spinbox.setValue(value.magnitude)
@@ -296,12 +296,12 @@ class PageConfigWidget(QGroupBox):
         return self.ui.paper_orientation.currentData(Qt.ItemDataRole.UserRole)
 
     @functools.singledispatchmethod
-    def highlight_differing_settings(self, settings):
+    def highlight_differing_settings(self, to_compare):
         pass
 
     @highlight_differing_settings.register
-    def _(self, settings: ConfigParser):
-        section = settings["documents"]
+    def _(self, to_compare: ConfigParser):
+        section = to_compare["documents"]
         for widget, setting in self._get_string_settings_widgets():
             if widget.text() != section[setting]:
                 highlight_widget(widget)
@@ -317,20 +317,20 @@ class PageConfigWidget(QGroupBox):
             highlight_widget(self.ui.paper_orientation)
 
     @highlight_differing_settings.register
-    def _(self, settings: PageLayoutSettings):
+    def _(self, to_compare: PageLayoutSettings):
         for line_edit, _ in self._get_string_settings_widgets():
             name = line_edit.objectName()
-            if line_edit.text() != getattr(settings, name):
+            if line_edit.text() != getattr(to_compare, name):
                 highlight_widget(line_edit)
         for checkbox, _ in self._get_boolean_settings_widgets():
             name = checkbox.objectName()
-            if checkbox.isChecked() is not getattr(settings, name):
+            if checkbox.isChecked() is not getattr(to_compare, name):
                 highlight_widget(checkbox)
         for spinbox, _ in self._get_decimal_settings_widgets():
             name = spinbox.objectName()
-            if not math.isclose(spinbox.value(), getattr(settings, name).to("mm").magnitude):
+            if not math.isclose(spinbox.value(), getattr(to_compare, name).to("mm").magnitude):
                 highlight_widget(spinbox)
-        if self._current_page_size() != PageSizeManager.PageSize[settings.paper_size]:
+        if self._current_page_size() != PageSizeManager.PageSize[to_compare.paper_size]:
             highlight_widget(self.ui.paper_size)
-        if self._current_page_orientation() != PageSizeManager.PageOrientation[settings.paper_orientation]:
+        if self._current_page_orientation() != PageSizeManager.PageOrientation[to_compare.paper_orientation]:
             highlight_widget(self.ui.paper_orientation)
