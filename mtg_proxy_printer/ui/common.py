@@ -18,7 +18,7 @@ import platform
 import typing
 
 from PySide6.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication
-from PySide6.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect
+from PySide6.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
 from PySide6.QtGui import QIcon
 from PySide6.QtUiTools import loadUiType
 
@@ -109,6 +109,10 @@ def load_ui_from_file(name: str):
         raise RuntimeError(f"Ui compilation failed for path {file_path}") from e
     return base_type
 
+def markdown_to_html(markdown: str) -> str:
+    browser = QTextEdit()
+    browser.setMarkdown(markdown)
+    return browser.toHtml()
 
 def format_size(size: float) -> str:
     template = QCoreApplication.translate(

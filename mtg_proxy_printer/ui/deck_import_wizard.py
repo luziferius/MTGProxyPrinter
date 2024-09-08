@@ -37,7 +37,7 @@ from mtg_proxy_printer.model.carddb import CardDatabase
 from mtg_proxy_printer.model.imagedb import ImageDatabase
 from mtg_proxy_printer.model.card_list import CardListModel, PageColumns
 from mtg_proxy_printer.natsort import NaturallySortedSortFilterProxyModel
-from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase
+from mtg_proxy_printer.ui.common import load_ui_from_file, format_size, WizardBase, markdown_to_html
 from mtg_proxy_printer.ui.item_delegates import ComboBoxItemDelegate
 from mtg_proxy_printer.document_controller.import_deck_list import ActionImportDeckList
 
@@ -324,12 +324,10 @@ class SelectDeckParserPage(QWizardPage):
         self._selected_parser = None
         self.parser_creator: typing.Callable[[], None] = (lambda: None)
         group_names = ', '.join(sorted(re_parsers.GenericRegularExpressionDeckParser.SUPPORTED_GROUP_NAMES))
-        self.ui.custom_re_input.setToolTip(self.tr(
-            "Enter a Regular Expression containing at least one supported, named group.\n\n"
-            "Supported named groups are: {group_names}\n\n"
-            "See the 'What’s this?' (?-Button) help for details."
-        ).format(group_names=group_names))
-        self.ui.custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
+        custom_re_input = self.ui.custom_re_input
+        custom_re_input.setToolTip(custom_re_input.toolTip().format(group_names=group_names))
+        custom_re_input.setWhatsThis(markdown_to_html(custom_re_input.whatsThis()))
+        custom_re_input.setValidator(IsDecklistParserRegularExpressionValidator(self))
         self.ui.insert_copies_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<copies>\d+)"))
         self.ui.insert_name_matcher_sample_button.clicked.connect(
@@ -343,7 +341,7 @@ class SelectDeckParserPage(QWizardPage):
         self.ui.insert_scryfall_id_matcher_sample_button.clicked.connect(
             lambda: self.append_group_to_custom_re_input(r"(?P<scryfall_id>[a-f\d]{8}(-[a-f\d]{4}){3}-[a-f\d]{12})"))
         self.complete = False
-        self.registerField("custom_re", self.ui.custom_re_input)
+        self.registerField("custom_re", custom_re_input)
         self.registerField("selected_parser", self)
         self.ui.select_parser_magic_workstation.clicked.connect(
             lambda: setattr(self, "parser_creator", self._create_magic_workstation_parser)
