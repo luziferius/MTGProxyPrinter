@@ -18,7 +18,7 @@ import platform
 import typing
 
 from PyQt5.QtCore import QFile, QUrl, QObject, QSize, QCoreApplication
-from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect
+from PyQt5.QtWidgets import QLabel, QWizard, QWidget, QGraphicsColorizeEffect, QTextEdit
 from PyQt5.QtGui import QIcon
 # noinspection PyUnresolvedReferences
 from PyQt5 import uic
@@ -108,6 +108,10 @@ def load_ui_from_file(name: str):
     base_type, _ = uic.loadUiType(file_path, from_imports=True)
     return base_type
 
+def markdown_to_html(markdown: str) -> str:
+    browser = QTextEdit()
+    browser.setMarkdown(markdown)
+    return browser.toHtml()
 
 def format_size(size: float) -> str:
     template = QCoreApplication.translate(
