@@ -2736,7 +2736,7 @@ A named group looks like this:
 
 Not all groups are required for a successful match. For example, `set_code` and `collector_number` is sufficient for exact identification most of the time.
 Hint: You may want to use an online Regular Expression editor, like [](https://regex101.com/), for example.</source>
-      <translation>Sie können einen regulären Ausdruck (in Python-Syntax) eingeben, um die Linien ihrer Deckliste zu analysieren. Verwenden Sie *benannte Gruppen* um die einzelnen Karteneigenschaften aus den einzelnen Zeilen der Deckliste zu extrahieren.
+      <translation>Sie können einen regulären Ausdruck (in Python-Syntax) eingeben, um die Zeilen ihrer Deckliste zu analysieren. Verwenden Sie *benannte Gruppen* um die einzelnen Karteneigenschaften aus den einzelnen Zeilen der Deckliste zu extrahieren.
 Eine benannte Gruppe sieht folgendermaßen aus:
 **(?P\&lt;GruppenName&gt;RE)**, wobei RE ein regulärer Ausdruck ist, der dem zu extrahierenden Teil entspricht, und GruppenName eine der folgenden Gruppen ist:
 
