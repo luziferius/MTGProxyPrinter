@@ -58,7 +58,7 @@ dev = [
     "pytest-qt >= 2.0",
     "tox >= 4.0",
     "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
-    "PySide2; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
+    "PySide6; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
 ]
 package = [
     "build",
