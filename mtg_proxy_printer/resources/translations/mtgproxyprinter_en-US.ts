@@ -467,14 +467,6 @@ switch the selected printing.</translation>
     </message>
   </context>
   <context>
-    <name>CustomCardImportDialog</name>
-    <message>
-      <location filename="../ui/custom_card_import_dialog.ui" line="14"/>
-      <source>Import custom cards</source>
-      <translation>Import custom cards</translation>
-    </message>
-  </context>
-  <context>
     <name>DebugSettingsPage</name>
     <message>
       <location filename="../../ui/settings_window_pages.py" line="118"/>
@@ -584,17 +576,17 @@ switch the selected printing.</translation>
   <context>
     <name>DeckImportWizard</name>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="620"/>
+      <location filename="../../ui/deck_import_wizard.py" line="618"/>
       <source>Import a deck list</source>
       <translation>Import a deck list</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="641"/>
+      <location filename="../../ui/deck_import_wizard.py" line="639"/>
       <source>Oversized cards present</source>
       <translation>Oversized cards present</translation>
     </message>
     <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="641"/>
+      <location filename="../../ui/deck_import_wizard.py" line="639"/>
       <source>There are %n possibly oversized cards in the deck list that may not fit into a deck, when printed out.
 
 Continue and use these cards as-is?</source>
@@ -608,12 +600,12 @@ Continue and use these cards as-is?</numerusform>
       </translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="652"/>
+      <location filename="../../ui/deck_import_wizard.py" line="650"/>
       <source>Incompatible file selected</source>
       <translation>Incompatible file selected</translation>
     </message>
     <message>
-      <location filename="../../ui/deck_import_wizard.py" line="652"/>
+      <location filename="../../ui/deck_import_wizard.py" line="650"/>
       <source>Unable to parse the given deck list, no results were obtained.
 Maybe you selected the wrong deck list type?</source>
       <translation>Unable to parse the given deck list, no results were obtained.
@@ -853,7 +845,7 @@ switch the selected printing.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="310"/>
+      <location filename="../../ui/dialogs.py" line="311"/>
       <source>These settings only affect the current document</source>
       <translation>These settings only affect the current document</translation>
     </message>
@@ -1519,7 +1511,7 @@ and is thus unavailable for printing.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="161"/>
+      <location filename="../../ui/dialogs.py" line="162"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>Load MTGProxyPrinter document</translation>
     </message>
@@ -1691,7 +1683,7 @@ Enabling this can potentially save disk space and download volume, based on the 
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="118"/>
+      <location filename="../../ui/dialogs.py" line="119"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter document (*.{default_save_suffix})</translation>
@@ -2518,7 +2510,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="131"/>
+      <location filename="../../ui/dialogs.py" line="132"/>
       <source>Save document as …</source>
       <translation>Save document as …</translation>
     </message>
@@ -2526,12 +2518,12 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="77"/>
+      <location filename="../../ui/dialogs.py" line="78"/>
       <source>Export as PDF</source>
       <translation>Export as PDF</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="78"/>
+      <location filename="../../ui/dialogs.py" line="79"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF documents (*.pdf)</translation>
     </message>
@@ -2546,19 +2538,6 @@ Enable this, if printing landscape documents results in portrait printouts with 
   </context>
   <context>
     <name>SelectDeckParserPage</name>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="326"/>
-      <source>Enter a Regular Expression containing at least one supported, named group.
-
-Supported named groups are: {group_names}
-
-See the 'What’s this?' (?-Button) help for details.</source>
-      <translation>Enter a Regular Expression containing at least one supported, named group.
-
-Supported named groups are: {group_names}
-
-See the 'What’s this?' (?-Button) help for details.</translation>
-    </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="14"/>
       <source>Import a deck list for printing</source>
@@ -2741,44 +2720,46 @@ as the format works for any card.</translation>
     </message>
     <message>
       <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="283"/>
-      <source>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</source>
-      <translation>Use this regular expression to parse the deck list file. See the context help (?-Button) for more details.</translation>
+      <source>Enter a Regular Expression containing at least one supported, named group.
+
+Supported named groups are: {group_names}
+
+See the 'What’s this?' (?-Button) help for details.</source>
+      <translation>Enter a Regular Expression containing at least one supported, named group.
+
+Supported named groups are: {group_names}
+
+See the 'What’s this?' (?-Button) help for details.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="286"/>
-      <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Ubuntu&apos;; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use &lt;span style=&quot; font-style:italic;&quot;&gt;named groups&lt;/span&gt; to extract the individual card properties from the individual lines of the deck list.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;A named group looks like this &lt;span style=&quot; font-weight:600;&quot;&gt;(?P&amp;lt;GroupName&amp;gt;RE)&lt;/span&gt;, where RE is a Regular Expression matching the part you want to extract.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This program recognises these group names:&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;copies&lt;/span&gt;: The number of card copies. Defaults to 1, if not present&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;name&lt;/span&gt;: The card name&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt;: The 3 (or more) letter code identifying the set.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt;: The collector number of the card&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;language&lt;/span&gt;: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to &amp;quot;en&amp;quot; for English, if not possible.&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Not all groups are required for a successful match. For example, &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt; and &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt; is sufficient for exact identification most of the time.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Hint: You may want to use an online Regular Expression editor, like &lt;a href=&quot;https://regex101.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://regex101.com/&lt;/span&gt;&lt;/a&gt;, for example.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;Ubuntu&apos;; font-size:10pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use &lt;span style=&quot; font-style:italic;&quot;&gt;named groups&lt;/span&gt; to extract the individual card properties from the individual lines of the deck list.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;A named group looks like this &lt;span style=&quot; font-weight:600;&quot;&gt;(?P&amp;lt;GroupName&amp;gt;RE)&lt;/span&gt;, where RE is a Regular Expression matching the part you want to extract.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This program recognises these group names:&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;copies&lt;/span&gt;: The number of card copies. Defaults to 1, if not present&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;name&lt;/span&gt;: The card name&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt;: The 3 (or more) letter code identifying the set.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt;: The collector number of the card&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- &lt;span style=&quot; font-weight:600;&quot;&gt;language&lt;/span&gt;: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to &amp;quot;en&amp;quot; for English, if not possible.&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Not all groups are required for a successful match. For example, &lt;span style=&quot; font-weight:600;&quot;&gt;set_code&lt;/span&gt; and &lt;span style=&quot; font-weight:600;&quot;&gt;collector_number&lt;/span&gt; is sufficient for exact identification most of the time.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Hint: You may want to use an online Regular Expression editor, like &lt;a href=&quot;https://regex101.com/&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#2980b9;&quot;&gt;https://regex101.com/&lt;/span&gt;&lt;/a&gt;, for example.&lt;/p&gt;
-&lt;p style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="290"/>
+      <source>You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use *named groups* to extract the individual card properties from the individual lines of the deck list.
+A named group looks like this:
+**(?P\&lt;GroupName&gt;RE)**, where RE is a Regular Expression matching the part you want to extract, and GroupName is one of the following:
+
+- `copies`: The number of card copies. Defaults to 1, if not present
+- `name`: The card name
+- `set_code`: The 3 (or more) letter code identifying the set
+- `collector_number`: The collector number of the card
+- `language`: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to &quot;en&quot; for English, if not possible.
+
+Not all groups are required for a successful match. For example, `set_code` and `collector_number` is sufficient for exact identification most of the time.
+Hint: You may want to use an online Regular Expression editor, like [](https://regex101.com/), for example.</source>
+      <translation>You can enter a custom Regular Expression (in Python syntax) to parse the lines of your deck list. Use *named groups* to extract the individual card properties from the individual lines of the deck list.
+A named group looks like this:
+**(?P\&lt;GroupName&gt;RE)**, where RE is a Regular Expression matching the part you want to extract, and GroupName is one of the following:
+
+- `copies`: The number of card copies. Defaults to 1, if not present
+- `name`: The card name
+- `set_code`: The 3 (or more) letter code identifying the set
+- `collector_number`: The collector number of the card
+- `language`: The card language, using a two-letter language code. If not given, the importer tries to determine the language from the card name. Defaults to &quot;en&quot; for English, if not possible.
+
+Not all groups are required for a successful match. For example, `set_code` and `collector_number` is sufficient for exact identification most of the time.
+Hint: You may want to use an online Regular Expression editor, like [](https://regex101.com/), for example.</translation>
     </message>
     <message>
-      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="316"/>
+      <location filename="../ui/deck_import_wizard/select_deck_parser_page.ui" line="317"/>
       <source>Magic Workstation Deck Data (mwDeck)</source>
       <translation>Magic Workstation Deck Data (mwDeck)</translation>
     </message>
@@ -2786,54 +2767,54 @@ p, li { white-space: pre-wrap; }
   <context>
     <name>SettingsWindow</name>
     <message>
-      <location filename="../../ui/settings_window.py" line="205"/>
+      <location filename="../../ui/settings_window.py" line="206"/>
       <source>Apply settings to the current document?</source>
       <translation>Apply settings to the current document?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="205"/>
+      <location filename="../../ui/settings_window.py" line="206"/>
       <source>The new default settings differ from the settings used by the current document.
 Apply the new settings to the current document?</source>
       <translation>The new default settings differ from the settings used by the current document.
 Apply the new settings to the current document?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="218"/>
+      <location filename="../../ui/settings_window.py" line="219"/>
       <source>Reset unsaved changes?</source>
       <translation>Reset unsaved changes?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="218"/>
+      <location filename="../../ui/settings_window.py" line="219"/>
       <source>Reset unsaved changes on the current page or on all pages?</source>
       <translation>Reset unsaved changes on the current page or on all pages?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="224"/>
+      <location filename="../../ui/settings_window.py" line="225"/>
       <source>Reset everything</source>
       <translation>Reset everything</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="225"/>
+      <location filename="../../ui/settings_window.py" line="226"/>
       <source>Reset current page</source>
       <translation>Reset current page</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="252"/>
+      <location filename="../../ui/settings_window.py" line="253"/>
       <source>Restore defaults for the current page or everything?</source>
       <translation>Restore defaults for the current page or everything?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="252"/>
+      <location filename="../../ui/settings_window.py" line="253"/>
       <source>Restore the settings on the current page or on all pages to their default values?</source>
       <translation>Restore the settings on the current page or on all pages to their default values?</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="258"/>
+      <location filename="../../ui/settings_window.py" line="259"/>
       <source>Restore everything</source>
       <translation>Restore everything</translation>
     </message>
     <message>
-      <location filename="../../ui/settings_window.py" line="259"/>
+      <location filename="../../ui/settings_window.py" line="260"/>
       <source>Restore current page</source>
       <translation>Restore current page</translation>
     </message>
@@ -2845,45 +2826,6 @@ Apply the new settings to the current document?</translation>
   </context>
   <context>
     <name>SummaryPage</name>
-    <message numerus="yes">
-      <location filename="../../ui/deck_import_wizard.py" line="471"/>
-      <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
-      <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
-      <translation>
-        <numerusform>Beware: The card list currently contains %n potentially oversized card.</numerusform>
-        <numerusform>Beware: The card list currently contains %n potentially oversized cards.</numerusform>
-      </translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="491"/>
-      <source>Replace document content with the identified cards</source>
-      <translation>Replace document content with the identified cards</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="494"/>
-      <source>Append identified cards to the document</source>
-      <translation>Append identified cards to the document</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="545"/>
-      <source>Remove basic lands</source>
-      <translation>Remove basic lands</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="546"/>
-      <source>Remove all basic lands in the deck list above</source>
-      <translation>Remove all basic lands in the deck list above</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="551"/>
-      <source>Remove selected</source>
-      <translation>Remove selected</translation>
-    </message>
-    <message>
-      <location filename="../../ui/deck_import_wizard.py" line="552"/>
-      <source>Remove all selected cards in the deck list above</source>
-      <translation>Remove all selected cards in the deck list above</translation>
-    </message>
     <message>
       <location filename="../../ui/cache_cleanup_wizard.py" line="451"/>
       <source>Images about to be deleted: {count}</source>
@@ -2893,6 +2835,45 @@ Apply the new settings to the current document?</translation>
       <location filename="../../ui/cache_cleanup_wizard.py" line="452"/>
       <source>Disk space that will be freed: {disk_space_freed}</source>
       <translation>Disk space that will be freed: {disk_space_freed}</translation>
+    </message>
+    <message numerus="yes">
+      <location filename="../../ui/deck_import_wizard.py" line="469"/>
+      <source>Beware: The card list currently contains %n potentially oversized card(s).</source>
+      <comment>Warning emitted, if at least 1 card has the oversized flag set. The Scryfall server *may* still return a regular-sized image, so not *all* printings marked as oversized are actually so when fetched.</comment>
+      <translation>
+        <numerusform>Beware: The card list currently contains %n potentially oversized card.</numerusform>
+        <numerusform>Beware: The card list currently contains %n potentially oversized cards.</numerusform>
+      </translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="489"/>
+      <source>Replace document content with the identified cards</source>
+      <translation>Replace document content with the identified cards</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="492"/>
+      <source>Append identified cards to the document</source>
+      <translation>Append identified cards to the document</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="543"/>
+      <source>Remove basic lands</source>
+      <translation>Remove basic lands</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="544"/>
+      <source>Remove all basic lands in the deck list above</source>
+      <translation>Remove all basic lands in the deck list above</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="549"/>
+      <source>Remove selected</source>
+      <translation>Remove selected</translation>
+    </message>
+    <message>
+      <location filename="../../ui/deck_import_wizard.py" line="550"/>
+      <source>Remove all selected cards in the deck list above</source>
+      <translation>Remove all selected cards in the deck list above</translation>
     </message>
     <message>
       <location filename="../ui/cache_cleanup_wizard/summary_page.ui" line="14"/>
@@ -3088,7 +3069,7 @@ If unchecked, append the cards found below to the document.</translation>
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../ui/common.py" line="113"/>
+      <location filename="../../ui/common.py" line="117"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>
