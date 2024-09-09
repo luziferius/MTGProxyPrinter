@@ -263,11 +263,14 @@ class PrintPreviewDialog(QPrintPreviewDialog):
         self.renderer.setParent(self)
         # The only way found to reliably set the window size is by forcing it larger via the minimum size.
         self.setMinimumSize(1000, 800)
-        # Resetting the minimum size to allow shrinking it again requires some delay. Directly setting the minimum size
-        # back to zero or using a shorter delay causes the window to show up in the original size.
-        QTimer.singleShot(10, partial(self.setMinimumSize, 0, 0))
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def showEvent(self, a0):
+        # Resetting the minimum size to allow shrinking it again requires some delay.
+        # So reset it once the window shows up.
+        self.setMinimumSize(0, 0)
+        super().showEvent(a0)
 
 
 class PrintDialog(QPrintDialog):
