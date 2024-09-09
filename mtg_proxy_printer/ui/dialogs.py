@@ -16,8 +16,9 @@
 import typing
 import pathlib
 import sys
+from functools import partial
 
-from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
+from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt, QTimer
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -257,9 +258,14 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
-        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super().__init__(self.qprinter, parent)
+        self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
+        super().__init__(self.q_printer, parent)
         self.renderer.setParent(self)
+        # The only way found to reliably set the window size is by forcing it larger via the minimum size.
+        self.setMinimumSize(1000, 800)
+        # Resetting the minimum size to allow shrinking it again requires some delay. Directly setting the minimum size
+        # back to zero or using a shorter delay causes the window to show up in the original size.
+        QTimer.singleShot(10, partial(self.setMinimumSize, 0, 0))
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
 
@@ -268,8 +274,8 @@ class PrintDialog(QPrintDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
-        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super().__init__(self.qprinter, parent)
+        self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
+        super().__init__(self.q_printer, parent)
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)
