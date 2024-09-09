@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import enum
+import typing
 from functools import partial
 
 from PyQt5.QtCore import Qt, QEvent
@@ -58,12 +59,8 @@ class PageRenderer(QGraphicsView):
         self.document: Document = None
         self.automatic_scaling = True
         self.setCursor(Qt.CursorShape.SizeAllCursor)
-        self.zoom_in_action = self._setup_zoom_action(StandardKey.ZoomIn, ZoomDirection.IN)
-        self.zoom_out_action = self._setup_zoom_action(StandardKey.ZoomOut, ZoomDirection.OUT)
-        zoom_in_shortcuts = ', '.join(
-            shortcut.toString(SequenceFormat.NativeText) for shortcut in self.zoom_in_action.shortcuts())
-        zoom_out_shortcuts = ', '.join(
-            shortcut.toString(SequenceFormat.NativeText) for shortcut in self.zoom_out_action.shortcuts())
+        self.zoom_in_action, zoom_in_shortcuts = self._setup_zoom_action(StandardKey.ZoomIn, ZoomDirection.IN)
+        self.zoom_out_action, zoom_out_shortcuts = self._setup_zoom_action(StandardKey.ZoomOut, ZoomDirection.OUT)
         self.setToolTip(self.tr(
             "Use Ctrl+Mouse wheel to zoom.\n"
             "Usable keyboard shortcuts are:\n"
@@ -76,12 +73,14 @@ class PageRenderer(QGraphicsView):
         self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
-    def _setup_zoom_action(self, key_sequence: StandardKey, zoom_direction: ZoomDirection) -> QAction:
+    def _setup_zoom_action(self, key_sequence: StandardKey, zoom_direction: ZoomDirection) -> typing.Tuple[QAction, str]:
         action = QAction(self)
-        action.setShortcuts(QKeySequence.keyBindings(key_sequence))
+        shortcuts = QKeySequence.keyBindings(key_sequence)
+        action.setShortcuts(shortcuts)
         action.triggered.connect(partial(self._perform_zoom_step, zoom_direction))
+        shortcut_display_texts = ', '.join(shortcut.toString(SequenceFormat.NativeText) for shortcut in shortcuts)
         self.addAction(action)
-        return action
+        return action, shortcut_display_texts
 
     def changeEvent(self, event: QEvent) -> None:
         if event.type() in {EventType.ApplicationPaletteChange, EventType.PaletteChange}:
