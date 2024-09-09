@@ -18,7 +18,7 @@ import unittest.mock
 import mtg_proxy_printer.settings
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UnitT, unit_registry
+from mtg_proxy_printer.units_and_sizes import PageType, QuantityT, UnitT, unit_registry, StrDict
 from mtg_proxy_printer.ui.page_scene import RenderMode
 
 from PyQt5.QtGui import QPageLayout, QPageSize
@@ -147,8 +147,8 @@ def test_page_layout_lt():
     assert_that(layout, is_not(less_than(layout)))
 
 
-def test_create_from_settings():
-    values = {
+@pytest.mark.parametrize("values", [
+    {
         "paper-height": "200 mm",
         "paper-width": "100 mm",
         "margin-top": "9 mm",
@@ -161,7 +161,23 @@ def test_create_from_settings():
         "print-sharp-corners": "True",
         "print-page-numbers": "True",
         "default-document-name": "Test",
-    }
+    },
+    {
+        "paper-height": "200 millimeter",
+        "paper-width": "100 millimeter",
+        "margin-top": "9 millimeter",
+        "margin-bottom": "8 millimeter",
+        "margin-left": "7 millimeter",
+        "margin-right": "6 millimeter",
+        "row-spacing": "2 millimeter",
+        "column-spacing": "1 millimeter",
+        "print-cut-marker": "True",
+        "print-sharp-corners": "True",
+        "print-page-numbers": "True",
+        "default-document-name": "Test",
+    },
+])
+def test_create_from_settings(values: StrDict):
     with unittest.mock.patch.dict(mtg_proxy_printer.settings.settings["documents"], values):
         layout = PageLayoutSettings.create_from_settings()
     assert_that(
