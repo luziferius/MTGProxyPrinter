@@ -33,7 +33,7 @@ classifiers = [
 # falling back to the slow pure Python backend.
 dependencies = [
     "platformdirs >= 2.6.0",
-    "PySide6_Essentials >= 6.5.0",
+    "PySide6_Essentials >= 6.7.0",
     "ijson >= 3.1.0; python_version < '3.11'",
     "ijson >= 3.2.0; python_version >= '3.11'",
     "ijson >= 3.2.1; python_version >= '3.12'",
@@ -106,7 +106,7 @@ version = {attr= "mtg_proxy_printer.meta_data.__version__"}
 requires = [
     "setuptools >=61",
     "wheel",
-    "PySide6-Essentials >= 6.5.0",
+    "PySide6-Essentials >= 6.7.0",
     "build",
     "tox >= 4.0",
 ]
