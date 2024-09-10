@@ -35,6 +35,9 @@
 
 ## Fixed issues
 
+- Prefer cards to tokens with the same name when selecting a printing during deck list imports.
+  This prevents the app from choosing the token for cards that can create token copies of themselves.
+  This started to be an issue with the release of the Bloomborrow set.
 - Improved performance of the image cleanup wizard, if there are many images of non-English cards stored on disk.
 - Reworded and clarified some texts in the user interface, fixed grammar and spelling mistakes
 - The main window no longer stays open unresponsive for multiple seconds when trying to exit the application

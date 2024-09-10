@@ -510,7 +510,7 @@ class CardDatabase(QObject):
             where_parameters.append(card.oracle_id)
         where_clause.append("")  # Insert final newline after joining
         query += "\n    ".join(where_clause)
-        order_by_terms = []
+        order_by_terms = ["is_token ASC"]
         if order_by_print_count:
             order_by_terms.append("LastImageUseTimestamps.usage_count DESC NULLS LAST")
         order_by_terms.append("wackiness_score ASC")
