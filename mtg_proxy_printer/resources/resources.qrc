@@ -21,6 +21,9 @@
     <!--file>translations/mtgproxyprinter_zh_CN.qm</file-->
     <!--file>translations/mtgproxyprinter_zh_TW.qm</file-->
 
+    <!-- Application icon -->
+    <file>icons/MTGPP.png</file>
+
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
     <!-- actions -->

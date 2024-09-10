@@ -16,9 +16,8 @@
 import typing
 import pathlib
 import sys
-from functools import partial
 
-from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt, QTimer
+from PyQt5.QtCore import QFile, pyqtSlot as Slot, QThreadPool, QObject, QEvent, Qt
 from PyQt5.QtWidgets import QFileDialog, QWidget, QTextBrowser, QDialogButtonBox, QDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtPrintSupport import QPrintPreviewDialog, QPrintDialog, QPrinter
@@ -188,6 +187,8 @@ class AboutDialog(QDialog):
         super().__init__(*args, **kwargs)
         self.ui = Ui_AboutDialog()
         self.ui.setupUi(self)
+        self.ui.mtg_proxy_printer_icon.setPixmap(
+            mtg_proxy_printer.ui.common.load_icon("MTGPP.png").pixmap(self.ui.mtg_proxy_printer_icon.size()))
         self._setup_about_text()
         self._setup_changelog_text()
         self._setup_license_text()
