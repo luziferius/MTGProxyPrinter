@@ -486,7 +486,7 @@ def test_subsequent_save_updates_settings(tmp_path: pathlib.Path, qtbot: QtBot, 
         document_custom_layout.loader.load_document(save_dir)
     assert_that(
         document_custom_layout.page_layout.page_height.to(mm).magnitude,
-        is_(close_to(1000, 0.001)))
+        is_(close_to_(1000)))
 
 
 def _create_save_file(temp_path: pathlib.Path, source_version: int):
@@ -564,18 +564,18 @@ def _validate_saved_document_settings(document: Document):
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
                 close_to_(page_layout.card_bleed.magnitude),
-                str(page_layout.column_spacing),
+                close_to_(page_layout.column_spacing.magnitude),
                 page_layout.document_name,
-                str(page_layout.draw_cut_markers),
-                str(page_layout.draw_sharp_corners),
-                str(page_layout.draw_page_numbers),
-                str(page_layout.margin_bottom),
-                str(page_layout.margin_left),
-                str(page_layout.margin_right),
-                str(page_layout.margin_top),
-                str(page_layout.page_height),
-                str(page_layout.page_width),
-                str(page_layout.row_spacing),
+                int(page_layout.draw_cut_markers),
+                int(page_layout.draw_sharp_corners),
+                int(page_layout.draw_page_numbers),
+                close_to_(page_layout.margin_bottom.magnitude),
+                close_to_(page_layout.margin_left.magnitude),
+                close_to_(page_layout.margin_right.magnitude),
+                close_to_(page_layout.margin_top.magnitude),
+                close_to_(page_layout.page_height.magnitude),
+                close_to_(page_layout.page_width.magnitude),
+                close_to_(page_layout.row_spacing.magnitude),
             )
         )
 
