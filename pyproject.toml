@@ -58,7 +58,7 @@ dev = [
     "pytest-qt >= 2.0",
     "tox >= 4.0",
     "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
-    "PySide6; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
+    "PySide6_Essentials; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 package = [
@@ -67,7 +67,7 @@ package = [
     # Limit to 7.1 for now, until a fix is found
     "cx_Freeze >= 6.11.1, < 7.2; platform.python_implementation == 'CPython'",
     "PySide2; platform_system == 'Windows' and python_version < '3.12'",  # Used for lrelease: Compiling translations
-    "PySide6; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
+    "PySide6_Essentials; platform_system == 'Windows' and python_version >= '3.12'",  # Used for lrelease: Compiling translations
     "pillow; platform_system == 'Windows'",  # Used to convert the app icon to .ico
 ]
 
