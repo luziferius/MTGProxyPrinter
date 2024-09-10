@@ -4,8 +4,8 @@
 
 ## New features
 
-- Localization support. Translations are managed on [Crowdin.com](https://crowdin.com/project/mtgproxyprinter).   
-  Join, if you want to contribute translations :)
+- Localization support. Translations are managed on [Crowdin.com](https://crowdin.com/project/mtgproxyprinter). 
+    - Join there, if you want to contribute translations :)
     - Interface language is chosen based on the system locale, but can be explicitly set in the application settings.
     - Currently, the app includes translations into US English and German.
     - Goal is translations into all languages in which Magic sets get printed.
