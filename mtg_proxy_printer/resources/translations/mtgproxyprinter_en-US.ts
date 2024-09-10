@@ -14,7 +14,47 @@
       <translation>About</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="59"/>
+      <location filename="../ui/about_dialog.ui" line="107"/>
+      <source>Python runtime version</source>
+      <translation>Python runtime version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="87"/>
+      <source>Python Version:</source>
+      <translation>Python Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="39"/>
+      <source>Application Version:</source>
+      <translation>Application Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="62"/>
+      <source>Application version</source>
+      <translation>Application version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="55"/>
+      <source>Last card update:</source>
+      <translation>Last card update:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="214"/>
+      <source>Changelog</source>
+      <translation>Changelog</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="228"/>
+      <source>License</source>
+      <translation>License</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="239"/>
+      <source>Third party licenses</source>
+      <translation>Third Party licenses</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="123"/>
       <source>{application_name} allows printing 
 [Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
 purposes.
@@ -30,6 +70,7 @@ nor any documents created, both in digital and physical form.
 
 Project Website: [{application_name} home page]({application_home_page})
 
+Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </source>
       <translation>{application_name} allows printing 
 [Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
@@ -46,47 +87,8 @@ nor any documents created, both in digital and physical form.
 
 Project Website: [{application_name} home page]({application_home_page})
 
+Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="84"/>
-      <source>Python runtime version</source>
-      <translation>Python runtime version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="94"/>
-      <source>Python Version:</source>
-      <translation>Python Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="101"/>
-      <source>Application Version:</source>
-      <translation>Application Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="134"/>
-      <source>Application version</source>
-      <translation>Application version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="153"/>
-      <source>Last card update:</source>
-      <translation>Last card update:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="173"/>
-      <source>Changelog</source>
-      <translation>Changelog</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="187"/>
-      <source>License</source>
-      <translation>License</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="198"/>
-      <source>Third party licenses</source>
-      <translation>Third Party licenses</translation>
     </message>
   </context>
   <context>
@@ -845,7 +847,7 @@ switch the selected printing.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="320"/>
+      <location filename="../../ui/dialogs.py" line="321"/>
       <source>These settings only affect the current document</source>
       <translation>These settings only affect the current document</translation>
     </message>
@@ -1511,7 +1513,7 @@ and is thus unavailable for printing.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="163"/>
+      <location filename="../../ui/dialogs.py" line="162"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>Load MTGProxyPrinter document</translation>
     </message>
@@ -1683,7 +1685,7 @@ Enabling this can potentially save disk space and download volume, based on the 
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="120"/>
+      <location filename="../../ui/dialogs.py" line="119"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter document (*.{default_save_suffix})</translation>
@@ -2524,7 +2526,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="133"/>
+      <location filename="../../ui/dialogs.py" line="132"/>
       <source>Save document as …</source>
       <translation>Save document as …</translation>
     </message>
@@ -2532,12 +2534,12 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="79"/>
+      <location filename="../../ui/dialogs.py" line="78"/>
       <source>Export as PDF</source>
       <translation>Export as PDF</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="80"/>
+      <location filename="../../ui/dialogs.py" line="79"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF documents (*.pdf)</translation>
     </message>
@@ -3083,7 +3085,7 @@ If unchecked, append the cards found below to the document.</translation>
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../ui/common.py" line="117"/>
+      <location filename="../../ui/common.py" line="126"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>

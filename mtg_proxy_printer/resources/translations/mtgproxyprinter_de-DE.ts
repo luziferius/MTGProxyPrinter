@@ -14,7 +14,47 @@
       <translation>Über</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="59"/>
+      <location filename="../ui/about_dialog.ui" line="107"/>
+      <source>Python runtime version</source>
+      <translation>Benutzte Python-Version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="87"/>
+      <source>Python Version:</source>
+      <translation>Python-Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="39"/>
+      <source>Application Version:</source>
+      <translation>Anwendungsversion:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="62"/>
+      <source>Application version</source>
+      <translation>Anwendungsversion</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="55"/>
+      <source>Last card update:</source>
+      <translation>Letzte Kartenaktualisierung:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="214"/>
+      <source>Changelog</source>
+      <translation>Änderungsprotokoll</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="228"/>
+      <source>License</source>
+      <translation>Lizenzvereinbarung</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="239"/>
+      <source>Third party licenses</source>
+      <translation>Drittanbieter-Lizenzen</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="123"/>
       <source>{application_name} allows printing 
 [Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
 purposes.
@@ -30,6 +70,7 @@ nor any documents created, both in digital and physical form.
 
 Project Website: [{application_name} home page]({application_home_page})
 
+Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </source>
       <translation>{application_name} erlaubt das Drucken von 
 [Magic: The Gathering](https://magic.wizards.com/) Karten zum Zwecke des Testens.
@@ -43,47 +84,8 @@ Im Rahmen der Fan-Inhaltsrichtlinie dürfen Sie die mit diesem Programm herunter
 
 Projekt-Website: [{application_name} Homepage]({application_home_page})
 
+Anwendungsicon von [islanders2013](https://www.reddit.com/user/islanders2013/)
 </translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="84"/>
-      <source>Python runtime version</source>
-      <translation>Benutzte Python-Version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="94"/>
-      <source>Python Version:</source>
-      <translation>Python-Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="101"/>
-      <source>Application Version:</source>
-      <translation>Anwendungsversion:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="134"/>
-      <source>Application version</source>
-      <translation>Anwendungsversion</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="153"/>
-      <source>Last card update:</source>
-      <translation>Letzte Kartenaktualisierung:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="173"/>
-      <source>Changelog</source>
-      <translation>Änderungsprotokoll</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="187"/>
-      <source>License</source>
-      <translation>Lizenzvereinbarung</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="198"/>
-      <source>Third party licenses</source>
-      <translation>Drittanbieter-Lizenzen</translation>
     </message>
   </context>
   <context>
@@ -841,7 +843,7 @@ zu wechseln.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="320"/>
+      <location filename="../../ui/dialogs.py" line="321"/>
       <source>These settings only affect the current document</source>
       <translation>Diese Einstellungen betreffen nur das aktuelle Dokument</translation>
     </message>
@@ -1506,7 +1508,7 @@ versteckt und ist daher nicht verfügbar.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="163"/>
+      <location filename="../../ui/dialogs.py" line="162"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>MTGProxyPrinter-Dokument laden</translation>
     </message>
@@ -1678,7 +1680,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="120"/>
+      <location filename="../../ui/dialogs.py" line="119"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter-Dokument (*.{default_save_suffix})</translation>
@@ -2517,7 +2519,7 @@ Aktivieren sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="133"/>
+      <location filename="../../ui/dialogs.py" line="132"/>
       <source>Save document as …</source>
       <translation>Dokument speichern unter …</translation>
     </message>
@@ -2525,12 +2527,12 @@ Aktivieren sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="79"/>
+      <location filename="../../ui/dialogs.py" line="78"/>
       <source>Export as PDF</source>
       <translation>Als PDF exportieren</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="80"/>
+      <location filename="../../ui/dialogs.py" line="79"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF-Dokument (*.pdf)</translation>
     </message>
@@ -3074,7 +3076,7 @@ Wenn nicht ausgewählt, füge die unten gefundenen Karten dem Dokument an.</tran
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../ui/common.py" line="117"/>
+      <location filename="../../ui/common.py" line="126"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>
