@@ -12,13 +12,15 @@
 - The deck import wizard can now directly download Scryfall search queries as deck lists
     - Added a text field to enter a Scryfall card search query, a button to show the result on the Scryfall website,
       and a button that downloads the search result as a deck list.
+    - Downloaded search results are treated as a list of singleton cards.
 - Add option to fully automatically remove basic lands from all imported deck lists.
     - When enabled in the settings, basic lands are automatically stripped from deck lists.
       Otherwise, the previous behavior, offering removal via a button click, is retained.
     - The option honors the settings regarding inclusion of Wastes or Snow-Covered basic lands.
 - Add new card filter to hide Art Series cards, which can be enabled in the application settings.
     - When updating from previous versions, the filter becomes functional after the next card data update.
-- Add a live-updating preview to the document settings window. 
+- Add a live-updating preview to the document settings window.
+- The app now has an icon. Provided by [islanders2013](https://www.reddit.com/user/islanders2013/)
 
 ## Changed features
 

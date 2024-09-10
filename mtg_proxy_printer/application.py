@@ -219,6 +219,8 @@ class Application(QApplication):
         # To test if the current platform has native icon theme support, check, if QIcon.fallbackThemeName() returns
         # a non-empty string. If it is empty, explicitly set the name of the internal icon theme. This will load the
         # internal icons.
+        application_icon = mtg_proxy_printer.ui.common.load_icon("MTGPP_clean.png")
+        self.setWindowIcon(application_icon)
         fallback_icon_theme = QIcon.fallbackThemeName()
         if not fallback_icon_theme:
             logger.info(

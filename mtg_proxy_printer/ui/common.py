@@ -108,6 +108,15 @@ def load_ui_from_file(name: str):
     base_type, _ = uic.loadUiType(file_path, from_imports=True)
     return base_type
 
+def load_icon(name: str) -> QIcon:
+    file_path = f"{RESOURCE_PATH_PREFIX}/icons/{name}"
+    if not QFile.exists(file_path):
+        error_message = f"Icon not found: {file_path}"
+        logger.error(error_message)
+        raise FileNotFoundError(error_message)
+    icon = QIcon(file_path)
+    return icon
+
 def markdown_to_html(markdown: str) -> str:
     browser = QTextEdit()
     browser.setMarkdown(markdown)
