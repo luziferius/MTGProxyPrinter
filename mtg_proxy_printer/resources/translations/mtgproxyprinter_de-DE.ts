@@ -841,7 +841,7 @@ zu wechseln.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="311"/>
+      <location filename="../../ui/dialogs.py" line="320"/>
       <source>These settings only affect the current document</source>
       <translation>Diese Einstellungen betreffen nur das aktuelle Dokument</translation>
     </message>
@@ -1506,7 +1506,7 @@ versteckt und ist daher nicht verfügbar.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="162"/>
+      <location filename="../../ui/dialogs.py" line="163"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>MTGProxyPrinter-Dokument laden</translation>
     </message>
@@ -1678,7 +1678,7 @@ Aktivieren kann möglicherweise Speicherplatz auf der Festplatte und Datenvolume
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="119"/>
+      <location filename="../../ui/dialogs.py" line="120"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter-Dokument (*.{default_save_suffix})</translation>
@@ -2433,6 +2433,20 @@ Andernfalls sind zwei Schnitte erforderlich, die jedoch weniger Präzision erfor
     </message>
   </context>
   <context>
+    <name>PageRenderer</name>
+    <message>
+      <location filename="../../ui/page_renderer.py" line="64"/>
+      <source>Use Ctrl+Mouse wheel to zoom.
+Usable keyboard shortcuts are:
+Zoom in: {zoom_in_shortcuts}
+Zoom out: {zoom_out_shortcuts}</source>
+      <translation>Mit Strg+Mausrad zoomen.
+Verwendbare Tastaturkürzeln sind:
+Zoom in: {zoom_in_shortcuts}
+Zoom aus: {zoom_out_shortcuts}</translation>
+    </message>
+  </context>
+  <context>
     <name>ParserBase</name>
     <message>
       <location filename="../../decklist_parser/common.py" line="67"/>
@@ -2503,7 +2517,7 @@ Aktivieren sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="132"/>
+      <location filename="../../ui/dialogs.py" line="133"/>
       <source>Save document as …</source>
       <translation>Dokument speichern unter …</translation>
     </message>
@@ -2511,12 +2525,12 @@ Aktivieren sie dies, wenn das Drucken von Querformat-Dokumenten zu Ausdrucken im
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="78"/>
+      <location filename="../../ui/dialogs.py" line="79"/>
       <source>Export as PDF</source>
       <translation>Als PDF exportieren</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="79"/>
+      <location filename="../../ui/dialogs.py" line="80"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF-Dokument (*.pdf)</translation>
     </message>

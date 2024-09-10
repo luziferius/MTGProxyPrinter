@@ -845,7 +845,7 @@ switch the selected printing.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="311"/>
+      <location filename="../../ui/dialogs.py" line="320"/>
       <source>These settings only affect the current document</source>
       <translation>These settings only affect the current document</translation>
     </message>
@@ -1511,7 +1511,7 @@ and is thus unavailable for printing.</translation>
   <context>
     <name>LoadDocumentDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="162"/>
+      <location filename="../../ui/dialogs.py" line="163"/>
       <source>Load MTGProxyPrinter document</source>
       <translation>Load MTGProxyPrinter document</translation>
     </message>
@@ -1683,7 +1683,7 @@ Enabling this can potentially save disk space and download volume, based on the 
   <context>
     <name>LoadSaveDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="119"/>
+      <location filename="../../ui/dialogs.py" line="120"/>
       <source>MTGProxyPrinter document (*.{default_save_suffix})</source>
       <comment>Human-readable file type name</comment>
       <translation>MTGProxyPrinter document (*.{default_save_suffix})</translation>
@@ -2440,6 +2440,20 @@ otherwise you need two cuts but require less precision hitting the exact middle.
     </message>
   </context>
   <context>
+    <name>PageRenderer</name>
+    <message>
+      <location filename="../../ui/page_renderer.py" line="64"/>
+      <source>Use Ctrl+Mouse wheel to zoom.
+Usable keyboard shortcuts are:
+Zoom in: {zoom_in_shortcuts}
+Zoom out: {zoom_out_shortcuts}</source>
+      <translation>Use Ctrl+Mouse wheel to zoom.
+Usable keyboard shortcuts are:
+Zoom in: {zoom_in_shortcuts}
+Zoom out: {zoom_out_shortcuts}</translation>
+    </message>
+  </context>
+  <context>
     <name>ParserBase</name>
     <message>
       <location filename="../../decklist_parser/common.py" line="67"/>
@@ -2510,7 +2524,7 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SaveDocumentAsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="132"/>
+      <location filename="../../ui/dialogs.py" line="133"/>
       <source>Save document as …</source>
       <translation>Save document as …</translation>
     </message>
@@ -2518,12 +2532,12 @@ Enable this, if printing landscape documents results in portrait printouts with 
   <context>
     <name>SavePDFDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="78"/>
+      <location filename="../../ui/dialogs.py" line="79"/>
       <source>Export as PDF</source>
       <translation>Export as PDF</translation>
     </message>
     <message>
-      <location filename="../../ui/dialogs.py" line="79"/>
+      <location filename="../../ui/dialogs.py" line="80"/>
       <source>PDF documents (*.pdf)</source>
       <translation>PDF documents (*.pdf)</translation>
     </message>
