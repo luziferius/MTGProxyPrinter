@@ -14,25 +14,19 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import contextlib
-import dataclasses
 import itertools
-import functools
-import typing
-from numbers import Real
 import pathlib
 import sqlite3
 import unittest.mock
 import textwrap
 
 import pint
-from hamcrest.core.matcher import Matcher
 from pint.facets import QuantityT
 from pytestqt.qtbot import QtBot
 import pytest
 from hamcrest import *
 
 import mtg_proxy_printer.model.document_loader
-from mtg_proxy_printer.model.document_loader import PageLayoutSettings
 from tests.helpers import quantity_close_to
 from mtg_proxy_printer.units_and_sizes import PageType, unit_registry, UnitT
 from mtg_proxy_printer.model.carddb import CheckCard
@@ -40,7 +34,6 @@ import mtg_proxy_printer.model.document
 import mtg_proxy_printer.sqlite_helpers
 
 CardType = mtg_proxy_printer.model.document_loader.CardType
-close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
 mm: UnitT = unit_registry.mm
 
 

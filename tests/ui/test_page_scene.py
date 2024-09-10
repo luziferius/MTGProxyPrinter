@@ -34,10 +34,10 @@ from mtg_proxy_printer.document_controller.compact_document import ActionCompact
 from mtg_proxy_printer.model.document import Document
 
 from ..document_controller.helpers import create_card
+from tests.helpers import close_to_
 from tests.hasgetter import has_getters, has_getter
 
 PATH_PREFIX = "mtg_proxy_printer.ui.page_renderer.PageScene."
-close_to_ = partial(close_to, delta=0.005)
 RenderHint = QPainter.RenderHint
 mm: UnitT = unit_registry.mm
 

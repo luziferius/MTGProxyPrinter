@@ -685,6 +685,69 @@ def _migrate_31_to_32(db: sqlite3.Connection):
 def _migrate_32_to_33(db: sqlite3.Connection):
     db.execute("CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id);\n")
 
+def _migrate_33_to_34(db: sqlite3.Connection):
+    for statement in [
+        "DROP VIEW VisiblePrintings;",
+        "DROP VIEW AllPrintings;",
+        "CREATE INDEX PrintingDisplayFilter_Printing_from_filter_lookup ON PrintingDisplayFilter(filter_id);",
+        textwrap.dedent("""\
+        CREATE VIEW VisiblePrintings AS
+        WITH 
+          double_faced_printings(printing_id, is_dfc) AS (
+          SELECT DISTINCT printing_id, TRUE as is_dfc
+            FROM CardFace
+            WHERE is_front IS FALSE),
+            
+          token_printings(printing_id, is_token) AS (
+          SELECT printing_id, TRUE AS is_token
+            FROM DisplayFilters
+            JOIN PrintingDisplayFilter USING (filter_id)
+            WHERE filter_name = 'hide-token')
+          
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+            is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, release_date,
+            coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc,
+            coalesce(token_printings.is_token, FALSE) as is_token
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)
+          LEFT OUTER JOIN token_printings USING (printing_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE
+        ;"""),
+        textwrap.dedent("""\
+        CREATE VIEW AllPrintings AS
+        WITH 
+        double_faced_printings(printing_id, is_dfc) AS (
+          SELECT DISTINCT printing_id, TRUE as is_dfc
+            FROM CardFace
+            WHERE is_front IS FALSE),
+        
+        token_printings(printing_id, is_token) AS (
+          SELECT printing_id, TRUE AS is_token
+            FROM DisplayFilters
+            JOIN PrintingDisplayFilter USING (filter_id)
+            WHERE filter_name = 'hide-token')
+        
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+             is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden,
+             coalesce(double_faced_printings.is_dfc, FALSE) as is_dfc,
+             coalesce(token_printings.is_token, FALSE) as is_token
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)
+          LEFT OUTER JOIN token_printings USING (printing_id)
+        ;"""),
+    ]:
+        db.execute(statement+"\n")
 
 MIGRATION_SCRIPTS: MigrationScriptListing = (
     # First component of each tuple contains the source schema version, second contains the migration script function.
@@ -713,6 +776,7 @@ MIGRATION_SCRIPTS: MigrationScriptListing = (
     (30, _migrate_30_to_31),
     (31, _migrate_31_to_32),
     (32, _migrate_32_to_33),
+    (33, _migrate_33_to_34),
 )
 
 

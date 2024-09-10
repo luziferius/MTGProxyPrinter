@@ -13,11 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import functools
-import typing
 from unittest.mock import patch
 
-import hamcrest.core.matcher
 import pint
 from PyQt5.QtWidgets import QDoubleSpinBox, QCheckBox
 
@@ -31,8 +28,7 @@ from mtg_proxy_printer.ui.page_config_widget import PageConfigWidget
 from mtg_proxy_printer.units_and_sizes import unit_registry, UnitT, QuantityT
 
 from tests.hasgetter import has_getter
-from tests.helpers import quantity_close_to, quantity_between, number_between
-close_to_: typing.Callable[[float], hamcrest.core.matcher.Matcher] = functools.partial(close_to, delta=0.01)
+from tests.helpers import quantity_close_to, quantity_between, number_between, close_to_
 mm: UnitT = unit_registry.mm
 
 @pytest.fixture()
