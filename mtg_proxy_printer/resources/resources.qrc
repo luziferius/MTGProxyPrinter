@@ -23,6 +23,7 @@
 
     <!-- Application icon -->
     <file>icons/MTGPP.png</file>
+    <file>icons/MTGPP_clean.png</file>
 
     <!-- Icons, sourced from Breeze icon theme, licensed under LGPL -->
     <file>icons/breeze/index.theme</file>
