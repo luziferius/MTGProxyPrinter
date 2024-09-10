@@ -18,12 +18,15 @@ import functools
 import json
 import os
 import typing
+from functools import partial
+from numbers import Real
 from unittest.mock import patch, MagicMock
 
 from hamcrest.core.base_matcher import BaseMatcher
 from hamcrest import assert_that, is_, empty, contains_inanyorder, has_properties, equal_to, any_of, instance_of, \
     close_to, all_of, greater_than_or_equal_to, less_than_or_equal_to
 from hamcrest.core.description import Description
+from hamcrest.core.matcher import Matcher
 from pytestqt.qtbot import QtBot
 
 import mtg_proxy_printer.model
@@ -34,6 +37,7 @@ from mtg_proxy_printer.units_and_sizes import CardDataType, StrDict, QuantityT
 import mtg_proxy_printer.logger
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.sqlite_helpers import read_resource_text
+
 
 
 def _should_skip_network_tests() -> bool:
@@ -48,6 +52,7 @@ def _should_skip_network_tests() -> bool:
 
 
 SHOULD_SKIP_NETWORK_TESTS = _should_skip_network_tests()
+close_to_: typing.Callable[[Real], Matcher] = functools.partial(close_to, delta=0.01)
 
 
 def setup_logging_for_testing():

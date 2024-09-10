@@ -43,6 +43,7 @@ from mtg_proxy_printer.document_controller.page_actions import ActionNewPage
 from mtg_proxy_printer.document_controller.card_actions import ActionAddCard
 from mtg_proxy_printer.document_controller.edit_document_settings import ActionEditDocumentSettings
 
+from tests.helpers import close_to_
 from .document_controller.helpers import insert_card_in_page, create_card
 
 ItemDataRole = Qt.ItemDataRole
@@ -562,7 +563,7 @@ def _validate_saved_document_settings(document: Document):
         assert_that(
             [value for value, in save.execute(query).fetchall()],
             contains_exactly(
-                str(page_layout.card_bleed),
+                close_to_(page_layout.card_bleed.magnitude),
                 str(page_layout.column_spacing),
                 page_layout.document_name,
                 str(page_layout.draw_cut_markers),
