@@ -31,9 +31,10 @@ def renderer(qtbot, document_light):
     Creates a PageRenderer.
     Note: qtbot fixture parameter is required for the implicitly provided event loop. Qt segfaults without it present
     """
-    page_renderer = PageRenderer()
-    page_renderer.set_document(document_light)
-    yield page_renderer
+    with patch(PATH_PREFIX+"PageRenderer._perform_zoom_step"):
+        page_renderer = PageRenderer()
+        page_renderer.set_document(document_light)
+        yield page_renderer
 
 
 @pytest.fixture(params=[QEvent.ApplicationPaletteChange, QEvent.PaletteChange])
@@ -52,6 +53,5 @@ def test_renderer_redraws_scene_on_palette_change(renderer: PageRenderer, palett
     ("zoom_in_action", ZoomDirection.IN), ("zoom_out_action", ZoomDirection.OUT)])
 def test_renderer_zoom_action_triggers_zoom(renderer: PageRenderer, zoom_action: str, direction: ZoomDirection):
     action: QAction = getattr(renderer, zoom_action)
-    with patch(PATH_PREFIX+"PageRenderer._perform_zoom_step") as zoom_step_mock:
-        action.trigger()
-    zoom_step_mock.assert_called_once_with(direction)
+    action.trigger()
+    renderer._perform_zoom_step.assert_called_once_with(direction)

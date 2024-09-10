@@ -196,6 +196,8 @@ def card_db_with_cards(qtbot, card_db: CardDatabase):
             "regular_english_card",
             "english_double_faced_card",
             "english_double_faced_art_series_card",
+            "Flowerfoot_Swordmaster_card",
+            "Flowerfoot_Swordmaster_token",
         ],
     )
     return card_db
@@ -388,6 +390,11 @@ def generate_test_cases_for_test_get_cards_from_data():
     ]
     # Empty result set
     yield CardIdentificationData(scryfall_id="invalid"), []
+    # Prefer cards to tokens with the same name
+    yield CardIdentificationData(name="Flowerfoot Swordmaster"), [
+        TestCaseData("Flowerfoot_Swordmaster_card").as_card(),
+        TestCaseData("Flowerfoot_Swordmaster_token").as_card(),
+    ]
 
 
 @pytest.mark.parametrize("card_data, expected", generate_test_cases_for_test_get_cards_from_data())
@@ -404,6 +411,22 @@ def test_get_cards_from_data(
         )
     )
 
+@pytest.mark.parametrize("card_data, expected", [
+            (CardIdentificationData(name="Flowerfoot Swordmaster"), [
+        TestCaseData("Flowerfoot_Swordmaster_card").as_card(),
+        TestCaseData("Flowerfoot_Swordmaster_token").as_card(),
+    ])
+])
+def test_get_cards_from_data_always_prefers_card_over_token(
+        card_db_with_cards: CardDatabase,
+        card_data: CardIdentificationData, expected: CardList):
+    cards = card_db_with_cards.get_cards_from_data(card_data)
+    assert_that(
+        cards,
+        contains_exactly(
+            *map(is_dataclass_equal_to, expected)
+        )
+    )
 
 def generate_test_cases_for_test_get_card_with_scryfall_id() -> \
         typing.Generator[typing.Tuple[CardIdentificationData, typing.Optional[Card]], None, None]:
@@ -463,27 +486,28 @@ def test_get_card_with_scryfall_id(
 
 
 @pytest.mark.parametrize("language", ["en", None])
-@pytest.mark.parametrize("card_count_data", [
-    [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)],
-    [("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)],
+@pytest.mark.parametrize("card_count_data, expected_index, identification_data", [
+    ([("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 2), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 1)], 0, CardIdentificationData(name="Forest")),
+    ([("7ef83f4c-d3ff-4905-a16d-f2bae673a5b2", 1), ("e2ef9b74-481b-424b-8e33-f0b910f66370", 2)], 1, CardIdentificationData(name="Forest")),
 ])
 def test_get_cards_from_data_order_by_print_count_enabled(
-        qtbot, card_db: CardDatabase, language: OptString, card_count_data):
+        qtbot, card_db: CardDatabase, language: OptString, card_count_data, expected_index: int, identification_data: CardIdentificationData):
     fill_card_database_with_json_cards(qtbot, card_db, ["english_basic_Forest", "english_basic_Forest_2"])
     card_db.db.executemany(
         "INSERT INTO LastImageUseTimestamps (scryfall_id, is_front, usage_count) VALUES (?, 1, ?)",
         card_count_data
     )
-    card_data = CardIdentificationData(language, name="Forest")
-    cards = card_db.get_cards_from_data(card_data, order_by_print_count=True)
+    identification_data.language = language
+    cards = card_db.get_cards_from_data(identification_data, order_by_print_count=True)
+    other_index = int(not expected_index)
     assert_that(
         cards,
         contains_exactly(
             has_property("scryfall_id", equal_to(
-                card_count_data[0 if card_count_data[0][1] > card_count_data[1][1] else 1][0]
+                card_count_data[expected_index][0]
             )),
             has_property("scryfall_id", equal_to(
-                card_count_data[1 if card_count_data[0][1] > card_count_data[1][1] else 0][0]
+                card_count_data[other_index][0]
             )),
         )
     )

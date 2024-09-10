@@ -187,6 +187,8 @@ class AboutDialog(QDialog):
         super().__init__(*args, **kwargs)
         self.ui = Ui_AboutDialog()
         self.ui.setupUi(self)
+        self.ui.mtg_proxy_printer_icon.setPixmap(
+            mtg_proxy_printer.ui.common.load_icon("MTGPP.png").pixmap(self.ui.mtg_proxy_printer_icon.size()))
         self._setup_about_text()
         self._setup_changelog_text()
         self._setup_license_text()
@@ -257,19 +259,27 @@ class PrintPreviewDialog(QPrintPreviewDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
-        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super().__init__(self.qprinter, parent)
+        self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
+        super().__init__(self.q_printer, parent)
         self.renderer.setParent(self)
+        # The only way found to reliably set the window size is by forcing it larger via the minimum size.
+        self.setMinimumSize(1000, 800)
         self.paintRequested.connect(self.renderer.print_document)
         logger.info(f"Created {self.__class__.__name__} instance.")
+
+    def showEvent(self, a0):
+        # Resetting the minimum size to allow shrinking it again requires some delay.
+        # So reset it once the window shows up.
+        self.setMinimumSize(0, 0)
+        super().showEvent(a0)
 
 
 class PrintDialog(QPrintDialog):
 
     def __init__(self, document: mtg_proxy_printer.model.document.Document, parent: QWidget = None):
         self.renderer = mtg_proxy_printer.print.Renderer(document)
-        self.qprinter = mtg_proxy_printer.print.create_printer(self.renderer)
-        super().__init__(self.qprinter, parent)
+        self.q_printer = mtg_proxy_printer.print.create_printer(self.renderer)
+        super().__init__(self.q_printer, parent)
         self.renderer.setParent(self)
         # When the user accepts the dialog, print the document and increase the usage counts
         self.accepted[QPrinter].connect(self.renderer.print_document)

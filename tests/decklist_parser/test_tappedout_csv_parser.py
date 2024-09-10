@@ -21,7 +21,7 @@ from hamcrest import *
 
 from mtg_proxy_printer.model.carddb import CardDatabase, Card, CardIdentificationData
 from mtg_proxy_printer.decklist_parser.csv_parsers import TappedOutCSVParser
-from mtg_proxy_printer.decklist_downloader import DecklistDownloader
+from mtg_proxy_printer.decklist_downloader import TappedOutDownloader
 
 from tests.helpers import fill_card_database_with_json_cards, SHOULD_SKIP_NETWORK_TESTS
 
@@ -40,7 +40,7 @@ def append_to_header(plain_deck_list: str) -> str:
 ])
 def test_local_header_conforms_to_current_scryfall_return_data(url: str, header: str):
     """Verifies that the hard-coded CSV headers above match what the API returns"""
-    downloader = DecklistDownloader()
+    downloader = TappedOutDownloader()
     result = downloader.download(url)
     expected = result.splitlines()[0]
     assert_that(

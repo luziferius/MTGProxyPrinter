@@ -14,7 +14,47 @@
       <translation>About</translation>
     </message>
     <message>
-      <location filename="../ui/about_dialog.ui" line="59"/>
+      <location filename="../ui/about_dialog.ui" line="107"/>
+      <source>Python runtime version</source>
+      <translation>Python runtime version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="87"/>
+      <source>Python Version:</source>
+      <translation>Python Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="39"/>
+      <source>Application Version:</source>
+      <translation>Application Version:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="62"/>
+      <source>Application version</source>
+      <translation>Application version</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="55"/>
+      <source>Last card update:</source>
+      <translation>Last card update:</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="214"/>
+      <source>Changelog</source>
+      <translation>Changelog</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="228"/>
+      <source>License</source>
+      <translation>License</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="239"/>
+      <source>Third party licenses</source>
+      <translation>Third Party licenses</translation>
+    </message>
+    <message>
+      <location filename="../ui/about_dialog.ui" line="123"/>
       <source>{application_name} allows printing 
 [Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
 purposes.
@@ -30,6 +70,7 @@ nor any documents created, both in digital and physical form.
 
 Project Website: [{application_name} home page]({application_home_page})
 
+Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </source>
       <translation>{application_name} allows printing 
 [Magic: The Gathering](https://magic.wizards.com/) cards for play-testing
@@ -46,47 +87,8 @@ nor any documents created, both in digital and physical form.
 
 Project Website: [{application_name} home page]({application_home_page})
 
+Application icon by [islanders2013](https://www.reddit.com/user/islanders2013/)
 </translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="84"/>
-      <source>Python runtime version</source>
-      <translation>Python runtime version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="94"/>
-      <source>Python Version:</source>
-      <translation>Python Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="101"/>
-      <source>Application Version:</source>
-      <translation>Application Version:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="134"/>
-      <source>Application version</source>
-      <translation>Application version</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="153"/>
-      <source>Last card update:</source>
-      <translation>Last card update:</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="173"/>
-      <source>Changelog</source>
-      <translation>Changelog</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="187"/>
-      <source>License</source>
-      <translation>License</translation>
-    </message>
-    <message>
-      <location filename="../ui/about_dialog.ui" line="198"/>
-      <source>Third party licenses</source>
-      <translation>Third Party licenses</translation>
     </message>
   </context>
   <context>
@@ -845,7 +847,7 @@ switch the selected printing.</translation>
   <context>
     <name>DocumentSettingsDialog</name>
     <message>
-      <location filename="../../ui/dialogs.py" line="311"/>
+      <location filename="../../ui/dialogs.py" line="321"/>
       <source>These settings only affect the current document</source>
       <translation>These settings only affect the current document</translation>
     </message>
@@ -2440,6 +2442,20 @@ otherwise you need two cuts but require less precision hitting the exact middle.
     </message>
   </context>
   <context>
+    <name>PageRenderer</name>
+    <message>
+      <location filename="../../ui/page_renderer.py" line="64"/>
+      <source>Use Ctrl+Mouse wheel to zoom.
+Usable keyboard shortcuts are:
+Zoom in: {zoom_in_shortcuts}
+Zoom out: {zoom_out_shortcuts}</source>
+      <translation>Use Ctrl+Mouse wheel to zoom.
+Usable keyboard shortcuts are:
+Zoom in: {zoom_in_shortcuts}
+Zoom out: {zoom_out_shortcuts}</translation>
+    </message>
+  </context>
+  <context>
     <name>ParserBase</name>
     <message>
       <location filename="../../decklist_parser/common.py" line="67"/>
@@ -3069,7 +3085,7 @@ If unchecked, append the cards found below to the document.</translation>
   <context>
     <name>format_size</name>
     <message>
-      <location filename="../../ui/common.py" line="117"/>
+      <location filename="../../ui/common.py" line="126"/>
       <source>{size} {unit}</source>
       <comment>A formatted file size in SI bytes</comment>
       <translation>{size} {unit}</translation>

@@ -14,6 +14,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import enum
+import typing
+from functools import partial
 
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtWidgets import QGraphicsView, QWidget
@@ -32,6 +34,9 @@ __all__ = [
     "PageRenderer",
 ]
 DragMode = QGraphicsView.DragMode
+StandardKey = QKeySequence.StandardKey
+SequenceFormat = QKeySequence.SequenceFormat
+EventType = QEvent.Type
 
 
 @enum.unique
@@ -55,25 +60,31 @@ class PageRenderer(QGraphicsView):
         self.document: Document = None
         self.automatic_scaling = True
         self.setCursor(Qt.CursorShape.SizeAllCursor)
-        self.zoom_in_action = QAction(self)
-        self.zoom_in_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomIn))
-        self.zoom_in_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.IN))
-        self.zoom_out_action = QAction(self)
-        self.zoom_out_action.setShortcuts(QKeySequence.keyBindings(QKeySequence.ZoomOut))
-        self.zoom_out_action.triggered.connect(lambda: self._perform_zoom_step(ZoomDirection.OUT))
-        self.addActions((self.zoom_in_action, self.zoom_out_action))
-        self.setToolTip(
-            # TODO Find a better way to handle translation of the Ctrl key in the first line
-            f"Use {QKeySequence('Ctrl+A').toString(QKeySequence.NativeText).split('+')[0]}+Mouse wheel to zoom.\n"
-            f"Usable keyboard shortcuts are:\n"
-            f"Zoom in: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_in_action.shortcuts())}\n"
-            f"Zoom out: {', '.join(shortcut.toString(QKeySequence.NativeText) for shortcut in self.zoom_out_action.shortcuts())}"
-        )
+        self.zoom_in_action, zoom_in_shortcuts = self._setup_zoom_action(StandardKey.ZoomIn, ZoomDirection.IN)
+        self.zoom_out_action, zoom_out_shortcuts = self._setup_zoom_action(StandardKey.ZoomOut, ZoomDirection.OUT)
+        self.setToolTip(self.tr(
+            "Use Ctrl+Mouse wheel to zoom.\n"
+            "Usable keyboard shortcuts are:\n"
+            "Zoom in: {zoom_in_shortcuts}\n"
+            "Zoom out: {zoom_out_shortcuts}"
+        ).format(
+            zoom_in_shortcuts=zoom_in_shortcuts,
+            zoom_out_shortcuts=zoom_out_shortcuts,
+        ))
         self._update_background_brush()
         logger.info(f"Created {self.__class__.__name__} instance.")
 
+    def _setup_zoom_action(self, key_sequence: StandardKey, zoom_direction: ZoomDirection) -> typing.Tuple[QAction, str]:
+        action = QAction(self)
+        shortcuts = QKeySequence.keyBindings(key_sequence)
+        action.setShortcuts(shortcuts)
+        action.triggered.connect(partial(self._perform_zoom_step, zoom_direction))
+        shortcut_display_texts = ', '.join(shortcut.toString(SequenceFormat.NativeText) for shortcut in shortcuts)
+        self.addAction(action)
+        return action, shortcut_display_texts
+
     def changeEvent(self, event: QEvent) -> None:
-        if event.type() in {QEvent.Type.ApplicationPaletteChange, QEvent.Type.PaletteChange}:
+        if event.type() in {EventType.ApplicationPaletteChange, EventType.PaletteChange}:
             self._update_background_brush()
             self.scene().setPalette(self.palette())
             event.accept()
@@ -81,7 +92,7 @@ class PageRenderer(QGraphicsView):
             super().changeEvent(event)
 
     def _update_background_brush(self):
-        self.setBackgroundBrush(self.palette().color(QPalette.Active, QPalette.Window))
+        self.setBackgroundBrush(self.palette().color(QPalette.ColorGroup.Active, QPalette.ColorRole.Window))
 
     def set_document(self, document: Document):
         logger.info("Document instance received, creating PageScene.")

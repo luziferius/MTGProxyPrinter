@@ -22,9 +22,10 @@ import sys
 
 from cx_Freeze import setup, Executable
 
-
+ROOT_DIR = pathlib.Path(__file__).parent
 main_package = "mtg_proxy_printer"
-meta_data = pathlib.Path(f"{main_package}/meta_data.py").read_text()
+resources_path = ROOT_DIR/main_package/"resources"
+meta_data = (ROOT_DIR/main_package/"meta_data.py").read_text()
 version = re.search(
     r"""^__version__\s*=\s*"(.*)"\s*""",
     meta_data,
@@ -89,6 +90,19 @@ if sys.platform == "win32":
         "platformdirs.unix",
     ]
 
+def get_icon() -> str:
+    source_path = ROOT_DIR/"resources.bak"/"icons"/"MTGPP.png"
+    if sys.platform == "win32":
+        dest = ROOT_DIR/"MTGPP.ico"
+        if not dest.exists():
+            from PIL import Image
+            with Image.open(source_path) as src:
+                src.save(dest, "ICO")
+        return str(dest)
+    else:
+        return str(source_path)
+
+icon = get_icon()
 
 setup_parameters = {
     "executables": [
@@ -98,6 +112,8 @@ setup_parameters = {
             target_name=project_name,
             shortcut_name=project_name,
             shortcut_dir='StartMenuFolder',
+            icon=icon,
+            copyright="© 2020-2024 Thomas Hess <thomas.hess@udo.edu>"
         ),
     ],
     "options": {
@@ -108,6 +124,7 @@ setup_parameters = {
             "upgrade_code": "{15a9e385-f6ab-4aa4-8ef1-3f2cf5c193a8}",
             "target_name": project_name,
             "skip_build": True,
+            "install_icon": icon,
         },
         "build_exe": {
             "packages": [
