@@ -43,44 +43,42 @@ base = "Win32GUI" if sys.platform == "win32" else None
 excludes  = [
     f"{main_package}.resources",  # Do not include the raw resources as individual files
     "distutils",
-    "lib2to3",
-    "pep517",
-    "pytest",
-    "pydoc_data",
-    "tkinter",
-    "toml",
-    "sqlite3.test",  # Ignore the internal test suite
-    "pint.testsuite",  # Ignore the internal test suite
     "ijson.benchmark",  # Ignore the benchmark script added after ijson 3.2.3
     "importlib_metadata",
+    "lib2to3",
+    "pep517",
+    "pint.testsuite",  # Ignore the internal test suite
+    "pydoc_data",
+    "pytest",
+    "sqlite3.test",  # Ignore the internal test suite
+    "tkinter",
+    "toml",
     # Empty package with readme and download scripts
     "ctypes.test",
     # Unused PySide6 components
-    "PySide6.plugins.achssetimporters",
-    "PySide6.plugibns.sqldrivers",  # Use Python native sqlite3 module instead
-    "PySide6.plugins.qmltooling",
-    "PySide6.plugins.designer",
-    "PySide6.plugins.tls",
     "PySide6.glue",
     "PySide6.include",
+    "PySide6.metatypes",
+    "PySide6.plugins.assetimporters",
+    "PySide6.plugins.canbus",
+    "PySide6.plugins.designer",
+    "PySide6.plugins.geometryloaders",
+    "PySide6.plugins.geoservices",
+    "PySide6.plugins.multimedia",
+    "PySide6.plugins.networkinformation",
+    "PySide6.plugins.position",
+    "PySide6.plugins.qmltooling",
+    "PySide6.plugins.scxmldatamodel",
+    "PySide6.plugins.sensors",
+    "PySide6.plugins.sqldrivers",  # Use Python native sqlite3 module instead
+    "PySide6.plugins.tls",
+    "PySide6.qml",
+    "PySide6.QtAsyncio",
+    "PySide6.resources",
     "PySide6.scripts",
     "PySide6.support",
-    "PySide6.metatypes",
-    "PySide6.qml",
+    "PySide6.translations.qtwebengine_locales",
     "PySide6.typesystems",
-    "PySide6.resources",
-    # Unused PySide6 modules
-    "PySide6.QtSql",
-    "PySide6.QtDBus",
-    "PySide6.QtDesigner",
-    "PySide6.QtTest",
-    "PySide6.QtQml",
-    "PySide6.QtQuick",
-    "PySide6.QtQuickControls2",
-    "PySide6.QtQuickWidgets",
-    "PySide6.QtNetwork",
-    "PySide6.QtLanguageServer",
-
 ]
 
 if sys.platform == "win32":

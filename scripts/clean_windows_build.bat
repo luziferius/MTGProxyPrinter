@@ -19,53 +19,41 @@ if "%1%"=="" (
   pushd "%1"
 )
 
-
 pushd lib
-
-:: Some versions of cx_Freeze copy the python DLL here
-:: So remove duplicates, if present
-del ijson\backends\python*.dll
-
 
 pushd PySide6
 
-:: Don't need the executables, like Qt6 Designer, etc
-del *.exe
-del QtRemoteObjects.pyd QtSerialPort.pyd QtSensors.pyd QtNetwork.pyd QtXml.pyd QtXmlPatterns.pyd pyrcc.pyd
+:: Don't need the executables, like Qt6 Designer, etc.
+:: Delete all typing stubs
+del *.exe *.pyi
 
-:: Remove unused QML-related DLLs and bindings
-del Qt*Qml* Qt*Quick* Qt*Labs*
-del Qt6Designer.dll QtDesigets.dll Qt5RemoteObjects.dll
-del Qt5Sensors.dll Qt5SerialPort.dll Qt5Sql.dll Qt5Test.dll Qt5WebChannel.dll
-dener.pyi QtDesigner.pyd
-del Qt*Test*
+:: Remove unused components. Each consists of a pair of QtComponent.pyd and Qt6Component.dll
+del Q*tSerialPort* Qt*DBus* Qt*Designer* Qt*JsonRpc* Qt*Labs* Qt*LanguageServer* Qt*Network*
+del Qt*Qml* Qt*Quick* Qt*RemoteObjects* Qt*Sensors* Qt*Sql* Qt*Test* Qt*WebChannel*
+del Qt*Bluetooth* Qt*Charts* Qt*Concurrent* Qt*DataVisualization* Qt*Graphs* Qt*HttpServer*
+del Qt*Nfc* Qt*Positioning* Qt*Scxml* Qt*SerialBus* Qt*SerialPort* Qt*ShaderTools*
+del Qt*StateMachine* Qt*Test* Qt*TextToSpeech* Qt*Web* Qt*3D*
+del Qt*Help* Qt*Multimedia* Qt*Xml*
+
+:: Unused audio/video codec DLLs
+del avformat-*.dll avutil-*.dll swresample-*.dll swscale-*.dll
 :: Unused OpenGL bindings. The Qt6OpenGL DLLs are required and thus not removed
 del QtOpenGL.pyd QtOpenGLWidgets.pyd opengl32sw.dll
-del Qt*DBus*
-del Qt*JsonRpc*
-del Qt*Sql*
-del Qt*Network*
-del Qt*LanguageServer*
-:: Delete all typing stubs
-del *.pyi
+
 
 pushd translations
 :: Remove translations for unused/removed components
 del assistant* designer* linguist* qtdeclarative*
+
 :: leave translations
 popd
 
 pushd plugins
-:: The application does not use the SQL modules built into Qt, ~2.2 MiB
-del /S /Q sqldrivers
-pushd imageformats
-:: Unused image format libraries, around 1.3 MiB
-del qwebp.dll qtiff.dll qjpeg.dll
-::leave imageformats
-popd
+del /Q /S tls
 
 :: leave plugins
 popd
+
 :: leave PySide6
 popd
 
