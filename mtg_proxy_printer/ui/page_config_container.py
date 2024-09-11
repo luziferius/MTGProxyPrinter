@@ -37,18 +37,16 @@ class PageConfigContainer(QWidget):
         super().__init__(parent)
         self.ui = ui = Ui_PageConfigContainer()
         ui.setupUi(self)
-        page_layout_changed = ui.page_config_widget.page_layout_changed
-        page_layout_changed.connect(
-            partial(setattr, ui.page_config_preview_area.document, "page_layout")
-        )
-        page_layout_changed.connect(
-            ui.page_config_preview_area.on_page_layout_changed
-        )
-        page_layout_changed.connect(
-            ui.page_config_preview_area.document.page_layout_changed
-        )
-        ui.page_config_widget.ui.show_preview_button.toggled.connect(ui.page_config_preview_area.setVisible)
-        logger.info(f"Created {self.__class__.__name__} instance")
 
-    def hide_preview_button(self):
-        self.ui.page_config_widget.hide_preview_button()
+        preview_area = ui.page_config_preview_area
+        config_widget = ui.page_config_widget
+
+        self.hide_preview_button = config_widget.hide_preview_button
+
+        page_layout_changed = config_widget.page_layout_changed
+        page_layout_changed.connect(partial(setattr, preview_area.document, "page_layout"))
+        page_layout_changed.connect(preview_area.on_page_layout_changed)
+        page_layout_changed.connect(preview_area.document.page_layout_changed)
+
+        config_widget.ui.show_preview_button.toggled.connect(preview_area.setVisible)
+        logger.info(f"Created {self.__class__.__name__} instance")
