@@ -42,10 +42,10 @@ class PageConfigContainer(QWidget):
             partial(setattr, ui.page_config_preview_area.document, "page_layout")
         )
         page_layout_changed.connect(
-            ui.page_config_preview_area.on_page_layout_changed
+            ui.page_config_preview_area.document.page_layout_changed
         )
         page_layout_changed.connect(
-            ui.page_config_preview_area.document.page_layout_changed
+            ui.page_config_preview_area.on_page_layout_changed
         )
         ui.page_config_widget.ui.show_preview_button.toggled.connect(ui.page_config_preview_area.setVisible)
         logger.info(f"Created {self.__class__.__name__} instance")
