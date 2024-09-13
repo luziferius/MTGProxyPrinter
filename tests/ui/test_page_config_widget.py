@@ -110,6 +110,20 @@ def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: 
     assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
 
 
+@pytest.mark.parametrize("attribute_name", [
+    "document_name",
+])
+def test_set_line_edits(qtbot: QtBot, widget: PageConfigWidget, attribute_name: str):
+    ui = widget.ui
+    assert_that(ui, has_property(attribute_name, instance_of(QLineEdit)))
+    assert_that(widget.page_layout, has_property(attribute_name, instance_of(str)))
+    line_edit: QLineEdit = getattr(ui, attribute_name)
+    new_value = "Test"
+    with qtbot.waitSignals([line_edit.textChanged, widget.page_layout_changed], timeout=100):
+        line_edit.setText(new_value)
+    assert_that(widget.page_layout, has_property(attribute_name, equal_to(new_value)))
+
+
 ZeroMarginsSettings = {
     "paper-height": "297 mm",
     "paper-width": "210 mm",
