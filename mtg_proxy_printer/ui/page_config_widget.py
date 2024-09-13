@@ -63,11 +63,13 @@ class PageConfigWidget(QGroupBox):
                 partial(self.set_numerical_page_layout_item, page_layout, layout_key, "mm"))
             spinbox.valueChanged[float].connect(self.validate_paper_size_settings)
             spinbox.valueChanged[float].connect(self.on_page_layout_setting_changed)
+            spinbox.valueChanged[float].connect(lambda: self.page_layout_changed.emit(page_layout))
         for checkbox in (
                 ui.draw_cut_markers, ui.draw_sharp_corners, ui.draw_page_numbers):
             layout_key = checkbox.objectName()
             checkbox.stateChanged.connect(
                 partial(self.set_boolean_page_layout_item, page_layout, layout_key))
+            checkbox.stateChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         ui.document_name.textChanged.connect(partial(setattr, page_layout, "document_name"))
         ui.document_name.textChanged.connect(lambda: self.page_layout_changed.emit(page_layout))
         return page_layout
