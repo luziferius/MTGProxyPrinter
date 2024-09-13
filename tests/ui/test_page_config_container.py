@@ -33,6 +33,7 @@ def container(qtbot: QtBot):
     qtbot.add_widget(container)
     return container
 
+
 @pytest.mark.parametrize(
     "widget_name",
     ["draw_cut_markers", "draw_sharp_corners", "draw_page_numbers"])
@@ -43,11 +44,11 @@ def test_boolean_settings_change_signal_connection_from_config_widget_to_preview
     widget: QCheckBox = getattr(page_config_widget.ui, widget_name)
     original_state: bool = getattr(document.page_layout, widget_name)
 
-    with qtbot.wait_signal(page_config_widget.page_layout_changed):
+    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.toggle()
     assert_that(getattr(document.page_layout, widget_name), is_(not original_state))
 
-    with qtbot.wait_signal(page_config_widget.page_layout_changed):
+    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.toggle()
     assert_that(getattr(document.page_layout, widget_name), is_(original_state))
 
@@ -67,19 +68,20 @@ def test_decimal_settings_change_signal_connection_from_config_widget_to_preview
     original_value: QuantityT = getattr(document.page_layout, widget_name)
     diff: QuantityT = 1*unit_registry.mm
 
-    with qtbot.wait_signal(page_config_widget.page_layout_changed):
+    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setValue((original_value+diff).magnitude)
     assert_that(
         getattr(document.page_layout, widget_name),
         is_(quantity_close_to(original_value + diff)),
         f"Failing widget: {widget_name}")
 
-    with qtbot.wait_signal(page_config_widget.page_layout_changed):
+    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setValue(original_value.magnitude)
     assert_that(
         getattr(document.page_layout, widget_name),
         is_(quantity_close_to(original_value)),
         f"Failing widget: {widget_name}")
+
 
 @pytest.mark.parametrize(
     "widget_name",[
@@ -93,14 +95,14 @@ def test_textual_settings_change_signal_connection_from_config_widget_to_preview
     original_value: str = getattr(document.page_layout, widget_name)
     new_value = "Test"
 
-    with qtbot.wait_signal(page_config_widget.page_layout_changed):
+    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setText(new_value)
     assert_that(
         getattr(document.page_layout, widget_name),
         is_(new_value),
         f"Failing widget: {widget_name}")
 
-    with qtbot.wait_signal(page_config_widget.page_layout_changed):
+    with qtbot.wait_signal(page_config_widget.page_layout_changed, timeout=100):
         widget.setText(original_value)
     assert_that(
         getattr(document.page_layout, widget_name),
