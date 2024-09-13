@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from PySide6.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
+from PyQt5.QtWidgets import QCheckBox, QDoubleSpinBox, QLineEdit
 
 import pytest
 from pytestqt.qtbot import QtBot
