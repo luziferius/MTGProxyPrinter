@@ -1,6 +1,12 @@
 # Changelog
 
-# Version 0.29.0 (2024-09-08)  <a name="v0_29_0"></a>
+# Version 0.29.0 (2024-09-14)  <a name="v0_29_0"></a>
+
+## Fixed issues
+
+- Fixed broken PDF export option
+
+# Version 0.29.0 (2024-09-13)  <a name="v0_29_0"></a>
 
 ## New features
 
