@@ -78,7 +78,7 @@ class PDFPrinter(QPdfWriter):
                  document_index: int = 0, pages_to_print: int = None):
         self.document = document
         self.document_index = document_index
-        self.pages_to_print: int = pages_to_print or document.rowCount()
+        self.pages_to_print = pages_to_print = pages_to_print or document.rowCount()
         self.landscape_workaround_enabled = settings["pdf-export"].getboolean("landscape-compatibility-workaround")
         if pages_to_print < document.rowCount():
             path = Path(file_path)
@@ -97,7 +97,7 @@ class PDFPrinter(QPdfWriter):
         logger.info(f"Created {self.__class__.__name__} instance.")
 
     def _to_page_size(self, layout: PageLayoutSettings) -> QPageSize:
-        size = QSizeF(layout.page_width, layout.page_height)
+        size = QSizeF(layout.page_width.magnitude, layout.page_height.magnitude)
         if layout.page_width > layout.page_height and self.landscape_workaround_enabled:
             size.transpose()
         return QPageSize(size, QPageSize.Unit.Millimeter)
