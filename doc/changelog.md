@@ -1,6 +1,10 @@
 # Changelog
 
-# Version 0.29.0 (2024-09-14)  <a name="v0_29_0"></a>
+# Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>
+
+## Changed features
+
+- Include support for more image formats in the Windows build, increasing compatibility with custom card images
 
 ## Fixed issues
 
