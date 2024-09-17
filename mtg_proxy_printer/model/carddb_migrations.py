@@ -22,6 +22,7 @@ To add a new migration function:
 - Append an entry with a reference to the added function to the MIGRATION_SCRIPTS tuple
 """
 
+import dataclasses
 import datetime
 import socket
 import sqlite3
@@ -47,14 +48,68 @@ __all__ = [
     "migrate_card_database_location",
 ]
 
-MigrationScript = Iterable[Union[LiteralString, Tuple[LiteralString, Any]]]
-MigrationFunction = Callable[[sqlite3.Connection], MigrationScript]
+@dataclasses.dataclass
+class MigrationScript:
+    script: List[Union[LiteralString, str]] = None
 
-#MigrationScript = Iterable[Union[LiteralString, Tuple[LiteralString, Iterable[Any]]]]
-MigrationScriptListing = Dict[int, Union[MigrationScript, MigrationFunction]]
+    def get_script(self, db: sqlite3.Connection) -> List[LiteralString]:
+        """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
+        if self.script is None:
+            raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
+        return self.script
 
-MIGRATION_SCRIPTS: MigrationScriptListing = {
-    9: [
+
+class Migrate_21_to_22(MigrationScript):
+
+    def get_script(self, db: sqlite3.Connection) -> List[LiteralString]:
+        return list(self._migrate_21_to_22(db))
+
+    def _migrate_21_to_22(self, db: sqlite3.Connection):
+        # Full edit procedure not needed here, because the table has no indices or foreign keys associated
+        # Import locally to break a cyclic dependency
+        import mtg_proxy_printer.card_info_downloader
+        from mtg_proxy_printer.model.carddb import CardDatabase
+        # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
+        dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabase(":memory:"))
+        updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
+        data = []
+        for id_, timestamp in updates:
+            url_parameters = urllib.parse.urlencode({
+                "include_multilingual": "true",
+                "include_variations": "true",
+                "include_extras": "true",
+                "unique": "prints",
+                "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
+            })
+            try:
+                card_count = next(dw.read_json_card_data_from_url(
+                    f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
+                ))
+            except (urllib.error.URLError, socket.error):
+                card_count = 0
+            data.append((id_, timestamp, card_count))
+            time.sleep(
+                0.1)  # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
+
+        logger.info(f"Acquired data for upgrade to schema version 22: {data}")
+        yield dedent("""\
+        CREATE TABLE LastDatabaseUpdateNew (
+          -- Contains the history of all performed card data updates
+          update_id             INTEGER NOT NULL PRIMARY KEY,
+          update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
+          reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
+        );
+        """)
+        yield (
+            "INSERT INTO LastDatabaseUpdateNew (update_id, update_timestamp, reported_card_count) VALUES (?, ?, ?)",
+            data
+        )
+        yield "DROP TABLE LastDatabaseUpdate"
+        yield "ALTER TABLE LastDatabaseUpdateNew RENAME TO LastDatabaseUpdate"
+
+
+MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
+    9: MigrationScript([
         # Schema version 9 did not store if a card was a front or back face.
         # This information can only be obtained by re-populating
         # the database using fresh data from Scryfall.
@@ -73,8 +128,8 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
           JOIN "Set" USING (set_id)
           JOIN Card USING (card_id)
           JOIN PrintLanguage USING(language_id)"""),
-    ],
-    10: [
+    ]),
+    10: MigrationScript([
         "DROP VIEW AllPrintings",
         dedent("""\
         CREATE VIEW AllPrintings AS
@@ -86,16 +141,16 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
           JOIN Card USING (card_id)
           JOIN PrintLanguage USING(language_id)"""),
         "CREATE INDEX CardFace_card_id_index ON CardFace (card_id)",
-    ],
-    11: [
+    ]),
+    11: MigrationScript([
         dedent("""\
         CREATE TABLE UsedDownloadSettings (
           -- This table contains the download filter settings used during the card data import
           setting TEXT NOT NULL PRIMARY KEY,
           "value" INTEGER NOT NULL CHECK ("value" IN (0, 1)) DEFAULT 1
         )"""),
-    ],
-    12: [
+    ]),
+    12: MigrationScript([
         dedent("""\
         CREATE TABLE LastImageUseTimestamps (
           -- Used to store the last image use timestamp and usage count of each image.
@@ -108,27 +163,27 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
           PRIMARY KEY (scryfall_id, is_front)
           -- No foreign key relation here. This table should be persistent across card data downloads
         )"""),
-    ],
-    13: [
+    ]),
+    13: MigrationScript([
         "CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)",
-    ],
-    14: [
+    ]),
+    14: MigrationScript([
         "ALTER TABLE LastDatabaseUpdate ADD COLUMN newest_card_timestamp TIMESTAMP WITH TIME ZONE NULL",
         # Re-use the update timestamp. This is good enough for this purpose.
         "UPDATE LastDatabaseUpdate SET newest_card_timestamp = substr(update_timestamp, 0, 11)",
-    ],
-    15: [
+    ]),
+    15: MigrationScript([
         # These two indices were useless indices containing a UNIQUE column plus the integer primary key.
         # The UNIQUE constraint is already implemented by a UNIQUE INDEX, the PK is implicitly always part of the index.
         "DROP INDEX LanguageIndex",
         "DROP INDEX SetAbbreviationIndex",
-    ],
-    16: [
+    ]),
+    16: MigrationScript([
         "DROP INDEX CardFace_card_id_index",
         # Index was recommended by SQLite’s expert mode, so extend index CardFace_card_id_index with column is_front
         "CREATE INDEX CardFace_card_id_index ON CardFace (card_id, is_front)",
-    ],
-    17: [
+    ]),
+    17: MigrationScript([
         "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE NewFaceName (
@@ -189,8 +244,8 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
         "CREATE INDEX CardFace_scryfall_id_index ON CardFace (scryfall_id, is_front)",
         "PRAGMA foreign_key_check",
         "PRAGMA foreign_keys = ON",
-    ],
-    18: [
+    ]),
+    18: MigrationScript([
         "PRAGMA foreign_keys = OFF",
         dedent("""\
         CREATE TABLE Printing (
@@ -250,11 +305,11 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
           JOIN PrintLanguage USING(language_id)"""),
         "PRAGMA foreign_key_check",
         "PRAGMA foreign_keys = ON",
-    ],
-    19: [
+    ]),
+    19: MigrationScript([
         "CREATE INDEX CardFace_Index_for_card_lookup_by_scryfall_id_and_is_front ON CardFace(is_front, printing_id)"
-    ],
-    20: [
+    ]),
+    20: MigrationScript([
         "PRAGMA foreign_keys = OFF",
         "DROP VIEW AllPrintings",
         dedent("""\
@@ -290,9 +345,9 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
           JOIN PrintLanguage USING(language_id)"""),
         "PRAGMA foreign_key_check",
         "PRAGMA foreign_keys = ON",
-    ],
-    21: _migrate_21_to_22,
-    22: [
+    ]),
+    21: Migrate_21_to_22(),
+    22: MigrationScript([
         dedent("""\
         CREATE TABLE RemovedPrintings (
           scryfall_id TEXT NOT NULL PRIMARY KEY,
@@ -300,196 +355,109 @@ MIGRATION_SCRIPTS: MigrationScriptListing = {
           language TEXT NOT NULL,
           oracle_id TEXT NOT NULL
         )"""),
-    ],
-    23: [
-    ],
-    24: [
-    ],
-    25: [
-    ],
-    26: [
-    ],
-    27: [
-    ],
-    28: [
-    ],
-    29: [
-    ],
-    30: [
-    ],
-    31: [
-    ],
-    32: [
-    ],
-    33: [
-    ],
-    34: [
-    ],
-}
-
-
-def _migrate_21_to_22(db: sqlite3.Connection):
-    # Full edit procedure not needed here, because the table has no indices or foreign keys associated
-    # Import locally to break a cyclic dependency
-    import mtg_proxy_printer.card_info_downloader
-    from mtg_proxy_printer.model.carddb import CardDatabase
-    # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
-    dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabase(":memory:"))
-    updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
-    data = []
-    for id_, timestamp in updates:
-        url_parameters = urllib.parse.urlencode({
-            "include_multilingual": "true",
-            "include_variations": "true",
-            "include_extras": "true",
-            "unique": "prints",
-            "q": f"date>1970-01-01 date<={datetime.datetime.fromisoformat(timestamp).date()}"
-        })
-        try:
-            card_count = next(dw.read_json_card_data_from_url(
-                f'https://api.scryfall.com/cards/search?{url_parameters}', 'total_cards'
-            ))
-        except (urllib.error.URLError, socket.error):
-            card_count = 0
-        data.append((id_, timestamp, card_count))
-        time.sleep(0.1)  # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
-
-    logger.info(f"Acquired data for upgrade to schema version 22: {data}")
-    yield dedent("""\
-    CREATE TABLE LastDatabaseUpdateNew (
-      -- Contains the history of all performed card data updates
-      update_id             INTEGER NOT NULL PRIMARY KEY,
-      update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
-      reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
-    );
-    """)
-    yield (
-        "INSERT INTO LastDatabaseUpdateNew (update_id, update_timestamp, reported_card_count) VALUES (?, ?, ?)",
-        data
-    )
-    yield "DROP TABLE LastDatabaseUpdate"
-    yield "ALTER TABLE LastDatabaseUpdateNew RENAME TO LastDatabaseUpdate"
-
-
-
-def _migrate_23_to_24(db: sqlite3.Connection):
-    db.executescript(dedent("""\
-    BEGIN TRANSACTION;
-    ALTER TABLE Printing ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
-    ALTER TABLE FaceName ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE;
-    CREATE TABLE DisplayFilters (
-      filter_id INTEGER NOT NULL PRIMARY KEY,
-      filter_name TEXT NOT NULL UNIQUE,
-      filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
-    );
-    DROP TABLE UsedDownloadSettings;
-    CREATE TABLE PrintingDisplayFilter (
-      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
-      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
-      filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
-      PRIMARY KEY (printing_id, filter_id)
-    );
-    CREATE VIEW HiddenPrintings AS
-      SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
-      FROM PrintingDisplayFilter
-      JOIN DisplayFilters USING (filter_id)
-      GROUP BY printing_id
-    ;
-    DROP VIEW AllPrintings;
-    CREATE VIEW AllPrintings AS
-      SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
-             highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
-      FROM Card
-      JOIN Printing USING (card_id)
-      JOIN "Set" USING (set_id)
-      JOIN CardFace USING (printing_id)
-      JOIN FaceName USING (face_name_id)
-      JOIN PrintLanguage USING (language_id)
-      WHERE Printing.is_hidden IS FALSE
-        AND FaceName.is_hidden IS FALSE
-    ;
-    CREATE INDEX Printing_is_hidden
-      ON Printing(printing_id, is_hidden);
-    DROP INDEX FaceNameLanguageToCardNameIndex;
-    CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, is_hidden, card_name COLLATE NOCASE);
-    ANALYZE;
-    """))
-
-
-def _migrate_24_to_25(db: sqlite3.Connection):
-    db.executescript(dedent("""\
-    BEGIN TRANSACTION;
-    DROP VIEW HiddenPrintings;
-    CREATE TABLE PrintingDisplayFilter2 (
-      -- Stores which filter applies to which printing.
-      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
-      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
-      filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
-      PRIMARY KEY (printing_id, filter_id)
-    ) WITHOUT ROWID;
-    INSERT INTO PrintingDisplayFilter2 (printing_id, filter_id, filter_applies)
-      SELECT printing_id, filter_id, filter_applies
-      FROM PrintingDisplayFilter;
-    DROP TABLE PrintingDisplayFilter;
-    ALTER TABLE PrintingDisplayFilter2 RENAME TO PrintingDisplayFilter;
-    CREATE VIEW HiddenPrintings AS
-      SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
-      FROM PrintingDisplayFilter
-      JOIN DisplayFilters USING (filter_id)
-      GROUP BY printing_id
-    ;
-    COMMIT;
-    VACUUM;
-    BEGIN TRANSACTION;
-    """))
-
-
-def _migrate_25_to_26(db: sqlite3.Connection):
-    db.executescript(dedent("""\
-    PRAGMA foreign_keys = OFF;
-    BEGIN TRANSACTION;
-    CREATE TABLE "Set2" (
-      set_id   INTEGER PRIMARY KEY NOT NULL,
-      set_code TEXT NOT NULL UNIQUE,
-      set_name TEXT NOT NULL,
-      set_uri  TEXT NOT NULL,
-      release_date TEXT NOT NULL,
-      wackiness_score INTEGER NOT NULL CHECK (wackiness_score >= 0)
-    );
-    INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date, wackiness_score)
-      -- Default to neutral values for new columns. Subsequent card data updates will update the values accordingly.
-      -- Use a date far in the future, because the importer can only date sets back.
-      SELECT set_id, "set", set_name, set_uri, '9999-01-01', 0
-      FROM "Set";
-    DROP VIEW AllPrintings;
-    -- Rename the old table first, to update the FOREIGN KEY relation in the Printing table. Then drop and replace
-    -- it with the new table definition. Without this, the Printing table will still hold a reference to the old name.
-    ALTER TABLE "Set" RENAME TO MTGSet;
-    DROP TABLE MTGSet;
-    ALTER TABLE "Set2" RENAME TO MTGSet;
-    CREATE VIEW  AllPrintings AS
-      SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
-             highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
-      FROM Card
-      JOIN Printing USING (card_id)
-      JOIN MTGSet   USING (set_id)
-      JOIN CardFace USING (printing_id)
-      JOIN FaceName USING (face_name_id)
-      JOIN PrintLanguage USING (language_id)
-      WHERE Printing.is_hidden IS FALSE
-        AND FaceName.is_hidden IS FALSE
-    ;
-    PRAGMA foreign_key_check;
-    COMMIT;
-    PRAGMA foreign_keys = ON;
-    ANALYZE;
-    VACUUM;
-    BEGIN TRANSACTION;
-    """))
-
-
-def _migrate_26_to_27(db: sqlite3.Connection):
-    for statement in [
+    ]),
+    23: MigrationScript([
+        "ALTER TABLE Printing ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE",
+        "ALTER TABLE FaceName ADD COLUMN is_hidden INTEGER NOT NULL CHECK (is_hidden IN (TRUE, FALSE)) DEFAULT FALSE",
+        dedent("""\
+        CREATE TABLE DisplayFilters (
+          filter_id INTEGER NOT NULL PRIMARY KEY,
+          filter_name TEXT NOT NULL UNIQUE,
+          filter_active INTEGER NOT NULL CHECK (filter_active IN (TRUE, FALSE))
+        )"""),
+        "DROP TABLE UsedDownloadSettings",
+        dedent("""\
+        CREATE TABLE PrintingDisplayFilter (
+          printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+          filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+          filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+          PRIMARY KEY (printing_id, filter_id)
+        )"""),
+        dedent("""\
+        CREATE VIEW HiddenPrintings AS
+          SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
+          FROM PrintingDisplayFilter
+          JOIN DisplayFilters USING (filter_id)
+          GROUP BY printing_id"""),
+        "DROP VIEW AllPrintings",
+        dedent("""\
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
+                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN "Set" USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE"""),
+        "CREATE INDEX Printing_is_hidden ON Printing(printing_id, is_hidden)",
+        "DROP INDEX FaceNameLanguageToCardNameIndex",
+        "CREATE INDEX FaceNameLanguageToCardNameIndex ON FaceName(language_id, is_hidden, card_name COLLATE NOCASE)",
+    ]),
+    24: MigrationScript([
+        "DROP VIEW HiddenPrintings",
+        dedent("""\
+        CREATE TABLE PrintingDisplayFilter2 (
+          -- Stores which filter applies to which printing.
+          printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+          filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+          filter_applies INTEGER NOT NULL CHECK (filter_applies IN (TRUE, FALSE)),
+          PRIMARY KEY (printing_id, filter_id)
+        ) WITHOUT ROWID"""),
+        dedent("""\
+        INSERT INTO PrintingDisplayFilter2 (printing_id, filter_id, filter_applies)
+          SELECT printing_id, filter_id, filter_applies
+          FROM PrintingDisplayFilter"""),
+        "DROP TABLE PrintingDisplayFilter",
+        "ALTER TABLE PrintingDisplayFilter2 RENAME TO PrintingDisplayFilter",
+        dedent("""\
+        CREATE VIEW HiddenPrintings AS
+          SELECT printing_id, sum(filter_applies * filter_active) > 0 AS should_be_hidden
+          FROM PrintingDisplayFilter
+          JOIN DisplayFilters USING (filter_id)
+          GROUP BY printing_id"""),
+    ]),
+    25: MigrationScript([
+        "PRAGMA foreign_keys = OFF",
+        dedent("""\
+        CREATE TABLE "Set2" (
+          set_id   INTEGER PRIMARY KEY NOT NULL,
+          set_code TEXT NOT NULL UNIQUE,
+          set_name TEXT NOT NULL,
+          set_uri  TEXT NOT NULL,
+          release_date TEXT NOT NULL,
+          wackiness_score INTEGER NOT NULL CHECK (wackiness_score >= 0)
+        )"""),
+        # Default to neutral values for new columns. Subsequent card data updates will update the values accordingly.
+        # Use a date far in the future, because the importer can only date sets back.
+        dedent('''\
+        INSERT INTO "Set2" (set_id, set_code, set_name, set_uri, release_date, wackiness_score)
+          SELECT set_id, "set", set_name, set_uri, '9999-01-01', 0
+          FROM "Set"'''),
+        "DROP VIEW AllPrintings",
+        # Rename the old table first, to update the FOREIGN KEY relation in the Printing table. Then drop and replace
+        # it with the new table definition. Without this, the Printing table will still hold a reference to the old name.
+        'ALTER TABLE "Set" RENAME TO MTGSet',
+        "DROP TABLE MTGSet",
+        'ALTER TABLE "Set2" RENAME TO MTGSet',
+        dedent("""\
+        CREATE VIEW  AllPrintings AS
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id,
+                 highres_image, face_number, is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)
+          WHERE Printing.is_hidden IS FALSE
+            AND FaceName.is_hidden IS FALSE"""),
+        "PRAGMA foreign_key_check",
+        "PRAGMA foreign_keys = ON",
+    ]),
+    26: MigrationScript([
         "UPDATE MTGSet SET release_date = '9999-01-01' WHERE release_date = '1970-01-01'",
         "CREATE INDEX FaceName_for_translation ON FaceName(language_id, card_name DESC)",
         "CREATE INDEX CardFace_for_translation ON CardFace(face_name_id, face_number, printing_id)",
@@ -518,12 +486,8 @@ def _migrate_26_to_27(db: sqlite3.Connection):
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)"""),
-    ]:
-        db.execute(f"{statement};\n")
-
-
-def _migrate_27_to_28(db: sqlite3.Connection):
-    for statement in [
+    ]),
+    27: MigrationScript([
         "DROP VIEW AllPrintings",
         "DROP VIEW VisiblePrintings",
         dedent("""\
@@ -549,67 +513,54 @@ def _migrate_27_to_28(db: sqlite3.Connection):
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)"""),
-    ]:
-        db.execute(statement)
-
-
-def _migrate_28_to_29(db: sqlite3.Connection):
-    db.execute("DROP VIEW HiddenPrintings\n")
-    db.execute(dedent("""\
-    CREATE TABLE PrintingDisplayFilter2 (
-      -- Stores which filter applies to which printing.
-      printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
-      filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
-      PRIMARY KEY (printing_id, filter_id)
-    ) WITHOUT ROWID;
-    """))
-    db.execute(dedent("""\
-    INSERT INTO PrintingDisplayFilter2 (printing_id, filter_id)
-      SELECT printing_id, filter_id
-      FROM PrintingDisplayFilter
-      WHERE filter_applies IS TRUE
-    """))
-    db.execute("DROP TABLE PrintingDisplayFilter\n")
-    db.execute("ALTER TABLE PrintingDisplayFilter2 RENAME TO PrintingDisplayFilter\n")
-    db.execute(dedent("""\
-    CREATE VIEW HiddenPrintingIDs AS
-      SELECT printing_id
-        FROM PrintingDisplayFilter
-        JOIN DisplayFilters USING (filter_id)
-        WHERE filter_active IS TRUE
-        GROUP BY printing_id
-    ;
-    """))
-    db.execute("DROP VIEW AllPrintings\n")
-    db.execute(dedent("""\
-    CREATE VIEW AllPrintings AS
-      SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
-             is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
-      FROM Card
-      JOIN Printing USING (card_id)
-      JOIN MTGSet   USING (set_id)
-      JOIN CardFace USING (printing_id)
-      JOIN FaceName USING (face_name_id)
-      JOIN PrintLanguage USING (language_id)
-    ;
-    """))
-
-
-def _migrate_29_to_30(db: sqlite3.Connection):
-    db.execute(dedent("""\
-    CREATE TABLE RelatedPrintings (
-      card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-      related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
-      PRIMARY KEY (card_id, related_id),
-      CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
-    ) WITHOUT ROWID;
-    """))
-    
-    
-def _migrate_30_to_31(db: sqlite3.Connection):
-    for statement in [
-        "DROP VIEW VisiblePrintings\n",
-        "DROP VIEW AllPrintings\n",
+    ]),
+    28: MigrationScript([
+        "DROP VIEW HiddenPrintings",
+        dedent("""\
+        CREATE TABLE PrintingDisplayFilter2 (
+          -- Stores which filter applies to which printing.
+          printing_id    INTEGER NOT NULL REFERENCES Printing (printing_id) ON DELETE CASCADE,
+          filter_id      INTEGER NOT NULL REFERENCES DisplayFilters (filter_id) ON DELETE CASCADE,
+          PRIMARY KEY (printing_id, filter_id)
+        ) WITHOUT ROWID"""),
+        dedent("""\
+        INSERT INTO PrintingDisplayFilter2 (printing_id, filter_id)
+          SELECT printing_id, filter_id
+          FROM PrintingDisplayFilter
+          WHERE filter_applies IS TRUE"""),
+        "DROP TABLE PrintingDisplayFilter",
+        "ALTER TABLE PrintingDisplayFilter2 RENAME TO PrintingDisplayFilter",
+        dedent("""\
+        CREATE VIEW HiddenPrintingIDs AS
+          SELECT printing_id
+            FROM PrintingDisplayFilter
+            JOIN DisplayFilters USING (filter_id)
+            WHERE filter_active IS TRUE
+            GROUP BY printing_id"""),
+        "DROP VIEW AllPrintings",
+        dedent("""\
+        CREATE VIEW AllPrintings AS
+          SELECT card_name, set_code, set_name, "language", collector_number, scryfall_id, highres_image, face_number,
+                 is_front, is_oversized, png_image_uri, oracle_id, release_date, wackiness_score, Printing.is_hidden
+          FROM Card
+          JOIN Printing USING (card_id)
+          JOIN MTGSet   USING (set_id)
+          JOIN CardFace USING (printing_id)
+          JOIN FaceName USING (face_name_id)
+          JOIN PrintLanguage USING (language_id)"""),
+    ]),
+    29: MigrationScript([
+        dedent("""\
+        CREATE TABLE RelatedPrintings (
+          card_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          related_id INTEGER NOT NULL REFERENCES Card(card_id) ON UPDATE CASCADE ON DELETE CASCADE,
+          PRIMARY KEY (card_id, related_id),
+          CONSTRAINT 'No self-reference' CHECK (card_id <> related_id)
+        ) WITHOUT ROWID""")
+    ]),
+    30: MigrationScript([
+        "DROP VIEW VisiblePrintings",
+        "DROP VIEW AllPrintings",
         dedent("""\
         CREATE VIEW VisiblePrintings AS
         WITH double_faced_printings(printing_id, is_dfc) AS (
@@ -627,8 +578,7 @@ def _migrate_30_to_31(db: sqlite3.Connection):
           JOIN PrintLanguage USING (language_id)
           LEFT OUTER JOIN double_faced_printings USING (printing_id)
           WHERE Printing.is_hidden IS FALSE
-            AND FaceName.is_hidden IS FALSE
-        ;"""),
+            AND FaceName.is_hidden IS FALSE"""),
         dedent("""\
         CREATE VIEW AllPrintings AS
         WITH double_faced_printings(printing_id, is_dfc) AS (
@@ -644,14 +594,9 @@ def _migrate_30_to_31(db: sqlite3.Connection):
           JOIN CardFace USING (printing_id)
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)
-          LEFT OUTER JOIN double_faced_printings USING (printing_id)
-        ;"""),
-    ]:
-        db.execute(statement)
-
-
-def _migrate_31_to_32(db: sqlite3.Connection):
-    for statement in [
+          LEFT OUTER JOIN double_faced_printings USING (printing_id)"""),
+    ]),
+    31: MigrationScript([
         dedent("""\
         CREATE VIEW CurrentlyEnabledSetCodeFilters AS
           -- Returns the set codes that are currently explicitly hidden by the hidden-sets filter.
@@ -660,25 +605,19 @@ def _migrate_31_to_32(db: sqlite3.Connection):
           JOIN Printing USING (set_id)
           JOIN PrintingDisplayFilter USING (printing_id)
           JOIN DisplayFilters USING (filter_id)
-          WHERE filter_name = 'hidden-sets'
-        ;
-        """),
-        "CREATE INDEX LookupPrintingBySet ON Printing(set_id);\n",
-        "COMMIT\n",
-        "PRAGMA journal_mode = 'wal';\n",
-        "BEGIN TRANSACTION\n",
-    ]:
-        db.execute(statement)
-
-
-def _migrate_32_to_33(db: sqlite3.Connection):
-    db.execute("CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id);\n")
-
-def _migrate_33_to_34(db: sqlite3.Connection):
-    for statement in [
-        "DROP VIEW VisiblePrintings;",
-        "DROP VIEW AllPrintings;",
-        "CREATE INDEX PrintingDisplayFilter_Printing_from_filter_lookup ON PrintingDisplayFilter(filter_id);",
+          WHERE filter_name = 'hidden-sets'"""),
+        "CREATE INDEX LookupPrintingBySet ON Printing(set_id)",
+        "COMMIT",
+        "PRAGMA journal_mode = 'wal'",
+        "BEGIN TRANSACTION",
+    ]),
+    32: MigrationScript([
+        "CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id)"
+    ]),
+    33: MigrationScript([
+        "DROP VIEW VisiblePrintings",
+        "DROP VIEW AllPrintings",
+        "CREATE INDEX PrintingDisplayFilter_Printing_from_filter_lookup ON PrintingDisplayFilter(filter_id)",
         dedent("""\
         CREATE VIEW VisiblePrintings AS
         WITH 
@@ -706,8 +645,7 @@ def _migrate_33_to_34(db: sqlite3.Connection):
           LEFT OUTER JOIN double_faced_printings USING (printing_id)
           LEFT OUTER JOIN token_printings USING (printing_id)
           WHERE Printing.is_hidden IS FALSE
-            AND FaceName.is_hidden IS FALSE
-        ;"""),
+            AND FaceName.is_hidden IS FALSE"""),
         dedent("""\
         CREATE VIEW AllPrintings AS
         WITH 
@@ -733,41 +671,9 @@ def _migrate_33_to_34(db: sqlite3.Connection):
           JOIN FaceName USING (face_name_id)
           JOIN PrintLanguage USING (language_id)
           LEFT OUTER JOIN double_faced_printings USING (printing_id)
-          LEFT OUTER JOIN token_printings USING (printing_id)
-        ;"""),
-    ]:
-        db.execute(statement+"\n")
-
-MIGRATION_SCRIPTS: MigrationScriptListing = (
-    # First component of each tuple contains the source schema version, second contains the migration script function.
-    # These MUST be ordered by source schema version, otherwise the migration logic breaks. In other words: APPEND only.
-    (9, _migrate_9_to_10),
-    (10, _migrate_10_to_11),
-    (11, _migrate_11_to_12),
-    (12, _migrate_12_to_13),
-    (13, _migrate_13_to_14),
-    (14, _migrate_14_to_15),
-    (15, _migrate_15_to_16),
-    (16, _migrate_16_to_17),
-    (17, _migrate_17_to_18),
-    (18, _migrate_18_to_19),
-    (19, _migrate_19_to_20),
-    (20, _migrate_20_to_21),
-    (21, _migrate_21_to_22),
-    (22, _migrate_22_to_23),
-    (23, _migrate_23_to_24),
-    (24, _migrate_24_to_25),
-    (25, _migrate_25_to_26),
-    (26, _migrate_26_to_27),
-    (27, _migrate_27_to_28),
-    (28, _migrate_28_to_29),
-    (29, _migrate_29_to_30),
-    (30, _migrate_30_to_31),
-    (31, _migrate_31_to_32),
-    (32, _migrate_32_to_33),
-    (33, _migrate_33_to_34),
-)
-
+          LEFT OUTER JOIN token_printings USING (printing_id)"""),
+    ]),
+}
 
 def migrate_card_database_location():
     from mtg_proxy_printer.model.carddb import DEFAULT_DATABASE_LOCATION, OLD_DATABASE_LOCATION
