@@ -38,6 +38,7 @@ try:
 except AttributeError:
     from typing_extensions import LiteralString
 
+from mtg_proxy_printer.runner import Runnable
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)
@@ -52,7 +53,7 @@ __all__ = [
 class MigrationScript:
     script: List[Union[LiteralString, str]] = None
 
-    def get_script(self, db: sqlite3.Connection) -> List[LiteralString]:
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString) -> List[LiteralString]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
         if self.script is None:
             raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
@@ -61,17 +62,17 @@ class MigrationScript:
 
 class Migrate_21_to_22(MigrationScript):
 
-    def get_script(self, db: sqlite3.Connection) -> List[LiteralString]:
-        return list(self._migrate_21_to_22(db))
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString) -> List[LiteralString]:
+        return list(self._migrate_21_to_22(db, suffix))
 
-    def _migrate_21_to_22(self, db: sqlite3.Connection):
+    def _migrate_21_to_22(self, db: sqlite3.Connection, suffix: LiteralString):
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
         from mtg_proxy_printer.model.carddb import CardDatabase
         # TODO: Extract read_json_card_data_from_url into a base class that does not depend on a database connection
         dw = mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker(CardDatabase(":memory:"))
-        updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate;\n")
+        updates = db.execute("SELECT update_id, update_timestamp FROM LastDatabaseUpdate"+suffix)
         data = []
         for id_, timestamp in updates:
             url_parameters = urllib.parse.urlencode({
@@ -98,8 +99,7 @@ class Migrate_21_to_22(MigrationScript):
           update_id             INTEGER NOT NULL PRIMARY KEY,
           update_timestamp      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (CURRENT_TIMESTAMP),
           reported_card_count   INTEGER NOT NULL CHECK (reported_card_count >= 0)
-        );
-        """)
+        )""")
         yield (
             "INSERT INTO LastDatabaseUpdateNew (update_id, update_timestamp, reported_card_count) VALUES (?, ?, ?)",
             data
@@ -612,7 +612,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         "BEGIN TRANSACTION",
     ]),
     32: MigrationScript([
-        "CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id)"
+        "CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id)",
     ]),
     33: MigrationScript([
         "DROP VIEW VisiblePrintings",
@@ -687,35 +687,60 @@ def migrate_card_database_location():
         OLD_DATABASE_LOCATION.rename(DEFAULT_DATABASE_LOCATION)
 
 
-def migrate_card_database(db: sqlite3.Connection, migration_scripts: MigrationScriptListing = MIGRATION_SCRIPTS):
+class DatabaseMigrationRunner(Runnable):
     """
     Upgrades the database schema of the given Card Database to the latest supported schema version.
 
     Given migration scripts are only executed, if their associated starting schema version matches the current database
-    schema version right before it is executed. Each migration script must upgrade to the next schema version. Functions
-    that combine multiple version upgrades in one SQL script are not supported.
-
-    :param db: card database, given as a plain sqlite3 database connection object
-    :param migration_scripts: List of migration script functions to run, if applicable. Defaults to a built-in list of
-      migration scripts. Should only be passed explicitly for testing purposes.
+    schema version right before it is executed. Each migration script must upgrade to the next schema version.
+    Scripts combining multiple version upgrades in one SQL script are not supported.
     """
-    begin_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
-    if mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0:
-        logger.info(f"Database schema outdated, running database migrations. {begin_schema_version=}")
+
+    def __init__(self, db: sqlite3.Connection):
+        super().__init__()
+        self.db = db
+
+    def run(self, migration_scripts: Dict[int, MigrationScript] = None):
+        """
+        Run the database update.
+        The optional parameter allows overwriting the scripts to run for testing purposes
+        """
+        migration_scripts = migration_scripts or MIGRATION_SCRIPTS
+        begin_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
+        target_version = max(migration_scripts.keys())
+
+        if not self._should_run_migrations(begin_schema_version, target_version):
+            return
+
         if migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {migration_scripts}")
-    else:
-        logger.info("Database schema recent, not running any database migrations")
-        return
-    for source_version, migration_script in migration_scripts:
-        if db.execute("PRAGMA user_version\n").fetchone()[0] == source_version:
-            logger.info(f"Running migration task for schema version {source_version}")
-            db.execute("BEGIN IMMEDIATE TRANSACTION\n")
-            migration_script(db)
-            db.execute(f"PRAGMA user_version = {source_version + 1}\n")
-            db.commit()
-    current_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
-    logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
-    db.execute("ANALYZE\n")
-    db.execute("VACUUM\n")
-    logger.info("Rebuild done.")
+        for source_version in range(begin_schema_version, target_version+1):
+            script = migration_scripts[source_version]
+            self._migrate_version(source_version, script)
+        current_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
+        logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
+        db.execute("ANALYZE\n")
+        db.execute("VACUUM\n")
+        logger.info("Rebuild done.")
+
+    @staticmethod
+    def _migrate_version(source_version: int, script: MigrationScript):
+        next_version = source_version + 1
+        logger.info(f"Migrate schema version {source_version} to {next_version}")
+        suffix = f";  -- Migrate {source_version} to {next_version}\n"
+        db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
+        for statement in script.get_script(db, suffix):
+            db.execute(statement + suffix)
+        db.execute(f"PRAGMA user_version = {next_version}\n")
+        db.commit()
+
+    @staticmethod
+    def _should_run_migrations(begin_schema_version: int, target_version: int):
+        if mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0:
+            logger.info(
+                "Database schema outdated. "
+                f"Running database migrations from {begin_schema_version=} to {target_version=}")
+            return True
+        else:
+            logger.info("Database schema recent, not running any database migrations")
+            return False
