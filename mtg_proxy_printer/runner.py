@@ -23,7 +23,17 @@ del get_logger
 
 __all__ = [
     "Runnable",
+    "ProgressSignalContainer"
 ]
+
+
+class ProgressSignalContainer(QObject):
+    begin_update = Signal(int, str)
+    progress = Signal(int)
+    update_completed = Signal()
+    advance_progress = Signal()
+    ui_update_required = Signal()
+    error_occurred = Signal(str)
 
 
 class Runnable(QRunnable):
