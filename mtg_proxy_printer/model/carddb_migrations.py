@@ -24,6 +24,7 @@ To add a new migration function:
 
 import dataclasses
 import datetime
+import functools
 import socket
 import sqlite3
 import time
@@ -31,41 +32,66 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Iterable, List, Dict, Union, Tuple, Any
+from typing import Iterable, List, Dict, Union, Tuple, Any, Generator
+
+from PyQt5.QtCore import QCoreApplication, Qt
+
 
 try:
     from typing import LiteralString
 except AttributeError:
     from typing_extensions import LiteralString
 
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.progress_meter import ProgressMeter
+from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
 import mtg_proxy_printer.sqlite_helpers
 from mtg_proxy_printer.logger import get_logger
+from mtg_proxy_printer.model.carddb import CardDatabase, with_database_write_lock
+
+if typing.TYPE_CHECKING:
+    from mtg_proxy_printer.ui.main_window import MainWindow
+
+
 logger = get_logger(__name__)
 del get_logger
+QueuedConnection = Qt.ConnectionType.QueuedConnection
 
 __all__ = [
-    "migrate_card_database",
+    "DatabaseMigrationRunner",
     "migrate_card_database_location",
 ]
 
+Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
+
 @dataclasses.dataclass
 class MigrationScript:
-    script: List[Union[LiteralString, str]] = None
+    script: List[Statement] = None
 
-    def get_script(self, db: sqlite3.Connection, suffix: LiteralString) -> List[LiteralString]:
+    def get_script(self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> List[Statement]:
         """Returns the script to run. Can be overridden by subclasses to allow dynamic behavior"""
         if self.script is None:
             raise RuntimeError("BUG: Migration script is None. Either not provided or this function wasn't overridden")
         return self.script
 
+    def script_length(self, db: sqlite3.Connection, suffix: LiteralString) -> int:
+        """
+        Returns the number of statements in the script. Defaults to the passed script length.
+
+        Non-static migration scripts can return a custom number that includes non-statement tasks that consume time
+        """
+        return len(self.script)
+
+
 
 class Migrate_21_to_22(MigrationScript):
 
-    def get_script(self, db: sqlite3.Connection, suffix: LiteralString) -> List[LiteralString]:
-        return list(self._migrate_21_to_22(db, suffix))
+    def get_script(
+            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> List[Statement]:
+        return list(self._migrate_21_to_22(db, suffix, progress_meter))
 
-    def _migrate_21_to_22(self, db: sqlite3.Connection, suffix: LiteralString):
+    def _migrate_21_to_22(
+            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter
+    ) -> Generator[Statement, None, None]:
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
         import mtg_proxy_printer.card_info_downloader
@@ -89,8 +115,9 @@ class Migrate_21_to_22(MigrationScript):
             except (urllib.error.URLError, socket.error):
                 card_count = 0
             data.append((id_, timestamp, card_count))
-            time.sleep(
-                0.1)  # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
+            # Rate limit the requests to 10 per second, according to the Scryfall API usage recommendations
+            time.sleep(0.1)
+            progress_meter.advance()
 
         logger.info(f"Acquired data for upgrade to schema version 22: {data}")
         yield dedent("""\
@@ -106,6 +133,10 @@ class Migrate_21_to_22(MigrationScript):
         )
         yield "DROP TABLE LastDatabaseUpdate"
         yield "ALTER TABLE LastDatabaseUpdateNew RENAME TO LastDatabaseUpdate"
+
+    def script_length(self, db: sqlite3.Connection, suffix: LiteralString) -> int:
+        api_call_count = db.execute("SELECT count(42) FROM LastDatabaseUpdate" + suffix).fetchone()[0]
+        return 4 + api_call_count  # 4 SQL statements in the script
 
 
 MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
@@ -212,8 +243,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         dedent("""\
         INSERT INTO NewFaceName (face_name_id, card_name, language_id) 
           SELECT face_name_id, card_name, language_id
-          FROM FaceName;
-        """),
+          FROM FaceName"""),
         dedent("""\
         INSERT INTO NewCardFace 
           (card_face_id, card_id, set_id, face_name_id, is_front,
@@ -221,12 +251,13 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
         SELECT 
            card_face_id, card_id, set_id, face_name_id, is_front,
            collector_number, scryfall_id, highres_image, png_image_uri
-        FROM CardFace;
-        DROP VIEW AllPrintings;
-        DROP TABLE FaceName;
-        DROP TABLE CardFace;
-        ALTER TABLE NewFaceName RENAME TO FaceName;
-        ALTER TABLE NewCardFace RENAME TO CardFace;
+        FROM CardFace"""),
+        "DROP VIEW AllPrintings",
+        "DROP TABLE FaceName",
+        "DROP TABLE CardFace",
+        "ALTER TABLE NewFaceName RENAME TO FaceName",
+        "ALTER TABLE NewCardFace RENAME TO CardFace",
+        dedent("""\
         CREATE VIEW AllPrintings AS
           SELECT card_name, "set" AS set_code, set_name, "language", collector_number, scryfall_id,
             highres_image, is_front, png_image_uri, oracle_id
@@ -696,51 +727,98 @@ class DatabaseMigrationRunner(Runnable):
     Scripts combining multiple version upgrades in one SQL script are not supported.
     """
 
-    def __init__(self, db: sqlite3.Connection):
+    def __init__(self, card_db: CardDatabase):
         super().__init__()
-        self.db = db
+        self.total_update_signals = ProgressSignalContainer()
+        self.script_update_signals = ProgressSignalContainer()
+        self.db_path = card_db.db_path
+        logger.debug(f"Created {self.__class__.__name__} instance.")
 
+    def connect_main_window_signals(self, main_window: "MainWindow"):
+        progress_bars = main_window.progress_bars
+        self.connect_progress_signals(
+            self.total_update_signals,
+            progress_bars.begin_outer_progress,
+            progress_bars.set_outer_progress,
+            progress_bars.end_outer_progress,
+        )
+        self.connect_progress_signals(
+            self.script_update_signals,
+            progress_bars.begin_inner_progress,
+            progress_bars.set_inner_progress,
+            progress_bars.end_inner_progress
+        )
+
+    def connect_progress_signals(self, signals: ProgressSignalContainer, begin_signal, progress_signal, end_signal):
+        signals.begin_update.connect(begin_signal, QueuedConnection)
+        signals.progress.connect(progress_signal, QueuedConnection)
+        signals.update_completed.connect(end_signal, QueuedConnection)
+
+    @with_database_write_lock()
     def run(self, migration_scripts: Dict[int, MigrationScript] = None):
         """
         Run the database update.
         The optional parameter allows overwriting the scripts to run for testing purposes
         """
         migration_scripts = migration_scripts or MIGRATION_SCRIPTS
-        begin_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
-        target_version = max(migration_scripts.keys())
-
-        if not self._should_run_migrations(begin_schema_version, target_version):
+        db = mtg_proxy_printer.sqlite_helpers.open_database(
+            self.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+        begin_schema_version = self._get_schema_version(db)
+        target_version = max(migration_scripts.keys())+1
+        if begin_schema_version >= target_version:
+            self.total_update_signals.update_completed.emit()
             return
-
         if migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {migration_scripts}")
-        for source_version in range(begin_schema_version, target_version+1):
+        logger.info(f"About to run {target_version-begin_schema_version} migration scripts.")
+        top_level_progress_meter = self._create_top_level_progress_meter(begin_schema_version, target_version)
+        for source_version in range(begin_schema_version, target_version):
             script = migration_scripts[source_version]
-            self._migrate_version(source_version, script)
-        current_schema_version = db.execute("PRAGMA user_version\n").fetchone()[0]
+            self._migrate_version(db, source_version, script)
+            top_level_progress_meter.advance()
+        current_schema_version = self._get_schema_version(db)
         logger.info(f"Finished database migrations, rebuilding database. {current_schema_version=}")
         db.execute("ANALYZE\n")
+        top_level_progress_meter.advance()
         db.execute("VACUUM\n")
+        top_level_progress_meter.advance()
+        top_level_progress_meter.finish()
         logger.info("Rebuild done.")
 
-    @staticmethod
-    def _migrate_version(source_version: int, script: MigrationScript):
-        next_version = source_version + 1
-        logger.info(f"Migrate schema version {source_version} to {next_version}")
-        suffix = f";  -- Migrate {source_version} to {next_version}\n"
-        db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
-        for statement in script.get_script(db, suffix):
-            db.execute(statement + suffix)
-        db.execute(f"PRAGMA user_version = {next_version}\n")
-        db.commit()
+    def _create_top_level_progress_meter(self, begin_schema_version: int, target_version: int) -> ProgressMeter:
+        signals = self.total_update_signals
+        msg = QCoreApplication.translate("DatabaseMigrationRunner", "Running database migrations:", "")
+        progress_meter = ProgressMeter(
+            target_version-begin_schema_version+2, msg,  # ANALYZE and VACUUM (2 steps) are run as top-level tasks
+            signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
+        return progress_meter
 
-    @staticmethod
-    def _should_run_migrations(begin_schema_version: int, target_version: int):
-        if mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, "carddb") > 0:
-            logger.info(
-                "Database schema outdated. "
-                f"Running database migrations from {begin_schema_version=} to {target_version=}")
-            return True
-        else:
-            logger.info("Database schema recent, not running any database migrations")
-            return False
+
+    def _get_schema_version(self, db: sqlite3.Connection) -> int:
+        return db.execute("PRAGMA user_version; -- DatabaseMigrationRunner\n").fetchone()[0]
+
+    def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript):
+        next_version = source_version + 1
+        suffix = f";  -- Migrate {source_version} to {next_version}\n"
+        signals = self.script_update_signals
+        steps = script.script_length(db, suffix)
+
+        msg = QCoreApplication.translate(
+            "DatabaseMigrationRunner", "Migrate to version %n:",
+            "The numeric parameter is a version number, and not countable.", source_version)
+        meter = ProgressMeter(
+            steps+1, msg,  # Add 1 for the call to db.commit()
+            signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
+
+        db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
+        for statement in script.get_script(db, suffix, meter):
+            if isinstance(statement, str):
+                db.execute(statement + suffix)
+            else:
+                statement, parameters = statement
+                db.executemany(statement + suffix, parameters)
+            meter.advance()
+        db.execute(f"PRAGMA user_version = {next_version}" + suffix)
+        db.commit()
+        meter.advance()
+        meter.finish()

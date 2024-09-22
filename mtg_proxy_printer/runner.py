@@ -15,7 +15,7 @@
 
 import typing
 
-from PyQt5.QtCore import QRunnable
+from PyQt5.QtCore import QRunnable, QObject, pyqtSignal as Signal
 
 from mtg_proxy_printer.logger import get_logger
 logger = get_logger(__name__)

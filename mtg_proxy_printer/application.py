@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import atexit
-import functools
+from functools import partial
 import os
 import pathlib
 import platform
@@ -33,6 +33,7 @@ import mtg_proxy_printer.model.carddb
 import mtg_proxy_printer.model.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
+from mtg_proxy_printer.model.carddb_migrations import DatabaseMigrationRunner
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.update_checker import UpdateChecker
@@ -64,27 +65,23 @@ class Application(QApplication):
             argv.append("-platform")
             argv.append("windows:darkmode=1")
         super().__init__(argv)
-        self.should_run = True
+        self.args = args
         self._setup_translations()
         self._setup_icons()
-        self.args: Namespace = args
+        self.language_model = self._create_language_model()  # TODO: Can this be removed?
         self.card_db, self.image_db = self._open_databases(args)
         self.card_info_downloader = mtg_proxy_printer.card_info_downloader.CardInfoDownloader(self.card_db)
         self.document = self._create_document_instance(self.card_db, self.image_db)
-        self.language_model = self._create_language_model()
         logger.debug("Creating GUI")
         self.main_window = mtg_proxy_printer.ui.main_window.MainWindow(
             self.card_db, self.card_info_downloader, self.image_db, self.document, self.language_model
         )
-        runner = PrintingFilterUpdater(self.card_db)
-        runner.connect_main_window_signals(self.main_window)
-        QThreadPool.globalInstance().start(runner)
-        self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        self.update_checker = self._create_update_checker(args)
+        self.main_window.ui.action_download_card_data.setEnabled(False)
         self.settings_window = self._create_settings_window(
             self.language_model, self.document, self.main_window, self.card_info_downloader)
         self.main_window.show()
-        self.update_checker = self._create_update_checker(args)
-        self.main_window.should_update_languages.emit()
+
 
     def enqueue_startup_tasks(self, args: Namespace):
         """
@@ -105,8 +102,31 @@ class Application(QApplication):
             settings.write_settings_to_file()
             QTimer.singleShot(0, self.main_window.about_dialog.show_changelog)
         logger.debug("Enqueueing update check")
+        start = QThreadPool.globalInstance().start
         QTimer.singleShot(100, self._check_for_undecided_update_settings)
-        self.update_checker.check_for_updates()
+
+        card_db_migration_runner = DatabaseMigrationRunner(self.card_db)
+        card_db_migration_runner.connect_main_window_signals(self.main_window)
+        printing_filter_updater_runner = PrintingFilterUpdater(self.card_db)
+        printing_filter_updater_runner.connect_main_window_signals(self.main_window)
+
+        card_db_migration_runner.total_update_signals.update_completed.connect(self.card_db.reopen_database)
+        card_db_migration_runner.total_update_signals.update_completed.connect(
+            partial(start, printing_filter_updater_runner)
+        )
+
+        printing_filter_updater_runner.signals.update_completed.connect(
+            lambda: self.main_window.ui.action_download_card_data.setEnabled(self.card_db.allow_updating_card_data())
+        )
+        printing_filter_updater_runner.signals.update_completed.connect(
+            self.main_window.should_update_languages
+        )
+        printing_filter_updater_runner.signals.update_completed.connect(self.update_checker.check_for_updates)
+        printing_filter_updater_runner.signals.update_completed.connect(partial(self._handle_command_line_argument_files, args))
+        
+        start(card_db_migration_runner)
+
+    def _handle_command_line_argument_files(self, args: Namespace):
         if args.card_data and args.card_data.is_file():
             logger.info(f"User imports card data from file {args.card_data}")
             self.card_info_downloader.import_from_file(args.card_data)
@@ -115,7 +135,7 @@ class Application(QApplication):
             self.main_window.ask_user_about_empty_database()
         if args.file is not None:
             if args.file.is_file():
-                QTimer.singleShot(0, functools.partial(self.document.loader.load_document, args.file))
+                QTimer.singleShot(0, partial(self.document.loader.load_document, args.file))
                 logger.info(f'Enqueued loading of document "{args.file}"')
             elif args.file.exists():
                 logger.warning(f'Command line argument "{args.file}" exists, but is not a file. Not loading it.')
@@ -126,7 +146,7 @@ class Application(QApplication):
         if args.test_exit_on_launch:
             temp_directory = pathlib.Path(mkdtemp())
             logger.info(f"Opening databases in temporary directory {temp_directory}")
-            atexit.register(functools.partial(shutil.rmtree, temp_directory))
+            atexit.register(partial(shutil.rmtree, temp_directory))
             card_db = mtg_proxy_printer.model.carddb.CardDatabase(temp_directory / "card_db" / "CardDatabase.sqlite3")
             image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(
                 temp_directory/"image_db", parent=self)
@@ -170,7 +190,6 @@ class Application(QApplication):
         return QStringListModel([preferred_language], self)
 
     def _create_update_checker(self, args: Namespace) -> UpdateChecker:
-        # Don’t do the card data update check, if the user imports card data via command line arguments
         update_checker = UpdateChecker(self.card_db, args, self)
         update_checker.network_error_occurred.connect(self.main_window.on_network_error_occurred)
         update_checker.card_data_update_found.connect(self.main_window.show_card_data_update_available_message_box)
@@ -241,7 +260,6 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
-        self.should_run = False
         self.main_window.hide()
         self.main_window.close()
         self.closeAllWindows()
