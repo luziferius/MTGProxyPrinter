@@ -30,10 +30,10 @@ from PyQt5.QtGui import QIcon
 from mtg_proxy_printer.argument_parser import Namespace
 from mtg_proxy_printer import meta_data
 import mtg_proxy_printer.model.carddb
-import mtg_proxy_printer.model.carddb_migrations
+import mtg_proxy_printer.carddb_migrations
 import mtg_proxy_printer.model.document
 import mtg_proxy_printer.model.imagedb
-from mtg_proxy_printer.model.carddb_migrations import DatabaseMigrationRunner
+from mtg_proxy_printer.carddb_migrations import DatabaseMigrationRunner
 from mtg_proxy_printer.printing_filter_updater import PrintingFilterUpdater
 from mtg_proxy_printer import settings
 from mtg_proxy_printer.update_checker import UpdateChecker
@@ -152,7 +152,7 @@ class Application(QApplication):
                 temp_directory/"image_db", parent=self)
             return card_db, image_db
         logger.debug("Opening Databases")
-        mtg_proxy_printer.model.carddb_migrations.migrate_card_database_location()
+        mtg_proxy_printer.carddb_migrations.migrate_card_database_location()
         card_db = mtg_proxy_printer.model.carddb.CardDatabase()
         image_db = mtg_proxy_printer.model.imagedb.ImageDatabase(parent=self)
         return card_db, image_db
