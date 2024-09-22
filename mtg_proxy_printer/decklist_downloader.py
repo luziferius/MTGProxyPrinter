@@ -301,7 +301,7 @@ class ArchidektHTMLParser(html.parser.HTMLParser):
 
 class ArchidektDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://archidekt\.com/decks/(?P<deck_id>\d+).*?"
+        r"https://(www\.)?archidekt\.com/decks/(?P<deck_id>\d+).*?"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "Archidekt (archidekt.com)"

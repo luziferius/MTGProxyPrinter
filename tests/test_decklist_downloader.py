@@ -108,6 +108,9 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # Archidekt
     yield ArchidektDownloader, "https://archidekt.com/decks/8"
     yield ArchidektDownloader, "https://archidekt.com/decks/4296325"
+    yield ArchidektDownloader, "https://archidekt.com/decks/4296325/some_name"
+    yield ArchidektDownloader, "https://www.archidekt.com/decks/4296325"
+    yield ArchidektDownloader, "https://www.archidekt.com/decks/4296325/some_name"
 
     # TCGPlayer Infinite
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532"
