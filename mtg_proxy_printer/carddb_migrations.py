@@ -17,9 +17,8 @@
 This module contains the database migration logic that is used to upgrade the schema of existing card databases
 to the newest schema version supported.
 
-To add a new migration function:
-- Write function _migrate_{source_version}_to_{target_version} that performs the schema migration
-- Append an entry with a reference to the added function to the MIGRATION_SCRIPTS tuple
+To add a new migration, place a MigrationScript instance in the MIGRATION_SCRIPTS dict,
+using the source schema version as the dict key.
 """
 
 import dataclasses
@@ -767,6 +766,7 @@ class DatabaseMigrationRunner(Runnable):
         target_version = max(migration_scripts.keys())+1
         if begin_schema_version >= target_version:
             self.total_update_signals.update_completed.emit()
+            self.release_instance()
             return
         if migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {migration_scripts}")
@@ -784,6 +784,7 @@ class DatabaseMigrationRunner(Runnable):
         top_level_progress_meter.advance()
         top_level_progress_meter.finish()
         logger.info("Rebuild done.")
+        self.release_instance()
 
     def _create_top_level_progress_meter(self, begin_schema_version: int, target_version: int) -> ProgressMeter:
         signals = self.total_update_signals
