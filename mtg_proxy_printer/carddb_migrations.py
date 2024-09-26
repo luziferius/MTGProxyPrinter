@@ -637,9 +637,7 @@ MIGRATION_SCRIPTS: Dict[int, MigrationScript] = {
           JOIN DisplayFilters USING (filter_id)
           WHERE filter_name = 'hidden-sets'"""),
         "CREATE INDEX LookupPrintingBySet ON Printing(set_id)",
-        "COMMIT",
         "PRAGMA journal_mode = 'wal'",
-        "BEGIN TRANSACTION",
     ]),
     32: MigrationScript([
         "CREATE INDEX CardFace_idx_for_translation ON CardFace(printing_id)",
@@ -814,12 +812,21 @@ class DatabaseMigrationRunner(Runnable):
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
         for statement in script.get_script(db, suffix, meter):
             if isinstance(statement, str):
+                if is_pragma := statement.startswith("PRAGMA"):
+                    db.execute("COMMIT" + suffix)
                 db.execute(statement + suffix)
+                if is_pragma:
+                    db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
             else:
                 statement, parameters = statement
                 db.executemany(statement + suffix, parameters)
             meter.advance()
         db.execute(f"PRAGMA user_version = {next_version}" + suffix)
         db.commit()
+        backup_path = f"CardDatabase-v{source_version}.sqlite3"
+        logger.info(f"Creating backup {backup_path}…")
+        with sqlite3.Connection(backup_path) as backup:
+            db.backup(backup)
+        logger.info(f"Created backup {backup_path}")
         meter.advance()
         meter.finish()
