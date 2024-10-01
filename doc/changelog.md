@@ -1,5 +1,12 @@
 # Changelog
 
+# Next version (in development)
+
+## Fixed issues
+
+- Fixed deck list downloader for Archidekt, CubeCobra and Manabox.app 
+  falsely rejecting valid URLs starting with `https://www.`. These are now accepted.
+
 # Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>
 
 ## Changed features

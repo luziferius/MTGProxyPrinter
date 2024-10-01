@@ -401,7 +401,7 @@ class TCGPlayerDownloader(DecklistDownloader):
 
 class CubeCobraDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://cubecobra\.com/cube/[a-z]+/(?P<cube_name>[0-9A-Za-z-_]+).*?"
+        r"https://(www\.)?cubecobra\.com/cube/[a-z]+/(?P<cube_name>[0-9A-Za-z-_]+).*?"
     )
     PARSER_CLASS = XMageParser
     APPLICABLE_WEBSITES = "CubeCobra (cubecobra.com)"
@@ -414,7 +414,7 @@ class CubeCobraDownloader(DecklistDownloader):
 
 class ManaboxDownloader(DecklistDownloader):
     DECKLIST_PATH_RE = re.compile(
-        r"https://manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"
+        r"https://(www\.)?manabox\.app/decks/(?P<deck_id>[a-zA-Z0-9_-]{22})/?.*"
     )
     PARSER_CLASS = ScryfallCSVParser
     APPLICABLE_WEBSITES = "ManaBox (manabox.app)"
