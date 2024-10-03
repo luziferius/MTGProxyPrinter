@@ -288,12 +288,12 @@ def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semap
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             semaphore.acquire()
-            logger.debug(f"Obtained database write lock")
+            logger.debug(f"Obtained database write lock, about to run task {func}")
             try:
                 app: "Application" = QApplication.instance()
                 # The instance used by unit tests does not have the should_run attribute.
-                # Skip the second condition in that case
-                if app and (not hasattr(app, "should_run") or app.should_run):
+                # In that case, run tasks regardless
+                if getattr(app, "should_run", True):
                     return func(*args, **kwargs)
                 else:
                     logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
