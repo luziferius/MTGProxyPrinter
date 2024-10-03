@@ -108,6 +108,9 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     # Archidekt
     yield ArchidektDownloader, "https://archidekt.com/decks/8"
     yield ArchidektDownloader, "https://archidekt.com/decks/4296325"
+    yield ArchidektDownloader, "https://archidekt.com/decks/4296325/some_name"
+    yield ArchidektDownloader, "https://www.archidekt.com/decks/4296325"
+    yield ArchidektDownloader, "https://www.archidekt.com/decks/4296325/some_name"
 
     # TCGPlayer Infinite
     yield TCGPlayerDownloader, "https://infinite.tcgplayer.com/magic-the-gathering/deck/Azorius-Hammer/468532"
@@ -121,9 +124,18 @@ def generate_tests_for_test_re_matcher_matches_acceptable_url() -> typing.Genera
     yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/gilpauper/"
     yield CubeCobraDownloader, "https://cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2/"
 
+    yield CubeCobraDownloader, "https://www.cubecobra.com/cube/list/gilpauper"
+    yield CubeCobraDownloader, "https://www.cubecobra.com/cube/overview/gilpauper"
+    yield CubeCobraDownloader, "https://www.cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2"
+    yield CubeCobraDownloader, "https://www.cubecobra.com/cube/list/gilpauper/"
+    yield CubeCobraDownloader, "https://www.cubecobra.com/cube/overview/gilpauper/"
+    yield CubeCobraDownloader, "https://www.cubecobra.com/cube/overview/5124b9d5-d921-4fd9-85bb-346aa06814e2/"
+
     # ManaBox
     yield ManaboxDownloader, "https://manabox.app/decks/xa1hXTCXQoiNkmp_TPwW8w"
     yield ManaboxDownloader, "https://manabox.app/decks/xa1hXTCXQoiNkmp_TPwW8w/"
+    yield ManaboxDownloader, "https://www.manabox.app/decks/xa1hXTCXQoiNkmp_TPwW8w"
+    yield ManaboxDownloader, "https://www.manabox.app/decks/xa1hXTCXQoiNkmp_TPwW8w/"
 
 
 @pytest.mark.parametrize("downloader, url", generate_tests_for_test_re_matcher_matches_acceptable_url())
