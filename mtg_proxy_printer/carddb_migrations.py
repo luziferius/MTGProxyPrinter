@@ -724,11 +724,12 @@ class DatabaseMigrationRunner(Runnable):
     Scripts combining multiple version upgrades in one SQL script are not supported.
     """
 
-    def __init__(self, card_db: CardDatabase):
+    def __init__(self, card_db: CardDatabase, migration_scripts: Dict[int, MigrationScript] = None):
         super().__init__()
         self.total_update_signals = ProgressSignalContainer()
         self.script_update_signals = ProgressSignalContainer()
         self.db_path = card_db.db_path
+        self.migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         logger.debug(f"Created {self.__class__.__name__} instance.")
 
     def connect_main_window_signals(self, main_window: "MainWindow"):
@@ -752,26 +753,25 @@ class DatabaseMigrationRunner(Runnable):
         signals.update_completed.connect(end_signal, QueuedConnection)
 
     @with_database_write_lock()
-    def run(self, migration_scripts: Dict[int, MigrationScript] = None):
+    def run(self):
         """
         Run the database update.
         The optional parameter allows overwriting the scripts to run for testing purposes
         """
-        migration_scripts = migration_scripts or MIGRATION_SCRIPTS
         db = mtg_proxy_printer.sqlite_helpers.open_database(
             self.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
         begin_schema_version = self._get_schema_version(db)
-        target_version = max(migration_scripts.keys())+1
+        target_version = max(self.migration_scripts.keys())+1
         if begin_schema_version >= target_version:
             self.total_update_signals.update_completed.emit()
             self.release_instance()
             return
-        if migration_scripts is not MIGRATION_SCRIPTS:
-            logger.debug(f"Custom migration scripts passed: {migration_scripts}")
+        if self.migration_scripts is not MIGRATION_SCRIPTS:
+            logger.debug(f"Custom migration scripts passed: {self.migration_scripts}")
         logger.info(f"About to run {target_version-begin_schema_version} migration scripts.")
         top_level_progress_meter = self._create_top_level_progress_meter(begin_schema_version, target_version)
         for source_version in range(begin_schema_version, target_version):
-            script = migration_scripts[source_version]
+            script = self.migration_scripts[source_version]
             self._migrate_version(db, source_version, script)
             top_level_progress_meter.advance()
         current_schema_version = self._get_schema_version(db)
