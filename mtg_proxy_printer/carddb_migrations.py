@@ -23,7 +23,6 @@ using the source schema version as the dict key.
 
 import dataclasses
 import datetime
-import functools
 import socket
 import sqlite3
 import time
@@ -31,10 +30,9 @@ import typing
 import urllib.error
 import urllib.parse
 from textwrap import dedent
-from typing import Iterable, List, Dict, Union, Tuple, Any, Generator
+from typing import List, Dict, Union, Tuple, Any, Generator, Callable
 
 from PyQt5.QtCore import QCoreApplication, Qt
-
 
 try:
     from typing import LiteralString
@@ -59,7 +57,10 @@ __all__ = [
     "DatabaseMigrationRunner",
     "migrate_card_database_location",
 ]
-
+# Overwrite the dedent signature for type hinting purposes.
+# Original dedent is annotated as str -> str, so overwrite that with LiteralString -> LiteralString,
+# allowing the type checker to detect SQL injections
+dedent: Callable[[LiteralString], LiteralString]
 Statement = Union[LiteralString, Tuple[LiteralString, List[Tuple[Any, ...]]]]
 
 @dataclasses.dataclass
@@ -88,8 +89,9 @@ class Migrate_21_to_22(MigrationScript):
             self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter) -> List[Statement]:
         return list(self._migrate_21_to_22(db, suffix, progress_meter))
 
+    @staticmethod
     def _migrate_21_to_22(
-            self, db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter
+            db: sqlite3.Connection, suffix: LiteralString, progress_meter: ProgressMeter
     ) -> Generator[Statement, None, None]:
         # Full edit procedure not needed here, because the table has no indices or foreign keys associated
         # Import locally to break a cyclic dependency
@@ -757,7 +759,6 @@ class DatabaseMigrationRunner(Runnable):
     def run(self):
         """
         Run the database update.
-        The optional parameter allows overwriting the scripts to run for testing purposes
         """
         db = mtg_proxy_printer.sqlite_helpers.open_database(
             self.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
@@ -769,7 +770,8 @@ class DatabaseMigrationRunner(Runnable):
             return
         if self.migration_scripts is not MIGRATION_SCRIPTS:
             logger.debug(f"Custom migration scripts passed: {self.migration_scripts}")
-        logger.info(f"About to run {target_version-begin_schema_version} migration scripts.")
+        logger.info(f"Migrating database from version {begin_schema_version} to {target_version}. "
+                    f"About to run {target_version-begin_schema_version} migration scripts.")
         top_level_progress_meter = self._create_top_level_progress_meter(begin_schema_version, target_version)
         for source_version in range(begin_schema_version, target_version):
             script = self.migration_scripts[source_version]
@@ -793,23 +795,24 @@ class DatabaseMigrationRunner(Runnable):
             signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
         return progress_meter
 
-
-    def _get_schema_version(self, db: sqlite3.Connection) -> int:
+    @staticmethod
+    def _get_schema_version(db: sqlite3.Connection) -> int:
         return db.execute("PRAGMA user_version; -- DatabaseMigrationRunner\n").fetchone()[0]
 
     def _migrate_version(self, db: sqlite3.Connection, source_version: int, script: MigrationScript):
         next_version = source_version + 1
         suffix = f";  -- Migrate {source_version} to {next_version}\n"
         signals = self.script_update_signals
-        steps = script.script_length(db, suffix)
+        steps = script.script_length(db, suffix) + 1  # Add 1 for the call to db.commit()
 
         msg = QCoreApplication.translate(
             "DatabaseMigrationRunner", "Migrate to version %n:",
             "The numeric parameter is a version number, and not countable.", source_version)
         meter = ProgressMeter(
-            steps+1, msg,  # Add 1 for the call to db.commit()
+            steps, msg,
             signals.begin_update.emit, signals.progress.emit, signals.update_completed.emit)
 
+        logger.debug(f"Starting migration from {source_version}")
         db.execute("BEGIN IMMEDIATE TRANSACTION" + suffix)
         for statement in script.get_script(db, suffix, meter):
             if isinstance(statement, str):
@@ -824,5 +827,6 @@ class DatabaseMigrationRunner(Runnable):
             meter.advance()
         db.execute(f"PRAGMA user_version = {next_version}" + suffix)
         db.commit()
+        logger.debug(f"Migrated to {next_version}")
         meter.advance()
         meter.finish()
