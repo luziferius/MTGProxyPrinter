@@ -65,6 +65,9 @@ class Application(QApplication):
             argv.append("-platform")
             argv.append("windows:darkmode=1")
         super().__init__(argv)
+        # Used by the with_database_write_lock decorator to not start un-frozen,
+        # waiting tasks when the application is about to exit
+        self.should_run = True
         self.args = args
         self._setup_translations()
         self._setup_icons()
@@ -260,6 +263,7 @@ class Application(QApplication):
     @Slot()
     def quit(self):
         logger.info("About to exit.")
+        self.should_run = False
         self.main_window.hide()
         self.main_window.close()
         self.closeAllWindows()
