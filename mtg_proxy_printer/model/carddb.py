@@ -30,7 +30,6 @@ from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal 
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
-    from mtg_proxy_printer.application import Application
 
 import mtg_proxy_printer.app_dirs
 from mtg_proxy_printer.natsort import natural_sorted

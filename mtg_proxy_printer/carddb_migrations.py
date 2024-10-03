@@ -747,7 +747,8 @@ class DatabaseMigrationRunner(Runnable):
             progress_bars.end_inner_progress
         )
 
-    def connect_progress_signals(self, signals: ProgressSignalContainer, begin_signal, progress_signal, end_signal):
+    @staticmethod
+    def connect_progress_signals(signals: ProgressSignalContainer, begin_signal, progress_signal, end_signal):
         signals.begin_update.connect(begin_signal, QueuedConnection)
         signals.progress.connect(progress_signal, QueuedConnection)
         signals.update_completed.connect(end_signal, QueuedConnection)
@@ -823,10 +824,5 @@ class DatabaseMigrationRunner(Runnable):
             meter.advance()
         db.execute(f"PRAGMA user_version = {next_version}" + suffix)
         db.commit()
-        backup_path = f"CardDatabase-v{source_version}.sqlite3"
-        logger.info(f"Creating backup {backup_path}…")
-        with sqlite3.Connection(backup_path) as backup:
-            db.backup(backup)
-        logger.info(f"Created backup {backup_path}")
         meter.advance()
         meter.finish()
