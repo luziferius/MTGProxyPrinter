@@ -4,8 +4,11 @@
 
 ## Fixed issues
 
+- Migrations for the local card database required after some application updates now run with the main window open 
+  instead of before opening the main window, and indicate the progress via a progress bar.
+  The app no longer appears hanging when starting for the first time after installing updates.
 - Fixed deck list downloader for Archidekt, CubeCobra and Manabox.app 
-  falsely rejecting valid URLs starting with `https://www.`. These are now accepted.
+  falsely rejecting valid URLs starting with `https://www.`. These are now accepted and work as intended.
 
 # Version 0.29.1 (2024-09-14)  <a name="v0_29_1"></a>
 

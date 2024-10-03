@@ -20,19 +20,18 @@ import enum
 import itertools
 import functools
 import pathlib
+import sqlite3
 import threading
 import typing
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QPixmap, QColor, QTransform, QPainter, QColorConstants
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QPointF, QObject, pyqtSignal as Signal, pyqtSlot as Slot
 
 if typing.TYPE_CHECKING:
     from mtg_proxy_printer.model.imagedb import CacheContent
-    from mtg_proxy_printer.application import Application
 
 import mtg_proxy_printer.app_dirs
-from mtg_proxy_printer.model.carddb_migrations import migrate_card_database
 from mtg_proxy_printer.natsort import natural_sorted
 import mtg_proxy_printer.meta_data
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database, validate_database_schema
@@ -288,17 +287,16 @@ def with_database_write_lock(semaphore: threading.BoundedSemaphore = write_semap
         @functools.wraps(func)
         def wrapped(*args, **kwargs):
             semaphore.acquire()
-            logger.debug(f"Obtained database write lock")
+            logger.debug(f"Obtained database write lock, about to run task {func}")
             try:
-                app: "Application" = QApplication.instance()
                 # The instance used by unit tests does not have the should_run attribute.
-                # Skip the second condition in that case
-                if app and (not hasattr(app, "should_run") or app.should_run):
+                # In that case, run tasks regardless
+                if getattr(QApplication.instance(), "should_run", True):
                     return func(*args, **kwargs)
                 else:
                     logger.warning(f"Not running enqueued task {func}, because the application is about to exit.")
             finally:
-                logger.debug("Releasing database write lock")
+                logger.debug(f"Releasing database write lock for task {func}")
                 semaphore.release()
         return wrapped
     return decorator
@@ -320,10 +318,28 @@ class CardDatabase(QObject):
         """
         super().__init__(parent)
         logger.info(f"Creating {self.__class__.__name__} instance.")
+        self._db_check_same_thread = check_same_thread
         self.db_path = db_path
-        self.db = db = open_database(
-            db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION, check_same_thread=check_same_thread)
-        migrate_card_database(db)
+        self.db: sqlite3.Connection = None
+        self._db_is_temporary = False
+        self.reopen_database()
+        self._exit_hook = None
+        if db_path != ":memory:":
+            self._register_exit_hook()
+
+    @Slot()
+    def reopen_database(self) -> None:
+        logger.info(f"About to open card database from {self.db_path}")
+        db = open_database(
+            self.db_path, SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
+            check_same_thread=self._db_check_same_thread)
+        outdated_on_disk = mtg_proxy_printer.sqlite_helpers.check_database_schema_version(db, SCHEMA_NAME) > 0
+        if outdated_on_disk:
+            logger.warning(
+                "Refusing to load outdated database schema. Use empty in-memory database until migrations complete.")
+            db = open_database(
+                ":memory:", SCHEMA_NAME, self.MIN_SUPPORTED_SQLITE_VERSION,
+                check_same_thread=self._db_check_same_thread)
         logger.debug("Validating schema of the opened database")
         try:
             validate_database_schema(
@@ -333,10 +349,14 @@ class CardDatabase(QObject):
             logger.exception("Card database schema validation failed. Trying to continue, but expect crashes")
         else:
             logger.debug("Card database schema valid")
-        self._exit_hook = None
-        if db_path != ":memory:":
-            self._register_exit_hook()
+        if reopened := (self.db is not None):
+            self.db.rollback()
+            self.db.close()
+        self.db = db
+        self._db_is_temporary = outdated_on_disk
         self.begin_transaction()
+        if reopened:
+            self.card_data_updated.emit()
 
     def _register_exit_hook(self):
         logger.debug("Registering cleanup hooks that close the database on exit.")
@@ -350,7 +370,7 @@ class CardDatabase(QObject):
             logger.debug("Running SQLite PRAGMA optimize.")
             # Running query planner optimization prior to closing the connection, as recommended by the SQLite devs.
             # See also: https://www.sqlite.org/lang_analyze.html
-            self.db.execute("PRAGMA optimize")
+            self.db.execute("PRAGMA optimize; -- close_db()\n")
             self.db.close()
             logger.info("Closed database.")
 
@@ -364,7 +384,7 @@ class CardDatabase(QObject):
 
     def begin_transaction(self):
         logger.info("Starting new read transaction")
-        self.db.execute("BEGIN DEFERRED TRANSACTION")
+        self.db.execute("BEGIN DEFERRED TRANSACTION; --begin_transaction()\n")
 
     def has_data(self) -> bool:
         result, = self.db.execute("SELECT EXISTS(SELECT * FROM Card)\n").fetchone()
@@ -933,7 +953,7 @@ class CardDatabase(QObject):
         result = natural_sorted((number for number, in self.db.execute(query, parameters)))
         return result
 
-    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any]):
+    def _read_optional_scalar_from_db(self, query: str, parameters: typing.Sequence[typing.Any] = None):
         if result := self.db.execute(query, parameters).fetchone():
             return result[0]
         else:
