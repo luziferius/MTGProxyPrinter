@@ -158,7 +158,7 @@ def card_db_at_version_21(old_db) -> pathlib.Path:
     card_db = CardDatabase(old_db)
     runner = DatabaseMigrationRunner(card_db, {src: script for src, script in MIGRATION_SCRIPTS.items() if src < 21})
     runner.run()
-    db = card_db.db
+    db = mtg_proxy_printer.sqlite_helpers.open_database(old_db, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
     assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(21)), "Setup failed")
     today_tuple = str(datetime.date.today()),
     db.execute("INSERT INTO LastDatabaseUpdate (newest_card_timestamp) values (?)", today_tuple)
@@ -173,12 +173,14 @@ def test_patch_21_to_22_applies_correctly_without_network_access_using_dummy_val
     with unittest.mock.patch(
             "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.read_json_card_data_from_url") as mock:
         mock.side_effect = possible_error
-        runner = DatabaseMigrationRunner(card_db)
-        runner.run({21: MIGRATION_SCRIPTS[21]})
-        assert_that(card_db.db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
-        mock.assert_called_once()
+        runner = DatabaseMigrationRunner(card_db, {21: MIGRATION_SCRIPTS[21]})
+        runner.run()
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+        card_db.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
+    mock.assert_called_once()
     assert_that(
-        card_db.db.execute("SELECT MAX(update_id), reported_card_count FROM LastDatabaseUpdate").fetchall(),
+        db.execute("SELECT MAX(update_id), reported_card_count FROM LastDatabaseUpdate").fetchall(),
         contains_exactly((1, 0))
     )
 
@@ -190,11 +192,13 @@ def test_patch_21_to_22_applies_with_network_access_and_requests_card_count_from
     with unittest.mock.patch(
             "mtg_proxy_printer.card_info_downloader.CardInfoDatabaseImportWorker.read_json_card_data_from_url") as mock:
         mock.return_value = iter((expected,))
-        runner = DatabaseMigrationRunner(card_db)
-        runner.run({21: MIGRATION_SCRIPTS[21]})
-        assert_that(card_db.db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
-        mock.assert_called_once()
+        runner = DatabaseMigrationRunner(card_db, {21: MIGRATION_SCRIPTS[21]})
+        runner.run()
+    db = mtg_proxy_printer.sqlite_helpers.open_database(
+        card_db.db_path, "carddb", CardDatabase.MIN_SUPPORTED_SQLITE_VERSION)
+    assert_that(db.execute("PRAGMA user_version").fetchone()[0], is_(equal_to(22)))
+    mock.assert_called_once()
     assert_that(
-        card_db.db.execute("SELECT MAX(update_id), reported_card_count FROM LastDatabaseUpdate").fetchall(),
+        db.execute("SELECT MAX(update_id), reported_card_count FROM LastDatabaseUpdate").fetchall(),
         contains_exactly((1, expected))
     )
