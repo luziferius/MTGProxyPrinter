@@ -65,8 +65,9 @@ Tabbed uses tabs to only show parts of the main window at a time. Best used with
      </property>
      <property name="toolTip">
       <string>Language choices will default to the chosen language here.
+Entries use the language codes as listed on Scryfall.
 
-Entries use the language codes as listed on Scryfall.</string>
+Note: Cards in deck lists use the language as given by the deck list. To overwrite, use the deck list translation option.</string>
      </property>
     </widget>
    </item>
@@ -93,6 +94,9 @@ Uncheck to disable this automatism.</string>
    </item>
    <item row="0" column="0">
     <widget class="QLabel" name="preferred_language_label">
+     <property name="toolTip">
+      <string>Card language selected at application start and default language when enabling deck list translations</string>
+     </property>
      <property name="text">
       <string>Preferred card language:</string>
      </property>
