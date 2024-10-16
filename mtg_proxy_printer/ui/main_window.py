@@ -440,7 +440,9 @@ class MainWindow(QMainWindow):
         name = mtg_proxy_printer.meta_data.PROGRAMNAME
         self._ask_user_about_update_policy(
             title=self.tr("Check for application updates?"),
-            question=self.tr(f"Automatically check for application updates whenever you start {name}?"),
+            question=self.tr(
+                "Automatically check for application updates whenever you start {program_name}?").format(
+                program_name=name),
             logger_message="Application update policy set.",
             settings_key="check-for-application-updates"
         )

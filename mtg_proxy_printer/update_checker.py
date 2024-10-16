@@ -191,6 +191,7 @@ class UpdateChecker(QObject):
         logger.info(f"Creating {self.__class__.__name__} instance.")
         super().__init__(parent)
         self.card_db = card_db
+        # Don’t do the card data update check, if the user imports card data via command line arguments
         self.card_data_parameter_passed = bool(args.card_data and args.card_data.is_file())
         logger.info(f"Created {self.__class__.__name__} instance.")
 

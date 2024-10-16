@@ -104,7 +104,7 @@ class SetWackinessScore(int, enum.Enum):
     OVERSIZED = 10  # Not playable
 
 
-class ProgressSignalContainer(QObject):
+class DownloadProgressSignalContainer(QObject):
     download_progress = Signal(int)  # Emits the total number of processed data after processing each item
     download_begins = Signal(int, str)  # Emitted when the download starts. Carries size (bytes) and description
     download_finished = Signal()  # Emitted when the input data is exhausted and processing finished
@@ -113,7 +113,7 @@ class ProgressSignalContainer(QObject):
     other_error_occurred = Signal(str)  # Emitted when database population failed due to non-network issues.
 
 
-class CardInfoDownloader(ProgressSignalContainer):
+class CardInfoDownloader(DownloadProgressSignalContainer):
     """
     Handles fetching the bulk card data from Scryfall and populates/updates the local card database.
     Also supports importing cards via a locally stored bulk card data file, mostly useful for debugging and testing
@@ -227,7 +227,7 @@ class CardInfoFileDownloadRunner(Runnable):
     def __init__(self, download_path: Path, parent: CardInfoDownloader):
         super().__init__()
         self.parent = parent
-        self.signals = ProgressSignalContainer()
+        self.signals = DownloadProgressSignalContainer()
         self.download_path = download_path
         self.worker: typing.Optional[CardInfoFileDownloadWorker] = None
 

@@ -24,7 +24,7 @@ if typing.TYPE_CHECKING:
     from mtg_proxy_printer.ui.main_window import MainWindow
 from mtg_proxy_printer.model.carddb import SCHEMA_NAME, with_database_write_lock
 from mtg_proxy_printer.sqlite_helpers import cached_dedent, open_database
-from mtg_proxy_printer.runner import Runnable
+from mtg_proxy_printer.runner import Runnable, ProgressSignalContainer
 from mtg_proxy_printer.logger import get_logger
 from mtg_proxy_printer.units_and_sizes import StringList, SectionProxy
 logger = get_logger(__name__)
@@ -39,14 +39,6 @@ class PrintingFilterUpdater(Runnable):
     Syncs the db-internal printing filters with the filters stored in the configuration file,
     and updates the is_hidden columns.
     """
-    class SignalContainer(QObject):
-        begin_update = Signal(int, str)
-        progress = Signal(int)
-        update_completed = Signal()
-        advance_progress = Signal()
-        ui_update_required = Signal()
-        error_occurred = Signal(str)
-
     PROGRESS_STEP_COUNT = 6
 
     def __init__(
@@ -65,7 +57,7 @@ class PrintingFilterUpdater(Runnable):
           the cached is_hidden, as the value may change for each card, even if the filters stayed constant.
         """
         super().__init__()
-        self.signals = signals = PrintingFilterUpdater.SignalContainer()
+        self.signals = signals = ProgressSignalContainer()
         self.model = model
         self.progress = 0
         signals.ui_update_required.connect(model.restart_transaction, QueuedConnection)
