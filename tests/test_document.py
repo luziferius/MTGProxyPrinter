@@ -506,10 +506,11 @@ def _validate_database_schema(db_path: pathlib.Path):
     target_schema_version = 6
     db_unsafe = open_database(
         db_path, f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
-    if db_unsafe.execute("PRAGMA application_id").fetchone()[0] != 41325044:
-        raise AssertionError("Not an MTGProxyPrinter save file!")
-    user_schema_version = db_unsafe.execute("PRAGMA user_version").fetchone()[0]
-    assert_that(user_schema_version, is_(equal_to(target_schema_version)))
+    assert_that(
+        db_unsafe.execute("PRAGMA application_id").fetchone(), contains_exactly(41325044),
+        "Not an MTGProxyPrinter save file!"
+    )
+    assert_that(db_unsafe.execute("PRAGMA user_version").fetchone(), contains_exactly(target_schema_version))
     db_known_good = create_in_memory_database(
         f"document-v{target_schema_version}", DocumentLoader.MIN_SUPPORTED_SQLITE_VERSION)
     tables_and_views_query = textwrap.dedent("""\
