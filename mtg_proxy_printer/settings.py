@@ -525,8 +525,11 @@ def _migrate_document_settings_to_pint(to_migrate: ConfigParser):
             "margin-top", "margin-bottom", "margin-left", "margin-right",
             "row-spacing", "column-spacing"):
         old_key = f"{key}-mm"
-        section[key] = f"{section[old_key]} mm"
-        del section[old_key]
+        if old_key in section:
+            section[key] = f"{section[old_key]} mm"
+            del section[old_key]
+        else:
+            section[key] = "0 mm"
 
 
 def _migrate_images_to_cards_section(to_migrate: ConfigParser):
