@@ -4,6 +4,7 @@
 
 ## Fixed issues
 
+- Fix crash at application start when upgrading from version 0.26.1 or older
 - Migrations for the local card database required after some application updates now run with the main window open 
   instead of before opening the main window, and indicate the progress via a progress bar.
   The app no longer appears hanging when starting for the first time after installing updates.
