@@ -15,15 +15,21 @@
 
 from itertools import chain
 from numbers import Real
+from pathlib import Path
 import typing
+from unittest.mock import patch
 
 import pint
+import pytest
+from hamcrest import *
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
+from mtg_proxy_printer.natsort import natural_sorted
 
-import pytest
-from hamcrest import *
+SETTINGS_DIR = Path(__file__).with_name("settings_files")
+
+
 
 
 def between(lower: Real, upper: Real):
@@ -195,3 +201,9 @@ def test_clamp_to_supported_range(value: float, expected: float):
     value_as_distance: pint.Quantity = value*unit_registry.mm
     clamped_value = mtg_proxy_printer.settings.clamp_to_supported_range(value_as_distance).magnitude
     assert_that(clamped_value, is_(close_to(expected, 0.001)))
+
+
+@pytest.mark.parametrize("source_file", SETTINGS_DIR.glob("*.ini"))
+def test_migration_does_not_crash(source_file: Path):
+    with patch("mtg_proxy_printer.settings.config_file_path", source_file):
+        mtg_proxy_printer.settings.read_settings_from_file()
