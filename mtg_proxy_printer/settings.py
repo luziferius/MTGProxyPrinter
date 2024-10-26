@@ -492,7 +492,7 @@ def _migrate_print_guessing_settings(to_migrate: ConfigParser):
     # be disabled by default.
     target["enable-print-guessing-by-default"] = "True"
     target["prefer-already-downloaded-images"] = source["prefer-already-downloaded"]
-    target["always-translate-deck-lists"] = source["always-translate-deck-lists"]
+    target["always-translate-deck-lists"] = source.get("always-translate-deck-lists", "False")
 
 
 def _migrate_image_spacing_settings(to_migrate: ConfigParser):
@@ -511,10 +511,14 @@ def _migrate_to_pdf_export_section(to_migrate: ConfigParser):
         return
     to_migrate.add_section(section_name)
     target = to_migrate[section_name]
-    target["pdf-page-count-limit"] = to_migrate["documents"]["pdf-page-count-limit"]
-    target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
-    del to_migrate["documents"]["pdf-page-count-limit"]
-    del to_migrate["default-filesystem-paths"]["pdf-export-path"]
+    target["pdf-page-count-limit"] = to_migrate["documents"].get("pdf-page-count-limit", "0")
+    try:
+        del to_migrate["documents"]["pdf-page-count-limit"]
+    except KeyError:
+        pass
+    if to_migrate.has_section("default-filesystem-paths"):
+        target["pdf-export-path"] = to_migrate["default-filesystem-paths"]["pdf-export-path"]
+        del to_migrate["default-filesystem-paths"]["pdf-export-path"]
 
 
 def _migrate_document_settings_to_pint(to_migrate: ConfigParser):

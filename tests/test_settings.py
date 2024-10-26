@@ -25,11 +25,8 @@ from hamcrest import *
 
 import mtg_proxy_printer.settings
 from mtg_proxy_printer.units_and_sizes import unit_registry, ConfigParser
-from mtg_proxy_printer.natsort import natural_sorted
 
 SETTINGS_DIR = Path(__file__).with_name("settings_files")
-
-
 
 
 def between(lower: Real, upper: Real):
