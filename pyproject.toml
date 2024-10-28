@@ -52,7 +52,7 @@ dynamic = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
+    "pytest >= 6.0",
     "pytest-cov",
     "pytest-timeout",
     "pytest-qt >= 2.0",
@@ -82,6 +82,8 @@ Translations = "https://crowdin.com/project/mtgproxyprinter"
 [project.gui-scripts]
 mtg-proxy-printer = "mtg_proxy_printer.__main__:main"
 
+[tool.pytest.ini_options]
+timeout = 10
 
 [tool.setuptools]
 exclude-package-data = {"mtg_proxy_printer" = ["resources", "resources.*"]}
